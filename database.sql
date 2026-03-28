@@ -1,5 +1,9 @@
 -- IT Management SQL Backup
 -- Generated at: 2026-03-28 19:52:18 UTC
+-- Complete IT Management System Database
+DROP DATABASE IF EXISTS `itmanagement`;
+CREATE DATABASE `itmanagement` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `itmanagement`;
 SET FOREIGN_KEY_CHECKS=0;
 
 -- Table structure for `access_levels`
