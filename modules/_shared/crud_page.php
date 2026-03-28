@@ -381,6 +381,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/select-add-option.js"></script>
 
 </body>
 </html>

@@ -221,5 +221,6 @@ function render_options($items, $selected = '') {
     </div>
 </div></div></div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/select-add-option.js"></script>
 </body>
 </html>
