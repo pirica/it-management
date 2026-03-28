@@ -7,7 +7,7 @@ $company_data = mysqli_fetch_assoc($company);
 $equipment_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM equipment WHERE company_id = $company_id AND active = 1"))['count'];
 $workstations_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM workstations WHERE company_id = $company_id AND active = 1"))['count'];
 $tickets_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM tickets WHERE company_id = $company_id"))['count'];
-$users_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE company_id = $company_id AND active = 1"))['count'];
+$employees_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM employees WHERE company_id = $company_id"))['count'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -42,8 +42,8 @@ $users_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as c
                         <div class="stat-number"><?php echo $tickets_count; ?></div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Users</div>
-                        <div class="stat-number"><?php echo $users_count; ?></div>
+                        <div class="stat-label">Employees</div>
+                        <div class="stat-number"><?php echo $employees_count; ?></div>
                     </div>
                 </div>
 
