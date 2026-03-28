@@ -263,6 +263,7 @@ CREATE TABLE `tickets`(
     FOREIGN KEY(`priority_id`) REFERENCES `ticket_priorities`(`id`),
     FOREIGN KEY(`created_by_user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY(`assigned_to_user_id`) REFERENCES `users`(`id`),
+    FOREIGN KEY(`asset_id`) REFERENCES `equipment`(`id`) ON DELETE SET NULL,
     INDEX(`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -452,6 +453,20 @@ ALTER TABLE `employees`
 ALTER TABLE `workstations`
     ADD COLUMN `assignment_type_id` INT NULL,
     ADD FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types`(`id`);
+
+-- Keep lookup FK columns synchronized with legacy ENUM values (for existing rows)
+UPDATE `users` u JOIN `user_roles` r ON r.name = u.role SET u.role_id = r.id WHERE u.role_id IS NULL;
+UPDATE `users` u JOIN `access_levels` a ON a.name = u.access_level SET u.access_level_id = a.id WHERE u.access_level_id IS NULL;
+UPDATE `it_locations` l JOIN `location_types` t ON t.name = l.type SET l.type_id = t.id WHERE l.type_id IS NULL;
+UPDATE `suppliers` s JOIN `supplier_statuses` ss ON ss.name = s.status SET s.status_id = ss.id WHERE s.status_id IS NULL;
+UPDATE `racks` r JOIN `rack_statuses` rs ON rs.name = r.status SET r.status_id = rs.id WHERE r.status_id IS NULL;
+UPDATE `equipment` e JOIN `equipment_statuses` es ON es.name = e.status SET e.status_id = es.id WHERE e.status_id IS NULL;
+UPDATE `equipment` e JOIN `warranty_types` wt ON wt.name = e.warranty_type SET e.warranty_type_id = wt.id WHERE e.warranty_type_id IS NULL;
+UPDATE `equipment` e JOIN `printer_device_types` pdt ON pdt.name = e.printer_device_type SET e.printer_device_type_id = pdt.id WHERE e.printer_device_type_id IS NULL;
+UPDATE `equipment` e JOIN `workstation_device_types` wdt ON wdt.name = e.workstation_device_type SET e.workstation_device_type_id = wdt.id WHERE e.workstation_device_type_id IS NULL;
+UPDATE `equipment` e JOIN `workstation_os_types` wot ON wot.name = e.workstation_os_type SET e.workstation_os_type_id = wot.id WHERE e.workstation_os_type_id IS NULL;
+UPDATE `employees` e JOIN `employee_statuses` es ON es.name = e.employment_status SET e.employment_status_id = es.id WHERE e.employment_status_id IS NULL;
+UPDATE `workstations` w JOIN `assignment_types` a ON a.name = w.assignment_type SET w.assignment_type_id = a.id WHERE w.assignment_type_id IS NULL;
 
 -- Example data for each main table
 INSERT INTO `it_locations` (`company_id`,`name`,`location_code`,`city`,`country`,`active`) VALUES (1,'HQ NYC','LOC-NY-01','New York','USA',1);
