@@ -5,7 +5,6 @@ $company = mysqli_query($conn, "SELECT * FROM companies WHERE id = $company_id")
 $company_data = mysqli_fetch_assoc($company);
 
 $equipment_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM equipment WHERE company_id = $company_id AND active = 1"))['count'];
-$printers_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM printers WHERE company_id = $company_id AND active = 1"))['count'];
 $workstations_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM workstations WHERE company_id = $company_id AND active = 1"))['count'];
 $tickets_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM tickets WHERE company_id = $company_id"))['count'];
 $users_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE company_id = $company_id AND active = 1"))['count'];

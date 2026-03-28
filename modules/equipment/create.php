@@ -6,8 +6,6 @@ $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = escape_sql($_POST['name'], $conn);
-    $asset_tag = escape_sql($_POST['asset_tag'], $conn);
-    $asset_code = escape_sql($_POST['asset_code'] ?? '', $conn);
     $serial_number = escape_sql($_POST['serial_number'] ?? '', $conn);
     $equipment_type_id = (int)($_POST['equipment_type_id'] ?? 0);
     $manufacturer_id = (int)($_POST['manufacturer_id'] ?? 0) ?: 'NULL';
@@ -25,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $photo_filename = '';
 
     // Validate required fields
-    if (!$name || !$asset_tag || !$equipment_type_id) {
-        $error = '❌ Please fill in all required fields (Name, Asset Tag, Equipment Type)';
+    if (!$name || !$equipment_type_id) {
+        $error = '❌ Please fill in all required fields (Name, Equipment Type)';
     } else {
         // Handle file upload
         if (!empty($_FILES['photo']['name'])) {
@@ -48,16 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $warranty_expiry_sql = $warranty_expiry === 'NULL' ? 'NULL' : "'" . $warranty_expiry . "'";
             
             $query = "INSERT INTO equipment 
-            (company_id, equipment_type_id, manufacturer_id, location_id, name, asset_tag, asset_code, 
+            (company_id, equipment_type_id, manufacturer_id, location_id, name, 
              serial_number, model, hostname, ip_address, mac_address, status, purchase_date, purchase_cost, 
              warranty_expiry, warranty_type, notes, photo_filename) 
             VALUES 
-            ($company_id, $equipment_type_id, $manufacturer_id, $location_id, '$name', '$asset_tag', '$asset_code', 
+            ($company_id, $equipment_type_id, $manufacturer_id, $location_id, '$name', 
              '$serial_number', '$model', '$hostname', '$ip_address', '$mac_address', '$status', $purchase_date_sql, $purchase_cost, 
              $warranty_expiry_sql, '$warranty_type', '$notes', '$photo_filename')";
 
             if (mysqli_query($conn, $query)) {
-                $success = '✅ Equipment created successfully!';
+                $success = '✅ Equipment saved successfully!';
                 header('refresh:2;url=index.php');
             } else {
                 $error = '❌ Database error: ' . mysqli_error($conn);
@@ -76,7 +74,7 @@ $locations = mysqli_query($conn, "SELECT * FROM it_locations WHERE company_id = 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Equipment - IT Management</title>
+    <title>New Equipment - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -87,7 +85,7 @@ $locations = mysqli_query($conn, "SELECT * FROM it_locations WHERE company_id = 
             <?php include '../../includes/header.php'; ?>
             
             <div class="content">
-                <h1>➕ Add New Equipment</h1>
+                <h1>➕ New Equipment</h1>
 
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?php echo $error; ?></div>
@@ -104,10 +102,6 @@ $locations = mysqli_query($conn, "SELECT * FROM it_locations WHERE company_id = 
                             <div class="form-group">
                                 <label>Equipment Name *</label>
                                 <input type="text" name="name" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Asset Tag *</label>
-                                <input type="text" name="asset_tag" required>
                             </div>
                         </div>
 
@@ -145,10 +139,6 @@ $locations = mysqli_query($conn, "SELECT * FROM it_locations WHERE company_id = 
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Asset Code</label>
-                                <input type="text" name="asset_code">
-                            </div>
                             <div class="form-group">
                                 <label>Hostname</label>
                                 <input type="text" name="hostname">

@@ -40,7 +40,7 @@ $equipment_list = mysqli_fetch_all($result, MYSQLI_ASSOC);
             <div class="content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h1>🖥️ Equipment Management</h1>
-                    <a href="create.php" class="btn btn-primary">+ Add Equipment</a>
+                    <a href="create.php" class="btn btn-primary">+ New Equipment</a>
                 </div>
 
                 <div class="card">
@@ -92,7 +92,7 @@ $equipment_list = mysqli_fetch_all($result, MYSQLI_ASSOC);
                     <?php else: ?>
                         <div style="text-align: center; padding: 40px;">
                             <p style="color: var(--text-secondary);">📭 No equipment found</p>
-                            <a href="create.php" class="btn btn-primary" style="margin-top: 20px;">Create First Equipment</a>
+                            <a href="create.php" class="btn btn-primary" style="margin-top: 20px;">New First Equipment</a>
                         </div>
                     <?php endif; ?>
                 </div>
