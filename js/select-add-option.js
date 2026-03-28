@@ -55,10 +55,18 @@
         });
 
         try {
+            const csrfToken = window.ITM_CSRF_TOKEN || '';
+            if (!csrfToken) {
+                throw new Error('Missing CSRF token.');
+            }
+
+            payload.append('csrf_token', csrfToken);
+
             const response = await fetch(endpointFor(selectEl), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRF-Token': csrfToken,
                 },
                 body: payload.toString(),
             });
