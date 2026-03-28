@@ -184,6 +184,91 @@
         window.alert('Unsupported file type. Please import CSV, XLS, or XLSX files.');
     }
 
+    function toolsForPage() {
+        return {
+            excel: true,
+            pdf: true,
+            importExcel: true,
+        };
+    }
+
+    function makeButton(label, clickHandler, toolType) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-sm';
+        button.textContent = label;
+        button.dataset.toolType = toolType || '';
+        if (typeof clickHandler === 'function') {
+            button.addEventListener('click', clickHandler);
+        }
+        return button;
+    }
+
+    function bindToolbarEvents(toolbar, table) {
+        toolbar.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-tool-type]');
+            if (!button) return;
+            const type = button.dataset.toolType;
+            if (type === 'excel') exportTableAsExcel(table);
+            if (type === 'pdf') exportTableAsPdf(table);
+            if (type === 'import') {
+                const inputId = button.dataset.inputId;
+                const input = inputId ? document.getElementById(inputId) : null;
+                if (input) input.click();
+            }
+        });
+
+        toolbar.querySelectorAll('input[type="file"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                importTableFromFile(table, file);
+                input.value = '';
+            });
+        });
+    }
+
+    function addToolbarClass(toolbar, mode) {
+        toolbar.classList.remove('itm-tools-left', 'itm-tools-right', 'itm-tools-left-right');
+        if (mode === 'left' || mode === 'top_left' || mode === 'bottom_left' || mode === 'top_bottom_left') {
+            toolbar.classList.add('itm-tools-left');
+            return;
+        }
+        if (mode === 'right' || mode === 'top_right' || mode === 'bottom_right' || mode === 'top_bottom_right') {
+            toolbar.classList.add('itm-tools-right');
+            return;
+        }
+        toolbar.classList.add('itm-tools-left-right');
+    }
+
+    function placeToolbar(table, toolbar) {
+        const cfg = window.ITM_UI_CONFIG || {};
+        const mode = (cfg.export_buttons_position || 'left_right').toString();
+        const card = table.closest('.card');
+        if (!card || !table.parentNode) return;
+
+        addToolbarClass(toolbar, mode);
+
+        if (mode === 'bottom_left' || mode === 'bottom_right') {
+            toolbar.classList.add('table-tools-bottom');
+            table.parentNode.appendChild(toolbar);
+            return;
+        }
+
+        if (mode === 'top_bottom_left' || mode === 'top_bottom_right') {
+            const topToolbar = toolbar.cloneNode(true);
+            addToolbarClass(topToolbar, mode);
+            bindToolbarEvents(topToolbar, table);
+            table.parentNode.insertBefore(topToolbar, table);
+
+            toolbar.classList.add('table-tools-bottom');
+            table.parentNode.appendChild(toolbar);
+            return;
+        }
+
+        table.parentNode.insertBefore(toolbar, table);
+    }
+
     function attachListTools(table, index) {
         if (table.dataset.tableToolsAttached === '1') {
             return;
