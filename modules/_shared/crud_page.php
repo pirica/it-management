@@ -116,11 +116,18 @@ function cr_is_hidden_employee_field($field) {
         return false;
     }
 
-    $hidden = ['user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    if (($GLOBALS['crud_table'] ?? '') === 'employees') {
+        $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        if (in_array($field, $employeeBoolFields, true)) {
+            return ((int)$value === 1) ? '✔️' : '❌';
+        }
+    }
+
     $text = (string)($value ?? '');
     if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
@@ -466,7 +473,10 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
                             <?php elseif ($isTinyInt): ?>
-                                <label><input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>> Enabled</label>
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✔️' : '❌'; ?></span></span>
+                                </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
@@ -537,6 +547,14 @@ document.addEventListener('click', function (event) {
     const outlookHref = link.getAttribute('data-outlook-href');
     if (outlookHref) {
         window.location.href = outlookHref;
+    }
+});
+
+document.addEventListener('change', function (event) {
+    if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
+    const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
+    if (indicator) {
+        indicator.textContent = event.target.checked ? '✔️' : '❌';
     }
 });
 </script>

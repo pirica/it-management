@@ -657,3 +657,15 @@ input[type="color"] {
     margin-top: 10px;
     margin-bottom: 0;
 }
+
+.itm-checkbox-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.itm-checkbox-control input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}

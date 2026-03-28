@@ -31,12 +31,22 @@ if ($id > 0) {
                 <?php else: ?>
                     <table>
                         <tbody>
-                        <?php foreach ($item as $field => $value): ?>
-                            <tr>
-                                <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
-                                <td><?php echo sanitize((string)($value ?? '')); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
+                        <tr>
+                            <th style="width:220px;">ID</th>
+                            <td><?php echo (int)$item['id']; ?></td>
+                        </tr>
+                        <tr>
+                            <th>Name</th>
+                            <td><?php echo sanitize((string)($item['name'] ?? '')); ?></td>
+                        </tr>
+                        <tr>
+                            <th>Description</th>
+                            <td><?php echo sanitize((string)($item['description'] ?? '')); ?></td>
+                        </tr>
+                        <tr>
+                            <th>Active</th>
+                            <td><?php echo (int)($item['active'] ?? 0) === 1 ? '✔️' : '❌'; ?></td>
+                        </tr>
                         </tbody>
                     </table>
                 <?php endif; ?>

@@ -247,16 +247,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
     }
 }
 
-$where = ' WHERE company_id=' . (int)$company_id;
-$rows = mysqli_query($conn, 'SELECT * FROM employees' . $where . ' ORDER BY id DESC LIMIT 500');
+$where = ' WHERE e.company_id=' . (int)$company_id;
+$rows = mysqli_query(
+    $conn,
+    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name
+     FROM employees e
+     LEFT JOIN departments d ON d.id = e.department_id
+     LEFT JOIN employee_statuses es ON es.id = e.employment_status_id'
+    . $where .
+    ' ORDER BY e.id DESC LIMIT 500'
+);
 $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
 $columns = [];
+$columnTypes = [];
 while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columns[] = $c['Field'];
+    $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
 $preferredOrder = ['id','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','active','comments'];
-$hiddenColumns = ['employee_code','location','phone','location_id','user_id'];
+$hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id','active'];
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) {
     return !in_array($c, $hiddenColumns, true);
 }));
@@ -270,6 +280,12 @@ usort($columns, function ($a, $b) use ($preferredOrder) {
 });
 
 function emp_label($field) {
+    if ($field === 'department_id') {
+        return 'Department Name';
+    }
+    if ($field === 'employment_status_id') {
+        return 'Employment Status';
+    }
     return ucwords(str_replace('_', ' ', trim((string)$field)));
 }
 ?>
@@ -335,7 +351,19 @@ function emp_label($field) {
                     <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                         <tr>
                             <?php foreach ($columns as $col): ?>
-                                <td><?php if ($col === 'email' && !empty($row[$col])): ?><a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a><?php else: ?><?php echo sanitize((string)($row[$col] ?? '')); ?><?php endif; ?></td>
+                                <td>
+                                    <?php if ($col === 'email' && !empty($row[$col])): ?>
+                                        <a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
+                                    <?php elseif ($col === 'department_id'): ?>
+                                        <?php echo sanitize((string)($row['department_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'employment_status_id'): ?>
+                                        <?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
+                                    <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
+                                        <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
+                                    <?php else: ?>
+                                        <?php echo sanitize((string)($row[$col] ?? '')); ?>
+                                    <?php endif; ?>
+                                </td>
                             <?php endforeach; ?>
                             <td>
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
