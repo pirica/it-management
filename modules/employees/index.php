@@ -128,8 +128,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             $created = 0;
             $updated = 0;
             $skipped = 0;
+            $duplicatesInFile = 0;
             $matchedIds = [];
             $deleted = 0;
+            $preExistingIds = [];
+
+            $existingSql = 'SELECT id FROM employees WHERE company_id=' . (int)$company_id;
+            $existingRes = mysqli_query($conn, $existingSql);
+            while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
+                $preExistingIds[(int)($existingRow['id'] ?? 0)] = true;
+            }
 
             foreach (array_slice($rows, 1) as $row) {
                 $mapped = [
@@ -227,6 +235,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 if ($existingId > 0) {
+                    if (!isset($preExistingIds[$existingId])) {
+                        $duplicatesInFile += 1;
+                    }
                     $sets = [];
                     foreach ($columns as $col) {
                         if ($col === 'company_id') {
@@ -236,7 +247,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     }
                     $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
                     if (mysqli_query($conn, $sql)) {
-                        $updated += 1;
+                        if (isset($preExistingIds[$existingId])) {
+                            $updated += 1;
+                        } else {
+                            $skipped += 1;
+                        }
                         $matchedIds[] = $existingId;
                     }
                 } else {
@@ -257,6 +272,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             }
 
             $messages[] = "Import complete: {$created} created, {$updated} updated, {$deleted} removed, {$skipped} skipped.";
+            if ($duplicatesInFile > 0) {
+                $messages[] = "{$duplicatesInFile} duplicate row(s) in the uploaded file matched another imported row and were skipped.";
+            }
         }
     }
 }
