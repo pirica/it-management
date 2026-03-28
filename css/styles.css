@@ -597,3 +597,63 @@ input[type="color"] {
 .table-tools-file {
     display: none;
 }
+
+.itm-actions-cell.itm-actions-left {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.itm-actions-cell.itm-actions-right {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.itm-actions-cell.itm-actions-left-right {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.itm-new-button-bar {
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.itm-form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.itm-form-actions.itm-align-left {
+    justify-content: flex-start;
+}
+
+.itm-form-actions.itm-align-right {
+    justify-content: flex-end;
+}
+
+.itm-form-actions.itm-align-between {
+    justify-content: space-between;
+}
+
+.table-tools.itm-tools-left {
+    justify-content: flex-start;
+}
+
+.table-tools.itm-tools-right {
+    justify-content: flex-end;
+}
+
+.table-tools.itm-tools-left-right {
+    justify-content: space-between;
+}
+
+.table-tools-bottom {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
