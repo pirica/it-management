@@ -23,16 +23,30 @@ function updateThemeButton() {
 
 function initSidebar() {
     const savedSidebar = localStorage.getItem('sidebar') || 'open';
-    document.body.classList.toggle('sidebar-collapsed', savedSidebar === 'collapsed');
+    applySidebarState(savedSidebar === 'collapsed');
 }
 
 function toggleSidebar() {
-    document.body.classList.toggle('sidebar-collapsed');
-    const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+    const isCollapsed = !document.body.classList.contains('sidebar-collapsed');
+    applySidebarState(isCollapsed);
     localStorage.setItem('sidebar', isCollapsed ? 'collapsed' : 'open');
+}
+
+function applySidebarState(isCollapsed) {
+    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    const container = document.querySelector('.container');
+    if (container) {
+        container.classList.toggle('sidebar-collapsed', isCollapsed);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initSidebar();
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+    if (sidebarToggleBtn) {
+        sidebarToggleBtn.addEventListener('click', toggleSidebar);
+    }
 });
+
+window.toggleSidebar = toggleSidebar;

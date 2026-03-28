@@ -93,11 +93,13 @@ body {
     transition: margin-left 0.25s ease;
 }
 
-body.sidebar-collapsed .sidebar {
+body.sidebar-collapsed .sidebar,
+.container.sidebar-collapsed .sidebar {
     transform: translateX(-250px);
 }
 
-body.sidebar-collapsed .main-content {
+body.sidebar-collapsed .main-content,
+.container.sidebar-collapsed .main-content {
     margin-left: 0;
 }
 
