@@ -19,7 +19,7 @@ $result = mysqli_query($conn, "SELECT * FROM companies ORDER BY id DESC");
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h1>🌍 Companies</h1>
-                <a href="create.php" class="btn btn-primary">+ New Company</a>
+                <a href="create.php" class="btn btn-primary">➕</a>
             </div>
             <div class="card">
                 <table>
@@ -42,8 +42,8 @@ $result = mysqli_query($conn, "SELECT * FROM companies ORDER BY id DESC");
                                     </span>
                                 </td>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">View</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">Edit</a>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this company?');">Delete</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this company?');">🗑️</a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>

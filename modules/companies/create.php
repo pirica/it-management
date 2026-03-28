@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group"><label>Country</label><input type="text" name="country" value="<?php echo sanitize($data['country']); ?>"></div>
                     </div>
                     <div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> Active</label></div>
-                    <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">Save</button><a href="index.php" class="btn">Cancel</a></div>
+                    <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">✖️</a></div>
                 </form>
             </div>
         </div>

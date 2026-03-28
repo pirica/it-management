@@ -31,7 +31,7 @@ $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 <?php foreach ($item as $k => $v): ?><tr><th style="width:240px;"><?php echo sanitize($k); ?></th><td><?php echo sanitize((string)$v); ?></td></tr><?php endforeach; ?>
 </tbody></table>
 <?php if (!empty($item['photo_filename'])): ?><p style="margin-top:16px;"><img src="<?php echo UPLOAD_URL . sanitize($item['photo_filename']); ?>" alt="Equipment Photo" style="max-width:300px;border:1px solid var(--border);border-radius:8px;"></p><?php endif; ?>
-<p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">Edit</a></p>
+<p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script></body></html>

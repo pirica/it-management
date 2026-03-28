@@ -63,7 +63,7 @@ if (!$hasSelectedSwitch && !empty($switches)) {
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h1>🖥️ Equipment</h1>
-                <a href="create.php" class="btn btn-primary">+ New</a>
+                <a href="create.php" class="btn btn-primary">➕</a>
             </div>
 
             <div class="card" style="overflow:auto;">
@@ -101,12 +101,12 @@ if (!$hasSelectedSwitch && !empty($switches)) {
                                     </span>
                                 </td>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">View</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">Edit</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($isSwitch): ?>
                                         <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">Delete</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -172,7 +172,7 @@ if (!$hasSelectedSwitch && !empty($switches)) {
                                 Comments:
                                 <input type="text" id="commentsInput" placeholder="Comments">
                             </label>
-                            <button class="btn btn-primary" id="savePortBtn" type="button">Save</button>
+                            <button class="btn btn-primary" id="savePortBtn" type="button">💾</button>
                         </div>
 
                         <div class="switch-legend" id="switchLegend">
