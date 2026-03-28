@@ -452,9 +452,6 @@ function emp_label($field) {
 
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
                 <h1 style="margin:0;">Employees</h1>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="create.php" class="btn btn-primary">➕ New Employee</a>
-                </div>
             </div>
 
             <div class="card" style="margin-bottom:16px;">
