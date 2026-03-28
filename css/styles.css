@@ -584,3 +584,16 @@ input[type="color"] {
 .c-white { background: #fff; }
 .c-orange { background: orange; }
 .c-purple { background: purple; }
+
+
+.table-tools {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.table-tools-file {
+    display: none;
+}
