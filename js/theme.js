@@ -44,8 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initSidebar();
     const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-    if (sidebarToggleBtn) {
+    if (sidebarToggleBtn && sidebarToggleBtn.dataset.sidebarBound !== 'true') {
         sidebarToggleBtn.addEventListener('click', toggleSidebar);
+        sidebarToggleBtn.dataset.sidebarBound = 'true';
     }
 });
 
