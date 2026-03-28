@@ -20,8 +20,8 @@
         return { filenameBase, headers, actionsIndex };
     }
 
-    function exportTableAsExcel(table) {
-        const { filenameBase, actionsIndex } = tableMeta(table);
+    function cloneTableWithoutActions(table) {
+        const { actionsIndex } = tableMeta(table);
         const clone = table.cloneNode(true);
 
         if (actionsIndex >= 0) {
@@ -32,6 +32,12 @@
             });
         }
 
+        return clone;
+    }
+
+    function exportTableAsExcel(table) {
+        const { filenameBase } = tableMeta(table);
+        const clone = cloneTableWithoutActions(table);
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${clone.outerHTML}</body></html>`;
         const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
         const url = URL.createObjectURL(blob);
@@ -45,16 +51,8 @@
     }
 
     function exportTableAsPdf(table) {
-        const { filenameBase, actionsIndex } = tableMeta(table);
-        const clone = table.cloneNode(true);
-
-        if (actionsIndex >= 0) {
-            clone.querySelectorAll('tr').forEach((row) => {
-                if (row.children[actionsIndex]) {
-                    row.removeChild(row.children[actionsIndex]);
-                }
-            });
-        }
+        const { filenameBase } = tableMeta(table);
+        const clone = cloneTableWithoutActions(table);
 
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
@@ -190,48 +188,42 @@
         if (table.dataset.tableToolsAttached === '1') {
             return;
         }
+
+        const enabled = toolsForPage(table);
+        if (!enabled.excel && !enabled.pdf && !enabled.importExcel) {
+            return;
+        }
+
         table.dataset.tableToolsAttached = '1';
 
         const toolbar = document.createElement('div');
         toolbar.className = 'table-tools';
 
-        const excelBtn = document.createElement('button');
-        excelBtn.type = 'button';
-        excelBtn.className = 'btn btn-sm';
-        excelBtn.textContent = '📗 Export Excel';
-        excelBtn.addEventListener('click', () => exportTableAsExcel(table));
+        if (enabled.excel) {
+            toolbar.appendChild(makeButton('📗 Export Excel', null, 'excel'));
+        }
 
-        const pdfBtn = document.createElement('button');
-        pdfBtn.type = 'button';
-        pdfBtn.className = 'btn btn-sm';
-        pdfBtn.textContent = '📄 Export PDF';
-        pdfBtn.addEventListener('click', () => exportTableAsPdf(table));
+        if (enabled.pdf) {
+            toolbar.appendChild(makeButton('📄 Export PDF', null, 'pdf'));
+        }
 
-        const importBtn = document.createElement('button');
-        importBtn.type = 'button';
-        importBtn.className = 'btn btn-sm';
-        importBtn.textContent = '📥 Import Excel';
+        if (enabled.importExcel) {
+            const importInputId = `tableToolsImport-${index}`;
+            const importBtn = makeButton('📥 Import Excel', null, 'import');
+            importBtn.dataset.inputId = importInputId;
 
-        const importInput = document.createElement('input');
-        importInput.type = 'file';
-        importInput.accept = '.csv,.xlsx,.xls';
-        importInput.className = 'table-tools-file';
-        importInput.id = `tableToolsImport-${index}`;
-        importInput.addEventListener('change', () => {
-            if (importInput.files && importInput.files[0]) {
-                importTableFromFile(table, importInput.files[0]);
-                importInput.value = '';
-            }
-        });
+            const importInput = document.createElement('input');
+            importInput.type = 'file';
+            importInput.accept = '.csv,.xlsx,.xls';
+            importInput.className = 'table-tools-file';
+            importInput.id = importInputId;
 
-        importBtn.addEventListener('click', () => importInput.click());
+            toolbar.appendChild(importBtn);
+            toolbar.appendChild(importInput);
+        }
 
-        toolbar.appendChild(excelBtn);
-        toolbar.appendChild(pdfBtn);
-        toolbar.appendChild(importBtn);
-        toolbar.appendChild(importInput);
-
-        table.parentNode.insertBefore(toolbar, table);
+        bindToolbarEvents(toolbar, table);
+        placeToolbar(table, toolbar);
     }
 
     function exportViewAsPdf(table) {
