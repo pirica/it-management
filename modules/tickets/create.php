@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($created_by_user_id <= 0) {
-                $error = 'Please create at least one active user before creating tickets.';
+                $error = 'Please add at least one active user before adding tickets.';
             } else {
                 $sql = "INSERT INTO tickets
                         (company_id, ticket_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, created_at)
@@ -96,7 +96,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $is_edit ? 'Edit' : 'Add'; ?> Ticket</title>
+    <title><?php echo $is_edit ? 'Edit' : 'New'; ?> Ticket</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -105,7 +105,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1><?php echo $is_edit ? '✏️ Edit' : '➕ Create'; ?> Ticket</h1>
+            <h1><?php echo $is_edit ? '✏️ Edit' : '➕ New'; ?> Ticket</h1>
 
             <?php if ($error): ?>
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>

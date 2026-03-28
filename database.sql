@@ -120,8 +120,6 @@ CREATE TABLE `equipment`(
     `location_id` INT,
     `rack_id` INT,
     `name` VARCHAR(255) NOT NULL,
-    `asset_tag` VARCHAR(80) UNIQUE,
-    `asset_code` VARCHAR(50),
     `serial_number` VARCHAR(100),
     `model` VARCHAR(100),
     `hostname` VARCHAR(100),
@@ -154,8 +152,7 @@ CREATE TABLE `equipment`(
     INDEX(`company_id`),
     INDEX(`status`),
     INDEX(`is_printer`),
-    INDEX(`is_workstation`),
-    UNIQUE KEY `unique_asset_per_company` (`company_id`, `asset_code`)
+    INDEX(`is_workstation`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `departments`(
@@ -298,6 +295,69 @@ CREATE TABLE `inventory_items`(
     INDEX(`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+-- Lookup tables for ENUM normalization and FK relationships
+CREATE TABLE `user_roles`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `access_levels`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `location_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `supplier_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `rack_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `equipment_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `warranty_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `printer_device_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `workstation_device_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `workstation_os_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `employee_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `assignment_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO `equipment_types` (`name`, `code`) VALUES
 ('Switch', 'SWITCH'),('Server', 'SRV'),('Router', 'RTR'),('Firewall', 'FW'),
 ('PDU', 'PDU'),('Access Point', 'AP'),('Workstation', 'WS'),('Printer', 'PRN'),
@@ -337,5 +397,83 @@ INSERT INTO `companies` (`name`, `company_code`, `industry`, `city`, `country`) 
 ('Network Solutions', 'NSI-001', 'Networking', 'San Francisco', 'USA'),
 ('CloudTech Services', 'CTS-001', 'Cloud', 'Seattle', 'USA'),
 ('Enterprise IT', 'ESL-001', 'Enterprise', 'Boston', 'USA');
+
+
+
+-- Populate lookup tables
+INSERT INTO `user_roles` (`name`) VALUES ('admin'),('it_manager'),('it_technician'),('helpdesk'),('user');
+INSERT INTO `access_levels` (`name`) VALUES ('full'),('read_only'),('limited');
+INSERT INTO `location_types` (`name`) VALUES ('Headquarters'),('Branch'),('Warehouse'),('DataCenter'),('Office'),('Remote'),('Other');
+INSERT INTO `supplier_statuses` (`name`) VALUES ('Active'),('Inactive'),('Preferred'),('Backup');
+INSERT INTO `rack_statuses` (`name`) VALUES ('Active'),('Maintenance'),('Full'),('Decommissioned');
+INSERT INTO `equipment_statuses` (`name`) VALUES ('Active'),('Inactive'),('Maintenance'),('Faulty'),('Reserved'),('Decommissioned'),('On-Order');
+INSERT INTO `warranty_types` (`name`) VALUES ('Standard'),('Extended'),('Premium'),('Enterprise'),('None');
+INSERT INTO `printer_device_types` (`name`) VALUES ('Laser'),('Inkjet'),('All-in-One'),('Thermal'),('Wide-Format'),('Photo'),('Label'),('Dotmatrix'),('Other');
+INSERT INTO `workstation_device_types` (`name`) VALUES ('Desktop'),('Laptop'),('All-in-One'),('Tablet'),('Thin-Client'),('Mobile'),('POS'),('Other');
+INSERT INTO `workstation_os_types` (`name`) VALUES ('Windows'),('macOS'),('Linux'),('ChromeOS'),('iOS'),('Android'),('Other');
+INSERT INTO `employee_statuses` (`name`) VALUES ('Active'),('Inactive'),('On Leave'),('Terminated'),('Contractor');
+INSERT INTO `assignment_types` (`name`) VALUES ('Individual'),('Department'),('Shared'),('Pool');
+
+-- Add relationship columns for all ENUMs
+ALTER TABLE `users`
+    ADD COLUMN `role_id` INT NULL,
+    ADD COLUMN `access_level_id` INT NULL,
+    ADD FOREIGN KEY (`role_id`) REFERENCES `user_roles`(`id`),
+    ADD FOREIGN KEY (`access_level_id`) REFERENCES `access_levels`(`id`);
+
+ALTER TABLE `it_locations`
+    ADD COLUMN `type_id` INT NULL,
+    ADD FOREIGN KEY (`type_id`) REFERENCES `location_types`(`id`);
+
+ALTER TABLE `suppliers`
+    ADD COLUMN `status_id` INT NULL,
+    ADD FOREIGN KEY (`status_id`) REFERENCES `supplier_statuses`(`id`);
+
+ALTER TABLE `racks`
+    ADD COLUMN `status_id` INT NULL,
+    ADD FOREIGN KEY (`status_id`) REFERENCES `rack_statuses`(`id`);
+
+ALTER TABLE `equipment`
+    ADD COLUMN `status_id` INT NULL,
+    ADD COLUMN `warranty_type_id` INT NULL,
+    ADD COLUMN `printer_device_type_id` INT NULL,
+    ADD COLUMN `workstation_device_type_id` INT NULL,
+    ADD COLUMN `workstation_os_type_id` INT NULL,
+    ADD FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses`(`id`),
+    ADD FOREIGN KEY (`warranty_type_id`) REFERENCES `warranty_types`(`id`),
+    ADD FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types`(`id`),
+    ADD FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types`(`id`),
+    ADD FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types`(`id`);
+
+ALTER TABLE `employees`
+    ADD COLUMN `employment_status_id` INT NULL,
+    ADD FOREIGN KEY (`employment_status_id`) REFERENCES `employee_statuses`(`id`);
+
+ALTER TABLE `workstations`
+    ADD COLUMN `assignment_type_id` INT NULL,
+    ADD FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types`(`id`);
+
+-- Example data for each main table
+INSERT INTO `it_locations` (`company_id`,`name`,`location_code`,`city`,`country`,`active`) VALUES (1,'HQ NYC','LOC-NY-01','New York','USA',1);
+INSERT INTO `users` (`company_id`,`username`,`email`,`password`,`first_name`,`last_name`,`role`,`access_level`,`active`,`role_id`,`access_level_id`) VALUES
+(1,'admin_tc','admin@techcorp.example','$2y$10$abcdefghijklmnopqrstuv','System','Admin','admin','full',1,1,1);
+INSERT INTO `suppliers` (`company_id`,`name`,`supplier_code`,`contact_person`,`email`,`phone`,`status`,`active`,`status_id`) VALUES
+(1,'Global IT Supply','SUP-001','Jane Doe','sales@globalit.example','+1-555-0100','Active',1,1);
+INSERT INTO `vlans` (`company_id`,`vlan_number`,`vlan_name`,`cable_color`,`subnet`,`gateway_ip`,`active`) VALUES
+(1,10,'Office Network','#2E86DE','192.168.10.0/24','192.168.10.1',1);
+INSERT INTO `racks` (`company_id`,`location_id`,`name`,`rack_code`,`status`,`active`,`status_id`) VALUES
+(1,1,'Main Rack A','RACK-A','Active',1,1);
+INSERT INTO `equipment` (`company_id`,`equipment_type_id`,`manufacturer_id`,`location_id`,`rack_id`,`name`,`serial_number`,`model`,`hostname`,`ip_address`,`status`,`purchase_date`,`purchase_cost`,`warranty_type`,`active`,`status_id`,`warranty_type_id`) VALUES
+(1,2,2,1,1,'Primary File Server','SN-SRV-001','PowerEdge R760','srv-file-01','192.168.10.20','Active','2025-01-10',8500.00,'Enterprise',1,1,4);
+INSERT INTO `departments` (`company_id`,`name`,`code`,`description`,`manager_user_id`,`location_id`,`active`) VALUES
+(1,'IT Operations','ITOPS','Core IT operations team',1,1,1);
+INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`email`,`phone`,`employee_code`,`department_id`,`job_title`,`location_id`,`employment_status`,`active`,`employment_status_id`) VALUES
+(1,1,'Alex','Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',1,'IT Manager',1,'Active',1,1);
+INSERT INTO `workstations` (`company_id`,`equipment_id`,`workstation_code`,`workstation_mode_id`,`assigned_to_employee_id`,`assigned_to_department_id`,`assignment_type`,`desk_location`,`active`,`assignment_type_id`) VALUES
+(1,1,'WS-001',1,1,1,'Individual','HQ-Desk-14',1,1);
+INSERT INTO `tickets` (`company_id`,`ticket_code`,`title`,`description`,`category_id`,`status_id`,`priority_id`,`created_by_user_id`,`assigned_to_user_id`,`asset_id`) VALUES
+(1,'TCK-0001','Server patching required','Patch cycle for file server',4,1,2,1,1,1);
+INSERT INTO `inventory_items` (`company_id`,`name`,`item_code`,`sku`,`category_id`,`manufacturer_id`,`quantity_on_hand`,`quantity_minimum`,`unit_cost`,`location_id`,`supplier_id`,`active`) VALUES
+(1,'Cat6 Cable 2m','INV-CAT6-2M','SKU-CAT6-2M',1,1,50,10,4.99,1,1,1);
 
 SET FOREIGN_KEY_CHECKS=1;

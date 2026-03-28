@@ -19,7 +19,7 @@ $result = mysqli_query($conn, "SELECT * FROM companies ORDER BY id DESC");
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h1>🌍 Companies</h1>
-                <a href="create.php" class="btn btn-primary">+ Add Company</a>
+                <a href="create.php" class="btn btn-primary">+ New Company</a>
             </div>
             <div class="card">
                 <table>

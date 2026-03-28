@@ -19,7 +19,6 @@ $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = escape_sql($_POST['name'], $conn);
-    $asset_tag = escape_sql($_POST['asset_tag'], $conn);
     $serial_number = escape_sql($_POST['serial_number'] ?? '', $conn);
     $model = escape_sql($_POST['model'] ?? '', $conn);
     $status = escape_sql($_POST['status'] ?? 'Active', $conn);
@@ -28,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $warranty_type = escape_sql($_POST['warranty_type'] ?? 'Standard', $conn);
     $photo_filename = $equipment['photo_filename'];
 
-    if (!$name || !$asset_tag) {
-        $error = '❌ Name and Asset Tag are required';
+    if (!$name) {
+        $error = '❌ Name is required';
     } else {
         // Handle photo upload
         if (!empty($_FILES['photo']['name'])) {
@@ -55,7 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             $query = "UPDATE equipment SET 
                 name = '$name',
-                asset_tag = '$asset_tag',
                 serial_number = '$serial_number',
                 model = '$model',
                 status = '$status',
@@ -110,10 +108,6 @@ $manufacturers = mysqli_query($conn, "SELECT * FROM manufacturers WHERE active =
                             <div class="form-group">
                                 <label>Name *</label>
                                 <input type="text" name="name" value="<?php echo sanitize($equipment['name']); ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Asset Tag *</label>
-                                <input type="text" name="asset_tag" value="<?php echo sanitize($equipment['asset_tag']); ?>" required>
                             </div>
                         </div>
 
