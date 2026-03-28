@@ -1,47 +1,13 @@
 <?php
 require '../../config/config.php';
 
-$items = mysqli_query($conn, "SELECT * FROM users WHERE company_id = $company_id");
+$result = mysqli_query($conn, "SELECT * FROM users WHERE company_id = $company_id ORDER BY id DESC");
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Users Management</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            <div class="content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h1>Users Management</h1>
-                    <a href="create.php" class="btn btn-primary">+ Add Users</a>
-                </div>
-                <div class="card">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 40px;">
-                                    📝 Module development in progress...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Users</title><link rel="stylesheet" href="../../css/styles.css"></head><body>
+<div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h1>👥 Users</h1><a href="create.php" class="btn btn-primary">+ New User</a></div>
+<div class="card"><table><thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+<?php if ($result && mysqli_num_rows($result)): while ($row = mysqli_fetch_assoc($result)): ?>
+<tr><td><?php echo (int)$row['id']; ?></td><td><?php echo sanitize($row['username']); ?></td><td><?php echo sanitize(trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?></td><td><?php echo sanitize($row['email'] ?? '-'); ?></td><td><?php echo sanitize($row['role']); ?></td><td><span class="badge <?php echo (int)$row['active'] ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$row['active'] ? 'Active' : 'Inactive'; ?></span></td><td><a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">View</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">Edit</a> <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete user?');">Delete</a></td></tr>
+<?php endwhile; else: ?><tr><td colspan="7" style="text-align:center;">No users found.</td></tr><?php endif; ?>
+</tbody></table></div></div></div></div><script src="../../js/theme.js"></script></body></html>

@@ -1,33 +1,11 @@
-<?php require '../../config/config.php'; ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Add Inventory</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            <div class="content">
-                <h1>Add Inventory</h1>
-                <div class="card">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text" name="name" required>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="index.php" class="btn">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<?php
+require '../../config/config.php';
+$id=(int)($_GET['id']??0); $is_edit=$id>0; $error='';
+$data=['name'=>'','item_code'=>'','sku'=>'','category_id'=>'','quantity_on_hand'=>0,'quantity_minimum'=>5,'unit_cost'=>'','active'=>1];
+if($is_edit){$q=mysqli_query($conn,"SELECT * FROM inventory_items WHERE id=$id AND company_id=$company_id LIMIT 1"); if($q&&mysqli_num_rows($q)===1)$data=mysqli_fetch_assoc($q); else {$error='Item not found.'; $is_edit=false;}}
+if($_SERVER['REQUEST_METHOD']==='POST'){
+$name=escape_sql($_POST['name']??'',$conn);$item_code=escape_sql($_POST['item_code']??'',$conn);$sku=escape_sql($_POST['sku']??'',$conn);$category_id=(int)($_POST['category_id']??0);$category_sql=$category_id?:'NULL';$quantity_on_hand=(int)($_POST['quantity_on_hand']??0);$quantity_minimum=(int)($_POST['quantity_minimum']??5);$unit_cost=(float)($_POST['unit_cost']??0);$active=isset($_POST['active'])?1:0;
+if(!$name)$error='Item name is required.'; else { $sql=$is_edit?"UPDATE inventory_items SET name='$name',item_code='$item_code',sku='$sku',category_id=$category_sql,quantity_on_hand=$quantity_on_hand,quantity_minimum=$quantity_minimum,unit_cost=$unit_cost,active=$active WHERE id=$id AND company_id=$company_id":"INSERT INTO inventory_items (company_id,name,item_code,sku,category_id,quantity_on_hand,quantity_minimum,unit_cost,active) VALUES ($company_id,'$name','$item_code','$sku',$category_sql,$quantity_on_hand,$quantity_minimum,$unit_cost,$active)"; if(mysqli_query($conn,$sql)){header('Location: index.php');exit;} $error='Database error: '.mysqli_error($conn);} }
+$categories=mysqli_query($conn,"SELECT id,name FROM inventory_categories WHERE active=1 ORDER BY name");
+?>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><?php echo $is_edit?'Edit':'Add'; ?> Inventory Item</title><link rel="stylesheet" href="../../css/styles.css"></head><body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content"><h1><?php echo $is_edit?'✏️ Edit':'➕ Add'; ?> Inventory Item</h1><?php if($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?><div class="card"><form method="POST"><div class="form-row"><div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div><div class="form-group"><label>Item Code</label><input name="item_code" value="<?php echo sanitize($data['item_code']); ?>"></div></div><div class="form-row"><div class="form-group"><label>SKU</label><input name="sku" value="<?php echo sanitize($data['sku']); ?>"></div><div class="form-group"><label>Category</label><select name="category_id"><option value="">-- None --</option><?php while($c=mysqli_fetch_assoc($categories)): ?><option value="<?php echo (int)$c['id']; ?>" <?php echo (string)$data['category_id']===(string)$c['id']?'selected':''; ?>><?php echo sanitize($c['name']); ?></option><?php endwhile; ?></select></div></div><div class="form-row"><div class="form-group"><label>Quantity On Hand</label><input type="number" name="quantity_on_hand" value="<?php echo (int)$data['quantity_on_hand']; ?>"></div><div class="form-group"><label>Minimum Quantity</label><input type="number" name="quantity_minimum" value="<?php echo (int)$data['quantity_minimum']; ?>"></div></div><div class="form-row"><div class="form-group"><label>Unit Cost ($)</label><input type="number" step="0.01" min="0" name="unit_cost" value="<?php echo sanitize((string)$data['unit_cost']); ?>"></div><div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)$data['active']===1?'checked':''; ?>> Active</label></div></div><div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">Save</button><a class="btn" href="index.php">Cancel</a></div></form></div></div></div></div><script src="../../js/theme.js"></script></body></html>

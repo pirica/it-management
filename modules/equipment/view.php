@@ -69,10 +69,6 @@ $equipment = mysqli_fetch_assoc($result);
                             <div class="detail-value"><?php echo sanitize($equipment['name']); ?></div>
                         </div>
                         <div class="detail-col">
-                            <div class="detail-label">Asset Tag</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['asset_tag']); ?></div>
-                        </div>
-                        <div class="detail-col">
                             <div class="detail-label">Status</div>
                             <div class="detail-value">
                                 <span class="badge badge-<?php echo $equipment['status'] === 'Active' ? 'success' : 'danger'; ?>">
@@ -102,10 +98,6 @@ $equipment = mysqli_fetch_assoc($result);
                         <div class="detail-col">
                             <div class="detail-label">Serial Number</div>
                             <div class="detail-value"><?php echo sanitize($equipment['serial_number']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Asset Code</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['asset_code']); ?></div>
                         </div>
                     </div>
 

@@ -1,33 +1,11 @@
-<?php require '../../config/config.php'; ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Add Employees</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            <div class="content">
-                <h1>Add Employees</h1>
-                <div class="card">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text" name="name" required>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="index.php" class="btn">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<?php
+require '../../config/config.php';
+$id=(int)($_GET['id']??0); $is_edit=$id>0; $error='';
+$data=['first_name'=>'','last_name'=>'','email'=>'','phone'=>'','employee_code'=>'','department_id'=>'','job_title'=>'','employment_status'=>'Active','active'=>1];
+if($is_edit){$q=mysqli_query($conn,"SELECT * FROM employees WHERE id=$id AND company_id=$company_id LIMIT 1"); if($q&&mysqli_num_rows($q)===1)$data=mysqli_fetch_assoc($q); else {$error='Employee not found.';$is_edit=false;}}
+if($_SERVER['REQUEST_METHOD']==='POST'){
+$first_name=escape_sql($_POST['first_name']??'',$conn);$last_name=escape_sql($_POST['last_name']??'',$conn);$email=escape_sql($_POST['email']??'',$conn);$phone=escape_sql($_POST['phone']??'',$conn);$employee_code=escape_sql($_POST['employee_code']??'',$conn);$department_id=(int)($_POST['department_id']??0);$department_sql=$department_id?:'NULL';$job_title=escape_sql($_POST['job_title']??'',$conn);$employment_status=escape_sql($_POST['employment_status']??'Active',$conn);$active=isset($_POST['active'])?1:0;
+if(!$first_name||!$last_name)$error='First and last name are required.'; else { $sql=$is_edit?"UPDATE employees SET first_name='$first_name',last_name='$last_name',email='$email',phone='$phone',employee_code='$employee_code',department_id=$department_sql,job_title='$job_title',employment_status='$employment_status',active=$active WHERE id=$id AND company_id=$company_id":"INSERT INTO employees (company_id,first_name,last_name,email,phone,employee_code,department_id,job_title,employment_status,active) VALUES ($company_id,'$first_name','$last_name','$email','$phone','$employee_code',$department_sql,'$job_title','$employment_status',$active)"; if(mysqli_query($conn,$sql)){header('Location: index.php');exit;} $error='Database error: '.mysqli_error($conn);} }
+$departments=mysqli_query($conn,"SELECT id,name FROM departments WHERE company_id=$company_id AND active=1 ORDER BY name");
+?>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><?php echo $is_edit?'Edit':'Add'; ?> Employee</title><link rel="stylesheet" href="../../css/styles.css"></head><body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content"><h1><?php echo $is_edit?'✏️ Edit':'➕ Add'; ?> Employee</h1><?php if($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?><div class="card"><form method="POST"><div class="form-row"><div class="form-group"><label>First Name *</label><input required name="first_name" value="<?php echo sanitize($data['first_name']); ?>"></div><div class="form-group"><label>Last Name *</label><input required name="last_name" value="<?php echo sanitize($data['last_name']); ?>"></div></div><div class="form-row"><div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($data['email']); ?>"></div><div class="form-group"><label>Phone</label><input name="phone" value="<?php echo sanitize($data['phone']); ?>"></div></div><div class="form-row"><div class="form-group"><label>Employee Code</label><input name="employee_code" value="<?php echo sanitize($data['employee_code']); ?>"></div><div class="form-group"><label>Job Title</label><input name="job_title" value="<?php echo sanitize($data['job_title']); ?>"></div></div><div class="form-row"><div class="form-group"><label>Department</label><select name="department_id"><option value="">-- None --</option><?php while($d=mysqli_fetch_assoc($departments)): ?><option value="<?php echo (int)$d['id']; ?>" <?php echo (string)$data['department_id']===(string)$d['id']?'selected':''; ?>><?php echo sanitize($d['name']); ?></option><?php endwhile; ?></select></div><div class="form-group"><label>Status</label><select name="employment_status"><?php foreach(['Active','Inactive','On Leave','Terminated','Contractor'] as $s): ?><option value="<?php echo $s; ?>" <?php echo $data['employment_status']===$s?'selected':''; ?>><?php echo $s; ?></option><?php endforeach; ?></select></div></div><div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)$data['active']===1?'checked':''; ?>> Active</label></div><div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">Save</button><a class="btn" href="index.php">Cancel</a></div></form></div></div></div></div><script src="../../js/theme.js"></script></body></html>
