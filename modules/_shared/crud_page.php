@@ -84,6 +84,21 @@ function cr_manageable_columns($columns) {
     }));
 }
 
+function cr_humanize_field($field) {
+    $label = trim((string)$field);
+    if ($label === '') {
+        return '';
+    }
+
+    if ($label === 'id') {
+        return 'ID';
+    }
+
+    $label = preg_replace('/_id$/', '', $label);
+    $label = str_replace('_', ' ', (string)$label);
+    return ucwords($label);
+}
+
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -267,7 +282,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <thead>
                         <tr>
                             <?php foreach ($columns as $col): ?>
-                                <th><?php echo sanitize($col['Field']); ?></th>
+                                <th><?php echo sanitize(cr_humanize_field($col['Field'])); ?></th>
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
@@ -303,7 +318,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
                         <div class="form-group">
-                            <label><?php echo sanitize($name); ?></label>
+                            <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
                             <?php elseif ($isTinyInt): ?>
@@ -321,7 +336,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
-                                    data-add-friendly="<?php echo sanitize(str_replace('_', ' ', $name)); ?>"
+                                    data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
@@ -353,7 +368,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php foreach ($columns as $col): $f = $col['Field']; ?>
                             <tr>
-                                <th style="width:240px;"><?php echo sanitize($f); ?></th>
+                                <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo sanitize((string)($data[$f] ?? '')); ?></td>
                             </tr>
                         <?php endforeach; ?>
