@@ -139,6 +139,59 @@ function emp_identifier_tokens($mapped) {
     return $tokens;
 }
 
+
+function emp_recalculate_duplicates($conn, $company_id) {
+    $cid = (int)$company_id;
+    mysqli_query($conn, 'UPDATE employees SET duplicate=0 WHERE company_id=' . $cid);
+
+    $duplicateConditions = [];
+    foreach (['email', 'employee_code', 'hilton_id'] as $field) {
+        $fieldEsc = emp_escape_identifier($field);
+        $duplicateConditions[] = "(LOWER(TRIM(COALESCE(" . $fieldEsc . ", ''))) IN (SELECT ident FROM (SELECT LOWER(TRIM(" . $fieldEsc . ")) AS ident FROM employees WHERE company_id=" . $cid . " AND " . $fieldEsc . " IS NOT NULL AND TRIM(" . $fieldEsc . ") <> '' GROUP BY LOWER(TRIM(" . $fieldEsc . ")) HAVING COUNT(*) > 1) dups) AND " . $fieldEsc . " IS NOT NULL AND TRIM(" . $fieldEsc . ") <> '')";
+    }
+
+    if (!empty($duplicateConditions)) {
+        $sql = 'UPDATE employees SET duplicate=1 WHERE company_id=' . $cid . ' AND (' . implode(' OR ', $duplicateConditions) . ')';
+        mysqli_query($conn, $sql);
+    }
+
+    $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id=' . $cid . ' AND duplicate=1');
+    return (int)($countRes ? (mysqli_fetch_assoc($countRes)['count'] ?? 0) : 0);
+}
+
+function emp_collect_duplicate_values($conn, $company_id) {
+    $cid = (int)$company_id;
+    $maps = [
+        'email' => [],
+        'employee_code' => [],
+        'hilton_id' => []
+    ];
+
+    foreach (array_keys($maps) as $field) {
+        $fieldEsc = emp_escape_identifier($field);
+        $sql = 'SELECT LOWER(TRIM(' . $fieldEsc . ')) AS ident FROM employees WHERE company_id=' . $cid . ' AND ' . $fieldEsc . " IS NOT NULL AND TRIM(" . $fieldEsc . ") <> '' GROUP BY LOWER(TRIM(" . $fieldEsc . ')) HAVING COUNT(*) > 1';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($r = mysqli_fetch_assoc($res))) {
+            $ident = (string)($r['ident'] ?? '');
+            if ($ident !== '') {
+                $maps[$field][$ident] = true;
+            }
+        }
+    }
+
+    return $maps;
+}
+
+function emp_duplicate_reasons_for_row($row, $duplicateValueMaps) {
+    $reasons = [];
+    foreach (['email' => 'Email', 'employee_code' => 'Employee Code', 'hilton_id' => 'Hilton ID'] as $field => $label) {
+        $value = strtolower(trim((string)($row[$field] ?? '')));
+        if ($value !== '' && !empty($duplicateValueMaps[$field][$value])) {
+            $reasons[] = $label;
+        }
+    }
+    return $reasons;
+}
 $messages = [];
 $errors = [];
 $skippedDetails = [];
@@ -350,8 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
             }
 
-            $duplicateCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id=' . (int)$company_id . ' AND duplicate=1');
-            $duplicatesInFile = (int)($duplicateCountRes ? (mysqli_fetch_assoc($duplicateCountRes)['count'] ?? 0) : 0);
+            $duplicatesInFile = emp_recalculate_duplicates($conn, $company_id);
 
             if (!empty($matchedIds)) {
                 $matchedIds = array_values(array_unique(array_map('intval', $matchedIds)));
@@ -376,8 +428,8 @@ if ($showDuplicatesOnly) {
     $where .= ' AND e.duplicate=1';
 }
 
-$duplicatesCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id=' . (int)$company_id . ' AND duplicate=1');
-$duplicatesCount = (int)($duplicatesCountRes ? (mysqli_fetch_assoc($duplicatesCountRes)['count'] ?? 0) : 0);
+$duplicatesCount = emp_recalculate_duplicates($conn, $company_id);
+$duplicateValueMaps = emp_collect_duplicate_values($conn, $company_id);
 $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
 $columns = [];
 $columnTypes = [];
@@ -525,7 +577,8 @@ function emp_label($field) {
                     </thead>
                     <tbody>
                     <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
-                        <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#fff3e0;"' : ''; ?>>
+                        <?php $duplicateReasons = emp_duplicate_reasons_for_row($row, $duplicateValueMaps); ?>
+                        <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#ffe8e8;border-left:4px solid #d93025;"' : ''; ?>>
                             <?php foreach ($columns as $col): ?>
                                 <td>
                                     <?php if ($col === 'email' && !empty($row[$col])): ?>
@@ -538,7 +591,11 @@ function emp_label($field) {
                                         <?php echo !empty($row[$col]) ? '✔️' : '❌'; ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php if ($col === 'duplicate'): ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️' : '—'; ?>
+                                            <?php if ((int)($row[$col] ?? 0) === 1): ?>
+                                                ⚠️ Duplicate<?php echo !empty($duplicateReasons) ? ' (' . sanitize(implode(', ', $duplicateReasons)) . ')' : ''; ?>
+                                            <?php else: ?>
+                                                —
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
                                         <?php endif; ?>
