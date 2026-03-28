@@ -30,6 +30,7 @@ if (!is_dir(BACKUP_PATH)) {
     @mkdir(BACKUP_PATH, 0775, true);
 }
 
+require_once ROOT_PATH . 'includes/ui_config.php';
 // Database Connection
 $conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
@@ -52,6 +53,8 @@ if (!isset($_SESSION['company_id']) && $current_file !== 'index.php' && $current
 }
 
 $company_id = $_SESSION['company_id'] ?? 0;
+
+$ui_config = itm_get_ui_configuration($conn, $company_id);
 
 // Helper Functions
 function sanitize($data) {

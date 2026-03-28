@@ -184,12 +184,75 @@
         window.alert('Unsupported file type. Please import CSV, XLS, or XLSX files.');
     }
 
-    function makeButton(label, onClick) {
+
+    function uiConfig(key, fallback) {
+        const config = window.ITM_UI_CONFIG || {};
+        return typeof config[key] === 'string' && config[key] ? config[key] : fallback;
+    }
+
+    function toolbarAlignClass(mode) {
+        if (mode === 'left') return 'itm-tools-left';
+        if (mode === 'right' || mode === 'top_right' || mode === 'bottom_right' || mode === 'top_bottom_right') return 'itm-tools-right';
+        if (mode === 'top_left' || mode === 'bottom_left' || mode === 'top_bottom_left') return 'itm-tools-left';
+        return 'itm-tools-left-right';
+    }
+
+    function placeToolbar(table, toolbar) {
+        const mode = uiConfig('export_buttons_position', 'left_right');
+        const topModes = new Set(['left_right', 'left', 'right', 'top_right', 'top_left', 'top_bottom_right', 'top_bottom_left']);
+        const bottomModes = new Set(['bottom_right', 'bottom_left', 'top_bottom_right', 'top_bottom_left']);
+
+        toolbar.classList.add(toolbarAlignClass(mode));
+
+        if (topModes.has(mode)) {
+            table.parentNode.insertBefore(toolbar, table);
+        }
+
+        if (bottomModes.has(mode)) {
+            const bottomToolbar = toolbar.cloneNode(true);
+            bottomToolbar.classList.add('table-tools-bottom');
+            bottomToolbar.classList.remove('itm-tools-left', 'itm-tools-right', 'itm-tools-left-right');
+            bottomToolbar.classList.add(toolbarAlignClass(mode));
+            bindToolbarEvents(bottomToolbar, table);
+            if (topModes.has(mode)) {
+                table.parentNode.insertBefore(bottomToolbar, table.nextSibling);
+            } else {
+                table.parentNode.insertBefore(bottomToolbar, table.nextSibling);
+                toolbar.remove();
+            }
+        }
+    }
+
+    function bindToolbarEvents(toolbar, table) {
+        toolbar.querySelectorAll('button[data-action]').forEach((btn) => {
+            const action = btn.dataset.action;
+            if (action === 'excel') {
+                btn.addEventListener('click', () => exportTableAsExcel(table));
+            } else if (action === 'pdf') {
+                btn.addEventListener('click', () => exportTableAsPdf(table));
+            } else if (action === 'import') {
+                const inputId = btn.dataset.inputId;
+                const importInput = toolbar.querySelector('#' + inputId);
+                if (importInput) {
+                    btn.addEventListener('click', () => importInput.click());
+                    importInput.addEventListener('change', () => {
+                        if (importInput.files && importInput.files[0]) {
+                            importTableFromFile(table, importInput.files[0]);
+                            importInput.value = '';
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    function makeButton(label, onClick, action) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn btn-sm';
         btn.textContent = label;
-        btn.addEventListener('click', onClick);
+        if (action) btn.dataset.action = action;
+        if (onClick) btn.addEventListener('click', onClick);
         return btn;
     }
 
@@ -230,32 +293,30 @@
         toolbar.className = 'table-tools';
 
         if (enabled.excel) {
-            toolbar.appendChild(makeButton('📗 Export Excel', () => exportTableAsExcel(table)));
+            toolbar.appendChild(makeButton('📗 Export Excel', null, 'excel'));
         }
 
         if (enabled.pdf) {
-            toolbar.appendChild(makeButton('📄 Export PDF', () => exportTableAsPdf(table)));
+            toolbar.appendChild(makeButton('📄 Export PDF', null, 'pdf'));
         }
 
         if (enabled.importExcel) {
-            const importBtn = makeButton('📥 Import Excel', () => importInput.click());
+            const importInputId = `tableToolsImport-${index}`;
+            const importBtn = makeButton('📥 Import Excel', null, 'import');
+            importBtn.dataset.inputId = importInputId;
+
             const importInput = document.createElement('input');
             importInput.type = 'file';
             importInput.accept = '.csv,.xlsx,.xls';
             importInput.className = 'table-tools-file';
-            importInput.id = `tableToolsImport-${index}`;
-            importInput.addEventListener('change', () => {
-                if (importInput.files && importInput.files[0]) {
-                    importTableFromFile(table, importInput.files[0]);
-                    importInput.value = '';
-                }
-            });
+            importInput.id = importInputId;
 
             toolbar.appendChild(importBtn);
             toolbar.appendChild(importInput);
         }
 
-        table.parentNode.insertBefore(toolbar, table);
+        bindToolbarEvents(toolbar, table);
+        placeToolbar(table, toolbar);
     }
 
     document.addEventListener('DOMContentLoaded', () => {

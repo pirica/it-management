@@ -18,7 +18,9 @@ if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
 
 <script>
 window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
+window.ITM_UI_CONFIG = <?php echo json_encode($ui_config ?? itm_ui_config_defaults()); ?>;
 </script>
 <script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="<?php echo BASE_URL; ?>js/ui-layout.js"></script>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js"></script>

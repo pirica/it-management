@@ -4,6 +4,50 @@ require '../../config/config.php';
 $message = '';
 $error = '';
 
+$uiFieldLabels = [
+    'table_actions_position' => 'Table Actions',
+    'new_button_position' => '+ New Button',
+    'export_buttons_position' => 'Export Buttons',
+    'back_save_position' => 'Back & Save Buttons',
+];
+
+$uiFieldOptions = [
+    'table_actions_position' => [
+        'left_right' => 'Left & Right (default)',
+        'left' => 'Left',
+        'right' => 'Right',
+    ],
+    'new_button_position' => [
+        'left_right' => 'Left & Right (default)',
+        'left' => 'Left',
+        'right' => 'Right',
+    ],
+    'export_buttons_position' => [
+        'left_right' => 'Left & Right (default)',
+        'left' => 'Left',
+        'right' => 'Right',
+        'bottom_right' => 'Bottom Right',
+        'bottom_left' => 'Bottom Left',
+        'top_right' => 'Top Right',
+        'top_left' => 'Top Left',
+        'top_bottom_right' => 'Top & Bottom Right',
+        'top_bottom_left' => 'Top & Bottom Left',
+    ],
+    'back_save_position' => [
+        'left_right' => 'Left & Right (default)',
+        'left' => 'Left',
+        'right' => 'Right',
+        'bottom_right' => 'Bottom Right',
+        'bottom_left' => 'Bottom Left',
+        'top_right' => 'Top Right',
+        'top_left' => 'Top Left',
+        'top_bottom_right' => 'Top & Bottom Right',
+        'top_bottom_left' => 'Top & Bottom Left',
+    ],
+];
+
+$currentUiConfig = $ui_config ?? itm_ui_config_defaults();
+
 function backup_filename() {
     return 'backup_' . date('d_M_Y') . '_' . date('His') . '.sql';
 }
@@ -143,6 +187,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    if ($action === 'save_ui_config') {
+        $newConfig = [];
+        foreach (array_keys($uiFieldLabels) as $key) {
+            $newConfig[$key] = $_POST[$key] ?? '';
+        }
+
+        if (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
+            $error = 'Unable to save UI configuration.';
+        } else {
+            $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+            $message = 'UI configuration saved successfully.';
+        }
+    }
+
+    if ($action === 'create_system_tables') {
+        if (!itm_ensure_ui_configuration_table($conn)) {
+            $error = 'Unable to create required system tables.';
+        } else {
+            $message = 'System tables verified/created successfully.';
+        }
+    }
 }
 
 if (isset($_GET['download'])) {
@@ -192,7 +258,7 @@ usort($backupFiles, static function ($a, $b) {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <h1>⚙️ Settings</h1>
-            <p style="margin-bottom:20px;">Options: create full SQL backup, import/export/delete backups, and view all backup files.</p>
+            <p style="margin-bottom:20px;">Options: configure UI button positions, create required SQL tables, and manage full SQL backups.</p>
 
             <?php if ($message): ?>
                 <div class="alert alert-success"><?php echo sanitize($message); ?></div>
@@ -200,6 +266,44 @@ usort($backupFiles, static function ($a, $b) {
             <?php if ($error): ?>
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
+
+
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header"><h2>UI Configuration</h2></div>
+                <div class="card-body">
+                    <form method="post">
+                        <input type="hidden" name="action" value="save_ui_config">
+                        <div class="form-row">
+                            <?php foreach ($uiFieldLabels as $field => $label): ?>
+                                <div class="form-group">
+                                    <label for="<?php echo sanitize($field); ?>"><?php echo sanitize($label); ?></label>
+                                    <select id="<?php echo sanitize($field); ?>" name="<?php echo sanitize($field); ?>" required>
+                                        <?php foreach ($uiFieldOptions[$field] as $value => $optionLabel): ?>
+                                            <option value="<?php echo sanitize($value); ?>" <?php echo ($currentUiConfig[$field] ?? '') === $value ? 'selected' : ''; ?>>
+                                                <?php echo sanitize($optionLabel); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="itm-form-actions itm-align-left">
+                            <button class="btn btn-primary" type="submit">Save Configuration</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header"><h2>SQL Database Setup</h2></div>
+                <div class="card-body">
+                    <p style="margin-bottom:10px;">Create/verify required system tables (idempotent).</p>
+                    <form method="post">
+                        <input type="hidden" name="action" value="create_system_tables">
+                        <button class="btn" type="submit">Create Missing Tables</button>
+                    </form>
+                </div>
+            </div>
 
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header"><h2>Create Full SQL Backup</h2></div>

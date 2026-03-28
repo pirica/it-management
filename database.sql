@@ -557,4 +557,21 @@ INSERT INTO `tickets` (`company_id`,`ticket_code`,`title`,`description`,`categor
 INSERT INTO `inventory_items` (`company_id`,`name`,`item_code`,`sku`,`category_id`,`manufacturer_id`,`quantity_on_hand`,`quantity_minimum`,`unit_cost`,`location_id`,`supplier_id`,`active`) VALUES
 (1,'Cat6 Cable 2m','INV-CAT6-2M','SKU-CAT6-2M',1,1,50,10,4.99,1,1,1);
 
+
+CREATE TABLE `ui_configuration`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `company_id` INT NOT NULL,
+    `table_actions_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
+    `new_button_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
+    `export_buttons_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
+    `back_save_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_ui_configuration_company` (`company_id`),
+    CONSTRAINT `fk_ui_configuration_company` FOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `ui_configuration` (`company_id`,`table_actions_position`,`new_button_position`,`export_buttons_position`,`back_save_position`) VALUES
+(1,'left_right','left_right','left_right','left_right');
+
 SET FOREIGN_KEY_CHECKS=1;
