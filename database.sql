@@ -176,19 +176,71 @@ CREATE TABLE `employees`(
     `user_id` INT,
     `first_name` VARCHAR(100) NOT NULL,
     `last_name` VARCHAR(100) NOT NULL,
-    `email` VARCHAR(120) UNIQUE,
+    `display_name` VARCHAR(150),
+    `email` VARCHAR(120),
     `phone` VARCHAR(20),
-    `employee_code` VARCHAR(50) UNIQUE,
+    `employee_code` VARCHAR(50),
+    `hilton_id` VARCHAR(50),
+    `username` VARCHAR(100),
     `department_id` INT,
+    `job_code` VARCHAR(120),
     `job_title` VARCHAR(100),
     `location_id` INT,
     `employment_status_id` INT NOT NULL,
+    `raw_status_code` VARCHAR(20),
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     FOREIGN KEY(`user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY(`department_id`) REFERENCES `departments`(`id`),
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`),
-    INDEX(`company_id`)
+    INDEX(`company_id`),
+    INDEX `idx_employees_hilton_id` (`hilton_id`),
+    INDEX `idx_employees_username` (`username`),
+    UNIQUE KEY `uq_employees_email_per_company` (`company_id`,`email`),
+    UNIQUE KEY `uq_employees_code_per_company` (`company_id`,`employee_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `employee_onboarding_requests`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `company_id` INT NOT NULL,
+    `employee_id` INT NULL,
+    `first_name` VARCHAR(100) NOT NULL,
+    `last_name` VARCHAR(100) NOT NULL,
+    `position_title` VARCHAR(150),
+    `department_name` VARCHAR(150),
+    `request_date` DATE,
+    `termination_date` DATE NULL,
+    `network_access` VARCHAR(120),
+    `micros_emc` VARCHAR(120),
+    `opera` VARCHAR(120),
+    `micros_card` VARCHAR(120),
+    `pms_id` VARCHAR(120),
+    `synergy_mms` VARCHAR(120),
+    `email_account` VARCHAR(160),
+    `landline_phone` VARCHAR(60),
+    `hu_the_lobby` VARCHAR(160),
+    `mobile_phone` VARCHAR(80),
+    `navision` VARCHAR(120),
+    `mobile_email` VARCHAR(160),
+    `onq_ri` VARCHAR(120),
+    `birchstreet` VARCHAR(120),
+    `delphi` VARCHAR(120),
+    `omina` VARCHAR(120),
+    `vingcard_system` VARCHAR(120),
+    `digital_rev` VARCHAR(120),
+    `office_key_card` VARCHAR(150),
+    `comments` TEXT,
+    `starting_date` DATE NULL,
+    `requested_by` VARCHAR(150),
+    `requested_on` DATE NULL,
+    `hod_approval` VARCHAR(150),
+    `hrd_approval` VARCHAR(150),
+    `ism_approval` VARCHAR(150),
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY(`employee_id`) REFERENCES `employees`(`id`) ON DELETE SET NULL,
+    INDEX(`company_id`),
+    INDEX(`employee_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `workstation_modes`(
@@ -486,9 +538,17 @@ INSERT INTO `racks` (`company_id`,`location_id`,`name`,`rack_code`,`active`,`sta
 INSERT INTO `equipment` (`company_id`,`equipment_type_id`,`manufacturer_id`,`location_id`,`rack_id`,`name`,`serial_number`,`model`,`hostname`,`ip_address`,`purchase_date`,`purchase_cost`,`active`,`status_id`,`warranty_type_id`,`printer_device_type_id`,`workstation_device_type_id`,`workstation_os_type_id`) VALUES
 (1,2,2,1,1,'Primary File Server','SN-SRV-001','PowerEdge R760','srv-file-01','192.168.10.20','2025-01-10',8500.00,1,1,4,NULL,NULL,NULL);
 INSERT INTO `departments` (`company_id`,`name`,`code`,`description`,`manager_user_id`,`location_id`,`active`) VALUES
-(1,'IT Operations','ITOPS','Core IT operations team',1,1,1);
-INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`email`,`phone`,`employee_code`,`department_id`,`job_title`,`location_id`,`active`,`employment_status_id`) VALUES
-(1,1,'Alex','Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',1,'IT Manager',1,1,1);
+(1,'IT Operations','ITOPS','Core IT operations team',1,1,1),
+(1,'Food and Drinks','FNB','Food and Beverages department',1,1,1),
+(1,'Human Resources','HR','Human resources department',1,1,1),
+(1,'Housekeeping','HK','Housekeeping operations',1,1,1);
+INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`display_name`,`email`,`phone`,`employee_code`,`hilton_id`,`username`,`department_id`,`job_code`,`job_title`,`location_id`,`active`,`employment_status_id`,`raw_status_code`) VALUES
+(1,1,'Alex','Morgan','Alex Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',NULL,'admin_tc',1,'IT Manager','IT Manager',1,1,1,'A'),
+(1,NULL,'Marcelo','Batista','Marcelo Batista','marcelo.costeira@icloud.com',NULL,NULL,'2295111','Marcelo Batista',4,'Room Attendant','Housekeeping Public Area Attendant',1,0,2,'I'),
+(1,NULL,'Rafaela','Cruz','Rafaela Cruz','cruzrafaela86@gmail.com',NULL,'A02F0122','A02F0122','A02F0122',3,'HR Co-Ordinator','HR Trainee',1,1,1,'A'),
+(1,NULL,'Nicky','Schouten','NICKY SCHOUTEN','302325432@student.rocmondriaan.nl',NULL,NULL,NULL,NULL,2,'TRAINEE','TRAINEE',1,1,1,'A');
+INSERT INTO `employee_onboarding_requests` (`company_id`,`employee_id`,`first_name`,`last_name`,`position_title`,`department_name`,`request_date`,`termination_date`,`network_access`,`micros_emc`,`opera`,`micros_card`,`pms_id`,`synergy_mms`,`email_account`,`landline_phone`,`hu_the_lobby`,`mobile_phone`,`navision`,`mobile_email`,`onq_ri`,`birchstreet`,`delphi`,`omina`,`vingcard_system`,`digital_rev`,`office_key_card`,`comments`,`starting_date`,`requested_by`,`requested_on`,`hod_approval`,`hrd_approval`,`ism_approval`) VALUES
+(1,4,'NICKY','SCHOUTEN','TRAINEE','FOOD AND DRINKS','2026-03-24',NULL,'N/A','N/A','N/A','Waiter','N/A','N/A','N/A','N/A','NICKY SCHOUTEN','N/A','N/A','N/A','N/A','N/A','N/A','Via HR','N/A','N/A','Room Service','Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl','2026-03-16','ALEXANDRANUNES','2026-03-24','Sonia Costa','Pedro Mendes','Kenneth Starreveld');
 INSERT INTO `workstations` (`company_id`,`equipment_id`,`workstation_code`,`workstation_mode_id`,`assigned_to_employee_id`,`assigned_to_department_id`,`desk_location`,`active`,`assignment_type_id`) VALUES
 (1,1,'WS-001',1,1,1,'HQ-Desk-14',1,1);
 INSERT INTO `tickets` (`company_id`,`ticket_code`,`title`,`description`,`category_id`,`status_id`,`priority_id`,`created_by_user_id`,`assigned_to_user_id`,`asset_id`) VALUES
