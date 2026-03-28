@@ -10,15 +10,33 @@
         const tables = document.querySelectorAll('.content .card table');
 
         tables.forEach((table) => {
-            const headers = Array.from(table.querySelectorAll('thead th'));
-            const actionsIndex = headers.findIndex((th) => {
-                const txt = (th.textContent || '').trim().toLowerCase();
-                return txt === 'actions' || txt === 'table actions' || txt === 'options';
-            });
-            if (actionsIndex < 0) return;
+            const rows = Array.from(table.querySelectorAll('tr'));
+            if (!rows.length) return;
 
-            table.querySelectorAll('tr').forEach((row) => {
-                const cell = row.children[actionsIndex];
+            rows.forEach((row) => {
+                row.querySelectorAll('[data-itm-actions-clone="1"]').forEach((clone) => clone.remove());
+            });
+
+            let actionCells = rows.map((row) => row.querySelector('[data-itm-actions-origin="1"]'));
+            const hasMappedActionCells = actionCells.some((cell) => !!cell);
+
+            if (!hasMappedActionCells) {
+                const headers = Array.from(table.querySelectorAll('thead th'));
+                const actionsIndex = headers.findIndex((th) => {
+                    const txt = (th.textContent || '').trim().toLowerCase();
+                    return txt === 'actions' || txt === 'table actions' || txt === 'options';
+                });
+                if (actionsIndex < 0) return;
+
+                rows.forEach((row) => {
+                    const cell = row.children[actionsIndex];
+                    if (!cell) return;
+                    cell.dataset.itmActionsOrigin = '1';
+                });
+                actionCells = rows.map((row) => row.querySelector('[data-itm-actions-origin="1"]'));
+            }
+
+            actionCells.forEach((cell) => {
                 if (!cell) return;
                 cell.classList.remove('itm-actions-left', 'itm-actions-right', 'itm-actions-left-right');
                 cell.classList.add('itm-actions-cell');
@@ -34,14 +52,33 @@
                         cell.appendChild(wrap);
                     }
                 }
+            });
+
+            rows.forEach((row) => {
+                const actionCell = row.querySelector('[data-itm-actions-origin="1"]');
+                if (!actionCell) return;
 
                 if (mode === 'left') {
-                    cell.classList.add('itm-actions-left');
-                } else if (mode === 'right') {
-                    cell.classList.add('itm-actions-right');
-                } else {
-                    cell.classList.add('itm-actions-left-right');
+                    actionCell.classList.add('itm-actions-left');
+                    row.insertBefore(actionCell, row.firstElementChild);
+                    return;
                 }
+
+                if (mode === 'right') {
+                    actionCell.classList.add('itm-actions-right');
+                    row.appendChild(actionCell);
+                    return;
+                }
+
+                actionCell.classList.add('itm-actions-right');
+                row.appendChild(actionCell);
+
+                const leftClone = actionCell.cloneNode(true);
+                leftClone.dataset.itmActionsClone = '1';
+                leftClone.removeAttribute('data-itm-actions-origin');
+                leftClone.classList.remove('itm-actions-right', 'itm-actions-left-right');
+                leftClone.classList.add('itm-actions-left');
+                row.insertBefore(leftClone, row.firstElementChild);
             });
         });
     }
