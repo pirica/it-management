@@ -20,8 +20,8 @@
         return { filenameBase, headers, actionsIndex };
     }
 
-    function exportTableAsExcel(table) {
-        const { filenameBase, actionsIndex } = tableMeta(table);
+    function cloneTableWithoutActions(table) {
+        const { actionsIndex } = tableMeta(table);
         const clone = table.cloneNode(true);
 
         if (actionsIndex >= 0) {
@@ -32,6 +32,12 @@
             });
         }
 
+        return clone;
+    }
+
+    function exportTableAsExcel(table) {
+        const { filenameBase } = tableMeta(table);
+        const clone = cloneTableWithoutActions(table);
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${clone.outerHTML}</body></html>`;
         const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
         const url = URL.createObjectURL(blob);
@@ -45,16 +51,8 @@
     }
 
     function exportTableAsPdf(table) {
-        const { filenameBase, actionsIndex } = tableMeta(table);
-        const clone = table.cloneNode(true);
-
-        if (actionsIndex >= 0) {
-            clone.querySelectorAll('tr').forEach((row) => {
-                if (row.children[actionsIndex]) {
-                    row.removeChild(row.children[actionsIndex]);
-                }
-            });
-        }
+        const { filenameBase } = tableMeta(table);
+        const clone = cloneTableWithoutActions(table);
 
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
@@ -186,50 +184,76 @@
         window.alert('Unsupported file type. Please import CSV, XLS, or XLSX files.');
     }
 
+    function makeButton(label, onClick) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm';
+        btn.textContent = label;
+        btn.addEventListener('click', onClick);
+        return btn;
+    }
+
+    function toolsForPage(table) {
+        const pathname = (window.location.pathname || '').toLowerCase();
+        const isViewPage = pathname.endsWith('/view.php');
+        const isListAllPage = pathname.endsWith('/list_all.php');
+        const hasHeader = table.querySelectorAll('thead th').length > 0;
+
+        if (isViewPage) {
+            return { excel: false, pdf: true, importExcel: false };
+        }
+
+        if (isListAllPage) {
+            return { excel: true, pdf: true, importExcel: true };
+        }
+
+        if (hasHeader) {
+            return { excel: true, pdf: true, importExcel: true };
+        }
+
+        return { excel: false, pdf: false, importExcel: false };
+    }
+
     function attachTools(table, index) {
         if (table.dataset.tableToolsAttached === '1') {
             return;
         }
+
+        const enabled = toolsForPage(table);
+        if (!enabled.excel && !enabled.pdf && !enabled.importExcel) {
+            return;
+        }
+
         table.dataset.tableToolsAttached = '1';
 
         const toolbar = document.createElement('div');
         toolbar.className = 'table-tools';
 
-        const excelBtn = document.createElement('button');
-        excelBtn.type = 'button';
-        excelBtn.className = 'btn btn-sm';
-        excelBtn.textContent = '📗 Export Excel';
-        excelBtn.addEventListener('click', () => exportTableAsExcel(table));
+        if (enabled.excel) {
+            toolbar.appendChild(makeButton('📗 Export Excel', () => exportTableAsExcel(table)));
+        }
 
-        const pdfBtn = document.createElement('button');
-        pdfBtn.type = 'button';
-        pdfBtn.className = 'btn btn-sm';
-        pdfBtn.textContent = '📄 Export PDF';
-        pdfBtn.addEventListener('click', () => exportTableAsPdf(table));
+        if (enabled.pdf) {
+            toolbar.appendChild(makeButton('📄 Export PDF', () => exportTableAsPdf(table)));
+        }
 
-        const importBtn = document.createElement('button');
-        importBtn.type = 'button';
-        importBtn.className = 'btn btn-sm';
-        importBtn.textContent = '📥 Import Excel';
+        if (enabled.importExcel) {
+            const importBtn = makeButton('📥 Import Excel', () => importInput.click());
+            const importInput = document.createElement('input');
+            importInput.type = 'file';
+            importInput.accept = '.csv,.xlsx,.xls';
+            importInput.className = 'table-tools-file';
+            importInput.id = `tableToolsImport-${index}`;
+            importInput.addEventListener('change', () => {
+                if (importInput.files && importInput.files[0]) {
+                    importTableFromFile(table, importInput.files[0]);
+                    importInput.value = '';
+                }
+            });
 
-        const importInput = document.createElement('input');
-        importInput.type = 'file';
-        importInput.accept = '.csv,.xlsx,.xls';
-        importInput.className = 'table-tools-file';
-        importInput.id = `tableToolsImport-${index}`;
-        importInput.addEventListener('change', () => {
-            if (importInput.files && importInput.files[0]) {
-                importTableFromFile(table, importInput.files[0]);
-                importInput.value = '';
-            }
-        });
-
-        importBtn.addEventListener('click', () => importInput.click());
-
-        toolbar.appendChild(excelBtn);
-        toolbar.appendChild(pdfBtn);
-        toolbar.appendChild(importBtn);
-        toolbar.appendChild(importInput);
+            toolbar.appendChild(importBtn);
+            toolbar.appendChild(importInput);
+        }
 
         table.parentNode.insertBefore(toolbar, table);
     }
@@ -237,9 +261,6 @@
     document.addEventListener('DOMContentLoaded', () => {
         const tables = Array.from(document.querySelectorAll('.content .card table'));
         tables.forEach((table, index) => {
-            if (!table.querySelector('thead th')) {
-                return;
-            }
             attachTools(table, index);
         });
     });
