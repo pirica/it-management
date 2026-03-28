@@ -1,5 +1,6 @@
 <?php 
 if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
+$csrfToken = itm_get_csrf_token();
 ?>
 <div class="header">
     <div>
@@ -18,6 +19,7 @@ if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
 
 <script>
 window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 window.ITM_UI_CONFIG = <?php echo json_encode($ui_config ?? itm_ui_config_defaults()); ?>;
 </script>
 <script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
