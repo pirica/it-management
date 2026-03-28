@@ -22,6 +22,19 @@
                 if (!cell) return;
                 cell.classList.remove('itm-actions-left', 'itm-actions-right', 'itm-actions-left-right');
                 cell.classList.add('itm-actions-cell');
+
+                if (cell.tagName === 'TD') {
+                    let wrap = cell.querySelector(':scope > .itm-actions-wrap');
+                    if (!wrap) {
+                        wrap = document.createElement('div');
+                        wrap.className = 'itm-actions-wrap';
+                        while (cell.firstChild) {
+                            wrap.appendChild(cell.firstChild);
+                        }
+                        cell.appendChild(wrap);
+                    }
+                }
+
                 if (mode === 'left') {
                     cell.classList.add('itm-actions-left');
                 } else if (mode === 'right') {

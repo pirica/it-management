@@ -598,22 +598,31 @@ input[type="color"] {
     display: none;
 }
 
+.itm-actions-cell {
+    white-space: nowrap;
+}
+
+.itm-actions-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .itm-actions-cell.itm-actions-left {
     text-align: left;
-    white-space: nowrap;
 }
 
 .itm-actions-cell.itm-actions-right {
     text-align: right;
-    white-space: nowrap;
 }
 
 .itm-actions-cell.itm-actions-left-right {
-    display: flex;
+    text-align: left;
+}
+
+.itm-actions-cell.itm-actions-left-right .itm-actions-wrap {
+    width: 100%;
     justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
 }
 
 .itm-new-button-bar {
