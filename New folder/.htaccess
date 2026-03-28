@@ -1,7 +1,0 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /it-management/
-</IfModule>
-
-php_value upload_max_filesize 50M
-php_value post_max_size 50M
