@@ -438,3 +438,28 @@ tr:hover {
         padding: 8px;
     }
 }
+
+/* Enhanced picker UI */
+input[type="date"],
+input[type="datetime-local"] {
+    appearance: none;
+    position: relative;
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px;
+    background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+input[type="color"] {
+    padding: 4px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    cursor: pointer;
+}

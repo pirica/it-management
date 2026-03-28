@@ -32,8 +32,8 @@ CREATE TABLE `users`(
     `first_name` VARCHAR(50),
     `last_name` VARCHAR(50),
     `phone` VARCHAR(20),
-    `role` ENUM('admin','it_manager','it_technician','helpdesk','user') DEFAULT 'user',
-    `access_level` ENUM('full','read_only','limited') DEFAULT 'read_only',
+    `role_id` INT NOT NULL,
+    `access_level_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
@@ -52,7 +52,7 @@ CREATE TABLE `it_locations`(
     `country` VARCHAR(100),
     `postal_code` VARCHAR(20),
     `phone` VARCHAR(20),
-    `type` ENUM('Headquarters','Branch','Warehouse','DataCenter','Office','Remote','Other') DEFAULT 'Office',
+    `type_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     INDEX(`company_id`)
@@ -80,7 +80,7 @@ CREATE TABLE `suppliers`(
     `contact_person` VARCHAR(100),
     `email` VARCHAR(100),
     `phone` VARCHAR(20),
-    `status` ENUM('Active','Inactive','Preferred','Backup') DEFAULT 'Active',
+    `status_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     INDEX(`company_id`)
@@ -105,7 +105,7 @@ CREATE TABLE `racks`(
     `location_id` INT NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `rack_code` VARCHAR(50) UNIQUE,
-    `status` ENUM('Active','Maintenance','Full','Decommissioned') DEFAULT 'Active',
+    `status_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`) ON DELETE CASCADE,
@@ -120,25 +120,23 @@ CREATE TABLE `equipment`(
     `location_id` INT,
     `rack_id` INT,
     `name` VARCHAR(255) NOT NULL,
-    `asset_tag` VARCHAR(80) UNIQUE,
-    `asset_code` VARCHAR(50),
     `serial_number` VARCHAR(100),
     `model` VARCHAR(100),
     `hostname` VARCHAR(100),
     `ip_address` VARCHAR(45),
     `mac_address` VARCHAR(45),
-    `status` ENUM('Active','Inactive','Maintenance','Faulty','Reserved','Decommissioned','On-Order') DEFAULT 'Active',
+    `status_id` INT NOT NULL,
     `purchase_date` DATE,
     `purchase_cost` DECIMAL(15, 2),
     `warranty_expiry` DATE,
-    `warranty_type` ENUM('Standard','Extended','Premium','Enterprise','None') DEFAULT 'Standard',
+    `warranty_type_id` INT NOT NULL,
     `is_printer` TINYINT DEFAULT 0,
-    `printer_device_type` ENUM('Laser','Inkjet','All-in-One','Thermal','Wide-Format','Photo','Label','Dotmatrix','Other'),
+    `printer_device_type_id` INT,
     `printer_color_capable` TINYINT DEFAULT 0,
     `printer_print_speed_ppm` INT,
     `is_workstation` TINYINT DEFAULT 0,
-    `workstation_device_type` ENUM('Desktop','Laptop','All-in-One','Tablet','Thin-Client','Mobile','POS','Other'),
-    `workstation_os_type` ENUM('Windows','macOS','Linux','ChromeOS','iOS','Android','Other'),
+    `workstation_device_type_id` INT,
+    `workstation_os_type_id` INT,
     `workstation_processor` VARCHAR(100),
     `workstation_memory_gb` INT,
     `notes` LONGTEXT,
@@ -152,10 +150,9 @@ CREATE TABLE `equipment`(
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`),
     FOREIGN KEY(`rack_id`) REFERENCES `racks`(`id`) ON DELETE SET NULL,
     INDEX(`company_id`),
-    INDEX(`status`),
+    INDEX(`status_id`),
     INDEX(`is_printer`),
-    INDEX(`is_workstation`),
-    UNIQUE KEY `unique_asset_per_company` (`company_id`, `asset_code`)
+    INDEX(`is_workstation`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `departments`(
@@ -185,7 +182,7 @@ CREATE TABLE `employees`(
     `department_id` INT,
     `job_title` VARCHAR(100),
     `location_id` INT,
-    `employment_status` ENUM('Active','Inactive','On Leave','Terminated','Contractor') DEFAULT 'Active',
+    `employment_status_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     FOREIGN KEY(`user_id`) REFERENCES `users`(`id`),
@@ -212,7 +209,7 @@ CREATE TABLE `workstations`(
     `workstation_mode_id` INT,
     `assigned_to_employee_id` INT,
     `assigned_to_department_id` INT,
-    `assignment_type` ENUM('Individual','Department','Shared','Pool') DEFAULT 'Individual',
+    `assignment_type_id` INT NOT NULL,
     `desk_location` VARCHAR(255),
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
@@ -223,19 +220,6 @@ CREATE TABLE `workstations`(
     INDEX(`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `printers`(
-    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `company_id` INT NOT NULL,
-    `equipment_id` INT NOT NULL,
-    `printer_code` VARCHAR(50) UNIQUE,
-    `assigned_to_department_id` INT,
-    `assignment_type` ENUM('Individual','Department','Shared','Lobby','Print-Room') DEFAULT 'Shared',
-    `active` TINYINT DEFAULT 1,
-    FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY(`assigned_to_department_id`) REFERENCES `departments`(`id`),
-    INDEX(`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `ticket_categories`(
     `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -279,6 +263,7 @@ CREATE TABLE `tickets`(
     FOREIGN KEY(`priority_id`) REFERENCES `ticket_priorities`(`id`),
     FOREIGN KEY(`created_by_user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY(`assigned_to_user_id`) REFERENCES `users`(`id`),
+    FOREIGN KEY(`asset_id`) REFERENCES `equipment`(`id`) ON DELETE SET NULL,
     INDEX(`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -309,6 +294,69 @@ CREATE TABLE `inventory_items`(
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`),
     FOREIGN KEY(`supplier_id`) REFERENCES `suppliers`(`id`),
     INDEX(`company_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+-- Lookup tables for ENUM normalization and FK relationships
+CREATE TABLE `user_roles`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `access_levels`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `location_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `supplier_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `rack_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `equipment_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `warranty_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `printer_device_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `workstation_device_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `workstation_os_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `employee_statuses`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `assignment_types`(
+    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `equipment_types` (`name`, `code`) VALUES
@@ -350,5 +398,71 @@ INSERT INTO `companies` (`name`, `company_code`, `industry`, `city`, `country`) 
 ('Network Solutions', 'NSI-001', 'Networking', 'San Francisco', 'USA'),
 ('CloudTech Services', 'CTS-001', 'Cloud', 'Seattle', 'USA'),
 ('Enterprise IT', 'ESL-001', 'Enterprise', 'Boston', 'USA');
+
+
+
+-- Populate lookup tables
+INSERT INTO `user_roles` (`name`) VALUES ('admin'),('it_manager'),('it_technician'),('helpdesk'),('user');
+INSERT INTO `access_levels` (`name`) VALUES ('full'),('read_only'),('limited');
+INSERT INTO `location_types` (`name`) VALUES ('Headquarters'),('Branch'),('Warehouse'),('DataCenter'),('Office'),('Remote'),('Other');
+INSERT INTO `supplier_statuses` (`name`) VALUES ('Active'),('Inactive'),('Preferred'),('Backup');
+INSERT INTO `rack_statuses` (`name`) VALUES ('Active'),('Maintenance'),('Full'),('Decommissioned');
+INSERT INTO `equipment_statuses` (`name`) VALUES ('Active'),('Inactive'),('Maintenance'),('Faulty'),('Reserved'),('Decommissioned'),('On-Order');
+INSERT INTO `warranty_types` (`name`) VALUES ('Standard'),('Extended'),('Premium'),('Enterprise'),('None');
+INSERT INTO `printer_device_types` (`name`) VALUES ('Laser'),('Inkjet'),('All-in-One'),('Thermal'),('Wide-Format'),('Photo'),('Label'),('Dotmatrix'),('Other');
+INSERT INTO `workstation_device_types` (`name`) VALUES ('Desktop'),('Laptop'),('All-in-One'),('Tablet'),('Thin-Client'),('Mobile'),('POS'),('Other');
+INSERT INTO `workstation_os_types` (`name`) VALUES ('Windows'),('macOS'),('Linux'),('ChromeOS'),('iOS'),('Android'),('Other');
+INSERT INTO `employee_statuses` (`name`) VALUES ('Active'),('Inactive'),('On Leave'),('Terminated'),('Contractor');
+INSERT INTO `assignment_types` (`name`) VALUES ('Individual'),('Department'),('Shared'),('Pool');
+
+-- Add lookup-table foreign key relationships
+ALTER TABLE `users`
+    ADD FOREIGN KEY (`role_id`) REFERENCES `user_roles`(`id`),
+    ADD FOREIGN KEY (`access_level_id`) REFERENCES `access_levels`(`id`);
+
+ALTER TABLE `it_locations`
+    ADD FOREIGN KEY (`type_id`) REFERENCES `location_types`(`id`);
+
+ALTER TABLE `suppliers`
+    ADD FOREIGN KEY (`status_id`) REFERENCES `supplier_statuses`(`id`);
+
+ALTER TABLE `racks`
+    ADD FOREIGN KEY (`status_id`) REFERENCES `rack_statuses`(`id`);
+
+ALTER TABLE `equipment`
+    ADD FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses`(`id`),
+    ADD FOREIGN KEY (`warranty_type_id`) REFERENCES `warranty_types`(`id`),
+    ADD FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types`(`id`),
+    ADD FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types`(`id`),
+    ADD FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types`(`id`);
+
+ALTER TABLE `employees`
+    ADD FOREIGN KEY (`employment_status_id`) REFERENCES `employee_statuses`(`id`);
+
+ALTER TABLE `workstations`
+    ADD FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types`(`id`);
+
+-- Example data for each main table
+INSERT INTO `it_locations` (`company_id`,`name`,`location_code`,`city`,`country`,`active`,`type_id`) VALUES (1,'HQ NYC','LOC-NY-01','New York','USA',1,1);
+INSERT INTO `users` (`company_id`,`username`,`email`,`password`,`first_name`,`last_name`,`active`,`role_id`,`access_level_id`) VALUES
+(1,'admin_tc','admin@techcorp.example','$2y$10$abcdefghijklmnopqrstuv','System','Admin',1,1,1);
+INSERT INTO `suppliers` (`company_id`,`name`,`supplier_code`,`contact_person`,`email`,`phone`,`active`,`status_id`) VALUES
+(1,'Global IT Supply','SUP-001','Jane Doe','sales@globalit.example','+1-555-0100',1,1);
+INSERT INTO `vlans` (`company_id`,`vlan_number`,`vlan_name`,`cable_color`,`subnet`,`gateway_ip`,`active`) VALUES
+(1,10,'Office Network','#2E86DE','192.168.10.0/24','192.168.10.1',1);
+INSERT INTO `racks` (`company_id`,`location_id`,`name`,`rack_code`,`active`,`status_id`) VALUES
+(1,1,'Main Rack A','RACK-A',1,1);
+INSERT INTO `equipment` (`company_id`,`equipment_type_id`,`manufacturer_id`,`location_id`,`rack_id`,`name`,`serial_number`,`model`,`hostname`,`ip_address`,`purchase_date`,`purchase_cost`,`active`,`status_id`,`warranty_type_id`,`printer_device_type_id`,`workstation_device_type_id`,`workstation_os_type_id`) VALUES
+(1,2,2,1,1,'Primary File Server','SN-SRV-001','PowerEdge R760','srv-file-01','192.168.10.20','2025-01-10',8500.00,1,1,4,NULL,NULL,NULL);
+INSERT INTO `departments` (`company_id`,`name`,`code`,`description`,`manager_user_id`,`location_id`,`active`) VALUES
+(1,'IT Operations','ITOPS','Core IT operations team',1,1,1);
+INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`email`,`phone`,`employee_code`,`department_id`,`job_title`,`location_id`,`active`,`employment_status_id`) VALUES
+(1,1,'Alex','Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',1,'IT Manager',1,1,1);
+INSERT INTO `workstations` (`company_id`,`equipment_id`,`workstation_code`,`workstation_mode_id`,`assigned_to_employee_id`,`assigned_to_department_id`,`desk_location`,`active`,`assignment_type_id`) VALUES
+(1,1,'WS-001',1,1,1,'HQ-Desk-14',1,1);
+INSERT INTO `tickets` (`company_id`,`ticket_code`,`title`,`description`,`category_id`,`status_id`,`priority_id`,`created_by_user_id`,`assigned_to_user_id`,`asset_id`) VALUES
+(1,'TCK-0001','Server patching required','Patch cycle for file server',4,1,2,1,1,1);
+INSERT INTO `inventory_items` (`company_id`,`name`,`item_code`,`sku`,`category_id`,`manufacturer_id`,`quantity_on_hand`,`quantity_minimum`,`unit_cost`,`location_id`,`supplier_id`,`active`) VALUES
+(1,'Cat6 Cable 2m','INV-CAT6-2M','SKU-CAT6-2M',1,1,50,10,4.99,1,1,1);
 
 SET FOREIGN_KEY_CHECKS=1;
