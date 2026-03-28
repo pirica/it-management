@@ -1,172 +1,37 @@
 <?php
 require '../../config/config.php';
-
-$id = (int)($_GET['id'] ?? 0);
-
-if (!$id) {
-    header('Location: index.php');
-    exit();
-}
-
-$query = "SELECT e.*, et.name as type_name, m.name as manufacturer_name, l.name as location_name
-          FROM equipment e 
-          LEFT JOIN equipment_types et ON e.equipment_type_id = et.id 
-          LEFT JOIN manufacturers m ON e.manufacturer_id = m.id 
-          LEFT JOIN it_locations l ON e.location_id = l.id 
-          WHERE e.id = $id AND e.company_id = $company_id";
-
-$result = mysqli_query($conn, $query);
-if (!$result || mysqli_num_rows($result) == 0) {
-    die("Equipment not found");
-}
-
-$equipment = mysqli_fetch_assoc($result);
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$sql = "SELECT e.*, c.name company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
+               r.name rack_name, es.name status_name, wt.name warranty_type_name,
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name
+        FROM equipment e
+        LEFT JOIN companies c ON c.id = e.company_id
+        LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+        LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
+        LEFT JOIN it_locations l ON l.id = e.location_id
+        LEFT JOIN racks r ON r.id = e.rack_id
+        LEFT JOIN equipment_statuses es ON es.id = e.status_id
+        LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id
+        LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id
+        LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id
+        LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id
+        WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
+$res = mysqli_query($conn, $sql);
+$item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 ?>
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($equipment['name']); ?> - IT Management</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-    <style>
-        .detail-row { display: flex; gap: 30px; margin-bottom: 20px; }
-        .detail-col { flex: 1; }
-        .detail-label { font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
-        .detail-value { font-size: 16px; color: var(--text-primary); }
-        .photo-container { text-align: center; margin-bottom: 20px; }
-        .photo-container img { max-width: 300px; border-radius: 8px; box-shadow: var(--shadow-lg); }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            
-            <div class="content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h1><?php echo sanitize($equipment['name']); ?></h1>
-                    <div>
-                        <a href="edit.php?id=<?php echo $equipment['id']; ?>" class="btn btn-primary">✏️ Edit</a>
-                        <a href="delete.php?id=<?php echo $equipment['id']; ?>" class="btn btn-danger" onclick="return confirm('Delete?')">🗑️ Delete</a>
-                        <a href="index.php" class="btn">← Back</a>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <?php if ($equipment['photo_filename']): ?>
-                        <div class="photo-container">
-                            <img src="../../equipment/<?php echo htmlspecialchars($equipment['photo_filename']); ?>" alt="Equipment Photo">
-                        </div>
-                    <?php endif; ?>
-
-                    <h3>Basic Information</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <div class="detail-label">Name</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['name']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Asset Tag</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['asset_tag']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Status</div>
-                            <div class="detail-value">
-                                <span class="badge badge-<?php echo $equipment['status'] === 'Active' ? 'success' : 'danger'; ?>">
-                                    <?php echo sanitize($equipment['status']); ?>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h3>Equipment Details</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <div class="detail-label">Type</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['type_name']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Manufacturer</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['manufacturer_name']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Model</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['model']); ?></div>
-                        </div>
-                    </div>
-
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <div class="detail-label">Serial Number</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['serial_number']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Asset Code</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['asset_code']); ?></div>
-                        </div>
-                    </div>
-
-                    <h3>Network Information</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <div class="detail-label">Hostname</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['hostname']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">IP Address</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['ip_address']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">MAC Address</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['mac_address']); ?></div>
-                        </div>
-                    </div>
-
-                    <h3>Location & Warranty</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <div class="detail-label">Location</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['location_name']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Warranty Type</div>
-                            <div class="detail-value"><?php echo sanitize($equipment['warranty_type']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Warranty Expiry</div>
-                            <div class="detail-value"><?php echo format_date($equipment['warranty_expiry']); ?></div>
-                        </div>
-                    </div>
-
-                    <h3>Financial Information</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <div class="detail-label">Purchase Date</div>
-                            <div class="detail-value"><?php echo format_date($equipment['purchase_date']); ?></div>
-                        </div>
-                        <div class="detail-col">
-                            <div class="detail-label">Purchase Cost</div>
-                            <div class="detail-value"><?php echo format_currency($equipment['purchase_cost']); ?></div>
-                        </div>
-                    </div>
-
-                    <?php if ($equipment['notes']): ?>
-                        <h3>Notes</h3>
-                        <p><?php echo nl2br(sanitize($equipment['notes'])); ?></p>
-                    <?php endif; ?>
-
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-tertiary); font-size: 12px;">
-                        Created: <?php echo date('M d, Y H:i', strtotime($equipment['created_at'])); ?> | 
-                        Updated: <?php echo date('M d, Y H:i', strtotime($equipment['updated_at'])); ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View Equipment</title><link rel="stylesheet" href="../../css/styles.css"></head>
+<body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
+<h1>View Equipment</h1>
+<?php if (!$item): ?>
+<div class="alert alert-danger">Equipment not found.</div>
+<?php else: ?>
+<div class="card">
+<table><tbody>
+<?php foreach ($item as $k => $v): ?><tr><th style="width:240px;"><?php echo sanitize($k); ?></th><td><?php echo sanitize((string)$v); ?></td></tr><?php endforeach; ?>
+</tbody></table>
+<?php if (!empty($item['photo_filename'])): ?><p style="margin-top:16px;"><img src="<?php echo UPLOAD_URL . sanitize($item['photo_filename']); ?>" alt="Equipment Photo" style="max-width:300px;border:1px solid var(--border);border-radius:8px;"></p><?php endif; ?>
+<p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">Edit</a></p>
+</div>
+<?php endif; ?>
+</div></div></div><script src="../../js/theme.js"></script></body></html>

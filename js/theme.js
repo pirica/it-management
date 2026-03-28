@@ -21,4 +21,32 @@ function updateThemeButton() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initTheme);
+function initSidebar() {
+    const savedSidebar = localStorage.getItem('sidebar') || 'open';
+    applySidebarState(savedSidebar === 'collapsed');
+}
+
+function toggleSidebar() {
+    const isCollapsed = !document.body.classList.contains('sidebar-collapsed');
+    applySidebarState(isCollapsed);
+    localStorage.setItem('sidebar', isCollapsed ? 'collapsed' : 'open');
+}
+
+function applySidebarState(isCollapsed) {
+    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    const container = document.querySelector('.container');
+    if (container) {
+        container.classList.toggle('sidebar-collapsed', isCollapsed);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    initSidebar();
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+    if (sidebarToggleBtn) {
+        sidebarToggleBtn.addEventListener('click', toggleSidebar);
+    }
+});
+
+window.toggleSidebar = toggleSidebar;
