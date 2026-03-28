@@ -1,0 +1,59 @@
+IT MANAGEMENT SYSTEM - INSTALLATION GUIDE
+=============================================
+
+1. DATABASE SETUP
+   - Open phpMyAdmin
+   - Create new database or use existing
+   - Import database.sql
+
+2. FILE SETUP
+   - Extract all files to: C:\Users\NelsonSalvador\Downloads\USBWebServer\USBWebServer\root\it-management\
+   - Create folder: equipment/
+   - Set permissions: chmod 755 equipment/
+
+3. CONFIGURATION
+   - Edit config/config.php
+   - Update database credentials if needed:
+     * DB_HOST: localhost
+     * DB_USER: root
+     * DB_PASS: (your password)
+     * DB_NAME: itmanagement
+
+4. ACCESS SYSTEM
+   - Open browser
+   - Go to: http://localhost:8080/it-management/
+   - Select a company and enter system
+
+5. DEFAULT COMPANIES
+   - TechCorp Global
+   - DataCenter Plus
+   - Network Solutions
+   - CloudTech Services
+   - Enterprise IT
+
+6. FEATURES
+   - Light/Dark Mode (🌙 button)
+   - Equipment management with photos
+   - Printer tracking
+   - Workstation assignments
+   - Ticket system
+   - Inventory tracking
+   - User management
+   - Department organization
+   - Employee tracking
+   - Multi-company support
+
+7. TROUBLESHOOTING
+   - Check database connection in config/config.php
+   - Ensure equipment/ folder is writable
+   - Clear browser cache if theme not working
+   - Check PHP error logs
+
+8. SUPPORT
+   - All files are self-contained
+   - No external dependencies
+   - Pure PHP + MySQL + CSS + JS
+   - Works with PHP 8.4+
+
+Created: 2026-03-28
+Version: 1.0.0
