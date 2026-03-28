@@ -5,28 +5,6 @@ function emp_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
-function emp_ensure_import_columns($conn) {
-    $requiredColumns = [
-        'hilton_id' => "ALTER TABLE `employees` ADD COLUMN `hilton_id` VARCHAR(50) NULL AFTER `employee_code`",
-        'username' => "ALTER TABLE `employees` ADD COLUMN `username` VARCHAR(100) NULL AFTER `hilton_id`",
-        'display_name' => "ALTER TABLE `employees` ADD COLUMN `display_name` VARCHAR(150) NULL AFTER `username`",
-        'job_code' => "ALTER TABLE `employees` ADD COLUMN `job_code` VARCHAR(120) NULL AFTER `job_title`",
-        'raw_status_code' => "ALTER TABLE `employees` ADD COLUMN `raw_status_code` VARCHAR(20) NULL AFTER `employment_status_id`"
-    ];
-
-    $existing = [];
-    $res = mysqli_query($conn, 'SHOW COLUMNS FROM `employees`');
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $existing[$row['Field']] = true;
-    }
-
-    foreach ($requiredColumns as $column => $sql) {
-        if (!isset($existing[$column])) {
-            mysqli_query($conn, $sql);
-        }
-    }
-}
-
 function emp_parse_delimited_rows($content) {
     $lines = preg_split('/\r\n|\n|\r/', trim((string)$content));
     if (!$lines || count($lines) < 2) {
@@ -91,8 +69,6 @@ function emp_status_id_from_raw($conn, $rawStatus) {
 
     return 1;
 }
-
-emp_ensure_import_columns($conn);
 
 $messages = [];
 $errors = [];
