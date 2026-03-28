@@ -176,19 +176,28 @@ CREATE TABLE `employees`(
     `user_id` INT,
     `first_name` VARCHAR(100) NOT NULL,
     `last_name` VARCHAR(100) NOT NULL,
-    `email` VARCHAR(120) UNIQUE,
+    `display_name` VARCHAR(150),
+    `email` VARCHAR(120),
     `phone` VARCHAR(20),
-    `employee_code` VARCHAR(50) UNIQUE,
+    `employee_code` VARCHAR(50),
+    `hilton_id` VARCHAR(50),
+    `username` VARCHAR(100),
     `department_id` INT,
+    `job_code` VARCHAR(120),
     `job_title` VARCHAR(100),
     `location_id` INT,
     `employment_status_id` INT NOT NULL,
+    `raw_status_code` VARCHAR(20),
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     FOREIGN KEY(`user_id`) REFERENCES `users`(`id`),
     FOREIGN KEY(`department_id`) REFERENCES `departments`(`id`),
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`),
-    INDEX(`company_id`)
+    INDEX(`company_id`),
+    INDEX `idx_employees_hilton_id` (`hilton_id`),
+    INDEX `idx_employees_username` (`username`),
+    UNIQUE KEY `uq_employees_email_per_company` (`company_id`,`email`),
+    UNIQUE KEY `uq_employees_code_per_company` (`company_id`,`employee_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `workstation_modes`(
