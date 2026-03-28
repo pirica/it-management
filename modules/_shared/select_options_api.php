@@ -9,6 +9,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+function so_require_valid_csrf_token() {
+    $token = (string)($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Forbidden: invalid CSRF token.']);
+        exit;
+    }
+}
+
+so_require_valid_csrf_token();
+
 function so_identifier($value) {
     return is_string($value) && preg_match('/^[a-zA-Z0-9_]+$/', $value);
 }

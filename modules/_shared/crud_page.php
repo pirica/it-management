@@ -99,6 +99,89 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
+function cr_get_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return (string)$_SESSION['csrf_token'];
+}
+
+function cr_require_valid_csrf_token() {
+    $token = (string)($_POST['csrf_token'] ?? '');
+    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
+        http_response_code(403);
+        echo 'Forbidden: invalid CSRF token.';
+        exit;
+    }
+}
+
+function cr_numeric_validation_error($field, $message) {
+    return cr_humanize_field($field) . ' ' . $message . '.';
+}
+
+function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
+    $type = strtolower((string)$column['Type']);
+    $isUnsigned = str_contains($type, 'unsigned');
+    $raw = trim((string)$rawValue);
+
+    if (preg_match('/^(tinyint|smallint|mediumint|int|bigint)\b/', $type, $match)) {
+        $intVal = filter_var($raw, FILTER_VALIDATE_INT);
+        if ($intVal === false) {
+            $error = cr_numeric_validation_error($fieldName, 'must be a valid integer');
+            return false;
+        }
+
+        $ranges = [
+            'tinyint' => [-128, 127, 0, 255],
+            'smallint' => [-32768, 32767, 0, 65535],
+            'mediumint' => [-8388608, 8388607, 0, 16777215],
+            'int' => [-2147483648, 2147483647, 0, 4294967295],
+        ];
+        $typeName = $match[1];
+
+        if (isset($ranges[$typeName])) {
+            [$signedMin, $signedMax, $unsignedMin, $unsignedMax] = $ranges[$typeName];
+            $min = $isUnsigned ? $unsignedMin : $signedMin;
+            $max = $isUnsigned ? $unsignedMax : $signedMax;
+            if ($intVal < $min || $intVal > $max) {
+                $error = cr_numeric_validation_error($fieldName, 'is out of range');
+                return false;
+            }
+        } elseif ($typeName === 'bigint' && $isUnsigned && $intVal < 0) {
+            $error = cr_numeric_validation_error($fieldName, 'must be zero or greater');
+            return false;
+        }
+
+        $normalizedValue = (string)$intVal;
+        return true;
+    }
+
+    if (preg_match('/^(decimal|float|double)\b/', $type)) {
+        if (!is_numeric($raw)) {
+            $error = cr_numeric_validation_error($fieldName, 'must be a valid number');
+            return false;
+        }
+
+        $floatVal = (float)$raw;
+        if (!is_finite($floatVal)) {
+            $error = cr_numeric_validation_error($fieldName, 'must be a finite number');
+            return false;
+        }
+
+        if ($isUnsigned && $floatVal < 0) {
+            $error = cr_numeric_validation_error($fieldName, 'must be zero or greater');
+            return false;
+        }
+
+        $normalizedValue = (string)$raw;
+        return true;
+    }
+
+    $error = cr_numeric_validation_error($fieldName, 'has an unsupported numeric type');
+    return false;
+}
+
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -109,9 +192,19 @@ foreach ($fieldColumns as $c) {
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
+$csrfToken = cr_get_csrf_token();
 
 if ($crud_action === 'delete') {
-    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        echo 'Method not allowed.';
+        exit;
+    }
+
+    cr_require_valid_csrf_token();
+
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
@@ -144,6 +237,8 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+    cr_require_valid_csrf_token();
+
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
@@ -211,7 +306,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
-            $data[$name] = (string)(0 + $value);
+            $normalizedNumeric = null;
+            $numericError = '';
+            if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {
+                $errors[] = $numericError;
+                $data[$name] = 'NULL';
+            } else {
+                $data[$name] = $normalizedNumeric;
+            }
         } else {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
@@ -296,7 +398,11 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this record?');">🗑️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
@@ -309,6 +415,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
@@ -381,6 +488,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script>
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+</script>
 <script src="../../js/select-add-option.js"></script>
 
 </body>
