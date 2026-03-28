@@ -39,7 +39,9 @@ function emp_canonical_header($header) {
         'first name' => 'first_name',
         'last name' => 'last_name',
         'job code' => 'job_code',
-        'title' => 'job_title'
+        'title' => 'job_title',
+        'comments' => 'comments',
+        'comment' => 'comments'
     ];
 
     return $map[$normalized] ?? null;
@@ -120,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'display_name' => '',
                     'job_code' => '',
                     'job_title' => '',
+                    'comments' => '',
                     'raw_status_code' => '',
                     'employment_status_id' => 1,
                     'active' => 1
@@ -171,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     $existingId = (int)(mysqli_fetch_assoc($found)['id'] ?? 0);
                 }
 
-                $columns = ['company_id','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','raw_status_code','employment_status_id','active'];
+                $columns = ['company_id','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','employment_status_id','active'];
                 $values = [];
                 foreach ($columns as $col) {
                     $value = $mapped[$col] ?? null;
@@ -217,7 +220,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columns[] = $c['Field'];
 }
 
-$preferredOrder = ['id','hilton_id','employee_code','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','phone','department_id','location_id','employment_status_id','active'];
+$preferredOrder = ['id','hilton_id','employee_code','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','comments','phone','department_id','location_id','employment_status_id','active'];
 usort($columns, function ($a, $b) use ($preferredOrder) {
     $ia = array_search($a, $preferredOrder, true);
     $ib = array_search($b, $preferredOrder, true);
