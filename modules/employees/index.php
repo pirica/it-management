@@ -90,8 +90,29 @@ function emp_drop_email_unique_if_exists($conn) {
     }
 }
 
+function emp_import_identity_label($mapped) {
+    $parts = [];
+    if (!empty($mapped['display_name'])) {
+        $parts[] = 'Name: ' . (string)$mapped['display_name'];
+    }
+    if (!empty($mapped['email'])) {
+        $parts[] = 'Email: ' . (string)$mapped['email'];
+    }
+    if (!empty($mapped['employee_code'])) {
+        $parts[] = 'Employee Code: ' . (string)$mapped['employee_code'];
+    }
+    if (!empty($mapped['hilton_id'])) {
+        $parts[] = 'Hilton ID: ' . (string)$mapped['hilton_id'];
+    }
+    if (!$parts) {
+        return 'No identifying data';
+    }
+    return implode(' | ', $parts);
+}
+
 $messages = [];
 $errors = [];
+$skippedDetails = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
     emp_drop_email_unique_if_exists($conn);
@@ -128,10 +149,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             $created = 0;
             $updated = 0;
             $skipped = 0;
+            $duplicatesInFile = 0;
             $matchedIds = [];
             $deleted = 0;
+            $preExistingIds = [];
 
-            foreach (array_slice($rows, 1) as $row) {
+            $existingSql = 'SELECT id FROM employees WHERE company_id=' . (int)$company_id;
+            $existingRes = mysqli_query($conn, $existingSql);
+            while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
+                $preExistingIds[(int)($existingRow['id'] ?? 0)] = true;
+            }
+
+            foreach (array_slice($rows, 1) as $rowOffset => $row) {
+                $sourceRowNumber = $rowOffset + 2;
                 $mapped = [
                     'company_id' => (int)$company_id,
                     'first_name' => '',
@@ -171,6 +201,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
                 if ($mapped['first_name'] === '' && $mapped['last_name'] === '' && $mapped['email'] === '' && $mapped['employee_code'] === '' && $mapped['hilton_id'] === '') {
                     $skipped += 1;
+                    $skippedDetails[] = [
+                        'row' => $sourceRowNumber,
+                        'reason' => 'Missing identifying data (name/email/employee code/hilton id).',
+                        'identity' => 'No identifying data'
+                    ];
                     continue;
                 }
 
@@ -203,6 +238,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
                 if (!$whereParts) {
                     $skipped += 1;
+                    $skippedDetails[] = [
+                        'row' => $sourceRowNumber,
+                        'reason' => 'No unique identifier found (email/employee code/hilton id).',
+                        'identity' => emp_import_identity_label($mapped)
+                    ];
                     continue;
                 }
 
@@ -227,6 +267,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 if ($existingId > 0) {
+                    if (!isset($preExistingIds[$existingId])) {
+                        $duplicatesInFile += 1;
+                    }
                     $sets = [];
                     foreach ($columns as $col) {
                         if ($col === 'company_id') {
@@ -236,7 +279,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     }
                     $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
                     if (mysqli_query($conn, $sql)) {
-                        $updated += 1;
+                        if (isset($preExistingIds[$existingId])) {
+                            $updated += 1;
+                        } else {
+                            $skipped += 1;
+                            $skippedDetails[] = [
+                                'row' => $sourceRowNumber,
+                                'reason' => 'Duplicate in uploaded file matched a row imported earlier in this run.',
+                                'identity' => emp_import_identity_label($mapped)
+                            ];
+                        }
                         $matchedIds[] = $existingId;
                     }
                 } else {
@@ -257,6 +309,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             }
 
             $messages[] = "Import complete: {$created} created, {$updated} updated, {$deleted} removed, {$skipped} skipped.";
+            if ($duplicatesInFile > 0) {
+                $messages[] = "{$duplicatesInFile} duplicate row(s) in the uploaded file matched another imported row and were skipped.";
+            }
         }
     }
 }
@@ -334,6 +389,24 @@ function emp_label($field) {
             <?php foreach ($messages as $msg): ?>
                 <div class="alert alert-success"><?php echo sanitize($msg); ?></div>
             <?php endforeach; ?>
+            <?php if (!empty($skippedDetails)): ?>
+                <div class="card" style="margin-bottom:16px;border:1px solid #f4c2c2;background:#fff6f6;">
+                    <h4 style="margin:0 0 8px 0;">Skipped Rows</h4>
+                    <p style="margin:0 0 8px 0;color:#666;">Showing first <?php echo (int)min(count($skippedDetails), 50); ?> skipped rows.</p>
+                    <ul style="margin:0;padding-left:20px;">
+                        <?php foreach (array_slice($skippedDetails, 0, 50) as $detail): ?>
+                            <li>
+                                Row <?php echo (int)($detail['row'] ?? 0); ?> —
+                                <?php echo sanitize((string)($detail['reason'] ?? 'Skipped')); ?>
+                                (<?php echo sanitize((string)($detail['identity'] ?? '')); ?>)
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php if (count($skippedDetails) > 50): ?>
+                        <p style="margin:8px 0 0 0;color:#666;"><?php echo (int)(count($skippedDetails) - 50); ?> additional skipped row(s) not shown.</p>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
                 <h1 style="margin:0;">Employees</h1>
