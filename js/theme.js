@@ -21,4 +21,18 @@ function updateThemeButton() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initTheme);
+function initSidebar() {
+    const savedSidebar = localStorage.getItem('sidebar') || 'open';
+    document.body.classList.toggle('sidebar-collapsed', savedSidebar === 'collapsed');
+}
+
+function toggleSidebar() {
+    document.body.classList.toggle('sidebar-collapsed');
+    const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+    localStorage.setItem('sidebar', isCollapsed ? 'collapsed' : 'open');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    initSidebar();
+});
