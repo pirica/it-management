@@ -151,7 +151,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                                         <?php echo sanitize($c['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -163,7 +163,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                                         <?php echo sanitize($s['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                     </div>
@@ -178,7 +178,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                                         <?php echo sanitize($p['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -190,7 +190,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                                         <?php echo sanitize($u['username']); ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                     </div>
@@ -205,7 +205,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                                         <?php echo sanitize($a['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -221,8 +221,8 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                     </div>
 
                     <div style="display:flex;gap:10px;">
-                        <button class="btn btn-primary" type="submit">Save</button>
-                        <a class="btn" href="index.php">Cancel</a>
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a class="btn" href="index.php">✖️</a>
                     </div>
                 </form>
             </div>

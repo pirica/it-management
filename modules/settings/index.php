@@ -251,7 +251,7 @@ usort($backupFiles, static function ($a, $b) {
                                         <form method="post" onsubmit="return confirm('Delete this backup file?');" style="display:inline;">
                                             <input type="hidden" name="action" value="delete_backup">
                                             <input type="hidden" name="file" value="<?php echo sanitize($backup['name']); ?>">
-                                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
                                     </td>
                                 </tr>

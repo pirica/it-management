@@ -79,7 +79,7 @@ $companies = mysqli_query($conn, "SELECT * FROM companies WHERE active = 1 ORDER
                                 <?php echo htmlspecialchars($c['name']); ?>
                             </option>
                         <?php endwhile; ?>
-                        <option value="__add_new__">+ Add</option>
+                        <option value="__add_new__">➕</option>
                     </select>
                     <input type="hidden" name="company_name" id="company_name">
                 </div>

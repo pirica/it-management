@@ -275,7 +275,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($crud_title); ?></h1>
-                    <a href="create.php" class="btn btn-primary">+ New</a>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
@@ -294,9 +294,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <td><?php echo sanitize((string)($row[$f] ?? '')); ?></td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">View</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">Edit</a>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this record?');">Delete</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this record?');">🗑️</a>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
@@ -342,7 +342,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <?php foreach ($opts as $opt): ?>
                                         <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
-                                    <option value="__add_new__">+ Add</option>
+                                    <option value="__add_new__">➕</option>
                                 </select>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
@@ -356,8 +356,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions">
-                        <button class="btn btn-primary" type="submit">Save</button>
-                        <a class="btn" href="index.php">Cancel</a>
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a class="btn" href="index.php">✖️</a>
                     </div>
                 </form>
 
@@ -374,7 +374,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">Edit</a></p>
+                    <p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>
