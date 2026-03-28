@@ -186,7 +186,7 @@
         window.alert('Unsupported file type. Please import CSV, XLS, or XLSX files.');
     }
 
-    function attachTools(table, index) {
+    function attachListTools(table, index) {
         if (table.dataset.tableToolsAttached === '1') {
             return;
         }
@@ -234,13 +234,73 @@
         table.parentNode.insertBefore(toolbar, table);
     }
 
+    function exportViewAsPdf(table) {
+        const heading = table.closest('.content')?.querySelector('h1');
+        const filenameBase = sanitizeFilename(heading ? heading.textContent : document.title);
+        const clone = table.cloneNode(true);
+        const printWindow = window.open('', '_blank');
+
+        if (!printWindow) {
+            window.alert('Please allow popups to export PDF.');
+            return;
+        }
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>${filenameBase}.pdf</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
+                    th { background: #f6f8fa; width: 240px; }
+                </style>
+            </head>
+            <body>
+                <h2>${filenameBase.replace(/-/g, ' ')}</h2>
+                ${clone.outerHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        setTimeout(() => printWindow.close(), 200);
+    }
+
+    function attachViewTools(table) {
+        if (table.dataset.tableToolsAttached === '1') {
+            return;
+        }
+        table.dataset.tableToolsAttached = '1';
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'table-tools';
+
+        const pdfBtn = document.createElement('button');
+        pdfBtn.type = 'button';
+        pdfBtn.className = 'btn btn-sm';
+        pdfBtn.textContent = '📄 Export PDF';
+        pdfBtn.addEventListener('click', () => exportViewAsPdf(table));
+
+        toolbar.appendChild(pdfBtn);
+        table.parentNode.insertBefore(toolbar, table);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const tables = Array.from(document.querySelectorAll('.content .card table'));
         tables.forEach((table, index) => {
-            if (!table.querySelector('thead th')) {
+            const hasListHeader = Boolean(table.querySelector('thead th'));
+            const isViewTable = !hasListHeader && Boolean(table.querySelector('tbody th'));
+
+            if (hasListHeader) {
+                attachListTools(table, index);
                 return;
             }
-            attachTools(table, index);
+
+            if (isViewTable) {
+                attachViewTools(table);
+            }
         });
     });
 })();
