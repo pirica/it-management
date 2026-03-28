@@ -143,6 +143,15 @@ $messages = [];
 $errors = [];
 $skippedDetails = [];
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'delete_all_employees')) {
+    $deleteAllSql = 'DELETE FROM employees WHERE company_id=' . (int)$company_id;
+    if (mysqli_query($conn, $deleteAllSql)) {
+        $messages[] = 'All employees were deleted for this company.';
+    } else {
+        $errors[] = 'Could not delete all employees. Please try again.';
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
     emp_ensure_duplicate_column($conn);
     emp_drop_email_unique_if_exists($conn);
@@ -359,6 +368,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
 emp_ensure_duplicate_column($conn);
 $where = ' WHERE e.company_id=' . (int)$company_id;
+$showDuplicatesOnly = (($_GET['show'] ?? '') === 'duplicates');
+if ($showDuplicatesOnly) {
+    $where .= ' AND e.duplicate=1';
+}
+
+$duplicatesCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id=' . (int)$company_id . ' AND duplicate=1');
+$duplicatesCount = (int)($duplicatesCountRes ? (mysqli_fetch_assoc($duplicatesCountRes)['count'] ?? 0) : 0);
 $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
 $columns = [];
 $columnTypes = [];
@@ -454,6 +470,15 @@ function emp_label($field) {
                 <h1 style="margin:0;">Employees</h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="create.php" class="btn btn-primary">➕ New Employee</a>
+                    <?php if ($showDuplicatesOnly): ?>
+                        <a href="index.php" class="btn btn-sm">Show All</a>
+                    <?php else: ?>
+                        <a href="index.php?show=duplicates" class="btn btn-sm">⚠️ Duplicates (<?php echo (int)$duplicatesCount; ?>)</a>
+                    <?php endif; ?>
+                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete ALL employees for this company? This cannot be undone.');">
+                        <input type="hidden" name="action" value="delete_all_employees">
+                        <button type="submit" class="btn btn-danger">✖ Delete ALL</button>
+                    </form>
                 </div>
             </div>
 
