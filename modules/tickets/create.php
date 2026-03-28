@@ -230,5 +230,6 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/select-add-option.js"></script>
 </body>
 </html>
