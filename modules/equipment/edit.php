@@ -1,5 +1,3 @@
 <?php
-$crud_table = 'equipment';
-$crud_title = 'Equipment';
-$crud_action = 'edit';
-require '../_shared/crud_page.php';
+$_GET['id'] = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+require 'create.php';
