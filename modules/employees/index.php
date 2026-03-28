@@ -248,10 +248,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             $processedIdMap = [];
             $importIdentitySeen = [];
 
-            $existingSql = 'SELECT id,email,employee_code,hilton_id FROM employees WHERE company_id=' . (int)$company_id;
+            $existingRowMap = [];
+            $existingSql = 'SELECT id,email,employee_code,hilton_id,duplicate,first_name,last_name,username,display_name,job_code,job_title,comments,raw_status_code,termination_date,request_date,requested_by,termination_requested_by,department_id,employment_status_id,active FROM employees WHERE company_id=' . (int)$company_id;
             $existingRes = mysqli_query($conn, $existingSql);
             while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
                 $existingId = (int)($existingRow['id'] ?? 0);
+                $existingRowMap[$existingId] = $existingRow;
                 $tokens = emp_identifier_tokens($existingRow);
                 foreach ($tokens as $token) {
                     if (!isset($existingIndex[$token])) {
@@ -373,16 +375,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 if ($existingId > 0) {
-                    $sets = [];
+                    $hasChanges = false;
+                    $existingCurrent = $existingRowMap[$existingId] ?? [];
                     foreach ($columns as $col) {
                         if ($col === 'company_id') {
                             continue;
                         }
-                        $sets[] = emp_escape_identifier($col) . '=' . $values[$col];
+
+                        $incomingVal = $mapped[$col] ?? null;
+                        if ($incomingVal === '') {
+                            $incomingVal = null;
+                        }
+
+                        $existingVal = $existingCurrent[$col] ?? null;
+                        if ($existingVal === '') {
+                            $existingVal = null;
+                        }
+
+                        if (in_array($col, ['employment_status_id','active','duplicate','department_id'], true)) {
+                            $incomingNorm = ($incomingVal === null) ? null : (int)$incomingVal;
+                            $existingNorm = ($existingVal === null) ? null : (int)$existingVal;
+                        } else {
+                            $incomingNorm = ($incomingVal === null) ? null : trim((string)$incomingVal);
+                            $existingNorm = ($existingVal === null) ? null : trim((string)$existingVal);
+                        }
+
+                        if ($incomingNorm !== $existingNorm) {
+                            $hasChanges = true;
+                            break;
+                        }
                     }
-                    $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
-                    if (mysqli_query($conn, $sql)) {
-                        $updated += 1;
+
+                    if ($hasChanges) {
+                        $sets = [];
+                        foreach ($columns as $col) {
+                            if ($col === 'company_id') {
+                                continue;
+                            }
+                            $sets[] = emp_escape_identifier($col) . '=' . $values[$col];
+                        }
+                        $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+                        if (mysqli_query($conn, $sql)) {
+                            $updated += 1;
+                            $matchedIds[] = $existingId;
+                            $processedIdMap[$existingId] = true;
+                            $existingRowMap[$existingId] = array_merge($existingCurrent, $mapped);
+                        }
+                    } else {
+                        $skipped += 1;
                         $matchedIds[] = $existingId;
                         $processedIdMap[$existingId] = true;
                     }
