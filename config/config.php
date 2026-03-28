@@ -13,12 +13,16 @@ define('APP_ENV', 'production'); // development or production
 // Paths
 define('BASE_URL', 'http://localhost:8080/it-management/');
 define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
-define('UPLOAD_PATH', ROOT_PATH . 'equipment/');
+define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'equipment'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('UPLOAD_URL', BASE_URL . 'equipment/');
 
 // Upload Settings
 define('MAX_FILE_SIZE', 5242880); // 5MB
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
+
+if (!is_dir(UPLOAD_PATH)) {
+    @mkdir(UPLOAD_PATH, 0775, true);
+}
 
 // Database Connection
 $conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);

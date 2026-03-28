@@ -90,6 +90,15 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    transition: margin-left 0.25s ease;
+}
+
+body.sidebar-collapsed .sidebar {
+    transform: translateX(-250px);
+}
+
+body.sidebar-collapsed .main-content {
+    margin-left: 0;
 }
 
 .header {
@@ -100,6 +109,11 @@ body {
     justify-content: space-between;
     align-items: center;
     box-shadow: var(--shadow);
+}
+
+.sidebar-toggle-btn {
+    min-width: 36px;
+    padding: 6px 8px;
 }
 
 .content {
@@ -437,4 +451,29 @@ tr:hover {
     th, td {
         padding: 8px;
     }
+}
+
+/* Enhanced picker UI */
+input[type="date"],
+input[type="datetime-local"] {
+    appearance: none;
+    position: relative;
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px;
+    background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+input[type="color"] {
+    padding: 4px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    cursor: pointer;
 }
