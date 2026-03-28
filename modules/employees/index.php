@@ -285,9 +285,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     continue;
                 }
 
-                $identityKey = implode('|', $identifierTokens);
-                $importIdentitySeen[$identityKey] = ($importIdentitySeen[$identityKey] ?? 0) + 1;
-                $isDuplicateInFile = $importIdentitySeen[$identityKey] > 1;
+                $isDuplicateInFile = false;
+                foreach ($identifierTokens as $token) {
+                    if (($importIdentitySeen[$token] ?? 0) > 0) {
+                        $isDuplicateInFile = true;
+                    }
+                }
+                foreach ($identifierTokens as $token) {
+                    $importIdentitySeen[$token] = ($importIdentitySeen[$token] ?? 0) + 1;
+                }
 
                 $existingId = 0;
                 foreach ($identifierTokens as $token) {
@@ -344,11 +350,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
             }
 
-            foreach ($importIdentitySeen as $seenCount) {
-                if ($seenCount > 1) {
-                    $duplicatesInFile += ($seenCount - 1);
-                }
-            }
+            $duplicateCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id=' . (int)$company_id . ' AND duplicate=1');
+            $duplicatesInFile = (int)($duplicateCountRes ? (mysqli_fetch_assoc($duplicateCountRes)['count'] ?? 0) : 0);
 
             if (!empty($matchedIds)) {
                 $matchedIds = array_values(array_unique(array_map('intval', $matchedIds)));
