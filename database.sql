@@ -32,8 +32,8 @@ CREATE TABLE `users`(
     `first_name` VARCHAR(50),
     `last_name` VARCHAR(50),
     `phone` VARCHAR(20),
-    `role` ENUM('admin','it_manager','it_technician','helpdesk','user') DEFAULT 'user',
-    `access_level` ENUM('full','read_only','limited') DEFAULT 'read_only',
+    `role_id` INT NOT NULL,
+    `access_level_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
@@ -52,7 +52,7 @@ CREATE TABLE `it_locations`(
     `country` VARCHAR(100),
     `postal_code` VARCHAR(20),
     `phone` VARCHAR(20),
-    `type` ENUM('Headquarters','Branch','Warehouse','DataCenter','Office','Remote','Other') DEFAULT 'Office',
+    `type_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     INDEX(`company_id`)
@@ -80,7 +80,7 @@ CREATE TABLE `suppliers`(
     `contact_person` VARCHAR(100),
     `email` VARCHAR(100),
     `phone` VARCHAR(20),
-    `status` ENUM('Active','Inactive','Preferred','Backup') DEFAULT 'Active',
+    `status_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     INDEX(`company_id`)
@@ -105,7 +105,7 @@ CREATE TABLE `racks`(
     `location_id` INT NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `rack_code` VARCHAR(50) UNIQUE,
-    `status` ENUM('Active','Maintenance','Full','Decommissioned') DEFAULT 'Active',
+    `status_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`) ON DELETE CASCADE,
@@ -125,18 +125,18 @@ CREATE TABLE `equipment`(
     `hostname` VARCHAR(100),
     `ip_address` VARCHAR(45),
     `mac_address` VARCHAR(45),
-    `status` ENUM('Active','Inactive','Maintenance','Faulty','Reserved','Decommissioned','On-Order') DEFAULT 'Active',
+    `status_id` INT NOT NULL,
     `purchase_date` DATE,
     `purchase_cost` DECIMAL(15, 2),
     `warranty_expiry` DATE,
-    `warranty_type` ENUM('Standard','Extended','Premium','Enterprise','None') DEFAULT 'Standard',
+    `warranty_type_id` INT NOT NULL,
     `is_printer` TINYINT DEFAULT 0,
-    `printer_device_type` ENUM('Laser','Inkjet','All-in-One','Thermal','Wide-Format','Photo','Label','Dotmatrix','Other'),
+    `printer_device_type_id` INT,
     `printer_color_capable` TINYINT DEFAULT 0,
     `printer_print_speed_ppm` INT,
     `is_workstation` TINYINT DEFAULT 0,
-    `workstation_device_type` ENUM('Desktop','Laptop','All-in-One','Tablet','Thin-Client','Mobile','POS','Other'),
-    `workstation_os_type` ENUM('Windows','macOS','Linux','ChromeOS','iOS','Android','Other'),
+    `workstation_device_type_id` INT,
+    `workstation_os_type_id` INT,
     `workstation_processor` VARCHAR(100),
     `workstation_memory_gb` INT,
     `notes` LONGTEXT,
@@ -150,7 +150,7 @@ CREATE TABLE `equipment`(
     FOREIGN KEY(`location_id`) REFERENCES `it_locations`(`id`),
     FOREIGN KEY(`rack_id`) REFERENCES `racks`(`id`) ON DELETE SET NULL,
     INDEX(`company_id`),
-    INDEX(`status`),
+    INDEX(`status_id`),
     INDEX(`is_printer`),
     INDEX(`is_workstation`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -182,7 +182,7 @@ CREATE TABLE `employees`(
     `department_id` INT,
     `job_title` VARCHAR(100),
     `location_id` INT,
-    `employment_status` ENUM('Active','Inactive','On Leave','Terminated','Contractor') DEFAULT 'Active',
+    `employment_status_id` INT NOT NULL,
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
     FOREIGN KEY(`user_id`) REFERENCES `users`(`id`),
@@ -209,7 +209,7 @@ CREATE TABLE `workstations`(
     `workstation_mode_id` INT,
     `assigned_to_employee_id` INT,
     `assigned_to_department_id` INT,
-    `assignment_type` ENUM('Individual','Department','Shared','Pool') DEFAULT 'Individual',
+    `assignment_type_id` INT NOT NULL,
     `desk_location` VARCHAR(255),
     `active` TINYINT DEFAULT 1,
     FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
@@ -415,31 +415,21 @@ INSERT INTO `workstation_os_types` (`name`) VALUES ('Windows'),('macOS'),('Linux
 INSERT INTO `employee_statuses` (`name`) VALUES ('Active'),('Inactive'),('On Leave'),('Terminated'),('Contractor');
 INSERT INTO `assignment_types` (`name`) VALUES ('Individual'),('Department'),('Shared'),('Pool');
 
--- Add relationship columns for all ENUMs
+-- Add lookup-table foreign key relationships
 ALTER TABLE `users`
-    ADD COLUMN `role_id` INT NULL,
-    ADD COLUMN `access_level_id` INT NULL,
     ADD FOREIGN KEY (`role_id`) REFERENCES `user_roles`(`id`),
     ADD FOREIGN KEY (`access_level_id`) REFERENCES `access_levels`(`id`);
 
 ALTER TABLE `it_locations`
-    ADD COLUMN `type_id` INT NULL,
     ADD FOREIGN KEY (`type_id`) REFERENCES `location_types`(`id`);
 
 ALTER TABLE `suppliers`
-    ADD COLUMN `status_id` INT NULL,
     ADD FOREIGN KEY (`status_id`) REFERENCES `supplier_statuses`(`id`);
 
 ALTER TABLE `racks`
-    ADD COLUMN `status_id` INT NULL,
     ADD FOREIGN KEY (`status_id`) REFERENCES `rack_statuses`(`id`);
 
 ALTER TABLE `equipment`
-    ADD COLUMN `status_id` INT NULL,
-    ADD COLUMN `warranty_type_id` INT NULL,
-    ADD COLUMN `printer_device_type_id` INT NULL,
-    ADD COLUMN `workstation_device_type_id` INT NULL,
-    ADD COLUMN `workstation_os_type_id` INT NULL,
     ADD FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses`(`id`),
     ADD FOREIGN KEY (`warranty_type_id`) REFERENCES `warranty_types`(`id`),
     ADD FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types`(`id`),
@@ -447,45 +437,29 @@ ALTER TABLE `equipment`
     ADD FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types`(`id`);
 
 ALTER TABLE `employees`
-    ADD COLUMN `employment_status_id` INT NULL,
     ADD FOREIGN KEY (`employment_status_id`) REFERENCES `employee_statuses`(`id`);
 
 ALTER TABLE `workstations`
-    ADD COLUMN `assignment_type_id` INT NULL,
     ADD FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types`(`id`);
 
--- Keep lookup FK columns synchronized with legacy ENUM values (for existing rows)
-UPDATE `users` u JOIN `user_roles` r ON r.name = u.role SET u.role_id = r.id WHERE u.role_id IS NULL;
-UPDATE `users` u JOIN `access_levels` a ON a.name = u.access_level SET u.access_level_id = a.id WHERE u.access_level_id IS NULL;
-UPDATE `it_locations` l JOIN `location_types` t ON t.name = l.type SET l.type_id = t.id WHERE l.type_id IS NULL;
-UPDATE `suppliers` s JOIN `supplier_statuses` ss ON ss.name = s.status SET s.status_id = ss.id WHERE s.status_id IS NULL;
-UPDATE `racks` r JOIN `rack_statuses` rs ON rs.name = r.status SET r.status_id = rs.id WHERE r.status_id IS NULL;
-UPDATE `equipment` e JOIN `equipment_statuses` es ON es.name = e.status SET e.status_id = es.id WHERE e.status_id IS NULL;
-UPDATE `equipment` e JOIN `warranty_types` wt ON wt.name = e.warranty_type SET e.warranty_type_id = wt.id WHERE e.warranty_type_id IS NULL;
-UPDATE `equipment` e JOIN `printer_device_types` pdt ON pdt.name = e.printer_device_type SET e.printer_device_type_id = pdt.id WHERE e.printer_device_type_id IS NULL;
-UPDATE `equipment` e JOIN `workstation_device_types` wdt ON wdt.name = e.workstation_device_type SET e.workstation_device_type_id = wdt.id WHERE e.workstation_device_type_id IS NULL;
-UPDATE `equipment` e JOIN `workstation_os_types` wot ON wot.name = e.workstation_os_type SET e.workstation_os_type_id = wot.id WHERE e.workstation_os_type_id IS NULL;
-UPDATE `employees` e JOIN `employee_statuses` es ON es.name = e.employment_status SET e.employment_status_id = es.id WHERE e.employment_status_id IS NULL;
-UPDATE `workstations` w JOIN `assignment_types` a ON a.name = w.assignment_type SET w.assignment_type_id = a.id WHERE w.assignment_type_id IS NULL;
-
 -- Example data for each main table
-INSERT INTO `it_locations` (`company_id`,`name`,`location_code`,`city`,`country`,`active`) VALUES (1,'HQ NYC','LOC-NY-01','New York','USA',1);
-INSERT INTO `users` (`company_id`,`username`,`email`,`password`,`first_name`,`last_name`,`role`,`access_level`,`active`,`role_id`,`access_level_id`) VALUES
-(1,'admin_tc','admin@techcorp.example','$2y$10$abcdefghijklmnopqrstuv','System','Admin','admin','full',1,1,1);
-INSERT INTO `suppliers` (`company_id`,`name`,`supplier_code`,`contact_person`,`email`,`phone`,`status`,`active`,`status_id`) VALUES
-(1,'Global IT Supply','SUP-001','Jane Doe','sales@globalit.example','+1-555-0100','Active',1,1);
+INSERT INTO `it_locations` (`company_id`,`name`,`location_code`,`city`,`country`,`active`,`type_id`) VALUES (1,'HQ NYC','LOC-NY-01','New York','USA',1,1);
+INSERT INTO `users` (`company_id`,`username`,`email`,`password`,`first_name`,`last_name`,`active`,`role_id`,`access_level_id`) VALUES
+(1,'admin_tc','admin@techcorp.example','$2y$10$abcdefghijklmnopqrstuv','System','Admin',1,1,1);
+INSERT INTO `suppliers` (`company_id`,`name`,`supplier_code`,`contact_person`,`email`,`phone`,`active`,`status_id`) VALUES
+(1,'Global IT Supply','SUP-001','Jane Doe','sales@globalit.example','+1-555-0100',1,1);
 INSERT INTO `vlans` (`company_id`,`vlan_number`,`vlan_name`,`cable_color`,`subnet`,`gateway_ip`,`active`) VALUES
 (1,10,'Office Network','#2E86DE','192.168.10.0/24','192.168.10.1',1);
-INSERT INTO `racks` (`company_id`,`location_id`,`name`,`rack_code`,`status`,`active`,`status_id`) VALUES
-(1,1,'Main Rack A','RACK-A','Active',1,1);
-INSERT INTO `equipment` (`company_id`,`equipment_type_id`,`manufacturer_id`,`location_id`,`rack_id`,`name`,`serial_number`,`model`,`hostname`,`ip_address`,`status`,`purchase_date`,`purchase_cost`,`warranty_type`,`active`,`status_id`,`warranty_type_id`) VALUES
-(1,2,2,1,1,'Primary File Server','SN-SRV-001','PowerEdge R760','srv-file-01','192.168.10.20','Active','2025-01-10',8500.00,'Enterprise',1,1,4);
+INSERT INTO `racks` (`company_id`,`location_id`,`name`,`rack_code`,`active`,`status_id`) VALUES
+(1,1,'Main Rack A','RACK-A',1,1);
+INSERT INTO `equipment` (`company_id`,`equipment_type_id`,`manufacturer_id`,`location_id`,`rack_id`,`name`,`serial_number`,`model`,`hostname`,`ip_address`,`purchase_date`,`purchase_cost`,`active`,`status_id`,`warranty_type_id`,`printer_device_type_id`,`workstation_device_type_id`,`workstation_os_type_id`) VALUES
+(1,2,2,1,1,'Primary File Server','SN-SRV-001','PowerEdge R760','srv-file-01','192.168.10.20','2025-01-10',8500.00,1,1,4,NULL,NULL,NULL);
 INSERT INTO `departments` (`company_id`,`name`,`code`,`description`,`manager_user_id`,`location_id`,`active`) VALUES
 (1,'IT Operations','ITOPS','Core IT operations team',1,1,1);
-INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`email`,`phone`,`employee_code`,`department_id`,`job_title`,`location_id`,`employment_status`,`active`,`employment_status_id`) VALUES
-(1,1,'Alex','Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',1,'IT Manager',1,'Active',1,1);
-INSERT INTO `workstations` (`company_id`,`equipment_id`,`workstation_code`,`workstation_mode_id`,`assigned_to_employee_id`,`assigned_to_department_id`,`assignment_type`,`desk_location`,`active`,`assignment_type_id`) VALUES
-(1,1,'WS-001',1,1,1,'Individual','HQ-Desk-14',1,1);
+INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`email`,`phone`,`employee_code`,`department_id`,`job_title`,`location_id`,`active`,`employment_status_id`) VALUES
+(1,1,'Alex','Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',1,'IT Manager',1,1,1);
+INSERT INTO `workstations` (`company_id`,`equipment_id`,`workstation_code`,`workstation_mode_id`,`assigned_to_employee_id`,`assigned_to_department_id`,`desk_location`,`active`,`assignment_type_id`) VALUES
+(1,1,'WS-001',1,1,1,'HQ-Desk-14',1,1);
 INSERT INTO `tickets` (`company_id`,`ticket_code`,`title`,`description`,`category_id`,`status_id`,`priority_id`,`created_by_user_id`,`assigned_to_user_id`,`asset_id`) VALUES
 (1,'TCK-0001','Server patching required','Patch cycle for file server',4,1,2,1,1,1);
 INSERT INTO `inventory_items` (`company_id`,`name`,`item_code`,`sku`,`category_id`,`manufacturer_id`,`quantity_on_hand`,`quantity_minimum`,`unit_cost`,`location_id`,`supplier_id`,`active`) VALUES

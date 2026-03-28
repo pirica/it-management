@@ -1,1 +1,5 @@
-<?php require '../../config/config.php'; $id=(int)($_GET['id']??0); if($id>0) mysqli_query($conn,"DELETE FROM employees WHERE id=$id AND company_id=$company_id"); header('Location: index.php'); exit;
+<?php
+$crud_table = 'employees';
+$crud_title = 'Employees';
+$crud_action = 'delete';
+require '../_shared/crud_page.php';

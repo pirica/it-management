@@ -1,3 +1,5 @@
 <?php
-$_GET['id'] = (int)($_GET['id'] ?? 0);
-require 'create.php';
+$crud_table = 'employees';
+$crud_title = 'Employees';
+$crud_action = 'edit';
+require '../_shared/crud_page.php';

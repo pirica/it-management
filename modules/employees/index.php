@@ -1,5 +1,5 @@
 <?php
-require '../../config/config.php';
-$items = mysqli_query($conn, "SELECT e.*, d.name AS department_name FROM employees e LEFT JOIN departments d ON d.id=e.department_id WHERE e.company_id=$company_id ORDER BY e.id DESC");
-?>
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Employees</title><link rel="stylesheet" href="../../css/styles.css"></head><body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h1>👤 Employees</h1><a class="btn btn-primary" href="create.php">+ New Employee</a></div><div class="card"><table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead><tbody><?php if ($items && mysqli_num_rows($items)): while ($e=mysqli_fetch_assoc($items)): ?><tr><td><?php echo (int)$e['id']; ?></td><td><?php echo sanitize($e['first_name'].' '.$e['last_name']); ?></td><td><?php echo sanitize($e['email']??'-'); ?></td><td><?php echo sanitize($e['department_name']??'-'); ?></td><td><?php echo sanitize($e['employment_status']); ?></td><td><a class="btn btn-sm" href="view.php?id=<?php echo (int)$e['id']; ?>">View</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$e['id']; ?>">Edit</a> <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$e['id']; ?>" onclick="return confirm('Delete employee?');">Delete</a></td></tr><?php endwhile; else: ?><tr><td colspan="6" style="text-align:center;">No employees found.</td></tr><?php endif; ?></tbody></table></div></div></div></div><script src="../../js/theme.js"></script></body></html>
+$crud_table = 'employees';
+$crud_title = 'Employees';
+$crud_action = 'index';
+require '../_shared/crud_page.php';
