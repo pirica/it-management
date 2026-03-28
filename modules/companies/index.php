@@ -42,7 +42,7 @@ $result = mysqli_query($conn, "SELECT * FROM companies ORDER BY id DESC");
                                     </span>
                                 </td>
                                 <td>
-                                    <a class="btn btn-sm" href="create.php?id=<?php echo (int)$row['id']; ?>">Edit</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">View</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">Edit</a>
                                     <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this company?');">Delete</a>
                                 </td>
                             </tr>
