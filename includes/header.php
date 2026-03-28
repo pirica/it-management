@@ -14,3 +14,9 @@ if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
     </div>
 </div>
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
+
+
+<script>
+window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
+</script>
+<script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
