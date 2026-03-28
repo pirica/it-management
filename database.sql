@@ -185,6 +185,7 @@ CREATE TABLE `employees`(
     `department_id` INT,
     `job_code` VARCHAR(120),
     `job_title` VARCHAR(100),
+    `comments` TEXT,
     `location_id` INT,
     `employment_status_id` INT NOT NULL,
     `raw_status_code` VARCHAR(20),
@@ -542,11 +543,11 @@ INSERT INTO `departments` (`company_id`,`name`,`code`,`description`,`manager_use
 (1,'Food and Drinks','FNB','Food and Beverages department',1,1,1),
 (1,'Human Resources','HR','Human resources department',1,1,1),
 (1,'Housekeeping','HK','Housekeeping operations',1,1,1);
-INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`display_name`,`email`,`phone`,`employee_code`,`hilton_id`,`username`,`department_id`,`job_code`,`job_title`,`location_id`,`active`,`employment_status_id`,`raw_status_code`) VALUES
-(1,1,'Alex','Morgan','Alex Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',NULL,'admin_tc',1,'IT Manager','IT Manager',1,1,1,'A'),
-(1,NULL,'Marcelo','Batista','Marcelo Batista','marcelo.costeira@icloud.com',NULL,NULL,'2295111','Marcelo Batista',4,'Room Attendant','Housekeeping Public Area Attendant',1,0,2,'I'),
-(1,NULL,'Rafaela','Cruz','Rafaela Cruz','cruzrafaela86@gmail.com',NULL,'A02F0122','A02F0122','A02F0122',3,'HR Co-Ordinator','HR Trainee',1,1,1,'A'),
-(1,NULL,'Nicky','Schouten','NICKY SCHOUTEN','302325432@student.rocmondriaan.nl',NULL,NULL,NULL,NULL,2,'TRAINEE','TRAINEE',1,1,1,'A');
+INSERT INTO `employees` (`company_id`,`user_id`,`first_name`,`last_name`,`display_name`,`email`,`phone`,`employee_code`,`hilton_id`,`username`,`department_id`,`job_code`,`job_title`,`comments`,`location_id`,`active`,`employment_status_id`,`raw_status_code`) VALUES
+(1,1,'Alex','Morgan','Alex Morgan','alex.morgan@techcorp.example','+1-555-0140','EMP-1001',NULL,'admin_tc',1,'IT Manager','IT Manager',NULL,1,1,1,'A'),
+(1,NULL,'Marcelo','Batista','Marcelo Batista','marcelo.costeira@icloud.com',NULL,NULL,'2295111','Marcelo Batista',4,'Room Attendant','Housekeeping Public Area Attendant','Imported from Hilton employee sheet',1,0,2,'I'),
+(1,NULL,'Rafaela','Cruz','Rafaela Cruz','cruzrafaela86@gmail.com',NULL,'A02F0122','A02F0122','A02F0122',3,'HR Co-Ordinator','HR Trainee','Imported from Hilton employee sheet',1,1,1,'A'),
+(1,NULL,'Nicky','Schouten','NICKY SCHOUTEN','302325432@student.rocmondriaan.nl',NULL,NULL,NULL,NULL,2,'TRAINEE','TRAINEE','Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl',1,1,1,'A');
 INSERT INTO `employee_onboarding_requests` (`company_id`,`employee_id`,`first_name`,`last_name`,`position_title`,`department_name`,`request_date`,`termination_date`,`network_access`,`micros_emc`,`opera`,`micros_card`,`pms_id`,`synergy_mms`,`email_account`,`landline_phone`,`hu_the_lobby`,`mobile_phone`,`navision`,`mobile_email`,`onq_ri`,`birchstreet`,`delphi`,`omina`,`vingcard_system`,`digital_rev`,`office_key_card`,`comments`,`starting_date`,`requested_by`,`requested_on`,`hod_approval`,`hrd_approval`,`ism_approval`) VALUES
 (1,4,'NICKY','SCHOUTEN','TRAINEE','FOOD AND DRINKS','2026-03-24',NULL,'N/A','N/A','N/A','Waiter','N/A','N/A','N/A','N/A','NICKY SCHOUTEN','N/A','N/A','N/A','N/A','N/A','N/A','Via HR','N/A','N/A','Room Service','Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl','2026-03-16','ALEXANDRANUNES','2026-03-24','Sonia Costa','Pedro Mendes','Kenneth Starreveld');
 INSERT INTO `workstations` (`company_id`,`equipment_id`,`workstation_code`,`workstation_mode_id`,`assigned_to_employee_id`,`assigned_to_department_id`,`desk_location`,`active`,`assignment_type_id`) VALUES
