@@ -61,7 +61,7 @@ $employees_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) 
                     </div>
                     <div class="card-body">
                         <p><strong>Company:</strong> <?php echo sanitize($company_data['name']); ?></p>
-                        <p><strong>Industry:</strong> <?php echo sanitize($company_data['industry']); ?></p>
+                        <p><strong>InCode:</strong> <?php echo sanitize($company_data['industry']); ?></p>
                         <p><strong>Location:</strong> <?php echo sanitize($company_data['city'] . ', ' . $company_data['country']); ?></p>
                     </div>
                 </div>
