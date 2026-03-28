@@ -1,47 +1,5 @@
 <?php
 require '../../config/config.php';
-
-$items = mysqli_query($conn, "SELECT * FROM workstations WHERE company_id = $company_id");
+$items = mysqli_query($conn, "SELECT w.*, e.name AS equipment_name, wm.mode_name FROM workstations w LEFT JOIN equipment e ON e.id=w.equipment_id LEFT JOIN workstation_modes wm ON wm.id=w.workstation_mode_id WHERE w.company_id=$company_id ORDER BY w.id DESC");
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Workstations Management</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            <div class="content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h1>Workstations Management</h1>
-                    <a href="create.php" class="btn btn-primary">+ Add Workstations</a>
-                </div>
-                <div class="card">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 40px;">
-                                    📝 Module development in progress...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Workstations</title><link rel="stylesheet" href="../../css/styles.css"></head><body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h1>💻 Workstations</h1><a class="btn btn-primary" href="create.php">+ Add Workstation</a></div><div class="card"><table><thead><tr><th>ID</th><th>Code</th><th>Equipment</th><th>Mode</th><th>Assignment</th><th>Status</th><th>Actions</th></tr></thead><tbody><?php if($items && mysqli_num_rows($items)): while($w=mysqli_fetch_assoc($items)): ?><tr><td><?php echo (int)$w['id']; ?></td><td><?php echo sanitize($w['workstation_code']??'-'); ?></td><td><?php echo sanitize($w['equipment_name']??'-'); ?></td><td><?php echo sanitize($w['mode_name']??'-'); ?></td><td><?php echo sanitize($w['assignment_type']); ?></td><td><span class="badge <?php echo (int)$w['active']?'badge-success':'badge-danger'; ?>"><?php echo (int)$w['active']?'Active':'Inactive'; ?></span></td><td><a class="btn btn-sm" href="view.php?id=<?php echo (int)$w['id']; ?>">View</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$w['id']; ?>">Edit</a> <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$w['id']; ?>" onclick="return confirm('Delete workstation?');">Delete</a></td></tr><?php endwhile; else: ?><tr><td colspan="7" style="text-align:center;">No workstations found.</td></tr><?php endif; ?></tbody></table></div></div></div></div><script src="../../js/theme.js"></script></body></html>

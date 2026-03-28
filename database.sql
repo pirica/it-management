@@ -223,19 +223,6 @@ CREATE TABLE `workstations`(
     INDEX(`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `printers`(
-    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `company_id` INT NOT NULL,
-    `equipment_id` INT NOT NULL,
-    `printer_code` VARCHAR(50) UNIQUE,
-    `assigned_to_department_id` INT,
-    `assignment_type` ENUM('Individual','Department','Shared','Lobby','Print-Room') DEFAULT 'Shared',
-    `active` TINYINT DEFAULT 1,
-    FOREIGN KEY(`company_id`) REFERENCES `companies`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY(`equipment_id`) REFERENCES `equipment`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY(`assigned_to_department_id`) REFERENCES `departments`(`id`),
-    INDEX(`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `ticket_categories`(
     `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,

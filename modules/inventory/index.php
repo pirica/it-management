@@ -1,53 +1,5 @@
 <?php
-<?php
-// Enable all error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error_log.txt');
 require '../../config/config.php';
-
-$items = mysqli_query($conn, "SELECT * FROM inventory WHERE company_id = $company_id");
+$items = mysqli_query($conn, "SELECT i.*, c.name AS category_name FROM inventory_items i LEFT JOIN inventory_categories c ON c.id=i.category_id WHERE i.company_id=$company_id ORDER BY i.id DESC");
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Inventory Management</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            <div class="content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h1>Inventory Management</h1>
-                    <a href="create.php" class="btn btn-primary">+ Add Inventory</a>
-                </div>
-                <div class="card">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 40px;">
-                                    📝 Module development in progress...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Inventory</title><link rel="stylesheet" href="../../css/styles.css"></head><body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h1>📦 Inventory Items</h1><a class="btn btn-primary" href="create.php">+ Add Item</a></div><div class="card"><table><thead><tr><th>ID</th><th>Name</th><th>Code</th><th>Category</th><th>QOH</th><th>Status</th><th>Actions</th></tr></thead><tbody><?php if($items && mysqli_num_rows($items)): while($i=mysqli_fetch_assoc($items)): ?><tr><td><?php echo (int)$i['id']; ?></td><td><?php echo sanitize($i['name']); ?></td><td><?php echo sanitize($i['item_code']??'-'); ?></td><td><?php echo sanitize($i['category_name']??'-'); ?></td><td><?php echo (int)$i['quantity_on_hand']; ?></td><td><span class="badge <?php echo (int)$i['active']?'badge-success':'badge-danger'; ?>"><?php echo (int)$i['active']?'Active':'Inactive'; ?></span></td><td><a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">View</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">Edit</a> <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">Delete</a></td></tr><?php endwhile; else: ?><tr><td colspan="7" style="text-align:center;">No inventory items found.</td></tr><?php endif; ?></tbody></table></div></div></div></div><script src="../../js/theme.js"></script></body></html>

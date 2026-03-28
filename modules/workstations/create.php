@@ -1,33 +1,14 @@
-<?php require '../../config/config.php'; ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Add Workstations</title>
-    <link rel="stylesheet" href="../../css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <?php include '../../includes/sidebar.php'; ?>
-        <div class="main-content">
-            <?php include '../../includes/header.php'; ?>
-            <div class="content">
-                <h1>Add Workstations</h1>
-                <div class="card">
-                    <form method="POST">
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text" name="name" required>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="index.php" class="btn">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../../js/theme.js"></script>
-</body>
-</html>
+<?php
+require '../../config/config.php';
+$id=(int)($_GET['id']??0);$is_edit=$id>0;$error='';
+$data=['equipment_id'=>'','workstation_code'=>'','workstation_mode_id'=>'','assigned_to_employee_id'=>'','assigned_to_department_id'=>'','assignment_type'=>'Individual','desk_location'=>'','active'=>1];
+if($is_edit){$q=mysqli_query($conn,"SELECT * FROM workstations WHERE id=$id AND company_id=$company_id LIMIT 1"); if($q&&mysqli_num_rows($q)===1)$data=mysqli_fetch_assoc($q); else {$error='Workstation not found.';$is_edit=false;}}
+if($_SERVER['REQUEST_METHOD']==='POST'){
+$equipment_id=(int)($_POST['equipment_id']??0);$workstation_code=escape_sql($_POST['workstation_code']??'', $conn);$workstation_mode_id=(int)($_POST['workstation_mode_id']??0)?:'NULL';$assigned_to_employee_id=(int)($_POST['assigned_to_employee_id']??0)?:'NULL';$assigned_to_department_id=(int)($_POST['assigned_to_department_id']??0)?:'NULL';$assignment_type=escape_sql($_POST['assignment_type']??'Individual', $conn);$desk_location=escape_sql($_POST['desk_location']??'', $conn);$active=isset($_POST['active'])?1:0;
+if(!$equipment_id)$error='Equipment is required.'; else {$sql=$is_edit?"UPDATE workstations SET equipment_id=$equipment_id, workstation_code='$workstation_code', workstation_mode_id=$workstation_mode_id, assigned_to_employee_id=$assigned_to_employee_id, assigned_to_department_id=$assigned_to_department_id, assignment_type='$assignment_type', desk_location='$desk_location', active=$active WHERE id=$id AND company_id=$company_id":"INSERT INTO workstations (company_id,equipment_id,workstation_code,workstation_mode_id,assigned_to_employee_id,assigned_to_department_id,assignment_type,desk_location,active) VALUES ($company_id,$equipment_id,'$workstation_code',$workstation_mode_id,$assigned_to_employee_id,$assigned_to_department_id,'$assignment_type','$desk_location',$active)"; if(mysqli_query($conn,$sql)){header('Location: index.php');exit;} $error='Database error: '.mysqli_error($conn);} }
+$equipment=mysqli_query($conn,"SELECT id,name FROM equipment WHERE company_id=$company_id AND active=1 ORDER BY name");
+$modes=mysqli_query($conn,"SELECT id,mode_name FROM workstation_modes WHERE active=1 ORDER BY mode_name");
+$employees=mysqli_query($conn,"SELECT id,first_name,last_name FROM employees WHERE company_id=$company_id AND active=1 ORDER BY first_name,last_name");
+$departments=mysqli_query($conn,"SELECT id,name FROM departments WHERE company_id=$company_id AND active=1 ORDER BY name");
+?>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><?php echo $is_edit?'Edit':'Add'; ?> Workstation</title><link rel="stylesheet" href="../../css/styles.css"></head><body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content"><h1><?php echo $is_edit?'✏️ Edit':'➕ Add'; ?> Workstation</h1><?php if($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?><div class="card"><form method="POST"><div class="form-row"><div class="form-group"><label>Equipment *</label><select required name="equipment_id"><option value="">-- Select equipment --</option><?php while($e=mysqli_fetch_assoc($equipment)): ?><option value="<?php echo (int)$e['id']; ?>" <?php echo (string)$data['equipment_id']===(string)$e['id']?'selected':''; ?>><?php echo sanitize($e['name']); ?></option><?php endwhile; ?></select></div><div class="form-group"><label>Workstation Code</label><input name="workstation_code" value="<?php echo sanitize($data['workstation_code']); ?>"></div></div><div class="form-row"><div class="form-group"><label>Mode</label><select name="workstation_mode_id"><option value="">-- None --</option><?php while($m=mysqli_fetch_assoc($modes)): ?><option value="<?php echo (int)$m['id']; ?>" <?php echo (string)$data['workstation_mode_id']===(string)$m['id']?'selected':''; ?>><?php echo sanitize($m['mode_name']); ?></option><?php endwhile; ?></select></div><div class="form-group"><label>Assignment Type</label><select name="assignment_type"><?php foreach(['Individual','Department','Shared','Pool'] as $t): ?><option value="<?php echo $t; ?>" <?php echo $data['assignment_type']===$t?'selected':''; ?>><?php echo $t; ?></option><?php endforeach; ?></select></div></div><div class="form-row"><div class="form-group"><label>Assigned Employee</label><select name="assigned_to_employee_id"><option value="">-- None --</option><?php while($emp=mysqli_fetch_assoc($employees)): ?><option value="<?php echo (int)$emp['id']; ?>" <?php echo (string)$data['assigned_to_employee_id']===(string)$emp['id']?'selected':''; ?>><?php echo sanitize($emp['first_name'].' '.$emp['last_name']); ?></option><?php endwhile; ?></select></div><div class="form-group"><label>Assigned Department</label><select name="assigned_to_department_id"><option value="">-- None --</option><?php while($d=mysqli_fetch_assoc($departments)): ?><option value="<?php echo (int)$d['id']; ?>" <?php echo (string)$data['assigned_to_department_id']===(string)$d['id']?'selected':''; ?>><?php echo sanitize($d['name']); ?></option><?php endwhile; ?></select></div></div><div class="form-row"><div class="form-group"><label>Desk Location</label><input name="desk_location" value="<?php echo sanitize($data['desk_location']); ?>"></div><div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)$data['active']===1?'checked':''; ?>> Active</label></div></div><div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">Save</button><a class="btn" href="index.php">Cancel</a></div></form></div></div></div></div><script src="../../js/theme.js"></script></body></html>
