@@ -184,100 +184,7 @@
         window.alert('Unsupported file type. Please import CSV, XLS, or XLSX files.');
     }
 
-
-    function uiConfig(key, fallback) {
-        const config = window.ITM_UI_CONFIG || {};
-        return typeof config[key] === 'string' && config[key] ? config[key] : fallback;
-    }
-
-    function toolbarAlignClass(mode) {
-        if (mode === 'left') return 'itm-tools-left';
-        if (mode === 'right' || mode === 'top_right' || mode === 'bottom_right' || mode === 'top_bottom_right') return 'itm-tools-right';
-        if (mode === 'top_left' || mode === 'bottom_left' || mode === 'top_bottom_left') return 'itm-tools-left';
-        return 'itm-tools-left-right';
-    }
-
-    function placeToolbar(table, toolbar) {
-        const mode = uiConfig('export_buttons_position', 'left_right');
-        const topModes = new Set(['left_right', 'left', 'right', 'top_right', 'top_left', 'top_bottom_right', 'top_bottom_left']);
-        const bottomModes = new Set(['bottom_right', 'bottom_left', 'top_bottom_right', 'top_bottom_left']);
-
-        toolbar.classList.add(toolbarAlignClass(mode));
-
-        if (topModes.has(mode)) {
-            table.parentNode.insertBefore(toolbar, table);
-        }
-
-        if (bottomModes.has(mode)) {
-            const bottomToolbar = toolbar.cloneNode(true);
-            bottomToolbar.classList.add('table-tools-bottom');
-            bottomToolbar.classList.remove('itm-tools-left', 'itm-tools-right', 'itm-tools-left-right');
-            bottomToolbar.classList.add(toolbarAlignClass(mode));
-            bindToolbarEvents(bottomToolbar, table);
-            if (topModes.has(mode)) {
-                table.parentNode.insertBefore(bottomToolbar, table.nextSibling);
-            } else {
-                table.parentNode.insertBefore(bottomToolbar, table.nextSibling);
-                toolbar.remove();
-            }
-        }
-    }
-
-    function bindToolbarEvents(toolbar, table) {
-        toolbar.querySelectorAll('button[data-action]').forEach((btn) => {
-            const action = btn.dataset.action;
-            if (action === 'excel') {
-                btn.addEventListener('click', () => exportTableAsExcel(table));
-            } else if (action === 'pdf') {
-                btn.addEventListener('click', () => exportTableAsPdf(table));
-            } else if (action === 'import') {
-                const inputId = btn.dataset.inputId;
-                const importInput = toolbar.querySelector('#' + inputId);
-                if (importInput) {
-                    btn.addEventListener('click', () => importInput.click());
-                    importInput.addEventListener('change', () => {
-                        if (importInput.files && importInput.files[0]) {
-                            importTableFromFile(table, importInput.files[0]);
-                            importInput.value = '';
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    function makeButton(label, onClick, action) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm';
-        btn.textContent = label;
-        if (action) btn.dataset.action = action;
-        if (onClick) btn.addEventListener('click', onClick);
-        return btn;
-    }
-
-    function toolsForPage(table) {
-        const pathname = (window.location.pathname || '').toLowerCase();
-        const isViewPage = pathname.endsWith('/view.php');
-        const isListAllPage = pathname.endsWith('/list_all.php');
-        const hasHeader = table.querySelectorAll('thead th').length > 0;
-
-        if (isViewPage) {
-            return { excel: false, pdf: true, importExcel: false };
-        }
-
-        if (isListAllPage) {
-            return { excel: true, pdf: true, importExcel: true };
-        }
-
-        if (hasHeader) {
-            return { excel: true, pdf: true, importExcel: true };
-        }
-
-        return { excel: false, pdf: false, importExcel: false };
-    }
-
-    function attachTools(table, index) {
+    function attachListTools(table, index) {
         if (table.dataset.tableToolsAttached === '1') {
             return;
         }
@@ -319,10 +226,73 @@
         placeToolbar(table, toolbar);
     }
 
+    function exportViewAsPdf(table) {
+        const heading = table.closest('.content')?.querySelector('h1');
+        const filenameBase = sanitizeFilename(heading ? heading.textContent : document.title);
+        const clone = table.cloneNode(true);
+        const printWindow = window.open('', '_blank');
+
+        if (!printWindow) {
+            window.alert('Please allow popups to export PDF.');
+            return;
+        }
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>${filenameBase}.pdf</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
+                    th { background: #f6f8fa; width: 240px; }
+                </style>
+            </head>
+            <body>
+                <h2>${filenameBase.replace(/-/g, ' ')}</h2>
+                ${clone.outerHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        setTimeout(() => printWindow.close(), 200);
+    }
+
+    function attachViewTools(table) {
+        if (table.dataset.tableToolsAttached === '1') {
+            return;
+        }
+        table.dataset.tableToolsAttached = '1';
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'table-tools';
+
+        const pdfBtn = document.createElement('button');
+        pdfBtn.type = 'button';
+        pdfBtn.className = 'btn btn-sm';
+        pdfBtn.textContent = '📄 Export PDF';
+        pdfBtn.addEventListener('click', () => exportViewAsPdf(table));
+
+        toolbar.appendChild(pdfBtn);
+        table.parentNode.insertBefore(toolbar, table);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const tables = Array.from(document.querySelectorAll('.content .card table'));
         tables.forEach((table, index) => {
-            attachTools(table, index);
+            const hasListHeader = Boolean(table.querySelector('thead th'));
+            const isViewTable = !hasListHeader && Boolean(table.querySelector('tbody th'));
+
+            if (hasListHeader) {
+                attachListTools(table, index);
+                return;
+            }
+
+            if (isViewTable) {
+                attachViewTools(table);
+            }
         });
     });
 })();
