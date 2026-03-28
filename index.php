@@ -72,13 +72,14 @@ $companies = mysqli_query($conn, "SELECT * FROM companies WHERE active = 1 ORDER
             <form method="POST">
                 <div style="margin-bottom: 20px;">
                     <label for="company">Company:</label>
-                    <select name="company_id" id="company" required onchange="updateName()">
+                    <select name="company_id" id="company" required onchange="updateName()" data-addable-select="1" data-add-table="companies" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="company">
                         <option value="">-- Select a Company --</option>
                         <?php while ($c = mysqli_fetch_assoc($companies)): ?>
                             <option value="<?php echo $c['id']; ?>" data-name="<?php echo htmlspecialchars($c['name']); ?>">
                                 <?php echo htmlspecialchars($c['name']); ?>
                             </option>
                         <?php endwhile; ?>
+                        <option value="__add_new__">+ Add</option>
                     </select>
                     <input type="hidden" name="company_name" id="company_name">
                 </div>
@@ -88,6 +89,12 @@ $companies = mysqli_query($conn, "SELECT * FROM companies WHERE active = 1 ORDER
             <p style="text-align: center; color: #999;">No companies available.</p>
         <?php endif; ?>
     </div>
+
+
+    <script>
+        window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
+    </script>
+    <script src="js/select-add-option.js"></script>
 
     <script>
         function updateName() {

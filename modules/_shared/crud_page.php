@@ -147,6 +147,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $newKey = $name . '__new_value';
             $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
 
+            if ($value === '__add_new__') {
+                $errors[] = 'Please wait for the new value to be created before saving.';
+                $data[$name] = 'NULL';
+                continue;
+            }
+
             if ($value === '__new__' && $newValueRaw !== '') {
                 $fk = $fkMap[$name];
                 $fkTable = $fk['REFERENCED_TABLE_NAME'];
@@ -303,15 +309,26 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php elseif ($isTinyInt): ?>
                                 <label><input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>> Enabled</label>
                             <?php elseif (isset($fkMap[$name])): ?>
-                                <?php $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id); ?>
-                                <select name="<?php echo sanitize($name); ?>" data-fk-select="<?php echo sanitize($name); ?>">
+                                <?php
+                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                    $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                ?>
+                                <select
+                                    name="<?php echo sanitize($name); ?>"
+                                    data-addable-select="1"
+                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
+                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                    data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
+                                    data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
+                                    data-add-friendly="<?php echo sanitize(str_replace('_', ' ', $name)); ?>"
+                                >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
                                         <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
-                                    <option value="__new__">+ Add new...</option>
+                                    <option value="__add_new__">+ Add</option>
                                 </select>
-                                <input type="text" name="<?php echo sanitize($name); ?>__new_value" data-fk-new-input="<?php echo sanitize($name); ?>" placeholder="Type new value" style="display:none;margin-top:8px;">
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -349,24 +366,6 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     </div>
 </div>
 <script src="../../js/theme.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('select[data-fk-select]').forEach(function (selectEl) {
-        const field = selectEl.getAttribute('data-fk-select');
-        const newInput = document.querySelector('input[data-fk-new-input="' + field + '"]');
-        if (!newInput) return;
-        const syncState = function () {
-            if (selectEl.value === '__new__') {
-                newInput.style.display = 'block';
-            } else {
-                newInput.style.display = 'none';
-                newInput.value = '';
-            }
-        };
-        syncState();
-        selectEl.addEventListener('change', syncState);
-    });
-});
-</script>
+
 </body>
 </html>
