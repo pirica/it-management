@@ -151,28 +151,31 @@ function emp_checked($form, $field) {
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Job Title</label><input type="text" name="job_title" value="<?php echo sanitize($form['job_title']); ?>"></div>
                         <div class="form-group"><label>Department</label>
-                            <select name="department_id">
+                            <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department">
                                 <option value="">-- None --</option>
                                 <?php if ($departments): while ($d = mysqli_fetch_assoc($departments)): ?>
                                     <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['department_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$d['name']); ?></option>
                                 <?php endwhile; endif; ?>
+                                <option value="__add_new__">+ Add</option>
                             </select>
                         </div>
                         <div class="form-group"><label>Office Key Card Department Id</label>
-                            <select name="office_key_card_department_id">
+                            <select name="office_key_card_department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="office key card department">
                                 <option value="">-- None --</option>
                                 <?php if ($departments instanceof mysqli_result) { mysqli_data_seek($departments, 0); } ?>
                                 <?php if ($departments): while ($d = mysqli_fetch_assoc($departments)): ?>
                                     <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['office_key_card_department_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$d['name']); ?></option>
                                 <?php endwhile; endif; ?>
+                                <option value="__add_new__">+ Add</option>
                             </select>
                         </div>
                         <div class="form-group"><label>Raw Status Code</label><input type="text" name="raw_status_code" value="<?php echo sanitize($form['raw_status_code']); ?>"></div>
                         <div class="form-group"><label>Employment Status</label>
-                            <select name="employment_status_id">
+                            <select name="employment_status_id" data-addable-select="1" data-add-table="employee_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="employment status">
                                 <?php if ($statuses): while ($s = mysqli_fetch_assoc($statuses)): ?>
                                     <option value="<?php echo (int)$s['id']; ?>" <?php echo ((string)$s['id'] === (string)$form['employment_status_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$s['name']); ?></option>
                                 <?php endwhile; endif; ?>
+                                <option value="__add_new__">+ Add</option>
                             </select>
                         </div>
                     </div>

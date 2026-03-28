@@ -65,6 +65,13 @@ function escape_sql($data, $conn) {
     return mysqli_real_escape_string($conn, $data);
 }
 
+function itm_get_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return (string)$_SESSION['csrf_token'];
+}
+
 function get_company_name($company_id, $conn) {
     $result = mysqli_query($conn, "SELECT name FROM companies WHERE id = $company_id");
     if ($result) {
