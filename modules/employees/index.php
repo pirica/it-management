@@ -124,6 +124,21 @@ function emp_import_identity_label($mapped) {
     return implode(' | ', $parts);
 }
 
+function emp_identifier_tokens($mapped) {
+    $tokens = [];
+    if (!empty($mapped['email'])) {
+        $tokens[] = 'email:' . strtolower(trim((string)$mapped['email']));
+    }
+    if (!empty($mapped['employee_code'])) {
+        $tokens[] = 'employee_code:' . strtolower(trim((string)$mapped['employee_code']));
+    }
+    if (!empty($mapped['hilton_id'])) {
+        $tokens[] = 'hilton_id:' . strtolower(trim((string)$mapped['hilton_id']));
+    }
+    sort($tokens);
+    return $tokens;
+}
+
 $messages = [];
 $errors = [];
 $skippedDetails = [];
@@ -167,12 +182,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             $duplicatesInFile = 0;
             $matchedIds = [];
             $deleted = 0;
-            $preExistingIds = [];
+            $existingIndex = [];
+            $processedIdMap = [];
+            $importIdentitySeen = [];
 
-            $existingSql = 'SELECT id FROM employees WHERE company_id=' . (int)$company_id;
+            $existingSql = 'SELECT id,email,employee_code,hilton_id FROM employees WHERE company_id=' . (int)$company_id;
             $existingRes = mysqli_query($conn, $existingSql);
             while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
-                $preExistingIds[(int)($existingRow['id'] ?? 0)] = true;
+                $existingId = (int)($existingRow['id'] ?? 0);
+                $tokens = emp_identifier_tokens($existingRow);
+                foreach ($tokens as $token) {
+                    if (!isset($existingIndex[$token])) {
+                        $existingIndex[$token] = [];
+                    }
+                    $existingIndex[$token][] = $existingId;
+                }
             }
 
             foreach (array_slice($rows, 1) as $rowOffset => $row) {
@@ -241,18 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     }
                 }
 
-                $whereParts = [];
-                if ($mapped['email'] !== '') {
-                    $whereParts[] = "email='" . mysqli_real_escape_string($conn, $mapped['email']) . "'";
-                }
-                if ($mapped['employee_code'] !== '') {
-                    $whereParts[] = "employee_code='" . mysqli_real_escape_string($conn, $mapped['employee_code']) . "'";
-                }
-                if ($mapped['hilton_id'] !== '') {
-                    $whereParts[] = "hilton_id='" . mysqli_real_escape_string($conn, $mapped['hilton_id']) . "'";
-                }
-
-                if (!$whereParts) {
+                $identifierTokens = emp_identifier_tokens($mapped);
+                if (!$identifierTokens) {
                     $skipped += 1;
                     $skippedDetails[] = [
                         'row' => $sourceRowNumber,
@@ -262,14 +276,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     continue;
                 }
 
+                $identityKey = implode('|', $identifierTokens);
+                $importIdentitySeen[$identityKey] = ($importIdentitySeen[$identityKey] ?? 0) + 1;
+                $isDuplicateInFile = $importIdentitySeen[$identityKey] > 1;
+
                 $existingId = 0;
-                $findSql = "SELECT id FROM employees WHERE company_id=" . (int)$company_id . " AND (" . implode(' OR ', $whereParts) . ') LIMIT 1';
-                $found = mysqli_query($conn, $findSql);
-                if ($found && mysqli_num_rows($found) === 1) {
-                    $existingId = (int)(mysqli_fetch_assoc($found)['id'] ?? 0);
+                foreach ($identifierTokens as $token) {
+                    foreach ($existingIndex[$token] ?? [] as $candidateId) {
+                        if (!isset($processedIdMap[$candidateId])) {
+                            $existingId = (int)$candidateId;
+                            break 2;
+                        }
+                    }
                 }
 
                 $columns = ['company_id','duplicate','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id','active'];
+                $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
                     $value = $mapped[$col] ?? null;
@@ -283,35 +305,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 if ($existingId > 0) {
-                    if (isset($preExistingIds[$existingId])) {
-                        $sets = [];
-                        foreach ($columns as $col) {
-                            if ($col === 'company_id') {
-                                continue;
-                            }
-                            $sets[] = emp_escape_identifier($col) . '=' . $values[$col];
+                    $sets = [];
+                    foreach ($columns as $col) {
+                        if ($col === 'company_id') {
+                            continue;
                         }
-                        $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
-                        if (mysqli_query($conn, $sql)) {
-                            $updated += 1;
-                            $matchedIds[] = $existingId;
-                        }
-                    } else {
-                        $duplicatesInFile += 1;
-                        $mapped['duplicate'] = 1;
-                        $values['duplicate'] = '1';
-                        $sql = 'INSERT INTO employees (' . implode(',', array_map('emp_escape_identifier', $columns)) . ') VALUES (' . implode(',', array_values($values)) . ')';
-                        if (mysqli_query($conn, $sql)) {
-                            $created += 1;
-                            $matchedIds[] = (int)mysqli_insert_id($conn);
-                        }
+                        $sets[] = emp_escape_identifier($col) . '=' . $values[$col];
+                    }
+                    $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+                    if (mysqli_query($conn, $sql)) {
+                        $updated += 1;
+                        $matchedIds[] = $existingId;
+                        $processedIdMap[$existingId] = true;
                     }
                 } else {
                     $sql = 'INSERT INTO employees (' . implode(',', array_map('emp_escape_identifier', $columns)) . ') VALUES (' . implode(',', array_values($values)) . ')';
                     if (mysqli_query($conn, $sql)) {
                         $created += 1;
-                        $matchedIds[] = (int)mysqli_insert_id($conn);
+                        $newId = (int)mysqli_insert_id($conn);
+                        $matchedIds[] = $newId;
+                        $processedIdMap[$newId] = true;
+                        foreach ($identifierTokens as $token) {
+                            if (!isset($existingIndex[$token])) {
+                                $existingIndex[$token] = [];
+                            }
+                            $existingIndex[$token][] = $newId;
+                        }
                     }
+                }
+            }
+
+            foreach ($importIdentitySeen as $seenCount) {
+                if ($seenCount > 1) {
+                    $duplicatesInFile += ($seenCount - 1);
                 }
             }
 
