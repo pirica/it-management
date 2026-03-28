@@ -1,5 +1,9 @@
 -- IT Management SQL Backup
 -- Generated at: 2026-03-28 19:52:18 UTC
+-- Complete IT Management System Database
+DROP DATABASE IF EXISTS `itmanagement`;
+CREATE DATABASE `itmanagement` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `itmanagement`;
 SET FOREIGN_KEY_CHECKS=0;
 
 -- Table structure for `access_levels`
@@ -201,7 +205,6 @@ CREATE TABLE `employees` (
   `raw_status_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_employees_email_per_company` (`company_id`,`email`),
   UNIQUE KEY `uq_employees_code_per_company` (`company_id`,`employee_code`),
   KEY `user_id` (`user_id`),
   KEY `department_id` (`department_id`),

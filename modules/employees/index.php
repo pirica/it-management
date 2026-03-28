@@ -77,10 +77,24 @@ function emp_status_id_from_raw($conn, $rawStatus) {
     return 1;
 }
 
+function emp_drop_email_unique_if_exists($conn) {
+    $sql = "SELECT 1
+            FROM information_schema.statistics
+            WHERE table_schema = DATABASE()
+              AND table_name = 'employees'
+              AND index_name = 'uq_employees_email_per_company'
+            LIMIT 1";
+    $res = mysqli_query($conn, $sql);
+    if ($res && mysqli_num_rows($res) === 1) {
+        mysqli_query($conn, 'ALTER TABLE employees DROP INDEX uq_employees_email_per_company');
+    }
+}
+
 $messages = [];
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
+    emp_drop_email_unique_if_exists($conn);
     $payload = trim((string)($_POST['import_payload'] ?? ''));
     $rows = [];
 
@@ -248,15 +262,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 }
 
 $where = ' WHERE e.company_id=' . (int)$company_id;
-$rows = mysqli_query(
-    $conn,
-    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name
-     FROM employees e
-     LEFT JOIN departments d ON d.id = e.department_id
-     LEFT JOIN employee_statuses es ON es.id = e.employment_status_id'
-    . $where .
-    ' ORDER BY e.id DESC LIMIT 500'
-);
 $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
 $columns = [];
 $columnTypes = [];
@@ -278,6 +283,26 @@ usort($columns, function ($a, $b) use ($preferredOrder) {
     $ib = ($ib === false) ? 999 : $ib;
     return $ia <=> $ib ?: strcmp($a, $b);
 });
+
+$sort = (string)($_GET['sort'] ?? 'id');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!in_array($sort, $columns, true)) {
+    $sort = 'id';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+$sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
+
+$rows = mysqli_query(
+    $conn,
+    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name
+     FROM employees e
+     LEFT JOIN departments d ON d.id = e.department_id
+     LEFT JOIN employee_statuses es ON es.id = e.employment_status_id'
+    . $where .
+    ' ORDER BY ' . $sortSql . ' LIMIT 500'
+);
 
 function emp_label($field) {
     if ($field === 'department_id') {
@@ -342,7 +367,15 @@ function emp_label($field) {
                     <thead>
                     <tr>
                         <?php foreach ($columns as $col): ?>
-                            <th><?php echo sanitize(emp_label($col)); ?></th>
+                            <?php $nextDir = ($sort === $col && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th>
+                                <a href="?sort=<?php echo urlencode($col); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <?php echo sanitize(emp_label($col)); ?>
+                                    <?php if ($sort === $col): ?>
+                                        <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
                         <?php endforeach; ?>
                         <th>Actions</th>
                     </tr>
@@ -358,6 +391,8 @@ function emp_label($field) {
                                         <?php echo sanitize((string)($row['department_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employment_status_id'): ?>
                                         <?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'office_key_card_department_id'): ?>
+                                        <?php echo !empty($row[$col]) ? '✔️' : '❌'; ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
                                     <?php else: ?>
@@ -368,7 +403,10 @@ function emp_label($field) {
                             <td>
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this employee?');">🗑️</a>
+                                <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this employee?');">
+                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
