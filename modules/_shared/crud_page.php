@@ -41,18 +41,9 @@ function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
-    $labelCol = 'name';
-    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
-    $available = [];
-    while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
-    }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
-        if (in_array($candidate, $available, true)) {
-            $labelCol = $candidate;
-            break;
-        }
-    }
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $labelCol = $fkMeta['label_col'];
+    $available = $fkMeta['available'];
 
     $where = '';
     if (in_array('company_id', $available, true) && $company_id > 0) {
@@ -66,6 +57,25 @@ function cr_fk_options($conn, $fk, $company_id) {
         $rows[] = $row;
     }
     return $rows;
+}
+
+function cr_fk_metadata($conn, $table) {
+    $labelCol = 'name';
+    $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
+    $available = [];
+    while ($des && ($d = mysqli_fetch_assoc($des))) {
+        $available[] = $d['Field'];
+    }
+    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+        if (in_array($candidate, $available, true)) {
+            $labelCol = $candidate;
+            break;
+        }
+    }
+    return [
+        'label_col' => $labelCol,
+        'available' => $available,
+    ];
 }
 
 function cr_manageable_columns($columns) {
@@ -130,6 +140,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         if ($name === 'company_id' && $company_id > 0) {
             $data[$name] = (int)$company_id;
             continue;
+        }
+
+        if (isset($fkMap[$name])) {
+            $value = $_POST[$name] ?? null;
+            $newKey = $name . '__new_value';
+            $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
+
+            if ($value === '__new__' && $newValueRaw !== '') {
+                $fk = $fkMap[$name];
+                $fkTable = $fk['REFERENCED_TABLE_NAME'];
+                $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+                $meta = cr_fk_metadata($conn, $fkTable);
+                $labelCol = $meta['label_col'];
+                $available = $meta['available'];
+                $newValueEsc = mysqli_real_escape_string($conn, $newValueRaw);
+
+                $findSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
+                    . ' WHERE ' . cr_escape_identifier($labelCol) . "='" . $newValueEsc . "'";
+                if (in_array('company_id', $available, true) && $company_id > 0) {
+                    $findSql .= ' AND company_id=' . (int)$company_id;
+                }
+                $findSql .= ' LIMIT 1';
+                $existing = mysqli_query($conn, $findSql);
+                if ($existing && mysqli_num_rows($existing) > 0) {
+                    $row = mysqli_fetch_assoc($existing);
+                    $data[$name] = (string)(int)$row['id'];
+                } else {
+                    $insertFields = [cr_escape_identifier($labelCol)];
+                    $insertValues = ["'" . $newValueEsc . "'"];
+                    if (in_array('company_id', $available, true) && $company_id > 0) {
+                        $insertFields[] = '`company_id`';
+                        $insertValues[] = (string)(int)$company_id;
+                    }
+                    $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
+                        . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
+                    if (mysqli_query($conn, $insertSql)) {
+                        $data[$name] = (string)(int)mysqli_insert_id($conn);
+                    } else {
+                        $errors[] = 'Could not add related value for ' . $name . ': ' . mysqli_error($conn);
+                        $data[$name] = 'NULL';
+                    }
+                }
+                continue;
+            }
         }
 
         $value = $_POST[$name] ?? null;
@@ -250,12 +304,14 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <label><input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>> Enabled</label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id); ?>
-                                <select name="<?php echo sanitize($name); ?>">
+                                <select name="<?php echo sanitize($name); ?>" data-fk-select="<?php echo sanitize($name); ?>">
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
                                         <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
+                                    <option value="__new__">+ Add new...</option>
                                 </select>
+                                <input type="text" name="<?php echo sanitize($name); ?>__new_value" data-fk-new-input="<?php echo sanitize($name); ?>" placeholder="Type new value" style="display:none;margin-top:8px;">
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -293,5 +349,24 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('select[data-fk-select]').forEach(function (selectEl) {
+        const field = selectEl.getAttribute('data-fk-select');
+        const newInput = document.querySelector('input[data-fk-new-input="' + field + '"]');
+        if (!newInput) return;
+        const syncState = function () {
+            if (selectEl.value === '__new__') {
+                newInput.style.display = 'block';
+            } else {
+                newInput.style.display = 'none';
+                newInput.value = '';
+            }
+        };
+        syncState();
+        selectEl.addEventListener('change', syncState);
+    });
+});
+</script>
 </body>
 </html>
