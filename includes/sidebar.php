@@ -11,16 +11,17 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
     <div class="sidebar-title">📊 Dashboard</div>
     <ul class="sidebar-nav">
         <li><a href="<?php echo BASE_URL; ?>dashboard.php" class="<?php echo $current_page === 'dashboard.php' ? 'active' : ''; ?>">📈 Dashboard</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/settings/" class="<?php echo $current_dir === 'settings' ? 'active' : ''; ?>">⚙️ Settings</a></li>
     </ul>
 
     <div class="sidebar-title">🏢 Management</div>
     <ul class="sidebar-nav">
         <li><a href="<?php echo BASE_URL; ?>modules/equipment/" class="<?php echo $current_dir === 'equipment' ? 'active' : ''; ?>">🖥️ Equipment</a></li>
-          <li><a href="<?php echo BASE_URL; ?>modules/workstations/" class="<?php echo $current_dir === 'workstations' ? 'active' : ''; ?>">💻 Workstations</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/workstations/" class="<?php echo $current_dir === 'workstations' ? 'active' : ''; ?>">💻 Workstations</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/tickets/" class="<?php echo $current_dir === 'tickets' ? 'active' : ''; ?>">🎫 Tickets</a></li>
     </ul>
 
-    <div class="sidebar-title">⚙️ Settings</div>
+    <div class="sidebar-title">🧰 Admin</div>
     <ul class="sidebar-nav">
         <li><a href="<?php echo BASE_URL; ?>modules/inventory/" class="<?php echo $current_dir === 'inventory' ? 'active' : ''; ?>">📦 Inventory</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/users/" class="<?php echo $current_dir === 'users' ? 'active' : ''; ?>">👥 Users</a></li>
