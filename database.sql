@@ -201,7 +201,6 @@ CREATE TABLE `employees` (
   `raw_status_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_employees_email_per_company` (`company_id`,`email`),
   UNIQUE KEY `uq_employees_code_per_company` (`company_id`,`employee_code`),
   KEY `user_id` (`user_id`),
   KEY `department_id` (`department_id`),
