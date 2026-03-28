@@ -41,7 +41,12 @@ function emp_canonical_header($header) {
         'job code' => 'job_code',
         'title' => 'job_title',
         'comments' => 'comments',
-        'comment' => 'comments'
+        'comment' => 'comments',
+        'termination date' => 'termination_date',
+        'request date' => 'request_date',
+        'requested by' => 'requested_by',
+        'termination requested by' => 'termination_requested_by',
+        'department name' => 'department_name'
     ];
 
     return $map[$normalized] ?? null;
@@ -109,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             $created = 0;
             $updated = 0;
             $skipped = 0;
+            $matchedIds = [];
+            $deleted = 0;
 
             foreach (array_slice($rows, 1) as $row) {
                 $mapped = [
@@ -124,6 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'job_title' => '',
                     'comments' => '',
                     'raw_status_code' => '',
+                    'termination_date' => '',
+                    'request_date' => '',
+                    'requested_by' => '',
+                    'termination_requested_by' => '',
+                    'department_name' => '',
                     'employment_status_id' => 1,
                     'active' => 1
                 ];
@@ -151,6 +163,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
                 $mapped['active'] = strtoupper($mapped['raw_status_code']) === 'I' ? 0 : 1;
 
+                if (!empty($mapped['department_name'])) {
+                    $depNameEsc = mysqli_real_escape_string($conn, (string)$mapped['department_name']);
+                    $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND name='" . $depNameEsc . "' LIMIT 1";
+                    $depRes = mysqli_query($conn, $depSql);
+                    if ($depRes && mysqli_num_rows($depRes) === 1) {
+                        $mapped['department_id'] = (int)(mysqli_fetch_assoc($depRes)['id'] ?? 0);
+                    } else {
+                        if (mysqli_query($conn, "INSERT INTO departments (company_id,name,active) VALUES (" . (int)$company_id . ", '" . $depNameEsc . "', 1)")) {
+                            $mapped['department_id'] = (int)mysqli_insert_id($conn);
+                        }
+                    }
+                }
+
                 $whereParts = [];
                 if ($mapped['email'] !== '') {
                     $whereParts[] = "email='" . mysqli_real_escape_string($conn, $mapped['email']) . "'";
@@ -174,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     $existingId = (int)(mysqli_fetch_assoc($found)['id'] ?? 0);
                 }
 
-                $columns = ['company_id','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','employment_status_id','active'];
+                $columns = ['company_id','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id','active'];
                 $values = [];
                 foreach ($columns as $col) {
                     $value = $mapped[$col] ?? null;
@@ -198,16 +223,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
                     if (mysqli_query($conn, $sql)) {
                         $updated += 1;
+                        $matchedIds[] = $existingId;
                     }
                 } else {
                     $sql = 'INSERT INTO employees (' . implode(',', array_map('emp_escape_identifier', $columns)) . ') VALUES (' . implode(',', array_values($values)) . ')';
                     if (mysqli_query($conn, $sql)) {
                         $created += 1;
+                        $matchedIds[] = (int)mysqli_insert_id($conn);
                     }
                 }
             }
 
-            $messages[] = "Import complete: {$created} created, {$updated} updated, {$skipped} skipped.";
+            if (!empty($matchedIds)) {
+                $matchedIds = array_values(array_unique(array_map('intval', $matchedIds)));
+                $deleteSql = 'DELETE FROM employees WHERE company_id=' . (int)$company_id . ' AND id NOT IN (' . implode(',', $matchedIds) . ')';
+                if (mysqli_query($conn, $deleteSql)) {
+                    $deleted = (int)mysqli_affected_rows($conn);
+                }
+            }
+
+            $messages[] = "Import complete: {$created} created, {$updated} updated, {$deleted} removed, {$skipped} skipped.";
         }
     }
 }
@@ -220,7 +255,12 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columns[] = $c['Field'];
 }
 
-$preferredOrder = ['id','hilton_id','employee_code','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','comments','phone','department_id','location_id','employment_status_id','active'];
+$preferredOrder = ['id','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','active','comments'];
+$hiddenColumns = ['employee_code','location','phone','location_id','user_id'];
+$columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) {
+    return !in_array($c, $hiddenColumns, true);
+}));
+
 usort($columns, function ($a, $b) use ($preferredOrder) {
     $ia = array_search($a, $preferredOrder, true);
     $ib = array_search($b, $preferredOrder, true);
@@ -263,7 +303,7 @@ function emp_label($field) {
 
             <div class="card" style="margin-bottom:16px;">
                 <h3 style="margin-top:0;">Import from Excel / CSV</h3>
-                <p style="margin-top:4px;color:#666;">Accepted headers: Hilton ID, User Name, Display Name, Email, Employee Status, First Name, Last Name, Job Code, Title.</p>
+                <p style="margin-top:4px;color:#666;">Accepted headers: Hilton ID, Employee Code, User Name, Display Name, Email, Employee Status, First Name, Last Name, Job Code, Title, Department Name, Request Date, Requested By, Termination Requested By, Termination Date.</p>
                 <form method="POST" id="employeeImportForm">
                     <input type="hidden" name="action" value="import_employees">
                     <input type="hidden" name="import_payload" id="employeeImportPayload" value="">
@@ -295,7 +335,7 @@ function emp_label($field) {
                     <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                         <tr>
                             <?php foreach ($columns as $col): ?>
-                                <td><?php echo sanitize((string)($row[$col] ?? '')); ?></td>
+                                <td><?php if ($col === 'email' && !empty($row[$col])): ?><a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a><?php else: ?><?php echo sanitize((string)($row[$col] ?? '')); ?><?php endif; ?></td>
                             <?php endforeach; ?>
                             <td>
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
@@ -397,6 +437,15 @@ function emp_label($field) {
         alert('Unsupported file type. Please use .xlsx, .xls, or .csv');
         fileInput.value = '';
     });
+
+document.addEventListener('click', function (event) {
+    const link = event.target.closest('a[data-outlook-link="1"]');
+    if (!link) return;
+    const targetHref = link.getAttribute('data-outlook-href');
+    if (targetHref) {
+        window.location.href = targetHref;
+    }
+});
 })();
 </script>
 </body>

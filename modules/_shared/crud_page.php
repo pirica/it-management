@@ -90,6 +90,18 @@ function cr_humanize_field($field) {
         return '';
     }
 
+    $map = [
+        'department_id' => 'Department Name',
+        'office_key_card_department_id' => 'Office Key Card Department',
+        'opera_username' => 'OPERA Username',
+        'onq_ri' => 'OnQ R&I',
+        'hu_the_lobby' => 'HU & The Lobby',
+    ];
+
+    if (isset($map[$label])) {
+        return $map[$label];
+    }
+
     if ($label === 'id') {
         return 'ID';
     }
@@ -98,6 +110,28 @@ function cr_humanize_field($field) {
     $label = str_replace('_', ' ', (string)$label);
     return ucwords($label);
 }
+
+function cr_is_hidden_employee_field($field) {
+    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
+        return false;
+    }
+
+    $hidden = ['user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    return in_array($field, $hidden, true);
+}
+
+function cr_render_cell_value($table, $field, $value) {
+    $text = (string)($value ?? '');
+    if ($table === 'employees' && $field === 'email' && $text !== '') {
+        $safeEmail = sanitize($text);
+        $mailto = 'mailto:' . $text;
+        $outlook = 'ms-outlook://compose?to=' . $text;
+        return '<a href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
+    }
+
+    return sanitize($text);
+}
+
 
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -185,6 +219,9 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
+$fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return !cr_is_hidden_employee_field($col['Field']);
+}));
 $hasCompany = false;
 foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
@@ -383,7 +420,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <table>
                         <thead>
                         <tr>
-                            <?php foreach ($columns as $col): ?>
+                            <?php foreach ($fieldColumns as $col): ?>
                                 <th><?php echo sanitize(cr_humanize_field($col['Field'])); ?></th>
                             <?php endforeach; ?>
                             <th>Actions</th>
@@ -392,8 +429,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php foreach ($columns as $col): $f = $col['Field']; ?>
-                                    <td><?php echo sanitize((string)($row[$f] ?? '')); ?></td>
+                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
@@ -406,7 +443,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($columns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -473,10 +510,10 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($columns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo sanitize((string)($data[$f] ?? '')); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -492,6 +529,17 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
 <script src="../../js/select-add-option.js"></script>
+
+<script>
+document.addEventListener('click', function (event) {
+    const link = event.target.closest('a[data-outlook-link="1"]');
+    if (!link) return;
+    const outlookHref = link.getAttribute('data-outlook-href');
+    if (outlookHref) {
+        window.location.href = outlookHref;
+    }
+});
+</script>
 
 </body>
 </html>

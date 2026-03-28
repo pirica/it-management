@@ -11,7 +11,10 @@
 
         tables.forEach((table) => {
             const headers = Array.from(table.querySelectorAll('thead th'));
-            const actionsIndex = headers.findIndex((th) => (th.textContent || '').trim().toLowerCase() === 'actions');
+            const actionsIndex = headers.findIndex((th) => {
+                const txt = (th.textContent || '').trim().toLowerCase();
+                return txt === 'actions' || txt === 'table actions' || txt === 'options';
+            });
             if (actionsIndex < 0) return;
 
             table.querySelectorAll('tr').forEach((row) => {
