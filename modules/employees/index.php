@@ -78,15 +78,29 @@ function emp_status_id_from_raw($conn, $rawStatus) {
 }
 
 function emp_drop_email_unique_if_exists($conn) {
-    $sql = "SELECT 1
-            FROM information_schema.statistics
-            WHERE table_schema = DATABASE()
-              AND table_name = 'employees'
-              AND index_name = 'uq_employees_email_per_company'
-            LIMIT 1";
-    $res = mysqli_query($conn, $sql);
-    if ($res && mysqli_num_rows($res) === 1) {
-        mysqli_query($conn, 'ALTER TABLE employees DROP INDEX uq_employees_email_per_company');
+    $legacyUniqueIndexes = [
+        'uq_employees_email_per_company',
+        'uq_employees_code_per_company'
+    ];
+
+    foreach ($legacyUniqueIndexes as $indexName) {
+        $sql = "SELECT 1
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'employees'
+                  AND index_name = '" . mysqli_real_escape_string($conn, $indexName) . "'
+                LIMIT 1";
+        $res = mysqli_query($conn, $sql);
+        if ($res && mysqli_num_rows($res) === 1) {
+            mysqli_query($conn, 'ALTER TABLE employees DROP INDEX ' . emp_escape_identifier($indexName));
+        }
+    }
+}
+
+function emp_ensure_duplicate_column($conn) {
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'duplicate'");
+    if ($res && mysqli_num_rows($res) === 0) {
+        mysqli_query($conn, "ALTER TABLE employees ADD COLUMN `duplicate` TINYINT(1) NOT NULL DEFAULT 0 AFTER `id`");
     }
 }
 
@@ -115,6 +129,7 @@ $errors = [];
 $skippedDetails = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
+    emp_ensure_duplicate_column($conn);
     emp_drop_email_unique_if_exists($conn);
     $payload = trim((string)($_POST['import_payload'] ?? ''));
     $rows = [];
@@ -181,7 +196,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'termination_requested_by' => '',
                     'department_name' => '',
                     'employment_status_id' => 1,
-                    'active' => 1
+                    'active' => 1,
+                    'duplicate' => 0
                 ];
 
                 foreach ($validIdx as $idx => $field) {
@@ -253,13 +269,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     $existingId = (int)(mysqli_fetch_assoc($found)['id'] ?? 0);
                 }
 
-                $columns = ['company_id','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id','active'];
+                $columns = ['company_id','duplicate','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id','active'];
                 $values = [];
                 foreach ($columns as $col) {
                     $value = $mapped[$col] ?? null;
                     if ($value === '' || $value === null) {
                         $values[$col] = 'NULL';
-                    } elseif (in_array($col, ['company_id','employment_status_id','active'], true)) {
+                    } elseif (in_array($col, ['company_id','employment_status_id','active','duplicate'], true)) {
                         $values[$col] = (string)(int)$value;
                     } else {
                         $values[$col] = "'" . mysqli_real_escape_string($conn, (string)$value) . "'";
@@ -267,29 +283,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 if ($existingId > 0) {
-                    if (!isset($preExistingIds[$existingId])) {
-                        $duplicatesInFile += 1;
-                    }
-                    $sets = [];
-                    foreach ($columns as $col) {
-                        if ($col === 'company_id') {
-                            continue;
+                    if (isset($preExistingIds[$existingId])) {
+                        $sets = [];
+                        foreach ($columns as $col) {
+                            if ($col === 'company_id') {
+                                continue;
+                            }
+                            $sets[] = emp_escape_identifier($col) . '=' . $values[$col];
                         }
-                        $sets[] = emp_escape_identifier($col) . '=' . $values[$col];
-                    }
-                    $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
-                    if (mysqli_query($conn, $sql)) {
-                        if (isset($preExistingIds[$existingId])) {
+                        $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+                        if (mysqli_query($conn, $sql)) {
                             $updated += 1;
-                        } else {
-                            $skipped += 1;
-                            $skippedDetails[] = [
-                                'row' => $sourceRowNumber,
-                                'reason' => 'Duplicate in uploaded file matched a row imported earlier in this run.',
-                                'identity' => emp_import_identity_label($mapped)
-                            ];
+                            $matchedIds[] = $existingId;
                         }
-                        $matchedIds[] = $existingId;
+                    } else {
+                        $duplicatesInFile += 1;
+                        $mapped['duplicate'] = 1;
+                        $values['duplicate'] = '1';
+                        $sql = 'INSERT INTO employees (' . implode(',', array_map('emp_escape_identifier', $columns)) . ') VALUES (' . implode(',', array_values($values)) . ')';
+                        if (mysqli_query($conn, $sql)) {
+                            $created += 1;
+                            $matchedIds[] = (int)mysqli_insert_id($conn);
+                        }
                     }
                 } else {
                     $sql = 'INSERT INTO employees (' . implode(',', array_map('emp_escape_identifier', $columns)) . ') VALUES (' . implode(',', array_values($values)) . ')';
@@ -310,12 +325,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
             $messages[] = "Import complete: {$created} created, {$updated} updated, {$deleted} removed, {$skipped} skipped.";
             if ($duplicatesInFile > 0) {
-                $messages[] = "{$duplicatesInFile} duplicate row(s) in the uploaded file matched another imported row and were skipped.";
+                $messages[] = "{$duplicatesInFile} duplicate row(s) in the uploaded file were imported and flagged as duplicates.";
             }
         }
     }
 }
 
+emp_ensure_duplicate_column($conn);
 $where = ' WHERE e.company_id=' . (int)$company_id;
 $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
 $columns = [];
@@ -325,7 +341,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','active','comments'];
+$preferredOrder = ['id','duplicate','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','active','comments'];
 $hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id','active'];
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) {
     return !in_array($c, $hiddenColumns, true);
@@ -455,7 +471,7 @@ function emp_label($field) {
                     </thead>
                     <tbody>
                     <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
-                        <tr>
+                        <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#fff3e0;"' : ''; ?>>
                             <?php foreach ($columns as $col): ?>
                                 <td>
                                     <?php if ($col === 'email' && !empty($row[$col])): ?>
@@ -467,7 +483,11 @@ function emp_label($field) {
                                     <?php elseif ($col === 'office_key_card_department_id'): ?>
                                         <?php echo !empty($row[$col]) ? '✔️' : '❌'; ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
-                                        <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
+                                        <?php if ($col === 'duplicate'): ?>
+                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️' : '—'; ?>
+                                        <?php else: ?>
+                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <?php echo sanitize((string)($row[$col] ?? '')); ?>
                                     <?php endif; ?>

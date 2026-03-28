@@ -162,6 +162,7 @@ INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('4', 'Terminated');
 DROP TABLE IF EXISTS `employees`;
 CREATE TABLE `employees` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `duplicate` tinyint(1) NOT NULL DEFAULT '0',
   `company_id` int NOT NULL,
   `user_id` int DEFAULT NULL,
   `first_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -205,7 +206,6 @@ CREATE TABLE `employees` (
   `raw_status_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_employees_code_per_company` (`company_id`,`employee_code`),
   KEY `user_id` (`user_id`),
   KEY `department_id` (`department_id`),
   KEY `location_id` (`location_id`),
