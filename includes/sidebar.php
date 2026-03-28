@@ -21,12 +21,16 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
         <li><a href="<?php echo BASE_URL; ?>modules/tickets/" class="<?php echo $current_dir === 'tickets' ? 'active' : ''; ?>">🎫 Tickets</a></li>
     </ul>
 
+    <div class="sidebar-title">👤 Employee</div>
+    <ul class="sidebar-nav">
+        <li><a href="<?php echo BASE_URL; ?>modules/employees/" class="<?php echo $current_dir === 'employees' ? 'active' : ''; ?>">👤 Employees</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/departments/" class="<?php echo $current_dir === 'departments' ? 'active' : ''; ?>">🏢 Departments</a></li>
+    </ul>
+
     <div class="sidebar-title">🧰 Admin</div>
     <ul class="sidebar-nav">
         <li><a href="<?php echo BASE_URL; ?>modules/inventory/" class="<?php echo $current_dir === 'inventory' ? 'active' : ''; ?>">📦 Inventory</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/users/" class="<?php echo $current_dir === 'users' ? 'active' : ''; ?>">👥 Users</a></li>
-        <li><a href="<?php echo BASE_URL; ?>modules/departments/" class="<?php echo $current_dir === 'departments' ? 'active' : ''; ?>">🏢 Departments</a></li>
-        <li><a href="<?php echo BASE_URL; ?>modules/employees/" class="<?php echo $current_dir === 'employees' ? 'active' : ''; ?>">👤 Employees</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/companies/" class="<?php echo $current_dir === 'companies' ? 'active' : ''; ?>">🌍 Companies</a></li>
     </ul>
 

@@ -237,3 +237,191 @@ SET @sql := (
     )
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @db_name := DATABASE();
+
+-- Employee offboarding / access fields
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='request_date'),
+        'SELECT "request_date already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `request_date` DATE NULL AFTER `comments`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='requested_by'),
+        'SELECT "requested_by already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `requested_by` VARCHAR(150) NULL AFTER `request_date`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='termination_requested_by'),
+        'SELECT "termination_requested_by already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `termination_requested_by` VARCHAR(150) NULL AFTER `requested_by`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='termination_date'),
+        'SELECT "termination_date already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `termination_date` DATE NULL AFTER `termination_requested_by`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='mobile_phone'),
+        'SELECT "mobile_phone already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `mobile_phone` VARCHAR(30) NULL AFTER `phone`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='work_phone'),
+        'SELECT "work_phone already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `work_phone` VARCHAR(30) NULL AFTER `mobile_phone`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='deck'),
+        'SELECT "deck already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `deck` VARCHAR(100) NULL AFTER `work_phone`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='extension'),
+        'SELECT "extension already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `extension` VARCHAR(30) NULL AFTER `deck`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='network_access'),
+        'SELECT "network_access already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `network_access` TINYINT(1) NOT NULL DEFAULT 0 AFTER `termination_date`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='micros_emc'),
+        'SELECT "micros_emc already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `micros_emc` TINYINT(1) NOT NULL DEFAULT 0 AFTER `network_access`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='opera_username'),
+        'SELECT "opera_username already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `opera_username` TINYINT(1) NOT NULL DEFAULT 0 AFTER `micros_emc`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='micros_card'),
+        'SELECT "micros_card already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `micros_card` TINYINT(1) NOT NULL DEFAULT 0 AFTER `opera_username`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='pms_id'),
+        'SELECT "pms_id already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `pms_id` TINYINT(1) NOT NULL DEFAULT 0 AFTER `micros_card`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='synergy_mms'),
+        'SELECT "synergy_mms already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `synergy_mms` TINYINT(1) NOT NULL DEFAULT 0 AFTER `pms_id`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='hu_the_lobby'),
+        'SELECT "hu_the_lobby already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `hu_the_lobby` TINYINT(1) NOT NULL DEFAULT 0 AFTER `synergy_mms`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='navision'),
+        'SELECT "navision already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `navision` TINYINT(1) NOT NULL DEFAULT 0 AFTER `hu_the_lobby`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='onq_ri'),
+        'SELECT "onq_ri already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `onq_ri` TINYINT(1) NOT NULL DEFAULT 0 AFTER `navision`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='birchstreet'),
+        'SELECT "birchstreet already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `birchstreet` TINYINT(1) NOT NULL DEFAULT 0 AFTER `onq_ri`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='delphi'),
+        'SELECT "delphi already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `delphi` TINYINT(1) NOT NULL DEFAULT 0 AFTER `birchstreet`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='omina'),
+        'SELECT "omina already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `omina` TINYINT(1) NOT NULL DEFAULT 0 AFTER `delphi`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='vingcard_system'),
+        'SELECT "vingcard_system already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `vingcard_system` TINYINT(1) NOT NULL DEFAULT 0 AFTER `omina`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='digital_rev'),
+        'SELECT "digital_rev already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `digital_rev` TINYINT(1) NOT NULL DEFAULT 0 AFTER `vingcard_system`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='office_key_card'),
+        'SELECT "office_key_card already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `office_key_card` TINYINT(1) NOT NULL DEFAULT 0 AFTER `digital_rev`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND COLUMN_NAME='office_key_card_department_id'),
+        'SELECT "office_key_card_department_id already exists"',
+        'ALTER TABLE `employees` ADD COLUMN `office_key_card_department_id` INT NULL AFTER `office_key_card`')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND INDEX_NAME='idx_employees_office_key_department'),
+        'SELECT "idx_employees_office_key_department already exists"',
+        'ALTER TABLE `employees` ADD INDEX `idx_employees_office_key_department` (`office_key_card_department_id`)')
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := (
+    SELECT IF(EXISTS(
+        SELECT 1 FROM information_schema.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA=@db_name AND TABLE_NAME='employees' AND CONSTRAINT_NAME='fk_employees_office_key_department'
+    ),
+        'SELECT "fk_employees_office_key_department already exists"',
+        'ALTER TABLE `employees` ADD CONSTRAINT `fk_employees_office_key_department` FOREIGN KEY (`office_key_card_department_id`) REFERENCES `departments`(`id`) ON DELETE SET NULL'
+    )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
