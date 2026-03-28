@@ -479,3 +479,108 @@ input[type="color"] {
     background: var(--bg-secondary);
     cursor: pointer;
 }
+
+/* Switch port manager */
+.switch-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.switch-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.switch-port {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+
+.switch-port-num {
+    font-size: 12px;
+    color: var(--text-primary);
+    z-index: 2;
+}
+
+.switch-color-indicator {
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    opacity: 0.18;
+    pointer-events: none;
+}
+
+.switch-controls {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    align-items: end;
+}
+
+.switch-controls label {
+    margin-bottom: 0;
+    font-size: 13px;
+}
+
+.switch-controls button {
+    width: fit-content;
+}
+
+.switch-legend {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+}
+
+.switch-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.switch-color-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.switch-tooltip {
+    position: fixed;
+    background: #222;
+    color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .12s;
+    z-index: 9999;
+    max-width: 320px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.c-green { background: green; }
+.c-red { background: red; }
+.c-yellow { background: gold; }
+.c-black { background: #111; }
+.c-blue { background: royalblue; }
+.c-white { background: #fff; }
+.c-orange { background: orange; }
+.c-purple { background: purple; }
