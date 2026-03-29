@@ -7,12 +7,14 @@ if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $where = " WHERE CAST(id AS CHAR) LIKE '{$searchEsc}'
-               OR name LIKE '{$searchEsc}'
-               OR company_code LIKE '{$searchEsc}'
-               OR industry LIKE '{$searchEsc}'
+               OR company LIKE '{$searchEsc}'
+               OR incode LIKE '{$searchEsc}'
+               OR city LIKE '{$searchEsc}'
+               OR country LIKE '{$searchEsc}'
+               OR phone LIKE '{$searchEsc}'
                OR CAST(active AS CHAR) LIKE '{$searchEsc}'";
 }
-$sortableColumns = ['id', 'name', 'company_code', 'industry', 'active'];
+$sortableColumns = ['id', 'company', 'incode', 'city', 'country', 'phone', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -54,11 +56,11 @@ $result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSq
                     </div>
                 </form>
             </div>
-            <div class="card">
+            <div class="card" style="overflow:auto;">
                 <table>
                     <thead>
                     <tr>
-                        <?php foreach (['id' => 'ID', 'name' => 'Name', 'company_code' => 'Code', 'industry' => 'Industry', 'active' => 'Status'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'company' => 'Company', 'incode' => 'InCode', 'city' => 'City', 'country' => 'Country', 'phone' => 'Phone', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -70,9 +72,11 @@ $result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSq
                         <?php while ($row = mysqli_fetch_assoc($result)): ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
-                                <td><?php echo sanitize($row['name']); ?></td>
-                                <td><?php echo sanitize($row['company_code'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['industry'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['company']); ?></td>
+                                <td><?php echo sanitize($row['incode'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['city'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['country'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['phone'] ?? '-'); ?></td>
                                 <td>
                                     <span class="badge <?php echo (int)$row['active'] === 1 ? 'badge-success' : 'badge-danger'; ?>">
                                         <?php echo (int)$row['active'] === 1 ? 'Active' : 'Inactive'; ?>
@@ -85,7 +89,7 @@ $result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSq
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="6" style="text-align:center;">No companies found.</td></tr>
+                        <tr><td colspan="8" style="text-align:center;">No companies found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

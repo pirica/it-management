@@ -39,32 +39,30 @@ INSERT INTO `assignment_types` (`id`, `name`) VALUES ('3', 'Shared');
 DROP TABLE IF EXISTS `companies`;
 CREATE TABLE `companies` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `company_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `industry` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `company` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `incode` varchar(6) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `city` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `state` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `country` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `postal_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vat` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comments` text COLLATE utf8mb4_unicode_ci,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`),
-  UNIQUE KEY `company_code` (`company_code`),
+  UNIQUE KEY `company` (`company`),
+  UNIQUE KEY `incode` (`incode`),
   KEY `active` (`active`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `companies`
-INSERT INTO `companies` (`id`, `name`, `company_code`, `industry`, `website`, `phone`, `email`, `address`, `city`, `state`, `country`, `postal_code`, `active`, `created_at`, `updated_at`) VALUES ('1', 'TechCorp Global', 'TC-001', 'Technology', NULL, NULL, NULL, NULL, 'New York', NULL, 'USA', NULL, '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `name`, `company_code`, `industry`, `website`, `phone`, `email`, `address`, `city`, `state`, `country`, `postal_code`, `active`, `created_at`, `updated_at`) VALUES ('2', 'DataCenter Plus', 'DCP-001', 'Data Center', NULL, NULL, NULL, NULL, 'Dallas', NULL, 'USA', NULL, '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `name`, `company_code`, `industry`, `website`, `phone`, `email`, `address`, `city`, `state`, `country`, `postal_code`, `active`, `created_at`, `updated_at`) VALUES ('3', 'Network Solutions', 'NSI-001', 'Networking', NULL, NULL, NULL, NULL, 'San Francisco', NULL, 'USA', NULL, '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `name`, `company_code`, `industry`, `website`, `phone`, `email`, `address`, `city`, `state`, `country`, `postal_code`, `active`, `created_at`, `updated_at`) VALUES ('4', 'CloudTech Services', 'CTS-001', 'Cloud', NULL, NULL, NULL, NULL, 'Seattle', NULL, 'USA', NULL, '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `name`, `company_code`, `industry`, `website`, `phone`, `email`, `address`, `city`, `state`, `country`, `postal_code`, `active`, `created_at`, `updated_at`) VALUES ('5', 'Enterprise IT', 'ESL-001', 'Enterprise', NULL, NULL, NULL, NULL, 'Boston', NULL, 'USA', NULL, '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('1', 'TechCorp Global', 'TC001', 'New York', 'USA', '+1-212-555-0101', 'info@techcorp.example', 'https://techcorp.example', 'US-TC-1001', 'Head office company profile', '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('2', 'DataCenter Plus', 'DCP001', 'Dallas', 'USA', '+1-972-555-0102', 'contact@datacenterplus.example', 'https://datacenterplus.example', 'US-DCP-1002', '', '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('3', 'Network Solutions', 'NSI001', 'San Francisco', 'USA', '+1-415-555-0103', 'hello@networksolutions.example', 'https://networksolutions.example', 'US-NSI-1003', '', '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('4', 'CloudTech Services', 'CTS001', 'Seattle', 'USA', '+1-206-555-0104', 'support@cloudtech.example', 'https://cloudtech.example', 'US-CTS-1004', '', '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('5', 'Enterprise IT', 'EIT001', 'Boston', 'USA', '+1-617-555-0105', 'office@enterpriseit.example', 'https://enterpriseit.example', 'US-EIT-1005', '', '1', '2026-03-28 19:43:17', NULL);
 
 -- Table structure for `departments`
 DROP TABLE IF EXISTS `departments`;

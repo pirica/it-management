@@ -6,8 +6,16 @@ $is_edit = $id > 0;
 $error = '';
 
 $data = [
-    'name' => '', 'company_code' => '', 'industry' => '', 'website' => '', 'phone' => '',
-    'email' => '', 'city' => '', 'country' => '', 'active' => 1
+    'company' => '',
+    'incode' => '',
+    'city' => '',
+    'country' => '',
+    'phone' => '',
+    'email' => '',
+    'website' => '',
+    'vat' => '',
+    'comments' => '',
+    'active' => 1,
 ];
 
 if ($is_edit) {
@@ -21,23 +29,24 @@ if ($is_edit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = escape_sql($_POST['name'] ?? '', $conn);
-    $company_code = escape_sql($_POST['company_code'] ?? '', $conn);
-    $industry = escape_sql($_POST['industry'] ?? '', $conn);
-    $website = escape_sql($_POST['website'] ?? '', $conn);
-    $phone = escape_sql($_POST['phone'] ?? '', $conn);
-    $email = escape_sql($_POST['email'] ?? '', $conn);
+    $company = escape_sql($_POST['company'] ?? '', $conn);
+    $incode = strtoupper(substr(escape_sql($_POST['incode'] ?? '', $conn), 0, 6));
     $city = escape_sql($_POST['city'] ?? '', $conn);
     $country = escape_sql($_POST['country'] ?? '', $conn);
+    $phone = escape_sql($_POST['phone'] ?? '', $conn);
+    $email = escape_sql($_POST['email'] ?? '', $conn);
+    $website = escape_sql($_POST['website'] ?? '', $conn);
+    $vat = escape_sql($_POST['vat'] ?? '', $conn);
+    $comments = escape_sql($_POST['comments'] ?? '', $conn);
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if (!$name) {
-        $error = 'Company name is required.';
+    if (!$company) {
+        $error = 'Company is required.';
     } else {
         if ($is_edit) {
-            $sql = "UPDATE companies SET name='$name', company_code='$company_code', industry='$industry', website='$website', phone='$phone', email='$email', city='$city', country='$country', active=$active WHERE id=$id";
+            $sql = "UPDATE companies SET company='$company', incode='$incode', city='$city', country='$country', phone='$phone', email='$email', website='$website', vat='$vat', comments='$comments', active=$active WHERE id=$id";
         } else {
-            $sql = "INSERT INTO companies (name, company_code, industry, website, phone, email, city, country, active) VALUES ('$name','$company_code','$industry','$website','$phone','$email','$city','$country',$active)";
+            $sql = "INSERT INTO companies (company, incode, city, country, phone, email, website, vat, comments, active) VALUES ('$company','$incode','$city','$country','$phone','$email','$website','$vat','$comments',$active)";
         }
 
         if (mysqli_query($conn, $sql)) {
@@ -67,22 +76,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card">
                 <form method="POST">
                     <div class="form-row">
-                        <div class="form-group"><label>Name *</label><input type="text" name="name" required value="<?php echo sanitize($data['name']); ?>"></div>
-                        <div class="form-group"><label>Company Code</label><input type="text" name="company_code" value="<?php echo sanitize($data['company_code']); ?>"></div>
+                        <div class="form-group"><label>Company *</label><input type="text" name="company" required value="<?php echo sanitize($data['company'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>InCode</label><input type="text" name="incode" maxlength="6" size="6" value="<?php echo sanitize($data['incode'] ?? ''); ?>"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Industry</label><input type="text" name="industry" value="<?php echo sanitize($data['industry']); ?>"></div>
-                        <div class="form-group"><label>Website</label><input type="url" name="website" value="<?php echo sanitize($data['website']); ?>"></div>
+                        <div class="form-group"><label>City</label><input type="text" name="city" value="<?php echo sanitize($data['city'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>Country</label><input type="text" name="country" value="<?php echo sanitize($data['country'] ?? ''); ?>"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($data['email']); ?>"></div>
-                        <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo sanitize($data['phone']); ?>"></div>
+                        <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo sanitize($data['phone'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($data['email'] ?? ''); ?>"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>City</label><input type="text" name="city" value="<?php echo sanitize($data['city']); ?>"></div>
-                        <div class="form-group"><label>Country</label><input type="text" name="country" value="<?php echo sanitize($data['country']); ?>"></div>
+                        <div class="form-group"><label>Website</label><input type="url" name="website" value="<?php echo sanitize($data['website'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>VAT</label><input type="text" name="vat" value="<?php echo sanitize($data['vat'] ?? ''); ?>"></div>
                     </div>
-                    <div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> Active</label></div>
+                    <div class="form-group"><label>Comments</label><textarea name="comments" rows="4"><?php echo sanitize($data['comments'] ?? ''); ?></textarea></div>
+                    <div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>> Active</label></div>
                     <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">✖️</a></div>
                 </form>
             </div>

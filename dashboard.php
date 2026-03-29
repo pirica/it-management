@@ -26,7 +26,7 @@ $employees_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) 
 
             <div class="content">
                 <h1>📊 Dashboard</h1>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">Welcome to <?php echo sanitize($company_data['name']); ?></p>
+                <p style="color: var(--text-secondary); margin-bottom: 30px;">Welcome to <?php echo sanitize($company_data['company']); ?></p>
 
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -57,12 +57,13 @@ $employees_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) 
 
                 <div class="card">
                     <div class="card-header">
-                        <h2>System Information</h2>
+                        <h2>Information</h2>
                     </div>
                     <div class="card-body">
-                        <p><strong>Company:</strong> <?php echo sanitize($company_data['name']); ?></p>
-                        <p><strong>InCode:</strong> <?php echo sanitize($company_data['industry']); ?></p>
-                        <p><strong>Location:</strong> <?php echo sanitize($company_data['city'] . ', ' . $company_data['country']); ?></p>
+                        <p><strong>Company:</strong> <?php echo sanitize($company_data['company']); ?></p>
+                        <p><strong>InCode:</strong> <?php echo sanitize($company_data['incode']); ?></p>
+                        <p><strong>Location:</strong> <?php echo sanitize(trim(($company_data['city'] ?? '') . ', ' . ($company_data['country'] ?? ''), ', ')); ?></p>
+                        <p><strong>Phone:</strong> <?php echo sanitize((string)($company_data['phone'] ?? '')); ?></p>
                     </div>
                 </div>
             </div>
