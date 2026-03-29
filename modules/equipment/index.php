@@ -527,11 +527,9 @@ if ($hasSelectedSwitch) {
                 row2.appendChild(el);
             });
 
-            const maxRj45InSingleRow = Math.max(row1.children.length, row2.children.length, 1);
             const switchManager = document.getElementById('switchManager');
-            switchManager.style.setProperty('--rj45-row-count', String(maxRj45InSingleRow));
-            switchManager.classList.toggle('switch-manager-compact', maxRj45InSingleRow > 12);
-            switchManager.classList.toggle('switch-manager-half', rj45Ports.length > 24);
+            switchManager.style.setProperty('--rj45-row-count', '12');
+            switchManager.classList.remove('switch-manager-compact', 'switch-manager-half');
 
             const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
             sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
