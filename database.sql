@@ -997,3 +997,5 @@ CREATE TABLE `workstations` (
 INSERT INTO `workstations` (`id`, `company_id`, `equipment_id`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `desk_location`, `active`) VALUES ('1', '1', '1', 'WS-001', '1', '1', '1', '1', 'HQ-Desk-14', '1');
 
 SET FOREIGN_KEY_CHECKS=1;
+
+-- 2026-03-29 14:09:28 UTC: Equipment form validation update (RJ45 Ports required only for switch type; Status and Warranty Type made optional in the form validation/UI).
