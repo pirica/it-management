@@ -251,6 +251,7 @@ CREATE TABLE `equipment` (
   `workstation_processor` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `workstation_memory_gb` int DEFAULT NULL,
   `switch_rj45_id` int DEFAULT NULL,
+  `switch_port_numbering_layout_id` int DEFAULT '1',
   `switch_fiber_id` int DEFAULT NULL,
   `switch_fiber_count_id` int DEFAULT NULL,
   `switch_poe_id` int DEFAULT NULL,
@@ -274,6 +275,7 @@ CREATE TABLE `equipment` (
   KEY `workstation_device_type_id` (`workstation_device_type_id`),
   KEY `workstation_os_type_id` (`workstation_os_type_id`),
   KEY `switch_rj45_id` (`switch_rj45_id`),
+  KEY `switch_port_numbering_layout_id` (`switch_port_numbering_layout_id`),
   KEY `switch_fiber_id` (`switch_fiber_id`),
   KEY `switch_fiber_count_id` (`switch_fiber_count_id`),
   KEY `switch_poe_id` (`switch_poe_id`),
@@ -289,14 +291,15 @@ CREATE TABLE `equipment` (
   CONSTRAINT `equipment_ibfk_8` FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types` (`id`),
   CONSTRAINT `equipment_ibfk_9` FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types` (`id`),
   CONSTRAINT `equipment_ibfk_11` FOREIGN KEY (`switch_rj45_id`) REFERENCES `equipment_rj45` (`id`),
-  CONSTRAINT `equipment_ibfk_12` FOREIGN KEY (`switch_fiber_id`) REFERENCES `equipment_fiber` (`id`),
-  CONSTRAINT `equipment_ibfk_13` FOREIGN KEY (`switch_poe_id`) REFERENCES `equipment_poe` (`id`),
-  CONSTRAINT `equipment_ibfk_14` FOREIGN KEY (`switch_environment_id`) REFERENCES `equipment_environment` (`id`),
-  CONSTRAINT `equipment_ibfk_15` FOREIGN KEY (`switch_fiber_count_id`) REFERENCES `equipment_fiber_count` (`id`)
+  CONSTRAINT `equipment_ibfk_12` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`),
+  CONSTRAINT `equipment_ibfk_13` FOREIGN KEY (`switch_fiber_id`) REFERENCES `equipment_fiber` (`id`),
+  CONSTRAINT `equipment_ibfk_14` FOREIGN KEY (`switch_poe_id`) REFERENCES `equipment_poe` (`id`),
+  CONSTRAINT `equipment_ibfk_15` FOREIGN KEY (`switch_environment_id`) REFERENCES `equipment_environment` (`id`),
+  CONSTRAINT `equipment_ibfk_16` FOREIGN KEY (`switch_fiber_count_id`) REFERENCES `equipment_fiber_count` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment`
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '2', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '4', '0', NULL, '0', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '2', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '4', '0', NULL, '0', NULL, '0', NULL, NULL, NULL, NULL, NULL, '1', NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', NULL);
 
 
 -- Table structure for `equipment_environment`
@@ -667,6 +670,19 @@ INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('7', 'white');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('8', 'orange');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('9', 'purple');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('10', 'other');
+
+-- Table structure for `switch_port_numbering_layout`
+DROP TABLE IF EXISTS `switch_port_numbering_layout`;
+CREATE TABLE `switch_port_numbering_layout` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `switch_port_numbering_layout`
+INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('1', 'Vertical');
+INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('2', 'Horizontal');
 
 -- Table structure for `switch_port_types`
 DROP TABLE IF EXISTS `switch_port_types`;
