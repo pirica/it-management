@@ -239,24 +239,12 @@ if ($hasSelectedSwitch) {
                                 Color:
                                 <select id="colorSelect">
                                     <option value="">-- choose color --</option>
-                                    <option value="green">Green</option>
-                                    <option value="red">Red</option>
-                                    <option value="yellow">Yellow</option>
-                                    <option value="black">Black</option>
-                                    <option value="blue">Blue</option>
-                                    <option value="white">White</option>
-                                    <option value="orange">Orange</option>
-                                    <option value="purple">Purple</option>
                                 </select>
                             </label>
                             <label>
                                 Status:
                                 <select id="statusSelect">
                                     <option value="">-- choose status --</option>
-                                    <option value="uplink">uplink</option>
-                                    <option value="empty">empty</option>
-                                    <option value="down">down</option>
-                                    <option value="unknown">unknown</option>
                                 </select>
                             </label>
                             <label>
@@ -270,16 +258,7 @@ if ($hasSelectedSwitch) {
                             <button class="btn btn-primary" id="savePortBtn" type="button">💾</button>
                         </div>
 
-                        <div class="switch-legend" id="switchLegend">
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-green"></span>Green</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-red"></span>Red</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-yellow"></span>Yellow</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-black"></span>Black</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-blue"></span>Blue</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-white"></span>White</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-orange"></span>Orange</div>
-                            <div class="switch-legend-item"><span class="switch-color-swatch c-purple"></span>Purple</div>
-                        </div>
+                        <div class="switch-legend" id="switchLegend"></div>
                     </div>
                     <div class="switch-tooltip" id="switchTooltip"></div>
                 </div>
@@ -296,6 +275,8 @@ if ($hasSelectedSwitch) {
         const selectedSwitchId = <?php echo (int)$selectedSwitchId; ?>;
         const selectedSwitchMeta = <?php echo json_encode($selectedSwitchData ?? []); ?>;
         let ports = [];
+        let colorOptions = [];
+        let statusOptions = [];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
 
@@ -309,6 +290,9 @@ if ($hasSelectedSwitch) {
                 case 'white': return '#fff';
                 case 'orange': return 'orange';
                 case 'purple': return 'purple';
+                case 'grey':
+                case 'gray': return 'grey';
+                case 'other': return 'lightgray';
                 default: return 'transparent';
             }
         }
@@ -415,6 +399,43 @@ if ($hasSelectedSwitch) {
             document.getElementById('fiberGrid').style.display = (sfpPorts.length || sfpPlusPorts.length) ? 'grid' : 'none';
         }
 
+
+        function hydrateLookups(statuses, colors) {
+            statusOptions = Array.isArray(statuses) ? statuses : [];
+            colorOptions = Array.isArray(colors) ? colors : [];
+
+            const statusSelect = document.getElementById('statusSelect');
+            const colorSelect = document.getElementById('colorSelect');
+            const legend = document.getElementById('switchLegend');
+
+            statusSelect.innerHTML = '<option value="">-- choose status --</option>';
+            colorSelect.innerHTML = '<option value="">-- choose color --</option>';
+            legend.innerHTML = '';
+
+            statusOptions.forEach(function (item) {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                statusSelect.appendChild(option);
+            });
+
+            colorOptions.forEach(function (item) {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                colorSelect.appendChild(option);
+
+                const legendItem = document.createElement('div');
+                legendItem.className = 'switch-legend-item';
+                const swatch = document.createElement('span');
+                swatch.className = 'switch-color-swatch';
+                swatch.style.background = getColorCss(item.name);
+                legendItem.appendChild(swatch);
+                legendItem.appendChild(document.createTextNode(item.name));
+                legend.appendChild(legendItem);
+            });
+        }
+
         function fallbackLayout() {
             const rj45 = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.rj45_name) || '').replace(/\D+/g, ''), 10) || 24;
             const fiberCount = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_count) || '').replace(/\D+/g, ''), 10) || 0;
@@ -476,6 +497,7 @@ if ($hasSelectedSwitch) {
                         throw new Error(data.error || 'Failed to load ports');
                     }
                     ports = data.ports || [];
+                    hydrateLookups(data.statuses || [], data.colors || []);
                     const layout = data.layout || localLayout;
                     document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
                     renderPorts();

@@ -10,20 +10,61 @@ if ($company_id <= 0) {
     exit;
 }
 
-function ensure_switch_ports_schema(mysqli $conn): bool
+function table_has_column(mysqli $conn, string $table, string $column): bool
 {
-    $hasColumn = static function (string $name) use ($conn): bool {
-        $res = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE '" . mysqli_real_escape_string($conn, $name) . "'");
-        return $res && mysqli_num_rows($res) > 0;
-    };
-    return $hasColumn('equipment_id') && $hasColumn('port_type');
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
 }
 
-if (!ensure_switch_ports_schema($conn)) {
+function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
+{
+    $rows = [];
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $labelEsc = mysqli_real_escape_string($conn, $labelColumn);
+    $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` ORDER BY id ASC");
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
+    }
+    return $rows;
+}
+
+function find_lookup_id(array $rows, $value): int
+{
+    if ($value === null || $value === '') {
+        return 0;
+    }
+    if (is_numeric($value)) {
+        $id = (int)$value;
+        foreach ($rows as $row) {
+            if ((int)$row['id'] === $id) {
+                return $id;
+            }
+        }
+        return 0;
+    }
+    $wanted = strtolower(trim((string)$value));
+    foreach ($rows as $row) {
+        if (strtolower(trim((string)$row['name'])) === $wanted) {
+            return (int)$row['id'];
+        }
+    }
+    return 0;
+}
+
+$hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
+$hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
+$hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
+
+if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing equipment_id/port_type columns']);
+    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns']);
     exit;
 }
+
+$statuses = fetch_lookup_map($conn, 'switch_status', 'status');
+$colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
 
 $raw = file_get_contents('php://input');
 $decoded = json_decode($raw, true);
@@ -47,11 +88,9 @@ if ($switchId <= 0) {
     echo json_encode(['success' => false, 'error' => 'Missing switch id']);
     exit;
 }
-$allowedColors = ['green', 'red', 'yellow', 'black', 'blue', 'white', 'orange', 'purple'];
-$allowedStatus = ['uplink', 'empty', 'down', 'unknown'];
 
-$color = (isset($input['color']) && in_array($input['color'], $allowedColors, true)) ? $input['color'] : null;
-$status = (isset($input['status']) && in_array($input['status'], $allowedStatus, true)) ? $input['status'] : null;
+$colorId = find_lookup_id($colors, $input['color'] ?? null);
+$statusId = find_lookup_id($statuses, $input['status'] ?? null);
 $label = isset($input['label']) ? trim((string)$input['label']) : null;
 $comments = isset($input['comments']) ? trim((string)$input['comments']) : null;
 
@@ -59,15 +98,15 @@ $fields = [];
 $types = '';
 $params = [];
 
-if ($color !== null) {
-    $fields[] = 'color = ?';
-    $types .= 's';
-    $params[] = $color;
+if ($colorId > 0) {
+    $fields[] = 'color_id = ?';
+    $types .= 'i';
+    $params[] = $colorId;
 }
-if ($status !== null) {
-    $fields[] = 'status = ?';
-    $types .= 's';
-    $params[] = $status;
+if ($statusId > 0) {
+    $fields[] = 'status_id = ?';
+    $types .= 'i';
+    $params[] = $statusId;
 }
 if ($label !== null) {
     $fields[] = 'label = ?';
@@ -85,11 +124,15 @@ if (empty($fields)) {
     exit;
 }
 
-$sql = 'UPDATE switch_ports SET ' . implode(', ', $fields) . ' WHERE id = ? AND company_id = ? AND equipment_id = ?';
-$types .= 'iii';
+$sql = 'UPDATE switch_ports SET ' . implode(', ', $fields) . ' WHERE id = ? AND company_id = ?';
+$types .= 'ii';
 $params[] = $id;
 $params[] = (int)$company_id;
-$params[] = $switchId;
+if ($hasEquipmentId) {
+    $sql .= ' AND equipment_id = ?';
+    $types .= 'i';
+    $params[] = $switchId;
+}
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {

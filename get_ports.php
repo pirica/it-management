@@ -10,20 +10,57 @@ if ($company_id <= 0) {
     exit;
 }
 
-function ensure_switch_ports_schema(mysqli $conn): bool
+function table_has_column(mysqli $conn, string $table, string $column): bool
 {
-    $hasColumn = static function (string $name) use ($conn): bool {
-        $res = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE '" . mysqli_real_escape_string($conn, $name) . "'");
-        return $res && mysqli_num_rows($res) > 0;
-    };
-    return $hasColumn('equipment_id') && $hasColumn('port_type');
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
 }
 
-if (!ensure_switch_ports_schema($conn)) {
+function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
+{
+    $rows = [];
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $labelEsc = mysqli_real_escape_string($conn, $labelColumn);
+    $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` ORDER BY id ASC");
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
+    }
+    return $rows;
+}
+
+function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
+{
+    foreach ($items as $item) {
+        if (strtolower(trim((string)$item['name'])) === strtolower(trim($wanted))) {
+            return (int)$item['id'];
+        }
+    }
+    return $fallback > 0 ? $fallback : (int)($items[0]['id'] ?? 0);
+}
+
+$hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
+$hasPortType = table_has_column($conn, 'switch_ports', 'port_type');
+$hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
+$hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
+
+if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing equipment_id/port_type columns']);
+    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns']);
     exit;
 }
+
+$statuses = fetch_lookup_map($conn, 'switch_status', 'status');
+$colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
+if (empty($statuses) || empty($colors)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'switch_status/switch_cablecolors lookup tables are empty']);
+    exit;
+}
+
+$defaultStatusId = lookup_id_by_name($statuses, 'Unknown');
+$defaultColorId = lookup_id_by_name($colors, 'black', lookup_id_by_name($colors, 'grey'));
 
 $switchId = (int)($_GET['switch_id'] ?? 0);
 if ($switchId <= 0) {
@@ -68,54 +105,109 @@ $fiberName = strtolower(trim((string)$switch['fiber_name']));
 $sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
 $sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
 
-function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count): void
+function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, int $defaultStatusId, int $defaultColorId): void
 {
     if ($count <= 0) {
         return;
     }
-    $existsSql = 'SELECT COUNT(*) AS c FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ?';
+
+    if ($hasEquipmentId && $hasPortType) {
+        $existsSql = 'SELECT COUNT(*) AS c FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ?';
+        $existsStmt = mysqli_prepare($conn, $existsSql);
+        $existingCount = 0;
+        if ($existsStmt) {
+            mysqli_stmt_bind_param($existsStmt, 'iis', $companyId, $switchId, $portType);
+            if (mysqli_stmt_execute($existsStmt)) {
+                $existsRes = mysqli_stmt_get_result($existsStmt);
+                $existingCount = (int)(($existsRes ? mysqli_fetch_assoc($existsRes) : [])['c'] ?? 0);
+            }
+            mysqli_stmt_close($existsStmt);
+        }
+        if ($existingCount > 0) {
+            return;
+        }
+
+        $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, label, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
+        $insertStmt = mysqli_prepare($conn, $insertSql);
+        if (!$insertStmt) {
+            return;
+        }
+        for ($n = 1; $n <= $count; $n++) {
+            $label = strtoupper(str_replace('_', '+', $portType)) . ' ' . $n;
+            mysqli_stmt_bind_param($insertStmt, 'iisiiii', $companyId, $switchId, $portType, $n, $label, $defaultStatusId, $defaultColorId);
+            mysqli_stmt_execute($insertStmt);
+        }
+        mysqli_stmt_close($insertStmt);
+        return;
+    }
+
+    if ($portType !== 'rj45') {
+        return;
+    }
+    $existsSql = 'SELECT COUNT(*) AS c FROM switch_ports WHERE company_id = ?';
     $existsStmt = mysqli_prepare($conn, $existsSql);
     $existingCount = 0;
     if ($existsStmt) {
-        mysqli_stmt_bind_param($existsStmt, 'iis', $companyId, $switchId, $portType);
+        mysqli_stmt_bind_param($existsStmt, 'i', $companyId);
         if (mysqli_stmt_execute($existsStmt)) {
             $existsRes = mysqli_stmt_get_result($existsStmt);
             $existingCount = (int)(($existsRes ? mysqli_fetch_assoc($existsRes) : [])['c'] ?? 0);
         }
         mysqli_stmt_close($existsStmt);
     }
-    if ($existingCount > 0) {
+    if ($existingCount >= $count) {
         return;
     }
-    $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, label, status, color, comments) VALUES (?, ?, ?, ?, ?, "unknown", "black", "")';
+
+    $insertSql = 'INSERT INTO switch_ports (company_id, port_number, label, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, "")';
     $insertStmt = mysqli_prepare($conn, $insertSql);
     if (!$insertStmt) {
         return;
     }
-    for ($n = 1; $n <= $count; $n++) {
-        $label = strtoupper(str_replace('_', '+', $portType)) . ' ' . $n;
-        mysqli_stmt_bind_param($insertStmt, 'iisis', $companyId, $switchId, $portType, $n, $label);
+    for ($n = $existingCount + 1; $n <= $count; $n++) {
+        $label = 'RJ45 ' . $n;
+        mysqli_stmt_bind_param($insertStmt, 'iisii', $companyId, $n, $label, $defaultStatusId, $defaultColorId);
         mysqli_stmt_execute($insertStmt);
     }
     mysqli_stmt_close($insertStmt);
 }
 
-seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount);
+seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
+seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
+seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 
-$sql = "SELECT id, port_type, port_number, label, status, color, comments
-        FROM switch_ports
-        WHERE company_id = ?
-          AND equipment_id = ?
-        ORDER BY FIELD(port_type, 'rj45', 'sfp', 'sfp_plus'), port_number ASC";
-$stmt = mysqli_prepare($conn, $sql);
-$result = false;
-if ($stmt) {
-    $companyId = (int)$company_id;
-    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $switchId);
-    if (mysqli_stmt_execute($stmt)) {
-        $result = mysqli_stmt_get_result($stmt);
+if ($hasEquipmentId && $hasPortType) {
+    $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments
+            FROM switch_ports sp
+            LEFT JOIN switch_status ss ON ss.id = sp.status_id
+            LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+            WHERE sp.company_id = ?
+              AND sp.equipment_id = ?
+            ORDER BY FIELD(sp.port_type, 'rj45', 'sfp', 'sfp_plus'), sp.port_number ASC";
+    $stmt = mysqli_prepare($conn, $sql);
+    $result = false;
+    if ($stmt) {
+        $companyId = (int)$company_id;
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $switchId);
+        if (mysqli_stmt_execute($stmt)) {
+            $result = mysqli_stmt_get_result($stmt);
+        }
+    }
+} else {
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments
+            FROM switch_ports sp
+            LEFT JOIN switch_status ss ON ss.id = sp.status_id
+            LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+            WHERE sp.company_id = ?
+            ORDER BY sp.port_number ASC";
+    $stmt = mysqli_prepare($conn, $sql);
+    $result = false;
+    if ($stmt) {
+        $companyId = (int)$company_id;
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        if (mysqli_stmt_execute($stmt)) {
+            $result = mysqli_stmt_get_result($stmt);
+        }
     }
 }
 
@@ -139,9 +231,11 @@ if ($stmt) {
 echo json_encode([
     'success' => true,
     'ports' => $ports,
+    'statuses' => $statuses,
+    'colors' => $colors,
     'layout' => [
         'rj45' => $rj45Count,
-        'sfp' => $sfpCount,
-        'sfp_plus' => $sfpPlusCount,
+        'sfp' => ($hasEquipmentId && $hasPortType) ? $sfpCount : 0,
+        'sfp_plus' => ($hasEquipmentId && $hasPortType) ? $sfpPlusCount : 0,
     ],
 ]);
