@@ -18,6 +18,7 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
     <ul class="sidebar-nav">
         <li><a href="<?php echo BASE_URL; ?>modules/equipment/" class="<?php echo $current_dir === 'equipment' ? 'active' : ''; ?>">🖥️ Equipment</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/workstations/" class="<?php echo $current_dir === 'workstations' ? 'active' : ''; ?>">💻 Workstations</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/switch_ports/" class="<?php echo $current_dir === 'switch_ports' ? 'active' : ''; ?>">🔌 Switch Ports</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/tickets/" class="<?php echo $current_dir === 'tickets' ? 'active' : ''; ?>">🎫 Tickets</a></li>
     </ul>
 
