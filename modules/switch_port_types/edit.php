@@ -175,6 +175,20 @@ function cr_try_query($conn, $sql, &$error = null) {
     }
 }
 
+function cr_humanize_db_error($message) {
+    $raw = trim((string)$message);
+    if ($raw === '') {
+        return 'An unexpected database error occurred.';
+    }
+
+    $lower = strtolower($raw);
+    if (str_contains($lower, 'switch_ports_ibfk_5') || (str_contains($lower, 'foreign key constraint fails') && str_contains($lower, 'switch_ports') && str_contains($lower, 'switch_port_types'))) {
+        return 'This switch port type is already used by one or more switch ports and cannot be renamed or deleted.';
+    }
+
+    return $raw;
+}
+
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -268,13 +282,22 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        mysqli_query($conn, 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        $deleteError = null;
+        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $deleteRes = cr_try_query($conn, $deleteSql, $deleteError);
+        if ($deleteRes === false) {
+            $_SESSION['itm_flash_error'] = cr_humanize_db_error($deleteError ?? mysqli_error($conn));
+        }
     }
     header('Location: ' . $listUrl);
     exit;
 }
 
 $errors = [];
+if (!empty($_SESSION['itm_flash_error'])) {
+    $errors[] = (string)$_SESSION['itm_flash_error'];
+    unset($_SESSION['itm_flash_error']);
+}
 $data = [];
 foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
@@ -413,7 +436,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             header('Location: ' . $listUrl);
             exit;
         }
-        $dbError = $saveError ?? mysqli_error($conn);
+        $dbError = cr_humanize_db_error($saveError ?? mysqli_error($conn));
         $errors[] = 'Database error: ' . $dbError;
     }
 }
