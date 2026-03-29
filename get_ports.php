@@ -264,6 +264,32 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
+if (!($hasEquipmentId && $hasPortType)) {
+    for ($n = 1; $n <= $sfpCount; $n++) {
+        $ports[] = [
+            'id' => 'virtual-sfp-' . $n,
+            'port_type' => 'sfp',
+            'port_number' => $n,
+            'label' => 'SFP ' . $n,
+            'status' => 'Unknown',
+            'color' => 'black',
+            'comments' => '',
+        ];
+    }
+
+    for ($n = 1; $n <= $sfpPlusCount; $n++) {
+        $ports[] = [
+            'id' => 'virtual-sfp-plus-' . $n,
+            'port_type' => 'sfp_plus',
+            'port_number' => $n,
+            'label' => 'SFP+ ' . $n,
+            'status' => 'Unknown',
+            'color' => 'black',
+            'comments' => '',
+        ];
+    }
+}
+
 echo json_encode([
     'success' => true,
     'ports' => $ports,
@@ -271,7 +297,7 @@ echo json_encode([
     'colors' => $colors,
     'layout' => [
         'rj45' => $rj45Count,
-        'sfp' => ($hasEquipmentId && $hasPortType) ? $sfpCount : 0,
-        'sfp_plus' => ($hasEquipmentId && $hasPortType) ? $sfpPlusCount : 0,
+        'sfp' => $sfpCount,
+        'sfp_plus' => $sfpPlusCount,
     ],
 ]);
