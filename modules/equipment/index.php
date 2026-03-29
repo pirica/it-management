@@ -290,6 +290,9 @@ if ($hasSelectedSwitch) {
             if (normalized === 'sfpplus') {
                 return 'sfp_plus';
             }
+            if (normalized === 'sfp_plus') {
+                return 'sfp_plus';
+            }
             if (normalized === 'sfp') {
                 return 'sfp';
             }
