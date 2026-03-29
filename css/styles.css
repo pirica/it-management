@@ -512,30 +512,69 @@ input[type="color"] {
 }
 
 .switch-port {
-    width: 48px;
-    height: 48px;
-    border-radius: 4px;
+    width: 74px;
+    height: 74px;
+    border-radius: 6px;
     border: 1px solid var(--border);
-    background: var(--bg-primary);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     cursor: pointer;
     box-shadow: var(--shadow);
+    overflow: hidden;
 }
 
 .switch-port-num {
     font-size: 12px;
-    color: var(--text-primary);
-    z-index: 2;
+    color: #111;
+    z-index: 4;
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    font-weight: 700;
 }
 
 .switch-color-indicator {
     position: absolute;
-    inset: 0;
-    border-radius: 4px;
+    inset: 12px;
+    border-radius: 3px;
     opacity: 1;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.switch-vlan-indicator {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.switch-port-frame {
+    position: absolute;
+    inset: 8px;
+    border-radius: 4px;
+    border: 8px solid #000;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.switch-status-tag {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    background: #00b140;
+    color: #fff;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 3px 5px;
+    z-index: 4;
     pointer-events: none;
 }
 
