@@ -2,6 +2,16 @@
 require 'config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
+ini_set('display_errors', '0');
+
+register_shutdown_function(static function () {
+    $lastError = error_get_last();
+    if ($lastError === null || headers_sent()) {
+        return;
+    }
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Fatal server error']);
+});
 
 if ($company_id <= 0) {
     http_response_code(401);

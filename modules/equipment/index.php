@@ -425,12 +425,26 @@ if ($hasSelectedSwitch) {
         }
 
         function savePort(payload, showMessage) {
+            function parseApiResponse(response) {
+                return response.text().then(function (text) {
+                    const raw = String(text || '').trim();
+                    if (!raw) {
+                        throw new Error('Empty response from server');
+                    }
+                    try {
+                        return JSON.parse(raw);
+                    } catch (e) {
+                        throw new Error('Invalid server JSON response');
+                    }
+                });
+            }
+
             return fetch(apiUpdate, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-                .then(function (r) { return r.json(); })
+                .then(parseApiResponse)
                 .then(function (resp) {
                     if (!resp.success) {
                         throw new Error(resp.error || 'Save failed');
@@ -444,7 +458,19 @@ if ($hasSelectedSwitch) {
         function loadPorts() {
             const localLayout = fallbackLayout();
             fetch(apiGet + '?switch_id=' + encodeURIComponent(selectedSwitchId))
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    return r.text().then(function (text) {
+                        const raw = String(text || '').trim();
+                        if (!raw) {
+                            throw new Error('Empty response from server');
+                        }
+                        try {
+                            return JSON.parse(raw);
+                        } catch (e) {
+                            throw new Error('Invalid server JSON response');
+                        }
+                    });
+                })
                 .then(function (data) {
                     if (!data.success) {
                         throw new Error(data.error || 'Failed to load ports');
