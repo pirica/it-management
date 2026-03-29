@@ -809,6 +809,9 @@ CREATE TABLE `ui_configuration` (
   `new_button_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
   `export_buttons_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
   `back_save_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
+  `sidebar_visibility` longtext COLLATE utf8mb4_unicode_ci,
+  `sidebar_main_order` longtext COLLATE utf8mb4_unicode_ci,
+  `sidebar_submenu_order` longtext COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -817,11 +820,29 @@ CREATE TABLE `ui_configuration` (
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `ui_configuration`
-INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `created_at`, `updated_at`) VALUES ('1', '1', 'left_right', 'left_right', 'left_right', 'left_right', '2026-03-28 19:43:17', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `created_at`, `updated_at`) VALUES ('2', '2', 'left_right', 'left_right', 'left_right', 'left_right', '2026-03-28 19:44:25', '2026-03-28 19:44:25');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `created_at`, `updated_at`) VALUES ('3', '3', 'left_right', 'left_right', 'left_right', 'left_right', '2026-03-28 19:44:25', '2026-03-28 19:44:25');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `created_at`, `updated_at`) VALUES ('4', '4', 'left', 'left_right', 'left_right', 'left_right', '2026-03-28 19:44:25', '2026-03-28 19:51:29');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `created_at`, `updated_at`) VALUES ('5', '5', 'left_right', 'left_right', 'left_right', 'left_right', '2026-03-28 19:44:25', '2026-03-28 19:44:25');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('1', '1', 'left_right', 'left_right', 'left_right', 'left_right', NULL, NULL, NULL, '2026-03-28 19:43:17', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('2', '2', 'left_right', 'left_right', 'left_right', 'left_right', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:44:25');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('3', '3', 'left_right', 'left_right', 'left_right', 'left_right', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:44:25');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('4', '4', 'left', 'left_right', 'left_right', 'left_right', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:51:29');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('5', '5', 'left_right', 'left_right', 'left_right', 'left_right', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:44:25');
+
+-- Table structure for `sidebar_layout`
+DROP TABLE IF EXISTS `sidebar_layout`;
+CREATE TABLE `sidebar_layout` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `entry_type` enum('section','item') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entry_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `section_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `display_order` int NOT NULL DEFAULT '0',
+  `is_visible` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sidebar_layout_entry` (`company_id`,`entry_type`,`entry_id`),
+  KEY `idx_sidebar_layout_company_type_order` (`company_id`,`entry_type`,`display_order`),
+  CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `user_roles`
 DROP TABLE IF EXISTS `user_roles`;

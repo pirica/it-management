@@ -170,7 +170,26 @@ function itm_ensure_ui_configuration_table($conn) {
         }
     }
 
-    return true;
+    return itm_ensure_sidebar_layout_table($conn);
+}
+
+function itm_ensure_sidebar_layout_table($conn) {
+    $sql = "CREATE TABLE IF NOT EXISTS `sidebar_layout` (
+        `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        `company_id` INT NOT NULL,
+        `entry_type` ENUM('section','item') NOT NULL,
+        `entry_id` VARCHAR(100) NOT NULL,
+        `section_id` VARCHAR(100) NULL,
+        `display_order` INT NOT NULL DEFAULT 0,
+        `is_visible` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY `uq_sidebar_layout_entry` (`company_id`, `entry_type`, `entry_id`),
+        KEY `idx_sidebar_layout_company_type_order` (`company_id`, `entry_type`, `display_order`),
+        CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    return mysqli_query($conn, $sql) === true;
 }
 
 function itm_get_ui_configuration($conn, $company_id) {
@@ -194,10 +213,24 @@ function itm_get_ui_configuration($conn, $company_id) {
     mysqli_stmt_close($stmt);
 
     if (!$row) {
+        $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
+        if ($layoutConfig !== null) {
+            $defaults['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
+            $defaults['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
+            $defaults['sidebar_submenu_order'] = $layoutConfig['sidebar_submenu_order'];
+        }
         return $defaults;
     }
 
-    return itm_normalize_ui_configuration($row);
+    $config = itm_normalize_ui_configuration($row);
+    $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
+    if ($layoutConfig !== null) {
+        $config['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
+        $config['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
+        $config['sidebar_submenu_order'] = $layoutConfig['sidebar_submenu_order'];
+    }
+
+    return $config;
 }
 
 function itm_normalize_ui_configuration($values) {
@@ -356,5 +389,190 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     $ok = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
-    return $ok;
+    if (!$ok) {
+        return false;
+    }
+
+    return itm_save_sidebar_layout($conn, $company_id, $config);
+}
+
+function itm_get_sidebar_layout_config($conn, $company_id) {
+    $company_id = (int)$company_id;
+    if ($company_id <= 0 || !itm_ensure_sidebar_layout_table($conn)) {
+        return null;
+    }
+
+    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
+            FROM sidebar_layout
+            WHERE company_id = ?
+            ORDER BY entry_type ASC, display_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $company_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $rows = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
+    mysqli_stmt_close($stmt);
+
+    if (!$rows) {
+        return null;
+    }
+
+    $visibility = [];
+    $mainOrder = [];
+    $submenuOrder = [];
+
+    foreach ($rows as $row) {
+        $entryType = (string)($row['entry_type'] ?? '');
+        $entryId = (string)($row['entry_id'] ?? '');
+        $sectionId = (string)($row['section_id'] ?? '');
+        $visible = ((int)($row['is_visible'] ?? 1) === 0) ? 0 : 1;
+
+        if ($entryId === '') {
+            continue;
+        }
+
+        $visibility[$entryId] = $visible;
+        if ($entryType === 'section') {
+            $mainOrder[] = $entryId;
+            if (!isset($submenuOrder[$entryId])) {
+                $submenuOrder[$entryId] = [];
+            }
+            continue;
+        }
+
+        if (!isset($submenuOrder[$sectionId])) {
+            $submenuOrder[$sectionId] = [];
+        }
+        $submenuOrder[$sectionId][] = $entryId;
+    }
+
+    return [
+        'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
+        'sidebar_main_order' => itm_normalize_sidebar_main_order($mainOrder),
+        'sidebar_submenu_order' => itm_normalize_sidebar_submenu_order($submenuOrder),
+    ];
+}
+
+function itm_sidebar_layout_rows_from_config($config) {
+    $sidebarStructure = itm_sidebar_structure();
+    $defaultParentMap = itm_sidebar_default_item_parent_map();
+    $catalog = itm_sidebar_item_catalog();
+    $rows = [];
+    $order = 0;
+
+    foreach ($config['sidebar_main_order'] as $sectionId) {
+        $rows[] = [
+            'entry_type' => 'section',
+            'entry_id' => $sectionId,
+            'section_id' => null,
+            'display_order' => $order++,
+            'is_visible' => ($config['sidebar_visibility'][$sectionId] ?? 1) === 0 ? 0 : 1,
+        ];
+    }
+
+    foreach ($config['sidebar_submenu_order'] as $sectionId => $items) {
+        if (!is_array($items)) {
+            continue;
+        }
+        $itemOrder = 0;
+        foreach ($items as $itemId) {
+            if (!isset($catalog[$itemId])) {
+                continue;
+            }
+            $rows[] = [
+                'entry_type' => 'item',
+                'entry_id' => $itemId,
+                'section_id' => $sectionId,
+                'display_order' => $itemOrder++,
+                'is_visible' => ($config['sidebar_visibility'][$itemId] ?? 1) === 0 ? 0 : 1,
+            ];
+        }
+    }
+
+    $knownRows = [];
+    foreach ($rows as $row) {
+        $knownRows[$row['entry_type'] . ':' . $row['entry_id']] = true;
+    }
+
+    foreach ($sidebarStructure as $section) {
+        if (!isset($knownRows['section:' . $section['id']])) {
+            $rows[] = [
+                'entry_type' => 'section',
+                'entry_id' => $section['id'],
+                'section_id' => null,
+                'display_order' => $order++,
+                'is_visible' => 1,
+            ];
+        }
+    }
+
+    foreach (array_keys($catalog) as $itemId) {
+        if (isset($knownRows['item:' . $itemId])) {
+            continue;
+        }
+        $parent = $defaultParentMap[$itemId] ?? '';
+        $sectionItems = $config['sidebar_submenu_order'][$parent] ?? [];
+        $rows[] = [
+            'entry_type' => 'item',
+            'entry_id' => $itemId,
+            'section_id' => $parent,
+            'display_order' => is_array($sectionItems) ? count($sectionItems) : 0,
+            'is_visible' => ($config['sidebar_visibility'][$itemId] ?? 1) === 0 ? 0 : 1,
+        ];
+    }
+
+    return $rows;
+}
+
+function itm_save_sidebar_layout($conn, $company_id, $config) {
+    $company_id = (int)$company_id;
+    if ($company_id <= 0 || !itm_ensure_sidebar_layout_table($conn)) {
+        return false;
+    }
+
+    $rows = itm_sidebar_layout_rows_from_config($config);
+
+    mysqli_begin_transaction($conn);
+    $deleteStmt = mysqli_prepare($conn, 'DELETE FROM sidebar_layout WHERE company_id = ?');
+    if (!$deleteStmt) {
+        mysqli_rollback($conn);
+        return false;
+    }
+    mysqli_stmt_bind_param($deleteStmt, 'i', $company_id);
+    $deleteOk = mysqli_stmt_execute($deleteStmt);
+    mysqli_stmt_close($deleteStmt);
+    if (!$deleteOk) {
+        mysqli_rollback($conn);
+        return false;
+    }
+
+    $insertStmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO sidebar_layout (company_id, entry_type, entry_id, section_id, display_order, is_visible) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    if (!$insertStmt) {
+        mysqli_rollback($conn);
+        return false;
+    }
+
+    foreach ($rows as $row) {
+        $entryType = (string)$row['entry_type'];
+        $entryId = (string)$row['entry_id'];
+        $sectionId = isset($row['section_id']) ? (string)$row['section_id'] : null;
+        $displayOrder = (int)$row['display_order'];
+        $isVisible = (int)$row['is_visible'];
+        mysqli_stmt_bind_param($insertStmt, 'isssii', $company_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
+        if (!mysqli_stmt_execute($insertStmt)) {
+            mysqli_stmt_close($insertStmt);
+            mysqli_rollback($conn);
+            return false;
+        }
+    }
+
+    mysqli_stmt_close($insertStmt);
+    return mysqli_commit($conn);
 }
