@@ -627,6 +627,24 @@ CREATE TABLE `suppliers` (
 -- Data for `suppliers`
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1');
 
+-- Table structure for `switch_status`
+DROP TABLE IF EXISTS `switch_status`;
+CREATE TABLE `switch_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `switch_cablecolors`
+DROP TABLE IF EXISTS `switch_cablecolors`;
+CREATE TABLE `switch_cablecolors` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `color` (`color`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
 CREATE TABLE `switch_ports` (
@@ -634,14 +652,18 @@ CREATE TABLE `switch_ports` (
   `company_id` int NOT NULL,
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
-  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
+  `status_id` int NOT NULL,
+  `color_id` int NOT NULL,
   `comments` text COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_switch_port` (`company_id`,`port_number`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+  KEY `status_id` (`status_id`),
+  KEY `color_id` (`color_id`),
+  CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
+  CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `switch_status`
