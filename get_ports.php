@@ -36,6 +36,10 @@ function ensure_switch_ports_schema(mysqli $conn): bool
     @mysqli_query($conn, "ALTER TABLE switch_ports ADD CONSTRAINT switch_ports_ibfk_2 FOREIGN KEY (equipment_id) REFERENCES equipment (id) ON DELETE CASCADE");
     return true;
 }
+$fiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
+$fiberName = strtolower(trim((string)$switch['fiber_name']));
+$sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
+$sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
 
 if (!ensure_switch_ports_schema($conn)) {
     http_response_code(500);
