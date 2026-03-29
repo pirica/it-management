@@ -635,13 +635,31 @@ CREATE TABLE `switch_ports` (
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
-  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey';
+  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
   `comments` text COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_switch_port` (`company_id`,`port_number`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `switch_status`
+DROP TABLE IF EXISTS `switch_status`;
+CREATE TABLE `switch_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `switch_cablecolors`
+DROP TABLE IF EXISTS `switch_cablecolors`;
+CREATE TABLE `switch_cablecolors` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `color` (`color`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_categories`
