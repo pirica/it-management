@@ -83,8 +83,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if ($data['name'] === '' || (int)$data['equipment_type_id'] <= 0 || (int)$data['status_id'] <= 0 || (int)$data['warranty_type_id'] <= 0) {
-        $error = 'Please fill required fields: Name, Type, Status, Warranty Type.';
+    $isSwitchEquipment = $switchTypeId > 0 && (int)$data['equipment_type_id'] === $switchTypeId;
+
+    if ($data['name'] === '' || (int)$data['equipment_type_id'] <= 0) {
+        $error = 'Please fill required fields: Name, Type.';
+    } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
+        $error = 'Please fill required field: RJ45 Ports for switch equipment.';
     }
 
     $photoFilename = $data['photo_filename'];
@@ -237,7 +241,7 @@ function render_options($items, $selected = '') {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Status *</label><select name="status_id" required data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="status"><option value="">-- Select --</option><?php render_options($statuses, $data['status_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Status</label><select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="status"><option value="">-- Select --</option><?php render_options($statuses, $data['status_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
@@ -249,7 +253,7 @@ function render_options($items, $selected = '') {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>MAC Address</label><input name="mac_address" value="<?php echo sanitize($data['mac_address']); ?>"></div>
-                <div class="form-group"><label>Warranty Type *</label><select name="warranty_type_id" required data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
@@ -282,7 +286,7 @@ function render_options($items, $selected = '') {
             <div id="switch-fields" style="display:none;">
                 <h3 style="margin-top:20px;">Switch Details</h3>
                 <div class="form-row">
-                    <div class="form-group"><label>RJ45 Ports</label><select name="switch_rj45_id"><option value="">-- None --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?></select></div>
+                    <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?></select></div>
                     <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?></select></div>
                 </div>
                 <div class="form-row">
