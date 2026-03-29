@@ -261,13 +261,24 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        mysqli_query($conn, 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            header('Location: ' . $listUrl);
+            exit;
+        }
     }
     header('Location: ' . $listUrl);
     exit;
 }
 
 $errors = [];
+if (!empty($_SESSION['crud_error'])) {
+    $errors[] = (string)$_SESSION['crud_error'];
+    unset($_SESSION['crud_error']);
+}
 $data = [];
 foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
@@ -342,10 +353,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     }
                     $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
                         . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
-                    if (mysqli_query($conn, $insertSql)) {
+                    $dbErrorCode = 0;
+                    $dbErrorMessage = '';
+                    if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
                         $data[$name] = (string)(int)mysqli_insert_id($conn);
                     } else {
-                        $errors[] = 'Could not add related value for ' . $name . ': ' . mysqli_error($conn);
+                        $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
                         $data[$name] = 'NULL';
                     }
                 }
@@ -393,11 +406,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
-        if (mysqli_query($conn, $sql)) {
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
             header('Location: ' . $listUrl);
             exit;
         }
-        $errors[] = 'Database error: ' . mysqli_error($conn);
+        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 

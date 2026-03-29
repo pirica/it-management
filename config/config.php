@@ -65,6 +65,41 @@ function escape_sql($data, $conn) {
     return mysqli_real_escape_string($conn, $data);
 }
 
+
+function itm_run_query($conn, $sql, &$errorCode = null, &$errorMessage = null) {
+    $errorCode = null;
+    $errorMessage = null;
+
+    try {
+        $result = mysqli_query($conn, $sql);
+        if ($result === false) {
+            $errorCode = (int)mysqli_errno($conn);
+            $errorMessage = (string)mysqli_error($conn);
+        }
+        return $result;
+    } catch (Throwable $t) {
+        $errorCode = (int)$t->getCode();
+        $errorMessage = (string)$t->getMessage();
+        return false;
+    }
+}
+
+function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
+    switch ((int)$errorCode) {
+        case 1451:
+            return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
+        case 1452:
+            return 'The selected related record does not exist anymore. Refresh the page and choose a valid value.';
+        case 1062:
+            return 'A record with the same unique value already exists. Use a different value.';
+        default:
+            if ($fallbackMessage !== '') {
+                return 'Database error: ' . $fallbackMessage;
+            }
+            return 'A database error occurred. Please try again.';
+    }
+}
+
 function itm_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
