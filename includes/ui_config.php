@@ -84,32 +84,46 @@ function itm_sidebar_structure($conn = null) {
         $conn = $GLOBALS['conn'];
     }
 
-    if (!$conn) {
-        return $structure;
+    $moduleNames = [];
+    $modulesRoot = dirname(__DIR__) . '/modules';
+    if (is_dir($modulesRoot)) {
+        $moduleDirs = glob($modulesRoot . '/*', GLOB_ONLYDIR) ?: [];
+        foreach ($moduleDirs as $moduleDir) {
+            $moduleName = basename($moduleDir);
+            if ($moduleName === '' || isset($existingItemIds[$moduleName])) {
+                continue;
+            }
+
+            if (is_file($moduleDir . '/index.php')) {
+                $moduleNames[$moduleName] = true;
+            }
+        }
     }
 
-    $tablesRes = mysqli_query($conn, 'SHOW TABLES');
-    if (!$tablesRes) {
-        return $structure;
+    if ($conn) {
+        $tablesRes = mysqli_query($conn, 'SHOW TABLES');
+        if ($tablesRes) {
+            while ($tableRow = mysqli_fetch_array($tablesRes)) {
+                $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
+                if ($table === '' || isset($existingItemIds[$table])) {
+                    continue;
+                }
+
+                $moduleIndex = $modulesRoot . '/' . $table . '/index.php';
+                if (is_file($moduleIndex)) {
+                    $moduleNames[$table] = true;
+                }
+            }
+        }
     }
 
     $discoveredItems = [];
-    while ($tableRow = mysqli_fetch_array($tablesRes)) {
-        $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
-        if ($table === '' || isset($existingItemIds[$table])) {
-            continue;
-        }
-
-        $moduleIndex = dirname(__DIR__) . '/modules/' . $table . '/index.php';
-        if (!is_file($moduleIndex)) {
-            continue;
-        }
-
+    foreach (array_keys($moduleNames) as $moduleName) {
         $discoveredItems[] = [
-            'id' => $table,
-            'label' => '🧩 ' . itm_sidebar_humanize_table_name($table),
-            'href' => 'modules/' . $table . '/',
-            'match_dir' => $table,
+            'id' => $moduleName,
+            'label' => '🧩 ' . itm_sidebar_humanize_table_name($moduleName),
+            'href' => 'modules/' . $moduleName . '/',
+            'match_dir' => $moduleName,
         ];
     }
 
