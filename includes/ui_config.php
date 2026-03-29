@@ -1,6 +1,6 @@
 <?php
 
-function itm_sidebar_structure() {
+function itm_sidebar_base_structure() {
     return [
         [
             'id' => 'dashboard',
@@ -59,6 +59,77 @@ function itm_sidebar_structure() {
             ],
         ],
     ];
+}
+
+function itm_sidebar_humanize_table_name($tableName) {
+    $label = str_replace('_', ' ', (string)$tableName);
+    $label = trim($label);
+    if ($label === '') {
+        return '';
+    }
+
+    return ucwords($label);
+}
+
+function itm_sidebar_structure($conn = null) {
+    $structure = itm_sidebar_base_structure();
+    $existingItemIds = [];
+    foreach ($structure as $section) {
+        foreach (($section['items'] ?? []) as $item) {
+            $existingItemIds[$item['id']] = true;
+        }
+    }
+
+    if ($conn === null && isset($GLOBALS['conn']) && is_object($GLOBALS['conn'])) {
+        $conn = $GLOBALS['conn'];
+    }
+
+    if (!$conn) {
+        return $structure;
+    }
+
+    $tablesRes = mysqli_query($conn, 'SHOW TABLES');
+    if (!$tablesRes) {
+        return $structure;
+    }
+
+    $discoveredItems = [];
+    while ($tableRow = mysqli_fetch_array($tablesRes)) {
+        $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
+        if ($table === '' || isset($existingItemIds[$table])) {
+            continue;
+        }
+
+        $moduleIndex = dirname(__DIR__) . '/modules/' . $table . '/index.php';
+        if (!is_file($moduleIndex)) {
+            continue;
+        }
+
+        $discoveredItems[] = [
+            'id' => $table,
+            'label' => '🧩 ' . itm_sidebar_humanize_table_name($table),
+            'href' => 'modules/' . $table . '/',
+            'match_dir' => $table,
+        ];
+    }
+
+    if (!$discoveredItems) {
+        return $structure;
+    }
+
+    usort($discoveredItems, static function ($a, $b) {
+        return strcmp($a['label'], $b['label']);
+    });
+
+    foreach ($structure as &$section) {
+        if (($section['id'] ?? '') === 'reference_data') {
+            $section['items'] = array_merge($section['items'], $discoveredItems);
+            break;
+        }
+    }
+    unset($section);
+
+    return $structure;
 }
 
 function itm_default_sidebar_visibility() {
