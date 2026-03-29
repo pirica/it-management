@@ -500,6 +500,22 @@ if (!in_array($sort, $columns, true)) {
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
+
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_'))
+        ? $searchRaw
+        : '%' . $searchRaw . '%';
+    $searchValue = mysqli_real_escape_string($conn, $searchPattern);
+    $searchConditions = [];
+    foreach ($columns as $col) {
+        $searchConditions[] = "CAST(e.`" . str_replace('`', '``', $col) . "` AS CHAR) LIKE '" . $searchValue . "'";
+    }
+    if (!empty($searchConditions)) {
+        $where .= ' AND (' . implode(' OR ', $searchConditions) . ')';
+    }
+}
+
 $sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
 $rows = mysqli_query(
@@ -520,6 +536,17 @@ function emp_label($field) {
         return 'Employment Status';
     }
     return ucwords(str_replace('_', ' ', trim((string)$field)));
+}
+
+function emp_build_query($params) {
+    $normalized = [];
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === '') {
+            continue;
+        }
+        $normalized[$key] = $value;
+    }
+    return http_build_query($normalized);
 }
 ?>
 <!DOCTYPE html>
@@ -566,15 +593,39 @@ function emp_label($field) {
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="create.php" class="btn btn-primary">➕ New Employee</a>
                     <?php if ($showDuplicatesOnly): ?>
-                        <a href="index.php" class="btn btn-sm">Show All</a>
+                        <a href="index.php?<?php echo sanitize(emp_build_query(['search' => $searchRaw])); ?>" class="btn btn-sm">Show All</a>
                     <?php else: ?>
-                        <a href="index.php?show=duplicates" class="btn btn-sm">⚠️ Duplicates (<?php echo (int)$duplicatesCount; ?>)</a>
+                        <a href="index.php?<?php echo sanitize(emp_build_query(['show' => 'duplicates', 'search' => $searchRaw])); ?>" class="btn btn-sm">⚠️ Duplicates (<?php echo (int)$duplicatesCount; ?>)</a>
                     <?php endif; ?>
                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete ALL employees for this company? This cannot be undone.');">
                         <input type="hidden" name="action" value="delete_all_employees">
                         <button type="submit" class="btn btn-danger">✖ Delete ALL</button>
                     </form>
                 </div>
+            </div>
+
+            <div class="card" style="margin-bottom:16px;">
+                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <?php if ($showDuplicatesOnly): ?>
+                        <input type="hidden" name="show" value="duplicates">
+                    <?php endif; ?>
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                    <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                        <label for="employeeSearch">Search (all employee fields)</label>
+                        <input
+                            type="text"
+                            id="employeeSearch"
+                            name="search"
+                            value="<?php echo sanitize($searchRaw); ?>"
+                            placeholder="Use SQL wildcards, e.g. %%smith%%"
+                        >
+                    </div>
+                    <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <a href="index.php?<?php echo sanitize(emp_build_query(['show' => $showDuplicatesOnly ? 'duplicates' : null, 'sort' => $sort, 'dir' => $dir])); ?>" class="btn btn-sm">Clear</a>
+                    </div>
+                </form>
             </div>
 
             <div class="card" style="margin-bottom:16px;">
@@ -604,7 +655,7 @@ function emp_label($field) {
                         <?php foreach ($columns as $col): ?>
                             <?php $nextDir = ($sort === $col && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th>
-                                <a href="?sort=<?php echo urlencode($col); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                <a href="?<?php echo sanitize(emp_build_query(['sort' => $col, 'dir' => $nextDir, 'show' => $showDuplicatesOnly ? 'duplicates' : null, 'search' => $searchRaw])); ?>" style="text-decoration:none;color:inherit;">
                                     <?php echo sanitize(emp_label($col)); ?>
                                     <?php if ($sort === $col): ?>
                                         <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>

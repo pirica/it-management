@@ -1,6 +1,27 @@
 <?php
 require '../../config/config.php';
 
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$searchSql = '';
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchSql = " AND (
+        CAST(e.id AS CHAR) LIKE '{$searchEsc}'
+        OR e.name LIKE '{$searchEsc}'
+        OR e.serial_number LIKE '{$searchEsc}'
+        OR e.model LIKE '{$searchEsc}'
+        OR e.hostname LIKE '{$searchEsc}'
+        OR e.ip_address LIKE '{$searchEsc}'
+        OR c.name LIKE '{$searchEsc}'
+        OR et.name LIKE '{$searchEsc}'
+        OR m.name LIKE '{$searchEsc}'
+        OR l.name LIKE '{$searchEsc}'
+        OR es.name LIKE '{$searchEsc}'
+        OR CAST(e.active AS CHAR) LIKE '{$searchEsc}'
+    )";
+}
+
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.active,
                c.name AS company_name,
                et.name AS equipment_type_name,
@@ -14,7 +35,28 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN it_locations l ON l.id = e.location_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
         WHERE e.company_id = $company_id
-        ORDER BY e.id DESC";
+        {$searchSql}";
+$sortableColumns = ['id', 'name', 'equipment_type_name', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number', 'active'];
+$sort = (string)($_GET['sort'] ?? 'id');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!in_array($sort, $sortableColumns, true)) {
+    $sort = 'id';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+$orderByMap = [
+    'id' => 'e.id',
+    'name' => 'e.name',
+    'equipment_type_name' => 'et.name',
+    'manufacturer_name' => 'm.name',
+    'location_name' => 'l.name',
+    'status_name' => 'es.name',
+    'ip_address' => 'e.ip_address',
+    'serial_number' => 'e.serial_number',
+    'active' => 'e.active',
+];
+$sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
 $result = mysqli_query($conn, $sql);
 
 $switches = [];
@@ -66,19 +108,40 @@ if (!$hasSelectedSwitch && !empty($switches)) {
                 <a href="create.php" class="btn btn-primary">➕</a>
             </div>
 
+            <div class="card" style="margin-bottom:16px;">
+                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <?php if ($hasSelectedSwitch): ?>
+                        <input type="hidden" name="switch_id" value="<?php echo (int)$selectedSwitchId; ?>">
+                    <?php endif; ?>
+                    <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                        <label for="equipmentSearch">Search (all fields)</label>
+                        <input type="text" id="equipmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%switch%%">
+                    </div>
+                    <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <a href="index.php<?php echo $hasSelectedSwitch ? '?switch_id=' . (int)$selectedSwitchId : ''; ?>" class="btn btn-sm">Clear</a>
+                    </div>
+                </form>
+            </div>
+
             <div class="card" style="overflow:auto;">
                 <table>
                     <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Manufacturer</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                        <th>IP Address</th>
-                        <th>Serial Number</th>
-                        <th>Active</th>
+                        <?php foreach ([
+                            'id' => 'ID',
+                            'name' => 'Name',
+                            'equipment_type_name' => 'Type',
+                            'manufacturer_name' => 'Manufacturer',
+                            'location_name' => 'Location',
+                            'status_name' => 'Status',
+                            'ip_address' => 'IP Address',
+                            'serial_number' => 'Serial Number',
+                            'active' => 'Active',
+                        ] as $field => $label): ?>
+                            <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                        <?php endforeach; ?>
                         <th>Actions</th>
                     </tr>
                     </thead>
@@ -104,7 +167,7 @@ if (!$hasSelectedSwitch && !empty($switches)) {
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($isSwitch): ?>
-                                        <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?>#switch-port-manager">Switch Port Manager</a>
+                                        <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
                                     <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
                                 </td>
@@ -122,6 +185,9 @@ if (!$hasSelectedSwitch && !empty($switches)) {
                     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                         <h2>Switch Port Manager</h2>
                         <form method="get" style="display:flex;align-items:center;gap:8px;">
+                            <?php if ($searchRaw !== ''): ?>
+                                <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
+                            <?php endif; ?>
                             <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
                             <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
                                 <?php foreach ($switches as $switchItem): ?>
