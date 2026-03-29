@@ -634,65 +634,15 @@ CREATE TABLE `switch_ports` (
   `company_id` int NOT NULL,
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('uplink','empty','down','unknown') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unknown',
-  `color` enum('green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'black',
+  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  `color` enum('','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '';
   `comments` text COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_switch_port` (`company_id`,`port_number`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Data for `switch_ports`
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('1', '1', '1', 'Port 1', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('2', '1', '2', 'Port 2', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('3', '1', '3', 'Port 3', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('4', '1', '4', 'Port 4', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('5', '1', '5', 'Port 5', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('6', '1', '6', 'Port 6', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('7', '1', '7', 'Port 7', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('8', '1', '8', 'Port 8', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('9', '1', '9', 'Port 9', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('10', '1', '10', 'Port 10', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('11', '1', '11', 'Port 11', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('12', '1', '12', 'Port 12', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('13', '1', '13', 'Port 13', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('14', '1', '14', 'Port 14', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('15', '1', '15', 'Port 15', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('16', '1', '16', 'Port 16', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('17', '1', '17', 'Port 17', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('18', '1', '18', 'Port 18', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('19', '1', '19', 'Port 19', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('20', '1', '20', 'Port 20', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('21', '1', '21', 'Port 21', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('22', '1', '22', 'Port 22', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('23', '1', '23', 'Port 23', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('24', '1', '24', 'Port 24', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('25', '1', '25', 'Port 25', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('26', '1', '26', 'Port 26', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('27', '1', '27', 'Port 27', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('28', '1', '28', 'Port 28', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('29', '1', '29', 'Port 29', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('30', '1', '30', 'Port 30', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('31', '1', '31', 'Port 31', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('32', '1', '32', 'Port 32', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('33', '1', '33', 'Port 33', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('34', '1', '34', 'Port 34', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('35', '1', '35', 'Port 35', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('36', '1', '36', 'Port 36', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('37', '1', '37', 'Port 37', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('38', '1', '38', 'Port 38', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('39', '1', '39', 'Port 39', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('40', '1', '40', 'Port 40', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('41', '1', '41', 'Port 41', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('42', '1', '42', 'Port 42', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('43', '1', '43', 'Port 43', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('44', '1', '44', 'Port 44', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('45', '1', '45', 'Port 45', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('46', '1', '46', 'Port 46', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('47', '1', '47', 'Port 47', 'unknown', 'black', '', '2026-03-28 19:43:17');
-INSERT INTO `switch_ports` (`id`, `company_id`, `port_number`, `label`, `status`, `color`, `comments`, `updated_at`) VALUES ('48', '1', '48', 'Port 48', 'unknown', 'black', '', '2026-03-28 19:43:17');
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_categories`
 DROP TABLE IF EXISTS `ticket_categories`;
