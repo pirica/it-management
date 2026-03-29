@@ -401,6 +401,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
+
+$displayFieldColumns = $fieldColumns;
+if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], true)) {
+    $desiredOrder = ['vlan_number', 'vlan_name', 'gateway_ip', 'subnet', 'ip', 'vlan_color', 'comments', 'active'];
+    $byField = [];
+    foreach ($displayFieldColumns as $col) {
+        $byField[$col['Field']] = $col;
+    }
+
+    $ordered = [];
+    foreach ($desiredOrder as $fieldName) {
+        if (isset($byField[$fieldName])) {
+            $ordered[] = $byField[$fieldName];
+            unset($byField[$fieldName]);
+        }
+    }
+
+    foreach ($displayFieldColumns as $col) {
+        $fieldName = (string)$col['Field'];
+        if ($fieldName === 'company_id') {
+            continue;
+        }
+        if (isset($byField[$fieldName])) {
+            $ordered[] = $byField[$fieldName];
+            unset($byField[$fieldName]);
+        }
+    }
+
+    $displayFieldColumns = $ordered;
+}
+
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
@@ -448,7 +479,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <table>
                         <thead>
                         <tr>
-                            <?php foreach ($fieldColumns as $col): ?>
+                            <?php foreach ($displayFieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -466,7 +497,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($displayFieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
@@ -480,7 +511,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($displayFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>

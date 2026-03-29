@@ -403,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
 $displayFieldColumns = $fieldColumns;
 if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], true)) {
-    $desiredOrder = ['vlan_number', 'vlan_name', 'gateway', 'subnet', 'ip', 'cable_color', 'comments', 'active'];
+    $desiredOrder = ['vlan_number', 'vlan_name', 'gateway_ip', 'subnet', 'ip', 'vlan_color', 'comments', 'active'];
     $byField = [];
     foreach ($displayFieldColumns as $col) {
         $byField[$col['Field']] = $col;
