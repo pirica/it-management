@@ -65,12 +65,14 @@ $switchResult = mysqli_query(
     "SELECT e.id, e.name,
             COALESCE(er.name, '24 ports') AS rj45_name,
             COALESCE(ef.name, '') AS fiber_name,
-            COALESCE(efc.name, '0') AS fiber_count
+            COALESCE(efc.name, '0') AS fiber_count,
+            COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
      FROM equipment e
      INNER JOIN equipment_types et ON et.id = e.equipment_type_id
      LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
      LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
      LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
+     LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
      WHERE e.company_id = $company_id
        AND e.active = 1
        AND LOWER(TRIM(et.name)) = 'switch'
@@ -505,6 +507,16 @@ if ($hasSelectedSwitch) {
             rj45Ports.forEach(function (p) {
                 const el = createPortElement(p);
                 const portNumber = Number(p.port_number);
+                const portLayout = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical').trim().toLowerCase();
+                if (portLayout === 'horizontal') {
+                    const splitPoint = Math.ceil(rj45Ports.length / 2);
+                    if (portNumber <= splitPoint) {
+                        row1.appendChild(el);
+                        return;
+                    }
+                    row2.appendChild(el);
+                    return;
+                }
                 if (portNumber % 2 === 1) {
                     row1.appendChild(el);
                     return;
@@ -522,7 +534,8 @@ if ($hasSelectedSwitch) {
             const sfpPlusPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; });
             sfpPlusPorts.forEach(function (p) { sfpPlusRow.appendChild(createPortElement(p)); });
 
-            document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + rj45Ports.length + ' | SFP: ' + sfpPorts.length + ' | SFP+: ' + sfpPlusPorts.length;
+            const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
+            document.getElementById('switchLayoutSummary').textContent = 'Layout: ' + layoutLabel + ' | RJ45: ' + rj45Ports.length + ' | SFP: ' + sfpPorts.length + ' | SFP+: ' + sfpPlusPorts.length;
             document.getElementById('fiberGrid').style.display = (sfpPorts.length || sfpPlusPorts.length) ? 'grid' : 'none';
         }
 
@@ -659,7 +672,8 @@ if ($hasSelectedSwitch) {
                     ports = data.ports || [];
                     hydrateLookups(data.statuses || [], data.colors || [], data.vlans || []);
                     const layout = data.layout || localLayout;
-                    document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
+                    const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
+                    document.getElementById('switchLayoutSummary').textContent = 'Layout: ' + layoutLabel + ' | RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
                     renderPorts();
                 })
                 .catch(function (err) {
