@@ -250,6 +250,11 @@ CREATE TABLE `equipment` (
   `workstation_os_type_id` int DEFAULT NULL,
   `workstation_processor` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `workstation_memory_gb` int DEFAULT NULL,
+  `switch_rj45_id` int DEFAULT NULL,
+  `switch_fiber_id` int DEFAULT NULL,
+  `switch_fiber_count_id` int DEFAULT NULL,
+  `switch_poe_id` int DEFAULT NULL,
+  `switch_environment_id` int DEFAULT NULL,
   `notes` longtext COLLATE utf8mb4_unicode_ci,
   `photo_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
@@ -268,6 +273,11 @@ CREATE TABLE `equipment` (
   KEY `printer_device_type_id` (`printer_device_type_id`),
   KEY `workstation_device_type_id` (`workstation_device_type_id`),
   KEY `workstation_os_type_id` (`workstation_os_type_id`),
+  KEY `switch_rj45_id` (`switch_rj45_id`),
+  KEY `switch_fiber_id` (`switch_fiber_id`),
+  KEY `switch_fiber_count_id` (`switch_fiber_count_id`),
+  KEY `switch_poe_id` (`switch_poe_id`),
+  KEY `switch_environment_id` (`switch_environment_id`),
   CONSTRAINT `equipment_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `equipment_ibfk_10` FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types` (`id`),
   CONSTRAINT `equipment_ibfk_2` FOREIGN KEY (`equipment_type_id`) REFERENCES `equipment_types` (`id`),
@@ -277,11 +287,89 @@ CREATE TABLE `equipment` (
   CONSTRAINT `equipment_ibfk_6` FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses` (`id`),
   CONSTRAINT `equipment_ibfk_7` FOREIGN KEY (`warranty_type_id`) REFERENCES `warranty_types` (`id`),
   CONSTRAINT `equipment_ibfk_8` FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types` (`id`),
-  CONSTRAINT `equipment_ibfk_9` FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types` (`id`)
+  CONSTRAINT `equipment_ibfk_9` FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types` (`id`),
+  CONSTRAINT `equipment_ibfk_11` FOREIGN KEY (`switch_rj45_id`) REFERENCES `equipment_rj45` (`id`),
+  CONSTRAINT `equipment_ibfk_12` FOREIGN KEY (`switch_fiber_id`) REFERENCES `equipment_fiber` (`id`),
+  CONSTRAINT `equipment_ibfk_13` FOREIGN KEY (`switch_poe_id`) REFERENCES `equipment_poe` (`id`),
+  CONSTRAINT `equipment_ibfk_14` FOREIGN KEY (`switch_environment_id`) REFERENCES `equipment_environment` (`id`),
+  CONSTRAINT `equipment_ibfk_15` FOREIGN KEY (`switch_fiber_count_id`) REFERENCES `equipment_fiber_count` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment`
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '2', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '4', '0', NULL, '0', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', NULL);
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '2', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '4', '0', NULL, '0', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', NULL);
+
+
+-- Table structure for `equipment_environment`
+DROP TABLE IF EXISTS `equipment_environment`;
+CREATE TABLE `equipment_environment` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `equipment_environment`
+INSERT INTO `equipment_environment` (`id`, `name`) VALUES ('1', 'Managed');
+INSERT INTO `equipment_environment` (`id`, `name`) VALUES ('2', 'Unmanaged');
+
+-- Table structure for `equipment_fiber`
+DROP TABLE IF EXISTS `equipment_fiber`;
+CREATE TABLE `equipment_fiber` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `equipment_fiber`
+INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('1', 'SFP 1 Gbps');
+INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('2', 'SFP+ 10 Gbps');
+INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('3', 'QSFP 40 Gbps');
+
+
+-- Table structure for `equipment_fiber_count`
+DROP TABLE IF EXISTS `equipment_fiber_count`;
+CREATE TABLE `equipment_fiber_count` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `equipment_fiber_count`
+INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('1', '1');
+INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('2', '2');
+INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('3', '3');
+INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('4', '4');
+
+-- Table structure for `equipment_poe`
+DROP TABLE IF EXISTS `equipment_poe`;
+CREATE TABLE `equipment_poe` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `equipment_poe`
+INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('1', 'PoE (802.3af) - up to 15.4W');
+INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('2', 'PoE+ (802.3at) - up to 30W');
+INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('3', 'PoE++ (802.3bt) - up to 60-90W');
+
+-- Table structure for `equipment_rj45`
+DROP TABLE IF EXISTS `equipment_rj45`;
+CREATE TABLE `equipment_rj45` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `equipment_rj45`
+INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('1', '8 ports');
+INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('2', '16 ports');
+INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('3', '24 ports');
+INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('4', '48 ports');
 
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
