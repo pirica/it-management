@@ -266,8 +266,8 @@ if ($hasSelectedSwitch) {
                                 </div>
                             </label>
                             <label>
-                                Label:
-                                <input type="text" id="labelInput" placeholder="Port label">
+                                Patch port:
+                                <input type="text" id="labelInput" placeholder="Patch port">
                             </label>
                             <label>
                                 VLAN:
@@ -437,7 +437,7 @@ if ($hasSelectedSwitch) {
             const vlanName = el.dataset.vlanName || '—';
             const portType = normalizePortType(el.dataset.portType).replace('_', '+').toUpperCase();
             tooltip.innerHTML = '<strong>' + escapeHtml(portType) + ' Port ' + el.dataset.portNumber + '</strong><br>'
-                + 'Label: ' + escapeHtml(label) + '<br>'
+                + 'Patch port: ' + escapeHtml(label) + '<br>'
                 + 'Status: ' + escapeHtml(status) + '<br>'
                 + 'VLAN: ' + escapeHtml(vlanName) + '<br>'
                 + 'Comments: ' + escapeHtml(comments);
