@@ -343,7 +343,7 @@ if ($hasSelectedSwitch) {
                 case 'orange': return 'orange';
                 case 'purple': return 'purple';
                 case 'grey':
-                case 'gray': return 'grey';
+                case 'gray': return '#9ca3af';
                 case 'other': return 'lightgray';
                 default: return 'transparent';
             }
@@ -357,6 +357,9 @@ if ($hasSelectedSwitch) {
                 case 'red':
                 case 'green':
                     return '#fff';
+                case 'grey':
+                case 'gray':
+                    return '#0b1220';
                 default:
                     return '#111';
             }

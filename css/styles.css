@@ -547,7 +547,7 @@ input[type="color"] {
     height: var(--switch-port-size);
     border-radius: 6px;
     border: 1px solid var(--border);
-    background: transparent;
+    background: rgba(148, 163, 184, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
