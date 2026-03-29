@@ -454,8 +454,8 @@ if ($hasSelectedSwitch) {
                     document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
                     renderPorts();
                 })
-                .catch(function () {
-                    alert('Unable to load switch ports.');
+                .catch(function (err) {
+                    alert(err && err.message ? ('Unable to load switch ports: ' + err.message) : 'Unable to load switch ports.');
                 });
         }
 

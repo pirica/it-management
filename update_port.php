@@ -11,15 +11,20 @@ if ($company_id <= 0) {
 
 function ensure_switch_ports_schema(mysqli $conn): bool
 {
+    $recheckColumn = static function (string $name) use ($conn): bool {
+        $res = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE '" . mysqli_real_escape_string($conn, $name) . "'");
+        return $res && mysqli_num_rows($res) > 0;
+    };
+
     $hasEquipmentId = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE 'equipment_id'");
     if (!$hasEquipmentId || mysqli_num_rows($hasEquipmentId) === 0) {
-        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN equipment_id INT NULL AFTER company_id")) {
+        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN equipment_id INT NULL AFTER company_id") && !$recheckColumn('equipment_id')) {
             return false;
         }
     }
     $hasPortType = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE 'port_type'");
     if (!$hasPortType || mysqli_num_rows($hasPortType) === 0) {
-        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN port_type ENUM('rj45','sfp','sfp_plus') NOT NULL DEFAULT 'rj45' AFTER equipment_id")) {
+        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN port_type ENUM('rj45','sfp','sfp_plus') NOT NULL DEFAULT 'rj45' AFTER equipment_id") && !$recheckColumn('port_type')) {
             return false;
         }
     }
@@ -32,7 +37,7 @@ function ensure_switch_ports_schema(mysqli $conn): bool
 
 if (!ensure_switch_ports_schema($conn)) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Schema update failed']);
+    echo json_encode(['success' => false, 'error' => 'Schema update failed: ' . mysqli_error($conn)]);
     exit;
 }
 

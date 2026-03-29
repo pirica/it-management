@@ -11,16 +11,21 @@ if ($company_id <= 0) {
 
 function ensure_switch_ports_schema(mysqli $conn): bool
 {
+    $recheckColumn = static function (string $name) use ($conn): bool {
+        $res = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE '" . mysqli_real_escape_string($conn, $name) . "'");
+        return $res && mysqli_num_rows($res) > 0;
+    };
+
     $hasEquipmentId = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE 'equipment_id'");
     if (!$hasEquipmentId || mysqli_num_rows($hasEquipmentId) === 0) {
-        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN equipment_id INT NULL AFTER company_id")) {
+        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN equipment_id INT NULL AFTER company_id") && !$recheckColumn('equipment_id')) {
             return false;
         }
     }
 
     $hasPortType = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE 'port_type'");
     if (!$hasPortType || mysqli_num_rows($hasPortType) === 0) {
-        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN port_type ENUM('rj45','sfp','sfp_plus') NOT NULL DEFAULT 'rj45' AFTER equipment_id")) {
+        if (!mysqli_query($conn, "ALTER TABLE switch_ports ADD COLUMN port_type ENUM('rj45','sfp','sfp_plus') NOT NULL DEFAULT 'rj45' AFTER equipment_id") && !$recheckColumn('port_type')) {
             return false;
         }
     }
@@ -31,10 +36,14 @@ function ensure_switch_ports_schema(mysqli $conn): bool
     @mysqli_query($conn, "ALTER TABLE switch_ports ADD CONSTRAINT switch_ports_ibfk_2 FOREIGN KEY (equipment_id) REFERENCES equipment (id) ON DELETE CASCADE");
     return true;
 }
+$fiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
+$fiberName = strtolower(trim((string)$switch['fiber_name']));
+$sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
+$sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
 
 if (!ensure_switch_ports_schema($conn)) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Schema update failed']);
+    echo json_encode(['success' => false, 'error' => 'Schema update failed: ' . mysqli_error($conn)]);
     exit;
 }
 
@@ -48,13 +57,12 @@ if ($switchId <= 0) {
 $switchSql = "SELECT e.id, e.name, COALESCE(er.name, '24 ports') AS rj45_name,
                      COALESCE(ef.name, '') AS fiber_name, COALESCE(efc.name, '0') AS fiber_count
               FROM equipment e
-              INNER JOIN equipment_types et ON et.id = e.equipment_type_id
+              LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
               LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
               LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
               LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
               WHERE e.id = $switchId
                 AND e.company_id = $company_id
-                AND LOWER(TRIM(et.name)) = 'switch'
               LIMIT 1";
 $switchRes = mysqli_query($conn, $switchSql);
 $switch = $switchRes ? mysqli_fetch_assoc($switchRes) : null;
