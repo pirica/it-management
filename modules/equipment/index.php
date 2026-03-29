@@ -383,11 +383,17 @@ if ($hasSelectedSwitch) {
             sfpRow.innerHTML = '';
             sfpPlusRow.innerHTML = '';
 
-            const rj45Ports = ports.filter(function (p) { return (p.port_type || 'rj45') === 'rj45'; });
-            const splitAt = Math.ceil(rj45Ports.length / 2);
-            rj45Ports.forEach(function (p, idx) {
+            const rj45Ports = ports
+                .filter(function (p) { return (p.port_type || 'rj45') === 'rj45'; })
+                .sort(function (a, b) { return Number(a.port_number) - Number(b.port_number); });
+            rj45Ports.forEach(function (p) {
                 const el = createPortElement(p);
-                if (idx < splitAt) { row1.appendChild(el); } else { row2.appendChild(el); }
+                const portNumber = Number(p.port_number);
+                if (!Number.isNaN(portNumber) && portNumber % 2 === 0) {
+                    row2.appendChild(el);
+                } else {
+                    row1.appendChild(el);
+                }
             });
 
             const sfpPorts = ports.filter(function (p) { return p.port_type === 'sfp'; });
