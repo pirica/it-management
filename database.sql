@@ -634,8 +634,8 @@ CREATE TABLE `switch_ports` (
   `company_id` int NOT NULL,
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
-  `color` enum('','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '';
+  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey';
   `comments` text COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
