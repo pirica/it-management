@@ -181,6 +181,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $conn,
                             "DELETE FROM switch_ports WHERE company_id = $company_id AND equipment_id = $id"
                         );
+                    } else {
+                        mysqli_query(
+                            $conn,
+                            "DELETE FROM switch_ports WHERE company_id = $company_id"
+                        );
                     }
                 }
             }
