@@ -166,6 +166,29 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+function cr_try_query($conn, $sql, &$error = null) {
+    try {
+        return mysqli_query($conn, $sql);
+    } catch (Throwable $t) {
+        $error = $t->getMessage();
+        return false;
+    }
+}
+
+function cr_humanize_db_error($message) {
+    $raw = trim((string)$message);
+    if ($raw === '') {
+        return 'An unexpected database error occurred.';
+    }
+
+    $lower = strtolower($raw);
+    if (str_contains($lower, 'switch_ports_ibfk_5') || (str_contains($lower, 'foreign key constraint fails') && str_contains($lower, 'switch_ports') && str_contains($lower, 'switch_port_types'))) {
+        return 'This switch port type is already used by one or more switch ports and cannot be renamed or deleted.';
+    }
+
+    return $raw;
+}
+
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -259,13 +282,22 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        mysqli_query($conn, 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        $deleteError = null;
+        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $deleteRes = cr_try_query($conn, $deleteSql, $deleteError);
+        if ($deleteRes === false) {
+            $_SESSION['itm_flash_error'] = cr_humanize_db_error($deleteError ?? mysqli_error($conn));
+        }
     }
     header('Location: ' . $listUrl);
     exit;
 }
 
 $errors = [];
+if (!empty($_SESSION['itm_flash_error'])) {
+    $errors[] = (string)$_SESSION['itm_flash_error'];
+    unset($_SESSION['itm_flash_error']);
+}
 $data = [];
 foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
@@ -327,7 +359,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $findSql .= ' AND company_id=' . (int)$company_id;
                 }
                 $findSql .= ' LIMIT 1';
-                $existing = mysqli_query($conn, $findSql);
+                $queryError = null;
+                $existing = cr_try_query($conn, $findSql, $queryError);
+                if ($existing === false && $queryError !== null) {
+                    $errors[] = 'Could not verify related value for ' . cr_humanize_field($name) . ': ' . $queryError;
+                    $data[$name] = 'NULL';
+                    continue;
+                }
                 if ($existing && mysqli_num_rows($existing) > 0) {
                     $row = mysqli_fetch_assoc($existing);
                     $data[$name] = (string)(int)$row['id'];
@@ -340,10 +378,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     }
                     $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
                         . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
-                    if (mysqli_query($conn, $insertSql)) {
+                    $insertError = null;
+                    if (cr_try_query($conn, $insertSql, $insertError)) {
                         $data[$name] = (string)(int)mysqli_insert_id($conn);
                     } else {
-                        $errors[] = 'Could not add related value for ' . $name . ': ' . mysqli_error($conn);
+                        $dbError = $insertError ?? mysqli_error($conn);
+                        $errors[] = 'Could not add related value for ' . cr_humanize_field($name) . ': ' . $dbError;
                         $data[$name] = 'NULL';
                     }
                 }
@@ -391,11 +431,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
-        if (mysqli_query($conn, $sql)) {
+        $saveError = null;
+        if (cr_try_query($conn, $sql, $saveError)) {
             header('Location: ' . $listUrl);
             exit;
         }
-        $errors[] = 'Database error: ' . mysqli_error($conn);
+        $dbError = cr_humanize_db_error($saveError ?? mysqli_error($conn));
+        $errors[] = 'Database error: ' . $dbError;
     }
 }
 
