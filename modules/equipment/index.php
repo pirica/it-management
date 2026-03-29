@@ -297,6 +297,28 @@ if ($hasSelectedSwitch) {
             }
         }
 
+        function getPortNumberColor(color) {
+            switch (color) {
+                case 'black':
+                case 'blue':
+                case 'purple':
+                case 'red':
+                case 'green':
+                    return '#fff';
+                default:
+                    return '#111';
+            }
+        }
+
+        function paintPort(el, color) {
+            const normalizedColor = color || 'black';
+            const indicator = el.querySelector('.switch-color-indicator');
+            const number = el.querySelector('.switch-port-num');
+            indicator.style.background = getColorCss(normalizedColor);
+            number.style.color = getPortNumberColor(normalizedColor);
+            el.dataset.color = normalizedColor;
+        }
+
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, function (m) {
                 return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m];
@@ -363,6 +385,7 @@ if ($hasSelectedSwitch) {
             const colorDiv = document.createElement('div');
             colorDiv.className = 'switch-color-indicator';
             colorDiv.style.background = getColorCss(p.color);
+            num.style.color = getPortNumberColor(p.color);
             el.appendChild(colorDiv);
 
             el.addEventListener('mouseenter', function (ev) { showTooltip(ev, el); });
@@ -530,11 +553,10 @@ if ($hasSelectedSwitch) {
 
             savePort(payload, true)
                 .then(function () {
-                    selected.dataset.color = payload.color || selected.dataset.color;
                     selected.dataset.status = payload.status || selected.dataset.status;
                     selected.dataset.label = payload.label || selected.dataset.label;
                     selected.dataset.comments = payload.comments || selected.dataset.comments;
-                    selected.querySelector('.switch-color-indicator').style.background = getColorCss(selected.dataset.color);
+                    paintPort(selected, payload.color || selected.dataset.color);
                 })
                 .catch(function (err) {
                     alert(err.message || 'Network error');
@@ -551,13 +573,11 @@ if ($hasSelectedSwitch) {
             }
             const chosenColor = this.value || null;
             const oldColor = selected.dataset.color;
-            selected.dataset.color = chosenColor || oldColor;
-            selected.querySelector('.switch-color-indicator').style.background = getColorCss(selected.dataset.color);
+            paintPort(selected, chosenColor || oldColor);
 
             savePort({ id: selected.dataset.id, switch_id: selectedSwitchId, color: chosenColor }, false)
                 .catch(function () {
-                    selected.dataset.color = oldColor;
-                    selected.querySelector('.switch-color-indicator').style.background = getColorCss(oldColor);
+                    paintPort(selected, oldColor);
                     alert('Unable to auto-save color.');
                 });
         });
