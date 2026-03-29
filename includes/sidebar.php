@@ -3,6 +3,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $current_dir = basename(dirname($_SERVER['PHP_SELF']));
 $sidebarConfig = $ui_config ?? itm_ui_config_defaults();
 $sidebarStructure = itm_sidebar_structure();
+$sidebarItemCatalog = itm_sidebar_item_catalog();
 
 $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
 $mainOrder = $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
@@ -36,21 +37,12 @@ foreach ($sectionsById as $section) {
         if (($visibility[$sectionId] ?? 1) !== 1) {
             continue;
         }
-        $itemsById = [];
-        foreach ($section['items'] as $item) {
-            $itemsById[$item['id']] = $item;
-        }
-
         $sectionItemOrder = $submenuOrder[$sectionId] ?? [];
         $orderedItems = [];
         foreach ($sectionItemOrder as $itemId) {
-            if (isset($itemsById[$itemId])) {
-                $orderedItems[] = $itemsById[$itemId];
-                unset($itemsById[$itemId]);
+            if (isset($sidebarItemCatalog[$itemId])) {
+                $orderedItems[] = $sidebarItemCatalog[$itemId];
             }
-        }
-        foreach ($itemsById as $item) {
-            $orderedItems[] = $item;
         }
 
         $visibleItems = array_values(array_filter($orderedItems, static function ($item) use ($visibility) {

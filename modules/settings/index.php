@@ -302,7 +302,7 @@ usort($backupFiles, static function ($a, $b) {
                         </div>
 
                         <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
-                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links.</p>
+                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections).</p>
                         <div class="sidebar-settings-list" id="sidebar-settings-list">
                             <?php foreach ($sidebarStructure as $section): ?>
                                 <?php $sectionId = $section['id']; ?>
@@ -437,6 +437,33 @@ usort($backupFiles, static function ($a, $b) {
         }
     }
 
+    function moveSubmenuRow(row, direction) {
+        if (!row) return;
+        const sibling = direction === 'up' ? row.previousElementSibling : row.nextElementSibling;
+        if (sibling) {
+            moveRow(row, direction);
+            return;
+        }
+
+        const currentSection = row.closest('.sidebar-setting-section');
+        if (!currentSection) return;
+
+        const targetSection = direction === 'up'
+            ? currentSection.previousElementSibling
+            : currentSection.nextElementSibling;
+
+        if (!targetSection) return;
+
+        const targetChildren = targetSection.querySelector('.sidebar-setting-children');
+        if (!targetChildren) return;
+
+        if (direction === 'up') {
+            targetChildren.appendChild(row);
+        } else {
+            targetChildren.insertBefore(row, targetChildren.firstElementChild || null);
+        }
+    }
+
     function applyInitialOrder() {
         const sectionsById = {};
         root.querySelectorAll('.sidebar-setting-section').forEach((section) => {
@@ -450,17 +477,17 @@ usort($backupFiles, static function ($a, $b) {
             }
         });
 
+        const allRowsById = {};
+        root.querySelectorAll('[data-item-id]').forEach((row) => {
+            allRowsById[row.dataset.itemId] = row;
+        });
+
         root.querySelectorAll('.sidebar-setting-section').forEach((section) => {
             const sectionId = section.dataset.sectionId;
             const childRoot = section.querySelector('.sidebar-setting-children');
-            const rowById = {};
-            childRoot.querySelectorAll('[data-item-id]').forEach((row) => {
-                rowById[row.dataset.itemId] = row;
-            });
-
             const order = initialSubmenuOrder[sectionId] || [];
             order.forEach((itemId) => {
-                const row = rowById[itemId];
+                const row = allRowsById[itemId];
                 if (row) childRoot.appendChild(row);
             });
         });
@@ -501,10 +528,10 @@ usort($backupFiles, static function ($a, $b) {
             moveRow(down.closest('.sidebar-setting-section'), 'down');
         }
         if (sup) {
-            moveRow(sup.closest('[data-item-id]'), 'up');
+            moveSubmenuRow(sup.closest('[data-item-id]'), 'up');
         }
         if (sdown) {
-            moveRow(sdown.closest('[data-item-id]'), 'down');
+            moveSubmenuRow(sdown.closest('[data-item-id]'), 'down');
         }
 
         if (up || down || sup || sdown) {

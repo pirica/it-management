@@ -88,6 +88,26 @@ function itm_default_sidebar_submenu_order() {
     return $submenuOrder;
 }
 
+function itm_sidebar_item_catalog() {
+    $catalog = [];
+    foreach (itm_sidebar_structure() as $section) {
+        foreach ($section['items'] as $item) {
+            $catalog[$item['id']] = $item;
+        }
+    }
+    return $catalog;
+}
+
+function itm_sidebar_default_item_parent_map() {
+    $map = [];
+    foreach (itm_sidebar_structure() as $section) {
+        foreach ($section['items'] as $item) {
+            $map[$item['id']] = $section['id'];
+        }
+    }
+    return $map;
+}
+
 function itm_ui_config_defaults() {
     return [
         'table_actions_position' => 'left_right',
@@ -243,6 +263,9 @@ function itm_normalize_sidebar_main_order($raw) {
 
 function itm_normalize_sidebar_submenu_order($raw) {
     $default = itm_default_sidebar_submenu_order();
+    $catalog = itm_sidebar_item_catalog();
+    $defaultParent = itm_sidebar_default_item_parent_map();
+
     if (is_string($raw)) {
         $decoded = json_decode($raw, true);
         $raw = is_array($decoded) ? $decoded : [];
@@ -252,27 +275,39 @@ function itm_normalize_sidebar_submenu_order($raw) {
     }
 
     $normalized = [];
-    foreach ($default as $sectionId => $ids) {
+    $assigned = [];
+
+    foreach ($default as $sectionId => $defaultIds) {
         $sectionRaw = $raw[$sectionId] ?? [];
         if (!is_array($sectionRaw)) {
             $sectionRaw = [];
         }
 
-        $seen = [];
         $sectionOrder = [];
         foreach ($sectionRaw as $id) {
             $id = (string)$id;
-            if (in_array($id, $ids, true) && !isset($seen[$id])) {
+            if (isset($catalog[$id]) && !isset($assigned[$id])) {
                 $sectionOrder[] = $id;
-                $seen[$id] = true;
+                $assigned[$id] = true;
             }
         }
-        foreach ($ids as $id) {
-            if (!isset($seen[$id])) {
-                $sectionOrder[] = $id;
-            }
-        }
+
         $normalized[$sectionId] = $sectionOrder;
+    }
+
+    foreach (array_keys($catalog) as $itemId) {
+        if (isset($assigned[$itemId])) {
+            continue;
+        }
+        $targetSection = $defaultParent[$itemId] ?? array_key_first($default);
+        if ($targetSection === null || !isset($normalized[$targetSection])) {
+            $targetSection = array_key_first($normalized);
+        }
+        if ($targetSection === null) {
+            continue;
+        }
+        $normalized[$targetSection][] = $itemId;
+        $assigned[$itemId] = true;
     }
 
     return $normalized;
