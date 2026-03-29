@@ -907,7 +907,7 @@ CREATE TABLE `vlans` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `vlans`
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '10', 'Office Network', '#2E86DE', '192.168.10.0/24', 'Primary office VLAN', '192.168.10.1', '1');
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', 'Primary office VLAN', '192.168.10.1', '1');
 
 -- Table structure for `warranty_types`
 DROP TABLE IF EXISTS `warranty_types`;
