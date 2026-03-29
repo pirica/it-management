@@ -78,7 +78,7 @@ if (empty($statuses) || empty($colors)) {
 }
 
 $defaultStatusId = lookup_id_by_name($statuses, 'Unknown');
-$defaultColorId = lookup_id_by_name($colors, 'black', lookup_id_by_name($colors, 'grey'));
+$defaultColorId = lookup_id_by_name($colors, 'grey', lookup_id_by_name($colors, 'gray'));
 
 $switchId = (int)($_GET['switch_id'] ?? 0);
 if ($switchId <= 0) {
@@ -272,7 +272,7 @@ if (!($hasEquipmentId && $hasPortType)) {
             'port_number' => $n,
             'label' => 'SFP ' . $n,
             'status' => 'Unknown',
-            'color' => 'black',
+            'color' => 'grey',
             'comments' => '',
         ];
     }
@@ -284,7 +284,7 @@ if (!($hasEquipmentId && $hasPortType)) {
             'port_number' => $n,
             'label' => 'SFP+ ' . $n,
             'status' => 'Unknown',
-            'color' => 'black',
+            'color' => 'grey',
             'comments' => '',
         ];
     }
