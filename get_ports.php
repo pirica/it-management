@@ -228,9 +228,35 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
     mysqli_stmt_close($insertStmt);
 }
 
+function remove_duplicate_ports(mysqli $conn, int $companyId, int $switchId, bool $hasEquipmentId, bool $hasPortType): void
+{
+    if (!$hasEquipmentId || !$hasPortType) {
+        return;
+    }
+
+    $deleteSql = "DELETE sp_dupe
+                  FROM switch_ports sp_dupe
+                  INNER JOIN switch_ports sp_keep
+                    ON sp_dupe.company_id = sp_keep.company_id
+                   AND sp_dupe.equipment_id = sp_keep.equipment_id
+                   AND sp_dupe.port_type = sp_keep.port_type
+                   AND sp_dupe.port_number = sp_keep.port_number
+                   AND sp_dupe.id > sp_keep.id
+                  WHERE sp_dupe.company_id = ?
+                    AND sp_dupe.equipment_id = ?";
+    $deleteStmt = mysqli_prepare($conn, $deleteSql);
+    if (!$deleteStmt) {
+        return;
+    }
+    mysqli_stmt_bind_param($deleteStmt, 'ii', $companyId, $switchId);
+    mysqli_stmt_execute($deleteStmt);
+    mysqli_stmt_close($deleteStmt);
+}
+
 seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
+remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
 if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name' : ', NULL AS vlan_id, NULL AS vlan_name';
