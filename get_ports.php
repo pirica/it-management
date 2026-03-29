@@ -53,6 +53,20 @@ function fetch_company_vlans(mysqli $conn, int $companyId): array
     return $rows;
 }
 
+function fetch_available_port_types(mysqli $conn): array
+{
+    $rows = [];
+    $res = mysqli_query($conn, 'SELECT type FROM switch_port_types ORDER BY id ASC');
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $normalized = normalize_port_type((string)($row['type'] ?? ''));
+        if ($normalized === '') {
+            continue;
+        }
+        $rows[$normalized] = true;
+    }
+    return array_keys($rows);
+}
+
 function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
 {
     foreach ($items as $item) {
@@ -86,6 +100,13 @@ $hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
 $hasVlanId = table_has_column($conn, 'switch_ports', 'vlan_id');
 $hasLegacyNumberPort = table_has_column($conn, 'equipment', 'numberport');
+$hasPortTypesTable = mysqli_query($conn, "SHOW TABLES LIKE 'switch_port_types'");
+$availablePortTypes = ($hasPortTypesTable && mysqli_num_rows($hasPortTypesTable) > 0)
+    ? fetch_available_port_types($conn)
+    : ['rj45', 'sfp', 'sfp_plus'];
+if (!in_array('rj45', $availablePortTypes, true)) {
+    $availablePortTypes[] = 'rj45';
+}
 
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
@@ -151,6 +172,12 @@ $fiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
 $fiberName = strtolower(trim((string)$switch['fiber_name']));
 $sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
 $sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
+if (!in_array('sfp', $availablePortTypes, true)) {
+    $sfpCount = 0;
+}
+if (!in_array('sfp_plus', $availablePortTypes, true)) {
+    $sfpPlusCount = 0;
+}
 
 function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, int $defaultStatusId, int $defaultColorId): void
 {
@@ -362,4 +389,5 @@ echo json_encode([
         'sfp' => $sfpCount,
         'sfp_plus' => $sfpPlusCount,
     ],
+    'port_types' => $availablePortTypes,
 ]);
