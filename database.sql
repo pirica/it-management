@@ -668,11 +668,27 @@ INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('8', 'orange');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('9', 'purple');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('10', 'other');
 
+-- Table structure for `switch_port_types`
+DROP TABLE IF EXISTS `switch_port_types`;
+CREATE TABLE `switch_port_types` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `switch_port_types`
+INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('1', 'rj45');
+INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('2', 'sfp');
+INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('3', 'sfp_plus');
+
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
 CREATE TABLE `switch_ports` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
+  `equipment_id` int NOT NULL,
+  `port_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'rj45',
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
@@ -680,13 +696,17 @@ CREATE TABLE `switch_ports` (
   `comments` text COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_switch_port` (`company_id`,`port_number`),
+  UNIQUE KEY `unique_switch_port` (`company_id`,`equipment_id`,`port_type`,`port_number`),
   KEY `company_id` (`company_id`),
+  KEY `equipment_id` (`equipment_id`),
+  KEY `port_type` (`port_type`),
   KEY `status_id` (`status_id`),
   KEY `color_id` (`color_id`),
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
-  CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`)
+  CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
+  CONSTRAINT `switch_ports_ibfk_4` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`),
+  CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_categories`
