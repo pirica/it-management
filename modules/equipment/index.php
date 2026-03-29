@@ -555,9 +555,9 @@ if ($hasSelectedSwitch) {
             const sfpPlusPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; });
             sfpPlusPorts.forEach(function (p) { sfpPlusRow.appendChild(createPortElement(p)); });
             document.getElementById('switchSfpLabel').style.display = hasPortType('sfp') ? 'block' : 'none';
-            sfpRow.style.display = hasPortType('sfp') ? 'grid' : 'none';
+            sfpRow.style.display = hasPortType('sfp') ? 'flex' : 'none';
             document.getElementById('switchSfpPlusLabel').style.display = hasPortType('sfp_plus') ? 'block' : 'none';
-            sfpPlusRow.style.display = hasPortType('sfp_plus') ? 'grid' : 'none';
+            sfpPlusRow.style.display = hasPortType('sfp_plus') ? 'flex' : 'none';
 
             const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
             document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, rj45Ports.length, sfpPorts.length, sfpPlusPorts.length);
