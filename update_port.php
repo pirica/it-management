@@ -47,6 +47,11 @@ if (empty($input['id'])) {
 }
 
 $id = (int)$input['id'];
+if ($id <= 0) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Invalid id']);
+    exit;
+}
 $switchId = (int)($input['switch_id'] ?? 0);
 if ($switchId <= 0) {
     http_response_code(400);

@@ -424,28 +424,6 @@ if ($hasSelectedSwitch) {
             return { rj45: rj45, sfp: sfp, sfp_plus: sfpPlus };
         }
 
-        function ensurePortSkeleton(layout) {
-            ['rj45', 'sfp', 'sfp_plus'].forEach(function (type) {
-                const count = Number(layout[type] || 0);
-                for (let i = 1; i <= count; i++) {
-                    const found = ports.find(function (p) {
-                        return (p.port_type || 'rj45') === type && Number(p.port_number) === i;
-                    });
-                    if (!found) {
-                        ports.push({
-                            id: 'virtual-' + type + '-' + i,
-                            port_type: type,
-                            port_number: i,
-                            label: type.toUpperCase() + ' ' + i,
-                            status: 'unknown',
-                            color: 'black',
-                            comments: ''
-                        });
-                    }
-                }
-            });
-        }
-
         function savePort(payload, showMessage) {
             return fetch(apiUpdate, {
                 method: 'POST',
@@ -472,7 +450,8 @@ if ($hasSelectedSwitch) {
                         throw new Error(data.error || 'Failed to load ports');
                     }
                     ports = data.ports || [];
-                    ensurePortSkeleton(data.layout || localLayout);
+                    const layout = data.layout || localLayout;
+                    document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
                     renderPorts();
                 })
                 .catch(function () {
@@ -510,6 +489,10 @@ if ($hasSelectedSwitch) {
 
         document.getElementById('colorSelect').addEventListener('change', function () {
             if (!selected) {
+                return;
+            }
+            if (String(selected.dataset.id).indexOf('virtual-') === 0) {
+                alert('This port is not saved in database yet. Reload the switch and try again.');
                 return;
             }
             const chosenColor = this.value || null;
