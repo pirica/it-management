@@ -2,10 +2,26 @@
 require 'config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
+ini_set('display_errors', '0');
 
 if ($company_id <= 0) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
+
+function ensure_switch_ports_schema(mysqli $conn): bool
+{
+    $hasColumn = static function (string $name) use ($conn): bool {
+        $res = mysqli_query($conn, "SHOW COLUMNS FROM switch_ports LIKE '" . mysqli_real_escape_string($conn, $name) . "'");
+        return $res && mysqli_num_rows($res) > 0;
+    };
+    return $hasColumn('equipment_id') && $hasColumn('port_type');
+}
+
+if (!ensure_switch_ports_schema($conn)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing equipment_id/port_type columns']);
     exit;
 }
 
@@ -20,6 +36,17 @@ if (empty($input['id'])) {
 }
 
 $id = (int)$input['id'];
+if ($id <= 0) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Invalid id']);
+    exit;
+}
+$switchId = (int)($input['switch_id'] ?? 0);
+if ($switchId <= 0) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Missing switch id']);
+    exit;
+}
 $allowedColors = ['green', 'red', 'yellow', 'black', 'blue', 'white', 'orange', 'purple'];
 $allowedStatus = ['uplink', 'empty', 'down', 'unknown'];
 
@@ -58,10 +85,11 @@ if (empty($fields)) {
     exit;
 }
 
-$sql = 'UPDATE switch_ports SET ' . implode(', ', $fields) . ' WHERE id = ? AND company_id = ?';
-$types .= 'ii';
+$sql = 'UPDATE switch_ports SET ' . implode(', ', $fields) . ' WHERE id = ? AND company_id = ? AND equipment_id = ?';
+$types .= 'iii';
 $params[] = $id;
 $params[] = (int)$company_id;
+$params[] = $switchId;
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
