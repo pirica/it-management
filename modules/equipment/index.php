@@ -280,6 +280,22 @@ if ($hasSelectedSwitch) {
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
 
+        function normalizePortType(portType) {
+            const normalized = String(portType || 'rj45')
+                .trim()
+                .toLowerCase()
+                .replace(/\+/g, '_plus')
+                .replace(/\s+/g, '_');
+
+            if (normalized === 'sfpplus') {
+                return 'sfp_plus';
+            }
+            if (normalized === 'sfp') {
+                return 'sfp';
+            }
+            return 'rj45';
+        }
+
         function getColorCss(color) {
             switch (color) {
                 case 'green': return 'green';
@@ -340,7 +356,7 @@ if ($hasSelectedSwitch) {
             const label = el.dataset.label || '—';
             const status = el.dataset.status || 'unknown';
             const comments = el.dataset.comments || '';
-            const portType = (el.dataset.portType || 'rj45').replace('_', '+').toUpperCase();
+            const portType = normalizePortType(el.dataset.portType).replace('_', '+').toUpperCase();
             tooltip.innerHTML = '<strong>' + escapeHtml(portType) + ' Port ' + el.dataset.portNumber + '</strong><br>'
                 + 'Label: ' + escapeHtml(label) + '<br>'
                 + 'Status: ' + escapeHtml(status) + '<br>'
@@ -371,7 +387,7 @@ if ($hasSelectedSwitch) {
             el.className = 'switch-port';
             el.dataset.id = p.id;
             el.dataset.portNumber = p.port_number;
-            el.dataset.portType = p.port_type || 'rj45';
+            el.dataset.portType = normalizePortType(p.port_type);
             el.dataset.label = p.label || '';
             el.dataset.status = p.status || 'unknown';
             el.dataset.comments = p.comments || '';
@@ -407,7 +423,7 @@ if ($hasSelectedSwitch) {
             sfpPlusRow.innerHTML = '';
 
             const rj45Ports = ports
-                .filter(function (p) { return (p.port_type || 'rj45') === 'rj45'; })
+                .filter(function (p) { return normalizePortType(p.port_type) === 'rj45'; })
                 .sort(function (a, b) { return Number(a.port_number) - Number(b.port_number); });
             rj45Ports.forEach(function (p) {
                 const el = createPortElement(p);
@@ -419,9 +435,9 @@ if ($hasSelectedSwitch) {
                 }
             });
 
-            const sfpPorts = ports.filter(function (p) { return p.port_type === 'sfp'; });
+            const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
             sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
-            const sfpPlusPorts = ports.filter(function (p) { return p.port_type === 'sfp_plus'; });
+            const sfpPlusPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; });
             sfpPlusPorts.forEach(function (p) { sfpPlusRow.appendChild(createPortElement(p)); });
 
             document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + rj45Ports.length + ' | SFP: ' + sfpPorts.length + ' | SFP+: ' + sfpPlusPorts.length;
