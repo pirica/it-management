@@ -40,6 +40,23 @@ function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
     return $fallback > 0 ? $fallback : (int)($items[0]['id'] ?? 0);
 }
 
+
+function normalize_port_type(string $portType): string
+{
+    $normalized = strtolower(trim($portType));
+    $normalized = str_replace(['+', '-', '/'], [' plus ', ' ', ' '], $normalized);
+    $normalized = preg_replace('/\s+/', ' ', $normalized);
+
+    if (str_contains($normalized, 'sfp') && str_contains($normalized, 'plus')) {
+        return 'sfp_plus';
+    }
+    if (str_contains($normalized, 'sfp')) {
+        return 'sfp';
+    }
+    return 'rj45';
+}
+
+
 $hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasPortType = table_has_column($conn, 'switch_ports', 'port_type');
 $hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
@@ -240,6 +257,7 @@ if (!$result) {
 
 $ports = [];
 while ($row = mysqli_fetch_assoc($result)) {
+    $row['port_type'] = normalize_port_type((string)($row['port_type'] ?? 'rj45'));
     $ports[] = $row;
 }
 if ($stmt) {
