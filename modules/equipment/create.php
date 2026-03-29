@@ -210,7 +210,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: index.php');
             exit;
         }
-        $error = 'Database error: ' . mysqli_error($conn);
+        $dbErrorCode = (int)mysqli_errno($conn);
+        $dbErrorMessage = (string)mysqli_error($conn);
+        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 

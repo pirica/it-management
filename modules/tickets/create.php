@@ -88,11 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!$error) {
-            if (mysqli_query($conn, $sql)) {
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 header('Location: index.php');
                 exit;
             }
-            $error = 'Database error: ' . mysqli_error($conn);
+            $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     }
 }
