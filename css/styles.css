@@ -517,7 +517,23 @@ input[type="color"] {
 
 .switch-manager.switch-manager-half {
     --switch-gap: 3px;
-    --switch-port-size: clamp(16px, calc((100% - ((var(--rj45-row-count) - 1) * var(--switch-gap))) / var(--rj45-row-count)), 37px);
+    --switch-port-size: clamp(24px, calc((100% - ((var(--rj45-row-count) - 1) * var(--switch-gap))) / var(--rj45-row-count)), 37px);
+}
+
+.switch-manager.switch-manager-half .switch-color-indicator {
+    inset: clamp(2px, calc(var(--switch-port-size) * 0.12), 6px);
+}
+
+.switch-manager.switch-manager-half .switch-port-frame {
+    inset: clamp(1px, calc(var(--switch-port-size) * 0.08), 4px);
+    border-width: clamp(1px, calc(var(--switch-port-size) * 0.08), 3px);
+    border-radius: 2px;
+}
+
+.switch-manager.switch-manager-half .switch-status-tag {
+    right: 2px;
+    bottom: 2px;
+    padding: 2px 3px;
 }
 
 .switch-row {
