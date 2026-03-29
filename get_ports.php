@@ -112,19 +112,21 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
     }
 
     if ($hasEquipmentId && $hasPortType) {
-        $existsSql = 'SELECT COUNT(*) AS c FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ?';
-        $existsStmt = mysqli_prepare($conn, $existsSql);
-        $existingCount = 0;
-        if ($existsStmt) {
-            mysqli_stmt_bind_param($existsStmt, 'iis', $companyId, $switchId, $portType);
-            if (mysqli_stmt_execute($existsStmt)) {
-                $existsRes = mysqli_stmt_get_result($existsStmt);
-                $existingCount = (int)(($existsRes ? mysqli_fetch_assoc($existsRes) : [])['c'] ?? 0);
+        $existingPortNumbers = [];
+        $existingSql = 'SELECT port_number FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ? ORDER BY port_number ASC';
+        $existingStmt = mysqli_prepare($conn, $existingSql);
+        if ($existingStmt) {
+            mysqli_stmt_bind_param($existingStmt, 'iis', $companyId, $switchId, $portType);
+            if (mysqli_stmt_execute($existingStmt)) {
+                $existingRes = mysqli_stmt_get_result($existingStmt);
+                while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
+                    $portNumber = (int)($existingRow['port_number'] ?? 0);
+                    if ($portNumber > 0) {
+                        $existingPortNumbers[$portNumber] = true;
+                    }
+                }
             }
-            mysqli_stmt_close($existsStmt);
-        }
-        if ($existingCount > 0) {
-            return;
+            mysqli_stmt_close($existingStmt);
         }
 
         $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, label, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
@@ -133,11 +135,22 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
             return;
         }
         for ($n = 1; $n <= $count; $n++) {
+            if (isset($existingPortNumbers[$n])) {
+                continue;
+            }
             $label = strtoupper(str_replace('_', '+', $portType)) . ' ' . $n;
             mysqli_stmt_bind_param($insertStmt, 'iisiiii', $companyId, $switchId, $portType, $n, $label, $defaultStatusId, $defaultColorId);
             mysqli_stmt_execute($insertStmt);
         }
         mysqli_stmt_close($insertStmt);
+
+        $deleteSql = 'DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ? AND port_number > ?';
+        $deleteStmt = mysqli_prepare($conn, $deleteSql);
+        if ($deleteStmt) {
+            mysqli_stmt_bind_param($deleteStmt, 'iisi', $companyId, $switchId, $portType, $count);
+            mysqli_stmt_execute($deleteStmt);
+            mysqli_stmt_close($deleteStmt);
+        }
         return;
     }
 
