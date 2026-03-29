@@ -339,6 +339,10 @@ if ($hasSelectedSwitch) {
             }
         }
 
+        function hasUpStatus(status) {
+            return String(status || '').trim().toLowerCase() === 'up';
+        }
+
         function paintPort(el, color) {
             const normalizedColor = color || 'black';
             const indicator = el.querySelector('.switch-color-indicator');
@@ -346,6 +350,23 @@ if ($hasSelectedSwitch) {
             indicator.style.background = getColorCss(normalizedColor);
             number.style.color = getPortNumberColor(normalizedColor);
             el.dataset.color = normalizedColor;
+        }
+
+        function paintVlan(el, vlanId) {
+            const vlanIndicator = el.querySelector('.switch-vlan-indicator');
+            if (!vlanIndicator) {
+                return;
+            }
+            const hasVlan = String(vlanId || '').trim() !== '';
+            vlanIndicator.style.background = hasVlan ? '#FFED00' : 'transparent';
+        }
+
+        function paintStatusTag(el, status) {
+            const tag = el.querySelector('.switch-status-tag');
+            if (!tag) {
+                return;
+            }
+            tag.style.display = hasUpStatus(status) ? 'inline-block' : 'none';
         }
 
         function escapeHtml(s) {
@@ -416,11 +437,27 @@ if ($hasSelectedSwitch) {
             num.textContent = p.port_number;
             el.appendChild(num);
 
+            const vlanDiv = document.createElement('div');
+            vlanDiv.className = 'switch-vlan-indicator';
+            el.appendChild(vlanDiv);
+
+            const frameDiv = document.createElement('div');
+            frameDiv.className = 'switch-port-frame';
+            el.appendChild(frameDiv);
+
             const colorDiv = document.createElement('div');
             colorDiv.className = 'switch-color-indicator';
             colorDiv.style.background = getColorCss(p.color);
             num.style.color = getPortNumberColor(p.color);
             el.appendChild(colorDiv);
+
+            const statusTag = document.createElement('div');
+            statusTag.className = 'switch-status-tag';
+            statusTag.textContent = 'UP';
+            statusTag.style.display = hasUpStatus(p.status) ? 'inline-block' : 'none';
+            el.appendChild(statusTag);
+
+            paintVlan(el, p.vlan_id);
 
             el.addEventListener('mouseenter', function (ev) { showTooltip(ev, el); });
             el.addEventListener('mousemove', moveTooltip);
@@ -605,6 +642,8 @@ if ($hasSelectedSwitch) {
                     selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
                     selected.dataset.comments = payload.comments || selected.dataset.comments;
                     paintPort(selected, payload.color || selected.dataset.color);
+                    paintVlan(selected, payload.vlan || '');
+                    paintStatusTag(selected, payload.status || selected.dataset.status);
                 })
                 .catch(function (err) {
                     alert(err.message || 'Network error');
