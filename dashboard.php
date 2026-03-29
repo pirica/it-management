@@ -29,22 +29,22 @@ $employees_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) 
                 <p style="color: var(--text-secondary); margin-bottom: 30px;">Welcome to <?php echo sanitize($company_data['company']); ?></p>
 
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
                         <div class="stat-label">Equipment</div>
                         <div class="stat-number"><?php echo $equipment_count; ?></div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/workstations/">
                         <div class="stat-label">Workstations</div>
                         <div class="stat-number"><?php echo $workstations_count; ?></div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/tickets/">
                         <div class="stat-label">Tickets</div>
                         <div class="stat-number"><?php echo $tickets_count; ?></div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/employees/">
                         <div class="stat-label">Employees</div>
                         <div class="stat-number"><?php echo $employees_count; ?></div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="card">
