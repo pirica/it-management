@@ -33,7 +33,7 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
 function fetch_company_vlans(mysqli $conn, int $companyId): array
 {
     $rows = [];
-    $sql = 'SELECT id, vlan_name FROM vlans WHERE company_id = ? ORDER BY vlan_number ASC, id ASC';
+    $sql = 'SELECT id, vlan_name, vlan_color FROM vlans WHERE company_id = ? ORDER BY vlan_number ASC, id ASC';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $rows;
@@ -42,7 +42,11 @@ function fetch_company_vlans(mysqli $conn, int $companyId): array
     if (mysqli_stmt_execute($stmt)) {
         $res = mysqli_stmt_get_result($stmt);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['vlan_name']];
+            $rows[] = [
+                'id' => (int)$row['id'],
+                'name' => (string)$row['vlan_name'],
+                'color' => (string)($row['vlan_color'] ?? ''),
+            ];
         }
     }
     mysqli_stmt_close($stmt);
@@ -259,7 +263,7 @@ seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEq
 remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
 if ($hasEquipmentId && $hasPortType) {
-    $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name' : ', NULL AS vlan_id, NULL AS vlan_name';
+    $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
@@ -278,7 +282,7 @@ if ($hasEquipmentId && $hasPortType) {
         }
     }
 } else {
-    $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name' : ', NULL AS vlan_id, NULL AS vlan_name';
+    $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
@@ -326,6 +330,7 @@ if (!($hasEquipmentId && $hasPortType)) {
             'color' => 'grey',
             'vlan_id' => null,
             'vlan_name' => null,
+            'vlan_color' => null,
             'comments' => '',
         ];
     }
@@ -340,6 +345,7 @@ if (!($hasEquipmentId && $hasPortType)) {
             'color' => 'grey',
             'vlan_id' => null,
             'vlan_name' => null,
+            'vlan_color' => null,
             'comments' => '',
         ];
     }
