@@ -101,6 +101,8 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'cable_color' => 'Vlan Color',
+        'vlan_color' => 'Vlan Color',
     ];
 
     if (isset($map[$label])) {
@@ -530,6 +532,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
+                            <?php elseif (in_array($name, ['cable_color', 'vlan_color'], true)): ?>
+                                <input type="color" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize((preg_match('/^#[A-Fa-f0-9]{6}$/', $displayVal) ? $displayVal : '#000000')); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>
