@@ -237,15 +237,21 @@ if ($hasSelectedSwitch) {
                             <label><strong>Selected port:</strong> <span id="selectedPort">None</span></label>
                             <label>
                                 Color:
-                                <select id="colorSelect">
-                                    <option value="">-- choose color --</option>
-                                </select>
+                                <div class="switch-control-input">
+                                    <select id="colorSelect">
+                                        <option value="">-- choose color --</option>
+                                    </select>
+                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/switch_cablecolors/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
+                                </div>
                             </label>
                             <label>
                                 Status:
-                                <select id="statusSelect">
-                                    <option value="">-- choose status --</option>
-                                </select>
+                                <div class="switch-control-input">
+                                    <select id="statusSelect">
+                                        <option value="">-- choose status --</option>
+                                    </select>
+                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/switch_status/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
+                                </div>
                             </label>
                             <label>
                                 Label:
@@ -253,7 +259,7 @@ if ($hasSelectedSwitch) {
                             </label>
                             <label>
                                 VLAN:
-                                <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="switch-control-input">
                                     <select id="vlanSelect">
                                         <option value="">-- choose VLAN --</option>
                                     </select>

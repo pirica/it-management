@@ -531,9 +531,12 @@ input[type="color"] {
     color: #111;
     z-index: 4;
     position: absolute;
-    top: 6px;
-    left: 8px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-weight: 700;
+    text-align: center;
+    pointer-events: none;
 }
 
 .switch-color-indicator {
@@ -595,6 +598,12 @@ input[type="color"] {
 .switch-controls label {
     margin-bottom: 0;
     font-size: 13px;
+}
+
+.switch-control-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .switch-controls button {
