@@ -166,6 +166,15 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+function cr_try_query($conn, $sql, &$error = null) {
+    try {
+        return mysqli_query($conn, $sql);
+    } catch (Throwable $t) {
+        $error = $t->getMessage();
+        return false;
+    }
+}
+
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -327,7 +336,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $findSql .= ' AND company_id=' . (int)$company_id;
                 }
                 $findSql .= ' LIMIT 1';
-                $existing = mysqli_query($conn, $findSql);
+                $queryError = null;
+                $existing = cr_try_query($conn, $findSql, $queryError);
+                if ($existing === false && $queryError !== null) {
+                    $errors[] = 'Could not verify related value for ' . cr_humanize_field($name) . ': ' . $queryError;
+                    $data[$name] = 'NULL';
+                    continue;
+                }
                 if ($existing && mysqli_num_rows($existing) > 0) {
                     $row = mysqli_fetch_assoc($existing);
                     $data[$name] = (string)(int)$row['id'];
@@ -340,10 +355,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     }
                     $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
                         . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
-                    if (mysqli_query($conn, $insertSql)) {
+                    $insertError = null;
+                    if (cr_try_query($conn, $insertSql, $insertError)) {
                         $data[$name] = (string)(int)mysqli_insert_id($conn);
                     } else {
-                        $errors[] = 'Could not add related value for ' . $name . ': ' . mysqli_error($conn);
+                        $dbError = $insertError ?? mysqli_error($conn);
+                        $errors[] = 'Could not add related value for ' . cr_humanize_field($name) . ': ' . $dbError;
                         $data[$name] = 'NULL';
                     }
                 }
@@ -391,11 +408,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
-        if (mysqli_query($conn, $sql)) {
+        $saveError = null;
+        if (cr_try_query($conn, $sql, $saveError)) {
             header('Location: ' . $listUrl);
             exit;
         }
-        $errors[] = 'Database error: ' . mysqli_error($conn);
+        $dbError = $saveError ?? mysqli_error($conn);
+        $errors[] = 'Database error: ' . $dbError;
     }
 }
 
