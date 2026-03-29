@@ -49,6 +49,11 @@ $uiFieldOptions = [
 $currentUiConfig = $ui_config ?? itm_ui_config_defaults();
 $sidebarStructure = itm_sidebar_structure();
 
+if (isset($_SESSION['settings_flash_message'])) {
+    $message = (string)$_SESSION['settings_flash_message'];
+    unset($_SESSION['settings_flash_message']);
+}
+
 function backup_filename() {
     return 'backup_' . date('d_M_Y') . '_' . date('His') . '.sql';
 }
@@ -206,8 +211,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
             $error = 'Unable to save UI configuration.';
         } else {
-            $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
-            $message = 'UI configuration saved successfully.';
+            $_SESSION['settings_flash_message'] = 'UI configuration saved successfully.';
+            header('Location: index.php?ui_saved=1');
+            exit;
         }
     }
 
@@ -551,6 +557,13 @@ usort($backupFiles, static function ($a, $b) {
     collectAndSetHiddenFields();
 })();
 </script>
+<?php if (isset($_GET['ui_saved']) && $_GET['ui_saved'] === '1'): ?>
+<script>
+window.setTimeout(function () {
+    window.location.href = 'index.php';
+}, 150);
+</script>
+<?php endif; ?>
 <script src="../../js/theme.js"></script>
 </body>
 </html>
