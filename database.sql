@@ -631,7 +631,7 @@ INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_p
 DROP TABLE IF EXISTS `switch_status`;
 CREATE TABLE `switch_status` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  `status` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
   PRIMARY KEY (`id`),
   UNIQUE KEY `status` (`status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -640,7 +640,7 @@ CREATE TABLE `switch_status` (
 DROP TABLE IF EXISTS `switch_cablecolors`;
 CREATE TABLE `switch_cablecolors` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
+  `color` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
   PRIMARY KEY (`id`),
   UNIQUE KEY `color` (`color`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -664,24 +664,6 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
   CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Table structure for `switch_status`
-DROP TABLE IF EXISTS `switch_status`;
-CREATE TABLE `switch_status` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `status` enum('Up','Down','Free','Disabled','Unknown','Err-Disabled','Testing','Faulty','Reserved') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `status` (`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Table structure for `switch_cablecolors`
-DROP TABLE IF EXISTS `switch_cablecolors`;
-CREATE TABLE `switch_cablecolors` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `color` enum('grey','green','red','yellow','black','blue','white','orange','purple') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `color` (`color`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_categories`
