@@ -159,6 +159,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (mysqli_query($conn, $sql)) {
             if ($isEdit) {
+                if ($equipment_type_id === $switchTypeId) {
+                    header('Location: index.php?switch_id=' . $id . '&saved=1#switch-port-manager');
+                    exit;
+                }
                 header('Location: edit.php?id=' . $id . '&saved=1');
                 exit;
             }
