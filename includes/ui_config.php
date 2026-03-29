@@ -71,6 +71,47 @@ function itm_sidebar_humanize_table_name($tableName) {
     return ucwords($label);
 }
 
+function itm_auto_create_module_scaffold($moduleName) {
+    $moduleName = trim((string)$moduleName);
+    if ($moduleName === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $moduleName)) {
+        return false;
+    }
+
+    $modulesRoot = dirname(__DIR__) . '/modules';
+    $moduleDir = $modulesRoot . '/' . $moduleName;
+    $templateDir = $modulesRoot . '/manufacturers';
+    if (!is_dir($templateDir)) {
+        return false;
+    }
+
+    if (!is_dir($moduleDir) && !mkdir($moduleDir, 0775, true) && !is_dir($moduleDir)) {
+        return false;
+    }
+
+    $templateFiles = glob($templateDir . '/*.php') ?: [];
+    foreach ($templateFiles as $templatePath) {
+        $fileName = basename($templatePath);
+        $targetPath = $moduleDir . '/' . $fileName;
+        if (is_file($targetPath)) {
+            continue;
+        }
+
+        $action = pathinfo($fileName, PATHINFO_FILENAME);
+        $title = itm_sidebar_humanize_table_name($moduleName);
+        $stub = "<?php\n";
+        $stub .= '$crud_table = ' . var_export($moduleName, true) . ";\n";
+        $stub .= '$crud_title = ' . var_export($title, true) . ";\n";
+        $stub .= '$crud_action = ' . var_export($action, true) . ";\n";
+        $stub .= "require __DIR__ . '/../manufacturers/" . $fileName . "';\n";
+
+        if (file_put_contents($targetPath, $stub) === false) {
+            return false;
+        }
+    }
+
+    return is_file($moduleDir . '/index.php');
+}
+
 function itm_sidebar_structure($conn = null) {
     $structure = itm_sidebar_base_structure();
     $existingItemIds = [];
@@ -110,6 +151,10 @@ function itm_sidebar_structure($conn = null) {
                 }
 
                 $moduleIndex = $modulesRoot . '/' . $table . '/index.php';
+                if (!is_file($moduleIndex)) {
+                    itm_auto_create_module_scaffold($table);
+                }
+
                 if (is_file($moduleIndex)) {
                     $moduleNames[$table] = true;
                 }

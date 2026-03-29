@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'manufacturers';
-$crud_title = 'Manufacturers';
-$crud_action = 'create';
+$crud_table = $crud_table ?? 'manufacturers';
+$crud_title = $crud_title ?? 'Manufacturers';
+$crud_action = $crud_action ?? 'create';
 ?>
 <?php
 require '../../config/config.php';
