@@ -252,6 +252,15 @@ if ($hasSelectedSwitch) {
                                 <input type="text" id="labelInput" placeholder="Port label">
                             </label>
                             <label>
+                                VLAN:
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <select id="vlanSelect">
+                                        <option value="">-- choose VLAN --</option>
+                                    </select>
+                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/vlans/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
+                                </div>
+                            </label>
+                            <label>
                                 Comments:
                                 <input type="text" id="commentsInput" placeholder="Comments">
                             </label>
@@ -277,6 +286,7 @@ if ($hasSelectedSwitch) {
         let ports = [];
         let colorOptions = [];
         let statusOptions = [];
+        let vlanOptions = [];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
 
@@ -359,10 +369,12 @@ if ($hasSelectedSwitch) {
             const label = el.dataset.label || '—';
             const status = el.dataset.status || 'unknown';
             const comments = el.dataset.comments || '';
+            const vlanName = el.dataset.vlanName || '—';
             const portType = normalizePortType(el.dataset.portType).replace('_', '+').toUpperCase();
             tooltip.innerHTML = '<strong>' + escapeHtml(portType) + ' Port ' + el.dataset.portNumber + '</strong><br>'
                 + 'Label: ' + escapeHtml(label) + '<br>'
                 + 'Status: ' + escapeHtml(status) + '<br>'
+                + 'VLAN: ' + escapeHtml(vlanName) + '<br>'
                 + 'Comments: ' + escapeHtml(comments);
             tooltip.style.opacity = '1';
             moveTooltip(ev);
@@ -382,6 +394,7 @@ if ($hasSelectedSwitch) {
             document.getElementById('colorSelect').value = el.dataset.color || '';
             document.getElementById('statusSelect').value = el.dataset.status || '';
             document.getElementById('labelInput').value = el.dataset.label || '';
+            document.getElementById('vlanSelect').value = el.dataset.vlanId || '';
             document.getElementById('commentsInput').value = el.dataset.comments || '';
         }
 
@@ -394,6 +407,8 @@ if ($hasSelectedSwitch) {
             el.dataset.label = p.label || '';
             el.dataset.status = p.status || 'unknown';
             el.dataset.comments = p.comments || '';
+            el.dataset.vlanId = p.vlan_id || '';
+            el.dataset.vlanName = p.vlan_name || '';
             el.dataset.color = p.color || 'black';
 
             const num = document.createElement('div');
@@ -448,16 +463,19 @@ if ($hasSelectedSwitch) {
         }
 
 
-        function hydrateLookups(statuses, colors) {
+        function hydrateLookups(statuses, colors, vlans) {
             statusOptions = Array.isArray(statuses) ? statuses : [];
             colorOptions = Array.isArray(colors) ? colors : [];
+            vlanOptions = Array.isArray(vlans) ? vlans : [];
 
             const statusSelect = document.getElementById('statusSelect');
             const colorSelect = document.getElementById('colorSelect');
+            const vlanSelect = document.getElementById('vlanSelect');
             const legend = document.getElementById('switchLegend');
 
             statusSelect.innerHTML = '<option value="">-- choose status --</option>';
             colorSelect.innerHTML = '<option value="">-- choose color --</option>';
+            vlanSelect.innerHTML = '<option value="">-- choose VLAN --</option>';
             legend.innerHTML = '';
 
             statusOptions.forEach(function (item) {
@@ -481,6 +499,13 @@ if ($hasSelectedSwitch) {
                 legendItem.appendChild(swatch);
                 legendItem.appendChild(document.createTextNode(item.name));
                 legend.appendChild(legendItem);
+            });
+
+            vlanOptions.forEach(function (item) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name;
+                vlanSelect.appendChild(option);
             });
         }
 
@@ -545,7 +570,7 @@ if ($hasSelectedSwitch) {
                         throw new Error(data.error || 'Failed to load ports');
                     }
                     ports = data.ports || [];
-                    hydrateLookups(data.statuses || [], data.colors || []);
+                    hydrateLookups(data.statuses || [], data.colors || [], data.vlans || []);
                     const layout = data.layout || localLayout;
                     document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
                     renderPorts();
@@ -567,6 +592,7 @@ if ($hasSelectedSwitch) {
                 color: document.getElementById('colorSelect').value || null,
                 status: document.getElementById('statusSelect').value || null,
                 label: document.getElementById('labelInput').value || null,
+                vlan: document.getElementById('vlanSelect').value || null,
                 comments: document.getElementById('commentsInput').value || null
             };
 
@@ -574,6 +600,9 @@ if ($hasSelectedSwitch) {
                 .then(function () {
                     selected.dataset.status = payload.status || selected.dataset.status;
                     selected.dataset.label = payload.label || selected.dataset.label;
+                    selected.dataset.vlanId = payload.vlan || '';
+                    const selectedVlan = vlanOptions.find(function (item) { return String(item.id) === String(payload.vlan || ''); });
+                    selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
                     selected.dataset.comments = payload.comments || selected.dataset.comments;
                     paintPort(selected, payload.color || selected.dataset.color);
                 })

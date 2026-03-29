@@ -30,6 +30,25 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     return $rows;
 }
 
+function fetch_company_vlans(mysqli $conn, int $companyId): array
+{
+    $rows = [];
+    $sql = 'SELECT id, vlan_name FROM vlans WHERE company_id = ? ORDER BY vlan_number ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $rows;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    if (mysqli_stmt_execute($stmt)) {
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['vlan_name']];
+        }
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+}
+
 function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
 {
     foreach ($items as $item) {
@@ -61,6 +80,7 @@ $hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasPortType = table_has_column($conn, 'switch_ports', 'port_type');
 $hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
+$hasVlanId = table_has_column($conn, 'switch_ports', 'vlan_id');
 $hasLegacyNumberPort = table_has_column($conn, 'equipment', 'numberport');
 
 if (!$hasStatusId || !$hasColorId) {
@@ -71,6 +91,7 @@ if (!$hasStatusId || !$hasColorId) {
 
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
+$vlans = fetch_company_vlans($conn, (int)$company_id);
 if (empty($statuses) || empty($colors)) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'switch_status/switch_cablecolors lookup tables are empty']);
@@ -212,10 +233,12 @@ seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId
 seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 
 if ($hasEquipmentId && $hasPortType) {
-    $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments
+    $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name' : ', NULL AS vlan_id, NULL AS vlan_name';
+    $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+            LEFT JOIN vlans v ON v.id = sp.vlan_id
             WHERE sp.company_id = ?
               AND sp.equipment_id = ?
             ORDER BY FIELD(sp.port_type, 'rj45', 'sfp', 'sfp_plus'), sp.port_number ASC";
@@ -229,10 +252,12 @@ if ($hasEquipmentId && $hasPortType) {
         }
     }
 } else {
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments
+    $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name' : ', NULL AS vlan_id, NULL AS vlan_name';
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+            LEFT JOIN vlans v ON v.id = sp.vlan_id
             WHERE sp.company_id = ?
             ORDER BY sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);
@@ -273,6 +298,8 @@ if (!($hasEquipmentId && $hasPortType)) {
             'label' => 'SFP ' . $n,
             'status' => 'Unknown',
             'color' => 'grey',
+            'vlan_id' => null,
+            'vlan_name' => null,
             'comments' => '',
         ];
     }
@@ -285,6 +312,8 @@ if (!($hasEquipmentId && $hasPortType)) {
             'label' => 'SFP+ ' . $n,
             'status' => 'Unknown',
             'color' => 'grey',
+            'vlan_id' => null,
+            'vlan_name' => null,
             'comments' => '',
         ];
     }
@@ -295,6 +324,7 @@ echo json_encode([
     'ports' => $ports,
     'statuses' => $statuses,
     'colors' => $colors,
+    'vlans' => $vlans,
     'layout' => [
         'rj45' => $rj45Count,
         'sfp' => $sfpCount,
