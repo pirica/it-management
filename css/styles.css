@@ -515,6 +515,11 @@ input[type="color"] {
     --switch-port-size: clamp(26px, calc((100% - ((var(--rj45-row-count) - 1) * var(--switch-gap))) / var(--rj45-row-count)), 74px);
 }
 
+.switch-manager.switch-manager-half {
+    --switch-gap: 3px;
+    --switch-port-size: clamp(16px, calc((100% - ((var(--rj45-row-count) - 1) * var(--switch-gap))) / var(--rj45-row-count)), 37px);
+}
+
 .switch-row {
     display: flex;
     gap: var(--switch-gap);
