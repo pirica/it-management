@@ -636,6 +636,17 @@ CREATE TABLE `switch_status` (
   UNIQUE KEY `status` (`status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Data for `switch_status`
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('1', 'Up');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('2', 'Down');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('3', 'Free');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('4', 'Disabled');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('5', 'Unknown');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('6', 'Err-Disabled');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('7', 'Testing');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('8', 'Faulty');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('9', 'Reserved');
+
 -- Table structure for `switch_cablecolors`
 DROP TABLE IF EXISTS `switch_cablecolors`;
 CREATE TABLE `switch_cablecolors` (
@@ -644,6 +655,18 @@ CREATE TABLE `switch_cablecolors` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `color` (`color`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `switch_cablecolors`
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('1', 'grey');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('2', 'green');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('3', 'red');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('4', 'yellow');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('5', 'black');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('6', 'blue');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('7', 'white');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('8', 'orange');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('9', 'purple');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('10', 'other');
 
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
