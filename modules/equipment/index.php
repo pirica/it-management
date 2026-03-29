@@ -384,7 +384,9 @@ if ($hasSelectedSwitch) {
                 return;
             }
             const hasVlan = String(vlanId || '').trim() !== '';
-            vlanIndicator.style.background = hasVlan ? '#FFED00' : 'transparent';
+            const vlanColor = String(el.dataset.vlanColor || '').trim();
+            const isHexColor = /^#[A-Fa-f0-9]{6}$/.test(vlanColor);
+            vlanIndicator.style.background = hasVlan ? (isHexColor ? vlanColor : '#FFED00') : 'transparent';
         }
 
         function paintStatusTag(el, status) {
@@ -456,6 +458,7 @@ if ($hasSelectedSwitch) {
             el.dataset.comments = p.comments || '';
             el.dataset.vlanId = p.vlan_id || '';
             el.dataset.vlanName = p.vlan_name || '';
+            el.dataset.vlanColor = p.vlan_color || '';
             el.dataset.color = p.color || 'black';
 
             const num = document.createElement('div');
@@ -706,6 +709,7 @@ if ($hasSelectedSwitch) {
                     selected.dataset.vlanId = payload.vlan || '';
                     const selectedVlan = vlanOptions.find(function (item) { return String(item.id) === String(payload.vlan || ''); });
                     selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
+                    selected.dataset.vlanColor = selectedVlan ? (selectedVlan.color || '') : '';
                     selected.dataset.comments = payload.comments || selected.dataset.comments;
                     paintPort(selected, payload.color || selected.dataset.color);
                     paintVlan(selected, payload.vlan || '');
