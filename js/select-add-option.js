@@ -15,7 +15,7 @@
         if (custom) return custom;
 
         const base = window.ITM_BASE_URL || '/';
-        return base.replace(/\/?$/, '/') + 'modules/_shared/select_options_api.php';
+        return base.replace(/\/?$/, '/') + 'modules/select_options_api.php';
     }
 
     function injectAddOption(selectEl) {
@@ -24,7 +24,7 @@
 
         const option = document.createElement('option');
         option.value = ADD_VALUE;
-        option.textContent = '+ Add';
+        option.textContent = '➕ Add';
         selectEl.appendChild(option);
     }
 
@@ -82,7 +82,7 @@
                 return `<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.label)}</option>`;
             }).join('');
 
-            selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">+ Add</option>`;
+            selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕ Add</option>`;
             selectEl.value = String(result.selected_id);
             selectEl.dataset.previousValue = String(result.selected_id);
         } catch (error) {

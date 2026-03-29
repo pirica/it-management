@@ -183,7 +183,7 @@ function emp_checked($form, $field) {
                                 <?php if ($departments): while ($d = mysqli_fetch_assoc($departments)): ?>
                                     <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['department_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$d['name']); ?></option>
                                 <?php endwhile; endif; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕ Add</option>
                             </select>
                         </div>
                         <div class="form-group"><label>Office Key Card Department Id</label>
@@ -193,7 +193,7 @@ function emp_checked($form, $field) {
                                 <?php if ($departments): while ($d = mysqli_fetch_assoc($departments)): ?>
                                     <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['office_key_card_department_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$d['name']); ?></option>
                                 <?php endwhile; endif; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕ Add</option>
                             </select>
                         </div>
                         <div class="form-group"><label>Raw Status Code</label><input type="text" name="raw_status_code" value="<?php echo sanitize($form['raw_status_code']); ?>"></div>
@@ -202,7 +202,7 @@ function emp_checked($form, $field) {
                                 <?php if ($statuses): while ($s = mysqli_fetch_assoc($statuses)): ?>
                                     <option value="<?php echo (int)$s['id']; ?>" <?php echo ((string)$s['id'] === (string)$form['employment_status_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$s['name']); ?></option>
                                 <?php endwhile; endif; ?>
-                                <option value="__add_new__">+ Add</option>
+                                <option value="__add_new__">➕ Add</option>
                             </select>
                         </div>
                     </div>
