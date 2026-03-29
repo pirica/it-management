@@ -286,16 +286,16 @@ function render_options($items, $selected = '') {
             <div id="switch-fields" style="display:none;">
                 <h3 style="margin-top:20px;">Switch Details</h3>
                 <div class="form-row">
-                    <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?></select></div>
-                    <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?></select></div>
+                    <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="rj45 port option"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id" data-addable-select="1" data-add-table="equipment_fiber" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="fiber port option"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?><option value="__add_new__">➕</option></select></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>Fiber Count</label><select name="switch_fiber_count_id"><option value="">-- None --</option><?php render_options($switchFiberCountOptions, $data['switch_fiber_count_id']); ?></select></div>
+                    <div class="form-group"><label>Fiber Count</label><select name="switch_fiber_count_id" data-addable-select="1" data-add-table="equipment_fiber_count" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="fiber count option"><option value="">-- None --</option><?php render_options($switchFiberCountOptions, $data['switch_fiber_count_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>PoE Type</label><select name="switch_poe_id"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?></select></div>
-                    <div class="form-group"><label>Management</label><select name="switch_environment_id"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?></select></div>
+                    <div class="form-group"><label>PoE Type</label><select name="switch_poe_id" data-addable-select="1" data-add-table="equipment_poe" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="poe type"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Management</label><select name="switch_environment_id" data-addable-select="1" data-add-table="equipment_environment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="management type"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?><option value="__add_new__">➕</option></select></div>
                 </div>
             </div>
             <div class="form-group"><label>Notes</label><textarea name="notes" rows="5"><?php echo sanitize($data['notes']); ?></textarea></div>
