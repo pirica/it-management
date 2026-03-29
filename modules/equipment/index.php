@@ -610,6 +610,26 @@ if ($hasSelectedSwitch) {
                 });
         }
 
+        function wireInlineAddOption(selectId, createUrl) {
+            const el = document.getElementById(selectId);
+            if (!el) {
+                return;
+            }
+            el.addEventListener('change', function () {
+                if (el.value !== '__add_new__') {
+                    return;
+                }
+                const previousValue = el.dataset.previousValue || '';
+                window.open(createUrl, '_blank', 'noopener,noreferrer');
+                el.value = previousValue;
+            });
+            el.addEventListener('focus', function () {
+                if (el.value !== '__add_new__') {
+                    el.dataset.previousValue = el.value || '';
+                }
+            });
+        }
+
         function loadPorts() {
             const localLayout = fallbackLayout();
             fetch(apiGet + '?switch_id=' + encodeURIComponent(selectedSwitchId))
@@ -678,6 +698,9 @@ if ($hasSelectedSwitch) {
             if (!selected) {
                 return;
             }
+            if (this.value === '__add_new__') {
+                return;
+            }
             if (String(selected.dataset.id).indexOf('virtual-') === 0) {
                 alert('This port is not saved in database yet. Reload the switch and try again.');
                 return;
@@ -692,6 +715,10 @@ if ($hasSelectedSwitch) {
                     alert('Unable to auto-save color.');
                 });
         });
+
+        wireInlineAddOption('colorSelect', '<?php echo BASE_URL; ?>modules/switch_cablecolors/create.php');
+        wireInlineAddOption('statusSelect', '<?php echo BASE_URL; ?>modules/switch_status/create.php');
+        wireInlineAddOption('vlanSelect', '<?php echo BASE_URL; ?>modules/vlans/create.php');
 
         loadPorts();
     })();
