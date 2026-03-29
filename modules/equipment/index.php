@@ -215,7 +215,7 @@ if ($hasSelectedSwitch) {
                     </div>
                     <div class="switch-manager" id="switchManager">
                         <div class="card" style="margin-bottom:14px;padding:12px;">
-                            <strong>Live switch layout:</strong>
+                            <strong>Switch layout:</strong>
                             <span id="switchLayoutSummary">Loading…</span>
                         </div>
                         <div class="switch-grid">
