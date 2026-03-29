@@ -1,13 +1,11 @@
 <?php
+require 'config/config.php';
+
 // Enable all error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/error_log.txt');
-
-session_start();
-@$conn = mysqli_connect('localhost', 'root', 'usbw', 'itmanagement');
-mysqli_set_charset($conn, "utf8mb4");
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $company_id = (int)$_POST['company_id'];
