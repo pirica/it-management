@@ -73,9 +73,21 @@ function itm_get_csrf_token() {
 }
 
 function get_company_name($company_id, $conn) {
-    $result = mysqli_query($conn, "SELECT company FROM companies WHERE id = $company_id");
-    if ($result) {
-        $row = mysqli_fetch_assoc($result);
+    $sql = 'SELECT company FROM companies WHERE id = ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 'Unknown';
+    }
+    $companyId = (int)$company_id;
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        return 'Unknown';
+    }
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+    if ($row) {
         return $row['company'] ?? 'Unknown';
     }
     return 'Unknown';

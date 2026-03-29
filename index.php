@@ -9,7 +9,16 @@ ini_set('error_log', __DIR__ . '/error_log.txt');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $company_id = (int)$_POST['company_id'];
-    $company = mysqli_fetch_assoc(mysqli_query($conn, "SELECT company FROM companies WHERE id = $company_id"));
+    $company = null;
+    $stmt = mysqli_prepare($conn, 'SELECT company FROM companies WHERE id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        if (mysqli_stmt_execute($stmt)) {
+            $res = mysqli_stmt_get_result($stmt);
+            $company = $res ? mysqli_fetch_assoc($res) : null;
+        }
+        mysqli_stmt_close($stmt);
+    }
     
     if ($company) {
         $_SESSION['company_id'] = $company_id;

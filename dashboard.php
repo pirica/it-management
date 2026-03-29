@@ -1,13 +1,40 @@
 <?php
 require 'config/config.php';
 
-$company = mysqli_query($conn, "SELECT * FROM companies WHERE id = $company_id");
-$company_data = mysqli_fetch_assoc($company);
+$companyId = (int)$company_id;
 
-$equipment_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM equipment WHERE company_id = $company_id AND active = 1"))['count'];
-$workstations_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM workstations WHERE company_id = $company_id AND active = 1"))['count'];
-$tickets_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM tickets WHERE company_id = $company_id"))['count'];
-$employees_count = (int)mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM employees WHERE company_id = $company_id"))['count'];
+$company_data = null;
+$companyStmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? LIMIT 1');
+if ($companyStmt) {
+    mysqli_stmt_bind_param($companyStmt, 'i', $companyId);
+    if (mysqli_stmt_execute($companyStmt)) {
+        $companyRes = mysqli_stmt_get_result($companyStmt);
+        $company_data = $companyRes ? mysqli_fetch_assoc($companyRes) : null;
+    }
+    mysqli_stmt_close($companyStmt);
+}
+
+function fetch_company_count(mysqli $conn, string $sql, int $companyId): int
+{
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        return 0;
+    }
+    $res = mysqli_stmt_get_result($stmt);
+    $count = (int)(($res ? mysqli_fetch_assoc($res) : [])['count'] ?? 0);
+    mysqli_stmt_close($stmt);
+    return $count;
+}
+
+$equipment_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM equipment WHERE company_id = ? AND active = 1', $companyId);
+$workstations_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM workstations WHERE company_id = ? AND active = 1', $companyId);
+$tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM tickets WHERE company_id = ?', $companyId);
+$employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
 ?>
 <!DOCTYPE html>
 <html lang="en">
