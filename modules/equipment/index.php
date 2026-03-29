@@ -238,19 +238,29 @@ if ($hasSelectedSwitch) {
                             <label>
                                 Color:
                                 <div class="switch-control-input">
-                                    <select id="colorSelect">
+                                    <select id="colorSelect"
+                                        data-addable-select="1"
+                                        data-add-table="switch_cablecolors"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="0"
+                                        data-add-friendly="cable color">
                                         <option value="">-- choose color --</option>
                                     </select>
-                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/switch_cablecolors/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
                                 </div>
                             </label>
                             <label>
                                 Status:
                                 <div class="switch-control-input">
-                                    <select id="statusSelect">
+                                    <select id="statusSelect"
+                                        data-addable-select="1"
+                                        data-add-table="switch_status"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="0"
+                                        data-add-friendly="switch status">
                                         <option value="">-- choose status --</option>
                                     </select>
-                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/switch_status/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
                                 </div>
                             </label>
                             <label>
@@ -260,10 +270,15 @@ if ($hasSelectedSwitch) {
                             <label>
                                 VLAN:
                                 <div class="switch-control-input">
-                                    <select id="vlanSelect">
+                                    <select id="vlanSelect"
+                                        data-addable-select="1"
+                                        data-add-table="vlans"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="vlan">
                                         <option value="">-- choose VLAN --</option>
                                     </select>
-                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/vlans/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
                                 </div>
                             </label>
                             <label>
@@ -527,6 +542,7 @@ if ($hasSelectedSwitch) {
                 option.textContent = item.name;
                 statusSelect.appendChild(option);
             });
+            statusSelect.appendChild(new Option('➕ Add', '__add_new__'));
 
             colorOptions.forEach(function (item) {
                 const option = document.createElement('option');
@@ -550,6 +566,8 @@ if ($hasSelectedSwitch) {
                 option.textContent = item.name;
                 vlanSelect.appendChild(option);
             });
+            colorSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            vlanSelect.appendChild(new Option('➕ Add', '__add_new__'));
         }
 
         function fallbackLayout() {
@@ -678,6 +696,7 @@ if ($hasSelectedSwitch) {
         loadPorts();
     })();
 </script>
+<script src="../../js/select-add-option.js"></script>
 <?php endif; ?>
 </body>
 </html>
