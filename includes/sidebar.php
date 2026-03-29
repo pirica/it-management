@@ -18,6 +18,7 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
     <ul class="sidebar-nav">
         <li><a href="<?php echo BASE_URL; ?>modules/equipment/" class="<?php echo $current_dir === 'equipment' ? 'active' : ''; ?>">🖥️ Equipment</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/workstations/" class="<?php echo $current_dir === 'workstations' ? 'active' : ''; ?>">💻 Workstations</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/switch_ports/" class="<?php echo $current_dir === 'switch_ports' ? 'active' : ''; ?>">🔌 Switch Ports</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/tickets/" class="<?php echo $current_dir === 'tickets' ? 'active' : ''; ?>">🎫 Tickets</a></li>
     </ul>
 
@@ -45,6 +46,8 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
         <li><a href="<?php echo BASE_URL; ?>modules/supplier_statuses/" class="<?php echo $current_dir === 'supplier_statuses' ? 'active' : ''; ?>">🟢 Supplier Statuses</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/racks/" class="<?php echo $current_dir === 'racks' ? 'active' : ''; ?>">🗄️ Racks</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/rack_statuses/" class="<?php echo $current_dir === 'rack_statuses' ? 'active' : ''; ?>">📶 Rack Statuses</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/switch_status/" class="<?php echo $current_dir === 'switch_status' ? 'active' : ''; ?>">📡 Switch Status</a></li>
+        <li><a href="<?php echo BASE_URL; ?>modules/switch_cablecolors/" class="<?php echo $current_dir === 'switch_cablecolors' ? 'active' : ''; ?>">🎨 Switch Cable Colors</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/ticket_categories/" class="<?php echo $current_dir === 'ticket_categories' ? 'active' : ''; ?>">🏷️ Ticket Categories</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/ticket_statuses/" class="<?php echo $current_dir === 'ticket_statuses' ? 'active' : ''; ?>">🚦 Ticket Statuses</a></li>
         <li><a href="<?php echo BASE_URL; ?>modules/ticket_priorities/" class="<?php echo $current_dir === 'ticket_priorities' ? 'active' : ''; ?>">🔥 Ticket Priorities</a></li>
