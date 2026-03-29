@@ -505,15 +505,25 @@ input[type="color"] {
     gap: 12px;
 }
 
+.switch-manager {
+    --rj45-row-count: 12;
+    --switch-gap: 6px;
+    --switch-port-size: 74px;
+}
+
+.switch-manager.switch-manager-compact {
+    --switch-port-size: clamp(26px, calc((100% - ((var(--rj45-row-count) - 1) * var(--switch-gap))) / var(--rj45-row-count)), 74px);
+}
+
 .switch-row {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: var(--switch-gap);
+    flex-wrap: nowrap;
 }
 
 .switch-port {
-    width: 74px;
-    height: 74px;
+    width: var(--switch-port-size);
+    height: var(--switch-port-size);
     border-radius: 6px;
     border: 1px solid var(--border);
     background: transparent;
@@ -527,7 +537,7 @@ input[type="color"] {
 }
 
 .switch-port-num {
-    font-size: 12px;
+    font-size: clamp(9px, calc(var(--switch-port-size) * 0.16), 12px);
     color: #111;
     z-index: 4;
     position: absolute;
@@ -541,7 +551,7 @@ input[type="color"] {
 
 .switch-color-indicator {
     position: absolute;
-    inset: 12px;
+    inset: clamp(4px, calc(var(--switch-port-size) * 0.16), 12px);
     border-radius: 3px;
     opacity: 1;
     pointer-events: none;
@@ -558,9 +568,9 @@ input[type="color"] {
 
 .switch-port-frame {
     position: absolute;
-    inset: 8px;
+    inset: clamp(3px, calc(var(--switch-port-size) * 0.11), 8px);
     border-radius: 4px;
-    border: 8px solid #000;
+    border: clamp(2px, calc(var(--switch-port-size) * 0.11), 8px) solid #000;
     pointer-events: none;
     z-index: 2;
 }
@@ -571,7 +581,7 @@ input[type="color"] {
     bottom: 6px;
     background: #00b140;
     color: #fff;
-    font-size: 9px;
+    font-size: clamp(7px, calc(var(--switch-port-size) * 0.12), 9px);
     line-height: 1;
     font-weight: 700;
     text-transform: uppercase;

@@ -501,15 +501,21 @@ if ($hasSelectedSwitch) {
             const rj45Ports = ports
                 .filter(function (p) { return normalizePortType(p.port_type) === 'rj45'; })
                 .sort(function (a, b) { return Number(a.port_number) - Number(b.port_number); });
-            const topRowCount = Math.ceil(rj45Ports.length / 2);
-            rj45Ports.forEach(function (p, idx) {
+
+            rj45Ports.forEach(function (p) {
                 const el = createPortElement(p);
-                if (idx < topRowCount) {
+                const portNumber = Number(p.port_number);
+                if (portNumber % 2 === 1) {
                     row1.appendChild(el);
                     return;
                 }
                 row2.appendChild(el);
             });
+
+            const maxRj45InSingleRow = Math.max(row1.children.length, row2.children.length, 1);
+            const switchManager = document.getElementById('switchManager');
+            switchManager.style.setProperty('--rj45-row-count', String(maxRj45InSingleRow));
+            switchManager.classList.toggle('switch-manager-compact', maxRj45InSingleRow > 12);
 
             const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
             sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
