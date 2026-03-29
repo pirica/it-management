@@ -241,7 +241,6 @@ if ($hasSelectedSwitch) {
                                     <select id="colorSelect">
                                         <option value="">-- choose color --</option>
                                     </select>
-                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/switch_cablecolors/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
                                 </div>
                             </label>
                             <label>
@@ -250,7 +249,6 @@ if ($hasSelectedSwitch) {
                                     <select id="statusSelect">
                                         <option value="">-- choose status --</option>
                                     </select>
-                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/switch_status/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
                                 </div>
                             </label>
                             <label>
@@ -263,7 +261,6 @@ if ($hasSelectedSwitch) {
                                     <select id="vlanSelect">
                                         <option value="">-- choose VLAN --</option>
                                     </select>
-                                    <a class="btn btn-sm btn-secondary" href="<?php echo BASE_URL; ?>modules/vlans/create.php" target="_blank" rel="noopener noreferrer">+ Add</a>
                                 </div>
                             </label>
                             <label>
@@ -527,6 +524,7 @@ if ($hasSelectedSwitch) {
                 option.textContent = item.name;
                 statusSelect.appendChild(option);
             });
+            statusSelect.appendChild(new Option('➕ Add', '__add_new__'));
 
             colorOptions.forEach(function (item) {
                 const option = document.createElement('option');
@@ -550,6 +548,8 @@ if ($hasSelectedSwitch) {
                 option.textContent = item.name;
                 vlanSelect.appendChild(option);
             });
+            colorSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            vlanSelect.appendChild(new Option('➕ Add', '__add_new__'));
         }
 
         function fallbackLayout() {
@@ -590,6 +590,26 @@ if ($hasSelectedSwitch) {
                         alert('Saved');
                     }
                 });
+        }
+
+        function wireInlineAddOption(selectId, createUrl) {
+            const el = document.getElementById(selectId);
+            if (!el) {
+                return;
+            }
+            el.addEventListener('change', function () {
+                if (el.value !== '__add_new__') {
+                    return;
+                }
+                const previousValue = el.dataset.previousValue || '';
+                window.open(createUrl, '_blank', 'noopener,noreferrer');
+                el.value = previousValue;
+            });
+            el.addEventListener('focus', function () {
+                if (el.value !== '__add_new__') {
+                    el.dataset.previousValue = el.value || '';
+                }
+            });
         }
 
         function loadPorts() {
@@ -660,6 +680,9 @@ if ($hasSelectedSwitch) {
             if (!selected) {
                 return;
             }
+            if (this.value === '__add_new__') {
+                return;
+            }
             if (String(selected.dataset.id).indexOf('virtual-') === 0) {
                 alert('This port is not saved in database yet. Reload the switch and try again.');
                 return;
@@ -674,6 +697,10 @@ if ($hasSelectedSwitch) {
                     alert('Unable to auto-save color.');
                 });
         });
+
+        wireInlineAddOption('colorSelect', '<?php echo BASE_URL; ?>modules/switch_cablecolors/create.php');
+        wireInlineAddOption('statusSelect', '<?php echo BASE_URL; ?>modules/switch_status/create.php');
+        wireInlineAddOption('vlanSelect', '<?php echo BASE_URL; ?>modules/vlans/create.php');
 
         loadPorts();
     })();
