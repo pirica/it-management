@@ -62,9 +62,15 @@ $result = mysqli_query($conn, $sql);
 $switches = [];
 $switchResult = mysqli_query(
     $conn,
-    "SELECT e.id, e.name
+    "SELECT e.id, e.name,
+            COALESCE(er.name, '24 ports') AS rj45_name,
+            COALESCE(ef.name, '') AS fiber_name,
+            COALESCE(efc.name, '0') AS fiber_count
      FROM equipment e
      INNER JOIN equipment_types et ON et.id = e.equipment_type_id
+     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+     LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+     LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
      WHERE e.company_id = $company_id
        AND e.active = 1
        AND LOWER(TRIM(et.name)) = 'switch'
@@ -87,6 +93,15 @@ if ($selectedSwitchId > 0) {
 if (!$hasSelectedSwitch && !empty($switches)) {
     $selectedSwitchId = (int)$switches[0]['id'];
     $hasSelectedSwitch = true;
+}
+$selectedSwitchData = null;
+if ($hasSelectedSwitch) {
+    foreach ($switches as $switchItem) {
+        if ((int)$switchItem['id'] === $selectedSwitchId) {
+            $selectedSwitchData = $switchItem;
+            break;
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -199,9 +214,23 @@ if (!$hasSelectedSwitch && !empty($switches)) {
                         </form>
                     </div>
                     <div class="switch-manager" id="switchManager">
+                        <div class="card" style="margin-bottom:14px;padding:12px;">
+                            <strong>Live switch layout:</strong>
+                            <span id="switchLayoutSummary">Loading…</span>
+                        </div>
                         <div class="switch-grid">
                             <div class="switch-row" id="switchRow1"></div>
                             <div class="switch-row" id="switchRow2"></div>
+                        </div>
+                        <div class="switch-grid" id="fiberGrid" style="margin-top:10px;">
+                            <div>
+                                <div style="margin-bottom:6px;font-weight:600;">SFP Ports</div>
+                                <div class="switch-row" id="switchSfpRow"></div>
+                            </div>
+                            <div>
+                                <div style="margin-bottom:6px;font-weight:600;">SFP+ Ports</div>
+                                <div class="switch-row" id="switchSfpPlusRow"></div>
+                            </div>
                         </div>
 
                         <div class="switch-controls">
@@ -264,6 +293,8 @@ if (!$hasSelectedSwitch && !empty($switches)) {
     (function () {
         const apiGet = '<?php echo BASE_URL; ?>get_ports.php';
         const apiUpdate = '<?php echo BASE_URL; ?>update_port.php';
+        const selectedSwitchId = <?php echo (int)$selectedSwitchId; ?>;
+        const selectedSwitchMeta = <?php echo json_encode($selectedSwitchData ?? []); ?>;
         let ports = [];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
@@ -303,7 +334,8 @@ if (!$hasSelectedSwitch && !empty($switches)) {
             const label = el.dataset.label || '—';
             const status = el.dataset.status || 'unknown';
             const comments = el.dataset.comments || '';
-            tooltip.innerHTML = '<strong>Port ' + el.dataset.portNumber + '</strong><br>'
+            const portType = (el.dataset.portType || 'rj45').replace('_', '+').toUpperCase();
+            tooltip.innerHTML = '<strong>' + escapeHtml(portType) + ' Port ' + el.dataset.portNumber + '</strong><br>'
                 + 'Label: ' + escapeHtml(label) + '<br>'
                 + 'Status: ' + escapeHtml(status) + '<br>'
                 + 'Comments: ' + escapeHtml(comments);
@@ -333,6 +365,7 @@ if (!$hasSelectedSwitch && !empty($switches)) {
             el.className = 'switch-port';
             el.dataset.id = p.id;
             el.dataset.portNumber = p.port_number;
+            el.dataset.portType = p.port_type || 'rj45';
             el.dataset.label = p.label || '';
             el.dataset.status = p.status || 'unknown';
             el.dataset.comments = p.comments || '';
@@ -359,26 +392,59 @@ if (!$hasSelectedSwitch && !empty($switches)) {
         function renderPorts() {
             const row1 = document.getElementById('switchRow1');
             const row2 = document.getElementById('switchRow2');
+            const sfpRow = document.getElementById('switchSfpRow');
+            const sfpPlusRow = document.getElementById('switchSfpPlusRow');
             row1.innerHTML = '';
             row2.innerHTML = '';
+            sfpRow.innerHTML = '';
+            sfpPlusRow.innerHTML = '';
 
-            ports.forEach(function (p) {
+            const rj45Ports = ports.filter(function (p) { return (p.port_type || 'rj45') === 'rj45'; });
+            const splitAt = Math.ceil(rj45Ports.length / 2);
+            rj45Ports.forEach(function (p, idx) {
                 const el = createPortElement(p);
-                if ((+p.port_number) <= 24) {
-                    row1.appendChild(el);
-                } else {
-                    row2.appendChild(el);
-                }
+                if (idx < splitAt) { row1.appendChild(el); } else { row2.appendChild(el); }
             });
+
+            const sfpPorts = ports.filter(function (p) { return p.port_type === 'sfp'; });
+            sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
+            const sfpPlusPorts = ports.filter(function (p) { return p.port_type === 'sfp_plus'; });
+            sfpPlusPorts.forEach(function (p) { sfpPlusRow.appendChild(createPortElement(p)); });
+
+            document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + rj45Ports.length + ' | SFP: ' + sfpPorts.length + ' | SFP+: ' + sfpPlusPorts.length;
+            document.getElementById('fiberGrid').style.display = (sfpPorts.length || sfpPlusPorts.length) ? 'grid' : 'none';
+        }
+
+        function fallbackLayout() {
+            const rj45 = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.rj45_name) || '').replace(/\D+/g, ''), 10) || 24;
+            const fiberCount = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_count) || '').replace(/\D+/g, ''), 10) || 0;
+            const fiberName = String((selectedSwitchMeta && selectedSwitchMeta.fiber_name) || '').toLowerCase();
+            const sfpPlus = fiberName.includes('sfp+') ? fiberCount : 0;
+            const sfp = fiberName.includes('sfp+') ? 0 : (fiberName.includes('sfp') ? fiberCount : 0);
+            return { rj45: rj45, sfp: sfp, sfp_plus: sfpPlus };
         }
 
         function savePort(payload, showMessage) {
+            function parseApiResponse(response) {
+                return response.text().then(function (text) {
+                    const raw = String(text || '').trim();
+                    if (!raw) {
+                        throw new Error('Empty response from server');
+                    }
+                    try {
+                        return JSON.parse(raw);
+                    } catch (e) {
+                        throw new Error('Invalid server JSON response');
+                    }
+                });
+            }
+
             return fetch(apiUpdate, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-                .then(function (r) { return r.json(); })
+                .then(parseApiResponse)
                 .then(function (resp) {
                     if (!resp.success) {
                         throw new Error(resp.error || 'Save failed');
@@ -390,17 +456,32 @@ if (!$hasSelectedSwitch && !empty($switches)) {
         }
 
         function loadPorts() {
-            fetch(apiGet)
-                .then(function (r) { return r.json(); })
+            const localLayout = fallbackLayout();
+            fetch(apiGet + '?switch_id=' + encodeURIComponent(selectedSwitchId))
+                .then(function (r) {
+                    return r.text().then(function (text) {
+                        const raw = String(text || '').trim();
+                        if (!raw) {
+                            throw new Error('Empty response from server');
+                        }
+                        try {
+                            return JSON.parse(raw);
+                        } catch (e) {
+                            throw new Error('Invalid server JSON response');
+                        }
+                    });
+                })
                 .then(function (data) {
                     if (!data.success) {
                         throw new Error(data.error || 'Failed to load ports');
                     }
                     ports = data.ports || [];
+                    const layout = data.layout || localLayout;
+                    document.getElementById('switchLayoutSummary').textContent = 'RJ45: ' + (layout.rj45 || 0) + ' | SFP: ' + (layout.sfp || 0) + ' | SFP+: ' + (layout.sfp_plus || 0);
                     renderPorts();
                 })
-                .catch(function () {
-                    alert('Unable to load switch ports.');
+                .catch(function (err) {
+                    alert(err && err.message ? ('Unable to load switch ports: ' + err.message) : 'Unable to load switch ports.');
                 });
         }
 
@@ -412,6 +493,7 @@ if (!$hasSelectedSwitch && !empty($switches)) {
 
             const payload = {
                 id: selected.dataset.id,
+                switch_id: selectedSwitchId,
                 color: document.getElementById('colorSelect').value || null,
                 status: document.getElementById('statusSelect').value || null,
                 label: document.getElementById('labelInput').value || null,
@@ -435,12 +517,16 @@ if (!$hasSelectedSwitch && !empty($switches)) {
             if (!selected) {
                 return;
             }
+            if (String(selected.dataset.id).indexOf('virtual-') === 0) {
+                alert('This port is not saved in database yet. Reload the switch and try again.');
+                return;
+            }
             const chosenColor = this.value || null;
             const oldColor = selected.dataset.color;
             selected.dataset.color = chosenColor || oldColor;
             selected.querySelector('.switch-color-indicator').style.background = getColorCss(selected.dataset.color);
 
-            savePort({ id: selected.dataset.id, color: chosenColor }, false)
+            savePort({ id: selected.dataset.id, switch_id: selectedSwitchId, color: chosenColor }, false)
                 .catch(function () {
                     selected.dataset.color = oldColor;
                     selected.querySelector('.switch-color-indicator').style.background = getColorCss(oldColor);
