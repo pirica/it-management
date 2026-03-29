@@ -898,6 +898,7 @@ CREATE TABLE `vlans` (
   `vlan_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `vlan_color` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `subnet` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `comments` text COLLATE utf8mb4_unicode_ci,
   `gateway_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
@@ -907,7 +908,7 @@ CREATE TABLE `vlans` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `vlans`
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', 'Primary office VLAN', '192.168.10.1', '1');
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
 
 -- Table structure for `warranty_types`
 DROP TABLE IF EXISTS `warranty_types`;
