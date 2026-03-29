@@ -47,6 +47,7 @@ $uiFieldOptions = [
 ];
 
 $currentUiConfig = $ui_config ?? itm_ui_config_defaults();
+$sidebarStructure = itm_sidebar_structure();
 
 function backup_filename() {
     return 'backup_' . date('d_M_Y') . '_' . date('His') . '.sql';
@@ -194,6 +195,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
 
+        $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
+        $sidebarMainOrderInput = json_decode((string)($_POST['sidebar_main_order'] ?? ''), true);
+        $sidebarSubmenuOrderInput = json_decode((string)($_POST['sidebar_submenu_order'] ?? ''), true);
+
+        $newConfig['sidebar_visibility'] = is_array($sidebarVisibilityInput) ? $sidebarVisibilityInput : [];
+        $newConfig['sidebar_main_order'] = is_array($sidebarMainOrderInput) ? $sidebarMainOrderInput : [];
+        $newConfig['sidebar_submenu_order'] = is_array($sidebarSubmenuOrderInput) ? $sidebarSubmenuOrderInput : [];
+
         if (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
             $error = 'Unable to save UI configuration.';
         } else {
@@ -271,8 +280,12 @@ usort($backupFiles, static function ($a, $b) {
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header"><h2>UI Configuration</h2></div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" id="ui-config-form">
                         <input type="hidden" name="action" value="save_ui_config">
+                        <input type="hidden" id="sidebar_visibility" name="sidebar_visibility">
+                        <input type="hidden" id="sidebar_main_order" name="sidebar_main_order">
+                        <input type="hidden" id="sidebar_submenu_order" name="sidebar_submenu_order">
+
                         <div class="form-row">
                             <?php foreach ($uiFieldLabels as $field => $label): ?>
                                 <div class="form-group">
@@ -287,6 +300,42 @@ usort($backupFiles, static function ($a, $b) {
                                 </div>
                             <?php endforeach; ?>
                         </div>
+
+                        <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
+                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections).</p>
+                        <div class="sidebar-settings-list" id="sidebar-settings-list">
+                            <?php foreach ($sidebarStructure as $section): ?>
+                                <?php $sectionId = $section['id']; ?>
+                                <div class="sidebar-setting-section" data-section-id="<?php echo sanitize($sectionId); ?>">
+                                    <div class="sidebar-setting-row sidebar-setting-main" data-main-id="<?php echo sanitize($sectionId); ?>">
+                                        <label>
+                                            <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$sectionId] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                            <?php echo sanitize($section['title']); ?>
+                                        </label>
+                                        <div>
+                                            <button type="button" class="btn btn-sm sidebar-move-up">↑</button>
+                                            <button type="button" class="btn btn-sm sidebar-move-down">↓</button>
+                                        </div>
+                                    </div>
+                                    <div class="sidebar-setting-children">
+                                        <?php foreach ($section['items'] as $item): ?>
+                                            <?php $itemId = $item['id']; ?>
+                                            <div class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
+                                                <label>
+                                                    <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                                    <?php echo sanitize($item['label']); ?>
+                                                </label>
+                                                <div>
+                                                    <button type="button" class="btn btn-sm sidebar-submove-up">↑</button>
+                                                    <button type="button" class="btn btn-sm sidebar-submove-down">↓</button>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
                         <div class="itm-form-actions itm-align-left">
                             <button class="btn btn-primary" type="submit">Save Configuration</button>
                         </div>
@@ -368,6 +417,140 @@ usort($backupFiles, static function ($a, $b) {
         </div>
     </div>
 </div>
+<script>
+(function () {
+    const form = document.getElementById('ui-config-form');
+    if (!form) return;
+
+    const root = document.getElementById('sidebar-settings-list');
+    const initialMainOrder = <?php echo json_encode($currentUiConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order()); ?>;
+    const initialSubmenuOrder = <?php echo json_encode($currentUiConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order()); ?>;
+
+    function moveRow(row, direction) {
+        if (!row || !row.parentElement) return;
+        const sibling = direction === 'up' ? row.previousElementSibling : row.nextElementSibling;
+        if (!sibling) return;
+        if (direction === 'up') {
+            row.parentElement.insertBefore(row, sibling);
+        } else {
+            row.parentElement.insertBefore(sibling, row);
+        }
+    }
+
+    function moveSubmenuRow(row, direction) {
+        if (!row) return;
+        const sibling = direction === 'up' ? row.previousElementSibling : row.nextElementSibling;
+        if (sibling) {
+            moveRow(row, direction);
+            return;
+        }
+
+        const currentSection = row.closest('.sidebar-setting-section');
+        if (!currentSection) return;
+
+        const targetSection = direction === 'up'
+            ? currentSection.previousElementSibling
+            : currentSection.nextElementSibling;
+
+        if (!targetSection) return;
+
+        const targetChildren = targetSection.querySelector('.sidebar-setting-children');
+        if (!targetChildren) return;
+
+        if (direction === 'up') {
+            targetChildren.appendChild(row);
+        } else {
+            targetChildren.insertBefore(row, targetChildren.firstElementChild || null);
+        }
+    }
+
+    function applyInitialOrder() {
+        const sectionsById = {};
+        root.querySelectorAll('.sidebar-setting-section').forEach((section) => {
+            sectionsById[section.dataset.sectionId] = section;
+        });
+
+        initialMainOrder.forEach((sectionId) => {
+            const section = sectionsById[sectionId];
+            if (section) {
+                root.appendChild(section);
+            }
+        });
+
+        const allRowsById = {};
+        root.querySelectorAll('[data-item-id]').forEach((row) => {
+            allRowsById[row.dataset.itemId] = row;
+        });
+
+        root.querySelectorAll('.sidebar-setting-section').forEach((section) => {
+            const sectionId = section.dataset.sectionId;
+            const childRoot = section.querySelector('.sidebar-setting-children');
+            const order = initialSubmenuOrder[sectionId] || [];
+            order.forEach((itemId) => {
+                const row = allRowsById[itemId];
+                if (row) childRoot.appendChild(row);
+            });
+        });
+    }
+
+    function collectAndSetHiddenFields() {
+        const visibility = {};
+        root.querySelectorAll('.sidebar-visible-toggle').forEach((toggle) => {
+            visibility[toggle.dataset.targetId] = toggle.checked ? 1 : 0;
+        });
+
+        const mainOrder = [];
+        const submenuOrder = {};
+        root.querySelectorAll('.sidebar-setting-section').forEach((section) => {
+            const sectionId = section.dataset.sectionId;
+            mainOrder.push(sectionId);
+            submenuOrder[sectionId] = [];
+            section.querySelectorAll('.sidebar-setting-children [data-item-id]').forEach((itemRow) => {
+                submenuOrder[sectionId].push(itemRow.dataset.itemId);
+            });
+        });
+
+        document.getElementById('sidebar_visibility').value = JSON.stringify(visibility);
+        document.getElementById('sidebar_main_order').value = JSON.stringify(mainOrder);
+        document.getElementById('sidebar_submenu_order').value = JSON.stringify(submenuOrder);
+    }
+
+    root.addEventListener('click', (event) => {
+        const up = event.target.closest('.sidebar-move-up');
+        const down = event.target.closest('.sidebar-move-down');
+        const sup = event.target.closest('.sidebar-submove-up');
+        const sdown = event.target.closest('.sidebar-submove-down');
+
+        if (up) {
+            moveRow(up.closest('.sidebar-setting-section'), 'up');
+        }
+        if (down) {
+            moveRow(down.closest('.sidebar-setting-section'), 'down');
+        }
+        if (sup) {
+            moveSubmenuRow(sup.closest('[data-item-id]'), 'up');
+        }
+        if (sdown) {
+            moveSubmenuRow(sdown.closest('[data-item-id]'), 'down');
+        }
+
+        if (up || down || sup || sdown) {
+            collectAndSetHiddenFields();
+        }
+    });
+
+    root.addEventListener('change', (event) => {
+        if (event.target.matches('.sidebar-visible-toggle')) {
+            collectAndSetHiddenFields();
+        }
+    });
+
+    form.addEventListener('submit', collectAndSetHiddenFields);
+
+    applyInitialOrder();
+    collectAndSetHiddenFields();
+})();
+</script>
 <script src="../../js/theme.js"></script>
 </body>
 </html>
