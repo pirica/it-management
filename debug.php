@@ -1,4 +1,6 @@
 <?php
+require 'config/config.php';
+
 // Enable all error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -11,7 +13,6 @@ echo "<pre>";
 
 // Test database connection
 echo "Testing database connection...\n";
-$conn = @mysqli_connect('localhost', 'root', 'usbw', 'itmanagement');
 
 if (!$conn) {
     echo "❌ Connection Failed: " . mysqli_connect_error() . "\n";
