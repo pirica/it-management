@@ -528,6 +528,7 @@ if ($hasSelectedSwitch) {
             const switchManager = document.getElementById('switchManager');
             switchManager.style.setProperty('--rj45-row-count', String(maxRj45InSingleRow));
             switchManager.classList.toggle('switch-manager-compact', maxRj45InSingleRow > 12);
+            switchManager.classList.toggle('switch-manager-half', rj45Ports.length > 24);
 
             const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
             sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
