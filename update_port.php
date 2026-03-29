@@ -30,6 +30,25 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     return $rows;
 }
 
+function fetch_company_vlans(mysqli $conn, int $companyId): array
+{
+    $rows = [];
+    $sql = 'SELECT id, vlan_name FROM vlans WHERE company_id = ? ORDER BY vlan_number ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $rows;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    if (mysqli_stmt_execute($stmt)) {
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['vlan_name']];
+        }
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+}
+
 function find_lookup_id(array $rows, $value): int
 {
     if ($value === null || $value === '') {
@@ -56,6 +75,7 @@ function find_lookup_id(array $rows, $value): int
 $hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
+$hasVlanId = table_has_column($conn, 'switch_ports', 'vlan_id');
 
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
@@ -65,6 +85,7 @@ if (!$hasStatusId || !$hasColorId) {
 
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
+$vlans = fetch_company_vlans($conn, (int)$company_id);
 
 $raw = file_get_contents('php://input');
 $decoded = json_decode($raw, true);
@@ -91,6 +112,7 @@ if ($switchId <= 0) {
 
 $colorId = find_lookup_id($colors, $input['color'] ?? null);
 $statusId = find_lookup_id($statuses, $input['status'] ?? null);
+$vlanId = $hasVlanId ? find_lookup_id($vlans, $input['vlan'] ?? null) : 0;
 $label = isset($input['label']) ? trim((string)$input['label']) : null;
 $comments = isset($input['comments']) ? trim((string)$input['comments']) : null;
 
@@ -107,6 +129,15 @@ if ($statusId > 0) {
     $fields[] = 'status_id = ?';
     $types .= 'i';
     $params[] = $statusId;
+}
+if ($hasVlanId && array_key_exists('vlan', $input)) {
+    if ($vlanId > 0) {
+        $fields[] = 'vlan_id = ?';
+        $types .= 'i';
+        $params[] = $vlanId;
+    } else {
+        $fields[] = 'vlan_id = NULL';
+    }
 }
 if ($label !== null) {
     $fields[] = 'label = ?';

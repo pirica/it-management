@@ -693,6 +693,7 @@ CREATE TABLE `switch_ports` (
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
   `color_id` int NOT NULL,
+  `vlan_id` int DEFAULT NULL,
   `comments` text COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -702,11 +703,13 @@ CREATE TABLE `switch_ports` (
   KEY `port_type` (`port_type`),
   KEY `status_id` (`status_id`),
   KEY `color_id` (`color_id`),
+  KEY `vlan_id` (`vlan_id`),
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
   CONSTRAINT `switch_ports_ibfk_4` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`),
-  CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`type`)
+  CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`type`),
+  CONSTRAINT `switch_ports_ibfk_6` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_categories`
