@@ -13,7 +13,7 @@ if ($searchRaw !== '') {
         OR e.model LIKE '{$searchEsc}'
         OR e.hostname LIKE '{$searchEsc}'
         OR e.ip_address LIKE '{$searchEsc}'
-        OR c.name LIKE '{$searchEsc}'
+        OR c.company LIKE '{$searchEsc}'
         OR et.name LIKE '{$searchEsc}'
         OR m.name LIKE '{$searchEsc}'
         OR l.name LIKE '{$searchEsc}'
@@ -23,7 +23,7 @@ if ($searchRaw !== '') {
 }
 
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.active,
-               c.name AS company_name,
+               c.company AS company_name,
                et.name AS equipment_type_name,
                m.name AS manufacturer_name,
                l.name AS location_name,

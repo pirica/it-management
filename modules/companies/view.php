@@ -24,19 +24,18 @@ if ($id > 0) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1>🔎 View Companies Record</h1>
+            <h1>🔎 Company Information</h1>
             <div class="card">
                 <?php if (!$item): ?>
                     <div class="alert alert-danger">Record not found.</div>
                 <?php else: ?>
                     <table>
                         <tbody>
-                        <?php foreach ($item as $field => $value): ?>
-                            <tr>
-                                <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
-                                <td><?php echo sanitize((string)($value ?? '')); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
+                            <tr><th style="width:220px;">Information</th><td></td></tr>
+                            <tr><th>Company</th><td><?php echo sanitize((string)($item['company'] ?? '')); ?></td></tr>
+                            <tr><th>InCode</th><td><?php echo sanitize((string)($item['incode'] ?? '')); ?></td></tr>
+                            <tr><th>Location</th><td><?php echo sanitize(trim((string)($item['city'] ?? '') . ', ' . (string)($item['country'] ?? ''), ', ')); ?></td></tr>
+                            <tr><th>Phone</th><td><?php echo sanitize((string)($item['phone'] ?? '')); ?></td></tr>
                         </tbody>
                     </table>
                 <?php endif; ?>

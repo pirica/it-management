@@ -1,7 +1,7 @@
 <?php
 require '../../config/config.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$sql = "SELECT e.*, c.name company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
+$sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                r.name rack_name, es.name status_name, wt.name warranty_type_name,
                pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name
         FROM equipment e

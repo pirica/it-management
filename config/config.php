@@ -73,10 +73,10 @@ function itm_get_csrf_token() {
 }
 
 function get_company_name($company_id, $conn) {
-    $result = mysqli_query($conn, "SELECT name FROM companies WHERE id = $company_id");
+    $result = mysqli_query($conn, "SELECT company FROM companies WHERE id = $company_id");
     if ($result) {
         $row = mysqli_fetch_assoc($result);
-        return $row['name'] ?? 'Unknown';
+        return $row['company'] ?? 'Unknown';
     }
     return 'Unknown';
 }
