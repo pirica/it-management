@@ -343,7 +343,7 @@ if ($hasSelectedSwitch) {
                 case 'orange': return 'orange';
                 case 'purple': return 'purple';
                 case 'grey':
-                case 'gray': return 'grey';
+                case 'gray': return '#9ca3af';
                 case 'other': return 'lightgray';
                 default: return 'transparent';
             }
@@ -357,6 +357,9 @@ if ($hasSelectedSwitch) {
                 case 'red':
                 case 'green':
                     return '#fff';
+                case 'grey':
+                case 'gray':
+                    return '#0b1220';
                 default:
                     return '#111';
             }
@@ -528,6 +531,7 @@ if ($hasSelectedSwitch) {
             const switchManager = document.getElementById('switchManager');
             switchManager.style.setProperty('--rj45-row-count', String(maxRj45InSingleRow));
             switchManager.classList.toggle('switch-manager-compact', maxRj45InSingleRow > 12);
+            switchManager.classList.toggle('switch-manager-half', rj45Ports.length > 24);
 
             const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
             sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
