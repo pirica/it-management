@@ -5,6 +5,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $isEdit = $id > 0;
 $error = '';
 $success = isset($_GET['saved']) && $_GET['saved'] === '1';
+$originalData = null;
 
 function fetch_options($conn, $table, $label = 'name', $where = '') {
     $items = [];
@@ -13,6 +14,14 @@ function fetch_options($conn, $table, $label = 'name', $where = '') {
         $items[] = $row;
     }
     return $items;
+}
+
+function equipment_table_has_column(mysqli $conn, string $table, string $column): bool
+{
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
 }
 
 $types = fetch_options($conn, 'equipment_types');
@@ -53,6 +62,7 @@ if ($isEdit) {
     $res = mysqli_query($conn, "SELECT * FROM equipment WHERE id=$id AND company_id=$company_id LIMIT 1");
     if ($res && mysqli_num_rows($res) === 1) {
         $data = mysqli_fetch_assoc($res);
+        $originalData = $data;
     } else {
         $error = 'Equipment record not found.';
     }
@@ -158,6 +168,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (mysqli_query($conn, $sql)) {
+            if ($isEdit && $originalData) {
+                $switchConfigChanged = (int)$originalData['switch_rj45_id'] !== (int)$data['switch_rj45_id']
+                    || (int)$originalData['switch_fiber_id'] !== (int)$data['switch_fiber_id']
+                    || (int)$originalData['switch_fiber_count_id'] !== (int)$data['switch_fiber_count_id'];
+                $changedAwayFromSwitch = (int)$originalData['equipment_type_id'] === $switchTypeId && $equipment_type_id !== $switchTypeId;
+
+                if ($switchConfigChanged || $changedAwayFromSwitch) {
+                    $hasEquipmentId = equipment_table_has_column($conn, 'switch_ports', 'equipment_id');
+                    if ($hasEquipmentId) {
+                        mysqli_query(
+                            $conn,
+                            "DELETE FROM switch_ports WHERE company_id = $company_id AND equipment_id = $id"
+                        );
+                    }
+                }
+            }
+
             if ($isEdit) {
                 if ($equipment_type_id === $switchTypeId) {
                     header('Location: index.php?switch_id=' . $id . '&saved=1#switch-port-manager');
