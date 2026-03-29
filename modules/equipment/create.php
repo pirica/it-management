@@ -4,6 +4,7 @@ require '../../config/config.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $isEdit = $id > 0;
 $error = '';
+$success = isset($_GET['saved']) && $_GET['saved'] === '1';
 
 function fetch_options($conn, $table, $label = 'name', $where = '') {
     $items = [];
@@ -157,6 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (mysqli_query($conn, $sql)) {
+            if ($isEdit) {
+                header('Location: edit.php?id=' . $id . '&saved=1');
+                exit;
+            }
             header('Location: index.php');
             exit;
         }
@@ -182,6 +187,7 @@ function render_options($items, $selected = '') {
 <body>
 <div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
     <h1><?php echo $isEdit ? '✏️ Edit' : '➕ New'; ?> Equipment</h1>
+    <?php if ($success): ?><div class="alert alert-success">Equipment updated successfully.</div><?php endif; ?>
     <?php if ($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
     <div class="card">
         <form method="POST" enctype="multipart/form-data">
