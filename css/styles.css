@@ -535,8 +535,14 @@ input[type="color"] {
     position: absolute;
     inset: 0;
     border-radius: 4px;
-    opacity: 0.18;
+    opacity: 1;
     pointer-events: none;
+}
+
+
+.switch-port[data-color="white"] .switch-color-indicator,
+.switch-port[data-color="other"] .switch-color-indicator {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .switch-controls {
