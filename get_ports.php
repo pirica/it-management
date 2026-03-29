@@ -18,6 +18,10 @@ function ensure_switch_ports_schema(mysqli $conn): bool
     };
     return $hasColumn('equipment_id') && $hasColumn('port_type');
 }
+$fiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
+$fiberName = strtolower(trim((string)$switch['fiber_name']));
+$sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
+$sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
 
 if (!ensure_switch_ports_schema($conn)) {
     http_response_code(500);
