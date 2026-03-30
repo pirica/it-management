@@ -162,6 +162,21 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+
+function cr_is_required_column($column) {
+    $nullability = strtoupper((string)($column['Null'] ?? 'YES'));
+    if ($nullability === 'YES') {
+        return false;
+    }
+
+    $extra = strtolower((string)($column['Extra'] ?? ''));
+    if (str_contains($extra, 'auto_increment')) {
+        return false;
+    }
+
+    return true;
+}
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
@@ -366,6 +381,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
+            if (cr_is_required_column($col)) {
+                $errors[] = cr_humanize_field($name) . ' is required.';
+            }
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
             $normalizedNumeric = null;
