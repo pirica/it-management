@@ -165,7 +165,7 @@ function esa_sync_relations_from_legacy($conn) {
         return true;
     }
 
-    $sql = 'INSERT INTO `employee_system_access_relations` (`company_id`, `employee_id`, `system_access_id`, `granted`) '
+    $sql = 'INSERT INTO `employee_system_access_relations` (`company_id`, `employee_id`, `system_access_id`) '
         . implode(' UNION ALL ', $selectParts)
         . ' ON DUPLICATE KEY UPDATE `granted`=1';
 
