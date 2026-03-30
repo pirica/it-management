@@ -906,7 +906,7 @@ CREATE TABLE `ui_configuration` (
   `new_button_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
   `export_buttons_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
   `back_save_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
-  `enable_all_error_reporting` tinyint(1) NOT NULL DEFAULT '0',
+  `enable_all_error_reporting` tinyint(1) NOT NULL DEFAULT '1',
   `sidebar_visibility` longtext COLLATE utf8mb4_unicode_ci,
   `sidebar_main_order` longtext COLLATE utf8mb4_unicode_ci,
   `sidebar_submenu_order` longtext COLLATE utf8mb4_unicode_ci,
