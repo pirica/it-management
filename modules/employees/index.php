@@ -199,7 +199,12 @@ $skippedDetails = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'delete_all_employees')) {
     $deleteAllSql = 'DELETE FROM employees WHERE company_id=' . (int)$company_id;
     if (mysqli_query($conn, $deleteAllSql)) {
-        $messages[] = 'All employees were deleted for this company.';
+        if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
+            $messages[] = 'All employees were deleted for this company, and ID numbering was reset.';
+        } else {
+            $messages[] = 'All employees were deleted for this company.';
+            $errors[] = 'Employees were deleted, but resetting ID numbering failed.';
+        }
     } else {
         $errors[] = 'Could not delete all employees. Please try again.';
     }
