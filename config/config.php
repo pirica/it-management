@@ -107,6 +107,104 @@ function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
     }
 }
 
+
+function itm_is_safe_identifier($name) {
+    return is_string($name) && preg_match('/^[a-zA-Z0-9_]+$/', $name) === 1;
+}
+
+function itm_table_has_column($conn, $table, $column) {
+    static $cache = [];
+    $key = $table . '.' . $column;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+        $cache[$key] = false;
+        return false;
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $sql = "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$tableEsc}' AND COLUMN_NAME = '{$columnEsc}' LIMIT 1";
+    $res = mysqli_query($conn, $sql);
+    $cache[$key] = ($res && mysqli_num_rows($res) > 0);
+    return $cache[$key];
+}
+
+function itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId = 0) {
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($pkColumn)) {
+        return [];
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $pkEsc = mysqli_real_escape_string($conn, $pkColumn);
+
+    $sql = "SELECT kcu.TABLE_NAME AS source_table, kcu.COLUMN_NAME AS source_column
+"
+        . "FROM information_schema.KEY_COLUMN_USAGE kcu
+"
+        . "WHERE kcu.TABLE_SCHEMA = DATABASE()
+"
+        . "  AND kcu.REFERENCED_TABLE_NAME = '{$tableEsc}'
+"
+        . "  AND kcu.REFERENCED_COLUMN_NAME = '{$pkEsc}'";
+
+    $usage = [];
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $sourceTable = (string)($row['source_table'] ?? '');
+        $sourceColumn = (string)($row['source_column'] ?? '');
+        if (!itm_is_safe_identifier($sourceTable) || !itm_is_safe_identifier($sourceColumn)) {
+            continue;
+        }
+
+        $where = '`' . str_replace('`', '``', $sourceColumn) . '`=' . (int)$pkValue;
+        if ((int)$companyId > 0 && itm_table_has_column($conn, $sourceTable, 'company_id')) {
+            $where .= ' AND `company_id`=' . (int)$companyId;
+        }
+
+        $countSql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $sourceTable) . '` WHERE ' . $where;
+        $countRes = mysqli_query($conn, $countSql);
+        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+        $count = (int)($countRow['c'] ?? 0);
+        if ($count > 0) {
+            $usage[] = [
+                'table' => $sourceTable,
+                'column' => $sourceColumn,
+                'count' => $count,
+            ];
+        }
+    }
+
+    return $usage;
+}
+
+function itm_format_record_usage_error($table, $usage) {
+    $tableLabel = ucwords(str_replace('_', ' ', (string)$table));
+    if (empty($usage)) {
+        return $tableLabel . ' cannot be deleted because it is currently in use.';
+    }
+
+    $parts = [];
+    foreach ($usage as $row) {
+        $parts[] = ($row['table'] ?? 'unknown') . ' (' . (int)($row['count'] ?? 0) . ')';
+    }
+
+    return $tableLabel . ' cannot be deleted because it is currently in use by: ' . implode(', ', $parts) . '.';
+}
+
+function itm_can_delete_record($conn, $table, $pkColumn, $pkValue, $companyId = 0, &$error = '') {
+    $error = '';
+    $usage = itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId);
+    if (!empty($usage)) {
+        $error = itm_format_record_usage_error($table, $usage);
+        return false;
+    }
+
+    return true;
+}
+
 function itm_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

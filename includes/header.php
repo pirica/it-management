@@ -14,6 +14,12 @@ $csrfToken = itm_get_csrf_token();
         <a href="<?php echo BASE_URL; ?>logout.php" class="btn btn-sm">🚪 Logout</a>
     </div>
 </div>
+<?php if (!empty($_SESSION['crud_error'])): ?>
+    <div class="alert alert-error" style="margin: 12px 0;">
+        <?php echo sanitize((string)$_SESSION['crud_error']); ?>
+    </div>
+    <?php unset($_SESSION['crud_error']); ?>
+<?php endif; ?>
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
 
 

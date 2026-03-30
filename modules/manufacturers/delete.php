@@ -260,6 +260,13 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        $usageError = '';
+        if (!itm_can_delete_record($conn, $crud_table, 'id', $id, $company_id, $usageError)) {
+            $_SESSION['crud_error'] = $usageError;
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
