@@ -71,12 +71,22 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+
+    $tableLabelCandidates = [
+        'equipment' => ['name'],
+        'switch_status' => ['name', 'status'],
+        'switch_cablecolors' => ['color', 'name'],
+        'vlans' => ['vlan_name', 'name'],
+    ];
+
+    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color', 'vlan_name'];
+    foreach ($candidates as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
         }
     }
+
     return [
         'label_col' => $labelCol,
         'available' => $available,
@@ -96,6 +106,7 @@ function cr_humanize_field($field) {
     }
 
     $map = [
+        'label' => 'Patch port',
         'department_id' => 'Department Name',
         'office_key_card_department_id' => 'Office Key Card Department',
         'opera_username' => 'OPERA Username',
@@ -125,7 +136,36 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_hidden_display_field($field) {
+    if (($GLOBALS['crud_table'] ?? '') === 'switch_ports' && $field === 'company_id') {
+        return true;
+    }
+
+    return cr_is_hidden_employee_field($field);
+}
+
 function cr_render_cell_value($table, $field, $value) {
+    if (isset($GLOBALS['fkMap'][$field]) && (string)$value !== '') {
+        $fk = $GLOBALS['fkMap'][$field];
+        $fkTable = $fk['REFERENCED_TABLE_NAME'];
+        $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+        $fkMeta = cr_fk_metadata($GLOBALS['conn'], $fkTable);
+        $labelCol = $fkMeta['label_col'];
+
+        $lookupValue = mysqli_real_escape_string($GLOBALS['conn'], (string)$value);
+        $lookupSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($fkTable)
+            . " WHERE " . cr_escape_identifier($fkCol) . "='" . $lookupValue . "'";
+        if (in_array('company_id', $fkMeta['available'], true) && (int)$GLOBALS['company_id'] > 0) {
+            $lookupSql .= ' AND company_id=' . (int)$GLOBALS['company_id'];
+        }
+        $lookupSql .= ' LIMIT 1';
+
+        $lookupRes = mysqli_query($GLOBALS['conn'], $lookupSql);
+        if ($lookupRes && ($lookupRow = mysqli_fetch_assoc($lookupRes)) && isset($lookupRow['label'])) {
+            return sanitize((string)$lookupRow['label']);
+        }
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -243,6 +283,9 @@ $hasCompany = false;
 foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
+$visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return !cr_is_hidden_display_field($col['Field']);
+}));
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -423,6 +466,18 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchParts = [];
+    foreach ($visibleFieldColumns as $col) {
+        $searchParts[] = 'CAST(' . cr_escape_identifier($col['Field']) . " AS CHAR) LIKE '" . $searchEsc . "'";
+    }
+    if (!empty($searchParts)) {
+        $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchParts) . ')';
+    }
+}
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -462,15 +517,27 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <h1><?php echo sanitize($crud_title); ?></h1>
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="switchPortsSearch">Search (all fields)</label>
+                            <input type="text" id="switchPortsSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%port%%">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn btn-sm">Clear</a>
+                        </div>
+                    </form>
+                </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
                         <tr>
-                            <?php foreach ($fieldColumns as $col): ?>
+                            <?php foreach ($visibleFieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
@@ -484,7 +551,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
@@ -498,7 +565,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -508,7 +575,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
@@ -568,7 +635,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
