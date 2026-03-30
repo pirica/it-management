@@ -1,0 +1,63 @@
+services:
+  - type: pserv
+    name: it-management-mysql
+    runtime: image
+    image:
+      url: docker.io/library/mysql:8.0
+    plan: starter
+    autoDeploy: false
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+    envVars:
+      - key: MYSQL_DATABASE
+        value: itmanagement
+      - key: MYSQL_USER
+        value: itmanagement
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+
+  - type: web
+    name: it-management-web
+    runtime: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /index.php
+    disk:
+      name: app-data
+      mountPath: /var/data
+      sizeGB: 5
+    dockerCommand: >-
+      bash -lc "
+      set -e
+      mkdir -p /var/data/equipment /var/data/backups
+      rm -rf /var/www/html/equipment /var/www/html/backups
+      ln -s /var/data/equipment /var/www/html/equipment
+      ln -s /var/data/backups /var/www/html/backups
+      apache2-foreground
+      "
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: it-management-mysql
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: pserv
+          name: it-management-mysql
+          property: port
+      - key: DB_NAME
+        value: itmanagement
+      - key: DB_USER
+        value: itmanagement
+      - key: DB_PASS
+        fromService:
+          type: pserv
+          name: it-management-mysql
+          envVarKey: MYSQL_PASSWORD
