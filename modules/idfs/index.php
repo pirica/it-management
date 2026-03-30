@@ -82,7 +82,7 @@ if ($company_id > 0) {
     }
 }
 
-$ui_config = itm_get_ui_config($conn, $company_id);
+$ui_config = itm_get_ui_configuration($conn, $company_id);
 ?>
 <!doctype html>
 <html lang="en">
