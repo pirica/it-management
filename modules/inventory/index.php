@@ -6,26 +6,30 @@ $searchSql = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (\n        CAST(i.id AS CHAR) LIKE '{$searchEsc}'\n        OR i.name LIKE '{$searchEsc}'\n        OR i.item_code LIKE '{$searchEsc}'\n        OR c.name LIKE '{$searchEsc}'\n        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'\n    )";
+    $searchSql = " AND (\n        i.name LIKE '{$searchEsc}'\n        OR i.item_code LIKE '{$searchEsc}'\n        OR i.sku LIKE '{$searchEsc}'\n        OR c.name LIKE '{$searchEsc}'\n        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.unit_cost AS CHAR) LIKE '{$searchEsc}'\n        OR i.comments LIKE '{$searchEsc}'\n        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'\n    )";
 }
 
-$sortableColumns = ['id', 'name', 'item_code', 'category_name', 'quantity_on_hand', 'active'];
-$sort = (string)($_GET['sort'] ?? 'id');
-$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+$sortableColumns = ['name', 'item_code', 'sku', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'unit_cost', 'comments', 'active'];
+$sort = (string)($_GET['sort'] ?? 'name');
+$dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
 if (!in_array($sort, $sortableColumns, true)) {
-    $sort = 'id';
+    $sort = 'name';
 }
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
-    $dir = 'DESC';
+    $dir = 'ASC';
 }
 $orderByMap = [
-    'id' => 'i.id',
     'name' => 'i.name',
     'item_code' => 'i.item_code',
+    'sku' => 'i.sku',
     'category_name' => 'c.name',
     'quantity_on_hand' => 'i.quantity_on_hand',
+    'quantity_minimum' => 'i.quantity_minimum',
+    'unit_cost' => 'i.unit_cost',
+    'comments' => 'i.comments',
     'active' => 'i.active',
 ];
+
 $items = mysqli_query(
     $conn,
     "SELECT i.*, c.name AS category_name
@@ -57,7 +61,7 @@ $items = mysqli_query(
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                         <label for="inventorySearch">Search (all fields)</label>
-                        <input type="text" id="inventorySearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%printer%%">
+                        <input type="text" id="inventorySearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%serial%%">
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
@@ -69,7 +73,17 @@ $items = mysqli_query(
                 <table>
                     <thead>
                     <tr>
-                        <?php foreach (['id' => 'ID', 'name' => 'Name', 'item_code' => 'Code', 'category_name' => 'Category', 'quantity_on_hand' => 'QOH', 'active' => 'Status'] as $field => $label): ?>
+                        <?php foreach ([
+                            'name' => 'Name',
+                            'item_code' => 'Code',
+                            'sku' => 'Serial',
+                            'category_name' => 'Category',
+                            'quantity_on_hand' => 'QOH',
+                            'quantity_minimum' => 'Min',
+                            'unit_cost' => 'Price (€)',
+                            'comments' => 'Comments',
+                            'active' => 'Status'
+                        ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -79,11 +93,14 @@ $items = mysqli_query(
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($i = mysqli_fetch_assoc($items)): ?>
                         <tr>
-                            <td><?php echo (int)$i['id']; ?></td>
-                            <td><?php echo sanitize($i['name']); ?></td>
-                            <td><?php echo sanitize($i['item_code'] ?? '-'); ?></td>
-                            <td><?php echo sanitize($i['category_name'] ?? '-'); ?></td>
+                            <td><?php echo sanitize((string)$i['name']); ?></td>
+                            <td><?php echo sanitize((string)($i['item_code'] ?? '-')); ?></td>
+                            <td><?php echo sanitize((string)($i['sku'] ?? '-')); ?></td>
+                            <td><?php echo sanitize((string)($i['category_name'] ?? '-')); ?></td>
                             <td><?php echo (int)$i['quantity_on_hand']; ?></td>
+                            <td><?php echo (int)$i['quantity_minimum']; ?></td>
+                            <td>€<?php echo number_format((float)($i['unit_cost'] ?? 0), 2); ?></td>
+                            <td><?php echo sanitize((string)($i['comments'] ?? '')); ?></td>
                             <td><span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?></span></td>
                             <td>
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
@@ -92,7 +109,7 @@ $items = mysqli_query(
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="7" style="text-align:center;">No inventory items found.</td></tr>
+                        <tr><td colspan="10" style="text-align:center;">No inventory items found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
