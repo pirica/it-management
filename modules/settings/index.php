@@ -347,7 +347,7 @@ usort($backupFiles, static function ($a, $b) {
                         <div class="form-group">
                             <label for="enable_all_error_reporting">
                                 <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 0) === 1) ? 'checked' : ''; ?>>
-                                Enable all error reporting
+                                <span aria-hidden="true">X</span> Enable all error reporting
                             </label>
                         </div>
 
