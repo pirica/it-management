@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="itm-checkbox-control">
                             <input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>>
-                            <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)$data['active'] === 1 ? '✔️' : '❌'; ?></span></span>
+                            <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)$data['active'] === 1 ? '✅' : '❌'; ?></span></span>
                         </label>
                     </div>
 
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
-    if (indicator) indicator.textContent = event.target.checked ? '✔️' : '❌';
+    if (indicator) indicator.textContent = event.target.checked ? '✅' : '❌';
 });
 </script>
 </body>

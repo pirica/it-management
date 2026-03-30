@@ -691,7 +691,7 @@ function emp_build_query($params) {
                                     <?php elseif ($col === 'employment_status_id'): ?>
                                         <?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
                                     <?php elseif ($col === 'office_key_card_department_id'): ?>
-                                        <?php echo !empty($row[$col]) ? '✔️' : '❌'; ?>
+                                        <?php echo !empty($row[$col]) ? '✅' : '❌'; ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php if ((int)($row[$col] ?? 0) === 1): ?>
@@ -700,7 +700,7 @@ function emp_build_query($params) {
                                                 —
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
+                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php endif; ?>
                                     <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>

@@ -45,7 +45,7 @@ if ($id > 0) {
                         </tr>
                         <tr>
                             <th>Active</th>
-                            <td><?php echo (int)($item['active'] ?? 0) === 1 ? '✔️' : '❌'; ?></td>
+                            <td><?php echo (int)($item['active'] ?? 0) === 1 ? '✅' : '❌'; ?></td>
                         </tr>
                         </tbody>
                     </table>
