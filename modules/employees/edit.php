@@ -39,10 +39,9 @@ if (!$employee) {
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 esa_ensure_table($conn);
+$systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, true);
 
 $errors = [];
-$booleanFields = array_keys(esa_ability_fields());
-
 $form = [
     'first_name' => (string)($employee['first_name'] ?? ''),
     'last_name' => (string)($employee['last_name'] ?? ''),
@@ -60,24 +59,19 @@ $form = [
     'active' => ((int)($employee['active'] ?? 1) === 1) ? '1' : '0',
 ];
 
-foreach ($booleanFields as $field) {
-    $form[$field] = '0';
-}
-$accessRow = esa_get_employee_access($conn, (int)$company_id, $id);
-foreach ($booleanFields as $field) {
-    $form[$field] = ((int)($accessRow[$field] ?? 0) === 1) ? '1' : '0';
-}
+$selectedSystemAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, $id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     emp_drop_email_unique_if_exists($conn);
 
     foreach ($form as $key => $default) {
-        if (in_array($key, $booleanFields, true) || $key === 'active') {
+        if ($key === 'active') {
             $form[$key] = isset($_POST[$key]) ? '1' : '0';
         } else {
             $form[$key] = trim((string)($_POST[$key] ?? ''));
         }
     }
+    $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
 
     if ($form['first_name'] === '') {
         $errors[] = 'First Name is required.';
@@ -122,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
-            esa_save_employee_access($conn, (int)$company_id, $id, $form);
+            esa_save_employee_access_ids($conn, (int)$company_id, $id, $selectedSystemAccessIds);
             header('Location: view.php?id=' . $id);
             exit;
         }
@@ -130,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-function emp_checked($form, $field) {
-    return (($form[$field] ?? '0') === '1') ? 'checked' : '';
+function emp_access_checked($selectedSystemAccessIds, $accessId) {
+    return in_array((int)$accessId, $selectedSystemAccessIds, true) ? 'checked' : '';
 }
 ?>
 <!DOCTYPE html>
@@ -203,8 +197,10 @@ function emp_checked($form, $field) {
 
                     <h3>System Access</h3>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
-                        <?php foreach ($booleanFields as $field): ?>
-                            <label><input type="checkbox" name="<?php echo sanitize($field); ?>" value="1" <?php echo emp_checked($form, $field); ?>> <?php echo sanitize(esa_ability_fields()[$field] ?? ucwords(str_replace('_', ' ', $field))); ?></label>
+                        <?php foreach ($systemAccessCatalog as $access): ?>
+                            <?php $accessName = (string)$access['name']; ?>
+                            <?php if ((int)$access['active'] !== 1) { $accessName .= ' (Inactive)'; } ?>
+                            <label><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo emp_access_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <?php echo sanitize($accessName); ?></label>
                         <?php endforeach; ?>
                         <label><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> Active</label>
                     </div>

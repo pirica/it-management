@@ -9,23 +9,33 @@ if ($id <= 0) {
     exit;
 }
 
-$sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name,
-            esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
-            esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
-            esa.digital_rev, esa.office_key_card
+$sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name
         FROM employees e
         LEFT JOIN departments d ON d.id = e.department_id
         LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id
         LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
-        LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id
         WHERE e.id = {$id} AND e.company_id = " . (int)$company_id . "
         LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $employee = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 
-$abilityFields = array_keys(esa_ability_fields());
-$booleanFields = array_merge(['active', 'duplicate'], $abilityFields);
+$booleanFields = ['active', 'duplicate'];
 $hiddenFields = ['company_id', 'user_id', 'location_id', 'phone', 'location'];
+
+$systemAccessNames = [];
+if ($employee) {
+    $saSql = 'SELECT sa.name FROM employee_system_access_relations esar '
+        . 'INNER JOIN system_access sa ON sa.id = esar.system_access_id '
+        . 'WHERE esar.company_id=' . (int)$company_id . ' AND esar.employee_id=' . (int)$employee['id'] . ' AND esar.granted=1 '
+        . 'ORDER BY sa.name ASC';
+    $saRes = mysqli_query($conn, $saSql);
+    while ($saRes && ($saRow = mysqli_fetch_assoc($saRes))) {
+        $name = trim((string)($saRow['name'] ?? ''));
+        if ($name !== '') {
+            $systemAccessNames[] = $name;
+        }
+    }
+}
 
 function emp_label($field) {
     $map = [
@@ -38,9 +48,6 @@ function emp_label($field) {
         'office_key_card_department_name' => 'Office Key Card Department',
         'hilton_id' => 'Hilton ID',
     ];
-    foreach (esa_ability_fields() as $field => $label) {
-        $map[$field] = $label;
-    }
     if (isset($map[$field])) return $map[$field];
     if ($field === 'id') return 'ID';
     return ucwords(str_replace('_', ' ', $field));
@@ -84,6 +91,16 @@ function emp_label($field) {
                                 <td><?php echo $display === '' ? '-' : $display; ?></td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr>
+                            <th style="width:260px;">System Access</th>
+                            <td>
+                                <?php if ($systemAccessNames): ?>
+                                    <?php echo sanitize(implode(', ', $systemAccessNames)); ?>
+                                <?php else: ?>
+                                    -
+                                <?php endif; ?>
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 <?php endif; ?>
