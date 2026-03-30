@@ -1,5 +1,7 @@
 <?php
 require '../../config/config.php';
+require '../../includes/employee_system_access.php';
+esa_ensure_table($conn);
 
 function emp_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
@@ -485,6 +487,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
 
 $preferredOrder = ['id','duplicate','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','active','comments'];
 $hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id','active'];
+$hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) {
     return !in_array($c, $hiddenColumns, true);
 }));
@@ -525,10 +528,14 @@ $sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
 $rows = mysqli_query(
     $conn,
-    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name
+    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name,
+            esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
+            esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
+            esa.digital_rev, esa.office_key_card
      FROM employees e
      LEFT JOIN departments d ON d.id = e.department_id
-     LEFT JOIN employee_statuses es ON es.id = e.employment_status_id'
+     LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
+     LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
     . $where .
     ' ORDER BY ' . $sortSql . ' LIMIT 500'
 );

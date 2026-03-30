@@ -1,5 +1,7 @@
 <?php
 require '../../config/config.php';
+require '../../includes/employee_system_access.php';
+esa_ensure_table($conn);
 
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -7,17 +9,22 @@ if ($id <= 0) {
     exit;
 }
 
-$sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name
+$sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name,
+            esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
+            esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
+            esa.digital_rev, esa.office_key_card
         FROM employees e
         LEFT JOIN departments d ON d.id = e.department_id
         LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id
         LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
+        LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id
         WHERE e.id = {$id} AND e.company_id = " . (int)$company_id . "
         LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $employee = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 
-$booleanFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card', 'duplicate'];
+$abilityFields = array_keys(esa_ability_fields());
+$booleanFields = array_merge(['active', 'duplicate'], $abilityFields);
 $hiddenFields = ['company_id', 'user_id', 'location_id', 'phone', 'location'];
 
 function emp_label($field) {
@@ -31,6 +38,9 @@ function emp_label($field) {
         'office_key_card_department_name' => 'Office Key Card Department',
         'hilton_id' => 'Hilton ID',
     ];
+    foreach (esa_ability_fields() as $field => $label) {
+        $map[$field] = $label;
+    }
     if (isset($map[$field])) return $map[$field];
     if ($field === 'id') return 'ID';
     return ucwords(str_replace('_', ' ', $field));

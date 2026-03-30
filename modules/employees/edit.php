@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require '../../includes/employee_system_access.php';
 
 function emp_drop_email_unique_if_exists($conn) {
     $legacyUniqueIndexes = [
@@ -37,9 +38,10 @@ if (!$employee) {
 
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
+esa_ensure_table($conn);
 
 $errors = [];
-$booleanFields = ['network_access','micros_emc','opera_username','micros_card','pms_id','synergy_mms','hu_the_lobby','navision','onq_ri','birchstreet','delphi','omina','vingcard_system','digital_rev','office_key_card'];
+$booleanFields = array_keys(esa_ability_fields());
 
 $form = [
     'first_name' => (string)($employee['first_name'] ?? ''),
@@ -59,7 +61,11 @@ $form = [
 ];
 
 foreach ($booleanFields as $field) {
-    $form[$field] = ((int)($employee[$field] ?? 0) === 1) ? '1' : '0';
+    $form[$field] = '0';
+}
+$accessRow = esa_get_employee_access($conn, (int)$company_id, $id);
+foreach ($booleanFields as $field) {
+    $form[$field] = ((int)($accessRow[$field] ?? 0) === 1) ? '1' : '0';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -111,26 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             comments={$comments},
             raw_status_code={$rawStatusCode},
             employment_status_id={$employmentStatusId},
-            network_access=" . (int)$form['network_access'] . ",
-            micros_emc=" . (int)$form['micros_emc'] . ",
-            opera_username=" . (int)$form['opera_username'] . ",
-            micros_card=" . (int)$form['micros_card'] . ",
-            pms_id=" . (int)$form['pms_id'] . ",
-            synergy_mms=" . (int)$form['synergy_mms'] . ",
-            hu_the_lobby=" . (int)$form['hu_the_lobby'] . ",
-            navision=" . (int)$form['navision'] . ",
-            onq_ri=" . (int)$form['onq_ri'] . ",
-            birchstreet=" . (int)$form['birchstreet'] . ",
-            delphi=" . (int)$form['delphi'] . ",
-            omina=" . (int)$form['omina'] . ",
-            vingcard_system=" . (int)$form['vingcard_system'] . ",
-            digital_rev=" . (int)$form['digital_rev'] . ",
-            office_key_card=" . (int)$form['office_key_card'] . ",
             office_key_card_department_id={$officeDeptId},
             active=" . (int)$form['active'] . "
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
+            esa_save_employee_access($conn, (int)$company_id, $id, $form);
             header('Location: view.php?id=' . $id);
             exit;
         }
@@ -212,7 +204,7 @@ function emp_checked($form, $field) {
                     <h3>System Access</h3>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($booleanFields as $field): ?>
-                            <label><input type="checkbox" name="<?php echo sanitize($field); ?>" value="1" <?php echo emp_checked($form, $field); ?>> <?php echo sanitize(ucwords(str_replace('_', ' ', $field))); ?></label>
+                            <label><input type="checkbox" name="<?php echo sanitize($field); ?>" value="1" <?php echo emp_checked($form, $field); ?>> <?php echo sanitize(esa_ability_fields()[$field] ?? ucwords(str_replace('_', ' ', $field))); ?></label>
                         <?php endforeach; ?>
                         <label><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> Active</label>
                     </div>
