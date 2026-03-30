@@ -1,5 +1,8 @@
 <?php
 require '../../config/config.php';
+require '../../includes/employee_system_access.php';
+
+esa_ensure_table($conn);
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $sortableColumns = ['code', 'name', 'active'];
