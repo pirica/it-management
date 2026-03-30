@@ -101,6 +101,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'status_id' => 'Status',
     ];
 
     if (isset($map[$label])) {
@@ -302,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt || $name === 'active') {
+        if ($isTinyInt && !($crud_table === 'workstations' && $name === 'active')) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -517,7 +518,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($isTinyInt && !($crud_table === 'workstations' && $name === 'active')): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✔️' : '❌'; ?></span></span>

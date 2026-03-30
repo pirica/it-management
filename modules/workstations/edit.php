@@ -101,6 +101,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'status_id' => 'Status',
     ];
 
     if (isset($map[$label])) {
@@ -125,7 +126,7 @@ function cr_is_hidden_field($field) {
     }
 
     if ($table === 'workstations') {
-        return $field === 'company_id';
+        return in_array($field, ['company_id', 'active'], true);
     }
 
     return false;
@@ -196,6 +197,77 @@ function cr_ensure_workstations_department_relation($conn) {
     if (!$fkExists) {
         mysqli_query($conn, 'UPDATE `workstations` SET `department`=NULL WHERE `department` IS NOT NULL AND `department` NOT IN (SELECT `id` FROM `departments`)');
         mysqli_query($conn, 'ALTER TABLE `workstations` ADD CONSTRAINT `workstations_ibfk_department` FOREIGN KEY (`department`) REFERENCES `departments` (`id`) ON DELETE SET NULL');
+    }
+}
+
+function cr_ensure_workstations_status_relation($conn) {
+    if (($GLOBALS['crud_table'] ?? '') !== 'workstations') {
+        return;
+    }
+
+    $activeExists = false;
+    $statusIdExists = false;
+    $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM `workstations`');
+    while ($columnsRes && ($column = mysqli_fetch_assoc($columnsRes))) {
+        if (($column['Field'] ?? '') === 'active') {
+            $activeExists = true;
+        }
+        if (($column['Field'] ?? '') === 'status_id') {
+            $statusIdExists = true;
+        }
+    }
+
+    if ($activeExists && !$statusIdExists) {
+        mysqli_query($conn, 'ALTER TABLE `workstations` ADD COLUMN `status_id` INT NULL AFTER `department`');
+
+        $activeStatusId = null;
+        $inactiveStatusId = null;
+
+        $activeRes = mysqli_query($conn, "SELECT `id` FROM `equipment_statuses` WHERE LOWER(`name`)='active' LIMIT 1");
+        if ($activeRes && ($activeRow = mysqli_fetch_assoc($activeRes))) {
+            $activeStatusId = (int)$activeRow['id'];
+        }
+
+        $inactiveRes = mysqli_query($conn, "SELECT `id` FROM `equipment_statuses` WHERE LOWER(`name`)='inactive' LIMIT 1");
+        if ($inactiveRes && ($inactiveRow = mysqli_fetch_assoc($inactiveRes))) {
+            $inactiveStatusId = (int)$inactiveRow['id'];
+        }
+
+        if ($activeStatusId !== null) {
+            $updateSql = 'UPDATE `workstations` SET `status_id`=' . $activeStatusId . ' WHERE `active`=1';
+            mysqli_query($conn, $updateSql);
+        }
+
+        if ($inactiveStatusId !== null) {
+            $updateSql = 'UPDATE `workstations` SET `status_id`=' . $inactiveStatusId . ' WHERE `active`<>1';
+            mysqli_query($conn, $updateSql);
+        }
+
+        $statusIdExists = true;
+    }
+
+    if (!$statusIdExists) {
+        return;
+    }
+
+    $indexExists = false;
+    $idxRes = mysqli_query($conn, "SELECT 1 FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='workstations' AND index_name='idx_workstations_status_id' LIMIT 1");
+    if ($idxRes && mysqli_num_rows($idxRes) === 1) {
+        $indexExists = true;
+    }
+    if (!$indexExists) {
+        mysqli_query($conn, 'ALTER TABLE `workstations` ADD INDEX `idx_workstations_status_id` (`status_id`)');
+    }
+
+    $fkExists = false;
+    $fkRes = mysqli_query($conn, "SELECT 1 FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'workstations' AND COLUMN_NAME = 'status_id' AND REFERENCED_TABLE_NAME = 'equipment_statuses' LIMIT 1");
+    if ($fkRes && mysqli_num_rows($fkRes) === 1) {
+        $fkExists = true;
+    }
+
+    if (!$fkExists) {
+        mysqli_query($conn, 'UPDATE `workstations` SET `status_id`=NULL WHERE `status_id` IS NOT NULL AND `status_id` NOT IN (SELECT `id` FROM `equipment_statuses`)');
+        mysqli_query($conn, 'ALTER TABLE `workstations` ADD CONSTRAINT `workstations_ibfk_status_id` FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses` (`id`) ON DELETE SET NULL');
     }
 }
 
@@ -303,6 +375,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 
 cr_ensure_workstations_department_relation($conn);
+cr_ensure_workstations_status_relation($conn);
 
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
@@ -378,7 +451,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt || $name === 'active') {
+        if ($isTinyInt && !($crud_table === 'workstations' && $name === 'active')) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -629,7 +702,7 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
                         <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($isTinyInt && !($crud_table === 'workstations' && $name === 'active')): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✔️' : '❌'; ?></span></span>
