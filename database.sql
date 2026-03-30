@@ -1125,13 +1125,16 @@ CREATE TABLE `workstations` (
 -- Data for `workstations`
 INSERT INTO `workstations` (`id`, `company_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) VALUES ('1', '1', 'srv-file-01', 'srv-file-01', '1', '1', '1', '1', '1', '1');
 
-SET FOREIGN_KEY_CHECKS=1;
-
 -- --------------------------------------------------------
 -- IDF module
 -- --------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `idfs` (
+DROP TABLE IF EXISTS `idf_links`;
+DROP TABLE IF EXISTS `idf_ports`;
+DROP TABLE IF EXISTS `idf_positions`;
+DROP TABLE IF EXISTS `idfs`;
+
+CREATE TABLE `idfs` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `company_id` INT NOT NULL,
   `location_id` INT NOT NULL,
@@ -1147,7 +1150,7 @@ CREATE TABLE IF NOT EXISTS `idfs` (
   CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `idf_positions` (
+CREATE TABLE `idf_positions` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `idf_id` INT NOT NULL,
   `position_no` TINYINT NOT NULL,
@@ -1166,7 +1169,7 @@ CREATE TABLE IF NOT EXISTS `idf_positions` (
   CONSTRAINT `idf_positions_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `idf_ports` (
+CREATE TABLE `idf_ports` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `position_id` INT NOT NULL,
   `port_no` SMALLINT NOT NULL,
@@ -1185,7 +1188,7 @@ CREATE TABLE IF NOT EXISTS `idf_ports` (
   CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `idf_links` (
+CREATE TABLE `idf_links` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `port_id_a` INT NOT NULL,
   `port_id_b` INT NOT NULL,
@@ -1200,3 +1203,5 @@ CREATE TABLE IF NOT EXISTS `idf_links` (
   CONSTRAINT `idf_links_ibfk_a` FOREIGN KEY (`port_id_a`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idf_links_ibfk_b` FOREIGN KEY (`port_id_b`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS=1;

@@ -129,11 +129,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hostname = $data['hostname'] === '' ? 'NULL' : "'" . escape_sql($data['hostname'], $conn) . "'";
         $ip_address = $data['ip_address'] === '' ? 'NULL' : "'" . escape_sql($data['ip_address'], $conn) . "'";
         $mac_address = $data['mac_address'] === '' ? 'NULL' : "'" . escape_sql($data['mac_address'], $conn) . "'";
-        $status_id = (int)$data['status_id'];
+        $status_id = (int)$data['status_id'] ?: 'NULL';
         $purchase_date = $data['purchase_date'] === '' ? 'NULL' : "'" . escape_sql($data['purchase_date'], $conn) . "'";
         $purchase_cost = $data['purchase_cost'] === '' ? 'NULL' : (float)$data['purchase_cost'];
         $warranty_expiry = $data['warranty_expiry'] === '' ? 'NULL' : "'" . escape_sql($data['warranty_expiry'], $conn) . "'";
-        $warranty_type_id = (int)$data['warranty_type_id'];
+        $warranty_type_id = (int)$data['warranty_type_id'] ?: 'NULL';
         $is_printer = (int)$data['is_printer'];
         $printer_device_type_id = (int)$data['printer_device_type_id'] ?: 'NULL';
         $printer_color_capable = (int)$data['printer_color_capable'];
