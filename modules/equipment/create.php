@@ -24,6 +24,29 @@ function equipment_table_has_column(mysqli $conn, string $table, string $column)
     return $res && mysqli_num_rows($res) > 0;
 }
 
+function equipment_table_varchar_length(mysqli $conn, string $table, string $column): int
+{
+    static $cache = [];
+
+    $cacheKey = $table . '.' . $column;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    $type = strtolower((string)($row['Type'] ?? ''));
+    if (preg_match('/^varchar\((\d+)\)$/', $type, $matches) === 1) {
+        $cache[$cacheKey] = (int)$matches[1];
+        return $cache[$cacheKey];
+    }
+
+    $cache[$cacheKey] = 0;
+    return 0;
+}
+
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
@@ -93,6 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill required fields: Name, Type.';
     } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
         $error = 'Please fill required field: RJ45 Ports for switch equipment.';
+    }
+
+    if (!$error && $data['mac_address'] !== '') {
+        $macColumnLength = equipment_table_varchar_length($conn, 'equipment', 'mac_address');
+        if ($macColumnLength > 0 && strlen($data['mac_address']) > $macColumnLength) {
+            $error = 'MAC Address is too long. Maximum allowed is ' . $macColumnLength . ' characters.';
+        }
     }
 
     $photoFilename = $data['photo_filename'];
