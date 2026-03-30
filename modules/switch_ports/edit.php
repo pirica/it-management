@@ -39,6 +39,23 @@ function cr_fk_map($conn, $table) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $map[$row['COLUMN_NAME']] = $row;
     }
+
+    if ($table === 'switch_ports') {
+        $manual = [
+            'equipment_id' => ['COLUMN_NAME' => 'equipment_id', 'REFERENCED_TABLE_NAME' => 'equipment', 'REFERENCED_COLUMN_NAME' => 'id'],
+            'status_id' => ['COLUMN_NAME' => 'status_id', 'REFERENCED_TABLE_NAME' => 'switch_status', 'REFERENCED_COLUMN_NAME' => 'id'],
+            'color_id' => ['COLUMN_NAME' => 'color_id', 'REFERENCED_TABLE_NAME' => 'switch_cablecolors', 'REFERENCED_COLUMN_NAME' => 'id'],
+            'vlan_id' => ['COLUMN_NAME' => 'vlan_id', 'REFERENCED_TABLE_NAME' => 'vlans', 'REFERENCED_COLUMN_NAME' => 'id'],
+            'port_type' => ['COLUMN_NAME' => 'port_type', 'REFERENCED_TABLE_NAME' => 'switch_port_types', 'REFERENCED_COLUMN_NAME' => 'type'],
+        ];
+
+        foreach ($manual as $column => $definition) {
+            if (!isset($map[$column])) {
+                $map[$column] = $definition;
+            }
+        }
+    }
+
     return $map;
 }
 
@@ -77,6 +94,7 @@ function cr_fk_metadata($conn, $table) {
         'switch_status' => ['name', 'status'],
         'switch_cablecolors' => ['color', 'name'],
         'vlans' => ['vlan_name', 'name'],
+        'switch_port_types' => ['name', 'type'],
     ];
 
     $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color', 'vlan_name'];
