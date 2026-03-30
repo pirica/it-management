@@ -245,6 +245,7 @@ function itm_ui_config_defaults() {
         'new_button_position' => 'left_right',
         'export_buttons_position' => 'left_right',
         'back_save_position' => 'left_right',
+        'enable_all_error_reporting' => 0,
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
@@ -264,6 +265,10 @@ function itm_ui_allowed_positions() {
     ];
 }
 
+function itm_normalize_flag($value) {
+    return ((string)$value === '1' || $value === 1 || $value === true) ? 1 : 0;
+}
+
 function itm_ensure_ui_configuration_table($conn) {
     $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -272,6 +277,7 @@ function itm_ensure_ui_configuration_table($conn) {
         `new_button_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `export_buttons_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `back_save_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
+        `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 0,
         `sidebar_visibility` LONGTEXT NULL,
         `sidebar_main_order` LONGTEXT NULL,
         `sidebar_submenu_order` LONGTEXT NULL,
@@ -286,6 +292,7 @@ function itm_ensure_ui_configuration_table($conn) {
     }
 
     $columns = [
+        'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 0 AFTER `back_save_position`",
         'sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_visibility` LONGTEXT NULL AFTER `back_save_position`",
         'sidebar_main_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_main_order` LONGTEXT NULL AFTER `sidebar_visibility`",
         'sidebar_submenu_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_submenu_order` LONGTEXT NULL AFTER `sidebar_main_order`",
@@ -331,7 +338,7 @@ function itm_get_ui_configuration($conn, $company_id) {
         return $defaults;
     }
 
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -376,6 +383,7 @@ function itm_normalize_ui_configuration($values) {
     $values['sidebar_visibility'] = itm_normalize_sidebar_visibility($values['sidebar_visibility'] ?? null);
     $values['sidebar_main_order'] = itm_normalize_sidebar_main_order($values['sidebar_main_order'] ?? null);
     $values['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($values['sidebar_submenu_order'] ?? null);
+    $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? 0);
 
     return $values;
 }
@@ -485,13 +493,14 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
                 export_buttons_position = VALUES(export_buttons_position),
                 back_save_position = VALUES(back_save_position),
+                enable_all_error_reporting = VALUES(enable_all_error_reporting),
                 sidebar_visibility = VALUES(sidebar_visibility),
                 sidebar_main_order = VALUES(sidebar_main_order),
                 sidebar_submenu_order = VALUES(sidebar_submenu_order)';
@@ -507,12 +516,13 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     mysqli_stmt_bind_param(
         $stmt,
-        'isssssss',
+        'issssissss',
         $company_id,
         $config['table_actions_position'],
         $config['new_button_position'],
         $config['export_buttons_position'],
         $config['back_save_position'],
+        $config['enable_all_error_reporting'],
         $sidebarVisibility,
         $sidebarMainOrder,
         $sidebarSubmenuOrder

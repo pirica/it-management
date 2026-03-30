@@ -199,6 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach (array_keys($uiFieldLabels) as $key) {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
+        $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
 
         $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
         $sidebarMainOrderInput = json_decode((string)($_POST['sidebar_main_order'] ?? ''), true);
@@ -340,6 +341,14 @@ usort($backupFiles, static function ($a, $b) {
                                     </div>
                                 </div>
                             <?php endforeach; ?>
+                        </div>
+
+                        <h3 style="margin-top:16px;">System</h3>
+                        <div class="form-group">
+                            <label for="enable_all_error_reporting">
+                                <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                                Enable all error reporting
+                            </label>
                         </div>
 
                         <div class="itm-form-actions itm-align-left">
