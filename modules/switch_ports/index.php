@@ -71,12 +71,22 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+
+    $tableLabelCandidates = [
+        'equipment' => ['name'],
+        'switch_status' => ['name', 'status'],
+        'switch_cablecolors' => ['color', 'name'],
+        'vlans' => ['vlan_name', 'name'],
+    ];
+
+    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color', 'vlan_name'];
+    foreach ($candidates as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
         }
     }
+
     return [
         'label_col' => $labelCol,
         'available' => $available,
@@ -96,6 +106,7 @@ function cr_humanize_field($field) {
     }
 
     $map = [
+        'label' => 'Patch port',
         'department_id' => 'Department Name',
         'office_key_card_department_id' => 'Office Key Card Department',
         'opera_username' => 'OPERA Username',
@@ -125,7 +136,35 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_hidden_display_field($field) {
+    if (($GLOBALS['crud_table'] ?? '') === 'switch_ports' && $field === 'company_id') {
+        return true;
+    }
+
+    return cr_is_hidden_employee_field($field);
+}
+
 function cr_render_cell_value($table, $field, $value) {
+    if (isset($GLOBALS['fkMap'][$field]) && (string)$value !== '') {
+        $fk = $GLOBALS['fkMap'][$field];
+        $fkTable = $fk['REFERENCED_TABLE_NAME'];
+        $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+        $fkMeta = cr_fk_metadata($GLOBALS['conn'], $fkTable);
+        $labelCol = $fkMeta['label_col'];
+
+        $lookupSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($fkTable)
+            . ' WHERE ' . cr_escape_identifier($fkCol) . '=' . (int)$value;
+        if (in_array('company_id', $fkMeta['available'], true) && (int)$GLOBALS['company_id'] > 0) {
+            $lookupSql .= ' AND company_id=' . (int)$GLOBALS['company_id'];
+        }
+        $lookupSql .= ' LIMIT 1';
+
+        $lookupRes = mysqli_query($GLOBALS['conn'], $lookupSql);
+        if ($lookupRes && ($lookupRow = mysqli_fetch_assoc($lookupRes)) && isset($lookupRow['label'])) {
+            return sanitize((string)$lookupRow['label']);
+        }
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -243,6 +282,9 @@ $hasCompany = false;
 foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
+$visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return !cr_is_hidden_display_field($col['Field']);
+}));
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -466,7 +508,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <table>
                         <thead>
                         <tr>
-                            <?php foreach ($fieldColumns as $col): ?>
+                            <?php foreach ($visibleFieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -484,7 +526,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
@@ -498,7 +540,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -508,7 +550,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
@@ -568,7 +610,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
