@@ -66,7 +66,7 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
     $equipmentOptions[] = $row;
 }
 
-$ui_config = itm_get_ui_config($conn, $company_id);
+$ui_config = itm_get_ui_configuration($conn, $company_id);
 ?>
 <!doctype html>
 <html lang="en">
