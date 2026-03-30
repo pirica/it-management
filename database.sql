@@ -150,39 +150,6 @@ INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
 INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('3', 'On Leave');
 INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('4', 'Terminated');
 
-
--- Table structure for `system_access`
-DROP TABLE IF EXISTS `system_access`;
-CREATE TABLE `system_access` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `company_id` int NOT NULL,
-  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `active` tinyint(1) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_system_access_company_code` (`company_id`,`code`),
-  UNIQUE KEY `uq_system_access_company_name` (`company_id`,`name`),
-  KEY `idx_system_access_company` (`company_id`),
-  CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Data for `system_access`
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('2', '1', 'micros_emc', 'Micros Emc', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('3', '1', 'opera_username', 'Opera Username', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('4', '1', 'micros_card', 'Micros Card', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('5', '1', 'pms_id', 'Pms Id', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('6', '1', 'synergy_mms', 'Synergy Mms', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('7', '1', 'hu_the_lobby', 'Hu The Lobby', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('8', '1', 'navision', 'Navision', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('9', '1', 'onq_ri', 'Onq Ri', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('10', '1', 'birchstreet', 'Birchstreet', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('11', '1', 'delphi', 'Delphi', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('12', '1', 'omina', 'Omina', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('13', '1', 'vingcard_system', 'Vingcard System', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('14', '1', 'digital_rev', 'Digital Rev', '1');
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('15', '1', 'office_key_card', 'Office Key Card', '1');
-
 -- Table structure for `employee_system_access`
 DROP TABLE IF EXISTS `employee_system_access`;
 CREATE TABLE `employee_system_access` (
@@ -294,7 +261,6 @@ CREATE TABLE `employees` (
   CONSTRAINT `employees_ibfk_6` FOREIGN KEY (`employment_status_id`) REFERENCES `employee_statuses` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Table structure for `equipment`
 DROP TABLE IF EXISTS `equipment`;
 CREATE TABLE `equipment` (
@@ -375,7 +341,6 @@ CREATE TABLE `equipment` (
 -- Data for `equipment`
 INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '4', '0', NULL, '0', NULL, '0', NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
 
-
 -- Table structure for `equipment_environment`
 DROP TABLE IF EXISTS `equipment_environment`;
 CREATE TABLE `equipment_environment` (
@@ -402,7 +367,6 @@ CREATE TABLE `equipment_fiber` (
 INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('1', 'SFP 1 Gbps');
 INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('2', 'SFP+ 10 Gbps');
 INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('3', 'QSFP 40 Gbps');
-
 
 -- Table structure for `equipment_fiber_count`
 DROP TABLE IF EXISTS `equipment_fiber_count`;
@@ -491,6 +455,110 @@ INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('8', 'Pri
 INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('9', 'Phone System', 'PHONE', '1');
 INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('10', 'Camera', 'CAM', '1');
 INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('11', 'Other', 'OTHER', '1');
+
+DROP TABLE IF EXISTS `idf_links`;
+CREATE TABLE `idf_links` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `port_id_a` INT NOT NULL,
+  `port_id_b` INT NOT NULL,
+  `cable_color` VARCHAR(40) NOT NULL DEFAULT 'yellow',
+  `cable_label` VARCHAR(120) DEFAULT NULL,
+  `notes` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_pair` (`port_id_a`,`port_id_b`),
+  KEY `port_id_a` (`port_id_a`),
+  KEY `port_id_b` (`port_id_b`),
+  CONSTRAINT `idf_links_ibfk_a` FOREIGN KEY (`port_id_a`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `idf_links_ibfk_b` FOREIGN KEY (`port_id_b`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `idf_ports`;
+CREATE TABLE `idf_ports` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `position_id` INT NOT NULL,
+  `port_no` SMALLINT NOT NULL,
+  `port_type` ENUM('RJ45','SFP','SFP+','LC','SC','OTHER') NOT NULL DEFAULT 'RJ45',
+  `label` VARCHAR(120) DEFAULT NULL,
+  `status` ENUM('free','used','reserved','down','unknown') NOT NULL DEFAULT 'unknown',
+  `connected_to` VARCHAR(180) DEFAULT NULL,
+  `vlan` VARCHAR(40) DEFAULT NULL,
+  `speed` VARCHAR(40) DEFAULT NULL,
+  `poe` VARCHAR(40) DEFAULT NULL,
+  `notes` TEXT DEFAULT NULL,
+  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pos_port_unique` (`position_id`,`port_no`),
+  KEY `position_id` (`position_id`),
+  CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('1', '1', '1', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('2', '1', '2', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('3', '1', '3', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('4', '1', '4', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('5', '1', '5', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('6', '1', '6', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('7', '1', '7', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('8', '1', '8', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('9', '1', '9', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('10', '1', '10', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('11', '1', '11', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('12', '1', '12', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('13', '1', '13', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('14', '1', '14', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('15', '1', '15', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('16', '1', '16', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('17', '1', '17', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('18', '1', '18', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('19', '1', '19', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('20', '1', '20', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('21', '1', '21', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('22', '1', '22', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('23', '1', '23', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('24', '1', '24', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
+
+DROP TABLE IF EXISTS `idf_positions`;
+CREATE TABLE `idf_positions` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `idf_id` INT NOT NULL,
+  `position_no` TINYINT NOT NULL,
+  `device_type` ENUM('switch','patch_panel','ups','server','other') NOT NULL DEFAULT 'other',
+  `device_name` VARCHAR(140) NOT NULL,
+  `equipment_id` INT DEFAULT NULL,
+  `port_count` SMALLINT NOT NULL DEFAULT 0,
+  `notes` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idf_pos_unique` (`idf_id`,`position_no`),
+  KEY `idf_id` (`idf_id`),
+  KEY `equipment_id` (`equipment_id`),
+  CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `idf_positions_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `idf_positions`
+INSERT INTO `idf_positions` (`id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) VALUES ('1', '1', '2', 'switch', 'cxcz', '1', '24', NULL, '2026-03-31 00:35:24', '2026-03-31 00:35:39');
+
+DROP TABLE IF EXISTS `idfs`;
+CREATE TABLE `idfs` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `company_id` INT NOT NULL,
+  `location_id` INT NOT NULL,
+  `name` VARCHAR(120) NOT NULL,
+  `idf_code` VARCHAR(60) DEFAULT NULL,
+  `notes` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `location_id` (`location_id`),
+  UNIQUE KEY `idf_code` (`idf_code`),
+  CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) VALUES ('1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '2026-03-31 00:25:58');
 
 -- Table structure for `inventory_categories`
 DROP TABLE IF EXISTS `inventory_categories`;
@@ -668,6 +736,24 @@ CREATE TABLE `racks` (
 -- Data for `racks`
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('1', '1', '1', 'Main Rack A', 'RACK-A', '1', '1');
 
+-- Table structure for `sidebar_layout`
+DROP TABLE IF EXISTS `sidebar_layout`;
+CREATE TABLE `sidebar_layout` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `entry_type` enum('section','item') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entry_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `section_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `display_order` int NOT NULL DEFAULT '0',
+  `is_visible` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sidebar_layout_entry` (`company_id`,`entry_type`,`entry_id`),
+  KEY `idx_sidebar_layout_company_type_order` (`company_id`,`entry_type`,`display_order`),
+  CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `supplier_statuses`
 DROP TABLE IF EXISTS `supplier_statuses`;
 CREATE TABLE `supplier_statuses` (
@@ -706,26 +792,6 @@ CREATE TABLE `suppliers` (
 
 -- Data for `suppliers`
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1');
-
--- Table structure for `switch_status`
-DROP TABLE IF EXISTS `switch_status`;
-CREATE TABLE `switch_status` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `status` (`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Data for `switch_status`
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('1', 'Up');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('2', 'Down');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('3', 'Free');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('4', 'Disabled');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('5', 'Unknown');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('6', 'Err-Disabled');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('7', 'Testing');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('8', 'Faulty');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('9', 'Reserved');
 
 -- Table structure for `switch_cablecolors`
 DROP TABLE IF EXISTS `switch_cablecolors`;
@@ -830,6 +896,58 @@ INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `por
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('22', '1', '1', NULL, 'rj45', '22', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('23', '1', '1', NULL, 'rj45', '23', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('24', '1', '1', NULL, 'rj45', '24', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+
+-- Table structure for `switch_status`
+DROP TABLE IF EXISTS `switch_status`;
+CREATE TABLE `switch_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `status` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `switch_status`
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('1', 'Up');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('2', 'Down');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('3', 'Free');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('4', 'Disabled');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('5', 'Unknown');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('6', 'Err-Disabled');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('7', 'Testing');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('8', 'Faulty');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('9', 'Reserved');
+
+-- Table structure for `system_access`
+DROP TABLE IF EXISTS `system_access`;
+CREATE TABLE `system_access` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_access_company_code` (`company_id`,`code`),
+  UNIQUE KEY `uq_system_access_company_name` (`company_id`,`name`),
+  KEY `idx_system_access_company` (`company_id`),
+  CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `system_access`
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('2', '1', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('3', '1', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('4', '1', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('5', '1', 'pms_id', 'Pms Id', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('6', '1', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('7', '1', 'hu_the_lobby', 'Hu The Lobby', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('8', '1', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('9', '1', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('10', '1', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('11', '1', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('12', '1', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('13', '1', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('14', '1', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('15', '1', 'office_key_card', 'Office Key Card', '1');
 
 -- Table structure for `ticket_categories`
 DROP TABLE IF EXISTS `ticket_categories`;
@@ -948,24 +1066,6 @@ INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `n
 INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('3', '3', 'left_right', 'left_right', 'left_right', 'left_right', '0', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:44:25');
 INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('4', '4', 'left', 'left_right', 'left_right', 'left_right', '0', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:51:29');
 INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) VALUES ('5', '5', 'left_right', 'left_right', 'left_right', 'left_right', '0', NULL, NULL, NULL, '2026-03-28 19:44:25', '2026-03-28 19:44:25');
-
--- Table structure for `sidebar_layout`
-DROP TABLE IF EXISTS `sidebar_layout`;
-CREATE TABLE `sidebar_layout` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `company_id` int NOT NULL,
-  `entry_type` enum('section','item') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `entry_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `section_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `display_order` int NOT NULL DEFAULT '0',
-  `is_visible` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_sidebar_layout_entry` (`company_id`,`entry_type`,`entry_id`),
-  KEY `idx_sidebar_layout_company_type_order` (`company_id`,`entry_type`,`display_order`),
-  CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `user_roles`
 DROP TABLE IF EXISTS `user_roles`;
@@ -1153,111 +1253,5 @@ INSERT INTO `workstations` (`id`, `company_id`, `hostname`, `workstation_code`, 
 -- --------------------------------------------------------
 -- IDF module
 -- --------------------------------------------------------
-
-DROP TABLE IF EXISTS `idfs`;
-CREATE TABLE `idfs` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `company_id` INT NOT NULL,
-  `location_id` INT NOT NULL,
-  `name` VARCHAR(120) NOT NULL,
-  `idf_code` VARCHAR(60) DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `company_id` (`company_id`),
-  KEY `location_id` (`location_id`),
-  UNIQUE KEY `idf_code` (`idf_code`),
-  CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) VALUES ('1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '2026-03-31 00:25:58');
-
-DROP TABLE IF EXISTS `idf_positions`;
-CREATE TABLE `idf_positions` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `idf_id` INT NOT NULL,
-  `position_no` TINYINT NOT NULL,
-  `device_type` ENUM('switch','patch_panel','ups','server','other') NOT NULL DEFAULT 'other',
-  `device_name` VARCHAR(140) NOT NULL,
-  `equipment_id` INT DEFAULT NULL,
-  `port_count` SMALLINT NOT NULL DEFAULT 0,
-  `notes` TEXT DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idf_pos_unique` (`idf_id`,`position_no`),
-  KEY `idf_id` (`idf_id`),
-  KEY `equipment_id` (`equipment_id`),
-  CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idf_positions_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Data for `idf_positions`
-INSERT INTO `idf_positions` (`id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) VALUES ('1', '1', '2', 'switch', 'cxcz', '1', '24', NULL, '2026-03-31 00:35:24', '2026-03-31 00:35:39');
-
-DROP TABLE IF EXISTS `idf_ports`;
-CREATE TABLE `idf_ports` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `position_id` INT NOT NULL,
-  `port_no` SMALLINT NOT NULL,
-  `port_type` ENUM('RJ45','SFP','SFP+','LC','SC','OTHER') NOT NULL DEFAULT 'RJ45',
-  `label` VARCHAR(120) DEFAULT NULL,
-  `status` ENUM('free','used','reserved','down','unknown') NOT NULL DEFAULT 'unknown',
-  `connected_to` VARCHAR(180) DEFAULT NULL,
-  `vlan` VARCHAR(40) DEFAULT NULL,
-  `speed` VARCHAR(40) DEFAULT NULL,
-  `poe` VARCHAR(40) DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `pos_port_unique` (`position_id`,`port_no`),
-  KEY `position_id` (`position_id`),
-  CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('1', '1', '1', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('2', '1', '2', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('3', '1', '3', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('4', '1', '4', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('5', '1', '5', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('6', '1', '6', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('7', '1', '7', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('8', '1', '8', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('9', '1', '9', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('10', '1', '10', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('11', '1', '11', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('12', '1', '12', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('13', '1', '13', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('14', '1', '14', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('15', '1', '15', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('16', '1', '16', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('17', '1', '17', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('18', '1', '18', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('19', '1', '19', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('20', '1', '20', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('21', '1', '21', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('22', '1', '22', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('23', '1', '23', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('24', '1', '24', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
-
-
-
-DROP TABLE IF EXISTS `idf_links`;
-CREATE TABLE `idf_links` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `port_id_a` INT NOT NULL,
-  `port_id_b` INT NOT NULL,
-  `cable_color` VARCHAR(40) NOT NULL DEFAULT 'yellow',
-  `cable_label` VARCHAR(120) DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_pair` (`port_id_a`,`port_id_b`),
-  KEY `port_id_a` (`port_id_a`),
-  KEY `port_id_b` (`port_id_b`),
-  CONSTRAINT `idf_links_ibfk_a` FOREIGN KEY (`port_id_a`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idf_links_ibfk_b` FOREIGN KEY (`port_id_b`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS=1;
