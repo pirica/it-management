@@ -1017,7 +1017,7 @@ CREATE TABLE `workstations` (
   `assigned_to_employee_id` int DEFAULT NULL,
   `assigned_to_department_id` int DEFAULT NULL,
   `assignment_type_id` int NOT NULL,
-  `desk_location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `department` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `workstation_code` (`workstation_code`),
@@ -1027,15 +1027,17 @@ CREATE TABLE `workstations` (
   KEY `assigned_to_department_id` (`assigned_to_department_id`),
   KEY `company_id` (`company_id`),
   KEY `assignment_type_id` (`assignment_type_id`),
+  KEY `idx_workstations_department` (`department`),
   CONSTRAINT `workstations_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `workstations_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
   CONSTRAINT `workstations_ibfk_3` FOREIGN KEY (`workstation_mode_id`) REFERENCES `workstation_modes` (`id`),
   CONSTRAINT `workstations_ibfk_4` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `workstations_ibfk_5` FOREIGN KEY (`assigned_to_department_id`) REFERENCES `departments` (`id`),
-  CONSTRAINT `workstations_ibfk_6` FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types` (`id`)
+  CONSTRAINT `workstations_ibfk_6` FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types` (`id`),
+  CONSTRAINT `workstations_ibfk_department` FOREIGN KEY (`department`) REFERENCES `departments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstations`
-INSERT INTO `workstations` (`id`, `company_id`, `equipment_id`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `desk_location`, `active`) VALUES ('1', '1', '1', 'WS-001', '1', '1', '1', '1', 'HQ-Desk-14', '1');
+INSERT INTO `workstations` (`id`, `company_id`, `equipment_id`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `active`) VALUES ('1', '1', '1', 'WS-001', '1', '1', '1', '1', '1', '1');
 
 SET FOREIGN_KEY_CHECKS=1;
