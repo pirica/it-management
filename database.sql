@@ -704,7 +704,8 @@ DROP TABLE IF EXISTS `switch_ports`;
 CREATE TABLE `switch_ports` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `equipment_id` int NOT NULL,
+  `equipment_id` int DEFAULT NULL,
+  `hostname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `port_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'rj45',
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1011,7 +1012,8 @@ DROP TABLE IF EXISTS `workstations`;
 CREATE TABLE `workstations` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `equipment_id` int NOT NULL,
+  `equipment_id` int DEFAULT NULL,
+  `hostname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `workstation_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `workstation_mode_id` int DEFAULT NULL,
   `assigned_to_employee_id` int DEFAULT NULL,
@@ -1040,6 +1042,6 @@ CREATE TABLE `workstations` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstations`
-INSERT INTO `workstations` (`id`, `company_id`, `equipment_id`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) VALUES ('1', '1', '1', 'WS-001', '1', '1', '1', '1', '1', '1');
+INSERT INTO `workstations` (`id`, `company_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) VALUES ('1', '1', 'srv-file-01', 'srv-file-01', '1', '1', '1', '1', '1', '1');
 
 SET FOREIGN_KEY_CHECKS=1;

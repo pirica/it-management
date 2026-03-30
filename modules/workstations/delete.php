@@ -50,6 +50,10 @@ function cr_fk_options($conn, $fk, $company_id) {
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
+    if ($table === 'equipment' && in_array('hostname', $available, true)) {
+        $labelCol = 'hostname';
+    }
+
     $where = '';
     if (in_array('company_id', $available, true) && $company_id > 0) {
         $where = ' WHERE company_id=' . (int)$company_id;
@@ -102,6 +106,7 @@ function cr_humanize_field($field) {
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
         'status_id' => 'Status',
+        'equipment_id' => 'Hostname',
     ];
 
     if (isset($map[$label])) {
@@ -118,12 +123,18 @@ function cr_humanize_field($field) {
 }
 
 function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
-        return false;
+    $table = (string)($GLOBALS['crud_table'] ?? '');
+
+    if ($table === 'employees') {
+        $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+        return in_array($field, $hidden, true);
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
-    return in_array($field, $hidden, true);
+    if ($table === 'workstations') {
+        return in_array($field, ['company_id', 'active', 'workstation_code', 'equipment_id'], true);
+    }
+
+    return false;
 }
 
 function cr_render_cell_value($table, $field, $value) {
