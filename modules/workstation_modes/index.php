@@ -139,7 +139,7 @@ function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
-            return ((int)$value === 1) ? '✔️' : '❌';
+            return ((int)$value === 1) ? '✅' : '❌';
         }
     }
 
@@ -534,7 +534,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✔️' : '❌'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
@@ -613,7 +613,7 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? '✔️' : '❌';
+        indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
 </script>

@@ -71,7 +71,7 @@ function emp_label($field) {
                             <?php if (in_array($field, $hiddenFields, true)) { continue; } ?>
                             <?php
                                 if (in_array($field, $booleanFields, true)) {
-                                    $display = ((int)$value === 1) ? '✔️' : '❌';
+                                    $display = ((int)$value === 1) ? '✅' : '❌';
                                 } elseif ($field === 'email' && (string)$value !== '') {
                                     $safe = sanitize((string)$value);
                                     $display = '<a href="mailto:' . $safe . '">' . $safe . '</a>';

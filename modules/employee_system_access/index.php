@@ -141,7 +141,7 @@ if (($_GET['export'] ?? '') === 'csv') {
                                 <?php endif; ?>
                             </td>
                             <?php foreach (array_keys($abilityFields) as $field): ?>
-                                <td><?php echo ((int)($row[$field] ?? 0) === 1) ? '✔️' : '❌'; ?></td>
+                                <td><?php echo ((int)($row[$field] ?? 0) === 1) ? '✅' : '❌'; ?></td>
                             <?php endforeach; ?>
                             <td><a class="btn btn-sm" href="edit.php?employee_id=<?php echo (int)$row['employee_id']; ?>">✏️</a></td>
                         </tr>
