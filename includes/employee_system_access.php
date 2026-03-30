@@ -195,6 +195,131 @@ function esa_system_access_id_map($conn) {
     return $map;
 }
 
+function esa_get_system_access_catalog($conn, $companyId, $includeInactive = false) {
+    $companyId = (int)$companyId;
+    $rows = [];
+    if ($companyId <= 0) {
+        return $rows;
+    }
+
+    $sql = 'SELECT `id`, `code`, `name`, `active` FROM `system_access` WHERE `company_id`=' . $companyId;
+    if (!$includeInactive) {
+        $sql .= ' AND `active`=1';
+    }
+    $sql .= ' ORDER BY `name` ASC';
+
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'code' => (string)($row['code'] ?? ''),
+            'name' => (string)($row['name'] ?? ''),
+            'active' => (int)($row['active'] ?? 0),
+        ];
+    }
+
+    return $rows;
+}
+
+function esa_get_employee_access_ids($conn, $companyId, $employeeId) {
+    $companyId = (int)$companyId;
+    $employeeId = (int)$employeeId;
+    $ids = [];
+
+    $sql = 'SELECT `system_access_id` FROM `employee_system_access_relations` WHERE `company_id`=' . $companyId
+        . ' AND `employee_id`=' . $employeeId . ' AND `granted`=1';
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $id = (int)($row['system_access_id'] ?? 0);
+        if ($id > 0) {
+            $ids[] = $id;
+        }
+    }
+
+    return array_values(array_unique($ids));
+}
+
+function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAccessIds) {
+    $companyId = (int)$companyId;
+    $employeeId = (int)$employeeId;
+    $systemAccessIds = is_array($systemAccessIds) ? $systemAccessIds : [];
+
+    $cleanIds = [];
+    foreach ($systemAccessIds as $id) {
+        $id = (int)$id;
+        if ($id > 0) {
+            $cleanIds[$id] = true;
+        }
+    }
+    $cleanIds = array_keys($cleanIds);
+
+    $validAccessById = [];
+    if (!empty($cleanIds)) {
+        $idSql = implode(',', array_map('intval', $cleanIds));
+        $res = mysqli_query($conn, 'SELECT `id`, `code` FROM `system_access` WHERE `company_id`=' . $companyId . ' AND `id` IN (' . $idSql . ')');
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $validAccessById[(int)$row['id']] = (string)$row['code'];
+        }
+    }
+
+    if (!mysqli_begin_transaction($conn)) {
+        return false;
+    }
+
+    $ok = true;
+    if (!mysqli_query($conn, 'DELETE FROM `employee_system_access_relations` WHERE `company_id`=' . $companyId . ' AND `employee_id`=' . $employeeId)) {
+        $ok = false;
+    }
+
+    if ($ok) {
+        foreach ($validAccessById as $accessId => $code) {
+            $insertSql = 'INSERT INTO `employee_system_access_relations` (`company_id`, `employee_id`, `system_access_id`, `granted`) VALUES ('
+                . $companyId . ', ' . $employeeId . ', ' . (int)$accessId . ', 1)';
+            if (!mysqli_query($conn, $insertSql)) {
+                $ok = false;
+                break;
+            }
+        }
+    }
+
+    if ($ok) {
+        $legacyFields = esa_ability_fields();
+        $normalized = [];
+        foreach (array_keys($legacyFields) as $field) {
+            $normalized[$field] = 0;
+        }
+        foreach ($validAccessById as $code) {
+            if (isset($normalized[$code])) {
+                $normalized[$code] = 1;
+            }
+        }
+
+        $columns = ['company_id', 'employee_id'];
+        $values = [$companyId, $employeeId];
+        $updates = [];
+        foreach ($normalized as $field => $value) {
+            $columns[] = $field;
+            $values[] = (int)$value;
+            $fieldEsc = esa_escape_identifier($field);
+            $updates[] = $fieldEsc . '=' . (int)$value;
+        }
+
+        $legacySql = 'INSERT INTO `employee_system_access` (' . implode(', ', array_map('esa_escape_identifier', $columns)) . ') VALUES (' . implode(', ', array_map('intval', $values)) . ') '
+            . 'ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
+
+        if (!mysqli_query($conn, $legacySql)) {
+            $ok = false;
+        }
+    }
+
+    if ($ok) {
+        return mysqli_commit($conn);
+    }
+
+    mysqli_rollback($conn);
+    return false;
+}
+
 function esa_get_employee_access($conn, $companyId, $employeeId) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
