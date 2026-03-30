@@ -16,9 +16,9 @@ CREATE TABLE `access_levels` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `access_levels`
-INSERT INTO `access_levels` (`id`, `name`) VALUES ('1', 'full');
-INSERT INTO `access_levels` (`id`, `name`) VALUES ('3', 'limited');
-INSERT INTO `access_levels` (`id`, `name`) VALUES ('2', 'read_only');
+INSERT INTO `access_levels` (`id`, `name`) VALUES ('1', 'Full');
+INSERT INTO `access_levels` (`id`, `name`) VALUES ('3', 'Limited');
+INSERT INTO `access_levels` (`id`, `name`) VALUES ('2', 'Read Only');
 
 -- Table structure for `assignment_types`
 DROP TABLE IF EXISTS `assignment_types`;
@@ -391,6 +391,7 @@ INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('3', 'Maintenance');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('7', 'On-Order');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('5', 'Reserved');
+INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('8', 'Other');
 
 -- Table structure for `equipment_types`
 DROP TABLE IF EXISTS `equipment_types`;
@@ -607,6 +608,7 @@ INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('1', 'Active');
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('4', 'Backup');
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('3', 'Preferred');
+INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('5', 'Other');
 
 -- Table structure for `suppliers`
 DROP TABLE IF EXISTS `suppliers`;
@@ -695,9 +697,9 @@ CREATE TABLE `switch_port_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_port_types`
-INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('1', 'rj45');
-INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('2', 'sfp');
-INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('3', 'sfp_plus');
+INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('1', 'RJ45');
+INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('2', 'SFP');
+INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('3', 'SFP+');
 
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
@@ -706,7 +708,7 @@ CREATE TABLE `switch_ports` (
   `company_id` int NOT NULL,
   `equipment_id` int DEFAULT NULL,
   `hostname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `port_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'rj45',
+  `port_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RJ45',
   `port_number` int NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
@@ -875,11 +877,11 @@ CREATE TABLE `user_roles` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `user_roles`
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('1', 'admin');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('4', 'helpdesk');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('2', 'it_manager');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('3', 'it_technician');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('5', 'user');
+INSERT INTO `user_roles` (`id`, `name`) VALUES ('1', 'Admin');
+INSERT INTO `user_roles` (`id`, `name`) VALUES ('4', 'Helpdesk');
+INSERT INTO `user_roles` (`id`, `name`) VALUES ('2', 'IT Manager');
+INSERT INTO `user_roles` (`id`, `name`) VALUES ('3', 'IT Assistant');
+INSERT INTO `user_roles` (`id`, `name`) VALUES ('5', 'User');
 
 -- Table structure for `users`
 DROP TABLE IF EXISTS `users`;
@@ -908,7 +910,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `users`
-INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin_tc', 'admin@techcorp.example', '$2y$10$abcdefghijklmnopqrstuv', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin_tc', 'admin@techcorp.example', '(to define)', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
 
 -- Table structure for `vlans`
 DROP TABLE IF EXISTS `vlans`;
@@ -946,6 +948,7 @@ INSERT INTO `warranty_types` (`id`, `name`) VALUES ('2', 'Extended');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('5', 'None');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('3', 'Premium');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('1', 'Standard');
+INSERT INTO `warranty_types` (`id`, `name`) VALUES ('6', 'Other');
 
 -- Table structure for `workstation_device_types`
 DROP TABLE IF EXISTS `workstation_device_types`;
@@ -982,12 +985,15 @@ CREATE TABLE `workstation_modes` (
 
 -- Data for `workstation_modes`
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('1', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('2', 'Computer + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('3', 'Computer + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('2', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('3', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('4', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('5', 'Laptop + Docking', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '2', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('5', 'Laptop + Docking', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('6', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('7', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('8', 'Laptop + Docking + Monitor', 'MODE-LAP-DOCK', 'Laptop with Docking Station & Monitor', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('9', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('10', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Desktop', '0', '1');
 
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
