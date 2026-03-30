@@ -24,6 +24,10 @@ function esa_escape_identifier($name) {
     return '`' . str_replace('`', '``', (string)$name) . '`';
 }
 
+function esa_current_company_id() {
+    return isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+}
+
 function esa_ensure_table($conn) {
     $legacySql = "CREATE TABLE IF NOT EXISTS `employee_system_access` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -57,13 +61,14 @@ function esa_ensure_table($conn) {
 
     $catalogSql = "CREATE TABLE IF NOT EXISTS `system_access` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        `company_id` INT NOT NULL,
         `code` VARCHAR(100) NOT NULL,
         `name` VARCHAR(150) NOT NULL,
         `active` TINYINT(1) NOT NULL DEFAULT 1,
-        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY `uq_system_access_code` (`code`),
-        UNIQUE KEY `uq_system_access_name` (`name`)
+        UNIQUE KEY `uq_system_access_company_code` (`company_id`, `code`),
+        UNIQUE KEY `uq_system_access_company_name` (`company_id`, `name`),
+        KEY `idx_system_access_company` (`company_id`),
+        CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
     if (!mysqli_query($conn, $catalogSql)) {
@@ -101,18 +106,23 @@ function esa_ensure_table($conn) {
 }
 
 function esa_seed_system_access($conn) {
+    $companyId = esa_current_company_id();
+    if ($companyId <= 0) {
+        return true;
+    }
+
     $values = [];
     foreach (esa_ability_fields() as $code => $label) {
         $codeEsc = mysqli_real_escape_string($conn, $code);
         $labelEsc = mysqli_real_escape_string($conn, $label);
-        $values[] = "('{$codeEsc}', '{$labelEsc}', 1)";
+        $values[] = '(' . $companyId . ", '{$codeEsc}', '{$labelEsc}', 1)";
     }
 
     if (!$values) {
         return true;
     }
 
-    $sql = 'INSERT INTO `system_access` (`code`, `name`, `active`) VALUES ' . implode(', ', $values)
+    $sql = 'INSERT INTO `system_access` (`company_id`, `code`, `name`, `active`) VALUES ' . implode(', ', $values)
         . ' ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `active`=1';
 
     return mysqli_query($conn, $sql) !== false;
@@ -173,8 +183,12 @@ function esa_sync_relations_from_legacy($conn) {
 }
 
 function esa_system_access_id_map($conn) {
+    $companyId = esa_current_company_id();
     $map = [];
-    $res = mysqli_query($conn, 'SELECT id, code FROM `system_access`');
+    if ($companyId <= 0) {
+        return $map;
+    }
+    $res = mysqli_query($conn, 'SELECT id, code FROM `system_access` WHERE `company_id`=' . $companyId);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $map[(string)$row['code']] = (int)$row['id'];
     }

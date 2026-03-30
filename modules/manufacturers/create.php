@@ -117,12 +117,17 @@ function cr_humanize_field($field) {
 }
 
 function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
-        return false;
+    $table = (string)($GLOBALS['crud_table'] ?? '');
+    if ($table === 'employees') {
+        $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+        return in_array($field, $hidden, true);
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
-    return in_array($field, $hidden, true);
+    if ($table === 'system_access') {
+        return $field === 'company_id';
+    }
+
+    return false;
 }
 
 function cr_render_cell_value($table, $field, $value) {
