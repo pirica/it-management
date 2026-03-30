@@ -18,20 +18,18 @@ if (!$employee) {
     exit;
 }
 
-$abilityFields = esa_ability_fields();
-$form = [];
-$current = esa_get_employee_access($conn, (int)$company_id, $employeeId);
-foreach (array_keys($abilityFields) as $field) {
-    $form[$field] = ((int)($current[$field] ?? 0) === 1) ? '1' : '0';
-}
+$systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
+$selectedSystemAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, $employeeId);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    foreach (array_keys($abilityFields) as $field) {
-        $form[$field] = isset($_POST[$field]) ? '1' : '0';
-    }
-    esa_save_employee_access($conn, (int)$company_id, $employeeId, $form);
+    $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
+    esa_save_employee_access_ids($conn, (int)$company_id, $employeeId, $selectedSystemAccessIds);
     header('Location: index.php');
     exit;
+}
+
+function esa_module_checked($ids, $id) {
+    return in_array((int)$id, array_map('intval', is_array($ids) ? $ids : []), true) ? 'checked' : '';
 }
 ?>
 <!DOCTYPE html>
@@ -54,11 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="card">
                 <p style="margin-top:0;"><strong>Email:</strong> <?php echo sanitize((string)($employee['email'] ?? '')); ?></p>
+                <?php if (empty($systemAccessCatalog)): ?>
+                    <p>No active System Access records were found. Add some in <a href="../system_access/">System Access</a>.</p>
+                <?php endif; ?>
                 <form method="POST">
                     <input type="hidden" name="employee_id" value="<?php echo (int)$employeeId; ?>">
-                    <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
-                        <?php foreach ($abilityFields as $field => $label): ?>
-                            <label><input type="checkbox" name="<?php echo sanitize($field); ?>" value="1" <?php echo (($form[$field] ?? '0') === '1') ? 'checked' : ''; ?>> <?php echo sanitize($label); ?></label>
+                    <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                        <?php foreach ($systemAccessCatalog as $access): ?>
+                            <label><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo esa_module_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <?php echo sanitize((string)$access['name']); ?></label>
                         <?php endforeach; ?>
                     </div>
                     <div class="form-actions" style="margin-top:16px;">
