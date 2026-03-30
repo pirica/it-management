@@ -4,8 +4,18 @@ require '../../includes/employee_system_access.php';
 
 esa_ensure_table($conn);
 
-$abilityFields = esa_ability_fields();
-$columns = array_merge(['employee_name', 'email'], array_keys($abilityFields));
+$systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
+$accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
+$accessLabelsById = [];
+foreach ($systemAccessCatalog as $access) {
+    $accessId = (int)($access['id'] ?? 0);
+    if ($accessId <= 0) {
+        continue;
+    }
+    $accessLabelsById[$accessId] = (string)($access['name'] ?? '');
+}
+
+$columns = array_merge(['employee_name', 'email'], array_map(static fn($id) => 'access_' . $id, array_keys($accessLabelsById)));
 
 $sort = (string)($_GET['sort'] ?? 'employee_name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
@@ -33,47 +43,75 @@ $where = ' WHERE e.company_id=' . (int)$company_id;
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchValue = mysqli_real_escape_string($conn, $searchPattern);
-    $conditions = [
-        "CAST(COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) AS CHAR) LIKE '{$searchValue}'",
-        "CAST(COALESCE(e.email, '') AS CHAR) LIKE '{$searchValue}'",
-    ];
-    foreach ($abilityFields as $field => $label) {
-        $fieldEsc = esa_escape_identifier($field);
-        $conditions[] = "CAST(esa.{$fieldEsc} AS CHAR) LIKE '{$searchValue}'";
-        if (stripos($label, $searchRaw) !== false || stripos($field, $searchRaw) !== false) {
-            $conditions[] = "esa.{$fieldEsc}=1";
-        }
-    }
-    $where .= ' AND (' . implode(' OR ', $conditions) . ')';
+    $where .= " AND (COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) LIKE '{$searchValue}' OR COALESCE(e.email, '') LIKE '{$searchValue}')";
 }
 
 $sortSql = $sort === 'employee_name'
     ? "COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) {$dir}"
-    : ($sort === 'email'
-        ? "e.email {$dir}"
-        : ('esa.' . esa_escape_identifier($sort) . ' ' . $dir));
+    : ($sort === 'email' ? "e.email {$dir}" : "COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) ASC");
 
 $sql = "SELECT e.id AS employee_id,
             COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) AS employee_name,
-            e.email,
-            esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
-            esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina,
-            esa.vingcard_system, esa.digital_rev, esa.office_key_card
-        FROM employees e
-        LEFT JOIN employee_system_access esa ON esa.company_id=e.company_id AND esa.employee_id=e.id"
-        . $where .
-        ' ORDER BY ' . $sortSql . ' LIMIT 1000';
+            e.email
+        FROM employees e"
+        . $where
+        . ' ORDER BY ' . $sortSql . ' LIMIT 1000';
 $rows = mysqli_query($conn, $sql);
+
+$employees = [];
+$employeeIds = [];
+while ($rows && ($row = mysqli_fetch_assoc($rows))) {
+    $employeeId = (int)($row['employee_id'] ?? 0);
+    if ($employeeId <= 0) {
+        continue;
+    }
+    $row['grants'] = [];
+    $employees[] = $row;
+    $employeeIds[] = $employeeId;
+}
+
+if (!empty($employeeIds) && !empty($accessIds)) {
+    $employeeIdSql = implode(',', array_map('intval', $employeeIds));
+    $accessIdSql = implode(',', array_map('intval', $accessIds));
+    $mapSql = 'SELECT employee_id, system_access_id FROM employee_system_access_relations WHERE company_id=' . (int)$company_id
+        . ' AND granted=1 AND employee_id IN (' . $employeeIdSql . ') AND system_access_id IN (' . $accessIdSql . ')';
+    $mapRes = mysqli_query($conn, $mapSql);
+    $grantsByEmployee = [];
+    while ($mapRes && ($mapRow = mysqli_fetch_assoc($mapRes))) {
+        $eid = (int)($mapRow['employee_id'] ?? 0);
+        $aid = (int)($mapRow['system_access_id'] ?? 0);
+        if ($eid > 0 && $aid > 0) {
+            $grantsByEmployee[$eid][$aid] = true;
+        }
+    }
+
+    foreach ($employees as $idx => $employee) {
+        $eid = (int)($employee['employee_id'] ?? 0);
+        $employees[$idx]['grants'] = $grantsByEmployee[$eid] ?? [];
+    }
+}
+
+if ($sort !== 'employee_name' && $sort !== 'email' && str_starts_with($sort, 'access_')) {
+    $sortAccessId = (int)substr($sort, strlen('access_'));
+    usort($employees, static function ($a, $b) use ($sortAccessId, $dir) {
+        $aHas = isset($a['grants'][$sortAccessId]) ? 1 : 0;
+        $bHas = isset($b['grants'][$sortAccessId]) ? 1 : 0;
+        if ($aHas === $bHas) {
+            return strcasecmp((string)($a['employee_name'] ?? ''), (string)($b['employee_name'] ?? ''));
+        }
+        return $dir === 'ASC' ? ($aHas <=> $bHas) : ($bHas <=> $aHas);
+    });
+}
 
 if (($_GET['export'] ?? '') === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=employee_system_access.csv');
     $out = fopen('php://output', 'w');
-    fputcsv($out, array_merge(['Employee Name', 'Email'], array_values($abilityFields)));
-    while ($rows && ($row = mysqli_fetch_assoc($rows))) {
+    fputcsv($out, array_merge(['Employee Name', 'Email'], array_values($accessLabelsById)));
+    foreach ($employees as $row) {
         $line = [(string)($row['employee_name'] ?? ''), (string)($row['email'] ?? '')];
-        foreach (array_keys($abilityFields) as $field) {
-            $line[] = ((int)($row[$field] ?? 0) === 1) ? 'Yes' : 'No';
+        foreach (array_keys($accessLabelsById) as $accessId) {
+            $line[] = isset($row['grants'][$accessId]) ? 'Yes' : 'No';
         }
         fputcsv($out, $line);
     }
@@ -105,8 +143,8 @@ if (($_GET['export'] ?? '') === 'csv') {
                     <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
                     <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                        <label for="abilitySearch">Search (employee + ability)</label>
-                        <input type="text" id="abilitySearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Try: opera, network, %yes%">
+                        <label for="abilitySearch">Search (employee + email)</label>
+                        <input type="text" id="abilitySearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Try: john@ or jane">
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
@@ -123,7 +161,16 @@ if (($_GET['export'] ?? '') === 'csv') {
                             <?php $nextDir = ($sort === $column && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th>
                                 <a href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $column, 'dir' => $nextDir])); ?>" style="text-decoration:none;color:inherit;">
-                                    <?php echo sanitize($column === 'employee_name' ? 'Employee Name' : ($column === 'email' ? 'Email' : ($abilityFields[$column] ?? $column))); ?>
+                                    <?php
+                                    if ($column === 'employee_name') {
+                                        echo 'Employee Name';
+                                    } elseif ($column === 'email') {
+                                        echo 'Email';
+                                    } else {
+                                        $accessId = (int)substr($column, strlen('access_'));
+                                        echo sanitize($accessLabelsById[$accessId] ?? $column);
+                                    }
+                                    ?>
                                     <?php if ($sort === $column): ?><?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                 </a>
                             </th>
@@ -132,7 +179,7 @@ if (($_GET['export'] ?? '') === 'csv') {
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
+                    <?php if (!empty($employees)): foreach ($employees as $row): ?>
                         <tr>
                             <td><?php echo sanitize((string)($row['employee_name'] ?? '')); ?></td>
                             <td>
@@ -140,12 +187,12 @@ if (($_GET['export'] ?? '') === 'csv') {
                                     <a href="mailto:<?php echo sanitize((string)$row['email']); ?>"><?php echo sanitize((string)$row['email']); ?></a>
                                 <?php endif; ?>
                             </td>
-                            <?php foreach (array_keys($abilityFields) as $field): ?>
-                                <td><?php echo ((int)($row[$field] ?? 0) === 1) ? '✅' : '❌'; ?></td>
+                            <?php foreach (array_keys($accessLabelsById) as $accessId): ?>
+                                <td><?php echo isset($row['grants'][$accessId]) ? '✅' : '❌'; ?></td>
                             <?php endforeach; ?>
                             <td><a class="btn btn-sm" href="edit.php?employee_id=<?php echo (int)$row['employee_id']; ?>">✏️</a></td>
                         </tr>
-                    <?php endwhile; else: ?>
+                    <?php endforeach; else: ?>
                         <tr><td colspan="<?php echo count($columns) + 1; ?>" style="text-align:center;">No rows found.</td></tr>
                     <?php endif; ?>
                     </tbody>
