@@ -162,6 +162,7 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
