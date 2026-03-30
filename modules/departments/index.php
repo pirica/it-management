@@ -12,11 +12,11 @@ if ($searchRaw !== '') {
         OR CAST(active AS CHAR) LIKE '{$searchEsc}'
     )";
 }
-$sortableColumns = ['id', 'name', 'description', 'active'];
-$sort = (string)($_GET['sort'] ?? 'id');
+$sortableColumns = ['name', 'description', 'active'];
+$sort = (string)($_GET['sort'] ?? 'name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
-    $sort = 'id';
+    $sort = 'name';
 }
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
@@ -58,7 +58,7 @@ $items = mysqli_query($conn, "SELECT * FROM departments WHERE company_id = $comp
                 <table>
                     <thead>
                     <tr>
-                        <?php foreach (['id' => 'ID', 'name' => 'Name', 'description' => 'Description', 'active' => 'Status'] as $field => $label): ?>
+                        <?php foreach (['name' => 'Name', 'description' => 'Description', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -68,7 +68,6 @@ $items = mysqli_query($conn, "SELECT * FROM departments WHERE company_id = $comp
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($d = mysqli_fetch_assoc($items)): ?>
                         <tr>
-                            <td><?php echo (int)$d['id']; ?></td>
                             <td><?php echo sanitize($d['name']); ?></td>
                             <td><?php echo sanitize($d['description'] ?? '-'); ?></td>
                             <td>
@@ -83,7 +82,7 @@ $items = mysqli_query($conn, "SELECT * FROM departments WHERE company_id = $comp
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="5" style="text-align:center;">No departments found.</td></tr>
+                        <tr><td colspan="4" style="text-align:center;">No departments found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
