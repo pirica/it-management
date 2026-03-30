@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require '../../includes/employee_system_access.php';
 
 function emp_drop_email_unique_if_exists($conn) {
     $sql = "SELECT 1
@@ -16,6 +17,7 @@ function emp_drop_email_unique_if_exists($conn) {
 
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
+esa_ensure_table($conn);
 
 $errors = [];
 $form = [
@@ -32,25 +34,15 @@ $form = [
     'employment_status_id' => '1',
     'comments' => '',
     'office_key_card_department_id' => '',
-    'network_access' => '0',
-    'micros_emc' => '0',
-    'opera_username' => '0',
-    'micros_card' => '0',
-    'pms_id' => '0',
-    'synergy_mms' => '0',
-    'hu_the_lobby' => '0',
-    'navision' => '0',
-    'onq_ri' => '0',
-    'birchstreet' => '0',
-    'delphi' => '0',
-    'omina' => '0',
-    'vingcard_system' => '0',
-    'digital_rev' => '0',
-    'office_key_card' => '0',
     'active' => '1',
 ];
 
-$booleanFields = ['network_access','micros_emc','opera_username','micros_card','pms_id','synergy_mms','hu_the_lobby','navision','onq_ri','birchstreet','delphi','omina','vingcard_system','digital_rev','office_key_card'];
+$booleanFields = array_keys(esa_ability_fields());
+foreach ($booleanFields as $abilityField) {
+    if (!isset($form[$abilityField])) {
+        $form[$abilityField] = '0';
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     emp_drop_email_unique_if_exists($conn);
@@ -92,18 +84,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, email, hilton_id, username,
             department_id, job_code, job_title, comments, raw_status_code, employment_status_id,
-            network_access, micros_emc, opera_username, micros_card, pms_id, synergy_mms,
-            hu_the_lobby, navision, onq_ri, birchstreet, delphi, omina, vingcard_system,
-            digital_rev, office_key_card, office_key_card_department_id, active
+            office_key_card_department_id, active
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$email}, {$hiltonId}, {$username},
             {$departmentId}, {$jobCode}, {$jobTitle}, {$comments}, {$rawStatusCode}, {$employmentStatusId},
-            " . (int)$form['network_access'] . ", " . (int)$form['micros_emc'] . ", " . (int)$form['opera_username'] . ", " . (int)$form['micros_card'] . ", " . (int)$form['pms_id'] . ", " . (int)$form['synergy_mms'] . ",
-            " . (int)$form['hu_the_lobby'] . ", " . (int)$form['navision'] . ", " . (int)$form['onq_ri'] . ", " . (int)$form['birchstreet'] . ", " . (int)$form['delphi'] . ", " . (int)$form['omina'] . ", " . (int)$form['vingcard_system'] . ",
-            " . (int)$form['digital_rev'] . ", " . (int)$form['office_key_card'] . ", {$officeDeptId}, {$active}
+            {$officeDeptId}, {$active}
         )";
 
         if (mysqli_query($conn, $sql)) {
+            $newEmployeeId = (int)mysqli_insert_id($conn);
+            esa_save_employee_access($conn, (int)$company_id, $newEmployeeId, $form);
             header('Location: index.php');
             exit;
         }
@@ -185,7 +175,7 @@ function emp_checked($form, $field) {
                     <h3>System Access</h3>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($booleanFields as $field): ?>
-                            <label><input type="checkbox" name="<?php echo sanitize($field); ?>" value="1" <?php echo emp_checked($form, $field); ?>> <?php echo sanitize(ucwords(str_replace('_', ' ', $field))); ?></label>
+                            <label><input type="checkbox" name="<?php echo sanitize($field); ?>" value="1" <?php echo emp_checked($form, $field); ?>> <?php echo sanitize(esa_ability_fields()[$field] ?? ucwords(str_replace('_', ' ', $field))); ?></label>
                         <?php endforeach; ?>
                         <label><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> Active</label>
                     </div>
