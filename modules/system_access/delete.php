@@ -1,5 +1,12 @@
 <?php
-$crud_table = 'system_access';
-$crud_title = 'System Access';
-$crud_action = 'delete';
-require __DIR__ . '/../manufacturers/delete.php';
+require '../../config/config.php';
+require '../../includes/employee_system_access.php';
+
+esa_ensure_table($conn);
+
+$id = (int)($_GET['id'] ?? 0);
+if ($id > 0) {
+    mysqli_query($conn, "DELETE FROM system_access WHERE id=$id AND company_id=$company_id");
+}
+header('Location: index.php');
+exit;
