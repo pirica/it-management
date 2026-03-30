@@ -1129,11 +1129,7 @@ INSERT INTO `workstations` (`id`, `company_id`, `hostname`, `workstation_code`, 
 -- IDF module
 -- --------------------------------------------------------
 
-DROP TABLE IF EXISTS `idf_links`;
-DROP TABLE IF EXISTS `idf_ports`;
-DROP TABLE IF EXISTS `idf_positions`;
 DROP TABLE IF EXISTS `idfs`;
-
 CREATE TABLE `idfs` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `company_id` INT NOT NULL,
@@ -1150,6 +1146,7 @@ CREATE TABLE `idfs` (
   CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `idf_id` INT NOT NULL,
@@ -1169,6 +1166,7 @@ CREATE TABLE `idf_positions` (
   CONSTRAINT `idf_positions_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `idf_ports`;
 CREATE TABLE `idf_ports` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `position_id` INT NOT NULL,
@@ -1188,6 +1186,7 @@ CREATE TABLE `idf_ports` (
   CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `idf_links`;
 CREATE TABLE `idf_links` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `port_id_a` INT NOT NULL,
