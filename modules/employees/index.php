@@ -702,6 +702,8 @@ function emp_build_query($params) {
                                         <?php else: ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '✔️' : '❌'; ?>
                                         <?php endif; ?>
+                                    <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php else: ?>
                                         <?php echo sanitize((string)($row[$col] ?? '')); ?>
                                     <?php endif; ?>

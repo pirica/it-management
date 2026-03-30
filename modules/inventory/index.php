@@ -100,7 +100,11 @@ $items = mysqli_query(
                             <td><?php echo (int)$i['quantity_on_hand']; ?></td>
                             <td><?php echo (int)$i['quantity_minimum']; ?></td>
                             <td>€<?php echo number_format((float)($i['price_eur'] ?? 0), 2); ?></td>
-                            <td><?php echo sanitize((string)($i['comments'] ?? '')); ?></td>
+                            <td>
+                                <?php if (trim((string)($i['comments'] ?? '')) !== ''): ?>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?></span></td>
                             <td>
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
