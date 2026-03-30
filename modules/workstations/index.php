@@ -675,7 +675,9 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
-                                    <?php if (isset($fkLabelMaps[$f])): ?>
+                                    <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
+                                        <td><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a></td>
+                                    <?php elseif (isset($fkLabelMaps[$f])): ?>
                                         <td><?php echo sanitize((string)($fkLabelMaps[$f][(string)($row[$f] ?? '')] ?? '')); ?></td>
                                     <?php else: ?>
                                         <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
