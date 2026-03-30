@@ -85,7 +85,12 @@ function cr_fk_metadata($conn, $table) {
 
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        $field = $c['Field'];
+        if (($GLOBALS['crud_table'] ?? '') === 'workstation_modes' && $field === 'max_users') {
+            return false;
+        }
+
+        return !in_array($field, ['id', 'created_at', 'updated_at'], true);
     }));
 }
 
