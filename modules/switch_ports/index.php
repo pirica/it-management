@@ -152,8 +152,9 @@ function cr_render_cell_value($table, $field, $value) {
         $fkMeta = cr_fk_metadata($GLOBALS['conn'], $fkTable);
         $labelCol = $fkMeta['label_col'];
 
+        $lookupValue = mysqli_real_escape_string($GLOBALS['conn'], (string)$value);
         $lookupSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($fkTable)
-            . ' WHERE ' . cr_escape_identifier($fkCol) . '=' . (int)$value;
+            . " WHERE " . cr_escape_identifier($fkCol) . "='" . $lookupValue . "'";
         if (in_array('company_id', $fkMeta['available'], true) && (int)$GLOBALS['company_id'] > 0) {
             $lookupSql .= ' AND company_id=' . (int)$GLOBALS['company_id'];
         }
@@ -465,6 +466,18 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchParts = [];
+    foreach ($visibleFieldColumns as $col) {
+        $searchParts[] = 'CAST(' . cr_escape_identifier($col['Field']) . " AS CHAR) LIKE '" . $searchEsc . "'";
+    }
+    if (!empty($searchParts)) {
+        $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchParts) . ')';
+    }
+}
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -504,6 +517,18 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <h1><?php echo sanitize($crud_title); ?></h1>
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="switchPortsSearch">Search (all fields)</label>
+                            <input type="text" id="switchPortsSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%port%%">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn btn-sm">Clear</a>
+                        </div>
+                    </form>
+                </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
@@ -512,7 +537,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
