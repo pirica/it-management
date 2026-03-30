@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../../config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['company_id'])) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
     exit;
