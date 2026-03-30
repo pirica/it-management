@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if ($id > 0) {
+    mysqli_query($conn, 'DELETE FROM employee_system_access_relations WHERE employee_id=' . $id . ' AND company_id=' . (int)$company_id);
     mysqli_query($conn, 'DELETE FROM employee_system_access WHERE employee_id=' . $id . ' AND company_id=' . (int)$company_id);
     $sql = 'DELETE FROM employees WHERE id=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
     mysqli_query($conn, $sql);
