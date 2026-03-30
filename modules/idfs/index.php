@@ -90,7 +90,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <meta charset="utf-8" />
     <title>IDFs</title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/idf.css">
 </head>
 <body>
 <div class="layout">
