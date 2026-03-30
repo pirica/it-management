@@ -1,1 +1,15 @@
-<?php require '../../config/config.php'; $id=(int)($_GET['id']??0); if($id>0) mysqli_query($conn,"DELETE FROM inventory_items WHERE id=$id AND company_id=$company_id"); header('Location: index.php'); exit;
+<?php
+require '../../config/config.php';
+
+$id = (int)($_GET['id'] ?? 0);
+if ($id > 0) {
+    $usageError = '';
+    if (!itm_can_delete_record($conn, 'inventory_items', 'id', $id, $company_id, $usageError)) {
+        $_SESSION['crud_error'] = $usageError;
+    } else {
+        mysqli_query($conn, "DELETE FROM inventory_items WHERE id=$id AND company_id=$company_id");
+    }
+}
+
+header('Location: index.php');
+exit;
