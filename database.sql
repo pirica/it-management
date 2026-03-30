@@ -972,7 +972,6 @@ CREATE TABLE `workstation_modes` (
   `mode_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
   `monitor_count` int DEFAULT '0',
-  `max_users` int DEFAULT '1',
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `mode_name` (`mode_name`),
@@ -980,13 +979,13 @@ CREATE TABLE `workstation_modes` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_modes`
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('1', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('2', 'Computer + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('3', 'Computer + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('4', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('5', 'Laptop + Docking', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '2', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('6', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `max_users`, `active`) VALUES ('7', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '4', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('1', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('2', 'Computer + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('3', 'Computer + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('4', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('5', 'Laptop + Docking', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '2', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('6', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('7', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1');
 
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
