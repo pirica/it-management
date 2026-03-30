@@ -516,7 +516,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     mysqli_stmt_bind_param(
         $stmt,
-        'issssissss',
+        'issssisss',
         $company_id,
         $config['table_actions_position'],
         $config['new_button_position'],
