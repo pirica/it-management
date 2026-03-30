@@ -6,10 +6,10 @@ $searchSql = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (\n        i.name LIKE '{$searchEsc}'\n        OR i.item_code LIKE '{$searchEsc}'\n        OR i.sku LIKE '{$searchEsc}'\n        OR c.name LIKE '{$searchEsc}'\n        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.unit_cost AS CHAR) LIKE '{$searchEsc}'\n        OR i.comments LIKE '{$searchEsc}'\n        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'\n    )";
+    $searchSql = " AND (\n        i.name LIKE '{$searchEsc}'\n        OR i.item_code LIKE '{$searchEsc}'\n        OR i.serial LIKE '{$searchEsc}'\n        OR c.name LIKE '{$searchEsc}'\n        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.price_eur AS CHAR) LIKE '{$searchEsc}'\n        OR i.comments LIKE '{$searchEsc}'\n        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'\n    )";
 }
 
-$sortableColumns = ['name', 'item_code', 'sku', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'unit_cost', 'comments', 'active'];
+$sortableColumns = ['name', 'item_code', 'serial', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'active'];
 $sort = (string)($_GET['sort'] ?? 'name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -21,11 +21,11 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 $orderByMap = [
     'name' => 'i.name',
     'item_code' => 'i.item_code',
-    'sku' => 'i.sku',
+    'serial' => 'i.serial',
     'category_name' => 'c.name',
     'quantity_on_hand' => 'i.quantity_on_hand',
     'quantity_minimum' => 'i.quantity_minimum',
-    'unit_cost' => 'i.unit_cost',
+    'price_eur' => 'i.price_eur',
     'comments' => 'i.comments',
     'active' => 'i.active',
 ];
@@ -76,11 +76,11 @@ $items = mysqli_query(
                         <?php foreach ([
                             'name' => 'Name',
                             'item_code' => 'Code',
-                            'sku' => 'Serial',
+                            'serial' => 'Serial',
                             'category_name' => 'Category',
                             'quantity_on_hand' => 'QOH',
                             'quantity_minimum' => 'Min',
-                            'unit_cost' => 'Price (€)',
+                            'price_eur' => 'Price (€)',
                             'comments' => 'Comments',
                             'active' => 'Status'
                         ] as $field => $label): ?>
@@ -95,11 +95,11 @@ $items = mysqli_query(
                         <tr>
                             <td><?php echo sanitize((string)$i['name']); ?></td>
                             <td><?php echo sanitize((string)($i['item_code'] ?? '-')); ?></td>
-                            <td><?php echo sanitize((string)($i['sku'] ?? '-')); ?></td>
+                            <td><?php echo sanitize((string)($i['serial'] ?? '-')); ?></td>
                             <td><?php echo sanitize((string)($i['category_name'] ?? '-')); ?></td>
                             <td><?php echo (int)$i['quantity_on_hand']; ?></td>
                             <td><?php echo (int)$i['quantity_minimum']; ?></td>
-                            <td>€<?php echo number_format((float)($i['unit_cost'] ?? 0), 2); ?></td>
+                            <td>€<?php echo number_format((float)($i['price_eur'] ?? 0), 2); ?></td>
                             <td><?php echo sanitize((string)($i['comments'] ?? '')); ?></td>
                             <td><span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?></span></td>
                             <td>

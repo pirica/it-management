@@ -7,12 +7,12 @@ $error = '';
 $data = [
     'name' => '',
     'item_code' => '',
-    'sku' => '',
+    'serial' => '',
     'comments' => '',
     'category_id' => '',
     'quantity_on_hand' => 0,
     'quantity_minimum' => 5,
-    'unit_cost' => '',
+    'price_eur' => '',
     'active' => 1,
 ];
 
@@ -29,7 +29,7 @@ if ($is_edit) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = escape_sql($_POST['name'] ?? '', $conn);
     $item_code = escape_sql($_POST['item_code'] ?? '', $conn);
-    $sku = escape_sql($_POST['sku'] ?? '', $conn);
+    $serial = escape_sql($_POST['serial'] ?? '', $conn);
     $comments = escape_sql($_POST['comments'] ?? '', $conn);
 
     $category_post = $_POST['category_id'] ?? 0;
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_sql = $category_id ?: 'NULL';
     $quantity_on_hand = (int)($_POST['quantity_on_hand'] ?? 0);
     $quantity_minimum = (int)($_POST['quantity_minimum'] ?? 5);
-    $unit_cost = (float)($_POST['unit_cost'] ?? 0);
+    $price_eur = (float)($_POST['price_eur'] ?? 0);
     $active = isset($_POST['active']) ? 1 : 0;
 
     if (!$name) {
@@ -51,19 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "UPDATE inventory_items
                     SET name='$name',
                         item_code='$item_code',
-                        sku='$sku',
+                        serial='$serial',
                         comments='$comments',
                         category_id=$category_sql,
                         quantity_on_hand=$quantity_on_hand,
                         quantity_minimum=$quantity_minimum,
-                        unit_cost=$unit_cost,
+                        price_eur=$price_eur,
                         active=$active
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO inventory_items
-                    (company_id,name,item_code,sku,comments,category_id,quantity_on_hand,quantity_minimum,unit_cost,active)
+                    (company_id,name,item_code,serial,comments,category_id,quantity_on_hand,quantity_minimum,price_eur,active)
                     VALUES
-                    ($company_id,'$name','$item_code','$sku','$comments',$category_sql,$quantity_on_hand,$quantity_minimum,$unit_cost,$active)";
+                    ($company_id,'$name','$item_code','$serial','$comments',$category_sql,$quantity_on_hand,$quantity_minimum,$price_eur,$active)";
         }
 
         $dbErrorCode = 0;
@@ -114,7 +114,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                     <div class="form-row">
                         <div class="form-group">
                             <label>Serial</label>
-                            <input name="sku" value="<?php echo sanitize((string)$data['sku']); ?>">
+                            <input name="serial" value="<?php echo sanitize((string)($data['serial'] ?? '')); ?>">
                         </div>
                         <div class="form-group">
                             <label>Category</label>
@@ -150,7 +150,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                     <div class="form-row">
                         <div class="form-group">
                             <label>Price (€)</label>
-                            <input type="number" step="0.01" min="0" name="unit_cost" value="<?php echo sanitize((string)$data['unit_cost']); ?>">
+                            <input type="number" step="0.01" min="0" name="price_eur" value="<?php echo sanitize((string)($data['price_eur'] ?? '')); ?>">
                         </div>
                         <div class="form-group">
                             <label><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> Active</label>

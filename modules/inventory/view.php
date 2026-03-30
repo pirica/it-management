@@ -13,11 +13,11 @@ if ($id > 0) {
 $labels = [
     'name' => 'Name',
     'item_code' => 'Item Code',
-    'sku' => 'Serial',
+    'serial' => 'Serial',
     'category_id' => 'Category ID',
     'quantity_on_hand' => 'Quantity On Hand',
     'quantity_minimum' => 'Minimum Quantity',
-    'unit_cost' => 'Price (€)',
+    'price_eur' => 'Price (€)',
     'comments' => 'Comments',
     'active' => 'Status',
     'created_at' => 'Created At',
@@ -50,7 +50,7 @@ $labels = [
                             <tr>
                                 <th style="width:220px;"><?php echo sanitize($labels[$field] ?? ucwords(str_replace('_', ' ', (string)$field))); ?></th>
                                 <td>
-                                    <?php if ($field === 'unit_cost'): ?>
+                                    <?php if ($field === 'price_eur'): ?>
                                         €<?php echo number_format((float)$value, 2); ?>
                                     <?php elseif ($field === 'active'): ?>
                                         <?php echo ((int)$value === 1) ? 'Active' : 'Inactive'; ?>
