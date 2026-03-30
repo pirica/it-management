@@ -6,6 +6,11 @@ $crud_action = $crud_action ?? 'edit';
 <?php
 require '../../config/config.php';
 
+if (($crud_table ?? '') === 'system_access') {
+    require '../../includes/employee_system_access.php';
+    esa_ensure_table($conn);
+}
+
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
