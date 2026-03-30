@@ -1,5 +1,3 @@
 <?php
-$crud_table = 'system_access';
-$crud_title = 'System Access';
-$crud_action = 'edit';
-require __DIR__ . '/../manufacturers/edit.php';
+$_GET['id'] = (int)($_GET['id'] ?? 0);
+require 'create.php';
