@@ -13,11 +13,11 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'ASC';
 }
 
-$where = '';
+$where = 'WHERE company_id=' . (int)$company_id;
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $where = "WHERE (CAST(id AS CHAR) LIKE '{$searchEsc}' OR code LIKE '{$searchEsc}' OR name LIKE '{$searchEsc}' OR CAST(active AS CHAR) LIKE '{$searchEsc}')";
+    $where .= " AND (CAST(id AS CHAR) LIKE '{$searchEsc}' OR code LIKE '{$searchEsc}' OR name LIKE '{$searchEsc}' OR CAST(active AS CHAR) LIKE '{$searchEsc}')";
 }
 
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;

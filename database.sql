@@ -161,32 +161,33 @@ INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('4', 'Terminated');
 DROP TABLE IF EXISTS `system_access`;
 CREATE TABLE `system_access` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_system_access_code` (`code`),
-  UNIQUE KEY `uq_system_access_name` (`name`)
+  UNIQUE KEY `uq_system_access_company_code` (`company_id`,`code`),
+  UNIQUE KEY `uq_system_access_company_name` (`company_id`,`name`),
+  KEY `idx_system_access_company` (`company_id`),
+  CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `system_access`
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('1', 'network_access', 'Network Access', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('2', 'micros_emc', 'Micros Emc', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('3', 'opera_username', 'Opera Username', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('4', 'micros_card', 'Micros Card', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('5', 'pms_id', 'Pms Id', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('6', 'synergy_mms', 'Synergy Mms', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('7', 'hu_the_lobby', 'Hu The Lobby', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('8', 'navision', 'Navision', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('9', 'onq_ri', 'Onq Ri', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('10', 'birchstreet', 'Birchstreet', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('11', 'delphi', 'Delphi', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('12', 'omina', 'Omina', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('13', 'vingcard_system', 'Vingcard System', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('14', 'digital_rev', 'Digital Rev', '1');
-INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('15', 'office_key_card', 'Office Key Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('2', '1', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('3', '1', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('4', '1', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('5', '1', 'pms_id', 'Pms Id', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('6', '1', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('7', '1', 'hu_the_lobby', 'Hu The Lobby', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('8', '1', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('9', '1', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('10', '1', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('11', '1', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('12', '1', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('13', '1', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('14', '1', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('15', '1', 'office_key_card', 'Office Key Card', '1');
 
 -- Table structure for `employee_system_access`
 DROP TABLE IF EXISTS `employee_system_access`;
