@@ -367,8 +367,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            if (cr_is_required_column($col)) {
-                $errors[] = cr_humanize_field($name) . ' is required.';
+            $isRequiredFkEdit = $crud_action === 'edit'
+                && isset($fkMap[$name])
+                && strtoupper((string)($col['Null'] ?? 'YES')) === 'NO';
+            if ($isRequiredFkEdit) {
+                $existingValue = $data[$name] ?? null;
+                if ($existingValue !== null && $existingValue !== '') {
+                    $data[$name] = (string)(int)$existingValue;
+                    continue;
+                }
             }
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
