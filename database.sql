@@ -547,7 +547,7 @@ CREATE TABLE `printer_device_types` (
 INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('3', 'All-in-One');
 INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('8', 'Dotmatrix');
 INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('2', 'Inkjet');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('7', 'Patch port');
+INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('7', 'Label');
 INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('1', 'Laser');
 INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('9', 'Other');
 INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('6', 'Photo');
