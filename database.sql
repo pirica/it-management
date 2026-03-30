@@ -72,24 +72,18 @@ CREATE TABLE `departments` (
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
-  `manager_user_id` int DEFAULT NULL,
-  `location_id` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  KEY `manager_user_id` (`manager_user_id`),
-  KEY `location_id` (`location_id`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `departments_ibfk_2` FOREIGN KEY (`manager_user_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `departments_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`)
+  CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `departments`
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `manager_user_id`, `location_id`, `active`) VALUES ('1', '1', 'IT Operations', 'ITOPS', 'Core IT operations team', '1', '1', '1');
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `manager_user_id`, `location_id`, `active`) VALUES ('2', '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1', '1', '1');
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `manager_user_id`, `location_id`, `active`) VALUES ('3', '1', 'Human Resources', 'HR', 'Human resources department', '1', '1', '1');
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `manager_user_id`, `location_id`, `active`) VALUES ('4', '1', 'Housekeeping', 'HK', 'Housekeeping operations', '1', '1', '1');
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `manager_user_id`, `location_id`, `active`) VALUES ('5', '4', 'Front Office', '', '', NULL, NULL, '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('1', '1', 'IT Operations', 'ITOPS', 'Core IT operations team', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('2', '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('3', '1', 'Human Resources', 'HR', 'Human resources department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('4', '1', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('5', '4', 'Front Office', '', '', '1');
 
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
