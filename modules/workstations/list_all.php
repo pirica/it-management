@@ -131,7 +131,7 @@ function cr_is_hidden_employee_field($field) {
     }
 
     if ($table === 'workstations') {
-        return in_array($field, ['company_id', 'active', 'workstation_code', 'equipment_id'], true);
+        return in_array($field, ['company_id', 'active', 'workstation_code'], true);
     }
 
     return false;
