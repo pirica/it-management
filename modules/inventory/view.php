@@ -9,6 +9,20 @@ if ($id > 0) {
         $item = mysqli_fetch_assoc($query);
     }
 }
+
+$labels = [
+    'name' => 'Name',
+    'item_code' => 'Item Code',
+    'serial' => 'Serial',
+    'category_id' => 'Category ID',
+    'quantity_on_hand' => 'Quantity On Hand',
+    'quantity_minimum' => 'Minimum Quantity',
+    'price_eur' => 'Price (€)',
+    'comments' => 'Comments',
+    'active' => 'Status',
+    'created_at' => 'Created At',
+    'updated_at' => 'Updated At',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -32,9 +46,18 @@ if ($id > 0) {
                     <table>
                         <tbody>
                         <?php foreach ($item as $field => $value): ?>
+                            <?php if ($field === 'id' || $field === 'company_id'): continue; endif; ?>
                             <tr>
-                                <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
-                                <td><?php echo sanitize((string)($value ?? '')); ?></td>
+                                <th style="width:220px;"><?php echo sanitize($labels[$field] ?? ucwords(str_replace('_', ' ', (string)$field))); ?></th>
+                                <td>
+                                    <?php if ($field === 'price_eur'): ?>
+                                        €<?php echo number_format((float)$value, 2); ?>
+                                    <?php elseif ($field === 'active'): ?>
+                                        <?php echo ((int)$value === 1) ? 'Active' : 'Inactive'; ?>
+                                    <?php else: ?>
+                                        <?php echo sanitize((string)($value ?? '')); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

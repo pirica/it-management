@@ -443,12 +443,13 @@ CREATE TABLE `inventory_items` (
   `company_id` int NOT NULL,
   `name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `item_code` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `sku` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `serial` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `category_id` int DEFAULT NULL,
   `manufacturer_id` int DEFAULT NULL,
   `quantity_on_hand` int NOT NULL DEFAULT '0',
   `quantity_minimum` int DEFAULT '5',
-  `unit_cost` decimal(10,2) DEFAULT NULL,
+  `price_eur` decimal(10,2) DEFAULT NULL,
+  `comments` text COLLATE utf8mb4_unicode_ci,
   `location_id` int DEFAULT NULL,
   `supplier_id` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
@@ -467,7 +468,7 @@ CREATE TABLE `inventory_items` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `inventory_items`
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `sku`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `unit_cost`, `location_id`, `supplier_id`, `active`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SKU-CAT6-2M', '1', '1', '50', '10', '4.99', '1', '1', '1');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `location_id`, `supplier_id`, `comments`, `active`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '1', '1', '50', '10', '4.99', '1', '1', 'Stock for patching and desktop setups', '1');
 
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
