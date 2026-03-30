@@ -163,20 +163,6 @@ function cr_require_valid_csrf_token() {
 }
 
 
-function cr_is_required_column($column) {
-    $nullability = strtoupper((string)($column['Null'] ?? 'YES'));
-    if ($nullability === 'YES') {
-        return false;
-    }
-
-    $extra = strtolower((string)($column['Extra'] ?? ''));
-    if (str_contains($extra, 'auto_increment')) {
-        return false;
-    }
-
-    return true;
-}
-
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
