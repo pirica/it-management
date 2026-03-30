@@ -116,13 +116,19 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
-function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
-        return false;
+function cr_is_hidden_field($field) {
+    $table = (string)($GLOBALS['crud_table'] ?? '');
+
+    if ($table === 'employees') {
+        $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+        return in_array($field, $hidden, true);
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
-    return in_array($field, $hidden, true);
+    if ($table === 'workstations') {
+        return $field === 'company_id';
+    }
+
+    return false;
 }
 
 function cr_render_cell_value($table, $field, $value) {
@@ -149,6 +155,72 @@ function cr_render_cell_value($table, $field, $value) {
     return sanitize($text);
 }
 
+function cr_ensure_workstations_department_relation($conn) {
+    if (($GLOBALS['crud_table'] ?? '') !== 'workstations') {
+        return;
+    }
+
+    $deskLocationExists = false;
+    $departmentExists = false;
+    $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM `workstations`');
+    while ($columnsRes && ($column = mysqli_fetch_assoc($columnsRes))) {
+        if (($column['Field'] ?? '') === 'desk_location') {
+            $deskLocationExists = true;
+        }
+        if (($column['Field'] ?? '') === 'department') {
+            $departmentExists = true;
+        }
+    }
+
+    if ($deskLocationExists && !$departmentExists) {
+        mysqli_query($conn, 'ALTER TABLE `workstations` ADD COLUMN `department` INT NULL AFTER `assignment_type_id`');
+        mysqli_query($conn, "UPDATE `workstations` SET `department`=CAST(`desk_location` AS UNSIGNED) WHERE `desk_location` REGEXP '^[0-9]+$'");
+        mysqli_query($conn, 'ALTER TABLE `workstations` DROP COLUMN `desk_location`');
+        $departmentExists = true;
+    }
+
+    if (!$departmentExists) {
+        return;
+    }
+
+    $indexExists = false;
+    $idxRes = mysqli_query($conn, "SELECT 1 FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='workstations' AND index_name='idx_workstations_department' LIMIT 1");
+    if ($idxRes && mysqli_num_rows($idxRes) === 1) {
+        $indexExists = true;
+    }
+    if (!$indexExists) {
+        mysqli_query($conn, 'ALTER TABLE `workstations` ADD INDEX `idx_workstations_department` (`department`)');
+    }
+
+    $fkExists = false;
+    $fkRes = mysqli_query($conn, "SELECT 1 FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'workstations' AND COLUMN_NAME = 'department' AND REFERENCED_TABLE_NAME = 'departments' LIMIT 1");
+    if ($fkRes && mysqli_num_rows($fkRes) === 1) {
+        $fkExists = true;
+    }
+
+    if (!$fkExists) {
+        mysqli_query($conn, 'UPDATE `workstations` SET `department`=NULL WHERE `department` IS NOT NULL AND `department` NOT IN (SELECT `id` FROM `departments`)');
+        mysqli_query($conn, 'ALTER TABLE `workstations` ADD CONSTRAINT `workstations_ibfk_department` FOREIGN KEY (`department`) REFERENCES `departments` (`id`) ON DELETE SET NULL');
+    }
+}
+
+function cr_fk_label_maps($conn, $fkMap, $fieldColumns, $company_id) {
+    $maps = [];
+    foreach ($fieldColumns as $col) {
+        $field = (string)($col['Field'] ?? '');
+        if (!isset($fkMap[$field])) {
+            continue;
+        }
+
+        $maps[$field] = [];
+        $options = cr_fk_options($conn, $fkMap[$field], (int)$company_id);
+        foreach ($options as $option) {
+            $maps[$field][(string)$option['id']] = (string)$option['label'];
+        }
+    }
+
+    return $maps;
+}
 
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -233,11 +305,15 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+
+cr_ensure_workstations_department_relation($conn);
+
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
-    return !cr_is_hidden_employee_field($col['Field']);
+    return !cr_is_hidden_field($col['Field']);
 }));
 $hasCompany = false;
 foreach ($fieldColumns as $c) {
@@ -419,10 +495,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
-$where = '';
+$whereParts = [];
 if ($hasCompany && $company_id > 0) {
-    $where = ' WHERE company_id=' . (int)$company_id;
+    $whereParts[] = 'company_id=' . (int)$company_id;
 }
+
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_'))
+        ? $searchRaw
+        : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchConditions = [];
+    foreach ($fieldColumns as $col) {
+        $fieldEsc = cr_escape_identifier($col['Field']);
+        $searchConditions[] = 'CAST(' . $fieldEsc . " AS CHAR) LIKE '" . $searchEsc . "'";
+    }
+    if (!empty($searchConditions)) {
+        $whereParts[] = '(' . implode(' OR ', $searchConditions) . ')';
+    }
+}
+
+$where = empty($whereParts) ? '' : ' WHERE ' . implode(' AND ', $whereParts);
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -438,6 +531,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
 $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
+$fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -462,6 +556,20 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <h1><?php echo sanitize($crud_title); ?></h1>
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="workstationSearch">Search (all fields)</label>
+                            <input type="text" id="workstationSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%desk%%">
+                        </div>
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn btn-sm">Clear</a>
+                        </div>
+                    </form>
+                </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
@@ -470,7 +578,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
@@ -485,7 +593,11 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
-                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <?php if (isset($fkLabelMaps[$f])): ?>
+                                        <td><?php echo sanitize((string)($fkLabelMaps[$f][(string)($row[$f] ?? '')] ?? '')); ?></td>
+                                    <?php else: ?>
+                                        <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
