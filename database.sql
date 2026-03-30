@@ -156,6 +156,85 @@ INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
 INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('3', 'On Leave');
 INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('4', 'Terminated');
 
+
+-- Table structure for `system_access`
+DROP TABLE IF EXISTS `system_access`;
+CREATE TABLE `system_access` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_access_code` (`code`),
+  UNIQUE KEY `uq_system_access_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `system_access`
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('1', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('2', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('3', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('4', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('5', 'pms_id', 'Pms Id', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('6', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('7', 'hu_the_lobby', 'Hu The Lobby', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('8', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('9', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('10', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('11', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('12', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('13', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('14', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `code`, `name`, `active`) VALUES ('15', 'office_key_card', 'Office Key Card', '1');
+
+-- Table structure for `employee_system_access`
+DROP TABLE IF EXISTS `employee_system_access`;
+CREATE TABLE `employee_system_access` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `network_access` tinyint(1) NOT NULL DEFAULT '0',
+  `micros_emc` tinyint(1) NOT NULL DEFAULT '0',
+  `opera_username` tinyint(1) NOT NULL DEFAULT '0',
+  `micros_card` tinyint(1) NOT NULL DEFAULT '0',
+  `pms_id` tinyint(1) NOT NULL DEFAULT '0',
+  `synergy_mms` tinyint(1) NOT NULL DEFAULT '0',
+  `hu_the_lobby` tinyint(1) NOT NULL DEFAULT '0',
+  `navision` tinyint(1) NOT NULL DEFAULT '0',
+  `onq_ri` tinyint(1) NOT NULL DEFAULT '0',
+  `birchstreet` tinyint(1) NOT NULL DEFAULT '0',
+  `delphi` tinyint(1) NOT NULL DEFAULT '0',
+  `omina` tinyint(1) NOT NULL DEFAULT '0',
+  `vingcard_system` tinyint(1) NOT NULL DEFAULT '0',
+  `digital_rev` tinyint(1) NOT NULL DEFAULT '0',
+  `office_key_card` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_employee_system_access_company_employee` (`company_id`,`employee_id`),
+  KEY `idx_employee_system_access_company` (`company_id`),
+  CONSTRAINT `fk_employee_system_access_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `employee_system_access_relations`
+DROP TABLE IF EXISTS `employee_system_access_relations`;
+CREATE TABLE `employee_system_access_relations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `system_access_id` int NOT NULL,
+  `granted` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_esa_rel_company_employee_system` (`company_id`,`employee_id`,`system_access_id`),
+  KEY `idx_esa_rel_company_employee` (`company_id`,`employee_id`),
+  KEY `idx_esa_rel_system_access` (`system_access_id`),
+  CONSTRAINT `fk_esa_rel_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_esa_rel_system_access` FOREIGN KEY (`system_access_id`) REFERENCES `system_access` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `employees`
 DROP TABLE IF EXISTS `employees`;
 CREATE TABLE `employees` (
