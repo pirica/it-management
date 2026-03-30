@@ -991,7 +991,7 @@ INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, 
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('5', 'Laptop + Docking', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('6', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('7', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('8', 'Laptop + Docking + Monitor', 'MODE-LAP-DOCK', 'Laptop with Docking Station & Monitor', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('8', 'Laptop + Docking + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('9', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('10', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Desktop', '0', '1');
 
