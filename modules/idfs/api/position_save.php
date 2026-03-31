@@ -107,9 +107,10 @@ if ($position_id > 0) {
         idf_fail('DB error updating position: ' . mysqli_error($conn), 500);
     }
 } else {
-    $sql = "INSERT INTO idf_positions (idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
-            VALUES ($idf_id, $position_no, '$device_type', '$nameEsc', $equipSql, $port_count, $notesSql)
+    $sql = "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
+            VALUES ($company_id, $idf_id, $position_no, '$device_type', '$nameEsc', $equipSql, $port_count, $notesSql)
             ON DUPLICATE KEY UPDATE
+              company_id=VALUES(company_id),
               device_type=VALUES(device_type),
               device_name=VALUES(device_name),
               equipment_id=VALUES(equipment_id),
@@ -134,9 +135,9 @@ if ($pid > 0) {
     if ($port_count > 0 && $existing === 0) {
         $values = [];
         for ($n = 1; $n <= $port_count; $n++) {
-            $values[] = "($pid,$n,'RJ45','unknown')";
+            $values[] = "($company_id,$pid,$n,'RJ45','unknown')";
         }
-        mysqli_query($conn, 'INSERT IGNORE INTO idf_ports (position_id, port_no, port_type, status) VALUES ' . implode(',', $values));
+        mysqli_query($conn, 'INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES ' . implode(',', $values));
     }
 }
 

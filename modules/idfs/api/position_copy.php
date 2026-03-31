@@ -52,8 +52,8 @@ try {
 
     mysqli_query(
         $conn,
-        "INSERT INTO idf_positions (idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
-         VALUES ($idf_id, $target_position, '" . idf_escape($conn, (string)$src['device_type']) . "', '$nameEsc', $equipSql, " . (int)$src['port_count'] . ", $notesSql)"
+        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
+         VALUES ($company_id, $idf_id, $target_position, '" . idf_escape($conn, (string)$src['device_type']) . "', '$nameEsc', $equipSql, " . (int)$src['port_count'] . ", $notesSql)"
     );
 
     $newPosId = (int)mysqli_insert_id($conn);
@@ -68,6 +68,7 @@ try {
         $vals = [];
         foreach ($ports as $p) {
             $vals[] = '(' .
+                $company_id . ',' .
                 $newPosId . ',' .
                 (int)$p['port_no'] . ',' .
                 "'" . idf_escape($conn, (string)$p['port_type']) . "'," .
@@ -82,7 +83,7 @@ try {
         }
         mysqli_query(
             $conn,
-            'INSERT INTO idf_ports (position_id, port_no, port_type, label, status, connected_to, vlan, speed, poe, notes) VALUES ' . implode(',', $vals)
+            'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status, connected_to, vlan, speed, poe, notes) VALUES ' . implode(',', $vals)
         );
     }
 

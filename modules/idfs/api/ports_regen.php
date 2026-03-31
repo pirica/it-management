@@ -32,9 +32,9 @@ try {
     mysqli_query($conn, "DELETE FROM idf_ports WHERE position_id=$position_id");
     $vals = [];
     for ($n = 1; $n <= $count; $n++) {
-        $vals[] = "($position_id,$n,'RJ45','unknown')";
+        $vals[] = "($company_id,$position_id,$n,'RJ45','unknown')";
     }
-    mysqli_query($conn, 'INSERT INTO idf_ports (position_id, port_no, port_type, status) VALUES ' . implode(',', $vals));
+    mysqli_query($conn, 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES ' . implode(',', $vals));
     mysqli_commit($conn);
 } catch (Throwable $e) {
     mysqli_rollback($conn);
