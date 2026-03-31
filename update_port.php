@@ -23,7 +23,11 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     $rows = [];
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $labelEsc = mysqli_real_escape_string($conn, $labelColumn);
-    $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` ORDER BY id ASC");
+    $companyFilter = '';
+    if (table_has_column($conn, $table, 'company_id') && isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0) {
+        $companyFilter = ' WHERE company_id = ' . (int)$GLOBALS['company_id'];
+    }
+    $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}`{$companyFilter} ORDER BY id ASC");
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
     }
