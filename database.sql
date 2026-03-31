@@ -1418,12 +1418,12 @@ INSERT INTO `employee_onboarding_requests` (`company_id`, `employee_id`, `first_
 INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`)
 SELECT
     c.`id`,
-    et_target.`id`,
+    COALESCE(et_target.`id`, et_fallback.`id`),
     m_target.`id`,
     l_target.`id`,
     r_target.`id`,
     t.`name`, t.`serial_number`, t.`model`, t.`hostname`, t.`ip_address`, t.`mac_address`,
-    es_target.`id`,
+    COALESCE(es_target.`id`, es_fallback.`id`),
     t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`,
     wt_target.`id`,
     t.`is_printer`,
@@ -1444,6 +1444,11 @@ FROM `equipment` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `equipment_types` et_source ON et_source.`id` = t.`equipment_type_id`
 LEFT JOIN `equipment_types` et_target ON et_target.`company_id` = c.`id` AND et_target.`name` = et_source.`name`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `equipment_types`
+    GROUP BY `company_id`
+) et_fallback ON et_fallback.`company_id` = c.`id`
 LEFT JOIN `manufacturers` m_source ON m_source.`id` = t.`manufacturer_id`
 LEFT JOIN `manufacturers` m_target ON m_target.`company_id` = c.`id` AND m_target.`name` = m_source.`name`
 LEFT JOIN `it_locations` l_source ON l_source.`id` = t.`location_id`
@@ -1452,6 +1457,11 @@ LEFT JOIN `racks` r_source ON r_source.`id` = t.`rack_id`
 LEFT JOIN `racks` r_target ON r_target.`company_id` = c.`id` AND r_target.`name` = r_source.`name`
 LEFT JOIN `equipment_statuses` es_source ON es_source.`id` = t.`status_id`
 LEFT JOIN `equipment_statuses` es_target ON es_target.`company_id` = c.`id` AND es_target.`name` = es_source.`name`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `equipment_statuses`
+    GROUP BY `company_id`
+) es_fallback ON es_fallback.`company_id` = c.`id`
 LEFT JOIN `warranty_types` wt_source ON wt_source.`id` = t.`warranty_type_id`
 LEFT JOIN `warranty_types` wt_target ON wt_target.`company_id` = c.`id` AND wt_target.`name` = wt_source.`name`
 LEFT JOIN `printer_device_types` pdt_source ON pdt_source.`id` = t.`printer_device_type_id`
@@ -1472,7 +1482,9 @@ LEFT JOIN `equipment_poe` poe_source ON poe_source.`id` = t.`switch_poe_id`
 LEFT JOIN `equipment_poe` poe_target ON poe_target.`company_id` = c.`id` AND poe_target.`name` = poe_source.`name`
 LEFT JOIN `equipment_environment` env_source ON env_source.`id` = t.`switch_environment_id`
 LEFT JOIN `equipment_environment` env_target ON env_target.`company_id` = c.`id` AND env_target.`name` = env_source.`name`
-WHERE t.`company_id` = 1;
+WHERE t.`company_id` = 1
+  AND COALESCE(et_target.`id`, et_fallback.`id`) IS NOT NULL
+  AND COALESCE(es_target.`id`, es_fallback.`id`) IS NOT NULL;
 INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status`, t.`connected_to`, t.`vlan`, t.`speed`, t.`poe`, t.`notes`, t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`idf_id`, t.`position_no`, t.`device_type`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at` FROM `idf_positions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
@@ -1513,8 +1525,8 @@ SELECT
     t.`port_type`,
     t.`port_number`,
     t.`label`,
-    ss_target.`id`,
-    sc_target.`id`,
+    COALESCE(ss_target.`id`, ss_fallback.`id`),
+    COALESCE(sc_target.`id`, sc_fallback.`id`),
     v_target.`id`,
     t.`comments`,
     t.`updated_at`
@@ -1524,12 +1536,25 @@ LEFT JOIN `equipment` e_source ON e_source.`id` = t.`equipment_id`
 LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
 LEFT JOIN `switch_status` ss_source ON ss_source.`id` = t.`status_id`
 LEFT JOIN `switch_status` ss_target ON ss_target.`company_id` = c.`id` AND ss_target.`status` = ss_source.`status`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `switch_status`
+    GROUP BY `company_id`
+) ss_fallback ON ss_fallback.`company_id` = c.`id`
 LEFT JOIN `switch_cablecolors` sc_source ON sc_source.`id` = t.`color_id`
 LEFT JOIN `switch_cablecolors` sc_target ON sc_target.`company_id` = c.`id` AND sc_target.`color` = sc_source.`color`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `switch_cablecolors`
+    GROUP BY `company_id`
+) sc_fallback ON sc_fallback.`company_id` = c.`id`
 LEFT JOIN `vlans` v_source ON v_source.`id` = t.`vlan_id`
 LEFT JOIN `vlans` v_target ON v_target.`company_id` = c.`id` AND v_target.`vlan_number` = v_source.`vlan_number`
-WHERE t.`company_id` = 1;
+WHERE t.`company_id` = 1
+  AND COALESCE(ss_target.`id`, ss_fallback.`id`) IS NOT NULL
+  AND COALESCE(sc_target.`id`, sc_fallback.`id`) IS NOT NULL;
 INSERT INTO `system_access` (`company_id`, `code`, `name`, `active`) SELECT c.`id`, t.`code`, t.`name`, t.`active` FROM `system_access` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `users` (`company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) SELECT c.`id`, t.`username`, t.`email`, t.`password`, t.`first_name`, t.`last_name`, t.`phone`, t.`role_id`, t.`access_level_id`, t.`active`, t.`created_at` FROM `users` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `tickets` (`company_id`, `ticket_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `created_at`)
 SELECT
     c.`id`,
@@ -1539,7 +1564,7 @@ SELECT
     tc_target.`id`,
     ts_target.`id`,
     tp_target.`id`,
-    u_creator_target.`id`,
+    COALESCE(u_creator_target.`id`, u_fallback.`id`),
     u_assignee_target.`id`,
     e_target.`id`,
     t.`created_at`
@@ -1555,11 +1580,16 @@ LEFT JOIN `users` u_creator_source ON u_creator_source.`id` = t.`created_by_user
 LEFT JOIN `users` u_creator_target ON u_creator_target.`company_id` = c.`id` AND u_creator_target.`username` = u_creator_source.`username`
 LEFT JOIN `users` u_assignee_source ON u_assignee_source.`id` = t.`assigned_to_user_id`
 LEFT JOIN `users` u_assignee_target ON u_assignee_target.`company_id` = c.`id` AND u_assignee_target.`username` = u_assignee_source.`username`
+LEFT JOIN (
+    SELECT u1.`company_id`, MIN(u1.`id`) AS `id`
+    FROM `users` u1
+    GROUP BY u1.`company_id`
+) u_fallback ON u_fallback.`company_id` = c.`id`
 LEFT JOIN `equipment` e_source ON e_source.`id` = t.`asset_id`
 LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
-WHERE t.`company_id` = 1;
+WHERE t.`company_id` = 1
+  AND COALESCE(u_creator_target.`id`, u_fallback.`id`) IS NOT NULL;
 INSERT INTO `ui_configuration` (`company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id`);
-INSERT INTO `users` (`company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) SELECT c.`id`, t.`username`, t.`email`, t.`password`, t.`first_name`, t.`last_name`, t.`phone`, t.`role_id`, t.`access_level_id`, t.`active`, t.`created_at` FROM `users` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstations` (`company_id`, `equipment_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) SELECT c.`id`, t.`equipment_id`, t.`hostname`, t.`workstation_code`, t.`workstation_mode_id`, t.`assigned_to_employee_id`, t.`assigned_to_department_id`, t.`assignment_type_id`, t.`department`, t.`status_id` FROM `workstations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
