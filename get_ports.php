@@ -226,6 +226,14 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
             mysqli_stmt_close($deleteStmt);
         }
         return;
+        $deleteSql = 'DELETE FROM idf_ports WHERE company_id = ? AND position_id = ? AND port_type = ? AND port_no > ?';
+        $deleteStmt = mysqli_prepare($conn, $deleteSql);
+        if ($deleteStmt) {
+            mysqli_stmt_bind_param($deleteStmt, 'iisi', $companyId, $switchId, $portType, $count);
+            mysqli_stmt_execute($deleteStmt);
+            mysqli_stmt_close($deleteStmt);
+        }
+        return;
     }
 
     if ($portType !== 'rj45') {
