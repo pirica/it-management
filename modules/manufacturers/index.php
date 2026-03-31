@@ -56,27 +56,15 @@ function cr_fk_options($conn, $fk, $company_id) {
     $available = $fkMeta['available'];
 
     $where = '';
-    $params = [];
-    $types = '';
     if (in_array('company_id', $available, true) && $company_id > 0) {
-        $where = ' WHERE company_id = ?';
-        $params[] = (int)$company_id;
-        $types .= 'i';
+        $where = ' WHERE company_id=' . (int)$company_id;
     }
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
-    $stmt = mysqli_prepare($conn, $sql);
     $rows = [];
-    if ($stmt) {
-        if (!empty($params)) {
-            mysqli_stmt_bind_param($stmt, $types, ...$params);
-        }
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rows[] = $row;
-        }
-        mysqli_stmt_close($stmt);
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
     }
     return $rows;
 }
@@ -88,7 +76,7 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'code', 'mode_name', 'company'] as $candidate) {
+    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
@@ -133,16 +121,13 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
-function cr_is_hidden_field($field) {
-    $table = (string)($GLOBALS['crud_table'] ?? '');
-    if ($table === 'employees') {
-        $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
-        return in_array($field, $hidden, true);
+function cr_is_hidden_employee_field($field) {
+    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
+        return false;
     }
-    if ($table === 'system_access') {
-        return $field === 'company_id';
-    }
-    return $field === 'company_id';
+
+    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    return in_array($field, $hidden, true);
 }
 
 function cr_render_cell_value($table, $field, $value) {
@@ -169,6 +154,23 @@ function cr_render_cell_value($table, $field, $value) {
     return sanitize($text);
 }
 
+
+function cr_get_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return (string)$_SESSION['csrf_token'];
+}
+
+function cr_require_valid_csrf_token() {
+    $token = (string)($_POST['csrf_token'] ?? '');
+    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
+        http_response_code(403);
+        echo 'Forbidden: invalid CSRF token.';
+        exit;
+    }
+}
 
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
@@ -240,40 +242,40 @@ $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
-    return !cr_is_hidden_field($col['Field']);
+    return !cr_is_hidden_employee_field($col['Field']);
 }));
 $hasCompany = false;
-foreach ($columns as $c) {
+foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
-$csrfToken = itm_get_csrf_token();
+$csrfToken = cr_get_csrf_token();
 
 if ($crud_action === 'delete') {
-    itm_require_post_csrf();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        echo 'Method not allowed.';
+        exit;
+    }
+
+    cr_require_valid_csrf_token();
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
-        $where = ' WHERE id = ?';
-        $params = [$id];
-        $types = 'i';
+        $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
-            $where .= ' AND company_id = ?';
-            $params[] = (int)$company_id;
-            $types .= 'i';
+            $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        $stmt = mysqli_prepare($conn, $deleteSql);
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, $types, ...$params);
-            if (!mysqli_stmt_execute($stmt)) {
-                $dbErrorCode = (int)mysqli_stmt_errno($stmt);
-                $dbErrorMessage = (string)mysqli_stmt_error($stmt);
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            }
-            mysqli_stmt_close($stmt);
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            header('Location: ' . $listUrl);
+            exit;
         }
     }
     header('Location: ' . $listUrl);
@@ -281,66 +283,6 @@ if ($crud_action === 'delete') {
 }
 
 $errors = [];
-$messages = [];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'import_csv') {
-    itm_require_post_csrf();
-    $csvData = trim((string)($_POST['csv_text'] ?? ''));
-    if ($csvData === '') {
-        $errors[] = 'CSV text is empty.';
-    } else {
-        $lines = preg_split('/\r\n|\n|\r/', $csvData);
-        $created = 0;
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '') continue;
-            $parts = str_getcsv($line);
-            if (empty($parts)) continue;
-
-            $insertFields = [];
-            $placeholders = [];
-            $insertParams = [];
-            $insertTypes = '';
-
-            if ($hasCompany && $company_id > 0) {
-                $insertFields[] = '`company_id`';
-                $placeholders[] = '?';
-                $insertParams[] = (int)$company_id;
-                $insertTypes .= 'i';
-            }
-
-            foreach ($fieldColumns as $idx => $col) {
-                if (isset($parts[$idx])) {
-                    $insertFields[] = cr_escape_identifier($col['Field']);
-                    $placeholders[] = '?';
-                    $val = trim($parts[$idx]);
-                    if (str_contains($col['Type'], 'int')) {
-                        $insertParams[] = (int)$val;
-                        $insertTypes .= 'i';
-                    } elseif (str_contains($col['Type'], 'decimal') || str_contains($col['Type'], 'float')) {
-                        $insertParams[] = (float)$val;
-                        $insertTypes .= 'd';
-                    } else {
-                        $insertParams[] = $val;
-                        $insertTypes .= 's';
-                    }
-                }
-            }
-
-            if (!empty($insertFields)) {
-                $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $placeholders) . ')';
-                $stmt = mysqli_prepare($conn, $sql);
-                if ($stmt) {
-                    mysqli_stmt_bind_param($stmt, $insertTypes, ...$insertParams);
-                    if (mysqli_stmt_execute($stmt)) $created++;
-                    mysqli_stmt_close($stmt);
-                }
-            }
-        }
-        $messages[] = "Imported $created records.";
-    }
-}
-
 if (!empty($_SESSION['crud_error'])) {
     $errors[] = (string)$_SESSION['crud_error'];
     unset($_SESSION['crud_error']);
@@ -353,150 +295,146 @@ foreach ($fieldColumns as $col) {
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
-    $where = ' WHERE id = ?';
-    $params = [$editId];
-    $types = 'i';
+    $where = ' WHERE id=' . $editId;
     if ($hasCompany && $company_id > 0) {
-        $where .= ' AND company_id = ?';
-        $params[] = (int)$company_id;
-        $types .= 'i';
+        $where .= ' AND company_id=' . (int)$company_id;
     }
-    $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $data = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : [];
-        mysqli_stmt_close($stmt);
-    }
-
+    $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+    $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
     if (!$data) {
         $errors[] = 'Record not found.';
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true) && ($_POST['action'] ?? '') !== 'import_csv') {
-    itm_require_post_csrf();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+    cr_require_valid_csrf_token();
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt || $name === 'active') {
+        if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
 
+        if ($name === 'company_id' && $company_id > 0) {
+            $data[$name] = (int)$company_id;
+            continue;
+        }
+
+        if (isset($fkMap[$name])) {
+            $value = $_POST[$name] ?? null;
+            $newKey = $name . '__new_value';
+            $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
+
+            if ($value === '__add_new__') {
+                $errors[] = 'Please wait for the new value to be created before saving.';
+                $data[$name] = 'NULL';
+                continue;
+            }
+
+            if ($value === '__new__' && $newValueRaw !== '') {
+                $fk = $fkMap[$name];
+                $fkTable = $fk['REFERENCED_TABLE_NAME'];
+                $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+                $meta = cr_fk_metadata($conn, $fkTable);
+                $labelCol = $meta['label_col'];
+                $available = $meta['available'];
+                $newValueEsc = mysqli_real_escape_string($conn, $newValueRaw);
+
+                $findSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
+                    . ' WHERE ' . cr_escape_identifier($labelCol) . "='" . $newValueEsc . "'";
+                if (in_array('company_id', $available, true) && $company_id > 0) {
+                    $findSql .= ' AND company_id=' . (int)$company_id;
+                }
+                $findSql .= ' LIMIT 1';
+                $existing = mysqli_query($conn, $findSql);
+                if ($existing && mysqli_num_rows($existing) > 0) {
+                    $row = mysqli_fetch_assoc($existing);
+                    $data[$name] = (string)(int)$row['id'];
+                } else {
+                    $insertFields = [cr_escape_identifier($labelCol)];
+                    $insertValues = ["'" . $newValueEsc . "'"];
+                    if (in_array('company_id', $available, true) && $company_id > 0) {
+                        $insertFields[] = '`company_id`';
+                        $insertValues[] = (string)(int)$company_id;
+                    }
+                    $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
+                        . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
+                    $dbErrorCode = 0;
+                    $dbErrorMessage = '';
+                    if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                        $data[$name] = (string)(int)mysqli_insert_id($conn);
+                    } else {
+                        $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                        $data[$name] = 'NULL';
+                    }
+                }
+                continue;
+            }
+        }
+
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            $data[$name] = null;
+            $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
             $normalizedNumeric = null;
             $numericError = '';
             if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {
                 $errors[] = $numericError;
-                $data[$name] = null;
+                $data[$name] = 'NULL';
             } else {
                 $data[$name] = $normalizedNumeric;
             }
         } else {
-            $data[$name] = $value;
+            $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
     }
 
     if (empty($errors)) {
-        $fields = [];
-        $placeholders = [];
-        $params = [];
-        $types = '';
-
-        if ($hasCompany && $company_id > 0) {
-            $data['company_id'] = (int)$company_id;
-        }
-
         if ($crud_action === 'create') {
+            $fields = [];
+            $values = [];
             foreach ($fieldColumns as $col) {
                 $name = $col['Field'];
                 $fields[] = cr_escape_identifier($name);
-                $placeholders[] = '?';
-                $params[] = $data[$name];
-                $types .= str_contains($col['Type'], 'int') ? 'i' : (str_contains($col['Type'], 'decimal') || str_contains($col['Type'], 'float') || str_contains($col['Type'], 'double') ? 'd' : 's');
+                $values[] = $data[$name];
             }
-            if ($hasCompany && $company_id > 0 && !in_array('company_id', array_column($fieldColumns, 'Field'))) {
-                $fields[] = '`company_id`';
-                $placeholders[] = '?';
-                $params[] = (int)$company_id;
-                $types .= 'i';
-            }
-            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
+            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
             $sets = [];
             foreach ($fieldColumns as $col) {
                 $name = $col['Field'];
-                $sets[] = cr_escape_identifier($name) . '=?';
-                $params[] = $data[$name];
-                $types .= str_contains($col['Type'], 'int') ? 'i' : (str_contains($col['Type'], 'decimal') || str_contains($col['Type'], 'float') || str_contains($col['Type'], 'double') ? 'd' : 's');
+                $sets[] = cr_escape_identifier($name) . '=' . $data[$name];
             }
-            $where = ' WHERE id = ?';
-            $params[] = $editId;
-            $types .= 'i';
+            $where = ' WHERE id=' . $editId;
             if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id = ?';
-                $params[] = (int)$company_id;
-                $types .= 'i';
+                $where .= ' AND company_id=' . (int)$company_id;
             }
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
-        $stmt = mysqli_prepare($conn, $sql);
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, $types, ...$params);
-            if (mysqli_stmt_execute($stmt)) {
-                mysqli_stmt_close($stmt);
-                header('Location: ' . $listUrl);
-                exit;
-            }
-            $dbErrorCode = (int)mysqli_stmt_errno($stmt);
-            $dbErrorMessage = (string)mysqli_stmt_error($stmt);
-            $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            mysqli_stmt_close($stmt);
-        } else {
-            $errors[] = "Failed to prepare statement: " . mysqli_error($conn);
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            header('Location: ' . $listUrl);
+            exit;
         }
+        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 
-$searchRaw = trim((string)($_GET['search'] ?? ''));
-$where = ' WHERE 1=1';
-$params = [];
-$types = '';
-
+$where = '';
 if ($hasCompany && $company_id > 0) {
-    $where .= ' AND company_id = ?';
-    $params[] = (int)$company_id;
-    $types .= 'i';
+    $where = ' WHERE company_id=' . (int)$company_id;
 }
-
-if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchConditions = [];
-    foreach ($fieldColumns as $col) {
-        $searchConditions[] = "CAST(" . cr_escape_identifier($col['Field']) . " AS CHAR) LIKE ?";
-        $params[] = $searchPattern;
-        $types .= 's';
-    }
-    if (!empty($searchConditions)) {
-        $where .= ' AND (' . implode(' OR ', $searchConditions) . ')';
-    }
-}
-
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
 
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true) && $sort !== 'id') {
+if (!in_array($sort, $sortableColumns, true)) {
     $sort = 'id';
 }
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
@@ -504,53 +442,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-$sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200';
-$stmt = mysqli_prepare($conn, $sql);
-$rows = [];
-if ($stmt) {
-    if (!empty($params)) {
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-    }
-    mysqli_stmt_execute($stmt);
-    $rowsRes = mysqli_stmt_get_result($stmt);
-    while ($rowsRes && ($row = mysqli_fetch_assoc($rowsRes))) {
-        $rows[] = $row;
-    }
-    mysqli_stmt_close($stmt);
-}
-
-if (($_GET['export'] ?? '') === 'csv' && !empty($rows)) {
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $crud_table . '_export.csv"');
-    $output = fopen('php://output', 'w');
-    fputcsv($output, array_column($fieldColumns, 'Field'));
-    foreach ($rows as $row) {
-        $dataRow = [];
-        foreach ($fieldColumns as $col) $dataRow[] = $row[$col['Field']];
-        fputcsv($output, $dataRow);
-    }
-    fclose($output);
-    exit;
-}
-
-function cr_fk_label_maps($conn, $fkMap, $fieldColumns, $company_id) {
-    $maps = [];
-    foreach ($fieldColumns as $col) {
-        $field = (string)($col['Field'] ?? '');
-        if (!isset($fkMap[$field])) {
-            continue;
-        }
-
-        $maps[$field] = [];
-        $options = cr_fk_options($conn, $fkMap[$field], (int)$company_id);
-        foreach ($options as $option) {
-            $maps[$field][(string)$option['id']] = (string)$option['label'];
-        }
-    }
-    return $maps;
-}
-$fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
-
+$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -566,45 +458,15 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php foreach ($errors as $error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endforeach; ?>
-            <?php foreach ($messages as $msg): ?><div class="alert alert-success"><?php echo sanitize($msg); ?></div><?php endforeach; ?>
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
+            <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($crud_title); ?></h1>
-                    <div style="display:flex;gap:8px;">
-                        <a href="create.php" class="btn btn-primary">➕ Add New</a>
-                        <a href="?export=csv&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>" class="btn">⬇ Export CSV</a>
-                    </div>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
-
-                <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                            <label for="genericSearch">Search (all fields)</label>
-                            <input type="text" id="genericSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Search...">
-                        </div>
-                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
-                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
-                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
-                            <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">Clear</a>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="card" style="margin-bottom:16px;">
-                    <form method="POST">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="import_csv">
-                        <div class="form-group" style="margin-bottom:10px;">
-                            <label for="csv_text">Import CSV (one record per line)</label>
-                            <textarea id="csv_text" name="csv_text" rows="3" placeholder="value1,value2,value3..."></textarea>
-                        </div>
-                        <button type="submit" class="btn">📥 Import CSV</button>
-                    </form>
-                </div>
-
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
@@ -613,7 +475,7 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
@@ -625,32 +487,28 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
                         </tr>
                         </thead>
                         <tbody>
-                        <?php if (!empty($rows)): foreach ($rows as $row): ?>
+                        <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <?php elseif (isset($fkLabelMaps[$f])): ?>
-                                            <?php echo sanitize((string)($fkLabelMaps[$f][(string)($row[$f] ?? '')] ?? '')); ?>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="itm-actions-cell">
-                                    <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
-                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                        </form>
-                                    </div>
+                                <td>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                    </form>
                                 </td>
                             </tr>
-                        <?php endforeach; else: ?>
+                        <?php endwhile; else: ?>
                             <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
@@ -667,11 +525,13 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
                         $val = $data[$name] ?? '';
-                        $displayVal = ($val === null) ? '' : (string)$val;
+                        $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($name === 'company_id' && $company_id > 0): ?>
+                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
+                            <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -709,8 +569,8 @@ $fkLabelMaps = cr_fk_label_maps($conn, $fkMap, $fieldColumns, (int)$company_id);
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions">
-                        <button class="btn btn-primary" type="submit">💾 Save</button>
-                        <a class="btn" href="index.php">✖️ Cancel</a>
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a class="btn" href="index.php">✖️</a>
                     </div>
                 </form>
 

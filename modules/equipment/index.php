@@ -3,28 +3,23 @@ require '../../config/config.php';
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
-$params = [];
-$types = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchSql = " AND (
-        CAST(e.id AS CHAR) LIKE ?
-        OR e.name LIKE ?
-        OR e.serial_number LIKE ?
-        OR e.model LIKE ?
-        OR e.hostname LIKE ?
-        OR e.ip_address LIKE ?
-        OR c.company LIKE ?
-        OR et.name LIKE ?
-        OR m.name LIKE ?
-        OR l.name LIKE ?
-        OR es.name LIKE ?
-        OR CAST(e.active AS CHAR) LIKE ?
+        CAST(e.id AS CHAR) LIKE '{$searchEsc}'
+        OR e.name LIKE '{$searchEsc}'
+        OR e.serial_number LIKE '{$searchEsc}'
+        OR e.model LIKE '{$searchEsc}'
+        OR e.hostname LIKE '{$searchEsc}'
+        OR e.ip_address LIKE '{$searchEsc}'
+        OR c.company LIKE '{$searchEsc}'
+        OR et.name LIKE '{$searchEsc}'
+        OR m.name LIKE '{$searchEsc}'
+        OR l.name LIKE '{$searchEsc}'
+        OR es.name LIKE '{$searchEsc}'
+        OR CAST(e.active AS CHAR) LIKE '{$searchEsc}'
     )";
-    for ($i = 0; $i < 12; $i++) {
-        $params[] = $searchPattern;
-        $types .= 's';
-    }
 }
 
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.active,
@@ -39,9 +34,8 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
         LEFT JOIN it_locations l ON l.id = e.location_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
-        WHERE e.company_id = ?
+        WHERE e.company_id = $company_id
         {$searchSql}";
-
 $sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
@@ -64,37 +58,10 @@ $orderByMap = [
     'active' => 'e.active',
 ];
 $sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
-
-$stmt = mysqli_prepare($conn, $sql);
-$result_rows = [];
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'i' . $types, $company_id, ...$params);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $result_rows[] = $row;
-    }
-    mysqli_stmt_close($stmt);
-}
-
-if (($_GET['export'] ?? '') === 'csv' && !empty($result_rows)) {
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="equipment_export.csv"');
-    $output = fopen('php://output', 'w');
-    fputcsv($output, ['ID', 'Name', 'Type', 'Hostname', 'Manufacturer', 'Location', 'Status', 'IP Address', 'Serial Number', 'Active']);
-    foreach ($result_rows as $row) {
-        fputcsv($output, [
-            $row['id'], $row['name'], $row['equipment_type_name'], $row['hostname'],
-            $row['manufacturer_name'], $row['location_name'], $row['status_name'],
-            $row['ip_address'], $row['serial_number'], $row['active']
-        ]);
-    }
-    fclose($output);
-    exit;
-}
+$result = mysqli_query($conn, $sql);
 
 $switches = [];
-$switchStmt = mysqli_prepare(
+$switchResult = mysqli_query(
     $conn,
     "SELECT e.id, e.name,
             COALESCE(er.name, '24 ports') AS rj45_name,
@@ -107,19 +74,13 @@ $switchStmt = mysqli_prepare(
      LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
      LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
-     WHERE e.company_id = ?
+     WHERE e.company_id = $company_id
        AND e.active = 1
        AND LOWER(TRIM(et.name)) = 'switch'
      ORDER BY e.name ASC"
 );
-if ($switchStmt) {
-    mysqli_stmt_bind_param($switchStmt, 'i', $company_id);
-    mysqli_stmt_execute($switchStmt);
-    $switchRes = mysqli_stmt_get_result($switchStmt);
-    while ($switchRes && ($row = mysqli_fetch_assoc($switchRes))) {
-        $switches[] = $row;
-    }
-    mysqli_stmt_close($switchStmt);
+while ($switchResult && ($row = mysqli_fetch_assoc($switchResult))) {
+    $switches[] = $row;
 }
 
 $selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
@@ -145,37 +106,6 @@ if ($hasSelectedSwitch) {
         }
     }
 }
-
-$errors = [];
-$messages = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'import_csv') {
-    itm_require_post_csrf();
-    $csvData = trim((string)($_POST['csv_text'] ?? ''));
-    if ($csvData === '') {
-        $errors[] = 'CSV text is empty.';
-    } else {
-        $lines = preg_split('/\r\n|\n|\r/', $csvData);
-        $created = 0;
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '') continue;
-            $parts = str_getcsv($line);
-            if (count($parts) < 1) continue;
-
-            $name = $parts[0] ?? '';
-            $type_id = (int)($parts[1] ?? 0);
-            if (!$name || $type_id <= 0) continue;
-
-            $stmt = mysqli_prepare($conn, "INSERT INTO equipment (company_id, name, equipment_type_id, active) VALUES (?, ?, ?, 1)");
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'isi', $company_id, $name, $type_id);
-                if (mysqli_stmt_execute($stmt)) $created++;
-                mysqli_stmt_close($stmt);
-            }
-        }
-        $messages[] = "Imported $created records. (Basic name, type_id import)";
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -191,27 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php foreach ($errors as $error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endforeach; ?>
-            <?php foreach ($messages as $msg): ?><div class="alert alert-success"><?php echo sanitize($msg); ?></div><?php endforeach; ?>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h1>🖥️ Equipment</h1>
-                <div style="display:flex;gap:8px;">
-                    <a href="create.php" class="btn btn-primary">➕ Add New</a>
-                    <a href="?export=csv&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>" class="btn">⬇ Export CSV</a>
-                </div>
-            </div>
-
-            <div class="card" style="margin-bottom:16px;">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
-                    <input type="hidden" name="action" value="import_csv">
-                    <div class="form-group" style="margin-bottom:10px;">
-                        <label for="csv_text">Import CSV (name, type_id)</label>
-                        <textarea id="csv_text" name="csv_text" rows="2" placeholder="My Device, 1"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-sm">📥 Import CSV</button>
-                </form>
+                <a href="create.php" class="btn btn-primary">➕</a>
             </div>
 
             <div class="card" style="margin-bottom:16px;">
@@ -253,8 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if (!empty($result_rows)): ?>
-                        <?php foreach ($result_rows as $row): ?>
+                    <?php if ($result && mysqli_num_rows($result) > 0): ?>
+                        <?php while ($row = mysqli_fetch_assoc($result)): ?>
                             <?php $isSwitch = strtolower(trim((string)($row['equipment_type_name'] ?? ''))) === 'switch'; ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
@@ -285,18 +197,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
                                         <?php echo (int)$row['active'] === 1 ? 'Active' : 'Inactive'; ?>
                                     </span>
                                 </td>
-                                <td class="itm-actions-cell">
-                                    <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
-                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <?php if ($isSwitch): ?>
-                                            <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
-                                        <?php endif; ?>
-                                        <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
-                                    </div>
+                                <td>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <?php if ($isSwitch): ?>
+                                        <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
+                                    <?php endif; ?>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endwhile; ?>
                     <?php else: ?>
                         <tr><td colspan="11" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
@@ -667,7 +577,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
             sfpPlusRow.style.display = hasPortType('sfp_plus') ? 'flex' : 'none';
 
             const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
-            document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, (layout.rj45 || 0), (layout.sfp || 0), (layout.sfp_plus || 0));
+            document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, rj45Ports.length, sfpPorts.length, sfpPlusPorts.length);
             document.getElementById('fiberGrid').style.display = (hasPortType('sfp') && sfpPorts.length) || (hasPortType('sfp_plus') && sfpPlusPorts.length) ? 'grid' : 'none';
         }
 

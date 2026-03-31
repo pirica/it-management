@@ -96,15 +96,15 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 <head>
     <meta charset="utf-8" />
     <title>Device</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
 </head>
 <body>
-<div class="container">
+<div class="layout">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
-    <div class="main-content">
+    <div class="main">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
-        <div class="content">
+        <div class="container">
             <div class="idf-toolbar">
                 <div class="left">
                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
@@ -299,10 +299,7 @@ const POSITION_ID = <?php echo (int)$position_id; ?>;
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': CSRF
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body),
         credentials: 'same-origin',
     });
