@@ -56,7 +56,7 @@ while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
 $equipmentOptions = [];
 $resEq = mysqli_query(
     $conn,
-    "SELECT id, name, serial_number
+    "SELECT id, name, serial_number, notes, switch_rj45_id
      FROM equipment
      WHERE company_id=$company_id
      ORDER BY name ASC
@@ -67,6 +67,14 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
 }
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
+$equipmentById = [];
+foreach ($equipmentOptions as $equipment) {
+    $equipmentById[(int)$equipment['id']] = [
+        'name' => (string)($equipment['name'] ?? ''),
+        'notes' => (string)($equipment['notes'] ?? ''),
+        'switch_rj45_id' => (int)($equipment['switch_rj45_id'] ?? 0),
+    ];
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -210,13 +218,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
             <div>
                 <label class="label">Link to Equipment (optional)</label>
-                <select class="input" name="equipment_id">
+                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-previous-value="">
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
                             <?php echo sanitize($e['name'] . (!empty($e['serial_number']) ? (' • SN ' . $e['serial_number']) : '')); ?>
                         </option>
                     <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
@@ -276,6 +285,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 <script>
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
+const EQUIPMENT_BY_ID = <?php echo json_encode($equipmentById, JSON_UNESCAPED_UNICODE); ?>;
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
 function closeModal(){ document.getElementById('idfModalBackdrop').style.display = 'none'; }
@@ -307,6 +317,7 @@ function openDeviceModal(positionNo, positionId) {
     form.querySelector('input[name="csrf_token"]').value = CSRF;
     form.querySelector('input[name="idf_id"]').value = '<?php echo (int)$idf_id; ?>';
     form.querySelector('input[name="position_no"]').value = positionNo;
+    form.equipment_id.dataset.previousValue = '';
 
     if (positionId) {
         apiPost('position_get.php', {csrf_token: CSRF, position_id: positionId})
@@ -314,15 +325,37 @@ function openDeviceModal(positionNo, positionId) {
                 form.device_type.value = position.device_type;
                 form.device_name.value = position.device_name;
                 form.equipment_id.value = position.equipment_id || '';
+                form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.port_count.value = position.port_count || 0;
                 form.notes.value = position.notes || '';
+                applyEquipmentLink(form);
                 openModal();
             })
             .catch(err => alert(err.message));
     } else {
+        applyEquipmentLink(form);
         openModal();
     }
 }
+
+function applyEquipmentLink(form) {
+    const equipmentId = Number(form.equipment_id.value || 0);
+    if (equipmentId > 0 && EQUIPMENT_BY_ID[equipmentId]) {
+        const equipment = EQUIPMENT_BY_ID[equipmentId];
+        form.device_name.value = equipment.name || '';
+        form.port_count.value = Number(equipment.switch_rj45_id || 0);
+        form.notes.value = equipment.notes || '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('idfDeviceForm');
+    if (!form) return;
+    form.equipment_id.addEventListener('change', () => {
+        if (form.equipment_id.value === '__add_new__') return;
+        applyEquipmentLink(form);
+    });
+});
 
 function saveDevice() {
     const form = document.getElementById('idfDeviceForm');

@@ -14,6 +14,23 @@ $equipment_id = isset($data['equipment_id']) ? (int)$data['equipment_id'] : 0;
 $port_count = (int)($data['port_count'] ?? 0);
 $notes = trim((string)($data['notes'] ?? ''));
 
+if ($equipment_id > 0) {
+    $resEquipment = mysqli_query(
+        $conn,
+        "SELECT name, notes, switch_rj45_id
+         FROM equipment
+         WHERE id=$equipment_id AND company_id=$company_id
+         LIMIT 1"
+    );
+    if (!$resEquipment || mysqli_num_rows($resEquipment) !== 1) {
+        idf_fail('Equipment not found', 404);
+    }
+    $equipmentRow = mysqli_fetch_assoc($resEquipment) ?: [];
+    $device_name = trim((string)($equipmentRow['name'] ?? ''));
+    $port_count = (int)($equipmentRow['switch_rj45_id'] ?? 0);
+    $notes = trim((string)($equipmentRow['notes'] ?? ''));
+}
+
 if ($idf_id <= 0 || $position_no < 1 || $position_no > 10) {
     idf_fail('Invalid idf_id/position_no');
 }
