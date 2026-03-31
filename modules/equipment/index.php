@@ -275,7 +275,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-table="switch_cablecolors"
                                         data-add-id-col="id"
                                         data-add-label-col="name"
-                                        data-add-company-scoped="0"
+                                        data-add-company-scoped="1"
                                         data-add-friendly="cable color">
                                         <option value="">-- choose color --</option>
                                     </select>
@@ -289,7 +289,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-table="switch_status"
                                         data-add-id-col="id"
                                         data-add-label-col="name"
-                                        data-add-company-scoped="0"
+                                        data-add-company-scoped="1"
                                         data-add-friendly="switch status">
                                         <option value="">-- choose status --</option>
                                     </select>

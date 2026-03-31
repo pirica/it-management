@@ -99,9 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$categories = mysqli_query($conn, "SELECT id,name FROM ticket_categories WHERE active=1 ORDER BY name");
-$statuses = mysqli_query($conn, "SELECT id,name,color FROM ticket_statuses WHERE active=1 ORDER BY name");
-$priorities = mysqli_query($conn, "SELECT id,name,color FROM ticket_priorities WHERE active=1 ORDER BY level");
+$categories = mysqli_query($conn, "SELECT id,name FROM ticket_categories WHERE company_id=$company_id AND active=1 ORDER BY name");
+$statuses = mysqli_query($conn, "SELECT id,name,color FROM ticket_statuses WHERE company_id=$company_id AND active=1 ORDER BY name");
+$priorities = mysqli_query($conn, "SELECT id,name,color FROM ticket_priorities WHERE company_id=$company_id AND active=1 ORDER BY level");
 $users = mysqli_query($conn, "SELECT id,username FROM users WHERE company_id=$company_id AND active=1 ORDER BY username");
 $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$company_id AND active=1 ORDER BY name");
 ?>
@@ -146,7 +146,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                     <div class="form-row">
                         <div class="form-group">
                             <label>Category</label>
-                            <select name="category_id" data-addable-select="1" data-add-table="ticket_categories" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="ticket category">
+                            <select name="category_id" data-addable-select="1" data-add-table="ticket_categories" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="ticket category">
                                 <option value="">-- Select --</option>
                                 <?php while ($c = mysqli_fetch_assoc($categories)): ?>
                                     <option value="<?php echo (int)$c['id']; ?>" <?php echo (string)$data['category_id'] === (string)$c['id'] ? 'selected' : ''; ?>>
@@ -158,7 +158,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                         </div>
                         <div class="form-group">
                             <label>Status</label>
-                            <select name="status_id" data-addable-select="1" data-add-table="ticket_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="ticket status">
+                            <select name="status_id" data-addable-select="1" data-add-table="ticket_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="ticket status">
                                 <option value="">-- Select --</option>
                                 <?php while ($s = mysqli_fetch_assoc($statuses)): ?>
                                     <option value="<?php echo (int)$s['id']; ?>" <?php echo (string)$data['status_id'] === (string)$s['id'] ? 'selected' : ''; ?>>
@@ -173,7 +173,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                     <div class="form-row">
                         <div class="form-group">
                             <label>Priority</label>
-                            <select name="priority_id" data-addable-select="1" data-add-table="ticket_priorities" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="ticket priority">
+                            <select name="priority_id" data-addable-select="1" data-add-table="ticket_priorities" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="ticket priority">
                                 <option value="">-- Select --</option>
                                 <?php while ($p = mysqli_fetch_assoc($priorities)): ?>
                                     <option value="<?php echo (int)$p['id']; ?>" <?php echo (string)$data['priority_id'] === (string)$p['id'] ? 'selected' : ''; ?>>
