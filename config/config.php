@@ -65,6 +65,18 @@ if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
 
 // Helper Functions
 function sanitize($data) {
+    if ($data === null) {
+        return '';
+    }
+
+    if (!is_string($data)) {
+        if (is_scalar($data)) {
+            $data = (string)$data;
+        } else {
+            return '';
+        }
+    }
+
     return htmlspecialchars(stripslashes($data), ENT_QUOTES, 'UTF-8');
 }
 
