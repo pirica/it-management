@@ -527,7 +527,7 @@ CREATE TABLE `idf_ports` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `pos_port_unique` (`position_id`,`port_no`),
+  UNIQUE KEY `pos_port_unique` (`company_id`,`position_id`,`port_no`),
   KEY `company_id` (`company_id`),
   KEY `position_id` (`position_id`),
   CONSTRAINT `idf_ports_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -575,7 +575,7 @@ CREATE TABLE `idf_positions` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idf_pos_unique` (`idf_id`,`position_no`),
+  UNIQUE KEY `idf_pos_unique` (`company_id`,`idf_id`,`position_no`),
   KEY `company_id` (`company_id`),
   KEY `idf_id` (`idf_id`),
   KEY `equipment_id` (`equipment_id`),
@@ -598,7 +598,7 @@ CREATE TABLE `idfs` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idf_code` (`idf_code`),
+  UNIQUE KEY `idf_code` (`company_id`,`idf_code`),
   KEY `company_id` (`company_id`),
   KEY `location_id` (`location_id`),
   CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -648,7 +648,7 @@ CREATE TABLE `inventory_items` (
   `supplier_id` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `item_code` (`item_code`),
+  UNIQUE KEY `item_code` (`company_id`,`item_code`),
   KEY `category_id` (`category_id`),
   KEY `manufacturer_id` (`manufacturer_id`),
   KEY `location_id` (`location_id`),
@@ -787,7 +787,7 @@ CREATE TABLE `racks` (
   `status_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `rack_code` (`rack_code`),
+  UNIQUE KEY `rack_code` (`company_id`,`rack_code`),
   KEY `location_id` (`location_id`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
@@ -849,7 +849,7 @@ CREATE TABLE `suppliers` (
   `status_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `supplier_code` (`supplier_code`),
+  UNIQUE KEY `supplier_code` (`company_id`,`supplier_code`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
   CONSTRAINT `suppliers_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -1108,7 +1108,7 @@ CREATE TABLE `tickets` (
   `asset_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `ticket_code` (`ticket_code`),
+  UNIQUE KEY `ticket_code` (`company_id`,`ticket_code`),
   KEY `category_id` (`category_id`),
   KEY `status_id` (`status_id`),
   KEY `priority_id` (`priority_id`),
@@ -1191,7 +1191,7 @@ CREATE TABLE `users` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_username_per_company` (`company_id`,`username`),
-  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `email` (`company_id`,`email`),
   KEY `company_id` (`company_id`),
   KEY `role_id` (`role_id`),
   KEY `access_level_id` (`access_level_id`),
@@ -1360,7 +1360,7 @@ CREATE TABLE `workstations` (
   `department` int DEFAULT NULL,
   `status_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `workstation_code` (`workstation_code`),
+  UNIQUE KEY `workstation_code` (`company_id`,`workstation_code`),
   KEY `equipment_id` (`equipment_id`),
   KEY `workstation_mode_id` (`workstation_mode_id`),
   KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
@@ -1413,5 +1413,22 @@ INSERT INTO `workstation_device_types` (`company_id`, `name`) SELECT c.`id`, t.`
 INSERT INTO `workstation_modes` (`company_id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) SELECT c.`id`, t.`mode_name`, t.`mode_code`, t.`description`, t.`monitor_count`, t.`has_keyboard_mouse`, t.`pos`, t.`active` FROM `workstation_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstation_office` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstation_os_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `departments` (`company_id`, `name`, `code`, `description`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`active` FROM `departments` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `employee_onboarding_requests` (`company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) SELECT c.`id`, t.`employee_id`, t.`first_name`, t.`last_name`, t.`position_title`, t.`department_name`, t.`request_date`, t.`termination_date`, t.`network_access`, t.`micros_emc`, t.`opera`, t.`micros_card`, t.`pms_id`, t.`synergy_mms`, t.`email_account`, t.`landline_phone`, t.`hu_the_lobby`, t.`mobile_phone`, t.`navision`, t.`mobile_email`, t.`onq_ri`, t.`birchstreet`, t.`delphi`, t.`omina`, t.`vingcard_system`, t.`digital_rev`, t.`office_key_card`, t.`comments`, t.`starting_date`, t.`requested_by`, t.`requested_on`, t.`hod_approval`, t.`hrd_approval`, t.`ism_approval`, t.`created_at` FROM `employee_onboarding_requests` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) SELECT c.`id`, t.`equipment_type_id`, t.`manufacturer_id`, t.`location_id`, t.`rack_id`, t.`name`, t.`serial_number`, t.`model`, t.`hostname`, t.`ip_address`, t.`mac_address`, t.`status_id`, t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`, t.`warranty_type_id`, t.`is_printer`, t.`printer_device_type_id`, t.`printer_color_capable`, t.`printer_print_speed_ppm`, t.`is_workstation`, t.`workstation_device_type_id`, t.`workstation_os_type_id`, t.`workstation_processor`, t.`workstation_memory_gb`, t.`switch_rj45_id`, t.`switch_port_numbering_layout_id`, t.`switch_fiber_id`, t.`switch_fiber_count_id`, t.`switch_poe_id`, t.`switch_environment_id`, t.`notes`, t.`photo_filename`, t.`active`, t.`created_at`, t.`updated_at` FROM `equipment` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status`, t.`connected_to`, t.`vlan`, t.`speed`, t.`poe`, t.`notes`, t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`idf_id`, t.`position_no`, t.`device_type`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at` FROM `idf_positions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) SELECT c.`id`, t.`name`, t.`item_code`, t.`serial`, t.`category_id`, t.`manufacturer_id`, t.`quantity_on_hand`, t.`quantity_minimum`, t.`price_eur`, t.`comments`, t.`location_id`, t.`supplier_id`, t.`active` FROM `inventory_items` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `it_locations` (`company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`) SELECT c.`id`, t.`name`, t.`location_code`, t.`address`, t.`city`, t.`state`, t.`country`, t.`postal_code`, t.`phone`, t.`type_id`, t.`active` FROM `it_locations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `racks` (`company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) SELECT c.`id`, t.`location_id`, t.`name`, t.`rack_code`, t.`status_id`, t.`active` FROM `racks` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `suppliers` (`company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) SELECT c.`id`, t.`name`, t.`supplier_code`, t.`contact_person`, t.`email`, t.`phone`, t.`status_id`, t.`active` FROM `suppliers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) SELECT c.`id`, t.`equipment_id`, t.`hostname`, t.`port_type`, t.`port_number`, t.`label`, t.`status_id`, t.`color_id`, t.`vlan_id`, t.`comments`, t.`updated_at` FROM `switch_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `system_access` (`company_id`, `code`, `name`, `active`) SELECT c.`id`, t.`code`, t.`name`, t.`active` FROM `system_access` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `tickets` (`company_id`, `ticket_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `created_at`) SELECT c.`id`, t.`ticket_code`, t.`title`, t.`description`, t.`category_id`, t.`status_id`, t.`priority_id`, t.`created_by_user_id`, t.`assigned_to_user_id`, t.`asset_id`, t.`created_at` FROM `tickets` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ui_configuration` (`company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id`);
+INSERT INTO `users` (`company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) SELECT c.`id`, t.`username`, t.`email`, t.`password`, t.`first_name`, t.`last_name`, t.`phone`, t.`role_id`, t.`access_level_id`, t.`active`, t.`created_at` FROM `users` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstations` (`company_id`, `equipment_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) SELECT c.`id`, t.`equipment_id`, t.`hostname`, t.`workstation_code`, t.`workstation_mode_id`, t.`assigned_to_employee_id`, t.`assigned_to_department_id`, t.`assignment_type_id`, t.`department`, t.`status_id` FROM `workstations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 SET FOREIGN_KEY_CHECKS=1;
