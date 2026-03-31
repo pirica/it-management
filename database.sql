@@ -6,6 +6,7 @@ CREATE DATABASE `itmanagement` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `itmanagement`;
 SET FOREIGN_KEY_CHECKS=0;
 
+
 -- Table structure for `access_levels`
 DROP TABLE IF EXISTS `access_levels`;
 CREATE TABLE `access_levels` (
@@ -464,9 +465,9 @@ CREATE TABLE `idf_links` (
   `id` int NOT NULL AUTO_INCREMENT,
   `port_id_a` int NOT NULL,
   `port_id_b` int NOT NULL,
-  `cable_color` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'yellow',
-  `cable_label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `cable_color` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'yellow',
+  `cable_label` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_pair` (`port_id_a`,`port_id_b`),
@@ -482,14 +483,14 @@ CREATE TABLE `idf_ports` (
   `id` int NOT NULL AUTO_INCREMENT,
   `position_id` int NOT NULL,
   `port_no` smallint NOT NULL,
-  `port_type` enum('RJ45','SFP','SFP+','LC','SC','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RJ45',
-  `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('free','used','reserved','down','unknown') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unknown',
-  `connected_to` varchar(180) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `vlan` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `speed` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `poe` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `port_type` enum('RJ45','SFP','SFP+','LC','SC','OTHER') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RJ45',
+  `label` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('free','used','reserved','down','unknown') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unknown',
+  `connected_to` varchar(180) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vlan` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `speed` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `poe` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `pos_port_unique` (`position_id`,`port_no`),
@@ -529,11 +530,11 @@ CREATE TABLE `idf_positions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `idf_id` int NOT NULL,
   `position_no` tinyint NOT NULL,
-  `device_type` enum('switch','patch_panel','ups','server','other') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
-  `device_name` varchar(140) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `device_type` enum('switch','patch_panel','ups','server','other') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
+  `device_name` varchar(140) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `equipment_id` int DEFAULT NULL,
   `port_count` smallint NOT NULL DEFAULT '0',
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -553,9 +554,9 @@ CREATE TABLE `idfs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `location_id` int NOT NULL,
-  `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `idf_code` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idf_code` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idf_code` (`idf_code`),
@@ -939,7 +940,7 @@ CREATE TABLE `system_access` (
   UNIQUE KEY `uq_system_access_company_name` (`company_id`,`name`),
   KEY `idx_system_access_company` (`company_id`),
   CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `system_access`
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
@@ -1179,7 +1180,6 @@ INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('4', 'Tablet');
 INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('5', 'Thin-Client');
 
 -- Table structure for `workstation_modes`
-
 DROP TABLE IF EXISTS `workstation_modes`;
 CREATE TABLE `workstation_modes` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -1195,19 +1195,18 @@ CREATE TABLE `workstation_modes` (
   UNIQUE KEY `mode_code` (`mode_code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES
-('1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '0', '1', '1'),
-('2', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '0', '1', '1'),
-('3', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1'),
-('4', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '0', '1', '1'),
-('5', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '0', '1', '1'),
-('6', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '0', '0', '1'),
-('7', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '0', '1', '1'),
-('8', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '0', '1', '1'),
-('9', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '0', '1'),
-('10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '0', '1', '1'),
-('11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '0', '1', '1');
-
+-- Data for `workstation_modes`
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('6', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('7', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('8', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('9', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
+INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
 
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
