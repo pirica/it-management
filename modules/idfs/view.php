@@ -71,9 +71,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
 $equipmentLookup = [];
 foreach ($equipmentOptions as $equipmentOption) {
+    $portCount = 0;
+    if (!empty($equipmentOption['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentOption['switch_rj45_name'], $matches)) {
+        $portCount = (int)$matches[1];
+    }
     $equipmentLookup[(int)$equipmentOption['id']] = [
         'name' => (string)($equipmentOption['name'] ?? ''),
-        'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
+        'port_count' => $portCount,
         'notes' => (string)($equipmentOption['notes'] ?? ''),
     ];
 }
@@ -290,7 +294,7 @@ const CSRF = '<?php echo sanitize($csrf); ?>';
 const equipmentMetaById = <?php
 $equipmentMeta = [];
 foreach ($equipmentOptions as $equipmentOption) {
-    $portCount = (int)($equipmentOption['switch_rj45_id'] ?? 0);
+    $portCount = 0;
     if (!empty($equipmentOption['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentOption['switch_rj45_name'], $matches)) {
         $portCount = (int)$matches[1];
     }
@@ -325,7 +329,7 @@ function applyEquipmentRelation(form) {
     if (!equipment) return;
 
     form.device_name.value = equipment.name || '';
-    form.port_count.value = Number(equipment.switch_rj45_id || 0);
+    form.port_count.value = Number(equipment.port_count || 0);
     form.notes.value = equipment.notes || '';
 }
 
