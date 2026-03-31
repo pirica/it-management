@@ -4,6 +4,70 @@ require '../../includes/employee_system_access.php';
 
 esa_ensure_table($conn);
 
+function sa_build_query($params) {
+    $normalized = [];
+    foreach ($params as $k => $v) {
+        if ($v === null || $v === '') {
+            continue;
+        }
+        $normalized[$k] = $v;
+    }
+    return http_build_query($normalized);
+}
+
+$messages = [];
+$errors = [];
+$csrfToken = itm_get_csrf_token();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_system_access')) {
+    itm_require_post_csrf();
+
+    $importText = trim((string)($_POST['import_text'] ?? ''));
+    if ($importText === '') {
+        $errors[] = 'Import text is empty.';
+    } else {
+        $lines = preg_split('/\r\n|\n|\r/', $importText);
+        $created = 0;
+        $updated = 0;
+        foreach ($lines as $line) {
+            $line = trim((string)$line);
+            if ($line === '') {
+                continue;
+            }
+            $parts = str_getcsv($line);
+            if (count($parts) < 2) {
+                continue;
+            }
+
+            $code = trim((string)$parts[0]);
+            $name = trim((string)$parts[1]);
+            $activeRaw = strtolower(trim((string)($parts[2] ?? '1')));
+            $active = in_array($activeRaw, ['1', 'true', 'active', 'yes', 'y'], true) ? 1 : 0;
+
+            if ($code === '' || $name === '') {
+                continue;
+            }
+
+            $codeEsc = mysqli_real_escape_string($conn, $code);
+            $nameEsc = mysqli_real_escape_string($conn, $name);
+            $find = mysqli_query($conn, "SELECT id FROM system_access WHERE company_id=$company_id AND code='{$codeEsc}' LIMIT 1");
+            if ($find && mysqli_num_rows($find) === 1) {
+                $row = mysqli_fetch_assoc($find);
+                $id = (int)($row['id'] ?? 0);
+                if ($id > 0 && mysqli_query($conn, "UPDATE system_access SET name='{$nameEsc}', active={$active} WHERE id={$id} AND company_id={$company_id}")) {
+                    $updated += 1;
+                }
+            } else {
+                if (mysqli_query($conn, "INSERT INTO system_access (company_id, code, name, active) VALUES ($company_id, '{$codeEsc}', '{$nameEsc}', {$active})")) {
+                    $created += 1;
+                }
+            }
+        }
+
+        $messages[] = "Import completed. Created: {$created}, Updated: {$updated}.";
+    }
+}
+
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
 if ($searchRaw !== '') {
@@ -27,6 +91,20 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
+
+if (($_GET['export'] ?? '') === 'csv') {
+    $rows = mysqli_query($conn, "SELECT code, name, active FROM system_access WHERE company_id = $company_id{$searchSql} ORDER BY {$sortSql}");
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="system_access_export.csv"');
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Code', 'Name', 'Active']);
+    while ($rows && ($row = mysqli_fetch_assoc($rows))) {
+        fputcsv($output, [$row['code'] ?? '', $row['name'] ?? '', (int)($row['active'] ?? 0)]);
+    }
+    fclose($output);
+    exit;
+}
+
 $items = mysqli_query($conn, "SELECT id, code, name, active FROM system_access WHERE company_id = $company_id{$searchSql} ORDER BY {$sortSql}");
 ?>
 <!DOCTYPE html>
@@ -47,6 +125,14 @@ $items = mysqli_query($conn, "SELECT id, code, name, active FROM system_access W
                 <h1>🛡️ System Access</h1>
                 <a class="btn btn-primary" href="create.php">➕</a>
             </div>
+
+            <?php foreach ($messages as $message): ?>
+                <div class="alert alert-success" style="margin-bottom:10px;"><?php echo sanitize($message); ?></div>
+            <?php endforeach; ?>
+            <?php foreach ($errors as $error): ?>
+                <div class="alert alert-danger" style="margin-bottom:10px;"><?php echo sanitize($error); ?></div>
+            <?php endforeach; ?>
+
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
@@ -56,9 +142,23 @@ $items = mysqli_query($conn, "SELECT id, code, name, active FROM system_access W
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
                         <a href="index.php" class="btn btn-sm">Clear</a>
+                        <a href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'export' => 'csv'])); ?>" class="btn btn-sm">⬇ Export CSV</a>
                     </div>
                 </form>
             </div>
+
+            <div class="card" style="margin-bottom:16px;">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="action" value="import_system_access">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label for="systemAccessImport">Import CSV text (code,name,active)</label>
+                        <textarea id="systemAccessImport" name="import_text" rows="4" placeholder="NET01,Network Access,1\nERP,ERP Access,1"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm">📥 Import</button>
+                </form>
+            </div>
+
             <div class="card">
                 <table>
                     <thead>
@@ -83,7 +183,11 @@ $items = mysqli_query($conn, "SELECT id, code, name, active FROM system_access W
                             <td>
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$item['id']; ?>">👁️</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a>
-                                <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$item['id']; ?>" onclick="return confirm('Delete system access record?');">🗑️</a>
+                                <form method="POST" action="delete.php" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <input type="hidden" name="id" value="<?php echo (int)$item['id']; ?>">
+                                    <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm('Delete system access record?');">🗑️</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
@@ -95,6 +199,5 @@ $items = mysqli_query($conn, "SELECT id, code, name, active FROM system_access W
         </div>
     </div>
 </div>
-<script src="../../js/theme.js"></script>
 </body>
 </html>

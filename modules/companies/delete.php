@@ -1,7 +1,13 @@
 <?php
 require '../../config/config.php';
 
-$id = (int)($_GET['id'] ?? 0);
+$csrfToken = (string)($_POST['csrf_token'] ?? ($_GET['csrf_token'] ?? ''));
+if (!itm_validate_csrf_token($csrfToken)) {
+    http_response_code(403);
+    exit('Invalid CSRF token.');
+}
+
+$id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
 if ($id > 0) {
     $usageError = '';
     if (!itm_can_delete_record($conn, 'companies', 'id', $id, 0, $usageError)) {
