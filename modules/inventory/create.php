@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHERE active=1 ORDER BY name");
+$categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHERE company_id=$company_id AND active=1 ORDER BY name");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -123,7 +123,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                                     data-add-table="inventory_categories"
                                     data-add-id-col="id"
                                     data-add-label-col="name"
-                                    data-add-company-scoped="0"
+                                    data-add-company-scoped="1"
                                     data-add-friendly="inventory category">
                                 <option value="">-- None --</option>
                                 <?php while ($c = mysqli_fetch_assoc($categories)): ?>

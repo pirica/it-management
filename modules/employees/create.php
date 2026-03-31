@@ -15,7 +15,7 @@ function emp_drop_email_unique_if_exists($conn) {
     }
 }
 
-$statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses ORDER BY name');
+$statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 esa_ensure_table($conn);
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
@@ -154,7 +154,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         </div>
                         <div class="form-group"><label>Raw Status Code</label><input type="text" name="raw_status_code" value="<?php echo sanitize($form['raw_status_code']); ?>"></div>
                         <div class="form-group"><label>Employment Status</label>
-                            <select name="employment_status_id" data-addable-select="1" data-add-table="employee_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="employment status">
+                            <select name="employment_status_id" data-addable-select="1" data-add-table="employee_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="employment status">
                                 <?php if ($statuses): while ($s = mysqli_fetch_assoc($statuses)): ?>
                                     <option value="<?php echo (int)$s['id']; ?>" <?php echo ((string)$s['id'] === (string)$form['employment_status_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$s['name']); ?></option>
                                 <?php endwhile; endif; ?>
