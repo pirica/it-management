@@ -1254,4 +1254,8 @@ INSERT INTO `workstations` (`id`, `company_id`, `hostname`, `workstation_code`, 
 -- IDF module
 -- --------------------------------------------------------
 
+-- Compatibility fix: ensure optional warranty_type_id accepts NULL
+ALTER TABLE `equipment`
+  MODIFY `warranty_type_id` int DEFAULT NULL;
+
 SET FOREIGN_KEY_CHECKS=1;
