@@ -90,7 +90,7 @@ function cr_fk_metadata($conn, $table) {
     }
 
     $tableLabelCandidates = [
-        'equipment' => ['name'],
+        'equipment' => ['hostname', 'name'],
         'switch_status' => ['name', 'status'],
         'switch_cablecolors' => ['color', 'name'],
         'vlans' => ['vlan_name', 'name'],
@@ -180,7 +180,12 @@ function cr_render_cell_value($table, $field, $value) {
 
         $lookupRes = mysqli_query($GLOBALS['conn'], $lookupSql);
         if ($lookupRes && ($lookupRow = mysqli_fetch_assoc($lookupRes)) && isset($lookupRow['label'])) {
-            return sanitize((string)$lookupRow['label']);
+            $label = sanitize((string)$lookupRow['label']);
+            if (($GLOBALS['crud_table'] ?? '') === 'switch_ports' && $field === 'equipment_id') {
+                $equipmentId = (int)$value;
+                return '<a href="../equipment/view.php?id=' . $equipmentId . '">' . $label . '</a>';
+            }
+            return $label;
         }
     }
 

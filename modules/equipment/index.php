@@ -36,7 +36,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
         WHERE e.company_id = $company_id
         {$searchSql}";
-$sortableColumns = ['id', 'name', 'equipment_type_name', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number', 'active'];
+$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -49,6 +49,7 @@ $orderByMap = [
     'id' => 'e.id',
     'name' => 'e.name',
     'equipment_type_name' => 'et.name',
+    'hostname' => 'e.hostname',
     'manufacturer_name' => 'm.name',
     'location_name' => 'l.name',
     'status_name' => 'es.name',
@@ -149,6 +150,7 @@ if ($hasSelectedSwitch) {
                             'id' => 'ID',
                             'name' => 'Name',
                             'equipment_type_name' => 'Type',
+                            'hostname' => 'Hostname',
                             'manufacturer_name' => 'Manufacturer',
                             'location_name' => 'Location',
                             'status_name' => 'Status',
@@ -170,9 +172,24 @@ if ($hasSelectedSwitch) {
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['name']); ?></td>
                                 <td><?php echo sanitize($row['equipment_type_name'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['hostname'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['manufacturer_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['location_name'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['status_name'] ?? '-'); ?></td>
+                                <td>
+                                    <?php
+                                    $statusText = trim((string)($row['status_name'] ?? ''));
+                                    $statusLower = strtolower($statusText);
+                                    $statusBadgeClass = 'badge-warning';
+                                    if ($statusLower === '' || $statusLower === '-') {
+                                        $statusText = '-';
+                                    } elseif (str_contains($statusLower, 'active') || str_contains($statusLower, 'online') || str_contains($statusLower, 'up')) {
+                                        $statusBadgeClass = 'badge-success';
+                                    } elseif (str_contains($statusLower, 'inactive') || str_contains($statusLower, 'offline') || str_contains($statusLower, 'down') || str_contains($statusLower, 'fail') || str_contains($statusLower, 'error')) {
+                                        $statusBadgeClass = 'badge-danger';
+                                    }
+                                    ?>
+                                    <span class="badge <?php echo $statusBadgeClass; ?>"><?php echo sanitize($statusText); ?></span>
+                                </td>
                                 <td><?php echo sanitize($row['ip_address'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['serial_number'] ?? '-'); ?></td>
                                 <td>
@@ -191,7 +208,7 @@ if ($hasSelectedSwitch) {
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="10" style="text-align:center;">No equipment records found.</td></tr>
+                        <tr><td colspan="11" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
