@@ -41,6 +41,7 @@ $form = [
 $selectedSystemAccessIds = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     emp_drop_email_unique_if_exists($conn);
 
     foreach ($form as $key => $default) {

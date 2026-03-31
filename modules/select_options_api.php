@@ -31,7 +31,8 @@ function so_escape_identifier($name) {
 
 function so_table_columns($conn, $table) {
     $columns = [];
-    $res = mysqli_query($conn, 'DESCRIBE ' . so_escape_identifier($table));
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $res = mysqli_query($conn, 'DESCRIBE ' . so_escape_identifier($tableEsc));
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $columns[$row['Field']] = $row;
     }
@@ -68,28 +69,46 @@ if ($companyScoped && !isset($columns['company_id'])) {
 }
 
 $companyWhere = '';
+$params = [$newValue];
+$types = 's';
+
 if ($companyScoped && $company_id > 0) {
-    $companyWhere = ' AND `company_id`=' . (int)$company_id;
+    $companyWhere = ' AND `company_id` = ?';
+    $params[] = (int)$company_id;
+    $types .= 'i';
 }
 
-$newValueEsc = mysqli_real_escape_string($conn, $newValue);
 $findSql = 'SELECT ' . so_escape_identifier($idCol) . ' AS id FROM ' . so_escape_identifier($table)
-    . ' WHERE ' . so_escape_identifier($labelCol) . "='" . $newValueEsc . "'" . $companyWhere . ' LIMIT 1';
-$existing = mysqli_query($conn, $findSql);
-if ($existing && mysqli_num_rows($existing) > 0) {
-    $selectedId = (int)mysqli_fetch_assoc($existing)['id'];
-} else {
+    . ' WHERE ' . so_escape_identifier($labelCol) . " = ?" . $companyWhere . ' LIMIT 1';
+
+$stmt = mysqli_prepare($conn, $findSql);
+$selectedId = 0;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($res && mysqli_num_rows($res) > 0) {
+        $selectedId = (int)mysqli_fetch_assoc($res)['id'];
+    }
+    mysqli_stmt_close($stmt);
+}
+
+if ($selectedId === 0) {
     $insertFields = [so_escape_identifier($labelCol)];
-    $insertValues = ["'" . $newValueEsc . "'"];
+    $insertPlaceholders = ["?"];
+    $insertParams = [$newValue];
+    $insertTypes = "s";
 
     if (isset($columns['company_id']) && $companyScoped && $company_id > 0) {
         $insertFields[] = '`company_id`';
-        $insertValues[] = (string)(int)$company_id;
+        $insertPlaceholders[] = '?';
+        $insertParams[] = (int)$company_id;
+        $insertTypes .= 'i';
     }
 
     if (isset($columns['active'])) {
         $insertFields[] = '`active`';
-        $insertValues[] = '1';
+        $insertPlaceholders[] = '1';
     }
 
     foreach ($columns as $field => $meta) {
@@ -114,34 +133,55 @@ if ($existing && mysqli_num_rows($existing) > 0) {
     }
 
     $insertSql = 'INSERT INTO ' . so_escape_identifier($table)
-        . ' (' . implode(', ', $insertFields) . ') VALUES (' . implode(', ', $insertValues) . ')';
+        . ' (' . implode(', ', $insertFields) . ') VALUES (' . implode(', ', $insertPlaceholders) . ')';
 
-    if (!mysqli_query($conn, $insertSql)) {
+    $stmt = mysqli_prepare($conn, $insertSql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, $insertTypes, ...$insertParams);
+        if (!mysqli_stmt_execute($stmt)) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Insert failed: ' . mysqli_stmt_error($stmt)]);
+            exit;
+        }
+        $selectedId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmt);
+    } else {
         http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Insert failed: ' . mysqli_error($conn)]);
+        echo json_encode(['ok' => false, 'error' => 'Prepare insert failed: ' . mysqli_error($conn)]);
         exit;
     }
-
-    $selectedId = (int)mysqli_insert_id($conn);
 }
 
 $where = ' WHERE 1=1';
+$listParams = [];
+$listTypes = '';
 if ($companyScoped && $company_id > 0 && isset($columns['company_id'])) {
-    $where .= ' AND `company_id`=' . (int)$company_id;
+    $where .= ' AND `company_id` = ?';
+    $listParams[] = (int)$company_id;
+    $listTypes .= 'i';
 }
 if (isset($columns['active'])) {
-    $where .= ' AND `active`=1';
+    $where .= ' AND `active` = 1';
 }
 
 $listSql = 'SELECT ' . so_escape_identifier($idCol) . ' AS id, ' . so_escape_identifier($labelCol) . ' AS label'
     . ' FROM ' . so_escape_identifier($table) . $where . ' ORDER BY label';
-$listRes = mysqli_query($conn, $listSql);
+
+$stmt = mysqli_prepare($conn, $listSql);
 $options = [];
-while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
-    $options[] = [
-        'id' => (int)$row['id'],
-        'label' => (string)$row['label'],
-    ];
+if ($stmt) {
+    if (!empty($listParams)) {
+        mysqli_stmt_bind_param($stmt, $listTypes, ...$listParams);
+    }
+    mysqli_stmt_execute($stmt);
+    $listRes = mysqli_stmt_get_result($stmt);
+    while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
+        $options[] = [
+            'id' => (int)$row['id'],
+            'label' => (string)$row['label'],
+        ];
+    }
+    mysqli_stmt_close($stmt);
 }
 
 echo json_encode([

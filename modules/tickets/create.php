@@ -29,6 +29,7 @@ if ($is_edit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $ticket_code = escape_sql($_POST['ticket_code'] ?? '', $conn);
     $title = escape_sql($_POST['title'] ?? '', $conn);
     $description = escape_sql($_POST['description'] ?? '', $conn);
@@ -148,11 +149,11 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                             <label>Category</label>
                             <select name="category_id" data-addable-select="1" data-add-table="ticket_categories" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="ticket category">
                                 <option value="">-- Select --</option>
-                                <?php while ($c = mysqli_fetch_assoc($categories)): ?>
+                                <?php if ($categories) { mysqli_data_seek($categories, 0); while ($c = mysqli_fetch_assoc($categories)): ?>
                                     <option value="<?php echo (int)$c['id']; ?>" <?php echo (string)$data['category_id'] === (string)$c['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($c['name']); ?>
                                     </option>
-                                <?php endwhile; ?>
+                                <?php endwhile; } ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
@@ -160,11 +161,11 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                             <label>Status</label>
                             <select name="status_id" data-addable-select="1" data-add-table="ticket_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="ticket status">
                                 <option value="">-- Select --</option>
-                                <?php while ($s = mysqli_fetch_assoc($statuses)): ?>
+                                <?php if ($statuses) { mysqli_data_seek($statuses, 0); while ($s = mysqli_fetch_assoc($statuses)): ?>
                                     <option value="<?php echo (int)$s['id']; ?>" <?php echo (string)$data['status_id'] === (string)$s['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($s['name']); ?>
                                     </option>
-                                <?php endwhile; ?>
+                                <?php endwhile; } ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
@@ -175,11 +176,11 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                             <label>Priority</label>
                             <select name="priority_id" data-addable-select="1" data-add-table="ticket_priorities" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="0" data-add-friendly="ticket priority">
                                 <option value="">-- Select --</option>
-                                <?php while ($p = mysqli_fetch_assoc($priorities)): ?>
+                                <?php if ($priorities) { mysqli_data_seek($priorities, 0); while ($p = mysqli_fetch_assoc($priorities)): ?>
                                     <option value="<?php echo (int)$p['id']; ?>" <?php echo (string)$data['priority_id'] === (string)$p['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($p['name']); ?>
                                     </option>
-                                <?php endwhile; ?>
+                                <?php endwhile; } ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
@@ -187,11 +188,11 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                             <label>Assigned To</label>
                             <select name="assigned_to_user_id" data-addable-select="1" data-add-table="users" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="assigned user">
                                 <option value="">-- Unassigned --</option>
-                                <?php while ($u = mysqli_fetch_assoc($users)): ?>
+                                <?php if ($users) { mysqli_data_seek($users, 0); while ($u = mysqli_fetch_assoc($users)): ?>
                                     <option value="<?php echo (int)$u['id']; ?>" <?php echo (string)$data['assigned_to_user_id'] === (string)$u['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($u['username']); ?>
                                     </option>
-                                <?php endwhile; ?>
+                                <?php endwhile; } ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
@@ -202,11 +203,11 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                             <label>Related Asset</label>
                             <select name="asset_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="related asset">
                                 <option value="">-- None --</option>
-                                <?php while ($a = mysqli_fetch_assoc($assets)): ?>
+                                <?php if ($assets) { mysqli_data_seek($assets, 0); while ($a = mysqli_fetch_assoc($assets)): ?>
                                     <option value="<?php echo (int)$a['id']; ?>" <?php echo (string)$data['asset_id'] === (string)$a['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize($a['name']); ?>
                                     </option>
-                                <?php endwhile; ?>
+                                <?php endwhile; } ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>

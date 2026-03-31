@@ -15,20 +15,11 @@ function idf_csrf_token(): string {
     return (string)$_SESSION['csrf_token'];
 }
 
-function idf_require_csrf(): void {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
-}
 
 $csrf = idf_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
-    idf_require_csrf();
+    itm_require_post_csrf();
 
     $name = trim((string)($_POST['name'] ?? ''));
     $idf_code = trim((string)($_POST['idf_code'] ?? ''));
@@ -89,15 +80,15 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 <head>
     <meta charset="utf-8" />
     <title>IDFs</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
 </head>
 <body>
-<div class="layout">
+<div class="container">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
-    <div class="main">
+    <div class="main-content">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
-        <div class="container">
+        <div class="content">
             <div class="idf-toolbar">
                 <div class="left">
                     <h2 style="margin:0;">🗄️ IDFs</h2>
