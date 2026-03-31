@@ -197,8 +197,10 @@ function emp_duplicate_reasons_for_row($row, $duplicateValueMaps) {
 $messages = [];
 $errors = [];
 $skippedDetails = [];
+$csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'delete_all_employees')) {
+    itm_require_post_csrf();
     $deleteAllSql = 'DELETE FROM employees WHERE company_id=' . (int)$company_id;
     if (mysqli_query($conn, $deleteAllSql)) {
         if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
@@ -213,6 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'dele
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
+    itm_require_post_csrf();
     emp_ensure_duplicate_column($conn);
     emp_drop_email_unique_if_exists($conn);
     $payload = trim((string)($_POST['import_payload'] ?? ''));
@@ -610,6 +613,7 @@ function emp_build_query($params) {
                         <a href="index.php?<?php echo sanitize(emp_build_query(['show' => 'duplicates', 'search' => $searchRaw])); ?>" class="btn btn-sm">⚠️ Duplicates (<?php echo (int)$duplicatesCount; ?>)</a>
                     <?php endif; ?>
                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete ALL employees for this company? This cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="delete_all_employees">
                         <button type="submit" class="btn btn-danger">✖ Delete ALL</button>
                     </form>
@@ -644,6 +648,7 @@ function emp_build_query($params) {
                 <h3 style="margin-top:0;">Import from Excel / CSV</h3>
                 <p style="margin-top:4px;color:#666;">Accepted headers: Hilton ID, Employee Code, User Name, Display Name, Email, Employee Status, First Name, Last Name, Job Code, Title, Department Name, Request Date, Requested By, Termination Requested By, Termination Date.</p>
                 <form method="POST" id="employeeImportForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="action" value="import_employees">
                     <input type="hidden" name="import_payload" id="employeeImportPayload" value="">
                     <div class="form-group">

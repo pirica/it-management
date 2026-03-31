@@ -32,3 +32,42 @@ window.ITM_UI_CONFIG = <?php echo json_encode($ui_config ?? itm_ui_config_defaul
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="<?php echo BASE_URL; ?>js/ui-layout.js"></script>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js"></script>
+
+
+<script>
+document.addEventListener('click', function (event) {
+    const link = event.target.closest('a[href*="delete.php?id="]');
+    if (!link) return;
+    event.preventDefault();
+
+    const ok = window.confirm(link.dataset.confirm || 'Are you sure you want to delete this record?');
+    if (!ok) return;
+
+    const href = link.getAttribute('href') || '';
+    const target = new URL(href, window.location.href);
+    const id = target.searchParams.get('id') || '';
+    if (!id) {
+        window.location.href = href;
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = target.pathname;
+
+    const idInput = document.createElement('input');
+    idInput.type = 'hidden';
+    idInput.name = 'id';
+    idInput.value = id;
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = window.ITM_CSRF_TOKEN || '';
+
+    form.appendChild(idInput);
+    form.appendChild(csrfInput);
+    document.body.appendChild(form);
+    form.submit();
+});
+</script>

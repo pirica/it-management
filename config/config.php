@@ -217,6 +217,20 @@ function itm_can_delete_record($conn, $table, $pkColumn, $pkValue, $companyId = 
     return true;
 }
 
+
+function itm_validate_csrf_token($token) {
+    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+    $token = (string)$token;
+    return $sessionToken !== '' && $token !== '' && hash_equals($sessionToken, $token);
+}
+
+function itm_require_post_csrf() {
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        exit('Invalid CSRF token.');
+    }
+}
+
 function itm_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

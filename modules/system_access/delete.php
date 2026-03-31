@@ -4,7 +4,14 @@ require '../../includes/employee_system_access.php';
 
 esa_ensure_table($conn);
 
-$id = (int)($_GET['id'] ?? 0);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed');
+}
+
+itm_require_post_csrf();
+
+$id = (int)($_POST['id'] ?? 0);
 if ($id > 0) {
     $usageError = '';
     if (!itm_can_delete_record($conn, 'system_access', 'id', $id, $company_id, $usageError)) {
