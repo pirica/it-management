@@ -2,20 +2,17 @@
 require '../../config/config.php';
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
-$where = ' WHERE 1=1';
-$params = [];
-$types = '';
+$where = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $where .= " AND (CAST(id AS CHAR) LIKE ?
-               OR company LIKE ?
-               OR incode LIKE ?
-               OR city LIKE ?
-               OR country LIKE ?
-               OR phone LIKE ?
-               OR CAST(active AS CHAR) LIKE ?)";
-    $params = array_fill(0, 7, $searchPattern);
-    $types = 'sssssss';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $where = " WHERE CAST(id AS CHAR) LIKE '{$searchEsc}'
+               OR company LIKE '{$searchEsc}'
+               OR incode LIKE '{$searchEsc}'
+               OR city LIKE '{$searchEsc}'
+               OR country LIKE '{$searchEsc}'
+               OR phone LIKE '{$searchEsc}'
+               OR CAST(active AS CHAR) LIKE '{$searchEsc}'";
 }
 $sortableColumns = ['id', 'company', 'incode', 'city', 'country', 'phone', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
@@ -27,21 +24,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
-
-$sql = "SELECT * FROM companies{$where} ORDER BY {$sortSql}";
-$stmt = mysqli_prepare($conn, $sql);
-$rows = [];
-if ($stmt) {
-    if (!empty($params)) {
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-    }
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rows[] = $row;
-    }
-    mysqli_stmt_close($stmt);
-}
+$result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSql}");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -85,8 +68,8 @@ if ($stmt) {
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if (!empty($rows)): ?>
-                        <?php foreach ($rows as $row): ?>
+                    <?php if ($result && mysqli_num_rows($result) > 0): ?>
+                        <?php while ($row = mysqli_fetch_assoc($result)): ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['company']); ?></td>
@@ -99,14 +82,12 @@ if ($stmt) {
                                         <?php echo (int)$row['active'] === 1 ? 'Active' : 'Inactive'; ?>
                                     </span>
                                 </td>
-                                <td class="itm-actions-cell">
-                                    <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this company?');">🗑️</a>
-                                    </div>
+                                <td>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this company?');">🗑️</a>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endwhile; ?>
                     <?php else: ?>
                         <tr><td colspan="8" style="text-align:center;">No companies found.</td></tr>
                     <?php endif; ?>

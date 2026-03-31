@@ -87,15 +87,15 @@ foreach ($equipmentOptions as $equipmentOption) {
 <head>
     <meta charset="utf-8" />
     <title>IDF View</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
 </head>
 <body>
-<div class="container">
+<div class="layout">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
-    <div class="main-content">
+    <div class="main">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
-        <div class="content">
+        <div class="container">
             <div class="idf-toolbar">
                 <div class="left">
                     <a class="btn btn-sm" href="index.php">← Back</a>

@@ -109,7 +109,6 @@ if ($isEdit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
     foreach ($data as $k => $v) {
         if (in_array($k, ['is_printer', 'printer_color_capable', 'is_workstation', 'active'], true)) {
             $data[$k] = isset($_POST[$k]) ? 1 : 0;

@@ -8,7 +8,6 @@ if (!$conn) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    itm_require_post_csrf();
     $company_id = (int)$_POST['company_id'];
     $company = null;
     $stmt = mysqli_prepare($conn, 'SELECT company FROM companies WHERE id = ? LIMIT 1');
@@ -78,7 +77,6 @@ $companies = mysqli_query($conn, "SELECT * FROM companies WHERE active = 1 ORDER
 
         <?php if (mysqli_num_rows($companies) > 0): ?>
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
                 <div style="margin-bottom: 20px;">
                     <label for="company">Company:</label>
                     <select name="company_id" id="company" required onchange="updateName()" data-addable-select="1" data-add-table="companies" data-add-id-col="id" data-add-label-col="company" data-add-company-scoped="0" data-add-friendly="company">

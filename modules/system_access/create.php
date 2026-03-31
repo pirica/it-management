@@ -11,60 +11,38 @@ $data = ['code' => '', 'name' => '', 'active' => 1];
 $csrfToken = itm_get_csrf_token();
 
 if ($is_edit) {
-    $stmt = mysqli_prepare($conn, "SELECT * FROM system_access WHERE id = ? AND company_id = ? LIMIT 1");
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        if ($res && mysqli_num_rows($res) === 1) {
-            $data = mysqli_fetch_assoc($res);
-        } else {
-            $error = 'System Access record not found.';
-            $is_edit = false;
-        }
-        mysqli_stmt_close($stmt);
+    $q = mysqli_query($conn, "SELECT * FROM system_access WHERE id=$id AND company_id=$company_id LIMIT 1");
+    if ($q && mysqli_num_rows($q) === 1) {
+        $data = mysqli_fetch_assoc($q);
+    } else {
+        $error = 'System Access record not found.';
+        $is_edit = false;
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $code = trim((string)($_POST['code'] ?? ''));
-    $name = trim((string)($_POST['name'] ?? ''));
+    $code = escape_sql($_POST['code'] ?? '', $conn);
+    $name = escape_sql($_POST['name'] ?? '', $conn);
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($code === '') {
+    if (!$code) {
         $error = 'Code is required.';
-    } elseif ($name === '') {
+    } elseif (!$name) {
         $error = 'Name is required.';
     } else {
-        if ($is_edit) {
-            $sql = "UPDATE system_access SET code = ?, name = ?, active = ? WHERE id = ? AND company_id = ?";
-            $stmt = mysqli_prepare($conn, $sql);
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'ssiii', $code, $name, $active, $id, $company_id);
-            }
-        } else {
-            $sql = "INSERT INTO system_access (company_id, code, name, active) VALUES (?, ?, ?, ?)";
-            $stmt = mysqli_prepare($conn, $sql);
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'issi', $company_id, $code, $name, $active);
-            }
-        }
+        $sql = $is_edit
+            ? "UPDATE system_access SET code='$code', name='$name', active=$active WHERE id=$id AND company_id=$company_id"
+            : "INSERT INTO system_access (company_id,code,name,active) VALUES ($company_id,'$code','$name',$active)";
 
-        if ($stmt) {
-            if (mysqli_stmt_execute($stmt)) {
-                mysqli_stmt_close($stmt);
-                header('Location: index.php');
-                exit;
-            }
-            $dbErrorCode = (int)mysqli_stmt_errno($stmt);
-            $dbErrorMessage = (string)mysqli_stmt_error($stmt);
-            $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            mysqli_stmt_close($stmt);
-        } else {
-            $error = "Failed to prepare statement: " . mysqli_error($conn);
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            header('Location: index.php');
+            exit;
         }
+        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 ?>

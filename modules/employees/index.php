@@ -513,17 +513,14 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
-$params = [];
-$types = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_'))
         ? $searchRaw
         : '%' . $searchRaw . '%';
+    $searchValue = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = [];
     foreach ($columns as $col) {
-        $searchConditions[] = "CAST(e.`" . str_replace('`', '``', $col) . "` AS CHAR) LIKE ?";
-        $params[] = $searchPattern;
-        $types .= 's';
+        $searchConditions[] = "CAST(e.`" . str_replace('`', '``', $col) . "` AS CHAR) LIKE '" . $searchValue . "'";
     }
     if (!empty($searchConditions)) {
         $where .= ' AND (' . implode(' OR ', $searchConditions) . ')';
@@ -532,7 +529,9 @@ if ($searchRaw !== '') {
 
 $sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
-$sql = 'SELECT e.*, d.name AS department_name, es.name AS employment_status_name,
+$rows = mysqli_query(
+    $conn,
+    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name,
             esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
             esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
             esa.digital_rev, esa.office_key_card
@@ -541,21 +540,8 @@ $sql = 'SELECT e.*, d.name AS department_name, es.name AS employment_status_name
      LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
      LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
     . $where .
-    ' ORDER BY ' . $sortSql . ' LIMIT 500';
-
-$stmt = mysqli_prepare($conn, $sql);
-$rows = [];
-if ($stmt) {
-    if (!empty($params)) {
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-    }
-    mysqli_stmt_execute($stmt);
-    $rowsRes = mysqli_stmt_get_result($stmt);
-    while ($rowsRes && ($row = mysqli_fetch_assoc($rowsRes))) {
-        $rows[] = $row;
-    }
-    mysqli_stmt_close($stmt);
-}
+    ' ORDER BY ' . $sortSql . ' LIMIT 500'
+);
 
 function emp_label($field) {
     if ($field === 'department_id') {
@@ -698,7 +684,7 @@ function emp_build_query($params) {
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if (!empty($rows)): foreach ($rows as $row): ?>
+                    <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                         <?php $duplicateReasons = emp_duplicate_reasons_for_row($row, $duplicateValueMaps); ?>
                         <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#ffe8e8;border-left:4px solid #d93025;"' : ''; ?>>
                             <?php foreach ($columns as $col): ?>
@@ -724,20 +710,17 @@ function emp_build_query($params) {
                                     <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php else: ?>
-                                        <?php echo sanitize((string)$row[$col] ?? ''); ?>
+                                        <?php echo sanitize((string)($row[$col] ?? '')); ?>
                                     <?php endif; ?>
                                 </td>
                             <?php endforeach; ?>
-                            <td class="itm-actions-cell">
-                                <div class="itm-actions-wrap">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this employee?');">
-                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
-                                    </form>
-                                </div>
+                            <td>
+                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this employee?');">
+                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
