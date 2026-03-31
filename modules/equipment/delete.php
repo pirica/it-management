@@ -1,25 +1,70 @@
 <?php
 require '../../config/config.php';
 
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($id > 0) {
-    $usageError = '';
-    if (!itm_can_delete_record($conn, 'equipment', 'id', $id, $company_id, $usageError)) {
-        $_SESSION['crud_error'] = $usageError;
-    } else {
-        $q = mysqli_query($conn, "SELECT photo_filename FROM equipment WHERE id=$id AND company_id=$company_id LIMIT 1");
-        if ($q && mysqli_num_rows($q) === 1) {
-            $row = mysqli_fetch_assoc($q);
-            if (!empty($row['photo_filename'])) {
-                $path = UPLOAD_PATH . $row['photo_filename'];
-                if (is_file($path)) {
-                    @unlink($path);
-                }
-            }
-        }
-        mysqli_query($conn, "DELETE FROM equipment WHERE id=$id AND company_id=$company_id LIMIT 1");
+$debugRequestUri = $_SERVER['REQUEST_URI'] ?? '';
+$debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
+$debugPost = $_POST;
+$debugGet = $_GET;
+
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+
+if ($id <= 0) {
+    $_SESSION['crud_error'] = 'Invalid equipment ID.'
+        . ' REQUEST_URI=' . $debugRequestUri
+        . ' | QUERY_STRING=' . $debugQueryString
+        . ' | POST=' . json_encode($debugPost)
+        . ' | GET=' . json_encode($debugGet);
+    header('Location: index.php');
+    exit;
+}
+
+$usageError = '';
+
+if (!itm_can_delete_record($conn, 'equipment', 'id', $id, $company_id, $usageError)) {
+    $_SESSION['crud_error'] = $usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.';
+    header('Location: index.php');
+    exit;
+}
+
+$checkSql = "SELECT photo_filename FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
+$checkResult = mysqli_query($conn, $checkSql);
+
+if (!$checkResult) {
+    $_SESSION['crud_error'] = 'Unable to check record before delete: ' . mysqli_error($conn);
+    header('Location: index.php');
+    exit;
+}
+
+if (mysqli_num_rows($checkResult) !== 1) {
+    $_SESSION['crud_error'] = 'Record not found, or it does not belong to this company.';
+    header('Location: index.php');
+    exit;
+}
+
+$row = mysqli_fetch_assoc($checkResult);
+
+if (!empty($row['photo_filename'])) {
+    $path = UPLOAD_PATH . $row['photo_filename'];
+    if (is_file($path)) {
+        @unlink($path);
     }
 }
 
+$deleteSql = "DELETE FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
+$deleteResult = mysqli_query($conn, $deleteSql);
+
+if (!$deleteResult) {
+    $_SESSION['crud_error'] = 'Delete failed: ' . mysqli_error($conn);
+    header('Location: index.php');
+    exit;
+}
+
+if (mysqli_affected_rows($conn) < 1) {
+    $_SESSION['crud_error'] = 'Nothing was deleted.';
+    header('Location: index.php');
+    exit;
+}
+
+//$_SESSION['crud_success'] = 'Record deleted successfully.';
 header('Location: index.php');
 exit;

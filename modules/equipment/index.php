@@ -122,6 +122,17 @@ if ($hasSelectedSwitch) {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+<?php
+if (!empty($_SESSION['crud_error'])) {
+    echo '<div style="color:red;margin-bottom:15px;">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
+    unset($_SESSION['crud_error']);
+}
+
+if (!empty($_SESSION['crud_success'])) {
+    echo '<div style="color:green;margin-bottom:15px;">' . htmlspecialchars($_SESSION['crud_success']) . '</div>';
+    unset($_SESSION['crud_success']);
+}
+?>
                 <h1>🖥️ Equipment</h1>
                 <a href="create.php" class="btn btn-primary">➕</a>
             </div>
@@ -203,7 +214,9 @@ if ($hasSelectedSwitch) {
                                     <?php if ($isSwitch): ?>
                                         <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
+                                    <?php $deleteUrl = './delete.php?id=' . (int)$row['id']; ?>
+<a class="btn btn-sm btn-danger" href="<?php echo $deleteUrl; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
+
                                 </td>
                             </tr>
                         <?php endwhile; ?>
