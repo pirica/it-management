@@ -55,12 +55,12 @@ if (!isset($_SESSION['company_id']) && $current_file !== 'index.php' && $current
 $company_id = $_SESSION['company_id'] ?? 0;
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
-if (($ui_config['enable_all_error_reporting'] ?? 0) === 1) {
+if (($ui_config['enable_all_error_reporting'] ?? 1) === 1) {
     //Enable all error reporting
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
     ini_set('log_errors', '1');
-    ini_set('error_log', __DIR__ . '/error_log.txt');
+    ini_set('error_log', ROOT_PATH . 'error_log.txt');
 }
 
 // Helper Functions

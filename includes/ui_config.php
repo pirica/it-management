@@ -247,7 +247,7 @@ function itm_ui_config_defaults() {
         'new_button_position' => 'left_right',
         'export_buttons_position' => 'left_right',
         'back_save_position' => 'left_right',
-        'enable_all_error_reporting' => 0,
+        'enable_all_error_reporting' => 1,
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
@@ -279,7 +279,7 @@ function itm_ensure_ui_configuration_table($conn) {
         `new_button_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `export_buttons_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `back_save_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
-        `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 0,
+        `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
         `sidebar_visibility` LONGTEXT NULL,
         `sidebar_main_order` LONGTEXT NULL,
         `sidebar_submenu_order` LONGTEXT NULL,
@@ -294,7 +294,7 @@ function itm_ensure_ui_configuration_table($conn) {
     }
 
     $columns = [
-        'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 0 AFTER `back_save_position`",
+        'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_visibility` LONGTEXT NULL AFTER `back_save_position`",
         'sidebar_main_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_main_order` LONGTEXT NULL AFTER `sidebar_visibility`",
         'sidebar_submenu_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_submenu_order` LONGTEXT NULL AFTER `sidebar_main_order`",
@@ -385,7 +385,7 @@ function itm_normalize_ui_configuration($values) {
     $values['sidebar_visibility'] = itm_normalize_sidebar_visibility($values['sidebar_visibility'] ?? null);
     $values['sidebar_main_order'] = itm_normalize_sidebar_main_order($values['sidebar_main_order'] ?? null);
     $values['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($values['sidebar_submenu_order'] ?? null);
-    $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? 0);
+    $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
 
     return $values;
 }
