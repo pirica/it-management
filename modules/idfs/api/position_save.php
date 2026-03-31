@@ -17,9 +17,10 @@ $notes = trim((string)($data['notes'] ?? ''));
 if ($equipment_id > 0) {
     $resEquipment = mysqli_query(
         $conn,
-        "SELECT name, notes, switch_rj45_id
-         FROM equipment
-         WHERE id=$equipment_id AND company_id=$company_id
+        "SELECT e.name, e.notes, er.name AS switch_rj45_name
+         FROM equipment e
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+         WHERE e.id=$equipment_id AND e.company_id=$company_id
          LIMIT 1"
     );
     if (!$resEquipment || mysqli_num_rows($resEquipment) !== 1) {
@@ -27,7 +28,10 @@ if ($equipment_id > 0) {
     }
     $equipmentRow = mysqli_fetch_assoc($resEquipment) ?: [];
     $device_name = trim((string)($equipmentRow['name'] ?? ''));
-    $port_count = (int)($equipmentRow['switch_rj45_id'] ?? 0);
+    $port_count = 0;
+    if (!empty($equipmentRow['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentRow['switch_rj45_name'], $matches)) {
+        $port_count = (int)$matches[1];
+    }
     $notes = trim((string)($equipmentRow['notes'] ?? ''));
 }
 
@@ -63,7 +67,7 @@ if ($equipment_id > 0) {
     $device_name = trim((string)($equipment['name'] ?? ''));
     $notes = trim((string)($equipment['notes'] ?? ''));
 
-    $port_count = (int)($equipment['switch_rj45_id'] ?? 0);
+    $port_count = 0;
     if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
         $port_count = (int)$matches[1];
     }
