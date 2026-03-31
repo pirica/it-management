@@ -52,6 +52,19 @@ $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
 $racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
 $statuses = fetch_options($conn, 'equipment_statuses');
+$defaultStatusId = '';
+foreach ($statuses as $statusItem) {
+    if (strcasecmp((string)$statusItem['label'], 'Active') === 0) {
+        $defaultStatusId = (string)$statusItem['id'];
+        break;
+    }
+}
+if ($defaultStatusId === '' && !empty($statuses)) {
+    $defaultStatusId = (string)$statuses[0]['id'];
+}
+if ($defaultStatusId === '') {
+    $defaultStatusId = '1';
+}
 $warrantyTypes = fetch_options($conn, 'warranty_types');
 $printerTypes = fetch_options($conn, 'printer_device_types');
 $workstationDeviceTypes = fetch_options($conn, 'workstation_device_types');
@@ -74,7 +87,7 @@ foreach ($types as $typeItem) {
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'name' => '',
     'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'mac_address' => '',
-    'status_id' => '', 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'warranty_type_id' => '',
+    'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'warranty_type_id' => '',
     'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_print_speed_ppm' => '',
     'is_workstation' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_processor' => '', 'workstation_memory_gb' => '',
@@ -108,6 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
+    }
+
+    if ((int)$data['status_id'] <= 0) {
+        $data['status_id'] = $defaultStatusId;
     }
 
     $isSwitchEquipment = $switchTypeId > 0 && (int)$data['equipment_type_id'] === $switchTypeId;
