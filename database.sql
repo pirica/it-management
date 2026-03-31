@@ -1230,7 +1230,7 @@ CREATE TABLE `workstation_os_types` (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_os_types`
 INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('6', 'Android');
@@ -1240,6 +1240,11 @@ INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('3', 'Linux');
 INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('2', 'macOS');
 INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('7', 'Other');
 INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('1', 'Windows');
+INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('8', 'Windows Server 2012');
+INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('9', 'Windows Server 2016');
+INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('10', 'Windows Server 2019');
+INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('11', 'Windows Server 2022');
+INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('12', 'Windows Server 2025');
 
 -- Table structure for `workstations`
 DROP TABLE IF EXISTS `workstations`;
