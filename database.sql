@@ -280,7 +280,7 @@ CREATE TABLE `equipment` (
   `purchase_date` date DEFAULT NULL,
   `purchase_cost` decimal(15,2) DEFAULT NULL,
   `warranty_expiry` date DEFAULT NULL,
-  `warranty_type_id` int NOT NULL,
+  `warranty_type_id` int DEFAULT NULL,
   `is_printer` tinyint DEFAULT '0',
   `printer_device_type_id` int DEFAULT NULL,
   `printer_color_capable` tinyint DEFAULT '0',
