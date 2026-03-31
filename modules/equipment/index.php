@@ -124,12 +124,12 @@ if ($hasSelectedSwitch) {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
 <?php
 if (!empty($_SESSION['crud_error'])) {
-    echo '<div style="color:red;margin-bottom:15px;">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
+    echo '<div class="crud_error">Failed to save record. Please try again.</div>';
     unset($_SESSION['crud_error']);
 }
 
 if (!empty($_SESSION['crud_success'])) {
-    echo '<div style="color:green;margin-bottom:15px;">' . htmlspecialchars($_SESSION['crud_success']) . '</div>';
+    echo '<div class="crud_success">Record saved successfully.</div>';
     unset($_SESSION['crud_success']);
 }
 ?>
