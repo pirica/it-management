@@ -11,30 +11,36 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `access_levels`;
 CREATE TABLE `access_levels` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `access_levels_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `access_levels`
-INSERT INTO `access_levels` (`id`, `name`) VALUES ('1', 'Full');
-INSERT INTO `access_levels` (`id`, `name`) VALUES ('3', 'Limited');
-INSERT INTO `access_levels` (`id`, `name`) VALUES ('2', 'Read Only');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Full');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Limited');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Read Only');
 
 -- Table structure for `assignment_types`
 DROP TABLE IF EXISTS `assignment_types`;
 CREATE TABLE `assignment_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `assignment_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `assignment_types`
-INSERT INTO `assignment_types` (`id`, `name`) VALUES ('2', 'Department');
-INSERT INTO `assignment_types` (`id`, `name`) VALUES ('1', 'Individual');
-INSERT INTO `assignment_types` (`id`, `name`) VALUES ('4', 'Pool');
-INSERT INTO `assignment_types` (`id`, `name`) VALUES ('3', 'Shared');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Department');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Individual');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Pool');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Shared');
 
 -- Table structure for `companies`
 DROP TABLE IF EXISTS `companies`;
@@ -139,17 +145,20 @@ INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `
 DROP TABLE IF EXISTS `employee_statuses`;
 CREATE TABLE `employee_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `employee_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `employee_statuses`
-INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('1', 'Active');
-INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('5', 'Contractor');
-INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
-INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('3', 'On Leave');
-INSERT INTO `employee_statuses` (`id`, `name`) VALUES ('4', 'Terminated');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Contractor');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inactive');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'On Leave');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Terminated');
 
 -- Table structure for `employee_system_access`
 DROP TABLE IF EXISTS `employee_system_access`;
@@ -348,121 +357,143 @@ INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_
 DROP TABLE IF EXISTS `equipment_environment`;
 CREATE TABLE `equipment_environment` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_environment_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_environment`
-INSERT INTO `equipment_environment` (`id`, `name`) VALUES ('1', 'Managed');
-INSERT INTO `equipment_environment` (`id`, `name`) VALUES ('2', 'Unmanaged');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Managed');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Unmanaged');
 
 -- Table structure for `equipment_fiber`
 DROP TABLE IF EXISTS `equipment_fiber`;
 CREATE TABLE `equipment_fiber` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_fiber_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_fiber`
-INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('3', 'QSFP 40 Gbps');
-INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('1', 'SFP 1 Gbps');
-INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('2', 'SFP+ 10 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '3', 'QSFP 40 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '1', 'SFP 1 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '2', 'SFP+ 10 Gbps');
 
 -- Table structure for `equipment_fiber_count`
 DROP TABLE IF EXISTS `equipment_fiber_count`;
 CREATE TABLE `equipment_fiber_count` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_fiber_count_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_fiber_count`
-INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('1', '1');
-INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('2', '2');
-INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('3', '3');
-INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('4', '4');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '1', '1');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '2', '2');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '3', '3');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '4', '4');
 
 -- Table structure for `equipment_poe`
 DROP TABLE IF EXISTS `equipment_poe`;
 CREATE TABLE `equipment_poe` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_poe_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_poe`
-INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('1', 'PoE (802.3af) - up to 15.4W');
-INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('2', 'PoE+ (802.3at) - up to 30W');
-INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('3', 'PoE++ (802.3bt) - up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '1', 'PoE (802.3af) - up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '2', 'PoE+ (802.3at) - up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '3', 'PoE++ (802.3bt) - up to 60-90W');
 
 -- Table structure for `equipment_rj45`
 DROP TABLE IF EXISTS `equipment_rj45`;
 CREATE TABLE `equipment_rj45` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_rj45_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_rj45`
-INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('2', '16 ports');
-INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('3', '24 ports');
-INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('4', '48 ports');
-INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('1', '8 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '2', '16 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '3', '24 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '4', '48 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '1', '8 ports');
 
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
 CREATE TABLE `equipment_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_statuses`
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('1', 'Active');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('6', 'Decommissioned');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('4', 'Faulty');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('3', 'Maintenance');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('7', 'On-Order');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('8', 'Other');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('5', 'Reserved');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Decommissioned');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Faulty');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inactive');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Maintenance');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '7', 'On-Order');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Other');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Reserved');
 
 -- Table structure for `equipment_types`
 DROP TABLE IF EXISTS `equipment_types`;
 CREATE TABLE `equipment_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`),
-  UNIQUE KEY `code` (`code`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  UNIQUE KEY `code` (`company_id`,`code`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `equipment_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_types`
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('1', 'Switch', 'SWITCH', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('2', 'Server', 'SRV', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('3', 'Router', 'RTR', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('4', 'Firewall', 'FW', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('5', 'PDU', 'PDU', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('6', 'Access Point', 'AP', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('7', 'Workstation', 'WS', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('8', 'Printer', 'PRN', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('9', 'Phone System', 'PHONE', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('10', 'Camera', 'CAM', '1');
-INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('11', 'Other', 'OTHER', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Server', 'SRV', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'Router', 'RTR', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Firewall', 'FW', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'PDU', 'PDU', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '6', 'Access Point', 'AP', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '7', 'Workstation', 'WS', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '8', 'Printer', 'PRN', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '9', 'Phone System', 'PHONE', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '10', 'Camera', 'CAM', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '11', 'Other', 'OTHER', '1');
 
 -- Table structure for `idf_links`
 DROP TABLE IF EXISTS `idf_links`;
 CREATE TABLE `idf_links` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `port_id_a` int NOT NULL,
   `port_id_b` int NOT NULL,
   `cable_color` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'yellow',
@@ -470,11 +501,13 @@ CREATE TABLE `idf_links` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_pair` (`port_id_a`,`port_id_b`),
+  UNIQUE KEY `uniq_pair` (`company_id`,`port_id_a`,`port_id_b`),
   KEY `port_id_a` (`port_id_a`),
   KEY `port_id_b` (`port_id_b`),
   CONSTRAINT `idf_links_ibfk_a` FOREIGN KEY (`port_id_a`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idf_links_ibfk_b` FOREIGN KEY (`port_id_b`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE
+  CONSTRAINT `idf_links_ibfk_b` FOREIGN KEY (`port_id_b`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE,
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `idf_links_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `idf_ports`
@@ -494,7 +527,7 @@ CREATE TABLE `idf_ports` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `pos_port_unique` (`position_id`,`port_no`),
+  UNIQUE KEY `pos_port_unique` (`company_id`,`position_id`,`port_no`),
   KEY `company_id` (`company_id`),
   KEY `position_id` (`position_id`),
   CONSTRAINT `idf_ports_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -542,7 +575,7 @@ CREATE TABLE `idf_positions` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idf_pos_unique` (`idf_id`,`position_no`),
+  UNIQUE KEY `idf_pos_unique` (`company_id`,`idf_id`,`position_no`),
   KEY `company_id` (`company_id`),
   KEY `idf_id` (`idf_id`),
   KEY `equipment_id` (`equipment_id`),
@@ -565,7 +598,7 @@ CREATE TABLE `idfs` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idf_code` (`idf_code`),
+  UNIQUE KEY `idf_code` (`company_id`,`idf_code`),
   KEY `company_id` (`company_id`),
   KEY `location_id` (`location_id`),
   CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -579,20 +612,23 @@ INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `name`, `idf_code`, `note
 DROP TABLE IF EXISTS `inventory_categories`;
 CREATE TABLE `inventory_categories` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `code` (`code`)
+  UNIQUE KEY `code` (`company_id`,`code`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `inventory_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `inventory_categories`
-INSERT INTO `inventory_categories` (`id`, `name`, `code`, `active`) VALUES ('1', 'Cables - Ethernet', 'CBL-ETH', '1');
-INSERT INTO `inventory_categories` (`id`, `name`, `code`, `active`) VALUES ('2', 'Cables - USB', 'CBL-USB', '1');
-INSERT INTO `inventory_categories` (`id`, `name`, `code`, `active`) VALUES ('3', 'Adapters', 'ADP', '1');
-INSERT INTO `inventory_categories` (`id`, `name`, `code`, `active`) VALUES ('4', 'Batteries', 'BAT', '1');
-INSERT INTO `inventory_categories` (`id`, `name`, `code`, `active`) VALUES ('5', 'Consumables', 'CONS', '1');
-INSERT INTO `inventory_categories` (`id`, `name`, `code`, `active`) VALUES ('6', 'Other', 'OTH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Cables - Ethernet', 'CBL-ETH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Cables - USB', 'CBL-USB', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'Adapters', 'ADP', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Batteries', 'BAT', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Consumables', 'CONS', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '6', 'Other', 'OTH', '1');
 
 -- Table structure for `inventory_items`
 DROP TABLE IF EXISTS `inventory_items`;
@@ -612,7 +648,7 @@ CREATE TABLE `inventory_items` (
   `supplier_id` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `item_code` (`item_code`),
+  UNIQUE KEY `item_code` (`company_id`,`item_code`),
   KEY `category_id` (`category_id`),
   KEY `manufacturer_id` (`manufacturer_id`),
   KEY `location_id` (`location_id`),
@@ -657,76 +693,88 @@ INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `addres
 DROP TABLE IF EXISTS `location_types`;
 CREATE TABLE `location_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `location_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `location_types`
-INSERT INTO `location_types` (`id`, `name`) VALUES ('2', 'Branch');
-INSERT INTO `location_types` (`id`, `name`) VALUES ('4', 'DataCenter');
-INSERT INTO `location_types` (`id`, `name`) VALUES ('1', 'Headquarters');
-INSERT INTO `location_types` (`id`, `name`) VALUES ('5', 'Office');
-INSERT INTO `location_types` (`id`, `name`) VALUES ('7', 'Other');
-INSERT INTO `location_types` (`id`, `name`) VALUES ('6', 'Remote');
-INSERT INTO `location_types` (`id`, `name`) VALUES ('3', 'Warehouse');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Branch');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'DataCenter');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Headquarters');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Office');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'Other');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Remote');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Warehouse');
 
 -- Table structure for `manufacturers`
 DROP TABLE IF EXISTS `manufacturers`;
 CREATE TABLE `manufacturers` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`),
-  UNIQUE KEY `code` (`code`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  UNIQUE KEY `code` (`company_id`,`code`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `manufacturers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `manufacturers`
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('1', 'Cisco Systems', 'CSCO', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('2', 'Dell Technologies', 'DELL', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('3', 'HP Inc', 'HPE', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('4', 'Juniper Networks', 'JNPR', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('5', 'Ubiquiti Networks', 'UBNT', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('6', 'Apple', 'APPLE', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('7', 'Lenovo', 'LENOVO', '1');
-INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('8', 'Microsoft', 'MSFT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Cisco Systems', 'CSCO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Dell Technologies', 'DELL', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'HP Inc', 'HPE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Juniper Networks', 'JNPR', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Ubiquiti Networks', 'UBNT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '6', 'Apple', 'APPLE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '7', 'Lenovo', 'LENOVO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '8', 'Microsoft', 'MSFT', '1');
 
 -- Table structure for `printer_device_types`
 DROP TABLE IF EXISTS `printer_device_types`;
 CREATE TABLE `printer_device_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `printer_device_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `printer_device_types`
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('3', 'All-in-One');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('8', 'Dotmatrix');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('2', 'Inkjet');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('7', 'Label');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('1', 'Laser');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('9', 'Other');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('6', 'Photo');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('4', 'Thermal');
-INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('5', 'Wide-Format');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'All-in-One');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Dotmatrix');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inkjet');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'Label');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Laser');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '9', 'Other');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Photo');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Thermal');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Wide-Format');
 
 -- Table structure for `rack_statuses`
 DROP TABLE IF EXISTS `rack_statuses`;
 CREATE TABLE `rack_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `rack_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `rack_statuses`
-INSERT INTO `rack_statuses` (`id`, `name`) VALUES ('1', 'Active');
-INSERT INTO `rack_statuses` (`id`, `name`) VALUES ('4', 'Decommissioned');
-INSERT INTO `rack_statuses` (`id`, `name`) VALUES ('3', 'Full');
-INSERT INTO `rack_statuses` (`id`, `name`) VALUES ('2', 'Maintenance');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Decommissioned');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Full');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Maintenance');
 
 -- Table structure for `racks`
 DROP TABLE IF EXISTS `racks`;
@@ -739,7 +787,7 @@ CREATE TABLE `racks` (
   `status_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `rack_code` (`rack_code`),
+  UNIQUE KEY `rack_code` (`company_id`,`rack_code`),
   KEY `location_id` (`location_id`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
@@ -773,17 +821,20 @@ CREATE TABLE `sidebar_layout` (
 DROP TABLE IF EXISTS `supplier_statuses`;
 CREATE TABLE `supplier_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `supplier_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `supplier_statuses`
-INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('1', 'Active');
-INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('4', 'Backup');
-INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
-INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('5', 'Other');
-INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('3', 'Preferred');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Backup');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inactive');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Other');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Preferred');
 
 -- Table structure for `suppliers`
 DROP TABLE IF EXISTS `suppliers`;
@@ -798,7 +849,7 @@ CREATE TABLE `suppliers` (
   `status_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `supplier_code` (`supplier_code`),
+  UNIQUE KEY `supplier_code` (`company_id`,`supplier_code`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
   CONSTRAINT `suppliers_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -812,49 +863,58 @@ INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_p
 DROP TABLE IF EXISTS `switch_cablecolors`;
 CREATE TABLE `switch_cablecolors` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `color` (`color`)
+  UNIQUE KEY `color` (`company_id`,`color`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `switch_cablecolors_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_cablecolors`
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('5', 'black');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('6', 'blue');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('2', 'green');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('1', 'grey');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('8', 'orange');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('10', 'other');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('9', 'purple');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('3', 'red');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('7', 'white');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('4', 'yellow');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '5', 'black');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '6', 'blue');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '2', 'green');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '1', 'grey');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '8', 'orange');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '10', 'other');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '9', 'purple');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '3', 'red');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '7', 'white');
+INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '4', 'yellow');
 
 -- Table structure for `switch_port_numbering_layout`
 DROP TABLE IF EXISTS `switch_port_numbering_layout`;
 CREATE TABLE `switch_port_numbering_layout` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `switch_port_numbering_layout_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_port_numbering_layout`
-INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('2', 'Horizontal');
-INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('1', 'Vertical');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Horizontal');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Vertical');
 
 -- Table structure for `switch_port_types`
 DROP TABLE IF EXISTS `switch_port_types`;
 CREATE TABLE `switch_port_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `type` (`type`)
+  UNIQUE KEY `type` (`company_id`,`type`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `switch_port_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_port_types`
-INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('1', 'RJ45');
-INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('2', 'SFP');
-INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('3', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '1', 'RJ45');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '2', 'SFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '3', 'SFP+');
 
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
@@ -875,7 +935,7 @@ CREATE TABLE `switch_ports` (
   UNIQUE KEY `unique_switch_port` (`company_id`,`equipment_id`,`port_type`,`port_number`),
   KEY `company_id` (`company_id`),
   KEY `equipment_id` (`equipment_id`),
-  KEY `port_type` (`port_type`),
+  KEY `idx_switch_ports_company_port_type` (`company_id`,`port_type`),
   KEY `status_id` (`status_id`),
   KEY `color_id` (`color_id`),
   KEY `vlan_id` (`vlan_id`),
@@ -883,55 +943,58 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
   CONSTRAINT `switch_ports_ibfk_4` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`),
-  CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`type`),
+  CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`company_id`,`port_type`) REFERENCES `switch_port_types` (`company_id`,`type`),
   CONSTRAINT `switch_ports_ibfk_6` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_ports`
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('1', '1', '1', NULL, 'rj45', '1', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('2', '1', '1', NULL, 'rj45', '2', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('3', '1', '1', NULL, 'rj45', '3', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('4', '1', '1', NULL, 'rj45', '4', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('5', '1', '1', NULL, 'rj45', '5', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('6', '1', '1', NULL, 'rj45', '6', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('7', '1', '1', NULL, 'rj45', '7', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('8', '1', '1', NULL, 'rj45', '8', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('9', '1', '1', NULL, 'rj45', '9', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('10', '1', '1', NULL, 'rj45', '10', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('11', '1', '1', NULL, 'rj45', '11', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('12', '1', '1', NULL, 'rj45', '12', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('13', '1', '1', NULL, 'rj45', '13', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('14', '1', '1', NULL, 'rj45', '14', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('15', '1', '1', NULL, 'rj45', '15', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('16', '1', '1', NULL, 'rj45', '16', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('17', '1', '1', NULL, 'rj45', '17', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('18', '1', '1', NULL, 'rj45', '18', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('19', '1', '1', NULL, 'rj45', '19', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('20', '1', '1', NULL, 'rj45', '20', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('21', '1', '1', NULL, 'rj45', '21', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('22', '1', '1', NULL, 'rj45', '22', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('23', '1', '1', NULL, 'rj45', '23', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
-INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('24', '1', '1', NULL, 'rj45', '24', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('1', '1', '1', NULL, 'RJ45', '1', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('2', '1', '1', NULL, 'RJ45', '2', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('3', '1', '1', NULL, 'RJ45', '3', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('4', '1', '1', NULL, 'RJ45', '4', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('5', '1', '1', NULL, 'RJ45', '5', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('6', '1', '1', NULL, 'RJ45', '6', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('7', '1', '1', NULL, 'RJ45', '7', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('8', '1', '1', NULL, 'RJ45', '8', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('9', '1', '1', NULL, 'RJ45', '9', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('10', '1', '1', NULL, 'RJ45', '10', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('11', '1', '1', NULL, 'RJ45', '11', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('12', '1', '1', NULL, 'RJ45', '12', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('13', '1', '1', NULL, 'RJ45', '13', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('14', '1', '1', NULL, 'RJ45', '14', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('15', '1', '1', NULL, 'RJ45', '15', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('16', '1', '1', NULL, 'RJ45', '16', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('17', '1', '1', NULL, 'RJ45', '17', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('18', '1', '1', NULL, 'RJ45', '18', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('19', '1', '1', NULL, 'RJ45', '19', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('20', '1', '1', NULL, 'RJ45', '20', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('21', '1', '1', NULL, 'RJ45', '21', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('22', '1', '1', NULL, 'RJ45', '22', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('23', '1', '1', NULL, 'RJ45', '23', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('24', '1', '1', NULL, 'RJ45', '24', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
 
 -- Table structure for `switch_status`
 DROP TABLE IF EXISTS `switch_status`;
 CREATE TABLE `switch_status` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `status` (`status`)
+  UNIQUE KEY `status` (`company_id`,`status`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `switch_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_status`
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('4', 'Disabled');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('2', 'Down');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('6', 'Err-Disabled');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('8', 'Faulty');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('3', 'Free');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('9', 'Reserved');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('7', 'Testing');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('5', 'Unknown');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('1', 'Up');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '4', 'Disabled');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '2', 'Down');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '6', 'Err-Disabled');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '8', 'Faulty');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '3', 'Free');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '9', 'Reserved');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '7', 'Testing');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '5', 'Unknown');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '1', 'Up');
 
 -- Table structure for `system_access`
 DROP TABLE IF EXISTS `system_access`;
@@ -969,56 +1032,65 @@ INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUE
 DROP TABLE IF EXISTS `ticket_categories`;
 CREATE TABLE `ticket_categories` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `code` (`code`)
+  UNIQUE KEY `code` (`company_id`,`code`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `ticket_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `ticket_categories`
-INSERT INTO `ticket_categories` (`id`, `name`, `code`, `active`) VALUES ('1', 'Hardware Issue', 'HW', '1');
-INSERT INTO `ticket_categories` (`id`, `name`, `code`, `active`) VALUES ('2', 'Network Problem', 'NET', '1');
-INSERT INTO `ticket_categories` (`id`, `name`, `code`, `active`) VALUES ('3', 'Software Issue', 'SW', '1');
-INSERT INTO `ticket_categories` (`id`, `name`, `code`, `active`) VALUES ('4', 'Maintenance', 'MAINT', '1');
-INSERT INTO `ticket_categories` (`id`, `name`, `code`, `active`) VALUES ('5', 'Other', 'OTHER', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Hardware Issue', 'HW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Network Problem', 'NET', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'Software Issue', 'SW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Maintenance', 'MAINT', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Other', 'OTHER', '1');
 
 -- Table structure for `ticket_priorities`
 DROP TABLE IF EXISTS `ticket_priorities`;
 CREATE TABLE `ticket_priorities` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `level` int DEFAULT NULL,
   `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `ticket_priorities_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `ticket_priorities`
-INSERT INTO `ticket_priorities` (`id`, `name`, `level`, `color`, `active`) VALUES ('1', 'Low', '1', '#0000FF', '1');
-INSERT INTO `ticket_priorities` (`id`, `name`, `level`, `color`, `active`) VALUES ('2', 'Normal', '2', '#00FF00', '1');
-INSERT INTO `ticket_priorities` (`id`, `name`, `level`, `color`, `active`) VALUES ('3', 'High', '3', '#FFA500', '1');
-INSERT INTO `ticket_priorities` (`id`, `name`, `level`, `color`, `active`) VALUES ('4', 'Urgent', '4', '#FF0000', '1');
-INSERT INTO `ticket_priorities` (`id`, `name`, `level`, `color`, `active`) VALUES ('5', 'Critical', '5', '#8B0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '1', 'Low', '1', '#0000FF', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '2', 'Normal', '2', '#00FF00', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '3', 'High', '3', '#FFA500', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '4', 'Urgent', '4', '#FF0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '5', 'Critical', '5', '#8B0000', '1');
 
 -- Table structure for `ticket_statuses`
 DROP TABLE IF EXISTS `ticket_statuses`;
 CREATE TABLE `ticket_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_closed` tinyint DEFAULT '0',
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `ticket_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `ticket_statuses`
-INSERT INTO `ticket_statuses` (`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', 'Open', '#FF0000', '0', '1');
-INSERT INTO `ticket_statuses` (`id`, `name`, `color`, `is_closed`, `active`) VALUES ('2', 'In Progress', '#FFA500', '0', '1');
-INSERT INTO `ticket_statuses` (`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3', 'Resolved', '#00FF00', '0', '1');
-INSERT INTO `ticket_statuses` (`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4', 'Closed', '#808080', '1', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '2', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '3', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '4', 'Closed', '#808080', '1', '1');
 
 -- Table structure for `tickets`
 DROP TABLE IF EXISTS `tickets`;
@@ -1036,7 +1108,7 @@ CREATE TABLE `tickets` (
   `asset_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `ticket_code` (`ticket_code`),
+  UNIQUE KEY `ticket_code` (`company_id`,`ticket_code`),
   KEY `category_id` (`category_id`),
   KEY `status_id` (`status_id`),
   KEY `priority_id` (`priority_id`),
@@ -1087,17 +1159,20 @@ INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `n
 DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `user_roles_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `user_roles`
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('1', 'Admin');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('4', 'Helpdesk');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('3', 'IT Assistant');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('2', 'IT Manager');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('5', 'User');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Admin');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Helpdesk');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '3', 'IT Assistant');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '2', 'IT Manager');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '5', 'User');
 
 -- Table structure for `users`
 DROP TABLE IF EXISTS `users`;
@@ -1116,7 +1191,7 @@ CREATE TABLE `users` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_username_per_company` (`company_id`,`username`),
-  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `email` (`company_id`,`email`),
   KEY `company_id` (`company_id`),
   KEY `role_id` (`role_id`),
   KEY `access_level_id` (`access_level_id`),
@@ -1153,42 +1228,49 @@ INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color
 DROP TABLE IF EXISTS `warranty_types`;
 CREATE TABLE `warranty_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `warranty_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `warranty_types`
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('4', 'Enterprise');
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('2', 'Extended');
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('5', 'None');
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('6', 'Other');
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('3', 'Premium');
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('1', 'Standard');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Enterprise');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Extended');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'None');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Other');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Premium');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Standard');
 
 -- Table structure for `workstation_device_types`
 DROP TABLE IF EXISTS `workstation_device_types`;
 CREATE TABLE `workstation_device_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_device_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_device_types`
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('3', 'All-in-One');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('1', 'Desktop');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('2', 'Laptop');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('6', 'Mobile');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('8', 'Other');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('7', 'POS');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('4', 'Tablet');
-INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('5', 'Thin-Client');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'All-in-One');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Desktop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Laptop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Mobile');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Other');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'POS');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Tablet');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Thin-Client');
 
 -- Table structure for `workstation_modes`
 DROP TABLE IF EXISTS `workstation_modes`;
 CREATE TABLE `workstation_modes` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `mode_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `mode_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -1197,63 +1279,71 @@ CREATE TABLE `workstation_modes` (
   `pos` int DEFAULT '0',
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `mode_name` (`mode_name`),
-  UNIQUE KEY `mode_code` (`mode_code`)
+  UNIQUE KEY `mode_name` (`company_id`,`mode_name`),
+  UNIQUE KEY `mode_code` (`company_id`,`mode_code`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_modes_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_modes`
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('6', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('7', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('8', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('9', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
-INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '2', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '3', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '4', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '5', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '6', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '7', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '8', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '9', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
 
 -- Table structure for `workstation_office`
 DROP TABLE IF EXISTS `workstation_office`;
 CREATE TABLE `workstation_office` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_office_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_office`
-INSERT INTO `workstation_office` (`id`, `name`) VALUES ('1', 'None');
-INSERT INTO `workstation_office` (`id`, `name`) VALUES ('3', 'Office 2024 Pro');
-INSERT INTO `workstation_office` (`id`, `name`) VALUES ('2', 'Office 2024 STD');
-INSERT INTO `workstation_office` (`id`, `name`) VALUES ('4', 'Office 365');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '1', 'None');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Office 2024 Pro');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Office 2024 STD');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Office 365');
 
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
 CREATE TABLE `workstation_os_types` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_os_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_os_types`
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('1', 'Windows');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('2', 'Windows 11');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('3', 'Windows 10');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('4', 'Windows Server');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('5', 'Windows Server 2012');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('6', 'Windows Server 2016');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('7', 'Windows Server 2019');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('8', 'Windows Server 2022');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('9', 'Windows Server 2025');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('10', 'Android');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('11', 'iOS');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('12', 'ChromeOS');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('13', 'Linux');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('14', 'macOS');
-INSERT INTO `workstation_os_types` (`id`, `name`) VALUES ('15', 'Other');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Windows');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Windows 11');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Windows 10');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Windows Server');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Windows Server 2012');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Windows Server 2016');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'Windows Server 2019');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Windows Server 2022');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '9', 'Windows Server 2025');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '10', 'Android');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '11', 'iOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '12', 'ChromeOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '13', 'Linux');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '14', 'macOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '15', 'Other');
 
 -- Table structure for `workstations`
 DROP TABLE IF EXISTS `workstations`;
@@ -1270,7 +1360,7 @@ CREATE TABLE `workstations` (
   `department` int DEFAULT NULL,
   `status_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `workstation_code` (`workstation_code`),
+  UNIQUE KEY `workstation_code` (`company_id`,`workstation_code`),
   KEY `equipment_id` (`equipment_id`),
   KEY `workstation_mode_id` (`workstation_mode_id`),
   KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
@@ -1291,5 +1381,54 @@ CREATE TABLE `workstations` (
 
 -- Data for `workstations`
 INSERT INTO `workstations` (`id`, `company_id`, `equipment_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) VALUES ('1', '1', NULL, 'srv-file-01', 'srv-file-01', '1', '1', '1', '1', '1', '1');
+
+
+-- Replicate shared table data to all companies
+INSERT INTO `access_levels` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `assignment_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `employee_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `employee_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_environment` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_environment` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_fiber` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_fiber_count` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_count` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_poe` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_poe` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_rj45` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_rj45` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_types` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `equipment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `inventory_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `inventory_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `location_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `location_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `manufacturers` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `manufacturers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `printer_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `printer_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `rack_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `rack_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `supplier_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `supplier_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_cablecolors` (`company_id`, `color`) SELECT c.`id`, t.`color` FROM `switch_cablecolors` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `switch_port_numbering_layout` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_port_types` (`company_id`, `type`) SELECT c.`id`, t.`type` FROM `switch_port_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_status` (`company_id`, `status`) SELECT c.`id`, t.`status` FROM `switch_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ticket_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `ticket_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ticket_priorities` (`company_id`, `name`, `level`, `color`, `active`) SELECT c.`id`, t.`name`, t.`level`, t.`color`, t.`active` FROM `ticket_priorities` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`, `active`) SELECT c.`id`, t.`name`, t.`color`, t.`is_closed`, t.`active` FROM `ticket_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `user_roles` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `user_roles` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `warranty_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `warranty_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_modes` (`company_id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) SELECT c.`id`, t.`mode_name`, t.`mode_code`, t.`description`, t.`monitor_count`, t.`has_keyboard_mouse`, t.`pos`, t.`active` FROM `workstation_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_office` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_os_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `departments` (`company_id`, `name`, `code`, `description`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`active` FROM `departments` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `employee_onboarding_requests` (`company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) SELECT c.`id`, t.`employee_id`, t.`first_name`, t.`last_name`, t.`position_title`, t.`department_name`, t.`request_date`, t.`termination_date`, t.`network_access`, t.`micros_emc`, t.`opera`, t.`micros_card`, t.`pms_id`, t.`synergy_mms`, t.`email_account`, t.`landline_phone`, t.`hu_the_lobby`, t.`mobile_phone`, t.`navision`, t.`mobile_email`, t.`onq_ri`, t.`birchstreet`, t.`delphi`, t.`omina`, t.`vingcard_system`, t.`digital_rev`, t.`office_key_card`, t.`comments`, t.`starting_date`, t.`requested_by`, t.`requested_on`, t.`hod_approval`, t.`hrd_approval`, t.`ism_approval`, t.`created_at` FROM `employee_onboarding_requests` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `printer_print_speed_ppm`, `is_workstation`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) SELECT c.`id`, t.`equipment_type_id`, t.`manufacturer_id`, t.`location_id`, t.`rack_id`, t.`name`, t.`serial_number`, t.`model`, t.`hostname`, t.`ip_address`, t.`mac_address`, t.`status_id`, t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`, t.`warranty_type_id`, t.`is_printer`, t.`printer_device_type_id`, t.`printer_color_capable`, t.`printer_print_speed_ppm`, t.`is_workstation`, t.`workstation_device_type_id`, t.`workstation_os_type_id`, t.`workstation_processor`, t.`workstation_memory_gb`, t.`switch_rj45_id`, t.`switch_port_numbering_layout_id`, t.`switch_fiber_id`, t.`switch_fiber_count_id`, t.`switch_poe_id`, t.`switch_environment_id`, t.`notes`, t.`photo_filename`, t.`active`, t.`created_at`, t.`updated_at` FROM `equipment` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status`, t.`connected_to`, t.`vlan`, t.`speed`, t.`poe`, t.`notes`, t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`idf_id`, t.`position_no`, t.`device_type`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at` FROM `idf_positions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) SELECT c.`id`, t.`name`, t.`item_code`, t.`serial`, t.`category_id`, t.`manufacturer_id`, t.`quantity_on_hand`, t.`quantity_minimum`, t.`price_eur`, t.`comments`, t.`location_id`, t.`supplier_id`, t.`active` FROM `inventory_items` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `it_locations` (`company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`) SELECT c.`id`, t.`name`, t.`location_code`, t.`address`, t.`city`, t.`state`, t.`country`, t.`postal_code`, t.`phone`, t.`type_id`, t.`active` FROM `it_locations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `racks` (`company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) SELECT c.`id`, t.`location_id`, t.`name`, t.`rack_code`, t.`status_id`, t.`active` FROM `racks` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `suppliers` (`company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) SELECT c.`id`, t.`name`, t.`supplier_code`, t.`contact_person`, t.`email`, t.`phone`, t.`status_id`, t.`active` FROM `suppliers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) SELECT c.`id`, t.`equipment_id`, t.`hostname`, t.`port_type`, t.`port_number`, t.`label`, t.`status_id`, t.`color_id`, t.`vlan_id`, t.`comments`, t.`updated_at` FROM `switch_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `system_access` (`company_id`, `code`, `name`, `active`) SELECT c.`id`, t.`code`, t.`name`, t.`active` FROM `system_access` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `tickets` (`company_id`, `ticket_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `created_at`) SELECT c.`id`, t.`ticket_code`, t.`title`, t.`description`, t.`category_id`, t.`status_id`, t.`priority_id`, t.`created_by_user_id`, t.`assigned_to_user_id`, t.`asset_id`, t.`created_at` FROM `tickets` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ui_configuration` (`company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id`);
+INSERT INTO `users` (`company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) SELECT c.`id`, t.`username`, t.`email`, t.`password`, t.`first_name`, t.`last_name`, t.`phone`, t.`role_id`, t.`access_level_id`, t.`active`, t.`created_at` FROM `users` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstations` (`company_id`, `equipment_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) SELECT c.`id`, t.`equipment_id`, t.`hostname`, t.`workstation_code`, t.`workstation_mode_id`, t.`assigned_to_employee_id`, t.`assigned_to_department_id`, t.`assignment_type_id`, t.`department`, t.`status_id` FROM `workstations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 SET FOREIGN_KEY_CHECKS=1;
