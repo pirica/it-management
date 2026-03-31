@@ -56,10 +56,11 @@ while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
 $equipmentOptions = [];
 $resEq = mysqli_query(
     $conn,
-    "SELECT id, name, serial_number, switch_rj45_id, notes
-     FROM equipment
-     WHERE company_id=$company_id
-     ORDER BY name ASC
+    "SELECT e.id, e.name, e.serial_number, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+     FROM equipment e
+     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+     WHERE e.company_id=$company_id
+     ORDER BY e.name ASC
      LIMIT 500"
 );
 while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
@@ -219,7 +220,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 
             <div>
                 <label class="label">Link to Equipment (optional)</label>
-                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-previous-value="">
+                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment">
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
@@ -286,7 +287,25 @@ foreach ($equipmentOptions as $equipmentOption) {
 <script>
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
-const EQUIPMENT_BY_ID = <?php echo json_encode($equipmentById, JSON_UNESCAPED_UNICODE); ?>;
+const equipmentMetaById = <?php
+$equipmentMeta = [];
+foreach ($equipmentOptions as $equipmentOption) {
+    $portCount = (int)($equipmentOption['switch_rj45_id'] ?? 0);
+    if (!empty($equipmentOption['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentOption['switch_rj45_name'], $matches)) {
+        $portCount = (int)$matches[1];
+    }
+    $equipmentMeta[] = [
+        'id' => (int)$equipmentOption['id'],
+        'name' => (string)($equipmentOption['name'] ?? ''),
+        'notes' => (string)($equipmentOption['notes'] ?? ''),
+        'port_count' => $portCount,
+    ];
+}
+echo json_encode($equipmentMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?>.reduce((acc, item) => {
+    acc[String(item.id)] = item;
+    return acc;
+}, {});
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
 function closeModal(){ document.getElementById('idfModalBackdrop').style.display = 'none'; }
@@ -343,34 +362,29 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.port_count.value = position.port_count || 0;
                 form.notes.value = position.notes || '';
-                if (form.equipment_id.value) applyEquipmentRelation(form);
+                syncFieldsFromEquipment(form, false);
                 openModal();
             })
             .catch(err => alert(err.message));
     } else {
-        applyEquipmentLink(form);
+        syncFieldsFromEquipment(form, false);
         openModal();
     }
 }
 
-function applyEquipmentLink(form) {
-    const equipmentId = Number(form.equipment_id.value || 0);
-    if (equipmentId > 0 && EQUIPMENT_BY_ID[equipmentId]) {
-        const equipment = EQUIPMENT_BY_ID[equipmentId];
-        form.device_name.value = equipment.name || '';
-        form.port_count.value = Number(equipment.switch_rj45_id || 0);
-        form.notes.value = equipment.notes || '';
+function syncFieldsFromEquipment(form, shouldAlert) {
+    const selectedEquipmentId = String(form.equipment_id.value || '');
+    const meta = equipmentMetaById[selectedEquipmentId];
+    if (!meta) return;
+
+    form.device_name.value = meta.name || '';
+    form.port_count.value = Number(meta.port_count || 0);
+    form.notes.value = meta.notes || '';
+
+    if (shouldAlert) {
+        alert('Device Name, Port Count, and Notes were filled from linked equipment.');
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('idfDeviceForm');
-    if (!form) return;
-    form.equipment_id.addEventListener('change', () => {
-        if (form.equipment_id.value === '__add_new__') return;
-        applyEquipmentLink(form);
-    });
-});
 
 function saveDevice() {
     const form = document.getElementById('idfDeviceForm');
@@ -389,6 +403,11 @@ function saveDevice() {
         .then(() => location.reload())
         .catch(err => alert(err.message));
 }
+
+document.getElementById('idfDeviceForm').equipment_id.addEventListener('change', function () {
+    const form = document.getElementById('idfDeviceForm');
+    syncFieldsFromEquipment(form, false);
+});
 
 function openCopyModal(positionNo, positionId) {
     document.getElementById('idfCopyPositionId').value = positionId;

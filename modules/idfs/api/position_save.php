@@ -49,9 +49,10 @@ if (!in_array($device_type, $validTypes, true)) {
 if ($equipment_id > 0) {
     $resEquipment = mysqli_query(
         $conn,
-        "SELECT name, switch_rj45_id, notes
-         FROM equipment
-         WHERE id=$equipment_id AND company_id=$company_id
+        "SELECT e.name, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+         FROM equipment e
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+         WHERE e.id=$equipment_id AND e.company_id=$company_id
          LIMIT 1"
     );
     $equipment = $resEquipment ? mysqli_fetch_assoc($resEquipment) : null;
@@ -60,8 +61,12 @@ if ($equipment_id > 0) {
     }
 
     $device_name = trim((string)($equipment['name'] ?? ''));
-    $port_count = (int)($equipment['switch_rj45_id'] ?? 0);
     $notes = trim((string)($equipment['notes'] ?? ''));
+
+    $port_count = (int)($equipment['switch_rj45_id'] ?? 0);
+    if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
+        $port_count = (int)$matches[1];
+    }
 }
 
 $resIdf = mysqli_query($conn, "SELECT id FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1");
