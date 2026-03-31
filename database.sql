@@ -1208,6 +1208,21 @@ INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, 
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
 
+-- Table structure for `workstation_office`
+DROP TABLE IF EXISTS `workstation_office`;
+CREATE TABLE `workstation_office` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `workstation_office`
+INSERT INTO `workstation_office` (`id`, `name`) VALUES ('1', 'None');
+INSERT INTO `workstation_office` (`id`, `name`) VALUES ('3', 'Office 2024 Pro');
+INSERT INTO `workstation_office` (`id`, `name`) VALUES ('2', 'Office 2024 STD');
+INSERT INTO `workstation_office` (`id`, `name`) VALUES ('4', 'Office 365');
+
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
 CREATE TABLE `workstation_os_types` (
