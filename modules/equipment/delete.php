@@ -1,6 +1,30 @@
 <?php
 require '../../config/config.php';
 
+if (!function_exists('equipment_table_has_column')) {
+    function equipment_table_has_column(mysqli $conn, string $table, string $column): bool
+    {
+        $tableEsc = mysqli_real_escape_string($conn, $table);
+        $columnEsc = mysqli_real_escape_string($conn, $column);
+        $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+        return $res && mysqli_num_rows($res) > 0;
+    }
+}
+
+function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentId): void
+{
+    if ($equipmentId <= 0 || $companyId <= 0) {
+        return;
+    }
+
+    $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
+    $companyFilter = $hasCompanyColumn ? " AND company_id = {$companyId}" : '';
+    mysqli_query(
+        $conn,
+        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentId}{$companyFilter}"
+    );
+}
+
 $debugRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
 $debugPost = $_POST;
@@ -42,6 +66,8 @@ if (mysqli_num_rows($checkResult) !== 1) {
 }
 
 $row = mysqli_fetch_assoc($checkResult);
+
+equipment_delete_idf_data($conn, (int)$company_id, $id);
 
 if (!empty($row['photo_filename'])) {
     $path = UPLOAD_PATH . $row['photo_filename'];

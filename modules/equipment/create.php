@@ -47,6 +47,20 @@ function equipment_table_varchar_length(mysqli $conn, string $table, string $col
     return 0;
 }
 
+function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentId): void
+{
+    if ($equipmentId <= 0 || $companyId <= 0) {
+        return;
+    }
+
+    $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
+    $companyFilter = $hasCompanyColumn ? " AND company_id = {$companyId}" : '';
+    mysqli_query(
+        $conn,
+        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentId}{$companyFilter}"
+    );
+}
+
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
@@ -243,6 +257,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             "DELETE FROM switch_ports WHERE company_id = $company_id"
                         );
                     }
+                }
+
+                if ($changedAwayFromSwitch) {
+                    equipment_delete_idf_data($conn, (int)$company_id, $id);
                 }
             }
 
