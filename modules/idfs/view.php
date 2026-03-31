@@ -56,7 +56,7 @@ while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
 $equipmentOptions = [];
 $resEq = mysqli_query(
     $conn,
-    "SELECT id, name, serial_number
+    "SELECT id, name, serial_number, switch_rj45_id, notes
      FROM equipment
      WHERE company_id=$company_id
      ORDER BY name ASC
@@ -67,6 +67,15 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
 }
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
+
+$equipmentLookup = [];
+foreach ($equipmentOptions as $equipmentOption) {
+    $equipmentLookup[(int)$equipmentOption['id']] = [
+        'name' => (string)($equipmentOption['name'] ?? ''),
+        'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
+        'notes' => (string)($equipmentOption['notes'] ?? ''),
+    ];
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -285,6 +294,20 @@ function closeCopyIfBackdrop(e){ if(e.target.id === 'idfCopyBackdrop') closeCopy
 function closeCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'none'; }
 function openCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'flex'; }
 
+const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+function applyEquipmentRelation(form) {
+    const rawEquipmentId = form.equipment_id.value;
+    if (!rawEquipmentId) return;
+
+    const equipment = EQUIPMENT_LOOKUP[String(rawEquipmentId)] || null;
+    if (!equipment) return;
+
+    form.device_name.value = equipment.name || '';
+    form.port_count.value = Number(equipment.switch_rj45_id || 0);
+    form.notes.value = equipment.notes || '';
+}
+
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
         method: 'POST',
@@ -307,6 +330,7 @@ function openDeviceModal(positionNo, positionId) {
     form.querySelector('input[name="csrf_token"]').value = CSRF;
     form.querySelector('input[name="idf_id"]').value = '<?php echo (int)$idf_id; ?>';
     form.querySelector('input[name="position_no"]').value = positionNo;
+    form.equipment_id.onchange = () => applyEquipmentRelation(form);
 
     if (positionId) {
         apiPost('position_get.php', {csrf_token: CSRF, position_id: positionId})
@@ -316,6 +340,7 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.value = position.equipment_id || '';
                 form.port_count.value = position.port_count || 0;
                 form.notes.value = position.notes || '';
+                if (form.equipment_id.value) applyEquipmentRelation(form);
                 openModal();
             })
             .catch(err => alert(err.message));

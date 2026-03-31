@@ -120,11 +120,18 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     </div>
                     <div>
                         <label class="label">Location</label>
-                        <select class="input" name="location_id" required>
+                        <select class="input" name="location_id" required
+                                data-addable-select="1"
+                                data-add-table="it_locations"
+                                data-add-id-col="id"
+                                data-add-label-col="name"
+                                data-add-company-scoped="1"
+                                data-add-friendly="location">
                             <option value="">-- Select location --</option>
                             <?php foreach ($locations as $l): ?>
                                 <option value="<?php echo (int)$l['id']; ?>"><?php echo sanitize($l['name']); ?></option>
                             <?php endforeach; ?>
+                            <option value="__add_new__">➕</option>
                         </select>
                     </div>
                     <div>
@@ -169,5 +176,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
         </div>
     </div>
 </div>
+<script src="../../js/select-add-option.js"></script>
 </body>
 </html>
