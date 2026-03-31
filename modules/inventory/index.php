@@ -3,15 +3,28 @@ require '../../config/config.php';
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
+$params = [];
+$types = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (\n        i.name LIKE '{$searchEsc}'\n        OR i.item_code LIKE '{$searchEsc}'\n        OR i.serial LIKE '{$searchEsc}'\n        OR c.name LIKE '{$searchEsc}'\n        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.price_eur AS CHAR) LIKE '{$searchEsc}'\n        OR i.comments LIKE '{$searchEsc}'\n        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'\n    )";
+    $searchSql = " AND (
+        i.name LIKE ?
+        OR i.item_code LIKE ?
+        OR i.serial LIKE ?
+        OR c.name LIKE ?
+        OR CAST(i.quantity_on_hand AS CHAR) LIKE ?
+        OR CAST(i.quantity_minimum AS CHAR) LIKE ?
+        OR CAST(i.price_eur AS CHAR) LIKE ?
+        OR i.comments LIKE ?
+        OR CAST(i.active AS CHAR) LIKE ?
+    )";
+    $params = array_fill(0, 9, $searchPattern);
+    $types = 'sssssssss';
 }
 
 $sortableColumns = ['name', 'item_code', 'serial', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'active'];
 $sort = (string)($_GET['sort'] ?? 'name');
-$dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
     $sort = 'name';
 }
@@ -30,14 +43,23 @@ $orderByMap = [
     'active' => 'i.active',
 ];
 
-$items = mysqli_query(
-    $conn,
-    "SELECT i.*, c.name AS category_name
-     FROM inventory_items i
-     LEFT JOIN inventory_categories c ON c.id = i.category_id
-     WHERE i.company_id = $company_id{$searchSql}
-     ORDER BY {$orderByMap[$sort]} {$dir}"
-);
+$sql = "SELECT i.*, c.name AS category_name
+        FROM inventory_items i
+        LEFT JOIN inventory_categories c ON c.id = i.category_id
+        WHERE i.company_id = ?{$searchSql}
+        ORDER BY {$orderByMap[$sort]} {$dir}";
+
+$stmt = mysqli_prepare($conn, $sql);
+$items = [];
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i' . $types, $company_id, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $items[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,7 +91,7 @@ $items = mysqli_query(
                     </div>
                 </form>
             </div>
-            <div class="card">
+            <div class="card" style="overflow:auto;">
                 <table>
                     <thead>
                     <tr>
@@ -91,7 +113,7 @@ $items = mysqli_query(
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if ($items && mysqli_num_rows($items)): while ($i = mysqli_fetch_assoc($items)): ?>
+                    <?php if (!empty($items)): foreach ($items as $i): ?>
                         <tr>
                             <td><?php echo sanitize((string)$i['name']); ?></td>
                             <td><?php echo sanitize((string)($i['item_code'] ?? '-')); ?></td>
@@ -106,13 +128,15 @@ $items = mysqli_query(
                                 <?php endif; ?>
                             </td>
                             <td><span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?></span></td>
-                            <td>
-                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
-                                <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
-                                <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">🗑️</a>
+                            <td class="itm-actions-cell">
+                                <div class="itm-actions-wrap">
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">🗑️</a>
+                                </div>
                             </td>
                         </tr>
-                    <?php endwhile; else: ?>
+                    <?php endforeach; else: ?>
                         <tr><td colspan="10" style="text-align:center;">No inventory items found.</td></tr>
                     <?php endif; ?>
                     </tbody>
