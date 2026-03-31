@@ -10,7 +10,7 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `access_levels`;
 CREATE TABLE `access_levels` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -24,7 +24,7 @@ INSERT INTO `access_levels` (`id`, `name`) VALUES ('2', 'Read Only');
 DROP TABLE IF EXISTS `assignment_types`;
 CREATE TABLE `assignment_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -39,15 +39,15 @@ INSERT INTO `assignment_types` (`id`, `name`) VALUES ('3', 'Shared');
 DROP TABLE IF EXISTS `companies`;
 CREATE TABLE `companies` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `company` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `incode` varchar(6) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `city` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `country` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `vat` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
+  `company` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `incode` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vat` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -69,9 +69,9 @@ DROP TABLE IF EXISTS `departments`;
 CREATE TABLE `departments` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
@@ -91,38 +91,38 @@ CREATE TABLE `employee_onboarding_requests` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `employee_id` int DEFAULT NULL,
-  `first_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `last_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `position_title` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `department_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `first_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `position_title` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `department_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `request_date` date DEFAULT NULL,
   `termination_date` date DEFAULT NULL,
-  `network_access` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `micros_emc` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `opera` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `micros_card` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `pms_id` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `synergy_mms` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email_account` varchar(160) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `landline_phone` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `hu_the_lobby` varchar(160) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `mobile_phone` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `navision` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `mobile_email` varchar(160) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `onq_ri` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `birchstreet` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `delphi` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `omina` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `vingcard_system` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `digital_rev` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `office_key_card` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
+  `network_access` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `micros_emc` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `opera` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `micros_card` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pms_id` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `synergy_mms` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email_account` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `landline_phone` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hu_the_lobby` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mobile_phone` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `navision` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mobile_email` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `onq_ri` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `birchstreet` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `delphi` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `omina` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vingcard_system` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `digital_rev` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `office_key_card` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `starting_date` date DEFAULT NULL,
-  `requested_by` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `requested_by` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `requested_on` date DEFAULT NULL,
-  `hod_approval` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `hrd_approval` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ism_approval` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hod_approval` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hrd_approval` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ism_approval` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
@@ -138,7 +138,7 @@ INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `
 DROP TABLE IF EXISTS `employee_statuses`;
 CREATE TABLE `employee_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -176,6 +176,7 @@ CREATE TABLE `employee_system_access` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_employee_system_access_company_employee` (`company_id`,`employee_id`),
   KEY `idx_employee_system_access_company` (`company_id`),
+  KEY `fk_employee_system_access_employee` (`employee_id`),
   CONSTRAINT `fk_employee_system_access_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -193,6 +194,7 @@ CREATE TABLE `employee_system_access_relations` (
   UNIQUE KEY `uq_esa_rel_company_employee_system` (`company_id`,`employee_id`,`system_access_id`),
   KEY `idx_esa_rel_company_employee` (`company_id`,`employee_id`),
   KEY `idx_esa_rel_system_access` (`system_access_id`),
+  KEY `fk_esa_rel_employee` (`employee_id`),
   CONSTRAINT `fk_esa_rel_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_esa_rel_system_access` FOREIGN KEY (`system_access_id`) REFERENCES `system_access` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -204,25 +206,25 @@ CREATE TABLE `employees` (
   `duplicate` tinyint(1) NOT NULL DEFAULT '0',
   `company_id` int NOT NULL,
   `user_id` int DEFAULT NULL,
-  `first_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `last_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `display_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `mobile_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `work_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `deck` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `extension` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `employee_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `hilton_id` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `username` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `first_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `display_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mobile_phone` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `work_phone` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `deck` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `extension` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `employee_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hilton_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department_id` int DEFAULT NULL,
-  `job_code` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `job_title` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
+  `job_code` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `job_title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `request_date` date DEFAULT NULL,
-  `requested_by` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `termination_requested_by` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `requested_by` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `termination_requested_by` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `termination_date` date DEFAULT NULL,
   `network_access` tinyint(1) DEFAULT '0',
   `micros_emc` tinyint(1) DEFAULT '0',
@@ -242,7 +244,7 @@ CREATE TABLE `employees` (
   `office_key_card_department_id` int DEFAULT NULL,
   `location_id` int DEFAULT NULL,
   `employment_status_id` int NOT NULL,
-  `raw_status_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `raw_status_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
@@ -270,12 +272,12 @@ CREATE TABLE `equipment` (
   `manufacturer_id` int DEFAULT NULL,
   `location_id` int DEFAULT NULL,
   `rack_id` int DEFAULT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `serial_number` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `model` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `hostname` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `mac_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `serial_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `model` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hostname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mac_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
   `purchase_date` date DEFAULT NULL,
   `purchase_cost` decimal(15,2) DEFAULT NULL,
@@ -288,7 +290,7 @@ CREATE TABLE `equipment` (
   `is_workstation` tinyint DEFAULT '0',
   `workstation_device_type_id` int DEFAULT NULL,
   `workstation_os_type_id` int DEFAULT NULL,
-  `workstation_processor` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `workstation_processor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `workstation_memory_gb` int DEFAULT NULL,
   `switch_rj45_id` int DEFAULT NULL,
   `switch_port_numbering_layout_id` int DEFAULT '1',
@@ -296,8 +298,8 @@ CREATE TABLE `equipment` (
   `switch_fiber_count_id` int DEFAULT NULL,
   `switch_poe_id` int DEFAULT NULL,
   `switch_environment_id` int DEFAULT NULL,
-  `notes` longtext COLLATE utf8mb4_unicode_ci,
-  `photo_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `photo_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -322,6 +324,12 @@ CREATE TABLE `equipment` (
   KEY `switch_environment_id` (`switch_environment_id`),
   CONSTRAINT `equipment_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `equipment_ibfk_10` FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types` (`id`),
+  CONSTRAINT `equipment_ibfk_11` FOREIGN KEY (`switch_rj45_id`) REFERENCES `equipment_rj45` (`id`),
+  CONSTRAINT `equipment_ibfk_12` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`),
+  CONSTRAINT `equipment_ibfk_13` FOREIGN KEY (`switch_fiber_id`) REFERENCES `equipment_fiber` (`id`),
+  CONSTRAINT `equipment_ibfk_14` FOREIGN KEY (`switch_poe_id`) REFERENCES `equipment_poe` (`id`),
+  CONSTRAINT `equipment_ibfk_15` FOREIGN KEY (`switch_environment_id`) REFERENCES `equipment_environment` (`id`),
+  CONSTRAINT `equipment_ibfk_16` FOREIGN KEY (`switch_fiber_count_id`) REFERENCES `equipment_fiber_count` (`id`),
   CONSTRAINT `equipment_ibfk_2` FOREIGN KEY (`equipment_type_id`) REFERENCES `equipment_types` (`id`),
   CONSTRAINT `equipment_ibfk_3` FOREIGN KEY (`manufacturer_id`) REFERENCES `manufacturers` (`id`),
   CONSTRAINT `equipment_ibfk_4` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`),
@@ -329,13 +337,7 @@ CREATE TABLE `equipment` (
   CONSTRAINT `equipment_ibfk_6` FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses` (`id`),
   CONSTRAINT `equipment_ibfk_7` FOREIGN KEY (`warranty_type_id`) REFERENCES `warranty_types` (`id`),
   CONSTRAINT `equipment_ibfk_8` FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types` (`id`),
-  CONSTRAINT `equipment_ibfk_9` FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types` (`id`),
-  CONSTRAINT `equipment_ibfk_11` FOREIGN KEY (`switch_rj45_id`) REFERENCES `equipment_rj45` (`id`),
-  CONSTRAINT `equipment_ibfk_12` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`),
-  CONSTRAINT `equipment_ibfk_13` FOREIGN KEY (`switch_fiber_id`) REFERENCES `equipment_fiber` (`id`),
-  CONSTRAINT `equipment_ibfk_14` FOREIGN KEY (`switch_poe_id`) REFERENCES `equipment_poe` (`id`),
-  CONSTRAINT `equipment_ibfk_15` FOREIGN KEY (`switch_environment_id`) REFERENCES `equipment_environment` (`id`),
-  CONSTRAINT `equipment_ibfk_16` FOREIGN KEY (`switch_fiber_count_id`) REFERENCES `equipment_fiber_count` (`id`)
+  CONSTRAINT `equipment_ibfk_9` FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment`
@@ -345,7 +347,7 @@ INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_
 DROP TABLE IF EXISTS `equipment_environment`;
 CREATE TABLE `equipment_environment` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -358,21 +360,21 @@ INSERT INTO `equipment_environment` (`id`, `name`) VALUES ('2', 'Unmanaged');
 DROP TABLE IF EXISTS `equipment_fiber`;
 CREATE TABLE `equipment_fiber` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_fiber`
+INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('3', 'QSFP 40 Gbps');
 INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('1', 'SFP 1 Gbps');
 INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('2', 'SFP+ 10 Gbps');
-INSERT INTO `equipment_fiber` (`id`, `name`) VALUES ('3', 'QSFP 40 Gbps');
 
 -- Table structure for `equipment_fiber_count`
 DROP TABLE IF EXISTS `equipment_fiber_count`;
 CREATE TABLE `equipment_fiber_count` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -387,7 +389,7 @@ INSERT INTO `equipment_fiber_count` (`id`, `name`) VALUES ('4', '4');
 DROP TABLE IF EXISTS `equipment_poe`;
 CREATE TABLE `equipment_poe` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -401,25 +403,25 @@ INSERT INTO `equipment_poe` (`id`, `name`) VALUES ('3', 'PoE++ (802.3bt) - up to
 DROP TABLE IF EXISTS `equipment_rj45`;
 CREATE TABLE `equipment_rj45` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_rj45`
-INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('1', '8 ports');
 INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('2', '16 ports');
 INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('3', '24 ports');
 INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('4', '48 ports');
+INSERT INTO `equipment_rj45` (`id`, `name`) VALUES ('1', '8 ports');
 
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
 CREATE TABLE `equipment_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_statuses`
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('1', 'Active');
@@ -428,15 +430,15 @@ INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('4', 'Faulty');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('3', 'Maintenance');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('7', 'On-Order');
-INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('5', 'Reserved');
 INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('8', 'Other');
+INSERT INTO `equipment_statuses` (`id`, `name`) VALUES ('5', 'Reserved');
 
 -- Table structure for `equipment_types`
 DROP TABLE IF EXISTS `equipment_types`;
 CREATE TABLE `equipment_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
@@ -456,15 +458,16 @@ INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('9', 'Pho
 INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('10', 'Camera', 'CAM', '1');
 INSERT INTO `equipment_types` (`id`, `name`, `code`, `active`) VALUES ('11', 'Other', 'OTHER', '1');
 
+-- Table structure for `idf_links`
 DROP TABLE IF EXISTS `idf_links`;
 CREATE TABLE `idf_links` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `port_id_a` INT NOT NULL,
-  `port_id_b` INT NOT NULL,
-  `cable_color` VARCHAR(40) NOT NULL DEFAULT 'yellow',
-  `cable_label` VARCHAR(120) DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `port_id_a` int NOT NULL,
+  `port_id_b` int NOT NULL,
+  `cable_color` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'yellow',
+  `cable_label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_pair` (`port_id_a`,`port_id_b`),
   KEY `port_id_a` (`port_id_a`),
@@ -473,26 +476,28 @@ CREATE TABLE `idf_links` (
   CONSTRAINT `idf_links_ibfk_b` FOREIGN KEY (`port_id_b`) REFERENCES `idf_ports` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for `idf_ports`
 DROP TABLE IF EXISTS `idf_ports`;
 CREATE TABLE `idf_ports` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `position_id` INT NOT NULL,
-  `port_no` SMALLINT NOT NULL,
-  `port_type` ENUM('RJ45','SFP','SFP+','LC','SC','OTHER') NOT NULL DEFAULT 'RJ45',
-  `label` VARCHAR(120) DEFAULT NULL,
-  `status` ENUM('free','used','reserved','down','unknown') NOT NULL DEFAULT 'unknown',
-  `connected_to` VARCHAR(180) DEFAULT NULL,
-  `vlan` VARCHAR(40) DEFAULT NULL,
-  `speed` VARCHAR(40) DEFAULT NULL,
-  `poe` VARCHAR(40) DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `position_id` int NOT NULL,
+  `port_no` smallint NOT NULL,
+  `port_type` enum('RJ45','SFP','SFP+','LC','SC','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RJ45',
+  `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('free','used','reserved','down','unknown') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unknown',
+  `connected_to` varchar(180) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vlan` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `speed` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `poe` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `pos_port_unique` (`position_id`,`port_no`),
   KEY `position_id` (`position_id`),
   CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Data for `idf_ports`
 INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('1', '1', '1', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('2', '1', '2', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('3', '1', '3', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
@@ -518,54 +523,57 @@ INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `
 INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('23', '1', '23', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `idf_ports` (`id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('24', '1', '24', 'RJ45', NULL, 'unknown', NULL, NULL, NULL, NULL, NULL, NULL);
 
+-- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `idf_id` INT NOT NULL,
-  `position_no` TINYINT NOT NULL,
-  `device_type` ENUM('switch','patch_panel','ups','server','other') NOT NULL DEFAULT 'other',
-  `device_name` VARCHAR(140) NOT NULL,
-  `equipment_id` INT DEFAULT NULL,
-  `port_count` SMALLINT NOT NULL DEFAULT 0,
-  `notes` TEXT DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `idf_id` int NOT NULL,
+  `position_no` tinyint NOT NULL,
+  `device_type` enum('switch','patch_panel','ups','server','other') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
+  `device_name` varchar(140) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `equipment_id` int DEFAULT NULL,
+  `port_count` smallint NOT NULL DEFAULT '0',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idf_pos_unique` (`idf_id`,`position_no`),
   KEY `idf_id` (`idf_id`),
   KEY `equipment_id` (`equipment_id`),
-  CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idf_positions_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `idf_positions_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `idf_positions`
 INSERT INTO `idf_positions` (`id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) VALUES ('1', '1', '2', 'switch', 'cxcz', '1', '24', NULL, '2026-03-31 00:35:24', '2026-03-31 00:35:39');
 
+-- Table structure for `idfs`
 DROP TABLE IF EXISTS `idfs`;
 CREATE TABLE `idfs` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `company_id` INT NOT NULL,
-  `location_id` INT NOT NULL,
-  `name` VARCHAR(120) NOT NULL,
-  `idf_code` VARCHAR(60) DEFAULT NULL,
-  `notes` TEXT DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `location_id` int NOT NULL,
+  `name` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idf_code` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `idf_code` (`idf_code`),
   KEY `company_id` (`company_id`),
   KEY `location_id` (`location_id`),
-  UNIQUE KEY `idf_code` (`idf_code`),
   CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Data for `idfs`
 INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) VALUES ('1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '2026-03-31 00:25:58');
 
 -- Table structure for `inventory_categories`
 DROP TABLE IF EXISTS `inventory_categories`;
 CREATE TABLE `inventory_categories` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
@@ -584,15 +592,15 @@ DROP TABLE IF EXISTS `inventory_items`;
 CREATE TABLE `inventory_items` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `item_code` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `serial` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_code` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `serial` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `category_id` int DEFAULT NULL,
   `manufacturer_id` int DEFAULT NULL,
   `quantity_on_hand` int NOT NULL DEFAULT '0',
   `quantity_minimum` int DEFAULT '5',
   `price_eur` decimal(10,2) DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `location_id` int DEFAULT NULL,
   `supplier_id` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
@@ -611,21 +619,21 @@ CREATE TABLE `inventory_items` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `inventory_items`
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `location_id`, `supplier_id`, `comments`, `active`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '1', '1', '50', '10', '4.99', '1', '1', 'Stock for patching and desktop setups', '1');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '1', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1');
 
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
 CREATE TABLE `it_locations` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `location_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `city` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `state` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `country` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `postal_code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `location_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `state` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `postal_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `type_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
@@ -642,7 +650,7 @@ INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `addres
 DROP TABLE IF EXISTS `location_types`;
 CREATE TABLE `location_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -660,8 +668,8 @@ INSERT INTO `location_types` (`id`, `name`) VALUES ('3', 'Warehouse');
 DROP TABLE IF EXISTS `manufacturers`;
 CREATE TABLE `manufacturers` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
@@ -682,7 +690,7 @@ INSERT INTO `manufacturers` (`id`, `name`, `code`, `active`) VALUES ('8', 'Micro
 DROP TABLE IF EXISTS `printer_device_types`;
 CREATE TABLE `printer_device_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -702,7 +710,7 @@ INSERT INTO `printer_device_types` (`id`, `name`) VALUES ('5', 'Wide-Format');
 DROP TABLE IF EXISTS `rack_statuses`;
 CREATE TABLE `rack_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -719,8 +727,8 @@ CREATE TABLE `racks` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `location_id` int NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `rack_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rack_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
@@ -741,9 +749,9 @@ DROP TABLE IF EXISTS `sidebar_layout`;
 CREATE TABLE `sidebar_layout` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `entry_type` enum('section','item') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `entry_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `section_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `entry_type` enum('section','item') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entry_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `section_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `display_order` int NOT NULL DEFAULT '0',
   `is_visible` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -758,28 +766,28 @@ CREATE TABLE `sidebar_layout` (
 DROP TABLE IF EXISTS `supplier_statuses`;
 CREATE TABLE `supplier_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `supplier_statuses`
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('1', 'Active');
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('4', 'Backup');
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('2', 'Inactive');
-INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('3', 'Preferred');
 INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('5', 'Other');
+INSERT INTO `supplier_statuses` (`id`, `name`) VALUES ('3', 'Preferred');
 
 -- Table structure for `suppliers`
 DROP TABLE IF EXISTS `suppliers`;
 CREATE TABLE `suppliers` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `supplier_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `contact_person` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_person` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
@@ -797,44 +805,44 @@ INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_p
 DROP TABLE IF EXISTS `switch_cablecolors`;
 CREATE TABLE `switch_cablecolors` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `color` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
+  `color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
   PRIMARY KEY (`id`),
   UNIQUE KEY `color` (`color`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_cablecolors`
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('1', 'grey');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('2', 'green');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('3', 'red');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('4', 'yellow');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('5', 'black');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('6', 'blue');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('7', 'white');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('2', 'green');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('1', 'grey');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('8', 'orange');
-INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('9', 'purple');
 INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('10', 'other');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('9', 'purple');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('3', 'red');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('7', 'white');
+INSERT INTO `switch_cablecolors` (`id`, `color`) VALUES ('4', 'yellow');
 
 -- Table structure for `switch_port_numbering_layout`
 DROP TABLE IF EXISTS `switch_port_numbering_layout`;
 CREATE TABLE `switch_port_numbering_layout` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_port_numbering_layout`
-INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('1', 'Vertical');
 INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('2', 'Horizontal');
+INSERT INTO `switch_port_numbering_layout` (`id`, `name`) VALUES ('1', 'Vertical');
 
 -- Table structure for `switch_port_types`
 DROP TABLE IF EXISTS `switch_port_types`;
 CREATE TABLE `switch_port_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `type` (`type`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_port_types`
 INSERT INTO `switch_port_types` (`id`, `type`) VALUES ('1', 'RJ45');
@@ -847,14 +855,14 @@ CREATE TABLE `switch_ports` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `equipment_id` int DEFAULT NULL,
-  `hostname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `port_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RJ45',
+  `hostname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `port_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RJ45',
   `port_number` int NOT NULL,
-  `label` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
   `color_id` int NOT NULL,
   `vlan_id` int DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_switch_port` (`company_id`,`equipment_id`,`port_type`,`port_number`),
@@ -870,7 +878,8 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_4` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`),
   CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`type`),
   CONSTRAINT `switch_ports_ibfk_6` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Data for `switch_ports`
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('1', '1', '1', NULL, 'rj45', '1', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('2', '1', '1', NULL, 'rj45', '2', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
@@ -901,36 +910,36 @@ INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `por
 DROP TABLE IF EXISTS `switch_status`;
 CREATE TABLE `switch_status` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
   PRIMARY KEY (`id`),
   UNIQUE KEY `status` (`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_status`
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('1', 'Up');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('2', 'Down');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('3', 'Free');
 INSERT INTO `switch_status` (`id`, `status`) VALUES ('4', 'Disabled');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('5', 'Unknown');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('2', 'Down');
 INSERT INTO `switch_status` (`id`, `status`) VALUES ('6', 'Err-Disabled');
-INSERT INTO `switch_status` (`id`, `status`) VALUES ('7', 'Testing');
 INSERT INTO `switch_status` (`id`, `status`) VALUES ('8', 'Faulty');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('3', 'Free');
 INSERT INTO `switch_status` (`id`, `status`) VALUES ('9', 'Reserved');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('7', 'Testing');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('5', 'Unknown');
+INSERT INTO `switch_status` (`id`, `status`) VALUES ('1', 'Up');
 
 -- Table structure for `system_access`
 DROP TABLE IF EXISTS `system_access`;
 CREATE TABLE `system_access` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_system_access_company_code` (`company_id`,`code`),
   UNIQUE KEY `uq_system_access_company_name` (`company_id`,`name`),
   KEY `idx_system_access_company` (`company_id`),
   CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `system_access`
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
@@ -953,8 +962,8 @@ INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUE
 DROP TABLE IF EXISTS `ticket_categories`;
 CREATE TABLE `ticket_categories` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
@@ -971,9 +980,9 @@ INSERT INTO `ticket_categories` (`id`, `name`, `code`, `active`) VALUES ('5', 'O
 DROP TABLE IF EXISTS `ticket_priorities`;
 CREATE TABLE `ticket_priorities` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `level` int DEFAULT NULL,
-  `color` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
@@ -990,8 +999,8 @@ INSERT INTO `ticket_priorities` (`id`, `name`, `level`, `color`, `active`) VALUE
 DROP TABLE IF EXISTS `ticket_statuses`;
 CREATE TABLE `ticket_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `color` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_closed` tinyint DEFAULT '0',
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
@@ -1009,9 +1018,9 @@ DROP TABLE IF EXISTS `tickets`;
 CREATE TABLE `tickets` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `ticket_code` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `ticket_code` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `category_id` int DEFAULT NULL,
   `status_id` int DEFAULT NULL,
   `priority_id` int DEFAULT NULL,
@@ -1045,14 +1054,14 @@ DROP TABLE IF EXISTS `ui_configuration`;
 CREATE TABLE `ui_configuration` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `table_actions_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
-  `new_button_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
-  `export_buttons_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
-  `back_save_position` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
+  `table_actions_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
+  `new_button_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
+  `export_buttons_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
+  `back_save_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
   `enable_all_error_reporting` tinyint(1) NOT NULL DEFAULT '1',
-  `sidebar_visibility` longtext COLLATE utf8mb4_unicode_ci,
-  `sidebar_main_order` longtext COLLATE utf8mb4_unicode_ci,
-  `sidebar_submenu_order` longtext COLLATE utf8mb4_unicode_ci,
+  `sidebar_visibility` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `sidebar_main_order` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `sidebar_submenu_order` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -1071,7 +1080,7 @@ INSERT INTO `ui_configuration` (`id`, `company_id`, `table_actions_position`, `n
 DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1079,8 +1088,8 @@ CREATE TABLE `user_roles` (
 -- Data for `user_roles`
 INSERT INTO `user_roles` (`id`, `name`) VALUES ('1', 'Admin');
 INSERT INTO `user_roles` (`id`, `name`) VALUES ('4', 'Helpdesk');
-INSERT INTO `user_roles` (`id`, `name`) VALUES ('2', 'IT Manager');
 INSERT INTO `user_roles` (`id`, `name`) VALUES ('3', 'IT Assistant');
+INSERT INTO `user_roles` (`id`, `name`) VALUES ('2', 'IT Manager');
 INSERT INTO `user_roles` (`id`, `name`) VALUES ('5', 'User');
 
 -- Table structure for `users`
@@ -1088,12 +1097,12 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `username` varchar(80) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `first_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `last_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `username` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `first_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `role_id` int DEFAULT NULL,
   `access_level_id` int DEFAULT NULL,
   `active` tinyint DEFAULT '1',
@@ -1118,12 +1127,12 @@ CREATE TABLE `vlans` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `vlan_number` int DEFAULT NULL,
-  `vlan_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `vlan_color` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `subnet` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
-  `gateway_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vlan_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `vlan_color` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subnet` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `gateway_ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
@@ -1137,24 +1146,24 @@ INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color
 DROP TABLE IF EXISTS `warranty_types`;
 CREATE TABLE `warranty_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `warranty_types`
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('4', 'Enterprise');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('2', 'Extended');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('5', 'None');
+INSERT INTO `warranty_types` (`id`, `name`) VALUES ('6', 'Other');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('3', 'Premium');
 INSERT INTO `warranty_types` (`id`, `name`) VALUES ('1', 'Standard');
-INSERT INTO `warranty_types` (`id`, `name`) VALUES ('6', 'Other');
 
 -- Table structure for `workstation_device_types`
 DROP TABLE IF EXISTS `workstation_device_types`;
 CREATE TABLE `workstation_device_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1173,15 +1182,15 @@ INSERT INTO `workstation_device_types` (`id`, `name`) VALUES ('5', 'Thin-Client'
 DROP TABLE IF EXISTS `workstation_modes`;
 CREATE TABLE `workstation_modes` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `mode_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `mode_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
+  `mode_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mode_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `monitor_count` int DEFAULT '0',
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `mode_name` (`mode_name`),
   UNIQUE KEY `mode_code` (`mode_code`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_modes`
 INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `active`) VALUES ('1', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '1');
@@ -1199,7 +1208,7 @@ INSERT INTO `workstation_modes` (`id`, `mode_name`, `mode_code`, `description`, 
 DROP TABLE IF EXISTS `workstation_os_types`;
 CREATE TABLE `workstation_os_types` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1219,8 +1228,8 @@ CREATE TABLE `workstations` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `equipment_id` int DEFAULT NULL,
-  `hostname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `workstation_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hostname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `workstation_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `workstation_mode_id` int DEFAULT NULL,
   `assigned_to_employee_id` int DEFAULT NULL,
   `assigned_to_department_id` int DEFAULT NULL,
@@ -1248,14 +1257,6 @@ CREATE TABLE `workstations` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstations`
-INSERT INTO `workstations` (`id`, `company_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) VALUES ('1', '1', 'srv-file-01', 'srv-file-01', '1', '1', '1', '1', '1', '1');
-
--- --------------------------------------------------------
--- IDF module
--- --------------------------------------------------------
-
--- Compatibility fix: ensure optional warranty_type_id accepts NULL
-ALTER TABLE `equipment`
-  MODIFY `warranty_type_id` int DEFAULT NULL;
+INSERT INTO `workstations` (`id`, `company_id`, `equipment_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) VALUES ('1', '1', NULL, 'srv-file-01', 'srv-file-01', '1', '1', '1', '1', '1', '1');
 
 SET FOREIGN_KEY_CHECKS=1;
