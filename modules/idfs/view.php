@@ -56,10 +56,11 @@ while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
 $equipmentOptions = [];
 $resEq = mysqli_query(
     $conn,
-    "SELECT id, name, serial_number
-     FROM equipment
-     WHERE company_id=$company_id
-     ORDER BY name ASC
+    "SELECT e.id, e.name, e.serial_number, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+     FROM equipment e
+     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+     WHERE e.company_id=$company_id
+     ORDER BY e.name ASC
      LIMIT 500"
 );
 while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
@@ -210,13 +211,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
             <div>
                 <label class="label">Link to Equipment (optional)</label>
-                <select class="input" name="equipment_id">
+                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment">
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
                             <?php echo sanitize($e['name'] . (!empty($e['serial_number']) ? (' • SN ' . $e['serial_number']) : '')); ?>
                         </option>
                     <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
@@ -276,6 +278,25 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 <script>
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
+const equipmentMetaById = <?php
+$equipmentMeta = [];
+foreach ($equipmentOptions as $equipmentOption) {
+    $portCount = (int)($equipmentOption['switch_rj45_id'] ?? 0);
+    if (!empty($equipmentOption['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentOption['switch_rj45_name'], $matches)) {
+        $portCount = (int)$matches[1];
+    }
+    $equipmentMeta[] = [
+        'id' => (int)$equipmentOption['id'],
+        'name' => (string)($equipmentOption['name'] ?? ''),
+        'notes' => (string)($equipmentOption['notes'] ?? ''),
+        'port_count' => $portCount,
+    ];
+}
+echo json_encode($equipmentMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?>.reduce((acc, item) => {
+    acc[String(item.id)] = item;
+    return acc;
+}, {});
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
 function closeModal(){ document.getElementById('idfModalBackdrop').style.display = 'none'; }
@@ -316,11 +337,27 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.value = position.equipment_id || '';
                 form.port_count.value = position.port_count || 0;
                 form.notes.value = position.notes || '';
+                syncFieldsFromEquipment(form, false);
                 openModal();
             })
             .catch(err => alert(err.message));
     } else {
+        syncFieldsFromEquipment(form, false);
         openModal();
+    }
+}
+
+function syncFieldsFromEquipment(form, shouldAlert) {
+    const selectedEquipmentId = String(form.equipment_id.value || '');
+    const meta = equipmentMetaById[selectedEquipmentId];
+    if (!meta) return;
+
+    form.device_name.value = meta.name || '';
+    form.port_count.value = Number(meta.port_count || 0);
+    form.notes.value = meta.notes || '';
+
+    if (shouldAlert) {
+        alert('Device Name, Port Count, and Notes were filled from linked equipment.');
     }
 }
 
@@ -341,6 +378,11 @@ function saveDevice() {
         .then(() => location.reload())
         .catch(err => alert(err.message));
 }
+
+document.getElementById('idfDeviceForm').equipment_id.addEventListener('change', function () {
+    const form = document.getElementById('idfDeviceForm');
+    syncFieldsFromEquipment(form, false);
+});
 
 function openCopyModal(positionNo, positionId) {
     document.getElementById('idfCopyPositionId').value = positionId;

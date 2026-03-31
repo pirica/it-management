@@ -29,6 +29,29 @@ if (!in_array($device_type, $validTypes, true)) {
     idf_fail('Invalid device_type');
 }
 
+if ($equipment_id > 0) {
+    $resEquipment = mysqli_query(
+        $conn,
+        "SELECT e.name, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+         FROM equipment e
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+         WHERE e.id=$equipment_id AND e.company_id=$company_id
+         LIMIT 1"
+    );
+    $equipment = $resEquipment ? mysqli_fetch_assoc($resEquipment) : null;
+    if (!$equipment) {
+        idf_fail('Selected equipment not found', 404);
+    }
+
+    $device_name = trim((string)($equipment['name'] ?? ''));
+    $notes = trim((string)($equipment['notes'] ?? ''));
+
+    $port_count = (int)($equipment['switch_rj45_id'] ?? 0);
+    if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
+        $port_count = (int)$matches[1];
+    }
+}
+
 $resIdf = mysqli_query($conn, "SELECT id FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1");
 if (!$resIdf || mysqli_num_rows($resIdf) !== 1) {
     idf_fail('IDF not found', 404);
