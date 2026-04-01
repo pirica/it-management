@@ -75,8 +75,7 @@ $switchResult = mysqli_query(
      LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
      WHERE e.company_id = $company_id
-       AND e.active = 1
-       AND LOWER(TRIM(et.name)) = 'switch'
+       AND LOWER(TRIM(et.name)) LIKE '%switch%'
      ORDER BY e.name ASC"
 );
 while ($switchResult && ($row = mysqli_fetch_assoc($switchResult))) {
@@ -178,7 +177,7 @@ if (!empty($_SESSION['crud_success'])) {
                     <tbody>
                     <?php if ($result && mysqli_num_rows($result) > 0): ?>
                         <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                            <?php $isSwitch = strtolower(trim((string)($row['equipment_type_name'] ?? ''))) === 'switch'; ?>
+                            <?php $isSwitch = str_contains(strtolower(trim((string)($row['equipment_type_name'] ?? ''))), 'switch'); ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['name']); ?></td>
