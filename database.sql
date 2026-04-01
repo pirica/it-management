@@ -181,7 +181,7 @@ CREATE TABLE `employee_system_access` (
   `vingcard_system` tinyint(1) NOT NULL DEFAULT '0',
   `digital_rev` tinyint(1) NOT NULL DEFAULT '0',
   `office_key_card` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `changed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_employee_system_access_company_employee` (`company_id`,`employee_id`),
@@ -1209,6 +1209,28 @@ CREATE TABLE `users` (
 
 -- Data for `users`
 INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin_tc', 'admin@techcorp.example', '(to define)', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
+
+-- Table structure for `audit_logs`
+DROP TABLE IF EXISTS `audit_logs`;
+CREATE TABLE `audit_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `record_id` int NOT NULL,
+  `action` enum('INSERT','UPDATE','DELETE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `old_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `new_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `changed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_logs_company` (`company_id`),
+  KEY `idx_audit_logs_user` (`user_id`),
+  KEY `idx_audit_logs_table_record` (`table_name`,`record_id`),
+  KEY `idx_audit_logs_action` (`action`),
+  KEY `idx_audit_logs_changed_at` (`changed_at`),
+  CONSTRAINT `audit_logs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `audit_logs_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `vlans`
 DROP TABLE IF EXISTS `vlans`;
