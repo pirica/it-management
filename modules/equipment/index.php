@@ -75,7 +75,6 @@ $switchResult = mysqli_query(
      LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
      WHERE e.company_id = $company_id
-       AND e.active = 1
        AND LOWER(TRIM(et.name)) LIKE '%switch%'
      ORDER BY e.name ASC"
 );

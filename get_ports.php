@@ -23,11 +23,16 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     $rows = [];
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $labelEsc = mysqli_real_escape_string($conn, $labelColumn);
-    $companyFilter = '';
-    if (table_has_column($conn, $table, 'company_id') && isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0) {
-        $companyFilter = ' WHERE company_id = ' . (int)$GLOBALS['company_id'];
+    $hasCompanyId = table_has_column($conn, $table, 'company_id');
+    $companyId = isset($GLOBALS['company_id']) ? (int)$GLOBALS['company_id'] : 0;
+
+    $res = false;
+    if ($hasCompanyId && $companyId > 0) {
+        $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` WHERE company_id = {$companyId} ORDER BY id ASC");
     }
-    $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}`{$companyFilter} ORDER BY id ASC");
+    if (!$res || mysqli_num_rows($res) === 0) {
+        $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` ORDER BY id ASC");
+    }
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
     }

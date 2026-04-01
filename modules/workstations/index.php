@@ -398,8 +398,11 @@ $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_field($col['Field']);
 }));
 $hasCompany = false;
-foreach ($fieldColumns as $c) {
-    if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
+foreach ($columns as $c) {
+    if (($c['Field'] ?? '') === 'company_id') {
+        $hasCompany = true;
+        break;
+    }
 }
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
