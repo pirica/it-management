@@ -18,6 +18,27 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+
+function equipment_field_label($key) {
+    $labels = [
+        'is_printer' => 'Is Printer',
+        'is_workstation' => 'Is Workstation',
+        'is_server' => 'Is Server',
+        'is_pos' => 'Is POS',
+        'is_switch' => 'Is Switch',
+        'notes' => 'Comments',
+    ];
+
+    return $labels[$key] ?? ucwords(str_replace('_', ' ', (string)$key));
+}
+
+function equipment_field_value($key, $value) {
+    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
+        return (int)$value === 1 ? 'Yes' : 'No';
+    }
+
+    return (string)$value;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View Equipment</title><link rel="stylesheet" href="../../css/styles.css"></head>
@@ -28,7 +49,12 @@ $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 <?php else: ?>
 <div class="card">
 <table><tbody>
-<?php foreach ($item as $k => $v): ?><tr><th style="width:240px;"><?php echo sanitize($k); ?></th><td><?php echo sanitize((string)$v); ?></td></tr><?php endforeach; ?>
+<?php foreach ($item as $k => $v): ?>
+    <tr>
+        <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
+        <td><?php echo sanitize(equipment_field_value($k, $v)); ?></td>
+    </tr>
+<?php endforeach; ?>
 </tbody></table>
 <?php if (!empty($item['photo_filename'])): ?><p style="margin-top:16px;"><img src="<?php echo UPLOAD_URL . sanitize($item['photo_filename']); ?>" alt="Equipment Photo" style="max-width:300px;border:1px solid var(--border);border-radius:8px;"></p><?php endif; ?>
 <p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
