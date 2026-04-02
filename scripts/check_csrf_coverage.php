@@ -17,7 +17,7 @@ $csrfPatterns = [
     'idf_require_csrf',
 ];
 
-$postHandlerPattern = '/if\s*\([^\)]*REQUEST_METHOD\s*[\"\']?\]\s*={2,3}\s*[\"\']POST[\"\'][^\)]*\)\s*\{/i';
+$postHandlerPattern = '/if\s*\([^\n{};]*REQUEST_METHOD[^\n{};]*POST[^\n{};]*\)\s*\{/i';
 $postSurfacePattern = '/REQUEST_METHOD\s*[\"\']?\]\s*={2,3}\s*[\"\']POST[\"\']|\$_POST\s*\[|php:\/\/input/i';
 
 $stateMutationPattern = '/\b(INSERT|UPDATE|DELETE)\b|\b(mysqli_query|mysqli_prepare|mysqli_stmt_execute)\s*\(|\$_SESSION\s*\[[^\]]+\]\s*=|session_destroy\s*\(|setcookie\s*\(/i';
