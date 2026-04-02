@@ -21,12 +21,13 @@ $params = [$companyId];
 $types = 'i';
 
 if ($search !== '') {
-    $where[] = '(al.table_name LIKE ? OR CAST(al.record_id AS CHAR) LIKE ? OR CONCAT(COALESCE(u.first_name, ""), " ", COALESCE(u.last_name, "")) LIKE ?)';
+    $where[] = '(al.table_name LIKE ? OR CAST(al.record_id AS CHAR) LIKE ? OR CONCAT(COALESCE(u.first_name, ""), " ", COALESCE(u.last_name, "")) LIKE ? OR COALESCE(u.username, "") LIKE ?)';
     $searchLike = '%' . $search . '%';
     $params[] = $searchLike;
     $params[] = $searchLike;
     $params[] = $searchLike;
-    $types .= 'sss';
+    $params[] = $searchLike;
+    $types .= 'ssss';
 }
 
 if ($action !== '') {
@@ -47,7 +48,7 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
     $types .= 's';
 }
 
-$sql = 'SELECT al.*, u.first_name, u.last_name '
+$sql = 'SELECT al.*, u.username, u.first_name, u.last_name '
      . 'FROM audit_logs al '
      . 'LEFT JOIN users u ON u.id = al.user_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
@@ -177,6 +178,9 @@ function itm_audit_preview($text, $limit = 120) {
                         <?php foreach ($rows as $row): ?>
                             <?php
                             $userName = trim((string)(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')));
+                            if ($userName === '') {
+                                $userName = trim((string)($row['username'] ?? ''));
+                            }
                             if ($userName === '') {
                                 $userName = $row['user_id'] ? ('User #' . (int)$row['user_id']) : 'System';
                             }
