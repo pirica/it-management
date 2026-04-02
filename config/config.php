@@ -62,7 +62,13 @@ if (!isset($_SESSION['user_id']) && !in_array($current_file, ['login.php', 'regi
     exit();
 }
 
-if (isset($_SESSION['user_id']) && !isset($_SESSION['company_id']) && !in_array($current_file, ['index.php', 'logout.php'], true)) {
+$isReadOnlyUserConfig = !empty($_SESSION['read_only_user_config']);
+if ($isReadOnlyUserConfig && !in_array($current_file, ['user-config.php', 'logout.php'], true)) {
+    header('Location: ' . BASE_URL . 'user-config.php');
+    exit();
+}
+
+if (isset($_SESSION['user_id']) && !isset($_SESSION['company_id']) && !$isReadOnlyUserConfig && !in_array($current_file, ['index.php', 'logout.php'], true)) {
     header('Location: ' . BASE_URL . 'index.php');
     exit();
 }

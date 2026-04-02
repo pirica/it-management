@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = (int)$_SESSION['user_id'];
+$isReadOnlyMode = !empty($_SESSION['read_only_user_config']);
 $message = '';
 $message_type = ''; // success, error, info
 
@@ -24,7 +25,7 @@ if ($stmt_init) {
 }
 
 // 2. Handle Form Submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
     $new_email = trim((string)($_POST['email'] ?? ''));
     $new_password = (string)($_POST['new_password'] ?? '');
     $confirm_password = (string)($_POST['confirm_password'] ?? '');
@@ -112,6 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Error: Current password incorrect. Changes not saved.';
         $message_type = 'error';
     }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $isReadOnlyMode) {
+    $message = 'Read-only mode is enabled. Account changes are not available.';
+    $message_type = 'info';
 }
 
 $messageClass = '';
@@ -128,8 +132,56 @@ if ($message_type === 'success') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Settings - IT Management</title>
     <link rel="stylesheet" href="css/styles.css">
+    <?php if ($isReadOnlyMode): ?>
+    <style>
+        .readonly-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: var(--bg);
+        }
+        .readonly-card {
+            width: 100%;
+            max-width: 560px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        .readonly-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+    <?php endif; ?>
 </head>
 <body>
+    <?php if ($isReadOnlyMode): ?>
+    <div class="readonly-wrap">
+        <div class="readonly-card">
+            <h1>👤 User Configuration</h1>
+            <p style="margin-top:10px; color: var(--text-secondary);">
+                Read-Only mode: your login email does not match any active employee with <strong>Active</strong> employment status.
+            </p>
+            <?php if ($message !== ''): ?>
+                <div class="<?php echo $messageClass !== '' ? $messageClass : ''; ?>" style="<?php echo $message_type === 'info' ? 'background: #e8f1ff; border:1px solid #b6d4fe; color:#084298; padding:10px; border-radius:8px; margin-top:16px;' : ''; ?>">
+                    <?php echo htmlspecialchars($message); ?>
+                </div>
+            <?php endif; ?>
+            <div class="readonly-actions">
+                <button type="button" onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙 Dark / White</button>
+                <a href="logout.php" class="btn btn-sm">🚪 Logout</a>
+            </div>
+        </div>
+    </div>
+    <script src="js/theme.js"></script>
+    <?php else: ?>
     <div class="container">
         <?php include 'includes/sidebar.php'; ?>
 
@@ -194,5 +246,6 @@ if ($message_type === 'success') {
 
     <script src="js/theme.js"></script>
     <script src="js/script.js"></script>
+    <?php endif; ?>
 </body>
 </html>
