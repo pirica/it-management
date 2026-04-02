@@ -109,6 +109,7 @@ $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_
 
 $switchTypeId = 0;
 $serverTypeId = 0;
+$printerTypeId = 0;
 foreach ($types as $typeItem) {
     if (strcasecmp((string)$typeItem['label'], 'Switch') === 0) {
         $switchTypeId = (int)$typeItem['id'];
@@ -116,13 +117,16 @@ foreach ($types as $typeItem) {
     if (strcasecmp((string)$typeItem['label'], 'Server') === 0) {
         $serverTypeId = (int)$typeItem['id'];
     }
+    if (strcasecmp((string)$typeItem['label'], 'Printer') === 0) {
+        $printerTypeId = (int)$typeItem['id'];
+    }
 }
 
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'name' => '',
     'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'mac_address' => '',
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
-    'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_print_speed_ppm' => '',
+    'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0,
     'is_workstation' => 0, 'is_server' => 0, 'is_pos' => 0, 'is_switch' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_processor' => '', 'workstation_memory_gb' => '',
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_count_id' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
@@ -232,7 +236,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_printer = (int)$data['is_printer'];
         $printer_device_type_id = (int)$data['printer_device_type_id'] ?: 'NULL';
         $printer_color_capable = (int)$data['printer_color_capable'];
-        $printer_print_speed_ppm = $data['printer_print_speed_ppm'] === '' ? 'NULL' : (int)$data['printer_print_speed_ppm'];
         $is_workstation = (int)$data['is_workstation'];
         $is_server = (int)$data['is_server'];
         $is_pos = (int)$data['is_pos'];
@@ -256,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, mac_address=$mac_address,
                     status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
                     warranty_type_id=$warranty_type_id, is_printer=$is_printer, printer_device_type_id=$printer_device_type_id,
-                    printer_color_capable=$printer_color_capable, printer_print_speed_ppm=$printer_print_speed_ppm,
+                    printer_color_capable=$printer_color_capable,
                     is_workstation=$is_workstation, is_server=$is_server, is_pos=$is_pos, is_switch=$is_switch,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
                     workstation_processor=$workstation_processor, workstation_memory_gb=$workstation_memory_gb,
@@ -267,11 +270,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
                     ip_address, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
-                    printer_device_type_id, printer_color_capable, printer_print_speed_ppm, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
+                    printer_device_type_id, printer_color_capable, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
                     workstation_os_type_id, workstation_processor, workstation_memory_gb, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
-                    $printer_device_type_id, $printer_color_capable, $printer_print_speed_ppm, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
+                    $printer_device_type_id, $printer_color_capable, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
                     $workstation_os_type_id, $workstation_processor, $workstation_memory_gb, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
@@ -380,9 +383,11 @@ function render_options($items, $selected = '') {
                     <div class="form-group"></div>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Printer Speed (PPM)</label><input type="number" name="printer_print_speed_ppm" value="<?php echo sanitize($data['printer_print_speed_ppm']); ?>"></div>
+            <div id="printer-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label></div>
+                </div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Processor</label><input name="workstation_processor" value="<?php echo sanitize($data['workstation_processor']); ?>"></div>
@@ -440,8 +445,11 @@ function render_options($items, $selected = '') {
     var typeSelect = document.querySelector('select[name="equipment_type_id"]');
     var switchFields = document.getElementById('switch-fields');
     var serverFields = document.getElementById('server-fields');
+    var printerFields = document.getElementById('printer-fields');
+    var isPrinterCheckbox = document.querySelector('input[name="is_printer"]');
     var switchTypeId = '<?php echo (int)$switchTypeId; ?>';
     var serverTypeId = '<?php echo (int)$serverTypeId; ?>';
+    var printerTypeId = '<?php echo (int)$printerTypeId; ?>';
 
     function toggleSwitchFields() {
         if (!typeSelect || !switchFields) {
@@ -470,11 +478,40 @@ function render_options($items, $selected = '') {
         }
     }
 
+    function togglePrinterFields() {
+        if (!typeSelect || !printerFields) {
+            return;
+        }
+
+        var matchesPrinterType = printerTypeId !== '0' && typeSelect.value === printerTypeId;
+        var matchesPrinterFlag = !!(isPrinterCheckbox && isPrinterCheckbox.checked);
+        var show = matchesPrinterType || matchesPrinterFlag;
+        printerFields.style.display = show ? 'block' : 'none';
+
+        if (!show) {
+            var printerTypeSelect = printerFields.querySelector('select[name="printer_device_type_id"]');
+            if (printerTypeSelect) {
+                printerTypeSelect.value = '';
+            }
+            var colorCapableInput = printerFields.querySelector('input[name="printer_color_capable"]');
+            if (colorCapableInput) {
+                colorCapableInput.checked = false;
+            }
+        }
+    }
+
     if (typeSelect) {
         typeSelect.addEventListener('change', toggleSwitchFields);
         typeSelect.addEventListener('change', toggleServerFields);
+        typeSelect.addEventListener('change', togglePrinterFields);
         toggleSwitchFields();
         toggleServerFields();
+        togglePrinterFields();
+    }
+
+    if (isPrinterCheckbox) {
+        isPrinterCheckbox.addEventListener('change', togglePrinterFields);
+        togglePrinterFields();
     }
 })();
 </script>
