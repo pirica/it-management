@@ -180,6 +180,21 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_is_admin_user_company_record($conn, $id) {
+    $recordId = (int)$id;
+    if ($recordId <= 0) {
+        return false;
+    }
+
+    $sql = 'SELECT ur.name AS role_name FROM user_companies uc '
+        . 'LEFT JOIN users u ON u.id = uc.user_id '
+        . 'LEFT JOIN user_roles ur ON ur.id = u.role_id '
+        . 'WHERE uc.id=' . $recordId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    return isset($row['role_name']) && strcasecmp((string)$row['role_name'], 'Admin') === 0;
+}
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
@@ -273,6 +288,12 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        if (cr_is_admin_user_company_record($conn, $id)) {
+            $_SESSION['crud_error'] = 'Admin user/company assignments cannot be deleted from this screen.';
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
         $usageError = '';
         if (!itm_can_delete_record($conn, $crud_table, 'id', $id, $company_id, $usageError)) {
             $_SESSION['crud_error'] = $usageError;

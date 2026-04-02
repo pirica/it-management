@@ -144,6 +144,29 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    global $conn;
+
+    if ($table === 'user_companies' && in_array($field, ['user_id', 'company_id', 'granted_by_user_id'], true)) {
+        $id = (int)$value;
+        if ($id <= 0) {
+            return '';
+        }
+
+        if ($field === 'user_id' || $field === 'granted_by_user_id') {
+            $sql = 'SELECT username FROM users WHERE id=' . $id . ' LIMIT 1';
+            $res = mysqli_query($conn, $sql);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            return sanitize((string)($row['username'] ?? $id));
+        }
+
+        if ($field === 'company_id') {
+            $sql = 'SELECT company FROM companies WHERE id=' . $id . ' LIMIT 1';
+            $res = mysqli_query($conn, $sql);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            return sanitize((string)($row['company'] ?? $id));
+        }
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {

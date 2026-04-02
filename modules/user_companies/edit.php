@@ -631,6 +631,18 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif (($crud_table ?? '') === 'user_companies' && $crud_action === 'edit' && $name === 'user_id'): ?>
+                                <?php
+                                    $userLabel = '';
+                                    $userId = (int)$displayVal;
+                                    if ($userId > 0) {
+                                        $userRes = mysqli_query($conn, 'SELECT username FROM users WHERE id=' . $userId . ' LIMIT 1');
+                                        $userRow = $userRes ? mysqli_fetch_assoc($userRes) : null;
+                                        $userLabel = (string)($userRow['username'] ?? '');
+                                    }
+                                ?>
+                                <input type="hidden" name="user_id" value="<?php echo $userId; ?>">
+                                <input type="text" value="<?php echo sanitize($userLabel); ?>" readonly disabled>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id, $name);
