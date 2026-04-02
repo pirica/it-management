@@ -2,18 +2,6 @@
 require '../../config/config.php';
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
-$where = '';
-if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $where = " WHERE CAST(id AS CHAR) LIKE '{$searchEsc}'
-               OR company LIKE '{$searchEsc}'
-               OR incode LIKE '{$searchEsc}'
-               OR city LIKE '{$searchEsc}'
-               OR country LIKE '{$searchEsc}'
-               OR phone LIKE '{$searchEsc}'
-               OR CAST(active AS CHAR) LIKE '{$searchEsc}'";
-}
 $sortableColumns = ['id', 'company', 'incode', 'city', 'country', 'phone', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
@@ -23,8 +11,32 @@ if (!in_array($sort, $sortableColumns, true)) {
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
+
+$whereSql = '';
+$params = [];
+$types = '';
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $whereSql = ' WHERE CAST(id AS CHAR) LIKE ? OR company LIKE ? OR incode LIKE ? OR city LIKE ? OR country LIKE ? OR phone LIKE ? OR CAST(active AS CHAR) LIKE ?';
+    $params = [$searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern];
+    $types = 'sssssss';
+}
+
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
-$result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSql}");
+$sql = 'SELECT * FROM companies' . $whereSql . ' ORDER BY ' . $sortSql;
+$stmt = mysqli_prepare($conn, $sql);
+$rows = null;
+if ($stmt) {
+    if ($types !== '') {
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+    }
+    mysqli_stmt_execute($stmt);
+    $rows = mysqli_stmt_get_result($stmt);
+}
+
+$csrfToken = itm_get_csrf_token();
+$error = (string)($_SESSION['crud_error'] ?? '');
+unset($_SESSION['crud_error']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,50 +53,64 @@ $result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSq
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>🌍 Companies</h1>
+                <h1>🏢 Companies</h1>
                 <a href="create.php" class="btn btn-primary">➕</a>
             </div>
+
+            <?php if ($error !== ''): ?>
+                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
+            <?php endif; ?>
+
             <div class="card" style="margin-bottom:16px;">
-                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                    <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;">
+                    <div class="form-group" style="margin:0;flex:1;">
                         <label for="companySearch">Search (all fields)</label>
                         <input type="text" id="companySearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%abc%%">
                     </div>
-                    <div class="form-actions" style="margin:0;display:flex;gap:8px;">
-                        <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php" class="btn btn-sm">Clear</a>
-                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <a href="index.php" class="btn">Clear</a>
                 </form>
             </div>
-            <div class="card" style="overflow:auto;">
+
+            <div class="card">
                 <table>
                     <thead>
                     <tr>
-                        <?php foreach (['id' => 'ID', 'company' => 'Company', 'incode' => 'InCode', 'city' => 'City', 'country' => 'Country', 'phone' => 'Phone', 'active' => 'Status'] as $field => $label): ?>
-                            <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                            <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
-                        <?php endforeach; ?>
-                        <th>Actions</th>
+                        <th><a href="?sort=id&dir=<?php echo $sort === 'id' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">ID</a></th>
+                        <th><a href="?sort=company&dir=<?php echo $sort === 'company' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Company</a></th>
+                        <th><a href="?sort=incode&dir=<?php echo $sort === 'incode' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">InCode</a></th>
+                        <th><a href="?sort=city&dir=<?php echo $sort === 'city' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">City</a></th>
+                        <th><a href="?sort=country&dir=<?php echo $sort === 'country' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Country</a></th>
+                        <th><a href="?sort=phone&dir=<?php echo $sort === 'phone' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Phone</a></th>
+                        <th><a href="?sort=active&dir=<?php echo $sort === 'active' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Status</a></th>
+                        <th class="itm-actions-cell">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                        <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                    <?php if ($rows && mysqli_num_rows($rows) > 0): ?>
+                        <?php while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['company']); ?></td>
-                                <td><?php echo sanitize($row['incode'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['city'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['country'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['phone'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['incode']); ?></td>
+                                <td><?php echo sanitize($row['city']); ?></td>
+                                <td><?php echo sanitize($row['country']); ?></td>
+                                <td><?php echo sanitize($row['phone']); ?></td>
                                 <td>
                                     <span class="badge <?php echo (int)$row['active'] === 1 ? 'badge-success' : 'badge-danger'; ?>">
                                         <?php echo (int)$row['active'] === 1 ? 'Active' : 'Inactive'; ?>
                                     </span>
                                 </td>
-                                <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a> <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this company?');">🗑️</a>
+                                <td class="itm-actions-cell">
+                                    <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this company?');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -100,3 +126,4 @@ $result = mysqli_query($conn, "SELECT * FROM companies{$where} ORDER BY {$sortSq
 <script src="../../js/theme.js"></script>
 </body>
 </html>
+<?php if ($stmt) { mysqli_stmt_close($stmt); } ?>

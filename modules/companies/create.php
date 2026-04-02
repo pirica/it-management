@@ -4,6 +4,7 @@ require '../../config/config.php';
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
+$csrfToken = itm_get_csrf_token();
 
 $data = [
     'company' => '',
@@ -19,43 +20,89 @@ $data = [
 ];
 
 if ($is_edit) {
-    $q = mysqli_query($conn, "SELECT * FROM companies WHERE id = $id LIMIT 1");
-    if ($q && mysqli_num_rows($q) === 1) {
-        $data = mysqli_fetch_assoc($q);
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && mysqli_num_rows($res) === 1) {
+            $data = mysqli_fetch_assoc($res);
+        } else {
+            $error = 'Company not found.';
+            $is_edit = false;
+        }
+        mysqli_stmt_close($stmt);
     } else {
-        $error = 'Company not found.';
+        $error = 'Failed to load company.';
         $is_edit = false;
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $company = escape_sql($_POST['company'] ?? '', $conn);
-    $incode = strtoupper(substr(escape_sql($_POST['incode'] ?? '', $conn), 0, 6));
-    $city = escape_sql($_POST['city'] ?? '', $conn);
-    $country = escape_sql($_POST['country'] ?? '', $conn);
-    $phone = escape_sql($_POST['phone'] ?? '', $conn);
-    $email = escape_sql($_POST['email'] ?? '', $conn);
-    $website = escape_sql($_POST['website'] ?? '', $conn);
-    $vat = escape_sql($_POST['vat'] ?? '', $conn);
-    $comments = escape_sql($_POST['comments'] ?? '', $conn);
+    itm_require_post_csrf();
+
+    $company = trim((string)($_POST['company'] ?? ''));
+    $incode = strtoupper(substr(trim((string)($_POST['incode'] ?? '')), 0, 6));
+    $city = trim((string)($_POST['city'] ?? ''));
+    $country = trim((string)($_POST['country'] ?? ''));
+    $phone = trim((string)($_POST['phone'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
+    $website = trim((string)($_POST['website'] ?? ''));
+    $vat = trim((string)($_POST['vat'] ?? ''));
+    $comments = trim((string)($_POST['comments'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if (!$company) {
+    $data = [
+        'company' => $company,
+        'incode' => $incode,
+        'city' => $city,
+        'country' => $country,
+        'phone' => $phone,
+        'email' => $email,
+        'website' => $website,
+        'vat' => $vat,
+        'comments' => $comments,
+        'active' => $active,
+    ];
+
+    if ($company === '') {
         $error = 'Company is required.';
     } else {
         if ($is_edit) {
-            $sql = "UPDATE companies SET company='$company', incode='$incode', city='$city', country='$country', phone='$phone', email='$email', website='$website', vat='$vat', comments='$comments', active=$active WHERE id=$id";
+            $old = itm_fetch_audit_record($conn, 'companies', $id, (int)($_SESSION['company_id'] ?? 0));
+            $sql = 'UPDATE companies SET company=?, incode=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=? WHERE id=?';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'sssssssssii', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active, $id);
+                if (mysqli_stmt_execute($stmt)) {
+                    itm_log_audit($conn, 'companies', $id, 'UPDATE', $old, $data);
+                    mysqli_stmt_close($stmt);
+                    header('Location: index.php');
+                    exit;
+                }
+                $error = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+                mysqli_stmt_close($stmt);
+            } else {
+                $error = 'Failed to update company.';
+            }
         } else {
-            $sql = "INSERT INTO companies (company, incode, city, country, phone, email, website, vat, comments, active) VALUES ('$company','$incode','$city','$country','$phone','$email','$website','$vat','$comments',$active)";
+            $sql = 'INSERT INTO companies (company, incode, city, country, phone, email, website, vat, comments, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'sssssssssi', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active);
+                if (mysqli_stmt_execute($stmt)) {
+                    $newId = (int)mysqli_insert_id($conn);
+                    itm_log_audit($conn, 'companies', $newId, 'INSERT', null, $data);
+                    mysqli_stmt_close($stmt);
+                    header('Location: index.php');
+                    exit;
+                }
+                $error = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+                mysqli_stmt_close($stmt);
+            } else {
+                $error = 'Failed to create company.';
+            }
         }
-
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: index.php');
-            exit;
-        }
-        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 ?>
@@ -77,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
             <div class="card">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
                         <div class="form-group"><label>Company *</label><input type="text" name="company" required value="<?php echo sanitize($data['company'] ?? ''); ?>"></div>
                         <div class="form-group"><label>InCode</label><input type="text" name="incode" maxlength="6" size="6" value="<?php echo sanitize($data['incode'] ?? ''); ?>"></div>
