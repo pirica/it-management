@@ -42,6 +42,18 @@ $idCol = $_POST['id_col'] ?? 'id';
 $labelCol = $_POST['label_col'] ?? 'name';
 $newValue = trim((string)($_POST['new_value'] ?? ''));
 $companyScoped = (int)($_POST['company_scoped'] ?? 0) === 1;
+$extraFieldsRaw = (string)($_POST['extra_fields'] ?? '');
+$extraFields = [];
+if ($extraFieldsRaw !== '') {
+    $decoded = json_decode($extraFieldsRaw, true);
+    if (is_array($decoded)) {
+        foreach ($decoded as $field => $value) {
+            if (so_identifier((string)$field)) {
+                $extraFields[(string)$field] = trim((string)$value);
+            }
+        }
+    }
+}
 
 if (!so_identifier($table) || !so_identifier($idCol) || !so_identifier($labelCol)) {
     http_response_code(400);
@@ -91,6 +103,7 @@ if ($existing && mysqli_num_rows($existing) > 0) {
         $insertValues[] = '1';
     }
 
+    $missingRequiredFields = [];
     foreach ($columns as $field => $meta) {
         $isAutoIncrement = stripos((string)$meta['Extra'], 'auto_increment') !== false;
         $hasDefault = $meta['Default'] !== null;
@@ -104,12 +117,30 @@ if ($existing && mysqli_num_rows($existing) > 0) {
             continue;
         }
 
+        if (!array_key_exists($field, $extraFields) || $extraFields[$field] === '') {
+            $missingRequiredFields[] = $field;
+        }
+    }
+
+    if (!empty($missingRequiredFields)) {
         http_response_code(422);
         echo json_encode([
             'ok' => false,
-            'error' => 'Cannot auto-add for this list because required field "' . $field . '" needs manual input.'
+            'error' => 'Cannot auto-add for this list because required field "' . $missingRequiredFields[0] . '" needs manual input.',
+            'required_fields' => $missingRequiredFields,
         ]);
         exit;
+    }
+
+    foreach ($extraFields as $field => $value) {
+        if (!isset($columns[$field]) || $value === '') {
+            continue;
+        }
+        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active'], true)) {
+            continue;
+        }
+        $insertFields[] = so_escape_identifier($field);
+        $insertValues[] = "'" . mysqli_real_escape_string($conn, $value) . "'";
     }
 
     $insertSql = 'INSERT INTO ' . so_escape_identifier($table)
