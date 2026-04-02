@@ -4,10 +4,9 @@ require '../../config/config.php';
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 $error = '';
+$notice = '';
 
-if ($id <= 0) {
-    $error = 'Invalid company id.';
-} else {
+if ($id > 0) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $id);
@@ -15,12 +14,20 @@ if ($id <= 0) {
         $result = mysqli_stmt_get_result($stmt);
         if ($result && mysqli_num_rows($result) === 1) {
             $item = mysqli_fetch_assoc($result);
-        } else {
-            $error = 'Company not found.';
         }
         mysqli_stmt_close($stmt);
     } else {
         $error = 'Failed to load company.';
+    }
+}
+
+if ($item === null && $error === '') {
+    $fallbackResult = mysqli_query($conn, 'SELECT * FROM companies ORDER BY id ASC LIMIT 1');
+    if ($fallbackResult && mysqli_num_rows($fallbackResult) === 1) {
+        $item = mysqli_fetch_assoc($fallbackResult);
+        $notice = $id > 0 ? 'Company not found. Showing the first available company record.' : 'No company id provided. Showing the first available company record.';
+    } else {
+        $error = 'No company records found.';
     }
 }
 ?>
@@ -43,6 +50,9 @@ if ($id <= 0) {
                 <?php if ($item === null): ?>
                     <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
                 <?php else: ?>
+                    <?php if ($notice !== ''): ?>
+                        <div class="alert alert-warning" style="margin-bottom:12px;"><?php echo sanitize($notice); ?></div>
+                    <?php endif; ?>
                     <table>
                         <tbody>
                         <tr><th style="width:220px;">ID</th><td><?php echo (int)$item['id']; ?></td></tr>
