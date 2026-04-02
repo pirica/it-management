@@ -342,6 +342,9 @@ if (!empty($_SESSION['crud_success'])) {
         let availablePortTypes = ['rj45', 'sfp', 'sfp_plus'];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
+        const csrfToken = window.ITM_CSRF_TOKEN
+            || (document.querySelector('input[name="csrf_token"]') || {}).value
+            || '';
 
         function hasPortType(type) {
             return availablePortTypes.indexOf(type) !== -1;
@@ -653,6 +656,10 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
         function savePort(payload, showMessage) {
+            if (!csrfToken) {
+                return Promise.reject(new Error('Missing CSRF token'));
+            }
+
             function parseApiResponse(response) {
                 return response.text().then(function (text) {
                     const raw = String(text || '').trim();
@@ -669,8 +676,12 @@ if (!empty($_SESSION['crud_success'])) {
 
             return fetch(apiUpdate, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(Object.assign({}, payload, { csrf_token: csrfToken }))
             })
                 .then(parseApiResponse)
                 .then(function (resp) {
@@ -704,13 +715,18 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
         function loadPorts() {
+            if (!csrfToken) {
+                alert('Missing CSRF token. Please refresh the page and try again.');
+                return;
+            }
             const localLayout = fallbackLayout();
             fetch(apiGet, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     switch_id: selectedSwitchId,
-                    csrf_token: window.ITM_CSRF_TOKEN || ''
+                    csrf_token: csrfToken
                 })
             })
                 .then(function (r) {
