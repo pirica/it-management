@@ -30,9 +30,8 @@ function eq_build_query(array $params): string {
 $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
-$isSwitchListing = ($moduleFlagField === 'is_switch');
 $selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
-$showSwitchPortManager = $isSwitchListing && $selectedSwitchId > 0;
+$showSwitchPortManager = $selectedSwitchId > 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_equipment') && $allowImport) {
     itm_require_post_csrf();
