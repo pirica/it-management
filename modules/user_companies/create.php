@@ -42,9 +42,27 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
-function cr_fk_options($conn, $fk, $company_id) {
+function cr_fk_options($conn, $fk, $company_id, $fieldName = '') {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
+
+    if (($GLOBALS['crud_table'] ?? '') === 'user_companies' && $fieldName === 'granted_by_user_id') {
+        $whereParts = ["u.active = 1", "ur.name IN ('Admin','IT Assistant','IT Manager')"];
+        if ($company_id > 0) {
+            $whereParts[] = '(u.company_id=' . (int)$company_id . ' OR EXISTS (SELECT 1 FROM user_companies uc WHERE uc.user_id = u.id AND uc.company_id=' . (int)$company_id . '))';
+        }
+        $sql = 'SELECT u.id, u.username AS label
+                FROM users u
+                LEFT JOIN user_roles ur ON ur.id = u.role_id
+                WHERE ' . implode(' AND ', $whereParts) . '
+                ORDER BY u.username';
+        $rows = [];
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        return $rows;
+    }
 
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
@@ -524,7 +542,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id, $name);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
