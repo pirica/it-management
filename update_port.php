@@ -10,6 +10,24 @@ if ($company_id <= 0) {
     exit;
 }
 
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
+    exit;
+}
+
+$raw = file_get_contents('php://input');
+$decoded = json_decode($raw, true);
+$input = is_array($decoded) ? $decoded : $_POST;
+$csrfToken = (string)($input['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+if (!itm_validate_csrf_token($csrfToken)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+    exit;
+}
+
+
 function table_has_column(mysqli $conn, string $table, string $column): bool
 {
     $tableEsc = mysqli_real_escape_string($conn, $table);
@@ -91,9 +109,6 @@ $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 
-$raw = file_get_contents('php://input');
-$decoded = json_decode($raw, true);
-$input = is_array($decoded) ? $decoded : $_POST;
 
 if (empty($input['id'])) {
     http_response_code(400);
