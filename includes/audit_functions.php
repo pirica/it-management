@@ -1,32 +1,93 @@
 <?php
 /**
- * itm_log_audit
- * 
- * Centralized function to log data changes (INSERT, UPDATE, DELETE)
+ * Audit helpers for centralized change logging.
  */
+
+function itm_audit_encode_values($values) {
+    if ($values === null) {
+        return null;
+    }
+
+    if (!is_array($values) && !is_object($values)) {
+        $values = ['value' => $values];
+    }
+
+    $json = json_encode($values, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    return $json === false ? null : $json;
+}
+
 function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $new_values = null) {
     if (!isset($_SESSION['company_id'])) {
         return false;
     }
 
+    $allowedActions = ['INSERT', 'UPDATE', 'DELETE'];
+    $action = strtoupper(trim((string)$action));
+    if (!in_array($action, $allowedActions, true)) {
+        return false;
+    }
+
+    $table = trim((string)$table);
+    if ($table === '') {
+        return false;
+    }
+
     $company_id = (int)$_SESSION['company_id'];
     $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
-    $action = strtoupper($action);
+    $old_json = itm_audit_encode_values($old_values);
+    $new_json = itm_audit_encode_values($new_values);
+    $ipAddress = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
 
-    $old_json = $old_values ? json_encode($old_values) : null;
-    $new_json = $new_values ? json_encode($new_values) : null;
+    $sql = 'INSERT INTO audit_logs (company_id, user_id, table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
+         . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
-    $sql = "INSERT INTO audit_logs (company_id, user_id, table_name, record_id, action, old_values, new_values) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
-    
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
     }
 
-    mysqli_stmt_bind_param($stmt, 'iisisss', $company_id, $user_id, $table, $record_id, $action, $old_json, $new_json);
+    mysqli_stmt_bind_param(
+        $stmt,
+        'iisisssss',
+        $company_id,
+        $user_id,
+        $table,
+        $record_id,
+        $action,
+        $old_json,
+        $new_json,
+        $ipAddress,
+        $userAgent
+    );
+
     $result = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
-
     return $result;
+}
+
+function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
+        return null;
+    }
+
+    $company_id = $company_id === null ? (int)($_SESSION['company_id'] ?? 0) : (int)$company_id;
+    if ($company_id <= 0) {
+        return null;
+    }
+
+    $sql = 'SELECT * FROM `' . $table . '` WHERE id = ? AND company_id = ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    $record_id = (int)$record_id;
+    mysqli_stmt_bind_param($stmt, 'ii', $record_id, $company_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ?: null;
 }
