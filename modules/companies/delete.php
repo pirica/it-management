@@ -16,7 +16,7 @@ if ($id > 0) {
         $_SESSION['crud_error'] = $usageError;
     } else {
         $old = itm_fetch_audit_record($conn, 'companies', $id, (int)($_SESSION['company_id'] ?? 0));
-        $stmt = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? LIMIT 1');
+        $stmt = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? AND id > 0 LIMIT 1');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'i', $id);
             if (!mysqli_stmt_execute($stmt)) {

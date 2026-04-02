@@ -12,12 +12,12 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
 
-$whereSql = '';
+$whereSql = ' WHERE id > 0';
 $params = [];
 $types = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $whereSql = ' WHERE CAST(id AS CHAR) LIKE ? OR company LIKE ? OR incode LIKE ? OR city LIKE ? OR country LIKE ? OR phone LIKE ? OR CAST(active AS CHAR) LIKE ?';
+    $whereSql = ' WHERE id > 0 AND (CAST(id AS CHAR) LIKE ? OR company LIKE ? OR incode LIKE ? OR city LIKE ? OR country LIKE ? OR phone LIKE ? OR CAST(active AS CHAR) LIKE ?)';
     $params = [$searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern];
     $types = 'sssssss';
 }

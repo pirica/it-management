@@ -6,7 +6,7 @@ $item = null;
 $error = '';
 
 if ($id > 0) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? AND id > 0 LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $id);
         mysqli_stmt_execute($stmt);
@@ -22,9 +22,9 @@ if ($id > 0) {
 
 if ($item === null && $error === '') {
     if ($id > 0) {
-        $error = 'Company not found.';
+        $error = 'Company not found for ID ' . $id . '.';
     } else {
-        $error = 'No company id provided.';
+        $error = 'Invalid company id.';
     }
 }
 ?>
