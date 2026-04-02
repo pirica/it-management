@@ -208,6 +208,18 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_is_admin_user_company_row($conn, $row) {
+    $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $sql = 'SELECT ur.name FROM users u LEFT JOIN user_roles ur ON ur.id = u.role_id WHERE u.id=' . $userId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $roleRow = $res ? mysqli_fetch_assoc($res) : null;
+    return isset($roleRow['name']) && strcasecmp((string)$roleRow['name'], 'Admin') === 0;
+}
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
@@ -537,7 +549,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return itmConfirmUserCompanyDelete(this);" data-is-admin="<?php echo cr_is_admin_user_company_row($conn, $row) ? '1' : '0'; ?>">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
@@ -652,6 +664,24 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+
+function itmConfirmUserCompanyDelete(form) {
+    if (!confirm('Delete this record?')) {
+        return false;
+    }
+
+    if (form && form.getAttribute('data-is-admin') === '1') {
+        if (!confirm('⚠️ This user is Admin. Are you sure you want to continue?')) {
+            return false;
+        }
+        if (!confirm('Final warning: deleting an Admin mapping can remove critical access. Continue?')) {
+            return false;
+        }
+    }
+
+    return true;
+}
 </script>
 
 </body>
