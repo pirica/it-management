@@ -1,6 +1,11 @@
 <?php
 require 'config/config.php';
 
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
 // Early error reporting for database connection issues
 if (!$conn) {
     error_reporting(E_ALL);
@@ -10,9 +15,9 @@ if (!$conn) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $company_id = (int)$_POST['company_id'];
     $company = null;
-    $stmt = mysqli_prepare($conn, 'SELECT company FROM companies WHERE id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.user_id = ? LIMIT 1');
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $_SESSION['user_id']);
         if (mysqli_stmt_execute($stmt)) {
             $res = mysqli_stmt_get_result($stmt);
             $company = $res ? mysqli_fetch_assoc($res) : null;
@@ -28,7 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-$companies = mysqli_query($conn, "SELECT * FROM companies WHERE active = 1 ORDER BY company");
+$stmtCompanies = mysqli_prepare($conn, "SELECT c.* FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.active = 1 AND uc.user_id = ? ORDER BY c.company");
+$companies = false;
+if ($stmtCompanies) {
+    mysqli_stmt_bind_param($stmtCompanies, 'i', $_SESSION['user_id']);
+    mysqli_stmt_execute($stmtCompanies);
+    $companies = mysqli_stmt_get_result($stmtCompanies);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
