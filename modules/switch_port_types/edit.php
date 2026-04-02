@@ -168,7 +168,7 @@ function cr_numeric_validation_error($field, $message) {
 
 function cr_try_query($conn, $sql, &$error = null) {
     try {
-        return mysqli_query($conn, $sql);
+        return itm_run_query($conn, $sql);
     } catch (Throwable $t) {
         $error = $t->getMessage();
         return false;

@@ -48,19 +48,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 continue;
             }
 
-            $codeEsc = mysqli_real_escape_string($conn, $code);
-            $nameEsc = mysqli_real_escape_string($conn, $name);
-            $find = mysqli_query($conn, "SELECT id FROM system_access WHERE company_id=$company_id AND code='{$codeEsc}' LIMIT 1");
-            if ($find && mysqli_num_rows($find) === 1) {
-                $row = mysqli_fetch_assoc($find);
+            $find = mysqli_prepare($conn, 'SELECT id FROM system_access WHERE company_id = ? AND code = ? LIMIT 1');
+            $findResult = false;
+            if ($find) {
+                mysqli_stmt_bind_param($find, 'is', $company_id, $code);
+                mysqli_stmt_execute($find);
+                $findResult = mysqli_stmt_get_result($find);
+            }
+            if ($findResult && mysqli_num_rows($findResult) === 1) {
+                $row = mysqli_fetch_assoc($findResult);
                 $id = (int)($row['id'] ?? 0);
-                if ($id > 0 && mysqli_query($conn, "UPDATE system_access SET name='{$nameEsc}', active={$active} WHERE id={$id} AND company_id={$company_id}")) {
-                    $updated += 1;
+                if ($id > 0) {
+                    $update = mysqli_prepare($conn, 'UPDATE system_access SET name = ?, active = ? WHERE id = ? AND company_id = ?');
+                    if ($update) {
+                        mysqli_stmt_bind_param($update, 'siii', $name, $active, $id, $company_id);
+                        if (mysqli_stmt_execute($update)) {
+                            $updated += 1;
+                        }
+                        mysqli_stmt_close($update);
+                    }
                 }
             } else {
-                if (mysqli_query($conn, "INSERT INTO system_access (company_id, code, name, active) VALUES ($company_id, '{$codeEsc}', '{$nameEsc}', {$active})")) {
-                    $created += 1;
+                $insert = mysqli_prepare($conn, 'INSERT INTO system_access (company_id, code, name, active) VALUES (?, ?, ?, ?)');
+                if ($insert) {
+                    mysqli_stmt_bind_param($insert, 'issi', $company_id, $code, $name, $active);
+                    if (mysqli_stmt_execute($insert)) {
+                        $created += 1;
+                    }
+                    mysqli_stmt_close($insert);
                 }
+            }
+            if ($find) {
+                mysqli_stmt_close($find);
             }
         }
 
@@ -70,14 +89,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
+$bindSearch = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $bindSearch = $searchPattern;
     $searchSql = " AND (
-        CAST(id AS CHAR) LIKE '{$searchEsc}'
-        OR code LIKE '{$searchEsc}'
-        OR name LIKE '{$searchEsc}'
-        OR CAST(active AS CHAR) LIKE '{$searchEsc}'
+        CAST(id AS CHAR) LIKE ?
+        OR code LIKE ?
+        OR name LIKE ?
+        OR CAST(active AS CHAR) LIKE ?
     )";
 }
 
@@ -93,7 +113,19 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
 if (($_GET['export'] ?? '') === 'csv') {
-    $rows = mysqli_query($conn, "SELECT code, name, active FROM system_access WHERE company_id = $company_id{$searchSql} ORDER BY {$sortSql}");
+    $rows = false;
+    $exportSql = "SELECT code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql}";
+    $stmt = mysqli_prepare($conn, $exportSql);
+    if ($stmt) {
+        if ($bindSearch !== '') {
+            mysqli_stmt_bind_param($stmt, 'issss', $company_id, $bindSearch, $bindSearch, $bindSearch, $bindSearch);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        }
+        mysqli_stmt_execute($stmt);
+        $rows = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
+    }
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="system_access_export.csv"');
     $output = fopen('php://output', 'w');
@@ -105,7 +137,19 @@ if (($_GET['export'] ?? '') === 'csv') {
     exit;
 }
 
-$items = mysqli_query($conn, "SELECT id, code, name, active FROM system_access WHERE company_id = $company_id{$searchSql} ORDER BY {$sortSql}");
+$items = false;
+$itemsSql = "SELECT id, code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql}";
+$stmt = mysqli_prepare($conn, $itemsSql);
+if ($stmt) {
+    if ($bindSearch !== '') {
+        mysqli_stmt_bind_param($stmt, 'issss', $company_id, $bindSearch, $bindSearch, $bindSearch, $bindSearch);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+    }
+    mysqli_stmt_execute($stmt);
+    $items = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_close($stmt);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

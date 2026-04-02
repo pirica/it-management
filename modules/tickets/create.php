@@ -19,13 +19,19 @@ $data = [
 ];
 
 if ($is_edit) {
-    $q = mysqli_query($conn, "SELECT * FROM tickets WHERE id=$id AND company_id=$company_id LIMIT 1");
-    if ($q && mysqli_num_rows($q) === 1) {
-        $data = mysqli_fetch_assoc($q);
-        $data['created_at'] = date('Y-m-d\TH:i', strtotime($data['created_at']));
-    } else {
-        $error = 'Ticket not found.';
-        $is_edit = false;
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_execute($stmt);
+        $q = mysqli_stmt_get_result($stmt);
+        if ($q && mysqli_num_rows($q) === 1) {
+            $data = mysqli_fetch_assoc($q);
+            $data['created_at'] = date('Y-m-d\TH:i', strtotime($data['created_at']));
+        } else {
+            $error = 'Ticket not found.';
+            $is_edit = false;
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 
@@ -74,9 +80,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $created_by_user_id = 0;
-            $creator_result = mysqli_query($conn, "SELECT id FROM users WHERE company_id=$company_id AND active=1 ORDER BY id ASC LIMIT 1");
-            if ($creator_result && mysqli_num_rows($creator_result) === 1) {
-                $created_by_user_id = (int)mysqli_fetch_assoc($creator_result)['id'];
+            $creator_stmt = mysqli_prepare($conn, 'SELECT id FROM users WHERE company_id = ? AND active = 1 ORDER BY id ASC LIMIT 1');
+            if ($creator_stmt) {
+                mysqli_stmt_bind_param($creator_stmt, 'i', $company_id);
+                mysqli_stmt_execute($creator_stmt);
+                $creator_result = mysqli_stmt_get_result($creator_stmt);
+                if ($creator_result && mysqli_num_rows($creator_result) === 1) {
+                    $created_by_user_id = (int)mysqli_fetch_assoc($creator_result)['id'];
+                }
+                mysqli_stmt_close($creator_stmt);
             }
 
             if ($created_by_user_id <= 0) {

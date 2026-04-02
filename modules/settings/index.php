@@ -132,7 +132,7 @@ function apply_sql_file($conn, $sqlText) {
 
         $statement .= $line . "\n";
         if (substr(rtrim($line), -1) === ';') {
-            if (!mysqli_query($conn, $statement)) {
+            if (!itm_run_query($conn, $statement)) {
                 return false;
             }
             $statement = '';
@@ -140,7 +140,7 @@ function apply_sql_file($conn, $sqlText) {
     }
 
     if (trim($statement) !== '') {
-        if (!mysqli_query($conn, $statement)) {
+        if (!itm_run_query($conn, $statement)) {
             return false;
         }
     }

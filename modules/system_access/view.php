@@ -7,9 +7,15 @@ esa_ensure_table($conn);
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
-    $query = mysqli_query($conn, "SELECT * FROM system_access WHERE id = $id AND company_id = $company_id LIMIT 1");
-    if ($query && mysqli_num_rows($query) === 1) {
-        $item = mysqli_fetch_assoc($query);
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM system_access WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_execute($stmt);
+        $query = mysqli_stmt_get_result($stmt);
+        if ($query && mysqli_num_rows($query) === 1) {
+            $item = mysqli_fetch_assoc($query);
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 ?>

@@ -2,7 +2,13 @@
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
 
-$companies = mysqli_query($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company');
+$companiesStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company');
+$companies = false;
+if ($companiesStmt) {
+    mysqli_stmt_execute($companiesStmt);
+    $companies = mysqli_stmt_get_result($companiesStmt);
+    mysqli_stmt_close($companiesStmt);
+}
 $companyOptions = [];
 if ($companies) {
     while ($company = mysqli_fetch_assoc($companies)) {
@@ -81,12 +87,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $success = 'Registration successful! You can login now.';
                     } else {
                         mysqli_rollback($conn);
-                        mysqli_query($conn, 'DELETE FROM users WHERE id = ' . $user_id);
+                        $cleanup = mysqli_prepare($conn, 'DELETE FROM users WHERE id = ?');
+                        if ($cleanup) {
+                            mysqli_stmt_bind_param($cleanup, 'i', $user_id);
+                            mysqli_stmt_execute($cleanup);
+                            mysqli_stmt_close($cleanup);
+                        }
                         $error = 'Registration failed while assigning companies. Please try again.';
                     }
                 } else {
                     mysqli_rollback($conn);
-                    mysqli_query($conn, 'DELETE FROM users WHERE id = ' . $user_id);
+                    $cleanup = mysqli_prepare($conn, 'DELETE FROM users WHERE id = ?');
+                    if ($cleanup) {
+                        mysqli_stmt_bind_param($cleanup, 'i', $user_id);
+                        mysqli_stmt_execute($cleanup);
+                        mysqli_stmt_close($cleanup);
+                    }
                     $error = 'Registration failed while assigning companies. Please try again.';
                 }
             } else {

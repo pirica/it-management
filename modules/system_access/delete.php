@@ -17,7 +17,12 @@ if ($id > 0) {
     if (!itm_can_delete_record($conn, 'system_access', 'id', $id, $company_id, $usageError)) {
         $_SESSION['crud_error'] = $usageError;
     } else {
-        mysqli_query($conn, "DELETE FROM system_access WHERE id=$id AND company_id=$company_id");
+        $stmt = mysqli_prepare($conn, 'DELETE FROM system_access WHERE id = ? AND company_id = ?');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
     }
 }
 

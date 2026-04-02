@@ -130,15 +130,21 @@ $data = [
 ];
 
 if ($isEdit) {
-    $res = mysqli_query($conn, "SELECT * FROM equipment WHERE id=$id AND company_id=$company_id LIMIT 1");
-    if ($res && mysqli_num_rows($res) === 1) {
-        $data = mysqli_fetch_assoc($res);
-        if (empty($data['switch_port_numbering_layout_id'])) {
-            $data['switch_port_numbering_layout_id'] = '1';
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && mysqli_num_rows($res) === 1) {
+            $data = mysqli_fetch_assoc($res);
+            if (empty($data['switch_port_numbering_layout_id'])) {
+                $data['switch_port_numbering_layout_id'] = '1';
+            }
+            $originalData = $data;
+        } else {
+            $error = 'Equipment record not found.';
         }
-        $originalData = $data;
-    } else {
-        $error = 'Equipment record not found.';
+        mysqli_stmt_close($stmt);
     }
 }
 

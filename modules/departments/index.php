@@ -2,14 +2,15 @@
 require '../../config/config.php';
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
+$bindSearch = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $bindSearch = $searchPattern;
     $searchSql = " AND (
-        CAST(id AS CHAR) LIKE '{$searchEsc}'
-        OR name LIKE '{$searchEsc}'
-        OR description LIKE '{$searchEsc}'
-        OR CAST(active AS CHAR) LIKE '{$searchEsc}'
+        CAST(id AS CHAR) LIKE ?
+        OR name LIKE ?
+        OR description LIKE ?
+        OR CAST(active AS CHAR) LIKE ?
     )";
 }
 $sortableColumns = ['name', 'description', 'active'];
@@ -22,7 +23,19 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
-$items = mysqli_query($conn, "SELECT * FROM departments WHERE company_id = $company_id{$searchSql} ORDER BY {$sortSql}");
+$items = false;
+$sql = "SELECT * FROM departments WHERE company_id = ?{$searchSql} ORDER BY {$sortSql}";
+$stmt = mysqli_prepare($conn, $sql);
+if ($stmt) {
+    if ($bindSearch !== '') {
+        mysqli_stmt_bind_param($stmt, 'issss', $company_id, $bindSearch, $bindSearch, $bindSearch, $bindSearch);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+    }
+    mysqli_stmt_execute($stmt);
+    $items = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_close($stmt);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

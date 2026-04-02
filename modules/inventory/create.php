@@ -18,12 +18,18 @@ $data = [
 $csrfToken = itm_get_csrf_token();
 
 if ($is_edit) {
-    $q = mysqli_query($conn, "SELECT * FROM inventory_items WHERE id=$id AND company_id=$company_id LIMIT 1");
-    if ($q && mysqli_num_rows($q) === 1) {
-        $data = mysqli_fetch_assoc($q);
-    } else {
-        $error = 'Item not found.';
-        $is_edit = false;
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM inventory_items WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_execute($stmt);
+        $q = mysqli_stmt_get_result($stmt);
+        if ($q && mysqli_num_rows($q) === 1) {
+            $data = mysqli_fetch_assoc($q);
+        } else {
+            $error = 'Item not found.';
+            $is_edit = false;
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 
