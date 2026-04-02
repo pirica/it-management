@@ -427,7 +427,6 @@ function render_options($items, $selected = '') {
     var typeSelect = document.querySelector('select[name="equipment_type_id"]');
     var switchFields = document.getElementById('switch-fields');
     var serverFields = document.getElementById('server-fields');
-    var isSwitchCheckbox = document.querySelector('input[name="is_switch"]');
     var switchTypeId = '<?php echo (int)$switchTypeId; ?>';
     var serverTypeId = '<?php echo (int)$serverTypeId; ?>';
 
@@ -435,9 +434,7 @@ function render_options($items, $selected = '') {
         if (!typeSelect || !switchFields) {
             return;
         }
-        var hasSwitchTypeSelected = switchTypeId !== '0' && typeSelect.value === switchTypeId;
-        var showByFlag = !!(isSwitchCheckbox && isSwitchCheckbox.checked);
-        var show = hasSwitchTypeSelected || showByFlag;
+        var show = switchTypeId !== '0' && typeSelect.value === switchTypeId;
         switchFields.style.display = show ? 'block' : 'none';
         if (!show) {
             switchFields.querySelectorAll('select').forEach(function (el) {
@@ -463,14 +460,9 @@ function render_options($items, $selected = '') {
     if (typeSelect) {
         typeSelect.addEventListener('change', toggleSwitchFields);
         typeSelect.addEventListener('change', toggleServerFields);
+        toggleSwitchFields();
+        toggleServerFields();
     }
-
-    if (isSwitchCheckbox) {
-        isSwitchCheckbox.addEventListener('change', toggleSwitchFields);
-    }
-
-    toggleSwitchFields();
-    toggleServerFields();
 })();
 </script>
 </body>

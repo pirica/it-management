@@ -1,26 +1,9 @@
 <?php
 require '../../config/config.php';
-
-$viewTitle = $equipmentViewTitle ?? 'View Equipment';
-$requiredFlagField = $equipmentRequiredFlagField ?? null;
-$backPath = $equipmentViewBackPath ?? 'index.php';
-$editPath = $equipmentViewEditPath ?? 'edit.php';
-
-if ($requiredFlagField !== null && !preg_match('/^is_[a-z0-9_]+$/', $requiredFlagField)) {
-    die('Invalid equipment view filter configuration');
-}
-
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$flagSql = '';
-if ($requiredFlagField !== null) {
-    $flagSql = ' AND e.`' . $requiredFlagField . '` = 1';
-}
-
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                r.name rack_name, es.name status_name, wt.name warranty_type_name,
-               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name,
-               er.name switch_rj45_name, spnl.name switch_port_numbering_layout_name, ef.name switch_fiber_name,
-               efc.name switch_fiber_count_name, ep.name switch_poe_name, ee.name switch_environment_name
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
@@ -32,34 +15,12 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id
         LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id
         LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id
-        LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-        LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
-        LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-        LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
-        LEFT JOIN equipment_poe ep ON ep.id = e.switch_poe_id
-        LEFT JOIN equipment_environment ee ON ee.id = e.switch_environment_id
-        WHERE e.id = $id AND e.company_id = $company_id {$flagSql} LIMIT 1";
+        WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 
 function equipment_field_label($key) {
     $labels = [
-        'company_name' => 'Company',
-        'equipment_type_name' => 'Equipment Type',
-        'manufacturer_name' => 'Manufacturer',
-        'location_name' => 'Location',
-        'rack_name' => 'Rack',
-        'status_name' => 'Status',
-        'warranty_type_name' => 'Warranty Type',
-        'printer_device_type_name' => 'Printer Device Type',
-        'workstation_device_type_name' => 'Workstation Device Type',
-        'workstation_os_type_name' => 'Workstation OS Type',
-        'switch_rj45_name' => 'RJ45 Ports',
-        'switch_port_numbering_layout_name' => 'Port Numbering Layout',
-        'switch_fiber_name' => 'Fiber Ports',
-        'switch_fiber_count_name' => 'Fiber Count',
-        'switch_poe_name' => 'PoE Type',
-        'switch_environment_name' => 'Management',
         'is_printer' => 'Is Printer',
         'is_workstation' => 'Is Workstation',
         'is_server' => 'Is Server',
@@ -78,67 +39,17 @@ function equipment_field_value($key, $value) {
 
     return (string)$value;
 }
-
-function equipment_show_field($item, $key, $value) {
-    $hiddenFields = [
-        'id', 'company_id', 'equipment_type_id', 'manufacturer_id', 'location_id', 'rack_id', 'status_id',
-        'warranty_type_id', 'printer_device_type_id', 'workstation_device_type_id', 'workstation_os_type_id',
-        'switch_rj45_id', 'switch_port_numbering_layout_id', 'switch_fiber_id', 'switch_fiber_count_id',
-        'switch_poe_id', 'switch_environment_id',
-    ];
-
-    if (in_array($key, $hiddenFields, true)) {
-        return false;
-    }
-
-    if (in_array($key, ['created_at', 'updated_at'], true)) {
-        return false;
-    }
-
-    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
-        return (int)$value === 1;
-    }
-
-    $fieldTypeMap = [
-        'printer_device_type_name' => 'is_printer',
-        'workstation_device_type_name' => 'is_workstation',
-        'workstation_os_type_name' => 'is_workstation',
-        'switch_rj45_name' => 'is_switch',
-        'switch_port_numbering_layout_name' => 'is_switch',
-        'switch_fiber_name' => 'is_switch',
-        'switch_fiber_count_name' => 'is_switch',
-        'switch_poe_name' => 'is_switch',
-        'switch_environment_name' => 'is_switch',
-    ];
-
-    if (isset($fieldTypeMap[$key])) {
-        $requiredFlag = $fieldTypeMap[$key];
-        return (int)($item[$requiredFlag] ?? 0) === 1 && $value !== null && trim((string)$value) !== '';
-    }
-
-    if ($value === null) {
-        return false;
-    }
-
-    $text = trim((string)$value);
-    if ($text === '' || $text === '0000-00-00' || $text === '0000-00-00 00:00:00') {
-        return false;
-    }
-
-    return true;
-}
 ?>
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><?php echo sanitize($viewTitle); ?></title><link rel="stylesheet" href="../../css/styles.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View Equipment</title><link rel="stylesheet" href="../../css/styles.css"></head>
 <body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
-<h1><?php echo sanitize($viewTitle); ?></h1>
+<h1>View Equipment</h1>
 <?php if (!$item): ?>
 <div class="alert alert-danger">Equipment not found.</div>
 <?php else: ?>
 <div class="card">
 <table><tbody>
 <?php foreach ($item as $k => $v): ?>
-    <?php if (!equipment_show_field($item, $k, $v)) { continue; } ?>
     <tr>
         <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
         <td><?php echo sanitize(equipment_field_value($k, $v)); ?></td>
@@ -146,7 +57,7 @@ function equipment_show_field($item, $key, $value) {
 <?php endforeach; ?>
 </tbody></table>
 <?php if (!empty($item['photo_filename'])): ?><p style="margin-top:16px;"><img src="<?php echo UPLOAD_URL . sanitize($item['photo_filename']); ?>" alt="Equipment Photo" style="max-width:300px;border:1px solid var(--border);border-radius:8px;"></p><?php endif; ?>
-<p style="margin-top:16px;"><a class="btn" href="<?php echo sanitize($backPath); ?>">Back</a> <a class="btn btn-primary" href="<?php echo sanitize($editPath); ?>?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
+<p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script></body></html>
