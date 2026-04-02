@@ -131,7 +131,7 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
             <label for="password">Password</label>
             <input id="password" type="password" name="password" placeholder="Password" required>
 
-            <button type="submit">Enter System</button>
+            <button type="submit">Resgister</button>
         </form>
         <div class="links"><a href="login.php">Back to Login</a></div>
     </div>
