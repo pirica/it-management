@@ -25,9 +25,8 @@ function idf_read_json(): array {
 }
 
 function idf_require_csrf(array $data): void {
-    $token = (string)($data['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
+    $token = (string)($data['csrf_token'] ?? ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')));
+    if (!itm_validate_csrf_token($token)) {
         http_response_code(403);
         echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token']);
         exit;
