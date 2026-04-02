@@ -49,7 +49,7 @@ function cr_fk_options($conn, $fk, $company_id, $fieldName = '') {
     if (($GLOBALS['crud_table'] ?? '') === 'user_companies' && $fieldName === 'granted_by_user_id') {
         $whereParts = ["u.active = 1", "ur.name IN ('Admin','IT Assistant','IT Manager')"];
         if ($company_id > 0) {
-            $whereParts[] = 'u.company_id=' . (int)$company_id;
+            $whereParts[] = '(u.company_id=' . (int)$company_id . ' OR EXISTS (SELECT 1 FROM user_companies uc WHERE uc.user_id = u.id AND uc.company_id=' . (int)$company_id . '))';
         }
         $sql = 'SELECT u.id, u.username AS label
                 FROM users u
