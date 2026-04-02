@@ -1,28 +1,28 @@
 <?php
-$current_page = basename($_SERVER['PHP_SELF']);
-$current_dir = basename(dirname($_SERVER['PHP_SELF']));
-$sidebarConfig = $ui_config ?? itm_ui_config_defaults();
-$sidebarStructure = itm_sidebar_structure();
-$sidebarItemCatalog = itm_sidebar_item_catalog();
+$itm_current_page = basename($_SERVER['PHP_SELF']);
+$itm_current_dir = basename(dirname($_SERVER['PHP_SELF']));
+$itm_sidebarConfig = $ui_config ?? itm_ui_config_defaults();
+$itm_sidebarStructure = itm_sidebar_structure();
+$itm_sidebarItemCatalog = itm_sidebar_item_catalog();
 
-$visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
-$mainOrder = $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
-$submenuOrder = $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order();
+$itm_visibility = $itm_sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
+$itm_mainOrder = $itm_sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
+$itm_submenuOrder = $itm_sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order();
 
-$sectionsById = [];
-foreach ($sidebarStructure as $section) {
-    $sectionsById[$section['id']] = $section;
+$itm_sectionsById = [];
+foreach ($itm_sidebarStructure as $itm_section) {
+    $itm_sectionsById[$itm_section['id']] = $itm_section;
 }
 
-$orderedSections = [];
-foreach ($mainOrder as $sectionId) {
-    if (isset($sectionsById[$sectionId])) {
-        $orderedSections[] = $sectionsById[$sectionId];
-        unset($sectionsById[$sectionId]);
+$itm_orderedSections = [];
+foreach ($itm_mainOrder as $itm_sectionId) {
+    if (isset($itm_sectionsById[$itm_sectionId])) {
+        $itm_orderedSections[] = $itm_sectionsById[$itm_sectionId];
+        unset($itm_sectionsById[$itm_sectionId]);
     }
 }
-foreach ($sectionsById as $section) {
-    $orderedSections[] = $section;
+foreach ($itm_sectionsById as $itm_section) {
+    $itm_orderedSections[] = $itm_section;
 }
 ?>
 <div class="sidebar">
@@ -31,42 +31,42 @@ foreach ($sectionsById as $section) {
         <p><?php echo sanitize($_SESSION['company_name'] ?? 'Company'); ?></p>
     </div>
 
-    <?php foreach ($orderedSections as $section): ?>
+    <?php foreach ($itm_orderedSections as $itm_section): ?>
         <?php
-        $sectionId = $section['id'];
-        if (($visibility[$sectionId] ?? 1) !== 1) {
+        $itm_sectionId = $itm_section['id'];
+        if (($itm_visibility[$itm_sectionId] ?? 1) !== 1) {
             continue;
         }
-        $sectionItemOrder = $submenuOrder[$sectionId] ?? [];
-        $orderedItems = [];
-        foreach ($sectionItemOrder as $itemId) {
-            if (isset($sidebarItemCatalog[$itemId])) {
-                $orderedItems[] = $sidebarItemCatalog[$itemId];
+        $itm_sectionItemOrder = $itm_submenuOrder[$itm_sectionId] ?? [];
+        $itm_orderedItems = [];
+        foreach ($itm_sectionItemOrder as $itm_itemId) {
+            if (isset($itm_sidebarItemCatalog[$itm_itemId])) {
+                $itm_orderedItems[] = $itm_sidebarItemCatalog[$itm_itemId];
             }
         }
 
-        $visibleItems = array_values(array_filter($orderedItems, static function ($item) use ($visibility) {
-            return ($visibility[$item['id']] ?? 1) === 1;
+        $itm_visibleItems = array_values(array_filter($itm_orderedItems, static function ($itm_item) use ($itm_visibility) {
+            return ($itm_visibility[$itm_item['id']] ?? 1) === 1;
         }));
 
-        if (!$visibleItems) {
+        if (!$itm_visibleItems) {
             continue;
         }
         ?>
-        <div class="sidebar-title"><?php echo sanitize($section['title']); ?></div>
+        <div class="sidebar-title"><?php echo sanitize($itm_section['title']); ?></div>
         <ul class="sidebar-nav">
-            <?php foreach ($visibleItems as $item): ?>
+            <?php foreach ($itm_visibleItems as $itm_item): ?>
                 <?php
-                $isActive = false;
-                if (isset($item['match_page'])) {
-                    $isActive = $current_page === $item['match_page'];
-                } elseif (isset($item['match_dir'])) {
-                    $isActive = $current_dir === $item['match_dir'];
+                $itm_isActive = false;
+                if (isset($itm_item['match_page'])) {
+                    $itm_isActive = $itm_current_page === $itm_item['match_page'];
+                } elseif (isset($itm_item['match_dir'])) {
+                    $itm_isActive = $itm_current_dir === $itm_item['match_dir'];
                 }
                 ?>
                 <li>
-                    <a href="<?php echo BASE_URL . $item['href']; ?>" class="<?php echo $isActive ? 'active' : ''; ?>">
-                        <?php echo sanitize($item['label']); ?>
+                    <a href="<?php echo BASE_URL . $itm_item['href']; ?>" class="<?php echo $itm_isActive ? 'active' : ''; ?>">
+                        <?php echo sanitize($itm_item['label']); ?>
                     </a>
                 </li>
             <?php endforeach; ?>
