@@ -6,15 +6,15 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
                pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
-        LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
-        LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
-        LEFT JOIN it_locations l ON l.id = e.location_id
-        LEFT JOIN racks r ON r.id = e.rack_id
-        LEFT JOIN equipment_statuses es ON es.id = e.status_id
-        LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id
-        LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id
-        LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id
-        LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id
+        LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
+        LEFT JOIN manufacturers m ON m.id = e.manufacturer_id AND m.company_id = e.company_id
+        LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
+        LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
+        LEFT JOIN equipment_statuses es ON es.id = e.status_id AND es.company_id = e.company_id
+        LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id AND wt.company_id = e.company_id
+        LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id AND pdt.company_id = e.company_id
+        LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id AND wdt.company_id = e.company_id
+        LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id AND wot.company_id = e.company_id
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
