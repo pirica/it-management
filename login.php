@@ -1,8 +1,10 @@
 <?php
 session_start();
 include('config/config.php');
+$csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -135,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php if (isset($error)): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <label for="email">Email or Username</label>
             <input id="email" type="text" name="email" placeholder="Email or username" required>
             <label for="password">Password</label>

@@ -1,5 +1,6 @@
 <?php
 include('config/config.php');
+$csrfToken = itm_get_csrf_token();
 
 $companies = mysqli_query($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company');
 $companyOptions = [];
@@ -10,6 +11,7 @@ if ($companies) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $rawPassword = $_POST['password'] ?? '';
@@ -135,6 +137,7 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
         <?php if (isset($error)): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <label for="company_ids">Companies:</label>
             <select id="company_ids" name="company_ids[]" multiple required size="6">
                 <?php foreach ($companyOptions as $company): ?>

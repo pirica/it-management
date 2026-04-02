@@ -13,6 +13,7 @@ if (!$conn) {
 }
 
 $userId = (int)$_SESSION['user_id'];
+$csrfToken = itm_get_csrf_token();
 $isAdmin = false;
 $adminStmt = mysqli_prepare(
     $conn,
@@ -31,6 +32,7 @@ if ($adminStmt) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    itm_require_post_csrf();
     $company_id = (int)($_POST['company_id'] ?? 0);
     $company = null;
 
@@ -155,6 +157,7 @@ if ($isAdmin) {
 
         <?php if ($companies && mysqli_num_rows($companies) > 0): ?>
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                 <div style="margin-bottom: 20px;">
                     <label for="company">Company:</label>
                     <select name="company_id" id="company" required onchange="updateName()" data-addable-select="1" data-add-table="companies" data-add-id-col="id" data-add-label-col="company" data-add-company-scoped="0" data-add-friendly="company">

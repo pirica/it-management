@@ -1,8 +1,10 @@
 <?php
 include('config/config.php');
 $token = $_GET['token'] ?? '';
+$csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
+    itm_require_post_csrf();
     $new_password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
 
     $stmt = mysqli_prepare($conn, 'UPDATE users SET password = ?, reset_token = NULL WHERE reset_token = ?');
@@ -48,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
 
         <?php if (!empty($success)): ?><p style="color:#2f855a; margin-bottom:14px;">Password updated! <a href="login.php">Login</a></p><?php endif; ?>
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <label for="password">New Password</label>
             <input id="password" type="password" name="password" placeholder="New Password" required>
             <button type="submit">Update</button>
