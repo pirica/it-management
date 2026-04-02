@@ -4,13 +4,14 @@ require '../../includes/employee_system_access.php';
 
 esa_ensure_table($conn);
 
-$csrfToken = (string)($_POST['csrf_token'] ?? ($_GET['csrf_token'] ?? ''));
-if (!itm_validate_csrf_token($csrfToken)) {
-    http_response_code(403);
-    exit('Invalid CSRF token.');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed');
 }
 
-$id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+itm_require_post_csrf();
+
+$id = (int)($_POST['id'] ?? 0);
 if ($id > 0) {
     $usageError = '';
     if (!itm_can_delete_record($conn, 'employees', 'id', $id, $company_id, $usageError)) {
