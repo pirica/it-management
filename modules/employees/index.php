@@ -718,6 +718,7 @@ function emp_build_query($params) {
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                 <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this employee?');">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                                 </form>
