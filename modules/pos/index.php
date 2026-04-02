@@ -1,7 +1,7 @@
 <?php
-$equipmentModuleTitle = '💻 Workstations';
-$equipmentFlagField = 'is_workstation';
-$equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%desk%%';
+$equipmentModuleTitle = '🏧 POS';
+$equipmentFlagField = 'is_pos';
+$equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%pos%%';
 $equipmentModuleBasePath = '../equipment/';
 $equipmentViewPath = '';
 $equipmentEditPath = '../equipment/';
