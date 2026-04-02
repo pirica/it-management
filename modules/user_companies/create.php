@@ -301,6 +301,8 @@ foreach ($fieldColumns as $col) {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$selectedCompanyIds = [];
+$allCompanyOptions = [];
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
@@ -314,8 +316,23 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+if (($crud_table ?? '') === 'user_companies') {
+    $resCompanies = mysqli_query($conn, 'SELECT id, company FROM companies WHERE active=1 ORDER BY company');
+    while ($resCompanies && ($row = mysqli_fetch_assoc($resCompanies))) {
+        $allCompanyOptions[] = $row;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
+
+    if (($crud_table ?? '') === 'user_companies' && $crud_action === 'create') {
+        $postedCompanyIds = $_POST['company_ids'] ?? [];
+        if (!is_array($postedCompanyIds)) {
+            $postedCompanyIds = [];
+        }
+        $selectedCompanyIds = array_values(array_unique(array_filter(array_map('intval', $postedCompanyIds))));
+    }
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
@@ -396,6 +413,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         } else {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+        }
+    }
+
+    if (empty($errors) && ($crud_table ?? '') === 'user_companies' && $crud_action === 'create') {
+        $targetUserId = (int)($data['user_id'] ?? 0);
+        if ($targetUserId <= 0) {
+            $errors[] = 'User is required.';
+        } elseif (empty($selectedCompanyIds)) {
+            $errors[] = 'At least one company is required.';
+        } else {
+            $grantedByValue = $data['granted_by_user_id'] ?? 'NULL';
+            $grantedBySql = ($grantedByValue === 'NULL' || $grantedByValue === '' || $grantedByValue === null) ? 'NULL' : (string)(int)$grantedByValue;
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            mysqli_begin_transaction($conn);
+            $insertOk = true;
+            foreach ($selectedCompanyIds as $selectedCompanyId) {
+                $insertSql = 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (' . $targetUserId . ',' . (int)$selectedCompanyId . ',' . $grantedBySql . ')';
+                if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                    $insertOk = false;
+                    break;
+                }
+            }
+            if ($insertOk) {
+                mysqli_commit($conn);
+                header('Location: ' . $listUrl);
+                exit;
+            }
+            mysqli_rollback($conn);
+            $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     }
 
@@ -529,7 +576,20 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
-                        <?php if ($name === 'company_id'): ?>
+                        <?php if ($name === 'company_id' && ($crud_table ?? '') === 'user_companies' && $crud_action === 'create'): ?>
+                            <div class="form-group">
+                                <label>Companies</label>
+                                <select name="company_ids[]" multiple size="6" required>
+                                    <?php foreach ($allCompanyOptions as $companyOption): ?>
+                                        <?php $cid = (int)$companyOption['id']; ?>
+                                        <option value="<?php echo $cid; ?>" <?php echo in_array($cid, $selectedCompanyIds, true) ? 'selected' : ''; ?>>
+                                            <?php echo sanitize($companyOption['company']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php continue; ?>
+                        <?php elseif ($name === 'company_id'): ?>
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
                             <?php continue; ?>
                         <?php endif; ?>
