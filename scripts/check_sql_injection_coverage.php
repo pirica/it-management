@@ -98,6 +98,7 @@ if (empty($issues)) {
 echo "SQL injection static check found potential issues:\n";
 foreach ($issues as $issue) {
     echo sprintf(" - %s:%d %s\n", $issue['path'], $issue['line'], $issue['reason']);
+    echo"<br>";
 }
 
 exit(1);
