@@ -1210,7 +1210,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `users`
-INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$5I5/6DQYXtQrpR1aHPRHEepbWA7g6U6qVNKU99cCXGsqpyBu.tDZC', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
 
 -- Table structure for `user_companies`
 DROP TABLE IF EXISTS `user_companies`;
