@@ -2,35 +2,66 @@
 include('config/config.php');
 
 $companies = mysqli_query($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company');
+$companyOptions = [];
+if ($companies) {
+    while ($company = mysqli_fetch_assoc($companies)) {
+        $companyOptions[] = $company;
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
-    $company_id = (int)($_POST['company_id'] ?? 0);
+    $selected_company_ids = $_POST['company_ids'] ?? [];
+    if (!is_array($selected_company_ids)) {
+        $selected_company_ids = [];
+    }
+    $selected_company_ids = array_values(array_unique(array_filter(array_map('intval', $selected_company_ids))));
 
-    $companyCheck = mysqli_prepare($conn, 'SELECT id FROM companies WHERE id = ? AND active = 1 LIMIT 1');
-    $companyExists = false;
-    if ($companyCheck) {
-        mysqli_stmt_bind_param($companyCheck, 'i', $company_id);
-        mysqli_stmt_execute($companyCheck);
-        $companyRes = mysqli_stmt_get_result($companyCheck);
-        $companyExists = $companyRes && mysqli_num_rows($companyRes) > 0;
-        mysqli_stmt_close($companyCheck);
+    if (empty($selected_company_ids)) {
+        $error = 'Please select at least one valid company.';
+    } else {
+        $placeholders = implode(',', array_fill(0, count($selected_company_ids), '?'));
+        $types = str_repeat('i', count($selected_company_ids));
+        $companyCheck = mysqli_prepare($conn, "SELECT id FROM companies WHERE active = 1 AND id IN ($placeholders)");
+        $valid_company_ids = [];
+
+        if ($companyCheck) {
+            mysqli_stmt_bind_param($companyCheck, $types, ...$selected_company_ids);
+            mysqli_stmt_execute($companyCheck);
+            $companyRes = mysqli_stmt_get_result($companyCheck);
+            if ($companyRes) {
+                while ($row = mysqli_fetch_assoc($companyRes)) {
+                    $valid_company_ids[] = (int)$row['id'];
+                }
+            }
+            mysqli_stmt_close($companyCheck);
+        }
+
+        sort($valid_company_ids);
+        $submitted_ids = $selected_company_ids;
+        sort($submitted_ids);
+        $allCompaniesValid = !empty($valid_company_ids) && $submitted_ids === $valid_company_ids;
+
+        if (!$allCompaniesValid) {
+            $error = 'Please select only valid active companies.';
+        }
     }
 
-    if (!$companyExists) {
-        $error = 'Please select a valid company.';
-    } else {
+    if (!isset($error)) {
+        $primary_company_id = $selected_company_ids[0];
         $stmt = mysqli_prepare($conn, 'INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, ?, (SELECT id FROM user_roles WHERE company_id = ? AND name = "User" LIMIT 1), (SELECT id FROM access_levels WHERE company_id = ? AND name = "Limited" LIMIT 1), 1)');
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'isssii', $company_id, $username, $email, $password, $company_id, $company_id);
+            mysqli_stmt_bind_param($stmt, 'isssii', $primary_company_id, $username, $email, $password, $primary_company_id, $primary_company_id);
             if (mysqli_stmt_execute($stmt)) {
                 $user_id = (int)mysqli_insert_id($conn);
                 $uc = mysqli_prepare($conn, 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (?, ?, NULL)');
-                if ($uc) {
-                    mysqli_stmt_bind_param($uc, 'ii', $user_id, $company_id);
-                    mysqli_stmt_execute($uc);
+                if ($uc && !empty($selected_company_ids)) {
+                    foreach ($selected_company_ids as $company_id) {
+                        mysqli_stmt_bind_param($uc, 'ii', $user_id, $company_id);
+                        mysqli_stmt_execute($uc);
+                    }
                     mysqli_stmt_close($uc);
                 }
                 $success = 'Registration successful! You can login now.';
@@ -40,6 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_close($stmt);
         }
     }
+}
+
+$posted_company_ids = [];
+if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
+    $posted_company_ids = array_map('intval', $_POST['company_ids']);
 }
 ?>
 <!DOCTYPE html>
@@ -77,12 +113,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (isset($error)): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
 
         <form method="POST">
-            <label for="company_id">Company:</label>
-            <select id="company_id" name="company_id" required>
-                <option value="">-- Select a Company --</option>
-                <?php while ($company = mysqli_fetch_assoc($companies)): ?>
-                    <option value="<?php echo (int)$company['id']; ?>"><?php echo htmlspecialchars($company['company']); ?></option>
-                <?php endwhile; ?>
+            <label for="company_ids">Companies:</label>
+            <select id="company_ids" name="company_ids[]" multiple required size="6">
+                <?php foreach ($companyOptions as $company): ?>
+                    <option value="<?php echo (int)$company['id']; ?>" <?php echo in_array((int)$company['id'], $posted_company_ids, true) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($company['company']); ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
 
             <label for="email">Email</label>
