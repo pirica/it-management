@@ -81,6 +81,7 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
+$locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
 $racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
 $statuses = fetch_options($conn, 'equipment_statuses');
 $defaultStatusId = '';
@@ -359,7 +360,7 @@ function render_options($items, $selected = '') {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields='[{"name":"type_id","label":"Location Type","type":"select","options":[<?php foreach ($locationTypes as $idx => $type): ?>{"value":"<?php echo (int)$type['id']; ?>","label":"<?php echo h($type['label']); ?>"}<?php if ($idx < count($locationTypes) - 1): ?>,<?php endif; ?><?php endforeach; ?>]}]'><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
