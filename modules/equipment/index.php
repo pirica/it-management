@@ -5,6 +5,9 @@ $moduleTitle = $equipmentModuleTitle ?? '🖥️ Equipment';
 $moduleFlagField = $equipmentFlagField ?? null;
 $moduleSearchPlaceholder = $equipmentSearchPlaceholder ?? 'Use SQL wildcards, e.g. %%desk%%';
 $moduleBasePath = $equipmentModuleBasePath ?? '';
+$moduleViewPath = $equipmentViewPath ?? $moduleBasePath;
+$moduleEditPath = $equipmentEditPath ?? $moduleBasePath;
+$moduleDeletePath = $equipmentDeletePath ?? $moduleBasePath;
 $allowCreate = isset($equipmentAllowCreate) ? (bool)$equipmentAllowCreate : true;
 $allowDelete = isset($equipmentAllowDelete) ? (bool)$equipmentAllowDelete : true;
 $allowImport = isset($equipmentAllowImport) ? (bool)$equipmentAllowImport : true;
@@ -283,10 +286,10 @@ $result = mysqli_query($conn, $sql);
                                     </span>
                                 </td>
                                 <td>
-                                    <a class="btn btn-sm" href="<?php echo sanitize($moduleBasePath); ?>view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
-                                    <a class="btn btn-sm" href="<?php echo sanitize($moduleBasePath); ?>edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm" href="<?php echo sanitize($moduleViewPath); ?>view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="<?php echo sanitize($moduleEditPath); ?>edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($allowDelete): ?>
-                                        <a class="btn btn-sm btn-danger" href="<?php echo sanitize($moduleBasePath); ?>delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
+                                        <a class="btn btn-sm btn-danger" href="<?php echo sanitize($moduleDeletePath); ?>delete.php?id=<?php echo (int)$row['id']; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
                                     <?php endif; ?>
                                 </td>
                             </tr>

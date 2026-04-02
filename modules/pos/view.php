@@ -1,6 +1,6 @@
 <?php
-$equipmentViewTitle = 'View Workstation';
-$equipmentRequiredFlagField = 'is_workstation';
+$equipmentViewTitle = 'View POS';
+$equipmentRequiredFlagField = 'is_pos';
 $equipmentViewBackPath = 'index.php';
 $equipmentViewEditPath = '../equipment/edit.php';
 require '../equipment/view.php';
