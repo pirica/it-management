@@ -15,9 +15,24 @@ define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
 // Paths
 $itm_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $itm_host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$itm_scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
-$itm_basePath = rtrim($itm_scriptDir, '/');
-if ($itm_basePath === '' || $itm_basePath === '.') {
+$itm_documentRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
+$itm_projectRoot = realpath(dirname(__DIR__));
+$itm_basePath = '';
+
+if ($itm_documentRoot && $itm_projectRoot && strpos($itm_projectRoot, $itm_documentRoot) === 0) {
+    $itm_basePath = str_replace('\\', '/', substr($itm_projectRoot, strlen($itm_documentRoot)));
+} else {
+    $itm_scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
+    $itm_modulesPos = strpos($itm_scriptName, '/modules/');
+    if ($itm_modulesPos !== false) {
+        $itm_basePath = substr($itm_scriptName, 0, $itm_modulesPos);
+    } else {
+        $itm_basePath = str_replace('\\', '/', dirname($itm_scriptName));
+    }
+}
+
+$itm_basePath = '/' . trim((string)$itm_basePath, '/');
+if ($itm_basePath === '/') {
     $itm_basePath = '';
 }
 
