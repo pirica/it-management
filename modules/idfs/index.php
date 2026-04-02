@@ -7,28 +7,10 @@ if (!isset($_SESSION['company_id'])) {
 }
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-
-function idf_csrf_token(): string {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    return (string)$_SESSION['csrf_token'];
-}
-
-function idf_require_csrf(): void {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
-}
-
-$csrf = idf_csrf_token();
+$csrf = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
-    idf_require_csrf();
+    itm_require_post_csrf();
 
     $name = trim((string)($_POST['name'] ?? ''));
     $idf_code = trim((string)($_POST['idf_code'] ?? ''));
