@@ -1,0 +1,198 @@
+<?php
+session_start();
+require 'config/config.php';
+
+// Security: Redirect to login if not authenticated
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+$user_id = (int)$_SESSION['user_id'];
+$message = '';
+$message_type = ''; // success, error, info
+
+// 1. Fetch current user data to show in the form
+$stmt_init = mysqli_prepare($conn, 'SELECT email FROM users WHERE id = ? LIMIT 1');
+$current_user = ['email' => ''];
+if ($stmt_init) {
+    mysqli_stmt_bind_param($stmt_init, 'i', $user_id);
+    mysqli_stmt_execute($stmt_init);
+    $res_init = mysqli_stmt_get_result($stmt_init);
+    $current_user = mysqli_fetch_assoc($res_init) ?: ['email' => ''];
+    mysqli_stmt_close($stmt_init);
+}
+
+// 2. Handle Form Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $new_email = trim((string)($_POST['email'] ?? ''));
+    $new_password = (string)($_POST['new_password'] ?? '');
+    $confirm_password = (string)($_POST['confirm_password'] ?? '');
+    $current_password_input = (string)($_POST['current_password_verify'] ?? '');
+
+    // --- VERIFICATION STEP 1: Check Current Password ---
+    $stmt_auth = mysqli_prepare($conn, 'SELECT password FROM users WHERE id = ? LIMIT 1');
+    $user_data = null;
+    if ($stmt_auth) {
+        mysqli_stmt_bind_param($stmt_auth, 'i', $user_id);
+        mysqli_stmt_execute($stmt_auth);
+        $res_auth = mysqli_stmt_get_result($stmt_auth);
+        $user_data = mysqli_fetch_assoc($res_auth);
+        mysqli_stmt_close($stmt_auth);
+    }
+
+    if ($user_data && password_verify($current_password_input, (string)$user_data['password'])) {
+        $update_fields = [];
+        $types = '';
+        $params = [];
+
+        // --- VERIFICATION STEP 2: Handle Email Change ---
+        if ($new_email !== '' && $new_email !== (string)$current_user['email']) {
+            // Check if new email is already taken by someone else
+            $stmt_check = mysqli_prepare($conn, 'SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1');
+            if ($stmt_check) {
+                mysqli_stmt_bind_param($stmt_check, 'si', $new_email, $user_id);
+                mysqli_stmt_execute($stmt_check);
+                mysqli_stmt_store_result($stmt_check);
+
+                if (mysqli_stmt_num_rows($stmt_check) > 0) {
+                    $message = 'Error: This email is already registered to another account.';
+                    $message_type = 'error';
+                } else {
+                    $update_fields[] = 'email = ?';
+                    $params[] = $new_email;
+                    $types .= 's';
+                }
+                mysqli_stmt_close($stmt_check);
+            }
+        }
+
+        // --- VERIFICATION STEP 3: Handle Password Change ---
+        if ($new_password !== '') {
+            if ($new_password === $confirm_password) {
+                $update_fields[] = 'password = ?';
+                $params[] = password_hash($new_password, PASSWORD_DEFAULT);
+                $types .= 's';
+            } else {
+                $message = 'Error: New passwords do not match.';
+                $message_type = 'error';
+            }
+        }
+
+        // --- FINAL STEP: Execute Update ---
+        if ($message === '' && !empty($update_fields)) {
+            $sql_update = 'UPDATE users SET ' . implode(', ', $update_fields) . ' WHERE id = ?';
+            $types .= 'i';
+            $params[] = $user_id;
+
+            $stmt_final = mysqli_prepare($conn, $sql_update);
+            if ($stmt_final) {
+                mysqli_stmt_bind_param($stmt_final, $types, ...$params);
+
+                if (mysqli_stmt_execute($stmt_final)) {
+                    $message = 'Profile updated successfully!';
+                    $message_type = 'success';
+                    if ($new_email !== '') {
+                        $current_user['email'] = $new_email;
+                    }
+                } else {
+                    $message = 'Database error. Please try again.';
+                    $message_type = 'error';
+                }
+                mysqli_stmt_close($stmt_final);
+            } else {
+                $message = 'Database error. Please try again.';
+                $message_type = 'error';
+            }
+        } elseif ($message === '' && empty($update_fields)) {
+            $message = 'No changes were made.';
+            $message_type = 'info';
+        }
+    } else {
+        $message = 'Error: Current password incorrect. Changes not saved.';
+        $message_type = 'error';
+    }
+}
+
+$messageClass = '';
+if ($message_type === 'success') {
+    $messageClass = 'crud_success';
+} elseif ($message_type === 'error') {
+    $messageClass = 'crud_error';
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Settings - IT Management</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <?php include 'includes/sidebar.php'; ?>
+
+        <div class="main-content">
+            <?php include 'includes/header.php'; ?>
+
+            <div class="content">
+                <h1>👤 User Settings</h1>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Manage your email and password.</p>
+
+                <?php if ($message !== ''): ?>
+                    <div class="<?php echo $messageClass !== '' ? $messageClass : ''; ?>" style="<?php echo $message_type === 'info' ? 'background: #e8f1ff; border:1px solid #b6d4fe; color:#084298; padding:10px; border-radius:8px;' : ''; ?>">
+                        <?php echo htmlspecialchars($message); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="card" style="max-width: 720px;">
+                    <div class="card-header">
+                        <h2>Account Configuration (ID: <?php echo (int)$user_id; ?>)</h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <fieldset>
+                                <legend>Account Information</legend>
+                                <p>
+                                    <label for="email">Email Address:</label><br>
+                                    <input id="email" type="email" name="email" value="<?php echo htmlspecialchars((string)$current_user['email']); ?>" required style="width:100%; max-width:460px;">
+                                </p>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Security (Leave blank to keep current password)</legend>
+                                <p>
+                                    <label for="new_password">New Password:</label><br>
+                                    <input id="new_password" type="password" name="new_password" style="width:100%; max-width:460px;">
+                                </p>
+                                <p>
+                                    <label for="confirm_password">Confirm New Password:</label><br>
+                                    <input id="confirm_password" type="password" name="confirm_password" style="width:100%; max-width:460px;">
+                                </p>
+                            </fieldset>
+
+                            <fieldset style="background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+                                <legend>Confirm Changes</legend>
+                                <p>
+                                    <label for="current_password_verify"><strong>Current Password (Required to save any changes):</strong></label><br>
+                                    <input id="current_password_verify" type="password" name="current_password_verify" required style="width:100%; max-width:460px;">
+                                </p>
+                                <button class="btn btn-primary" type="submit">Save All Changes</button>
+                            </fieldset>
+                        </form>
+                    </div>
+                </div>
+
+                <p style="margin-top: 20px;">
+                    <a class="btn" href="dashboard.php">Back to Dashboard</a>
+                    <a class="btn" href="logout.php">Logout</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
