@@ -22,6 +22,8 @@ $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 function equipment_field_label($key) {
     $labels = [
         'is_printer' => 'Is Printer',
+        'printer_device_type_name' => 'Printer Type',
+        'printer_color_capable' => 'Printer Color Capable',
         'is_workstation' => 'Is Workstation',
         'is_server' => 'Is Server',
         'is_pos' => 'Is POS',
@@ -65,7 +67,7 @@ function equipment_field_should_display($key) {
 }
 
 function equipment_field_matches_context($key, $item) {
-    if ($key !== 'printer_color_capable') {
+    if (!in_array($key, ['printer_color_capable', 'printer_device_type_name'], true)) {
         return true;
     }
 
