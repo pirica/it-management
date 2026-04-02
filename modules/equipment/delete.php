@@ -30,6 +30,13 @@ $debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
 $debugPost = $_POST;
 $debugGet = $_GET;
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed');
+}
+
+itm_require_post_csrf();
+
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
 if ($id <= 0) {
