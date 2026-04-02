@@ -46,8 +46,8 @@ foreach ($sectionsById as $section) {
             }
         }
 
-        $visibleItems = array_values(array_filter($orderedItems, static function ($item) use ($visibility) {
-            return ($visibility[$item['id']] ?? 1) === 1;
+        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility) {
+            return ($visibility[$sidebarItem['id']] ?? 1) === 1;
         }));
 
         if (!$visibleItems) {
@@ -56,18 +56,18 @@ foreach ($sectionsById as $section) {
         ?>
         <div class="sidebar-title"><?php echo sanitize($section['title']); ?></div>
         <ul class="sidebar-nav">
-            <?php foreach ($visibleItems as $item): ?>
+            <?php foreach ($visibleItems as $sidebarItem): ?>
                 <?php
                 $isActive = false;
-                if (isset($item['match_page'])) {
-                    $isActive = $current_page === $item['match_page'];
-                } elseif (isset($item['match_dir'])) {
-                    $isActive = $current_dir === $item['match_dir'];
+                if (isset($sidebarItem['match_page'])) {
+                    $isActive = $current_page === $sidebarItem['match_page'];
+                } elseif (isset($sidebarItem['match_dir'])) {
+                    $isActive = $current_dir === $sidebarItem['match_dir'];
                 }
                 ?>
                 <li>
-                    <a href="<?php echo BASE_URL . $item['href']; ?>" class="<?php echo $isActive ? 'active' : ''; ?>">
-                        <?php echo sanitize($item['label']); ?>
+                    <a href="<?php echo BASE_URL . $sidebarItem['href']; ?>" class="<?php echo $isActive ? 'active' : ''; ?>">
+                        <?php echo sanitize($sidebarItem['label']); ?>
                     </a>
                 </li>
             <?php endforeach; ?>
