@@ -18,11 +18,10 @@ if ($searchRaw !== '') {
         OR m.name LIKE '{$searchEsc}'
         OR l.name LIKE '{$searchEsc}'
         OR es.name LIKE '{$searchEsc}'
-        OR CAST(e.active AS CHAR) LIKE '{$searchEsc}'
     )";
 }
 
-$sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.active,
+$sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
                c.company AS company_name,
                et.name AS equipment_type_name,
                m.name AS manufacturer_name,
@@ -36,7 +35,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
         WHERE e.company_id = $company_id
         {$searchSql}";
-$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number', 'active'];
+$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -55,7 +54,6 @@ $orderByMap = [
     'status_name' => 'es.name',
     'ip_address' => 'e.ip_address',
     'serial_number' => 'e.serial_number',
-    'active' => 'e.active',
 ];
 $sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
 $result = mysqli_query($conn, $sql);
@@ -166,7 +164,6 @@ if (!empty($_SESSION['crud_success'])) {
                             'status_name' => 'Status',
                             'ip_address' => 'IP Address',
                             'serial_number' => 'Serial Number',
-                            'active' => 'Active',
                         ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -203,11 +200,6 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td><?php echo sanitize($row['ip_address'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['serial_number'] ?? '-'); ?></td>
                                 <td>
-                                    <span class="badge <?php echo (int)$row['active'] === 1 ? 'badge-success' : 'badge-danger'; ?>">
-                                        <?php echo (int)$row['active'] === 1 ? 'Active' : 'Inactive'; ?>
-                                    </span>
-                                </td>
-                                <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($isSwitch): ?>
@@ -220,7 +212,7 @@ if (!empty($_SESSION['crud_success'])) {
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="11" style="text-align:center;">No equipment records found.</td></tr>
+                        <tr><td colspan="10" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
