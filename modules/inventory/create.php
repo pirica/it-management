@@ -15,6 +15,7 @@ $data = [
     'price_eur' => '',
     'active' => 1,
 ];
+$csrfToken = itm_get_csrf_token();
 
 if ($is_edit) {
     $q = mysqli_query($conn, "SELECT * FROM inventory_items WHERE id=$id AND company_id=$company_id LIMIT 1");
@@ -27,6 +28,7 @@ if ($is_edit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $name = escape_sql($_POST['name'] ?? '', $conn);
     $item_code = escape_sql($_POST['item_code'] ?? '', $conn);
     $serial = escape_sql($_POST['serial'] ?? '', $conn);
@@ -100,6 +102,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
 
             <div class="card">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Name *</label>

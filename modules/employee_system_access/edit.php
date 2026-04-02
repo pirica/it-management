@@ -20,8 +20,10 @@ if (!$employee) {
 
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
 $selectedSystemAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, $employeeId);
+$csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
     esa_save_employee_access_ids($conn, (int)$company_id, $employeeId, $selectedSystemAccessIds);
     header('Location: index.php');
@@ -56,6 +58,7 @@ function esa_module_checked($ids, $id) {
                     <p>No active System Access records were found. Add some in <a href="../system_access/">System Access</a>.</p>
                 <?php endif; ?>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="employee_id" value="<?php echo (int)$employeeId; ?>">
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>

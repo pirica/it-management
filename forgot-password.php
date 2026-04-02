@@ -1,7 +1,9 @@
 <?php
 include('config/config.php');
+$csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $email = trim($_POST['email'] ?? '');
     $token = bin2hex(random_bytes(20));
 
@@ -70,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php if (isset($message)): ?><p style="color:#2f855a; margin-bottom:14px;"><?php echo htmlspecialchars($message); ?></p><?php endif; ?>
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <label for="email">Email</label>
             <input id="email" type="email" name="email" placeholder="Email" required>
             <button type="submit">Send Email</button>

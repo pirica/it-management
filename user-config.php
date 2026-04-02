@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = (int)$_SESSION['user_id'];
+$csrfToken = itm_get_csrf_token();
 $isReadOnlyMode = !empty($_SESSION['read_only_user_config']);
 $message = '';
 $message_type = ''; // success, error, info
@@ -26,6 +27,7 @@ if ($stmt_init) {
 
 // 2. Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
+    itm_require_post_csrf();
     $new_email = trim((string)($_POST['email'] ?? ''));
     $new_password = (string)($_POST['new_password'] ?? '');
     $confirm_password = (string)($_POST['confirm_password'] ?? '');
@@ -204,6 +206,7 @@ if ($message_type === 'success') {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                             <fieldset>
                                 <legend>Account Information</legend>
                                 <p>

@@ -6,6 +6,7 @@ $isEdit = $id > 0;
 $error = '';
 $success = isset($_GET['saved']) && $_GET['saved'] === '1';
 $originalData = null;
+$csrfToken = itm_get_csrf_token();
 
 function fetch_options($conn, $table, $label = 'name', $where = '') {
     $items = [];
@@ -142,6 +143,7 @@ if ($isEdit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     foreach ($data as $k => $v) {
         if (in_array($k, ['is_printer', 'printer_color_capable', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
             $data[$k] = isset($_POST[$k]) ? 1 : 0;
@@ -330,6 +332,7 @@ function render_options($items, $selected = '') {
     <?php if ($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
     <div class="card">
         <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-row">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
                 <div class="form-group"><label>Type *</label><select name="equipment_type_id" required data-addable-select="1" data-add-table="equipment_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment type"><option value="">-- Select --</option><?php render_options($types, $data['equipment_type_id']); ?><option value="__add_new__">➕</option></select></div>

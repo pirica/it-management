@@ -54,6 +54,8 @@ if (isset($_SESSION['settings_flash_message'])) {
     unset($_SESSION['settings_flash_message']);
 }
 
+$csrfToken = itm_get_csrf_token();
+
 function backup_filename() {
     return 'backup_' . date('d_M_Y') . '_' . date('His') . '.sql';
 }
@@ -147,6 +149,7 @@ function apply_sql_file($conn, $sqlText) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'create_backup') {
@@ -288,6 +291,7 @@ usort($backupFiles, static function ($a, $b) {
                 <div class="card-header"><h2>UI Configuration</h2></div>
                 <div class="card-body">
                     <form method="post" id="ui-config-form">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="save_ui_config">
                         <input type="hidden" id="sidebar_visibility" name="sidebar_visibility">
                         <input type="hidden" id="sidebar_main_order" name="sidebar_main_order">
@@ -363,6 +367,7 @@ usort($backupFiles, static function ($a, $b) {
                 <div class="card-body">
                     <p style="margin-bottom:10px;">Create/verify required system tables (idempotent).</p>
                     <form method="post">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="create_system_tables">
                         <button class="btn" type="submit">Create Missing Tables</button>
                     </form>
@@ -373,6 +378,7 @@ usort($backupFiles, static function ($a, $b) {
                 <div class="card-header"><h2>Create Full SQL Backup</h2></div>
                 <div class="card-body">
                     <form method="post">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="create_backup">
                         <button class="btn btn-primary" type="submit">Create Backup Now</button>
                     </form>
@@ -383,6 +389,7 @@ usort($backupFiles, static function ($a, $b) {
                 <div class="card-header"><h2>Import Backup</h2></div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="import_backup">
                         <div class="form-group" style="margin:0;min-width:260px;">
                             <label for="sql_file">SQL File</label>
@@ -417,6 +424,7 @@ usort($backupFiles, static function ($a, $b) {
                                     <td style="display:flex;gap:8px;flex-wrap:wrap;">
                                         <a class="btn btn-sm" href="index.php?download=<?php echo urlencode($backup['name']); ?>">Export</a>
                                         <form method="post" onsubmit="return confirm('Delete this backup file?');" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <input type="hidden" name="action" value="delete_backup">
                                             <input type="hidden" name="file" value="<?php echo sanitize($backup['name']); ?>">
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>

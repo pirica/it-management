@@ -4,6 +4,7 @@ require '../../config/config.php';
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
+$csrfToken = itm_get_csrf_token();
 
 $data = [
     'ticket_code' => '',
@@ -29,6 +30,7 @@ if ($is_edit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $ticket_code = escape_sql($_POST['ticket_code'] ?? '', $conn);
     $title = escape_sql($_POST['title'] ?? '', $conn);
     $description = escape_sql($_POST['description'] ?? '', $conn);
@@ -127,6 +129,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
 
             <div class="card">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Title *</label>
