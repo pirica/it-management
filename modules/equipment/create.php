@@ -151,8 +151,11 @@ if ($isEdit) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
     foreach ($data as $k => $v) {
-        if (in_array($k, ['is_printer', 'printer_color_capable', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
+        if (in_array($k, ['is_printer', 'printer_color_capable', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
             $data[$k] = isset($_POST[$k]) ? 1 : 0;
+        } elseif ($k === 'active') {
+            $postedActive = $_POST['active'] ?? $data['active'];
+            $data[$k] = (int)$postedActive === 1 ? 1 : 0;
         } else {
             $data[$k] = trim($_POST[$k] ?? '');
         }
@@ -349,7 +352,7 @@ function render_options($items, $selected = '') {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Status</label><select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status"><option value="">-- Select --</option><?php render_options($statuses, $data['status_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
@@ -423,8 +426,9 @@ function render_options($items, $selected = '') {
             </div>
             <div class="form-row">
                 <div class="form-group"><label><input type="checkbox" name="is_pos" <?php echo (int)$data['is_pos'] === 1 ? 'checked' : ''; ?>> Is POS</label></div>
-                <div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> Active</label></div>
+                <div class="form-group"><label>Status</label><select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status"><option value="">-- Select --</option><?php render_options($statuses, $data['status_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
+            <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
             <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">✖️</a></div>
         </form>
     </div>
