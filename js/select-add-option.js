@@ -1,4 +1,9 @@
 (function () {
+    if (window.ITM_SELECT_ADD_OPTION_INITIALIZED) {
+        return;
+    }
+    window.ITM_SELECT_ADD_OPTION_INITIALIZED = true;
+
     const ADD_VALUE = '__add_new__';
 
     function escapeHtml(value) {
