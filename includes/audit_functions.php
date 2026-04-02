@@ -108,13 +108,16 @@ function itm_audit_table_has_column($conn, $table, $column) {
         return false;
     }
 
-    $sql = 'SHOW COLUMNS FROM `' . $table . '` LIKE ?';
+    // NOTE:
+    // Older MySQL/MariaDB versions do not allow parameter placeholders in
+    // SHOW statements, so we query INFORMATION_SCHEMA instead.
+    $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
     }
 
-    mysqli_stmt_bind_param($stmt, 's', $column);
+    mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $exists = $result && mysqli_num_rows($result) > 0;
