@@ -81,6 +81,33 @@ $equipment_count = fetch_company_count($conn, $equipmentSql, $companyId);
 $workstations_count = fetch_company_count($conn, $workstationsSql, $companyId);
 $tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM tickets WHERE company_id = ?', $companyId);
 $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
+
+$userDisplayName = '';
+$userEmail = '';
+
+$userId = (int)($_SESSION['user_id'] ?? 0);
+if ($userId > 0) {
+    $userStmt = mysqli_prepare($conn, 'SELECT username, email FROM users WHERE id = ? LIMIT 1');
+    if ($userStmt) {
+        mysqli_stmt_bind_param($userStmt, 'i', $userId);
+        if (mysqli_stmt_execute($userStmt)) {
+            $userRes = mysqli_stmt_get_result($userStmt);
+            $userData = $userRes ? mysqli_fetch_assoc($userRes) : null;
+            $userDisplayName = trim((string)($userData['username'] ?? ''));
+            $userEmail = trim((string)($userData['email'] ?? ''));
+        }
+        mysqli_stmt_close($userStmt);
+    }
+}
+
+$welcomeMessage = 'Welcome to DataCenter Plus';
+if ($userDisplayName !== '' && $userEmail !== '') {
+    $welcomeMessage .= ', ' . $userDisplayName . ' (' . $userEmail . ')';
+} elseif ($userDisplayName !== '') {
+    $welcomeMessage .= ', ' . $userDisplayName;
+} elseif ($userEmail !== '') {
+    $welcomeMessage .= ' - (' . $userEmail . ')';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -99,7 +126,7 @@ $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM emp
 
             <div class="content">
                 <h1>📊 Dashboard</h1>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">Welcome to <?php echo sanitize($company_data['company']); ?></p>
+                <p style="color: var(--text-secondary); margin-bottom: 30px;"><?php echo sanitize($welcomeMessage); ?></p>
 
                 <div class="stats-grid">
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
