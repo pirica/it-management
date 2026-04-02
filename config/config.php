@@ -125,12 +125,45 @@ function escape_sql($data, $conn) {
 function itm_run_query($conn, $sql, &$errorCode = null, &$errorMessage = null) {
     $errorCode = null;
     $errorMessage = null;
+    $auditMeta = function_exists('itm_parse_audit_sql') ? itm_parse_audit_sql($sql) : null;
+    $auditOldValues = null;
+
+    if ($auditMeta && in_array($auditMeta['action'], ['UPDATE', 'DELETE'], true) && (int)$auditMeta['record_id'] > 0) {
+        $auditOldValues = itm_fetch_audit_record($conn, $auditMeta['table'], (int)$auditMeta['record_id']);
+        if ($auditOldValues === null) {
+            $auditOldValues = itm_fetch_audit_record_by_id($conn, $auditMeta['table'], (int)$auditMeta['record_id']);
+        }
+    }
 
     try {
         $result = mysqli_query($conn, $sql);
         if ($result === false) {
             $errorCode = (int)mysqli_errno($conn);
             $errorMessage = (string)mysqli_error($conn);
+        } elseif ($auditMeta) {
+            $auditRecordId = (int)$auditMeta['record_id'];
+            if ($auditMeta['action'] === 'INSERT' && $auditRecordId <= 0) {
+                $auditRecordId = (int)mysqli_insert_id($conn);
+            }
+
+            if ($auditRecordId > 0) {
+                $auditNewValues = null;
+                if (in_array($auditMeta['action'], ['INSERT', 'UPDATE'], true)) {
+                    $auditNewValues = itm_fetch_audit_record($conn, $auditMeta['table'], $auditRecordId);
+                    if ($auditNewValues === null) {
+                        $auditNewValues = itm_fetch_audit_record_by_id($conn, $auditMeta['table'], $auditRecordId);
+                    }
+                }
+
+                itm_log_audit(
+                    $conn,
+                    $auditMeta['table'],
+                    $auditRecordId,
+                    $auditMeta['action'],
+                    $auditOldValues,
+                    $auditNewValues
+                );
+            }
         }
         return $result;
     } catch (Throwable $t) {
