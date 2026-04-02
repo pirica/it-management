@@ -3,12 +3,12 @@ session_start();
 include('config/config.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
+    $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
     $stmt = mysqli_prepare($conn, 'SELECT id, password FROM users WHERE email = ? AND active = 1 LIMIT 1');
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $email);
+        mysqli_stmt_bind_param($stmt, 's', $loginIdentifier);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         $user = mysqli_fetch_assoc($result);
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <h2>Login</h2>
 <?php if (isset($error)): ?><p style="color:red;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
 <form method="POST">
-    <input type="email" name="email" placeholder="Email" required><br><br>
+    <input type="text" name="email" placeholder="Email or Admin" required><br><br>
     <input type="password" name="password" placeholder="Password" required><br><br>
     <button type="submit">Login</button>
 </form>
