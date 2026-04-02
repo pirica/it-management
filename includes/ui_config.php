@@ -15,7 +15,11 @@ function itm_sidebar_base_structure() {
             'title' => '🏢 Management',
             'items' => [
                 ['id' => 'equipment', 'label' => '🖥️ Equipment', 'href' => 'modules/equipment/', 'match_dir' => 'equipment'],
-                ['id' => 'workstations', 'label' => '💻 Workstations', 'href' => 'modules/workstations/', 'match_dir' => 'workstations'],
+                ['id' => 'workstations', 'label' => '💻 Is Workstation', 'href' => 'modules/workstations/', 'match_dir' => 'workstations'],
+                ['id' => 'servers', 'label' => '🖥️ Is Server', 'href' => 'modules/servers/', 'match_dir' => 'servers'],
+                ['id' => 'switches', 'label' => '🔀 Is Switch', 'href' => 'modules/switches/', 'match_dir' => 'switches'],
+                ['id' => 'printers', 'label' => '🖨️ Is Printer', 'href' => 'modules/printers/', 'match_dir' => 'printers'],
+                ['id' => 'pos', 'label' => '🏧 Is POS', 'href' => 'modules/pos/', 'match_dir' => 'pos'],
                 ['id' => 'switch_ports', 'label' => '🔌 Switch Ports', 'href' => 'modules/switch_ports/', 'match_dir' => 'switch_ports'],
                 ['id' => 'tickets', 'label' => '🎫 Tickets', 'href' => 'modules/tickets/', 'match_dir' => 'tickets'],
             ],
