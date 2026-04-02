@@ -337,6 +337,25 @@ function render_options($items, $selected = '') {
         echo '<option value="' . (int)$i['id'] . '" ' . $sel . '>' . sanitize($i['label']) . '</option>';
     }
 }
+
+$locationExtraFieldsConfig = [
+    [
+        'name' => 'type_id',
+        'label' => 'Location Type',
+        'type' => 'select',
+        'options' => array_map(static function ($type) {
+            return [
+                'value' => (string)((int)($type['id'] ?? 0)),
+                'label' => (string)($type['label'] ?? ''),
+            ];
+        }, $locationTypes),
+    ],
+];
+$locationExtraFieldsJson = htmlspecialchars(
+    json_encode($locationExtraFieldsConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -360,7 +379,7 @@ function render_options($items, $selected = '') {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields='[{"name":"type_id","label":"Location Type","type":"select","options":[<?php foreach ($locationTypes as $idx => $type): ?>{"value":"<?php echo (int)$type['id']; ?>","label":"<?php echo h($type['label']); ?>"}<?php if ($idx < count($locationTypes) - 1): ?>,<?php endif; ?><?php endforeach; ?>]}]'><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
