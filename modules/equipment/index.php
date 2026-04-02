@@ -705,7 +705,14 @@ if (!empty($_SESSION['crud_success'])) {
 
         function loadPorts() {
             const localLayout = fallbackLayout();
-            fetch(apiGet + '?switch_id=' + encodeURIComponent(selectedSwitchId))
+            fetch(apiGet, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    switch_id: selectedSwitchId,
+                    csrf_token: window.ITM_CSRF_TOKEN || ''
+                })
+            })
                 .then(function (r) {
                     return r.text().then(function (text) {
                         const raw = String(text || '').trim();
