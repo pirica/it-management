@@ -72,24 +72,55 @@ function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
     }
 
     $company_id = $company_id === null ? (int)($_SESSION['company_id'] ?? 0) : (int)$company_id;
-    if ($company_id <= 0) {
-        return null;
-    }
+    $hasCompanyColumn = itm_audit_table_has_column($conn, $table, 'company_id');
 
-    $sql = 'SELECT * FROM `' . $table . '` WHERE id = ? AND company_id = ? LIMIT 1';
+    $sql = 'SELECT * FROM `' . $table . '` WHERE id = ?';
+    if ($hasCompanyColumn && $company_id > 0) {
+        $sql .= ' AND company_id = ?';
+    }
+    $sql .= ' LIMIT 1';
+
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return null;
     }
 
     $record_id = (int)$record_id;
-    mysqli_stmt_bind_param($stmt, 'ii', $record_id, $company_id);
+    if ($hasCompanyColumn && $company_id > 0) {
+        mysqli_stmt_bind_param($stmt, 'ii', $record_id, $company_id);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $record_id);
+    }
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $row = $result ? mysqli_fetch_assoc($result) : null;
     mysqli_stmt_close($stmt);
 
     return $row ?: null;
+}
+
+function itm_audit_table_has_column($conn, $table, $column) {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
+        return false;
+    }
+
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$column)) {
+        return false;
+    }
+
+    $sql = 'SHOW COLUMNS FROM `' . $table . '` LIKE ?';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 's', $column);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $exists = $result && mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+
+    return $exists;
 }
 
 function itm_fetch_audit_record_by_id($conn, $table, $record_id) {
