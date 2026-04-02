@@ -173,11 +173,18 @@ function itm_table_has_column($conn, $table, $column) {
         return false;
     }
 
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $sql = "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$tableEsc}' AND COLUMN_NAME = '{$columnEsc}' LIMIT 1";
-    $res = mysqli_query($conn, $sql);
+    $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        $cache[$key] = false;
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
     $cache[$key] = ($res && mysqli_num_rows($res) > 0);
+    mysqli_stmt_close($stmt);
     return $cache[$key];
 }
 
@@ -186,21 +193,20 @@ function itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId = 
         return [];
     }
 
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $pkEsc = mysqli_real_escape_string($conn, $pkColumn);
-
     $sql = "SELECT kcu.TABLE_NAME AS source_table, kcu.COLUMN_NAME AS source_column
-"
-        . "FROM information_schema.KEY_COLUMN_USAGE kcu
-"
-        . "WHERE kcu.TABLE_SCHEMA = DATABASE()
-"
-        . "  AND kcu.REFERENCED_TABLE_NAME = '{$tableEsc}'
-"
-        . "  AND kcu.REFERENCED_COLUMN_NAME = '{$pkEsc}'";
+FROM information_schema.KEY_COLUMN_USAGE kcu
+WHERE kcu.TABLE_SCHEMA = DATABASE()
+  AND kcu.REFERENCED_TABLE_NAME = ?
+  AND kcu.REFERENCED_COLUMN_NAME = ?";
 
     $usage = [];
-    $res = mysqli_query($conn, $sql);
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+    mysqli_stmt_bind_param($stmt, 'ss', $table, $pkColumn);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $sourceTable = (string)($row['source_table'] ?? '');
         $sourceColumn = (string)($row['source_column'] ?? '');
@@ -225,6 +231,7 @@ function itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId = 
             ];
         }
     }
+    mysqli_stmt_close($stmt);
 
     return $usage;
 }
