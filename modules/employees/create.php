@@ -19,6 +19,7 @@ $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses WHERE co
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 esa_ensure_table($conn);
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
+$csrfToken = itm_get_csrf_token();
 
 $errors = [];
 $form = [
@@ -41,6 +42,7 @@ $form = [
 $selectedSystemAccessIds = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     emp_drop_email_unique_if_exists($conn);
 
     foreach ($form as $key => $default) {
@@ -124,6 +126,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
 
             <div class="card">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
                         <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="<?php echo sanitize($form['first_name']); ?>" required></div>
                         <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" value="<?php echo sanitize($form['last_name']); ?>" required></div>

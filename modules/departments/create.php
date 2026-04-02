@@ -5,6 +5,7 @@ $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
 $data = ['name' => '', 'description' => '', 'active' => 1];
+$csrfToken = itm_get_csrf_token();
 
 if ($is_edit) {
     $q = mysqli_query($conn, "SELECT * FROM departments WHERE id=$id AND company_id=$company_id LIMIT 1");
@@ -17,6 +18,8 @@ if ($is_edit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+
     $name = escape_sql($_POST['name'] ?? '', $conn);
     $description = escape_sql($_POST['description'] ?? '', $conn);
     $active = isset($_POST['active']) ? 1 : 0;
@@ -58,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
             <div class="card">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Name *</label>
