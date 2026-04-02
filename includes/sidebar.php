@@ -4,6 +4,7 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
 $sidebarConfig = $ui_config ?? itm_ui_config_defaults();
 $sidebarStructure = itm_sidebar_structure();
 $sidebarItemCatalog = itm_sidebar_item_catalog();
+$csrfToken = itm_get_csrf_token();
 
 $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
 $mainOrder = $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
@@ -74,6 +75,11 @@ foreach ($sectionsById as $section) {
     <?php endforeach; ?>
 
     <ul class="sidebar-nav" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
-        <li><a href="<?php echo BASE_URL; ?>logout.php">🚪 Logout</a></li>
+        <li>
+            <form method="POST" action="<?php echo BASE_URL; ?>logout.php" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                <button type="submit" class="btn btn-sm" style="width:100%;">🚪 Logout</button>
+            </form>
+        </li>
     </ul>
 </div>
