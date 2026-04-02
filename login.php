@@ -25,8 +25,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         if ($passwordMatches) {
-            $_SESSION['user_id'] = (int)$user['id'];
+            $userId = (int)$user['id'];
+            $_SESSION['user_id'] = $userId;
             unset($_SESSION['company_id'], $_SESSION['company_name']);
+
+            $isAdmin = false;
+            $adminStmt = mysqli_prepare(
+                $conn,
+                'SELECT 1
+                 FROM users u
+                 LEFT JOIN user_roles ur ON ur.id = u.role_id
+                 WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
+                 LIMIT 1'
+            );
+            if ($adminStmt) {
+                mysqli_stmt_bind_param($adminStmt, 'i', $userId);
+                mysqli_stmt_execute($adminStmt);
+                $adminRes = mysqli_stmt_get_result($adminStmt);
+                $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
+                mysqli_stmt_close($adminStmt);
+            }
+
+            $_SESSION['read_only_user_config'] = 0;
+
+            if ($isAdmin) {
+                $companyStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company ASC LIMIT 1');
+                if ($companyStmt) {
+                    mysqli_stmt_execute($companyStmt);
+                    $companyRes = mysqli_stmt_get_result($companyStmt);
+                    $company = $companyRes ? mysqli_fetch_assoc($companyRes) : null;
+                    mysqli_stmt_close($companyStmt);
+                    if ($company) {
+                        $_SESSION['company_id'] = (int)$company['id'];
+                        $_SESSION['company_name'] = (string)$company['company'];
+                    }
+                }
+                header('Location: dashboard.php');
+                exit();
+            }
+
+            $statusStmt = mysqli_prepare(
+                $conn,
+                'SELECT 1
+                 FROM users u
+                 INNER JOIN employees e ON LOWER(TRIM(e.email)) = LOWER(TRIM(u.email))
+                 INNER JOIN employee_statuses es ON es.id = e.employment_status_id
+                 WHERE u.id = ?
+                   AND e.active = 1
+                   AND LOWER(TRIM(COALESCE(es.name, ""))) = "active"
+                 LIMIT 1'
+            );
+            $hasActiveEmployeeMatch = false;
+            if ($statusStmt) {
+                mysqli_stmt_bind_param($statusStmt, 'i', $userId);
+                mysqli_stmt_execute($statusStmt);
+                $statusRes = mysqli_stmt_get_result($statusStmt);
+                $hasActiveEmployeeMatch = $statusRes && mysqli_num_rows($statusRes) > 0;
+                mysqli_stmt_close($statusStmt);
+            }
+
+            if (!$hasActiveEmployeeMatch) {
+                $_SESSION['read_only_user_config'] = 1;
+                header('Location: user-config.php');
+                exit();
+            }
+
             header('Location: index.php');
             exit();
         }
