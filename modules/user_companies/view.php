@@ -158,8 +158,8 @@ function cr_format_company_list($companies) {
     $lines = [
         sanitize($companies[0]) . ' - ' . sanitize($companies[1]),
     ];
-    for ($i = 2; $i < $count; $i++) {
-        $lines[] = '- ' . sanitize($companies[$i]);
+    for ($i = 1; $i < $count; $i++) {
+        $lines[] = '' . sanitize($companies[$i]);
     }
 
     return implode('<br>', $lines);
