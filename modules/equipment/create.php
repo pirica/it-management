@@ -109,12 +109,16 @@ $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_
 
 $switchTypeId = 0;
 $serverTypeId = 0;
+$printerTypeId = 0;
 foreach ($types as $typeItem) {
     if (strcasecmp((string)$typeItem['label'], 'Switch') === 0) {
         $switchTypeId = (int)$typeItem['id'];
     }
     if (strcasecmp((string)$typeItem['label'], 'Server') === 0) {
         $serverTypeId = (int)$typeItem['id'];
+    }
+    if (strcasecmp((string)$typeItem['label'], 'Printer') === 0) {
+        $printerTypeId = (int)$typeItem['id'];
     }
 }
 
@@ -380,9 +384,11 @@ function render_options($items, $selected = '') {
                     <div class="form-group"></div>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Printer Speed (PPM)</label><input type="number" name="printer_print_speed_ppm" value="<?php echo sanitize($data['printer_print_speed_ppm']); ?>"></div>
+            <div id="printer-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label></div>
+                </div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Processor</label><input name="workstation_processor" value="<?php echo sanitize($data['workstation_processor']); ?>"></div>
@@ -440,8 +446,11 @@ function render_options($items, $selected = '') {
     var typeSelect = document.querySelector('select[name="equipment_type_id"]');
     var switchFields = document.getElementById('switch-fields');
     var serverFields = document.getElementById('server-fields');
+    var printerFields = document.getElementById('printer-fields');
+    var isPrinterCheckbox = document.querySelector('input[name="is_printer"]');
     var switchTypeId = '<?php echo (int)$switchTypeId; ?>';
     var serverTypeId = '<?php echo (int)$serverTypeId; ?>';
+    var printerTypeId = '<?php echo (int)$printerTypeId; ?>';
 
     function toggleSwitchFields() {
         if (!typeSelect || !switchFields) {
@@ -470,11 +479,40 @@ function render_options($items, $selected = '') {
         }
     }
 
+    function togglePrinterFields() {
+        if (!typeSelect || !printerFields) {
+            return;
+        }
+
+        var matchesPrinterType = printerTypeId !== '0' && typeSelect.value === printerTypeId;
+        var matchesPrinterFlag = !!(isPrinterCheckbox && isPrinterCheckbox.checked);
+        var show = matchesPrinterType || matchesPrinterFlag;
+        printerFields.style.display = show ? 'block' : 'none';
+
+        if (!show) {
+            var printerTypeSelect = printerFields.querySelector('select[name="printer_device_type_id"]');
+            if (printerTypeSelect) {
+                printerTypeSelect.value = '';
+            }
+            var colorCapableInput = printerFields.querySelector('input[name="printer_color_capable"]');
+            if (colorCapableInput) {
+                colorCapableInput.checked = false;
+            }
+        }
+    }
+
     if (typeSelect) {
         typeSelect.addEventListener('change', toggleSwitchFields);
         typeSelect.addEventListener('change', toggleServerFields);
+        typeSelect.addEventListener('change', togglePrinterFields);
         toggleSwitchFields();
         toggleServerFields();
+        togglePrinterFields();
+    }
+
+    if (isPrinterCheckbox) {
+        isPrinterCheckbox.addEventListener('change', togglePrinterFields);
+        togglePrinterFields();
     }
 })();
 </script>
