@@ -13,7 +13,15 @@ define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
 define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
 
 // Paths
-define('BASE_URL', 'http://localhost:8080/it-management/');
+$itm_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$itm_host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$itm_scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+$itm_basePath = rtrim($itm_scriptDir, '/');
+if ($itm_basePath === '' || $itm_basePath === '.') {
+    $itm_basePath = '';
+}
+
+define('BASE_URL', $itm_scheme . '://' . $itm_host . ($itm_basePath !== '' ? $itm_basePath . '/' : '/'));
 define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
 define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'equipment'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('UPLOAD_URL', BASE_URL . 'equipment/');
