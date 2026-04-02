@@ -1311,6 +1311,8 @@ CREATE TABLE `audit_logs` (
   `action` enum('INSERT','UPDATE','DELETE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `old_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `new_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `changed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_audit_logs_company` (`company_id`),
@@ -1318,6 +1320,7 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_logs_table_record` (`table_name`,`record_id`),
   KEY `idx_audit_logs_action` (`action`),
   KEY `idx_audit_logs_changed_at` (`changed_at`),
+  KEY `idx_audit_logs_company_changed` (`company_id`,`changed_at`),
   CONSTRAINT `audit_logs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `audit_logs_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

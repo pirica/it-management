@@ -56,6 +56,7 @@ if (!is_dir(BACKUP_PATH)) {
 }
 
 require_once ROOT_PATH . 'includes/ui_config.php';
+require_once ROOT_PATH . 'includes/audit_functions.php';
 // Database Connection
 $conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
