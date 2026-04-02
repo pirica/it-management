@@ -30,6 +30,9 @@ function eq_build_query(array $params): string {
 $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
+$isSwitchListing = ($moduleFlagField === 'is_switch');
+$selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
+$showSwitchPortManager = $isSwitchListing && $selectedSwitchId > 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_equipment') && $allowImport) {
     itm_require_post_csrf();
@@ -300,9 +303,93 @@ $result = mysqli_query($conn, $sql);
                     </tbody>
                 </table>
             </div>
+
+            <?php if ($showSwitchPortManager): ?>
+                <div id="switch-port-manager" class="card" style="margin-top:16px;overflow:auto;">
+                    <h2 style="margin-top:0;">🔌 Switch Port Manager</h2>
+                    <p style="margin-top:0;opacity:.8;">Switch ID: <?php echo (int)$selectedSwitchId; ?></p>
+                    <div id="switchPortManagerStatus" style="margin-bottom:10px;opacity:.85;">Loading ports…</div>
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Port</th>
+                            <th>Label</th>
+                            <th>Status</th>
+                            <th>Color</th>
+                            <th>VLAN</th>
+                            <th>Comments</th>
+                        </tr>
+                        </thead>
+                        <tbody id="switchPortManagerBody">
+                        <tr><td colspan="6" style="opacity:.75;">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
+<?php if ($showSwitchPortManager): ?>
+<script>
+(function () {
+    const switchId = <?php echo (int)$selectedSwitchId; ?>;
+    const statusEl = document.getElementById('switchPortManagerStatus');
+    const tbody = document.getElementById('switchPortManagerBody');
+
+    function setStatus(message, isError) {
+        if (!statusEl) return;
+        statusEl.textContent = message;
+        statusEl.style.color = isError ? '#b42318' : '';
+    }
+
+    fetch('../../get_ports.php?switch_id=' + encodeURIComponent(String(switchId)), {
+        credentials: 'same-origin'
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (!data || !data.success || !Array.isArray(data.ports)) {
+                throw new Error((data && data.error) ? data.error : 'Unable to load ports');
+            }
+
+            if (data.ports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="opacity:.75;">No ports found.</td></tr>';
+                setStatus('No ports found for this switch.', false);
+                return;
+            }
+
+            const rows = data.ports.map((port) => {
+                const portType = (port.port_type || 'rj45').toString().toUpperCase().replace('_PLUS', '+');
+                const portNumber = Number(port.port_number || 0);
+                const vlan = (port.vlan_name || '').toString().trim();
+                const safe = (value) => {
+                    const text = (value ?? '').toString();
+                    return text
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                };
+                return '<tr>'
+                    + '<td>' + safe(portType + ' ' + portNumber) + '</td>'
+                    + '<td>' + safe(port.label || '') + '</td>'
+                    + '<td>' + safe(port.status || '') + '</td>'
+                    + '<td>' + safe(port.color || '') + '</td>'
+                    + '<td>' + safe(vlan) + '</td>'
+                    + '<td>' + safe(port.comments || '') + '</td>'
+                    + '</tr>';
+            }).join('');
+
+            tbody.innerHTML = rows;
+            setStatus('Loaded ' + data.ports.length + ' port(s).', false);
+        })
+        .catch((error) => {
+            tbody.innerHTML = '<tr><td colspan="6" style="opacity:.75;">Failed to load ports.</td></tr>';
+            setStatus('Could not load ports: ' + (error && error.message ? error.message : 'Unknown error'), true);
+        });
+})();
+</script>
+<?php endif; ?>
 <script src="../../js/theme.js"></script>
 </body>
 </html>
