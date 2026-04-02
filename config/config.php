@@ -9,6 +9,8 @@ define('DB_NAME', 'itmanagement');
 define('APP_NAME', 'IT Management System');
 define('APP_VERSION', '1.0.0');
 define('APP_ENV', 'production'); // development or production
+define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
+define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
 
 // Paths
 define('BASE_URL', 'http://localhost:8080/it-management/');
@@ -45,9 +47,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Redirect if not logged in (except on index and logout)
+// Redirect if not logged in (except auth/public pages)
 $current_file = basename($_SERVER['PHP_SELF']);
-if (!isset($_SESSION['company_id']) && $current_file !== 'index.php' && $current_file !== 'logout.php') {
+if (!isset($_SESSION['user_id']) && !in_array($current_file, ['login.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)) {
+    header('Location: ' . BASE_URL . 'login.php');
+    exit();
+}
+
+if (isset($_SESSION['user_id']) && !isset($_SESSION['company_id']) && !in_array($current_file, ['index.php', 'logout.php'], true)) {
     header('Location: ' . BASE_URL . 'index.php');
     exit();
 }
