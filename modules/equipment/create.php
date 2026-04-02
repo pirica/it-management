@@ -100,12 +100,14 @@ $warrantyTypes = fetch_options($conn, 'warranty_types');
 $printerTypes = fetch_options($conn, 'printer_device_types');
 $workstationDeviceTypes = fetch_options($conn, 'workstation_device_types');
 $workstationOsTypes = fetch_options($conn, 'workstation_os_types');
+$workstationOfficeOptions = fetch_options($conn, 'workstation_office');
 $switchRj45Options = fetch_options($conn, 'equipment_rj45');
 $switchFiberOptions = fetch_options($conn, 'equipment_fiber');
 $switchPoeOptions = fetch_options($conn, 'equipment_poe');
 $switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
 $switchFiberCountOptions = fetch_options($conn, 'equipment_fiber_count');
 $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_layout');
+$hasWorkstationOfficeIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_office_id');
 
 $switchTypeId = 0;
 $serverTypeId = 0;
@@ -128,6 +130,7 @@ $data = [
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0,
     'is_workstation' => 0, 'is_server' => 0, 'is_pos' => 0, 'is_switch' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
+    'workstation_office_id' => '',
     'workstation_processor' => '', 'workstation_memory_gb' => '',
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_count_id' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '', 'active' => 1
@@ -140,7 +143,7 @@ if ($isEdit) {
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         if ($res && mysqli_num_rows($res) === 1) {
-            $data = mysqli_fetch_assoc($res);
+            $data = array_merge($data, mysqli_fetch_assoc($res));
             if (empty($data['switch_port_numbering_layout_id'])) {
                 $data['switch_port_numbering_layout_id'] = '1';
             }
@@ -165,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
@@ -242,6 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_switch = (int)$data['is_switch'];
         $workstation_device_type_id = (int)$data['workstation_device_type_id'] ?: 'NULL';
         $workstation_os_type_id = (int)$data['workstation_os_type_id'] ?: 'NULL';
+        $workstation_office_id = (int)$data['workstation_office_id'] ?: 'NULL';
         $workstation_processor = $data['workstation_processor'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_processor'], $conn) . "'";
         $workstation_memory_gb = $data['workstation_memory_gb'] === '' ? 'NULL' : (int)$data['workstation_memory_gb'];
         $switch_rj45_id = (int)$data['switch_rj45_id'] ?: 'NULL';
@@ -254,6 +258,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photo = $photoFilename === '' ? 'NULL' : "'" . escape_sql($photoFilename, $conn) . "'";
         $active = (int)$data['active'];
 
+        $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
+        $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
+        $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
+
         if ($isEdit) {
             $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id,
                     name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, mac_address=$mac_address,
@@ -262,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     printer_color_capable=$printer_color_capable,
                     is_workstation=$is_workstation, is_server=$is_server, is_pos=$is_pos, is_switch=$is_switch,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
-                    workstation_processor=$workstation_processor, workstation_memory_gb=$workstation_memory_gb,
+                    $workstationOfficeUpdateSqlworkstation_processor=$workstation_processor, workstation_memory_gb=$workstation_memory_gb,
                     switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_count_id=$switch_fiber_count_id, switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
                     notes=$notes,
                     photo_filename=$photo, active=$active
@@ -271,11 +279,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
                     ip_address, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
                     printer_device_type_id, printer_color_capable, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
-                    workstation_os_type_id, workstation_processor, workstation_memory_gb, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
+                    workstation_os_type_id$workstationOfficeInsertColumns, workstation_processor, workstation_memory_gb, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
                     $printer_device_type_id, $printer_color_capable, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
-                    $workstation_os_type_id, $workstation_processor, $workstation_memory_gb, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+                    $workstation_os_type_id$workstationOfficeInsertValues, $workstation_processor, $workstation_memory_gb, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
         if (mysqli_query($conn, $sql)) {
@@ -376,6 +384,10 @@ function render_options($items, $selected = '') {
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
                 <div class="form-group"><label>Photo Upload</label><input type="file" name="photo" accept="image/*"><?php if (!empty($data['photo_filename'])): ?><div class="form-hint">Current: <?php echo sanitize($data['photo_filename']); ?></div><?php endif; ?></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"></div>
             </div>
             <div id="server-fields" style="display:none;">
                 <div class="form-row">

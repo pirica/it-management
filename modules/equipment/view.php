@@ -1,9 +1,24 @@
 <?php
 require '../../config/config.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+function equipment_view_table_has_column(mysqli $conn, string $table, string $column): bool
+{
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
+}
+
+$hasWorkstationOfficeIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_office_id');
+$workstationOfficeSelect = $hasWorkstationOfficeIdColumn ? ', wo.name workstation_office_name' : '';
+$workstationOfficeJoin = $hasWorkstationOfficeIdColumn
+    ? ' LEFT JOIN workstation_office wo ON wo.id = e.workstation_office_id AND wo.company_id = e.company_id'
+    : '';
+
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                r.name rack_name, es.name status_name, wt.name warranty_type_name,
-               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
@@ -15,6 +30,7 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id AND pdt.company_id = e.company_id
         LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id AND wdt.company_id = e.company_id
         LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id AND wot.company_id = e.company_id
+        $workstationOfficeJoin
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
@@ -28,6 +44,7 @@ function equipment_field_label($key) {
         'is_server' => 'Is Server',
         'is_pos' => 'Is POS',
         'is_switch' => 'Is Switch',
+        'workstation_office_name' => 'Workstation Office',
         'notes' => 'Comments',
     ];
 
