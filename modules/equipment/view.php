@@ -65,7 +65,7 @@ function equipment_field_value($key, $value) {
     return (string)$value;
 }
 
-function equipment_show_field($key, $value) {
+function equipment_show_field($item, $key, $value) {
     $hiddenFields = [
         'id', 'company_id', 'equipment_type_id', 'manufacturer_id', 'location_id', 'rack_id', 'status_id',
         'warranty_type_id', 'printer_device_type_id', 'workstation_device_type_id', 'workstation_os_type_id',
@@ -83,6 +83,17 @@ function equipment_show_field($key, $value) {
 
     if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
         return (int)$value === 1;
+    }
+
+    $fieldTypeMap = [
+        'printer_device_type_name' => 'is_printer',
+        'workstation_device_type_name' => 'is_workstation',
+        'workstation_os_type_name' => 'is_workstation',
+    ];
+
+    if (isset($fieldTypeMap[$key])) {
+        $requiredFlag = $fieldTypeMap[$key];
+        return (int)($item[$requiredFlag] ?? 0) === 1 && $value !== null && trim((string)$value) !== '';
     }
 
     if ($value === null) {
@@ -107,7 +118,7 @@ function equipment_show_field($key, $value) {
 <div class="card">
 <table><tbody>
 <?php foreach ($item as $k => $v): ?>
-    <?php if (!equipment_show_field($k, $v)) { continue; } ?>
+    <?php if (!equipment_show_field($item, $k, $v)) { continue; } ?>
     <tr>
         <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
         <td><?php echo sanitize(equipment_field_value($k, $v)); ?></td>
