@@ -54,8 +54,30 @@ function has_sql_injection_signature(string $value, array &$matchedRules = []): 
 
 $payload = (string)($jsonInput['payload'] ?? ($_POST['payload'] ?? ($_GET['payload'] ?? '')));
 if ($payload === '') {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Missing payload']);
+    $samplePayloads = [
+        "Core-Switch-01",
+        "' OR '1'='1",
+        "admin' UNION SELECT 1,2 --",
+        "test; DROP TABLE users;",
+    ];
+
+    $sampleResults = [];
+    foreach ($samplePayloads as $samplePayload) {
+        $rules = [];
+        $sampleResults[] = [
+            'payload' => $samplePayload,
+            'suspicious' => has_sql_injection_signature($samplePayload, $rules),
+            'matched_rules' => array_values(array_unique($rules)),
+        ];
+    }
+
+    http_response_code(200);
+    echo json_encode([
+        'success' => true,
+        'test_mode' => 'sql_injection_detection',
+        'message' => 'No payload provided. Pass payload via ?payload=... or POST/JSON payload to test a specific value.',
+        'sample_results' => $sampleResults,
+    ]);
     exit;
 }
 
