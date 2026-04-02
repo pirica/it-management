@@ -21,7 +21,7 @@ IT MANAGEMENT SYSTEM - INSTALLATION GUIDE
 
 4. ACCESS SYSTEM
    - Open browser
-   - Go to: http://localhost:8080/it-management/
+   - Go to: http://localhost/it-management/
    - Select a company and enter system
 
 5. DEFAULT COMPANIES
