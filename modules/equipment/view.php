@@ -18,7 +18,9 @@ if ($requiredFlagField !== null) {
 
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                r.name rack_name, es.name status_name, wt.name warranty_type_name,
-               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name,
+               er.name switch_rj45_name, spnl.name switch_port_numbering_layout_name, ef.name switch_fiber_name,
+               efc.name switch_fiber_count_name, ep.name switch_poe_name, ee.name switch_environment_name
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
@@ -30,6 +32,12 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id
         LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id
         LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id
+        LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+        LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
+        LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+        LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
+        LEFT JOIN equipment_poe ep ON ep.id = e.switch_poe_id
+        LEFT JOIN equipment_environment ee ON ee.id = e.switch_environment_id
         WHERE e.id = $id AND e.company_id = $company_id {$flagSql} LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
@@ -46,6 +54,12 @@ function equipment_field_label($key) {
         'printer_device_type_name' => 'Printer Device Type',
         'workstation_device_type_name' => 'Workstation Device Type',
         'workstation_os_type_name' => 'Workstation OS Type',
+        'switch_rj45_name' => 'RJ45 Ports',
+        'switch_port_numbering_layout_name' => 'Port Numbering Layout',
+        'switch_fiber_name' => 'Fiber Ports',
+        'switch_fiber_count_name' => 'Fiber Count',
+        'switch_poe_name' => 'PoE Type',
+        'switch_environment_name' => 'Management',
         'is_printer' => 'Is Printer',
         'is_workstation' => 'Is Workstation',
         'is_server' => 'Is Server',
@@ -89,6 +103,12 @@ function equipment_show_field($item, $key, $value) {
         'printer_device_type_name' => 'is_printer',
         'workstation_device_type_name' => 'is_workstation',
         'workstation_os_type_name' => 'is_workstation',
+        'switch_rj45_name' => 'is_switch',
+        'switch_port_numbering_layout_name' => 'is_switch',
+        'switch_fiber_name' => 'is_switch',
+        'switch_fiber_count_name' => 'is_switch',
+        'switch_poe_name' => 'is_switch',
+        'switch_environment_name' => 'is_switch',
     ];
 
     if (isset($fieldTypeMap[$key])) {
