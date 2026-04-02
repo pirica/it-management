@@ -91,3 +91,52 @@ function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
 
     return $row ?: null;
 }
+
+function itm_fetch_audit_record_by_id($conn, $table, $record_id) {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
+        return null;
+    }
+
+    $sql = 'SELECT * FROM `' . $table . '` WHERE id = ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    $record_id = (int)$record_id;
+    mysqli_stmt_bind_param($stmt, 'i', $record_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ?: null;
+}
+
+function itm_parse_audit_sql($sql) {
+    $sql = trim((string)$sql);
+    if ($sql === '') {
+        return null;
+    }
+
+    $meta = null;
+    if (preg_match('/^INSERT\s+INTO\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $m)) {
+        $meta = ['action' => 'INSERT', 'table' => $m[1], 'record_id' => 0];
+    } elseif (preg_match('/^UPDATE\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $m)) {
+        $meta = ['action' => 'UPDATE', 'table' => $m[1], 'record_id' => 0];
+    } elseif (preg_match('/^DELETE\s+FROM\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $m)) {
+        $meta = ['action' => 'DELETE', 'table' => $m[1], 'record_id' => 0];
+    } else {
+        return null;
+    }
+
+    if ($meta['table'] === 'audit_logs') {
+        return null;
+    }
+
+    if (preg_match('/\bWHERE\b[\s\S]*?\bid\s*=\s*(\d+)/i', $sql, $idMatch)) {
+        $meta['record_id'] = (int)$idMatch[1];
+    }
+
+    return $meta;
+}
