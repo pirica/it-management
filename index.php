@@ -146,7 +146,10 @@ if ($isAdmin) {
     </style>
 </head>
 <body>
-    <a class="logout-btn" href="logout.php">Logout</a>
+    <form method="POST" action="logout.php" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
     <button class="theme-btn" onclick="toggleTheme()">🌙</button>
 
     <div class="container">

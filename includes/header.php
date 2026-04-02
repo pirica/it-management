@@ -11,7 +11,10 @@ $csrfToken = itm_get_csrf_token();
     </div>
     <div style="display: flex; gap: 15px; align-items: center;">
         <button onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙</button>
-        <a href="<?php echo BASE_URL; ?>logout.php" class="btn btn-sm">🚪 Logout</a>
+        <form method="POST" action="<?php echo BASE_URL; ?>logout.php" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+            <button type="submit" class="btn btn-sm">🚪 Logout</button>
+        </form>
     </div>
 </div>
 <?php

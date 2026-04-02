@@ -178,7 +178,10 @@ if ($message_type === 'success') {
             <?php endif; ?>
             <div class="readonly-actions">
                 <button type="button" onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙 Dark / White</button>
-                <a href="logout.php" class="btn btn-sm">🚪 Logout</a>
+                <form method="POST" action="logout.php" style="display:inline; margin:0;">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <button type="submit" class="btn btn-sm">🚪 Logout</button>
+                </form>
             </div>
         </div>
     </div>
@@ -241,7 +244,10 @@ if ($message_type === 'success') {
 
                 <p style="margin-top: 20px;">
                     <a class="btn" href="dashboard.php">Back to Dashboard</a>
-                    <a class="btn" href="logout.php">Logout</a>
+                    <form method="POST" action="logout.php" style="display:inline; margin:0;">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                        <button type="submit" class="btn">Logout</button>
+                    </form>
                 </p>
             </div>
         </div>
