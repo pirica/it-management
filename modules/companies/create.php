@@ -20,7 +20,7 @@ $data = [
 ];
 
 if ($is_edit) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? AND id > 0 LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $id);
         mysqli_stmt_execute($stmt);
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if ($is_edit) {
             $old = itm_fetch_audit_record($conn, 'companies', $id, (int)($_SESSION['company_id'] ?? 0));
-            $sql = 'UPDATE companies SET company=?, incode=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=? WHERE id=?';
+            $sql = 'UPDATE companies SET company=?, incode=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=? WHERE id=? AND id > 0';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'sssssssssii', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active, $id);
