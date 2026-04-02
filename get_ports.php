@@ -4,6 +4,26 @@ require 'config/config.php';
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
+}
+
+$rawInput = file_get_contents('php://input');
+$jsonInput = json_decode((string)$rawInput, true);
+if (!is_array($jsonInput)) {
+    $jsonInput = [];
+}
+
+$csrfToken = (string)($jsonInput['csrf_token'] ?? ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')));
+if (!itm_validate_csrf_token($csrfToken)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+    exit;
+}
+
 if ($company_id <= 0) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
@@ -135,7 +155,7 @@ if (empty($statuses) || empty($colors)) {
 $defaultStatusId = lookup_id_by_name($statuses, 'Unknown');
 $defaultColorId = lookup_id_by_name($colors, 'grey', lookup_id_by_name($colors, 'gray'));
 
-$switchId = (int)($_GET['switch_id'] ?? 0);
+$switchId = (int)($jsonInput['switch_id'] ?? ($_POST['switch_id'] ?? 0));
 if ($switchId <= 0) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Missing switch id']);
