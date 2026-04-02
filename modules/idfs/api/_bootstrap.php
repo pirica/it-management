@@ -3,6 +3,13 @@ require_once __DIR__ . '/../../../config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
+    exit;
+}
+
 if (!isset($_SESSION['company_id'])) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
