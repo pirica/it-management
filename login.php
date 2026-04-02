@@ -6,15 +6,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    $stmt = mysqli_prepare($conn, 'SELECT id, password FROM users WHERE email = ? AND active = 1 LIMIT 1');
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, password FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
+    );
+
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $loginIdentifier);
+        mysqli_stmt_bind_param($stmt, 'ss', $loginIdentifier, $loginIdentifier);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         $user = mysqli_fetch_assoc($result);
         mysqli_stmt_close($stmt);
 
-        if ($user && password_verify($password, (string)$user['password'])) {
+        $storedPassword = (string)($user['password'] ?? '');
+        $passwordMatches = $user && (
+            password_verify($password, $storedPassword)
+            || hash_equals($storedPassword, $password)
+        );
+
+        if ($passwordMatches) {
             $_SESSION['user_id'] = (int)$user['id'];
             unset($_SESSION['company_id'], $_SESSION['company_name']);
             header('Location: index.php');
