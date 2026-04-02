@@ -63,6 +63,17 @@ function equipment_field_should_display($key) {
 
     return !preg_match('/_id$/', (string)$key);
 }
+
+function equipment_field_matches_context($key, $item) {
+    if ($key !== 'printer_color_capable') {
+        return true;
+    }
+
+    $equipmentTypeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
+    $isPrinter = (int)($item['is_printer'] ?? 0) === 1;
+
+    return $equipmentTypeName === 'printer' || $isPrinter;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View Equipment</title><link rel="stylesheet" href="../../css/styles.css"></head>
@@ -75,6 +86,7 @@ function equipment_field_should_display($key) {
 <table><tbody>
 <?php foreach ($item as $k => $v): ?>
     <?php if (!equipment_field_should_display($k)) { continue; } ?>
+    <?php if (!equipment_field_matches_context($k, $item)) { continue; } ?>
     <?php if (!equipment_field_is_populated($k, $v)) { continue; } ?>
     <tr>
         <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
