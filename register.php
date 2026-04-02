@@ -85,12 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endwhile; ?>
             </select>
 
-            <label for="username">Username</label>
-            <input id="username" type="text" name="username" placeholder="Username" required>
-
             <label for="email">Email</label>
             <input id="email" type="email" name="email" placeholder="Email" required>
 
+            <label for="username">Username</label>
+            <input id="username" type="text" name="username" placeholder="Username" required>
+            
             <label for="password">Password</label>
             <input id="password" type="password" name="password" placeholder="Password" required>
 
