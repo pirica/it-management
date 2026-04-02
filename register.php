@@ -12,14 +12,19 @@ if ($companies) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
-    $password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
+    $rawPassword = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
     $selected_company_ids = $_POST['company_ids'] ?? [];
     if (!is_array($selected_company_ids)) {
         $selected_company_ids = [];
     }
     $selected_company_ids = array_values(array_unique(array_filter(array_map('intval', $selected_company_ids))));
 
-    if (empty($selected_company_ids)) {
+    if ($rawPassword === '' || $confirmPassword === '') {
+        $error = 'Password and confirmation are required.';
+    } elseif ($rawPassword !== $confirmPassword) {
+        $error = 'Password confirmation does not match.';
+    } elseif (empty($selected_company_ids)) {
         $error = 'Please select at least one valid company.';
     } else {
         $placeholders = implode(',', array_fill(0, count($selected_company_ids), '?'));
@@ -50,21 +55,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!isset($error)) {
+        $password = password_hash($rawPassword, PASSWORD_DEFAULT);
         $primary_company_id = $selected_company_ids[0];
         $stmt = mysqli_prepare($conn, 'INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, ?, (SELECT id FROM user_roles WHERE company_id = ? AND name = "User" LIMIT 1), (SELECT id FROM access_levels WHERE company_id = ? AND name = "Limited" LIMIT 1), 1)');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'isssii', $primary_company_id, $username, $email, $password, $primary_company_id, $primary_company_id);
             if (mysqli_stmt_execute($stmt)) {
                 $user_id = (int)mysqli_insert_id($conn);
+                mysqli_begin_transaction($conn);
                 $uc = mysqli_prepare($conn, 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (?, ?, NULL)');
-                if ($uc && !empty($selected_company_ids)) {
+                if ($uc) {
+                    $insertedRows = 0;
                     foreach ($selected_company_ids as $company_id) {
                         mysqli_stmt_bind_param($uc, 'ii', $user_id, $company_id);
-                        mysqli_stmt_execute($uc);
+                        if (!mysqli_stmt_execute($uc)) {
+                            break;
+                        }
+                        $insertedRows += mysqli_stmt_affected_rows($uc);
                     }
                     mysqli_stmt_close($uc);
+                    if ($insertedRows === count($selected_company_ids)) {
+                        mysqli_commit($conn);
+                        $success = 'Registration successful! You can login now.';
+                    } else {
+                        mysqli_rollback($conn);
+                        mysqli_query($conn, 'DELETE FROM users WHERE id = ' . $user_id);
+                        $error = 'Registration failed while assigning companies. Please try again.';
+                    }
+                } else {
+                    mysqli_rollback($conn);
+                    mysqli_query($conn, 'DELETE FROM users WHERE id = ' . $user_id);
+                    $error = 'Registration failed while assigning companies. Please try again.';
                 }
-                $success = 'Registration successful! You can login now.';
             } else {
                 $error = 'Registration failed. Email/username may already exist.';
             }
@@ -131,7 +153,10 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
             <label for="password">Password</label>
             <input id="password" type="password" name="password" placeholder="Password" required>
 
-            <button type="submit">Resgister</button>
+            <label for="confirm_password">Re-confirm Password</label>
+            <input id="confirm_password" type="password" name="confirm_password" placeholder="Re-confirm Password" required>
+
+            <button type="submit">Register</button>
         </form>
         <div class="links"><a href="login.php">Back to Login</a></div>
     </div>
