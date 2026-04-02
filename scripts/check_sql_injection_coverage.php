@@ -91,10 +91,11 @@ foreach ($iterator as $fileInfo) {
 }
 
 if (empty($issues)) {
+    echo "<br>";
     echo "SQL injection static check passed. Scanned {$scanned} PHP files and found no high-confidence direct-query findings.\n";
     exit(0);
 }
-
+echo"<br>";
 echo "SQL injection static check found potential issues:\n";
 foreach ($issues as $issue) {
     echo sprintf(" - %s:%d %s\n", $issue['path'], $issue['line'], $issue['reason']);
