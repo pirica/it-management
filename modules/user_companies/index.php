@@ -143,7 +143,29 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
-function cr_render_cell_value($table, $field, $value) {
+function cr_format_company_list($companies) {
+    $count = count($companies);
+    if ($count === 0) {
+        return '';
+    }
+    if ($count === 1) {
+        return sanitize($companies[0]);
+    }
+    if ($count === 2) {
+        return sanitize($companies[0]) . ' - ' . sanitize($companies[1]);
+    }
+
+    $lines = [
+        sanitize($companies[0]) . ' - ' . sanitize($companies[1]),
+    ];
+    for ($i = 2; $i < $count; $i++) {
+        $lines[] = '- ' . sanitize($companies[$i]);
+    }
+
+    return implode('<br>', $lines);
+}
+
+function cr_render_cell_value($table, $field, $value, $row = []) {
     global $conn;
 
     if ($field === 'active') {
@@ -165,10 +187,30 @@ function cr_render_cell_value($table, $field, $value) {
         }
 
         if ($field === 'company_id') {
+            $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+            if ($userId > 0) {
+                $sql = 'SELECT c.company
+                        FROM user_companies uc
+                        LEFT JOIN companies c ON c.id = uc.company_id
+                        WHERE uc.user_id=' . $userId . '
+                        ORDER BY c.company';
+                $res = mysqli_query($conn, $sql);
+                $companies = [];
+                while ($res && ($companyRow = mysqli_fetch_assoc($res))) {
+                    $companyName = trim((string)($companyRow['company'] ?? ''));
+                    if ($companyName !== '' && !in_array($companyName, $companies, true)) {
+                        $companies[] = $companyName;
+                    }
+                }
+                if (!empty($companies)) {
+                    return cr_format_company_list($companies);
+                }
+            }
+
             $sql = 'SELECT company FROM companies WHERE id=' . $id . ' LIMIT 1';
             $res = mysqli_query($conn, $sql);
-            $row = $res ? mysqli_fetch_assoc($res) : null;
-            return sanitize((string)($row['company'] ?? $id));
+            $companyRow = $res ? mysqli_fetch_assoc($res) : null;
+            return sanitize((string)($companyRow['company'] ?? $id));
         }
     }
 
@@ -542,7 +584,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
+                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? '', $row); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
@@ -630,7 +672,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? '', $data); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
