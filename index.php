@@ -12,19 +12,50 @@ if (!$conn) {
     ini_set('display_errors', '1');
 }
 
+$userId = (int)$_SESSION['user_id'];
+$isAdmin = false;
+$adminStmt = mysqli_prepare(
+    $conn,
+    'SELECT 1
+     FROM users u
+     LEFT JOIN user_roles ur ON ur.id = u.role_id
+     WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
+     LIMIT 1'
+);
+if ($adminStmt) {
+    mysqli_stmt_bind_param($adminStmt, 'i', $userId);
+    mysqli_stmt_execute($adminStmt);
+    $adminRes = mysqli_stmt_get_result($adminStmt);
+    $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
+    mysqli_stmt_close($adminStmt);
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $company_id = (int)$_POST['company_id'];
+    $company_id = (int)($_POST['company_id'] ?? 0);
     $company = null;
-    $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.user_id = ? LIMIT 1');
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $_SESSION['user_id']);
-        if (mysqli_stmt_execute($stmt)) {
-            $res = mysqli_stmt_get_result($stmt);
-            $company = $res ? mysqli_fetch_assoc($res) : null;
+
+    if ($isAdmin) {
+        $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c WHERE c.id = ? AND c.active = 1 LIMIT 1');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $company_id);
+            if (mysqli_stmt_execute($stmt)) {
+                $res = mysqli_stmt_get_result($stmt);
+                $company = $res ? mysqli_fetch_assoc($res) : null;
+            }
+            mysqli_stmt_close($stmt);
         }
-        mysqli_stmt_close($stmt);
+    } else {
+        $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.user_id = ? AND c.active = 1 LIMIT 1');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ii', $company_id, $userId);
+            if (mysqli_stmt_execute($stmt)) {
+                $res = mysqli_stmt_get_result($stmt);
+                $company = $res ? mysqli_fetch_assoc($res) : null;
+            }
+            mysqli_stmt_close($stmt);
+        }
     }
-    
+
     if ($company) {
         $_SESSION['company_id'] = $company_id;
         $_SESSION['company_name'] = $company['company'];
@@ -33,12 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-$stmtCompanies = mysqli_prepare($conn, "SELECT c.* FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.active = 1 AND uc.user_id = ? ORDER BY c.company");
-$companies = false;
-if ($stmtCompanies) {
-    mysqli_stmt_bind_param($stmtCompanies, 'i', $_SESSION['user_id']);
-    mysqli_stmt_execute($stmtCompanies);
-    $companies = mysqli_stmt_get_result($stmtCompanies);
+if ($isAdmin) {
+    $companies = mysqli_query($conn, 'SELECT c.* FROM companies c WHERE c.active = 1 ORDER BY c.company');
+} else {
+    $stmtCompanies = mysqli_prepare($conn, 'SELECT c.* FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.active = 1 AND uc.user_id = ? ORDER BY c.company');
+    $companies = false;
+    if ($stmtCompanies) {
+        mysqli_stmt_bind_param($stmtCompanies, 'i', $userId);
+        mysqli_stmt_execute($stmtCompanies);
+        $companies = mysqli_stmt_get_result($stmtCompanies);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -52,11 +87,13 @@ if ($stmtCompanies) {
             --accent: #0969da;
             --bg: #ffffff;
             --text: #24292f;
+            --muted: #666;
         }
         [data-theme="dark"] {
             --accent: #58a6ff;
             --bg: #0d1117;
             --text: #c9d1d9;
+            --muted: #8b949e;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -66,27 +103,57 @@ if ($stmtCompanies) {
             align-items: center;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
         }
         .container { background: var(--bg); padding: 40px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         .logo { text-align: center; margin-bottom: 30px; }
         .logo h1 { color: var(--accent); font-size: 28px; }
-        .logo p { color: #666; font-size: 14px; }
+        .logo p { color: var(--muted); font-size: 14px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
-        select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); }
-        button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+        }
+        button, .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: auto;
+            padding: 10px 14px;
+            background: rgba(13, 17, 23, 0.82);
+        }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
+    <a class="logout-btn" href="logout.php">Logout</a>
     <button class="theme-btn" onclick="toggleTheme()">🌙</button>
-    
+
     <div class="container">
         <div class="logo">
             <h1>⚙️ IT Management</h1>
             <p>Select Your Company</p>
         </div>
 
-        <?php if (mysqli_num_rows($companies) > 0): ?>
+        <?php if ($companies && mysqli_num_rows($companies) > 0): ?>
             <form method="POST">
                 <div style="margin-bottom: 20px;">
                     <label for="company">Company:</label>
