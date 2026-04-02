@@ -20,14 +20,21 @@ $csrf = idf_csrf_token();
 
 $pos = null;
 if ($position_id > 0 && $company_id > 0) {
-    $res = mysqli_query(
+    $stmt = mysqli_prepare(
         $conn,
-        "SELECT p.*, i.name AS idf_name, i.id AS idf_id
+        'SELECT p.*, i.name AS idf_name, i.id AS idf_id
          FROM idf_positions p
-         JOIN idfs i ON i.id=p.idf_id
-         WHERE p.id=$position_id AND i.company_id=$company_id
-         LIMIT 1"
+         JOIN idfs i ON i.id = p.idf_id
+         WHERE p.id = ? AND i.company_id = ?
+         LIMIT 1'
     );
+    $res = false;
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $position_id, $company_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        mysqli_stmt_close($stmt);
+    }
     $pos = $res ? mysqli_fetch_assoc($res) : null;
 }
 
