@@ -626,6 +626,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     </a>
                                 </th>
                             <?php endforeach; ?>
+                            <th style="display:none;">
+                                <input type="checkbox" id="select-all-rows" aria-label="Select all rows">
+                            </th>
                             <th>Actions</th>
                         </tr>
                         <tr>
@@ -650,6 +653,15 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
+                                <td style="display:none;">
+                                    <input
+                                        type="checkbox"
+                                        name="ids[]"
+                                        value="<?php echo (int)$row['id']; ?>"
+                                        form="bulk-delete-form"
+                                        aria-label="Select row <?php echo (int)$row['id']; ?> for deletion"
+                                    >
+                                </td>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
@@ -662,7 +674,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
