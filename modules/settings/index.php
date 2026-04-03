@@ -330,7 +330,9 @@ usort($backupFiles, static function ($a, $b) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-
+                        <div class="itm-form-actions itm-align-left">
+                            <button class="btn btn-primary" type="submit">Save Configuration</button>
+                        </div>
                         <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
                         <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections).</p>
                         <div class="sidebar-settings-list" id="sidebar-settings-list">
