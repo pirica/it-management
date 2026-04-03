@@ -766,7 +766,7 @@ if (!empty($_SESSION['crud_success'])) {
                 status: document.getElementById('statusSelect').value || null,
                 label: document.getElementById('labelInput').value || null,
                 vlan: document.getElementById('vlanSelect').value || null,
-                comments: document.getElementById('commentsInput').value || null
+                comments: document.getElementById('commentsInput').value
             };
 
             savePort(payload, true)
@@ -777,7 +777,7 @@ if (!empty($_SESSION['crud_success'])) {
                     const selectedVlan = vlanOptions.find(function (item) { return String(item.id) === String(payload.vlan || ''); });
                     selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
                     selected.dataset.vlanColor = selectedVlan ? (selectedVlan.color || '') : '';
-                    selected.dataset.comments = payload.comments || selected.dataset.comments;
+                    selected.dataset.comments = payload.comments || '';
                     paintPort(selected, payload.color || selected.dataset.color);
                     paintVlan(selected, payload.vlan || '');
                     paintStatusTag(selected, payload.status || selected.dataset.status);
