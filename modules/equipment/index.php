@@ -276,7 +276,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-addable-select="1"
                                         data-add-table="switch_cablecolors"
                                         data-add-id-col="id"
-                                        data-add-label-col="name"
+                                        data-add-label-col="color"
                                         data-add-company-scoped="1"
                                         data-add-friendly="cable color">
                                         <option value="">-- choose color --</option>
@@ -290,7 +290,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-addable-select="1"
                                         data-add-table="switch_status"
                                         data-add-id-col="id"
-                                        data-add-label-col="name"
+                                        data-add-label-col="status"
                                         data-add-company-scoped="1"
                                         data-add-friendly="switch status">
                                         <option value="">-- choose status --</option>
@@ -308,9 +308,10 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-addable-select="1"
                                         data-add-table="vlans"
                                         data-add-id-col="id"
-                                        data-add-label-col="name"
+                                        data-add-label-col="vlan_name"
                                         data-add-company-scoped="1"
-                                        data-add-friendly="vlan">
+                                        data-add-friendly="vlan"
+                                        data-add-extra-fields='[{"name":"vlan_number","label":"VLAN Number","type":"number"}]'>
                                         <option value="">-- choose VLAN --</option>
                                     </select>
                                 </div>
@@ -702,26 +703,6 @@ if (!empty($_SESSION['crud_success'])) {
                 });
         }
 
-        function wireInlineAddOption(selectId, createUrl) {
-            const el = document.getElementById(selectId);
-            if (!el) {
-                return;
-            }
-            el.addEventListener('change', function () {
-                if (el.value !== '__add_new__') {
-                    return;
-                }
-                const previousValue = el.dataset.previousValue || '';
-                window.open(createUrl, '_blank', 'noopener,noreferrer');
-                el.value = previousValue;
-            });
-            el.addEventListener('focus', function () {
-                if (el.value !== '__add_new__') {
-                    el.dataset.previousValue = el.value || '';
-                }
-            });
-        }
-
         function loadPorts() {
             if (!csrfToken) {
                 alert('Missing CSRF token. Please refresh the page and try again.');
@@ -827,10 +808,6 @@ if (!empty($_SESSION['crud_success'])) {
                     alert('Unable to auto-save color.');
                 });
         });
-
-        wireInlineAddOption('colorSelect', '<?php echo BASE_URL; ?>modules/switch_cablecolors/create.php');
-        wireInlineAddOption('statusSelect', '<?php echo BASE_URL; ?>modules/switch_status/create.php');
-        wireInlineAddOption('vlanSelect', '<?php echo BASE_URL; ?>modules/vlans/create.php');
 
         loadPorts();
     })();
