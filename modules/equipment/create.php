@@ -10,6 +10,9 @@ $csrfToken = itm_get_csrf_token();
 
 function fetch_options($conn, $table, $label = 'name', $where = '') {
     $items = [];
+    if (!equipment_table_exists($conn, $table)) {
+        return $items;
+    }
     $hasCompanyColumn = equipment_table_has_column($conn, $table, 'company_id');
     $companyScope = ($hasCompanyColumn && isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0)
         ? 'company_id = ' . (int)$GLOBALS['company_id']
@@ -33,8 +36,30 @@ function fetch_options($conn, $table, $label = 'name', $where = '') {
     return $items;
 }
 
+function equipment_table_exists(mysqli $conn, string $table): bool
+{
+    static $cache = [];
+
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $res = mysqli_query(
+        $conn,
+        "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$tableEsc}' LIMIT 1"
+    );
+
+    $cache[$table] = $res && mysqli_num_rows($res) > 0;
+    return $cache[$table];
+}
+
 function equipment_table_has_column(mysqli $conn, string $table, string $column): bool
 {
+    if (!equipment_table_exists($conn, $table)) {
+        return false;
+    }
+
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $columnEsc = mysqli_real_escape_string($conn, $column);
     $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
@@ -48,6 +73,11 @@ function equipment_table_varchar_length(mysqli $conn, string $table, string $col
     $cacheKey = $table . '.' . $column;
     if (array_key_exists($cacheKey, $cache)) {
         return $cache[$cacheKey];
+    }
+
+    if (!equipment_table_exists($conn, $table)) {
+        $cache[$cacheKey] = 0;
+        return 0;
     }
 
     $tableEsc = mysqli_real_escape_string($conn, $table);
