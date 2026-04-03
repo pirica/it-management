@@ -40,6 +40,8 @@ define('BASE_URL', $itm_scheme . '://' . $itm_host . ($itm_basePath !== '' ? $it
 define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
 define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'images'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('UPLOAD_URL', BASE_URL . 'images/');
+define('TICKET_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'tickets_photos'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+define('TICKET_UPLOAD_URL', BASE_URL . 'tickets_photos/');
 define('BACKUP_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'backups'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('BACKUP_URL', BASE_URL . 'backups/');
 
@@ -49,6 +51,10 @@ define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 
 if (!is_dir(UPLOAD_PATH)) {
     @mkdir(UPLOAD_PATH, 0775, true);
+}
+
+if (!is_dir(TICKET_UPLOAD_PATH)) {
+    @mkdir(TICKET_UPLOAD_PATH, 0775, true);
 }
 
 if (!is_dir(BACKUP_PATH)) {

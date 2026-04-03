@@ -19,7 +19,7 @@ function ticket_parse_photo_filenames($rawValue): array
 
 function ticket_photo_public_path(string $filename): string
 {
-    return '../../tickets_photos/' . rawurlencode($filename);
+    return TICKET_UPLOAD_URL . rawurlencode($filename);
 }
 
 $id = (int)($_GET['id'] ?? 0);
