@@ -1,6 +1,27 @@
 <?php
 require '../../config/config.php';
 
+function ticket_parse_photo_filenames($rawValue): array
+{
+    if (!is_string($rawValue) || trim($rawValue) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($rawValue, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('strval', $decoded), static function ($value) {
+        return $value !== '';
+    }));
+}
+
+function ticket_photo_public_path(string $filename): string
+{
+    return '../../tickets_photos/' . rawurlencode($filename);
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
@@ -38,6 +59,30 @@ if ($id > 0) {
                     <table>
                         <tbody>
                         <?php foreach ($item as $field => $value): ?>
+                            <?php if ($field === 'tickets_photos'): ?>
+                                <?php $ticketPhotos = ticket_parse_photo_filenames((string)$value); ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
+                                    <td>
+                                        <?php if (empty($ticketPhotos)): ?>
+                                            <span>—</span>
+                                        <?php else: ?>
+                                            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                                                <?php foreach ($ticketPhotos as $ticketPhoto): ?>
+                                                    <a href="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" target="_blank" rel="noopener noreferrer">
+                                                        <img
+                                                            src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>"
+                                                            alt="Ticket photo"
+                                                            style="width:96px;height:96px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
+                                                        >
+                                                    </a>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
                             <tr>
                                 <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
                                 <td><?php echo sanitize((string)($value ?? '')); ?></td>
