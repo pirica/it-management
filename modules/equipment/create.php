@@ -329,6 +329,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $photoFilenames = equipment_parse_photo_filenames($data['photo_filename']);
     $deleteCurrentPhoto = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
+    $deletePhotoIndexesRaw = trim((string)($_POST['delete_photo_indexes'] ?? ''));
+    $deletePhotoIndexes = [];
+    if ($deletePhotoIndexesRaw !== '') {
+        $deletePhotoIndexes = array_values(array_unique(array_filter(array_map(static function ($indexValue) {
+            if (!is_numeric($indexValue)) {
+                return null;
+            }
+            $index = (int)$indexValue;
+            return $index >= 0 ? $index : null;
+        }, explode(',', $deletePhotoIndexesRaw)), static function ($value) {
+            return $value !== null;
+        })));
+    }
     if (!$error && $isEdit && $deleteCurrentPhoto && !empty($photoFilenames)) {
         foreach ($photoFilenames as $existingPhotoFilename) {
             $existingPhotoPath = UPLOAD_PATH . $existingPhotoFilename;
@@ -337,6 +350,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $photoFilenames = [];
+    } elseif (!$error && $isEdit && !empty($deletePhotoIndexes) && !empty($photoFilenames)) {
+        foreach ($deletePhotoIndexes as $deletePhotoIndex) {
+            if (!array_key_exists($deletePhotoIndex, $photoFilenames)) {
+                continue;
+            }
+            $existingPhotoPath = UPLOAD_PATH . (string)$photoFilenames[$deletePhotoIndex];
+            if (is_file($existingPhotoPath)) {
+                @unlink($existingPhotoPath);
+            }
+            unset($photoFilenames[$deletePhotoIndex]);
+        }
+        $photoFilenames = array_values($photoFilenames);
     }
 
     if (
@@ -637,6 +662,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         gap: 12px;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
+    .photo-preview-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
     .photo-preview-gallery img {
         width: 100%;
         height: auto;
@@ -683,7 +713,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
-                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo[]" accept="image/*" multiple><div class="form-hint">You can upload one or many photos at once.</div><?php if (!empty($currentPhotoFilenames)): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><div class="form-hint" id="currentPhotoHint">Current photos: <?php echo count($currentPhotoFilenames); ?><button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button></div><?php endif; ?></div>
+                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo[]" accept="image/*" multiple><div class="form-hint">You can upload one or many photos at once.</div><?php if (!empty($currentPhotoFilenames)): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value=""><div class="form-hint" id="currentPhotoHint">Current photos: <?php echo count($currentPhotoFilenames); ?><button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button></div><?php endif; ?></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -760,13 +790,16 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 </div></div></div>
 <?php if (!empty($currentPhotoUrls)): ?>
 <div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
-    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current equipment photo" onclick="event.stopPropagation()">
+    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current equipment photos" onclick="event.stopPropagation()">
         <div class="photo-preview-actions">
             <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
         </div>
         <div class="photo-preview-gallery">
             <?php foreach ($currentPhotoUrls as $photoIndex => $photoUrl): ?>
-                <img src="<?php echo sanitize($photoUrl); ?>" alt="Current equipment photo <?php echo (int)$photoIndex + 1; ?>">
+                <div class="photo-preview-item">
+                    <img src="<?php echo sanitize($photoUrl); ?>" alt="Current equipment photo <?php echo (int)$photoIndex + 1; ?>">
+                    <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
+                </div>
             <?php endforeach; ?>
         </div>
     </div>
@@ -853,8 +886,31 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var closePhotoPreview = document.getElementById('closePhotoPreview');
     var deletePhotoButton = document.getElementById('deletePhotoButton');
     var deletePhotoInput = document.getElementById('deletePhotoInput');
+    var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHint = document.getElementById('currentPhotoHint');
     var photoInput = document.querySelector('input[name="photo[]"]');
+    var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
+    var pendingDeletedPhotoIndexes = new Set();
+
+    function syncDeletePhotoIndexes() {
+        if (!deletePhotoIndexesInput) {
+            return;
+        }
+        deletePhotoIndexesInput.value = Array.from(pendingDeletedPhotoIndexes).sort(function (a, b) { return a - b; }).join(',');
+    }
+
+    function updateCurrentPhotoHint() {
+        if (!currentPhotoHint) {
+            return;
+        }
+        if (deletePhotoInput && deletePhotoInput.value === '1') {
+            currentPhotoHint.textContent = 'Current photos will be deleted after you save.';
+            return;
+        }
+        if (pendingDeletedPhotoIndexes.size > 0) {
+            currentPhotoHint.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save.';
+        }
+    }
 
     function hidePhotoModal() {
         if (!photoPreviewModal) {
@@ -887,14 +943,35 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     if (deletePhotoButton && deletePhotoInput) {
         deletePhotoButton.addEventListener('click', function () {
             deletePhotoInput.value = '1';
+            pendingDeletedPhotoIndexes.clear();
+            syncDeletePhotoIndexes();
             hidePhotoModal();
-            if (currentPhotoHint) {
-                currentPhotoHint.textContent = 'Current photos will be deleted after you save.';
-            }
+            updateCurrentPhotoHint();
             if (photoInput) {
                 photoInput.value = '';
             }
             deletePhotoButton.disabled = true;
+        });
+    }
+
+    if (deletePhotoItemButtons.length > 0 && deletePhotoInput) {
+        deletePhotoItemButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (deletePhotoInput.value === '1') {
+                    return;
+                }
+                var photoIndex = parseInt(button.getAttribute('data-photo-index') || '', 10);
+                if (!Number.isInteger(photoIndex) || photoIndex < 0) {
+                    return;
+                }
+                pendingDeletedPhotoIndexes.add(photoIndex);
+                syncDeletePhotoIndexes();
+                var photoItem = button.closest('.photo-preview-item');
+                if (photoItem) {
+                    photoItem.style.display = 'none';
+                }
+                updateCurrentPhotoHint();
+            });
         });
     }
 })();
