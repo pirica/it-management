@@ -678,15 +678,18 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     }
     .switch-details-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
         gap: 14px 20px;
+    }
+    .form-row-3 {
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
     }
     .switch-details-grid .form-group {
         margin: 0;
     }
     .role-flags-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
         gap: 12px 20px;
         margin-top: 8px;
     }
@@ -702,8 +705,15 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     .status-field-wrap {
         margin-top: 12px;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
         .switch-details-grid {
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+        }
+    }
+    @media (max-width: 900px) {
+        .form-row-3,
+        .switch-details-grid,
+        .role-flags-grid {
             grid-template-columns: 1fr;
         }
     }
@@ -729,26 +739,24 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
                 <div class="form-group"><label>Type *</label><select name="equipment_type_id" required data-addable-select="1" data-add-table="equipment_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment type"><option value="">-- Select --</option><?php render_options($types, $data['equipment_type_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
+            <div class="form-row form-row-3">
                 <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
-            </div>
-            <div class="form-row">
+                <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
                 <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack" data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"></div>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
-                <div class="form-group"><label>Model</label><input name="model" value="<?php echo sanitize($data['model']); ?>"></div>
-            </div>
-            <div class="form-row">
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Patch Port</label><input name="patch_port" value="<?php echo sanitize($data['patch_port']); ?>"></div>
                 <div class="form-group"><label>Hostname</label><input name="hostname" value="<?php echo sanitize($data['hostname']); ?>"></div>
                 <div class="form-group"><label>IP Address</label><input name="ip_address" value="<?php echo sanitize($data['ip_address']); ?>"></div>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>Patch Port</label><input name="patch_port" value="<?php echo sanitize($data['patch_port']); ?>"></div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
+                <div class="form-group"><label>Model</label><input name="model" value="<?php echo sanitize($data['model']); ?>"></div>
                 <div class="form-group"><label>MAC Address</label><input name="mac_address" value="<?php echo sanitize($data['mac_address']); ?>"></div>
+            </div>
+            <div class="form-row">
                 <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
