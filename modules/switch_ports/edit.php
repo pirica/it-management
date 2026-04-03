@@ -41,12 +41,13 @@ function cr_fk_map($conn, $table) {
     }
 
     if ($table === 'switch_ports') {
+        $switchPortTypeRefColumn = cr_switch_port_type_ref_column($conn);
         $manual = [
             'equipment_id' => ['COLUMN_NAME' => 'equipment_id', 'REFERENCED_TABLE_NAME' => 'equipment', 'REFERENCED_COLUMN_NAME' => 'id'],
             'status_id' => ['COLUMN_NAME' => 'status_id', 'REFERENCED_TABLE_NAME' => 'switch_status', 'REFERENCED_COLUMN_NAME' => 'id'],
             'color_id' => ['COLUMN_NAME' => 'color_id', 'REFERENCED_TABLE_NAME' => 'switch_cablecolors', 'REFERENCED_COLUMN_NAME' => 'id'],
             'vlan_id' => ['COLUMN_NAME' => 'vlan_id', 'REFERENCED_TABLE_NAME' => 'vlans', 'REFERENCED_COLUMN_NAME' => 'id'],
-            'port_type' => ['COLUMN_NAME' => 'port_type', 'REFERENCED_TABLE_NAME' => 'switch_port_types', 'REFERENCED_COLUMN_NAME' => 'type'],
+            'port_type' => ['COLUMN_NAME' => 'port_type', 'REFERENCED_TABLE_NAME' => 'switch_port_types', 'REFERENCED_COLUMN_NAME' => $switchPortTypeRefColumn],
         ];
 
         foreach ($manual as $column => $definition) {
@@ -57,6 +58,34 @@ function cr_fk_map($conn, $table) {
     }
 
     return $map;
+}
+
+function cr_switch_port_type_ref_column($conn) {
+    $localType = '';
+    $localCols = cr_table_columns($conn, 'switch_ports');
+    foreach ($localCols as $col) {
+        if (($col['Field'] ?? '') === 'port_type') {
+            $localType = strtolower((string)($col['Type'] ?? ''));
+            break;
+        }
+    }
+
+    $preferred = preg_match('/\b(int|tinyint|smallint|mediumint|bigint)\b/', $localType) ? 'id' : 'type';
+    $fallback = ($preferred === 'id') ? 'type' : 'id';
+
+    $refCols = cr_table_columns($conn, 'switch_port_types');
+    $has = [];
+    foreach ($refCols as $col) {
+        $has[(string)($col['Field'] ?? '')] = true;
+    }
+
+    if (isset($has[$preferred])) {
+        return $preferred;
+    }
+    if (isset($has[$fallback])) {
+        return $fallback;
+    }
+    return 'id';
 }
 
 function cr_fk_options($conn, $fk, $company_id) {
@@ -378,6 +407,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $newKey = $name . '__new_value';
             $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
 
+            if ($name === 'port_type' && $value !== null && $value !== '' && $value !== '__add_new__' && $value !== '__new__') {
+                $fk = $fkMap[$name];
+                $fkTable = $fk['REFERENCED_TABLE_NAME'];
+                $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+                $valueEsc = mysqli_real_escape_string($conn, (string)$value);
+                $canonicalSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
+                    . ' WHERE LOWER(' . cr_escape_identifier($fkCol) . ")=LOWER('" . $valueEsc . "')";
+                if ($company_id > 0 && itm_table_has_column($conn, $fkTable, 'company_id')) {
+                    $canonicalSql .= ' AND company_id=' . (int)$company_id;
+                }
+                $canonicalSql .= ' ORDER BY ' . cr_escape_identifier($fkCol) . ' ASC LIMIT 1';
+                $canonicalRes = mysqli_query($conn, $canonicalSql);
+                if ($canonicalRes && ($canonicalRow = mysqli_fetch_assoc($canonicalRes)) && isset($canonicalRow['id'])) {
+                    $value = (string)$canonicalRow['id'];
+                }
+            }
+
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
                 $data[$name] = 'NULL';
@@ -626,7 +672,14 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php $optId = (string)($opt['id'] ?? ''); ?>
+                                        <?php
+                                            $isSelected = ((string)$displayVal === $optId);
+                                            if (!$isSelected && $crud_table === 'switch_ports' && $name === 'port_type') {
+                                                $isSelected = (strcasecmp((string)$displayVal, $optId) === 0);
+                                            }
+                                        ?>
+                                        <option value="<?php echo sanitize($optId); ?>" <?php echo $isSelected ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
