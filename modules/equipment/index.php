@@ -1,6 +1,15 @@
 <?php
 require '../../config/config.php';
 
+$hasSwitchFiberPortLabelColumn = false;
+$hasSwitchFiberPortLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_fiber_port_label'");
+if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabelColumnRes) > 0) {
+    $hasSwitchFiberPortLabelColumn = true;
+}
+$switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
+    ? "COALESCE(e.switch_fiber_port_label, '')"
+    : "''";
+
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
 if ($searchRaw !== '') {
@@ -66,6 +75,7 @@ $switchResult = mysqli_query(
             COALESCE(ef.name, '') AS fiber_name,
             COALESCE(efc.name, '0') AS fiber_count,
             COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
+            {$switchFiberPortLabelSelect} AS fiber_port_label,
             COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
      FROM equipment e
      INNER JOIN equipment_types et ON et.id = e.equipment_type_id
@@ -646,8 +656,10 @@ if (!empty($_SESSION['crud_success'])) {
             const legacyFiberCount = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_count) || '').replace(/\D+/g, ''), 10) || 0;
             const fiberCount = fiberPortsNumber > 0 ? fiberPortsNumber : legacyFiberCount;
             const fiberName = String((selectedSwitchMeta && selectedSwitchMeta.fiber_name) || '').toLowerCase();
-            const sfpPlus = hasPortType('sfp_plus') && fiberName.includes('sfp+') ? fiberCount : 0;
-            const sfp = hasPortType('sfp') && !fiberName.includes('sfp+') && fiberName.includes('sfp') ? fiberCount : 0;
+            const fiberLabel = String((selectedSwitchMeta && selectedSwitchMeta.fiber_port_label) || '').toLowerCase();
+            const fiberHint = (fiberLabel + ' ' + fiberName).trim();
+            const sfpPlus = hasPortType('sfp_plus') && fiberHint.includes('sfp+') ? fiberCount : 0;
+            const sfp = hasPortType('sfp') && !fiberHint.includes('sfp+') && fiberHint.includes('sfp') ? fiberCount : 0;
             return { rj45: rj45, sfp: sfp, sfp_plus: sfpPlus };
         }
 
