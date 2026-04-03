@@ -11,16 +11,11 @@ function equipment_view_table_has_column(mysqli $conn, string $table, string $co
 }
 
 $hasWorkstationOfficeIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_office_id');
-$hasWorkstationOsBuildIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_os_build_id');
 $hasWorkstationOsVersionIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_os_version_id');
 $hasWorkstationRamIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_ram_id');
 $workstationOfficeSelect = $hasWorkstationOfficeIdColumn ? ', wo.name workstation_office_name' : '';
 $workstationOfficeJoin = $hasWorkstationOfficeIdColumn
     ? ' LEFT JOIN workstation_office wo ON wo.id = e.workstation_office_id AND wo.company_id = e.company_id'
-    : '';
-$workstationOsBuildSelect = $hasWorkstationOsBuildIdColumn ? ', wob.name workstation_os_build_name' : '';
-$workstationOsBuildJoin = $hasWorkstationOsBuildIdColumn
-    ? ' LEFT JOIN workstation_os_builds wob ON wob.id = e.workstation_os_build_id AND wob.company_id = e.company_id'
     : '';
 $workstationOsVersionSelect = $hasWorkstationOsVersionIdColumn ? ', wov.name workstation_os_version_name' : '';
 $workstationOsVersionJoin = $hasWorkstationOsVersionIdColumn
@@ -33,7 +28,7 @@ $workstationRamJoin = $hasWorkstationRamIdColumn
 
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                r.name rack_name, es.name status_name, wt.name warranty_type_name,
-               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$workstationOsBuildSelect$workstationOsVersionSelect$workstationRamSelect
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$workstationOsVersionSelect$workstationRamSelect
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
@@ -46,7 +41,6 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id AND wdt.company_id = e.company_id
         LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id AND wot.company_id = e.company_id
         $workstationOfficeJoin
-        $workstationOsBuildJoin
         $workstationOsVersionJoin
         $workstationRamJoin
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
@@ -94,7 +88,6 @@ function equipment_field_label($key) {
         'is_pos' => 'Is POS',
         'is_switch' => 'Is Switch',
         'workstation_office_name' => 'Workstation Office',
-        'workstation_os_build_name' => 'Workstation OS Build',
         'workstation_os_version_name' => 'Workstation OS Version',
         'workstation_ram_name' => 'RAM',
         'workstation_storage' => 'Storage (GB/TB)',
