@@ -755,6 +755,8 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                          <label class="role-flag-option"><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label>
                          <label class="role-flag-option"><input type="checkbox" name="printer_scan" <?php echo (int)$data['printer_scan'] === 1 ? 'checked' : ''; ?>> Printer & Scan</label>
                      </div>
+                    </div>
+                </div>
             </div>
             </div>
             <div class="form-row form-row-3">
