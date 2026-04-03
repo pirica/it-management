@@ -207,6 +207,35 @@ function cr_render_cell_value($table, $field, $value) {
     return sanitize($text);
 }
 
+function cr_switch_port_rack_label($equipmentId) {
+    $equipmentId = (int)$equipmentId;
+    if ($equipmentId <= 0) {
+        return '';
+    }
+
+    $sql = 'SELECT r.name AS rack_name
+            FROM `equipment` e
+            LEFT JOIN `racks` r ON r.id = e.rack_id
+            WHERE e.id = ' . $equipmentId;
+
+    if ((int)($GLOBALS['company_id'] ?? 0) > 0) {
+        $sql .= ' AND e.company_id = ' . (int)$GLOBALS['company_id'];
+    }
+    $sql .= ' LIMIT 1';
+
+    $res = mysqli_query($GLOBALS['conn'], $sql);
+    if (!$res) {
+        return '';
+    }
+
+    $row = mysqli_fetch_assoc($res);
+    if (!$row || !isset($row['rack_name'])) {
+        return '';
+    }
+
+    return (string)$row['rack_name'];
+}
+
 
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -304,6 +333,13 @@ foreach ($fieldColumns as $c) {
 $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_display_field($col['Field']);
 }));
+$hasRackDisplayColumn = false;
+foreach ($visibleFieldColumns as $visibleFieldColumn) {
+    if (($visibleFieldColumn['Field'] ?? '') === 'port_number') {
+        $hasRackDisplayColumn = true;
+        break;
+    }
+}
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -562,6 +598,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         <?php endif; ?>
                                     </a>
                                 </th>
+                                <?php if ($field === 'port_number'): ?>
+                                    <th>Rack</th>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
@@ -571,6 +610,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <tr>
                                 <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <?php if ($f === 'port_number'): ?>
+                                        <td><?php echo sanitize(cr_switch_port_rack_label($row['equipment_id'] ?? 0)); ?></td>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
@@ -583,7 +625,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + ($hasRackDisplayColumn ? 1 : 0) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
