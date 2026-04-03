@@ -22,6 +22,33 @@ function ticket_photo_public_path(string $filename): string
     return '../../tickets_photos/' . rawurlencode($filename);
 }
 
+function ticket_detect_upload_mime_type(string $tmpName): string
+{
+    if ($tmpName === '' || !is_file($tmpName)) {
+        return '';
+    }
+
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo !== false) {
+            $mime = finfo_file($finfo, $tmpName);
+            finfo_close($finfo);
+            if (is_string($mime) && $mime !== '') {
+                return $mime;
+            }
+        }
+    }
+
+    if (function_exists('mime_content_type')) {
+        $mime = mime_content_type($tmpName);
+        if (is_string($mime) && $mime !== '') {
+            return $mime;
+        }
+    }
+
+    return '';
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
@@ -113,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $tmpName = (string)($_FILES['photo']['tmp_name'][$index] ?? '');
             $name = (string)($_FILES['photo']['name'][$index] ?? '');
-            $mime = mime_content_type($tmpName) ?: '';
+            $mime = ticket_detect_upload_mime_type($tmpName);
             if (!in_array($mime, ALLOWED_TYPES, true)) {
                 $error = 'One of the uploaded files has an unsupported image type.';
                 break;
