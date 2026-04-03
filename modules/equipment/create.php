@@ -149,6 +149,58 @@ function equipment_detect_upload_mime(array $file): string
     return $extensionMimeMap[$extension] ?? '';
 }
 
+function equipment_parse_photo_filenames($rawValue): array
+{
+    if ($rawValue === null) {
+        return [];
+    }
+
+    $value = trim((string)$rawValue);
+    if ($value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        $items = $decoded;
+    } elseif (str_contains($value, ',')) {
+        $items = explode(',', $value);
+    } else {
+        $items = [$value];
+    }
+
+    $filenames = [];
+    foreach ($items as $item) {
+        $filename = basename((string)$item);
+        if ($filename !== '') {
+            $filenames[$filename] = $filename;
+        }
+    }
+
+    return array_values($filenames);
+}
+
+function equipment_encode_photo_filenames(array $filenames): string
+{
+    $clean = [];
+    foreach ($filenames as $filename) {
+        $base = basename((string)$filename);
+        if ($base !== '') {
+            $clean[$base] = $base;
+        }
+    }
+    $clean = array_values($clean);
+
+    if (count($clean) === 0) {
+        return '';
+    }
+    if (count($clean) === 1) {
+        return $clean[0];
+    }
+
+    return json_encode($clean, JSON_UNESCAPED_SLASHES);
+}
+
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
@@ -275,40 +327,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $photoFilename = $data['photo_filename'];
+    $photoFilenames = equipment_parse_photo_filenames($data['photo_filename']);
     $deleteCurrentPhoto = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
-    if (!$error && $isEdit && $deleteCurrentPhoto && $photoFilename !== '') {
-        $existingPhotoPath = UPLOAD_PATH . $photoFilename;
-        if (is_file($existingPhotoPath)) {
-            @unlink($existingPhotoPath);
+    if (!$error && $isEdit && $deleteCurrentPhoto && !empty($photoFilenames)) {
+        foreach ($photoFilenames as $existingPhotoFilename) {
+            $existingPhotoPath = UPLOAD_PATH . $existingPhotoFilename;
+            if (is_file($existingPhotoPath)) {
+                @unlink($existingPhotoPath);
+            }
         }
-        $photoFilename = '';
+        $photoFilenames = [];
     }
 
-    if (!$error && isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-        if ($_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
-            $error = 'Photo upload failed.';
-        } elseif ($_FILES['photo']['size'] > MAX_FILE_SIZE) {
-            $error = 'Photo exceeds max allowed size.';
-        } else {
-            $mime = equipment_detect_upload_mime($_FILES['photo']);
+    if (
+        !$error
+        && isset($_FILES['photo'])
+        && is_array($_FILES['photo']['error'] ?? null)
+    ) {
+        $uploadedPhotoFilenames = [];
+        $fileCount = count($_FILES['photo']['error']);
+
+        for ($index = 0; $index < $fileCount; $index++) {
+            $fileError = (int)($_FILES['photo']['error'][$index] ?? UPLOAD_ERR_NO_FILE);
+            if ($fileError === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            if ($fileError !== UPLOAD_ERR_OK) {
+                $error = 'One of the photo uploads failed.';
+                break;
+            }
+
+            $fileSize = (int)($_FILES['photo']['size'][$index] ?? 0);
+            if ($fileSize > MAX_FILE_SIZE) {
+                $error = 'One of the photos exceeds max allowed size.';
+                break;
+            }
+
+            $currentFile = [
+                'tmp_name' => $_FILES['photo']['tmp_name'][$index] ?? '',
+                'name' => $_FILES['photo']['name'][$index] ?? '',
+            ];
+            $mime = equipment_detect_upload_mime($currentFile);
             if (!in_array($mime, ALLOWED_TYPES, true)) {
-                $error = 'Unsupported image type.';
-            } else {
-                if (!is_dir(UPLOAD_PATH)) {
-                    @mkdir(UPLOAD_PATH, 0775, true);
-                }
-                $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
-                $photoFilename = 'equipment_' . time() . '_' . mt_rand(1000, 9999) . '.' . strtolower($ext);
-                if (!move_uploaded_file($_FILES['photo']['tmp_name'], UPLOAD_PATH . $photoFilename)) {
-                    $error = 'Unable to save photo file.';
-                } elseif ($isEdit && !empty($data['photo_filename']) && $data['photo_filename'] !== $photoFilename) {
-                    $oldPhotoPath = UPLOAD_PATH . $data['photo_filename'];
-                    if (is_file($oldPhotoPath)) {
-                        @unlink($oldPhotoPath);
-                    }
+                $error = 'One of the uploaded files has an unsupported image type.';
+                break;
+            }
+
+            if (!is_dir(UPLOAD_PATH)) {
+                @mkdir(UPLOAD_PATH, 0775, true);
+            }
+
+            $ext = pathinfo((string)$currentFile['name'], PATHINFO_EXTENSION);
+            $photoFilename = 'equipment_' . time() . '_' . mt_rand(1000, 9999) . '_' . $index . '.' . strtolower((string)$ext);
+            if (!move_uploaded_file((string)$currentFile['tmp_name'], UPLOAD_PATH . $photoFilename)) {
+                $error = 'Unable to save one of the uploaded photos.';
+                break;
+            }
+            $uploadedPhotoFilenames[] = $photoFilename;
+        }
+
+        if ($error !== '' && !empty($uploadedPhotoFilenames)) {
+            foreach ($uploadedPhotoFilenames as $uploadedPhotoFilename) {
+                $uploadedPath = UPLOAD_PATH . $uploadedPhotoFilename;
+                if (is_file($uploadedPath)) {
+                    @unlink($uploadedPath);
                 }
             }
+        } elseif (!$error && !empty($uploadedPhotoFilenames)) {
+            $photoFilenames = array_values(array_unique(array_merge($photoFilenames, $uploadedPhotoFilenames)));
         }
     }
 
@@ -354,7 +440,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $switch_poe_id = (int)$data['switch_poe_id'] ?: 'NULL';
         $switch_environment_id = (int)$data['switch_environment_id'] ?: 'NULL';
         $notes = $data['notes'] === '' ? 'NULL' : "'" . escape_sql($data['notes'], $conn) . "'";
-        $photo = $photoFilename === '' ? 'NULL' : "'" . escape_sql($photoFilename, $conn) . "'";
+        $encodedPhotoFilenames = equipment_encode_photo_filenames($photoFilenames);
+        $photo = $encodedPhotoFilenames === '' ? 'NULL' : "'" . escape_sql($encodedPhotoFilenames, $conn) . "'";
         $active = (int)$data['active'];
 
         $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
@@ -499,9 +586,10 @@ $rackExtraFieldsJson = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
-$currentPhotoUrl = '';
-if (!empty($data['photo_filename'])) {
-    $currentPhotoUrl = UPLOAD_URL . rawurlencode((string)$data['photo_filename']);
+$currentPhotoFilenames = equipment_parse_photo_filenames($data['photo_filename'] ?? '');
+$currentPhotoUrls = [];
+foreach ($currentPhotoFilenames as $currentPhotoFilename) {
+    $currentPhotoUrls[] = UPLOAD_URL . rawurlencode((string)$currentPhotoFilename);
 }
 ?>
 <!DOCTYPE html>
@@ -541,8 +629,19 @@ if (!empty($data['photo_filename'])) {
         margin-bottom: 10px;
         text-align: right;
     }
-    .photo-preview-link {
+    .photo-preview-trigger {
         margin-left: 8px;
+    }
+    .photo-preview-gallery {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .photo-preview-gallery img {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
     }
     </style>
 </head>
@@ -584,7 +683,7 @@ if (!empty($data['photo_filename'])) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
-                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo" accept="image/*"><?php if (!empty($data['photo_filename'])): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><div class="form-hint" id="currentPhotoHint">Current: <?php echo sanitize($data['photo_filename']); ?><a href="#" class="photo-preview-link" id="openPhotoPreview">View</a><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete</button></div><?php endif; ?></div>
+                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo[]" accept="image/*" multiple><div class="form-hint">You can upload one or many photos at once.</div><?php if (!empty($currentPhotoFilenames)): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><div class="form-hint" id="currentPhotoHint">Current photos: <?php echo count($currentPhotoFilenames); ?><button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button></div><?php endif; ?></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -659,13 +758,17 @@ if (!empty($data['photo_filename'])) {
         </form>
     </div>
 </div></div></div>
-<?php if ($currentPhotoUrl !== ''): ?>
+<?php if (!empty($currentPhotoUrls)): ?>
 <div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
     <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current equipment photo" onclick="event.stopPropagation()">
         <div class="photo-preview-actions">
             <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
         </div>
-        <img src="<?php echo sanitize($currentPhotoUrl); ?>" alt="Current equipment photo">
+        <div class="photo-preview-gallery">
+            <?php foreach ($currentPhotoUrls as $photoIndex => $photoUrl): ?>
+                <img src="<?php echo sanitize($photoUrl); ?>" alt="Current equipment photo <?php echo (int)$photoIndex + 1; ?>">
+            <?php endforeach; ?>
+        </div>
     </div>
 </div>
 <?php endif; ?>
@@ -751,7 +854,7 @@ if (!empty($data['photo_filename'])) {
     var deletePhotoButton = document.getElementById('deletePhotoButton');
     var deletePhotoInput = document.getElementById('deletePhotoInput');
     var currentPhotoHint = document.getElementById('currentPhotoHint');
-    var photoInput = document.querySelector('input[name="photo"]');
+    var photoInput = document.querySelector('input[name="photo[]"]');
 
     function hidePhotoModal() {
         if (!photoPreviewModal) {
@@ -786,7 +889,7 @@ if (!empty($data['photo_filename'])) {
             deletePhotoInput.value = '1';
             hidePhotoModal();
             if (currentPhotoHint) {
-                currentPhotoHint.textContent = 'Current photo will be deleted after you save.';
+                currentPhotoHint.textContent = 'Current photos will be deleted after you save.';
             }
             if (photoInput) {
                 photoInput.value = '';

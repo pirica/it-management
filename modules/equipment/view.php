@@ -53,6 +53,37 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 
+function equipment_parse_photo_filenames($rawValue): array
+{
+    if ($rawValue === null) {
+        return [];
+    }
+
+    $value = trim((string)$rawValue);
+    if ($value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        $items = $decoded;
+    } elseif (str_contains($value, ',')) {
+        $items = explode(',', $value);
+    } else {
+        $items = [$value];
+    }
+
+    $filenames = [];
+    foreach ($items as $item) {
+        $filename = basename((string)$item);
+        if ($filename !== '') {
+            $filenames[$filename] = $filename;
+        }
+    }
+
+    return array_values($filenames);
+}
+
 function equipment_field_label($key) {
     $labels = [
         'is_printer' => 'Is Printer',
@@ -102,6 +133,9 @@ function equipment_field_should_display($key) {
     if ($key === 'id') {
         return true;
     }
+    if ($key === 'photo_filename') {
+        return false;
+    }
 
     return !preg_match('/_id$/', (string)$key);
 }
@@ -136,7 +170,8 @@ function equipment_field_matches_context($key, $item) {
     </tr>
 <?php endforeach; ?>
 </tbody></table>
-<?php if (!empty($item['photo_filename'])): ?><p style="margin-top:16px;"><img src="<?php echo UPLOAD_URL . sanitize($item['photo_filename']); ?>" alt="Equipment Photo" style="max-width:300px;border:1px solid var(--border);border-radius:8px;"></p><?php endif; ?>
+<?php $photoFilenames = equipment_parse_photo_filenames($item['photo_filename'] ?? ''); ?>
+<?php if (!empty($photoFilenames)): ?><div style="margin-top:16px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));"><?php foreach ($photoFilenames as $photoIndex => $photoFilename): ?><img src="<?php echo UPLOAD_URL . sanitize($photoFilename); ?>" alt="Equipment Photo <?php echo (int)$photoIndex + 1; ?>" style="max-width:100%;border:1px solid var(--border);border-radius:8px;"><?php endforeach; ?></div><?php endif; ?>
 <p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>
