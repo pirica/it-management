@@ -1162,6 +1162,7 @@ CREATE TABLE `tickets` (
   `created_by_user_id` int NOT NULL,
   `assigned_to_user_id` int DEFAULT NULL,
   `asset_id` int DEFAULT NULL,
+  `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `ticket_code` (`company_id`,`ticket_code`),
@@ -1182,7 +1183,7 @@ CREATE TABLE `tickets` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `tickets`
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', '2026-03-28 19:43:17');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-03-28 19:43:17');
 
 -- Table structure for `ui_configuration`
 DROP TABLE IF EXISTS `ui_configuration`;

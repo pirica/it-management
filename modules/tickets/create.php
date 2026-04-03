@@ -1,10 +1,27 @@
 <?php
 require '../../config/config.php';
 
+function ticket_parse_photo_filenames($rawValue): array
+{
+    if (!is_string($rawValue) || trim($rawValue) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($rawValue, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('strval', $decoded), static function ($value) {
+        return $value !== '';
+    }));
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
 $csrfToken = itm_get_csrf_token();
+$ticketUploadPath = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'tickets_photos'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
 $data = [
     'ticket_code' => '',
@@ -15,6 +32,7 @@ $data = [
     'priority_id' => '',
     'assigned_to_user_id' => '',
     'asset_id' => '',
+    'tickets_photos' => '',
     'created_at' => date('Y-m-d\TH:i')
 ];
 
@@ -57,11 +75,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $priority_id = (int)$priority_id_post ?: 'NULL';
     $assigned_to_user_id = (int)$assigned_to_user_id_post ?: 'NULL';
     $asset_id = (int)$asset_id_post ?: 'NULL';
+    $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
 
     $created_at_raw = $_POST['created_at'] ?? '';
     $created_at = $created_at_raw
         ? "'" . escape_sql(str_replace('T', ' ', $created_at_raw) . ':00', $conn) . "'"
         : 'CURRENT_TIMESTAMP';
+
+    if (
+        !$error
+        && isset($_FILES['photo'])
+        && is_array($_FILES['photo']['error'] ?? null)
+    ) {
+        $uploadedPhotoFilenames = [];
+        $fileCount = count($_FILES['photo']['error']);
+
+        for ($index = 0; $index < $fileCount; $index++) {
+            $fileError = (int)($_FILES['photo']['error'][$index] ?? UPLOAD_ERR_NO_FILE);
+            if ($fileError === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            if ($fileError !== UPLOAD_ERR_OK) {
+                $error = 'One of the photo uploads failed.';
+                break;
+            }
+
+            $fileSize = (int)($_FILES['photo']['size'][$index] ?? 0);
+            if ($fileSize > MAX_FILE_SIZE) {
+                $error = 'One of the photos exceeds max allowed size.';
+                break;
+            }
+
+            $tmpName = (string)($_FILES['photo']['tmp_name'][$index] ?? '');
+            $name = (string)($_FILES['photo']['name'][$index] ?? '');
+            $mime = mime_content_type($tmpName) ?: '';
+            if (!in_array($mime, ALLOWED_TYPES, true)) {
+                $error = 'One of the uploaded files has an unsupported image type.';
+                break;
+            }
+
+            if (!is_dir($ticketUploadPath)) {
+                @mkdir($ticketUploadPath, 0775, true);
+            }
+
+            $ext = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
+            if ($ext === '') {
+                $ext = 'jpg';
+            }
+            $photoFilename = 'ticket_' . time() . '_' . mt_rand(1000, 9999) . '_' . $index . '.' . $ext;
+            if (!move_uploaded_file($tmpName, $ticketUploadPath . $photoFilename)) {
+                $error = 'Unable to save one of the uploaded photos.';
+                break;
+            }
+            $uploadedPhotoFilenames[] = $photoFilename;
+        }
+
+        if ($error !== '' && !empty($uploadedPhotoFilenames)) {
+            foreach ($uploadedPhotoFilenames as $uploadedPhotoFilename) {
+                $uploadedPath = $ticketUploadPath . $uploadedPhotoFilename;
+                if (is_file($uploadedPath)) {
+                    @unlink($uploadedPath);
+                }
+            }
+        } elseif (!$error && !empty($uploadedPhotoFilenames)) {
+            $ticketPhotoFilenames = array_values(array_unique(array_merge($ticketPhotoFilenames, $uploadedPhotoFilenames)));
+        }
+    }
+
+    $tickets_photos = empty($ticketPhotoFilenames)
+        ? 'NULL'
+        : "'" . escape_sql(json_encode($ticketPhotoFilenames, JSON_UNESCAPED_SLASHES), $conn) . "'";
 
     if (!$title) {
         $error = 'Ticket title is required.';
@@ -76,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         priority_id=$priority_id,
                         assigned_to_user_id=$assigned_to_user_id,
                         asset_id=$asset_id,
+                        tickets_photos=$tickets_photos,
                         created_at=$created_at
                     WHERE id=$id AND company_id=$company_id";
         } else {
@@ -95,9 +179,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Please add at least one active user before adding tickets.';
             } else {
                 $sql = "INSERT INTO tickets
-                        (company_id, ticket_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, created_at)
+                        (company_id, ticket_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, tickets_photos, created_at)
                         VALUES
-                        ($company_id, '$ticket_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $created_at)";
+                        ($company_id, '$ticket_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $tickets_photos, $created_at)";
             }
         }
 
@@ -140,7 +224,7 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
             <?php endif; ?>
 
             <div class="card">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
                         <div class="form-group">
@@ -229,6 +313,12 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                             <label>Created Date</label>
                             <input type="datetime-local" name="created_at" value="<?php echo sanitize($data['created_at']); ?>">
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Photo Upload</label>
+                        <input type="file" name="photo[]" accept="image/*" multiple="">
+                        <div class="form-hint">You can upload one or many photos at once.</div>
                     </div>
 
                     <div class="form-group">
