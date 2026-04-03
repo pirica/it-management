@@ -756,7 +756,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
             <div class="card">
-                <form method="POST" enctype="multipart/form-data">
+                <form id="equipmentForm" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
@@ -807,7 +807,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="form-group">
                     <label>Photo Upload</label>
                     <input type="file" name="photo[]" accept="image/*" multiple>
-                    <div class="form-hint">You can upload one or many photos at once.</div>
+                    <div class="form-hint">You can upload one or many photos at once.<?php if ($isEdit): ?> Files upload automatically after selection when editing.<?php endif; ?></div>
                     <?php if (!empty($currentPhotoFilenames)): ?>
                         <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
                         <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
@@ -990,9 +990,12 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.querySelector('input[name="photo[]"]');
+    var equipmentForm = document.getElementById('equipmentForm');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;
+    var isEditMode = <?php echo $isEdit ? 'true' : 'false'; ?>;
+    var isAutoSubmitting = false;
 
     function resetPendingPhotoDeletionState() {
         pendingDeletedPhotoIndexes.clear();
@@ -1097,6 +1100,16 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 }
                 updateCurrentPhotoHint();
             });
+        });
+    }
+
+    if (photoInput && equipmentForm && isEditMode) {
+        photoInput.addEventListener('change', function () {
+            if (isAutoSubmitting || !photoInput.files || photoInput.files.length === 0) {
+                return;
+            }
+            isAutoSubmitting = true;
+            equipmentForm.requestSubmit();
         });
     }
 })();
