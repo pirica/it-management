@@ -676,6 +676,37 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         border: 1px solid var(--border, #ddd);
         border-radius: 8px;
     }
+    .switch-details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 14px 20px;
+    }
+    .switch-details-grid .form-group {
+        margin: 0;
+    }
+    .role-flags-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px 20px;
+        margin-top: 8px;
+    }
+    .role-flag-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 38px;
+    }
+    .role-flag-option input[type="checkbox"] {
+        margin: 0;
+    }
+    .status-field-wrap {
+        margin-top: 12px;
+    }
+    @media (max-width: 900px) {
+        .switch-details-grid {
+            grid-template-columns: 1fr;
+        }
+    }
     </style>
 </head>
 <body>
@@ -778,42 +809,31 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             </div>
             <div id="switch-fields" style="display:none;">
                 <h3 style="margin-top:20px;">Switch Details</h3>
-                <div class="form-row">
+                <div class="switch-details-grid">
                     <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Port Numbering Layout</label><select name="switch_port_numbering_layout_id" data-addable-select="1" data-add-table="switch_port_numbering_layout" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="port numbering layout"><option value="">-- Select --</option><?php render_options($switchPortNumberingLayoutOptions, $data['switch_port_numbering_layout_id']); ?><option value="__add_new__">➕</option></select></div>
-                </div>
-                <div class="form-row">
                     <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id" data-addable-select="1" data-add-table="equipment_fiber" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber port option"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?><option value="__add_new__">➕</option></select></div>
-                    <div class="form-group"></div>
-                </div>
-                <div class="form-row">
                     <div class="form-group"><label>Fiber Count</label><select name="switch_fiber_count_id" data-addable-select="1" data-add-table="equipment_fiber_count" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber count option"><option value="">-- None --</option><?php render_options($switchFiberCountOptions, $data['switch_fiber_count_id']); ?><option value="__add_new__">➕</option></select></div>
-                    <div class="form-group"></div>
-                </div>
-                <div class="form-row">
                     <div class="form-group"><label>PoE Type</label><select name="switch_poe_id" data-addable-select="1" data-add-table="equipment_poe" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="poe type"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Management</label><select name="switch_environment_id" data-addable-select="1" data-add-table="equipment_environment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="management type"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?><option value="__add_new__">➕</option></select></div>
                 </div>
             </div>
             <div class="form-group"><label>Comments</label><textarea name="notes" rows="5"><?php echo sanitize($data['notes']); ?></textarea></div>
-            <div class="form-row">
-                <div class="form-group"><label><input type="checkbox" name="is_printer" <?php echo (int)$data['is_printer'] === 1 ? 'checked' : ''; ?>> Is Printer</label></div>
-                <div class="form-group"><label><input type="checkbox" name="is_workstation" <?php echo (int)$data['is_workstation'] === 1 ? 'checked' : ''; ?>> Is Workstation</label></div>
+            <div class="role-flags-grid">
+                <label class="role-flag-option"><input type="checkbox" name="is_printer" <?php echo (int)$data['is_printer'] === 1 ? 'checked' : ''; ?>> <span>Is Printer</span></label>
+                <label class="role-flag-option"><input type="checkbox" name="is_workstation" <?php echo (int)$data['is_workstation'] === 1 ? 'checked' : ''; ?>> <span>Is Workstation</span></label>
+                <label class="role-flag-option"><input type="checkbox" name="is_switch" <?php echo (int)$data['is_switch'] === 1 ? 'checked' : ''; ?>> <span>Is Switch</span></label>
+                <label class="role-flag-option"><input type="checkbox" name="is_server" <?php echo (int)$data['is_server'] === 1 ? 'checked' : ''; ?>> <span>Is Server</span></label>
+                <label class="role-flag-option"><input type="checkbox" name="is_pos" <?php echo (int)$data['is_pos'] === 1 ? 'checked' : ''; ?>> <span>Is POS</span></label>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label><input type="checkbox" name="is_switch" <?php echo (int)$data['is_switch'] === 1 ? 'checked' : ''; ?>> Is Switch</label></div>
-                <div class="form-group"><label><input type="checkbox" name="is_server" <?php echo (int)$data['is_server'] === 1 ? 'checked' : ''; ?>> Is Server</label></div>
+            <div class="form-group status-field-wrap">
+                <label>Status</label>
+                <select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status">
+                    <option value="">-- Select --</option>
+                    <?php render_options($statuses, $data['status_id']); ?>
+                    <option value="__add_new__">➕</option>
+                </select>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label><input type="checkbox" name="is_pos" <?php echo (int)$data['is_pos'] === 1 ? 'checked' : ''; ?>> Is POS</label></div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status">
-                        <option value="">-- Select --</option>
-                        <?php render_options($statuses, $data['status_id']); ?>
-                        <option value="__add_new__">➕</option>
-                    </select>
-                </div>
             </div>
             <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
             <div style="display:flex;gap:10px;">
