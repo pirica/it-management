@@ -280,6 +280,14 @@ tr:hover {
     background-color: var(--bg-secondary);
 }
 
+tr.ticket-row-colorized {
+    background-color: var(--ticket-row-color);
+}
+
+tr.ticket-row-colorized:hover {
+    background-color: var(--ticket-row-color);
+}
+
 /* Cards */
 .card {
     background-color: var(--bg-primary);
