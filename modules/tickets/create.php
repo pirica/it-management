@@ -66,6 +66,26 @@ function ticket_detect_upload_mime_type(string $tmpName): string
     return '';
 }
 
+function ticket_resolve_upload_ticket_id(mysqli $conn, bool $isEdit, int $id): int
+{
+    if ($isEdit && $id > 0) {
+        return $id;
+    }
+
+    $statusResult = mysqli_query($conn, "SHOW TABLE STATUS LIKE 'tickets'");
+    if ($statusResult) {
+        $statusRow = mysqli_fetch_assoc($statusResult);
+        if (is_array($statusRow) && isset($statusRow['Auto_increment'])) {
+            $nextId = (int)$statusRow['Auto_increment'];
+            if ($nextId > 0) {
+                return $nextId;
+            }
+        }
+    }
+
+    return 0;
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
@@ -73,7 +93,7 @@ $csrfToken = itm_get_csrf_token();
 $ticketUploadPath = TICKET_UPLOAD_PATH;
 
 $data = [
-    'ticket_code' => '',
+    'ticket_external_code' => '',
     'title' => '',
     'description' => '',
     'category_id' => '',
@@ -81,6 +101,7 @@ $data = [
     'priority_id' => '',
     'assigned_to_user_id' => '',
     'asset_id' => '',
+    'ui_color' => '#0969da',
     'tickets_photos' => '',
     'created_at' => date('Y-m-d\TH:i')
 ];
@@ -104,7 +125,7 @@ if ($is_edit) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
-    $ticket_code = escape_sql($_POST['ticket_code'] ?? '', $conn);
+    $ticket_external_code = escape_sql($_POST['ticket_external_code'] ?? '', $conn);
     $title = escape_sql($_POST['title'] ?? '', $conn);
     $description = escape_sql($_POST['description'] ?? '', $conn);
     $category_id_post = $_POST['category_id'] ?? 0;
@@ -112,6 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $priority_id_post = $_POST['priority_id'] ?? 0;
     $assigned_to_user_id_post = $_POST['assigned_to_user_id'] ?? 0;
     $asset_id_post = $_POST['asset_id'] ?? 0;
+    $ui_color_raw = strtolower(trim((string)($_POST['ui_color'] ?? '#0969da')));
+    $ui_color = preg_match('/^#[0-9a-f]{6}$/', $ui_color_raw) ? $ui_color_raw : '#0969da';
+    $ui_color_sql = "'" . escape_sql($ui_color, $conn) . "'";
 
     foreach (['category_id_post', 'status_id_post', 'priority_id_post', 'assigned_to_user_id_post', 'asset_id_post'] as $fkPostField) {
         if ($$fkPostField === '__add_new__') {
@@ -130,6 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $created_at = $created_at_raw
         ? "'" . escape_sql(str_replace('T', ' ', $created_at_raw) . ':00', $conn) . "'"
         : 'CURRENT_TIMESTAMP';
+    $uploadTicketId = ticket_resolve_upload_ticket_id($conn, $is_edit, $id);
 
     if (
         !$error
@@ -179,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($ext === '') {
                 $ext = 'jpg';
             }
-            $photoFilename = 'ticket_' . time() . '_' . mt_rand(1000, 9999) . '_' . $index . '.' . $ext;
+            $photoFilename = 'ticket_' . $uploadTicketId . '_' . time() . '_' . mt_rand(1000, 9999) . '_' . $index . '.' . $ext;
             if (!move_uploaded_file($tmpName, $ticketUploadPath . $photoFilename)) {
                 $error = 'Unable to save one of the uploaded photos.';
                 break;
@@ -208,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if ($is_edit) {
             $sql = "UPDATE tickets SET
-                        ticket_code='$ticket_code',
+                        ticket_external_code='$ticket_external_code',
                         title='$title',
                         description='$description',
                         category_id=$category_id,
@@ -216,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         priority_id=$priority_id,
                         assigned_to_user_id=$assigned_to_user_id,
                         asset_id=$asset_id,
+                        ui_color=$ui_color_sql,
                         tickets_photos=$tickets_photos,
                         created_at=$created_at
                     WHERE id=$id AND company_id=$company_id";
@@ -236,9 +262,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Please add at least one active user before adding tickets.';
             } else {
                 $sql = "INSERT INTO tickets
-                        (company_id, ticket_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, tickets_photos, created_at)
+                        (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, ui_color, tickets_photos, created_at)
                         VALUES
-                        ($company_id, '$ticket_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $tickets_photos, $created_at)";
+                        ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $ui_color_sql, $tickets_photos, $created_at)";
             }
         }
 
@@ -290,8 +316,8 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
                             <input required name="title" value="<?php echo sanitize($data['title']); ?>">
                         </div>
                         <div class="form-group">
-                            <label>Ticket Code</label>
-                            <input name="ticket_code" value="<?php echo sanitize($data['ticket_code']); ?>">
+                            <label>Ticket External Code</label>
+                            <input name="ticket_external_code" value="<?php echo sanitize($data['ticket_external_code']); ?>">
                         </div>
                     </div>
 
@@ -395,7 +421,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
 
                     <div class="form-group">
                         <label>Quick Color Tag (UI)</label>
-                        <input type="color" name="ui_color" value="#0969da">
+                        <input type="color" name="ui_color" value="<?php echo sanitize($data['ui_color'] ?? '#0969da'); ?>">
                         <div class="form-hint">Color picker for fast visual tagging while creating tickets.</div>
                     </div>
 
