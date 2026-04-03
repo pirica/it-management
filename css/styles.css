@@ -137,6 +137,31 @@ body.sidebar-collapsed .main-content,
     border-radius: 4px;
 }
 
+@media print {
+    html,
+    body,
+    .container,
+    .main-content,
+    .content {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    .container {
+        display: block !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+    }
+
+    .sidebar,
+    .header {
+        display: none !important;
+    }
+}
+
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
