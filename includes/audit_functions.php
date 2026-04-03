@@ -33,6 +33,11 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
     }
 
     $company_id = (int)$_SESSION['company_id'];
+    $uiConfig = itm_get_ui_configuration($conn, $company_id);
+    if ((int)($uiConfig['enable_audit_logs'] ?? 1) !== 1) {
+        return false;
+    }
+
     $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
     $old_json = itm_audit_encode_values($old_values);
     $new_json = itm_audit_encode_values($new_values);
