@@ -281,11 +281,11 @@ tr:hover {
 }
 
 tr.ticket-row-colorized {
-    background-color: color-mix(in srgb, var(--ticket-row-color) 18%, var(--bg-primary));
+    background-color: var(--ticket-row-color);
 }
 
 tr.ticket-row-colorized:hover {
-    background-color: color-mix(in srgb, var(--ticket-row-color) 24%, var(--bg-primary));
+    background-color: var(--ticket-row-color);
 }
 
 /* Cards */

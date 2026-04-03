@@ -86,7 +86,7 @@ $items = mysqli_query(
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($t = mysqli_fetch_assoc($items)): ?>
                         <?php $rowColor = (isset($t['ui_color']) && ticket_is_valid_hex_color((string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; ?>
-                        <tr<?php echo $rowColor !== '' ? ' class="ticket-row-colorized" style="--ticket-row-color:' . sanitize($rowColor) . ';border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
+                        <tr<?php echo $rowColor !== '' ? ' class="ticket-row-colorized" style="--ticket-row-color:' . sanitize($rowColor) . ';background-color:' . sanitize($rowColor) . ';border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
                             <td><?php echo (int)$t['id']; ?></td>
                             <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>
