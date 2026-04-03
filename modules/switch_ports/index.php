@@ -613,13 +613,14 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
+                                <th style="display:none;">
+                                    <input type="checkbox" id="select-all-rows" aria-label="Select all rows">
+                                </th>
+                           
                         <tr>
                             <?php foreach ($visibleFieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                                <th style="display:none;">
-                                    <input type="checkbox" id="select-all-rows" aria-label="Select all rows">
-                                </th>
                                 <th>
                                     <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
