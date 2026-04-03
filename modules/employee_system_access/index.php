@@ -118,6 +118,8 @@ if (($_GET['export'] ?? '') === 'csv') {
     fclose($out);
     exit;
 }
+
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '🔐 Employee System Access';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -133,8 +135,8 @@ if (($_GET['export'] ?? '') === 'csv') {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-                <h1 style="margin:0;">Employee System Access</h1>
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <a href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'export' => 'csv'])); ?>" class="btn btn-primary">⬇ Export CSV</a>
             </div>
 
