@@ -208,6 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
         $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
+        $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
 
         $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
@@ -378,8 +379,14 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                         <h3 style="margin-top:16px;">System</h3>
                         <div class="form-group">
                             <label class="role-flag-option" for="enable_all_error_reporting">
-                                <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                                <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 1) === 1) ? 'checked' : ''; ?>>
                                 <span>Enable all error reporting</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="role-flag-option" for="enable_audit_logs">
+                                <input type="checkbox" id="enable_audit_logs" name="enable_audit_logs" value="1" <?php echo (($currentUiConfig['enable_audit_logs'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                <span>Enable Audit Logs</span>
                             </label>
                         </div>
 
