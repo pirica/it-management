@@ -611,8 +611,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
             <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
-                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">🖥️ <?php echo sanitize($crud_title); ?></h1>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <h1><?php echo sanitize($crud_title); ?></h1>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
