@@ -524,7 +524,9 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
         <div class="photo-preview-gallery">
             <?php foreach ($existingTicketPhotos as $photoIndex => $ticketPhoto): ?>
                 <div class="photo-preview-item">
-                    <img src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" alt="Ticket photo <?php echo (int)$photoIndex + 1; ?>">
+                    <a href="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" target="_blank" rel="noopener noreferrer">
+                        <img src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" alt="Ticket photo <?php echo (int)$photoIndex + 1; ?>">
+                    </a>
                     <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
                 </div>
             <?php endforeach; ?>
