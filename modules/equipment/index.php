@@ -142,7 +142,12 @@ if (!empty($_SESSION['crud_success'])) {
 }
 ?>
                 <h1>🖥️ Equipment</h1>
-                <a href="create.php" class="btn btn-primary">➕</a>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <?php if ($hasSelectedSwitch): ?>
+                        <button type="button" class="btn btn-sm" id="exportEquipmentPdfBtn">Export PDF</button>
+                    <?php endif; ?>
+                    <a href="create.php" class="btn btn-primary">➕</a>
+                </div>
             </div>
 
             <div class="card" style="margin-bottom:16px;">
@@ -337,6 +342,7 @@ if (!empty($_SESSION['crud_success'])) {
 <script src="../../js/theme.js"></script>
 <?php if ($hasSelectedSwitch): ?>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
     (function () {
         const apiGet = '<?php echo BASE_URL; ?>get_ports.php';
@@ -414,6 +420,73 @@ if (!empty($_SESSION['crud_success'])) {
                 console.error(error);
                 alert('Unable to export image right now. Please try again.');
             }
+        }
+
+        async function exportEquipmentPdf() {
+            const contentNode = document.querySelector('.main-content .content');
+            if (!contentNode) {
+                alert('Unable to find page content for PDF export.');
+                return;
+            }
+            if (typeof html2canvas === 'undefined' || !window.jspdf || !window.jspdf.jsPDF) {
+                alert('PDF export libraries are not loaded. Please refresh and try again.');
+                return;
+            }
+
+            const previousOverflow = contentNode.style.overflow;
+            const previousHeight = contentNode.style.height;
+            contentNode.style.overflow = 'visible';
+            contentNode.style.height = 'auto';
+
+            try {
+                const canvas = await html2canvas(contentNode, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    windowWidth: Math.max(document.documentElement.scrollWidth, contentNode.scrollWidth),
+                    windowHeight: Math.max(document.documentElement.scrollHeight, contentNode.scrollHeight)
+                });
+
+                const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                const imageData = canvas.toDataURL('image/png');
+                pdf.addImage(imageData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imageData, 'PNG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= pdfHeight;
+                }
+
+                const rawHostname = String((selectedSwitchMeta && selectedSwitchMeta.hostname) || '').trim();
+                const safeHostname = rawHostname
+                    .toLowerCase()
+                    .replace(/[^a-z0-9._-]+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+                const fileBase = safeHostname !== '' ? safeHostname : 'equipment';
+                pdf.save(fileBase + '-layout.pdf');
+            } catch (error) {
+                console.error(error);
+                alert('Unable to export PDF right now. Please try again.');
+            } finally {
+                contentNode.style.overflow = previousOverflow;
+                contentNode.style.height = previousHeight;
+            }
+        }
+
+        const exportEquipmentPdfBtn = document.getElementById('exportEquipmentPdfBtn');
+        if (exportEquipmentPdfBtn) {
+            exportEquipmentPdfBtn.addEventListener('click', exportEquipmentPdf);
         }
 
         const switchExportImageBtn = document.getElementById('switchExportImageBtn');
