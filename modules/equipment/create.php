@@ -811,12 +811,14 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                     <?php if (!empty($currentPhotoFilenames)): ?>
                         <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
                         <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
-                        <div class="form-hint" id="currentPhotoHint">
-                            <span id="currentPhotoHintText">Current photos: <?php echo count($currentPhotoFilenames); ?></span>
-                            <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button>
-                            <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
-                        </div>
                     <?php endif; ?>
+                    <div class="form-hint" id="currentPhotoHint">
+                        <span id="currentPhotoHintText"><?php echo !empty($currentPhotoFilenames) ? 'Current photos: ' . count($currentPhotoFilenames) : 'Selected photos: 0'; ?></span>
+                        <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button>
+                        <?php if (!empty($currentPhotoFilenames)): ?>
+                            <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             <div class="form-row">
@@ -883,13 +885,12 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         </div>
     </div>
 </div>
-<?php if (!empty($currentPhotoUrls)): ?>
 <div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
-    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current equipment photos" onclick="event.stopPropagation()">
+    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Equipment photos" onclick="event.stopPropagation()">
         <div class="photo-preview-actions">
             <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
         </div>
-        <div class="photo-preview-gallery">
+        <div class="photo-preview-gallery" id="existingPhotoPreviewGallery">
             <?php foreach ($currentPhotoUrls as $photoIndex => $photoUrl): ?>
                 <div class="photo-preview-item">
                     <a href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
@@ -899,9 +900,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 </div>
             <?php endforeach; ?>
         </div>
+        <h4 style="margin:14px 0 8px;">Selected (not saved yet)</h4>
+        <div class="photo-preview-gallery" id="pendingPhotoPreviewGallery"></div>
+        <p id="photoPreviewEmptyHint" style="margin-top:12px;color:var(--text-muted,#666);display:none;">No photos to preview yet.</p>
     </div>
 </div>
-<?php endif; ?>
 <script src="../../js/theme.js"></script>
 <script src="../../js/select-add-option.js"></script>
 <script>
@@ -992,10 +995,14 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var photoInput = document.querySelector('input[name="photo[]"]');
     var equipmentForm = document.getElementById('equipmentForm');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
+    var existingPhotoPreviewGallery = document.getElementById('existingPhotoPreviewGallery');
+    var pendingPhotoPreviewGallery = document.getElementById('pendingPhotoPreviewGallery');
+    var photoPreviewEmptyHint = document.getElementById('photoPreviewEmptyHint');
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;
     var isEditMode = <?php echo $isEdit ? 'true' : 'false'; ?>;
     var isAutoSubmitting = false;
+    var selectedPhotoPreviewUrls = [];
 
     function resetPendingPhotoDeletionState() {
         pendingDeletedPhotoIndexes.clear();
@@ -1021,6 +1028,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         if (!currentPhotoHintText) {
             return;
         }
+        var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
         if (deletePhotoInput && deletePhotoInput.value === '1') {
             currentPhotoHintText.textContent = 'Current photos will be deleted after you save.';
             return;
@@ -1030,7 +1038,73 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             currentPhotoHintText.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save. Remaining: ' + remainingPhotos + '.';
             return;
         }
-        currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos;
+        if (totalCurrentPhotos > 0) {
+            currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos + '. Selected (not saved): ' + selectedPhotoCount + '.';
+            return;
+        }
+        currentPhotoHintText.textContent = 'Selected photos: ' + selectedPhotoCount + ' (not saved yet).';
+    }
+
+    function updatePhotoPreviewActionState() {
+        var visibleExistingPhotos = 0;
+        if (existingPhotoPreviewGallery) {
+            Array.prototype.forEach.call(existingPhotoPreviewGallery.children, function (item) {
+                if (item.style.display !== 'none') {
+                    visibleExistingPhotos += 1;
+                }
+            });
+        }
+        var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
+        var hasAnyPhotos = visibleExistingPhotos > 0 || selectedPhotoCount > 0;
+
+        if (openPhotoPreview) {
+            openPhotoPreview.disabled = !hasAnyPhotos;
+        }
+        if (photoPreviewEmptyHint) {
+            photoPreviewEmptyHint.style.display = hasAnyPhotos ? 'none' : 'block';
+        }
+    }
+
+    function clearPendingPhotoPreview() {
+        selectedPhotoPreviewUrls.forEach(function (url) {
+            URL.revokeObjectURL(url);
+        });
+        selectedPhotoPreviewUrls = [];
+        if (pendingPhotoPreviewGallery) {
+            pendingPhotoPreviewGallery.innerHTML = '';
+        }
+    }
+
+    function renderPendingPhotoPreview() {
+        clearPendingPhotoPreview();
+        if (!pendingPhotoPreviewGallery || !photoInput || !photoInput.files) {
+            updatePhotoPreviewActionState();
+            updateCurrentPhotoHint();
+            return;
+        }
+
+        Array.prototype.forEach.call(photoInput.files, function (file, index) {
+            if (!file || typeof file.type !== 'string' || file.type.indexOf('image/') !== 0) {
+                return;
+            }
+            var previewUrl = URL.createObjectURL(file);
+            selectedPhotoPreviewUrls.push(previewUrl);
+
+            var item = document.createElement('div');
+            item.className = 'photo-preview-item';
+            var image = document.createElement('img');
+            image.src = previewUrl;
+            image.alt = 'Selected equipment photo ' + (index + 1);
+            item.appendChild(image);
+
+            var label = document.createElement('small');
+            label.textContent = file.name;
+            item.appendChild(label);
+            pendingPhotoPreviewGallery.appendChild(item);
+        });
+
+        updatePhotoPreviewActionState();
+        updateCurrentPhotoHint();
     }
 
     function hidePhotoModal() {
@@ -1043,9 +1117,12 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 
     resetPendingPhotoDeletionState();
     updateCurrentPhotoHint();
+    updatePhotoPreviewActionState();
     window.addEventListener('pageshow', function () {
         resetPendingPhotoDeletionState();
+        clearPendingPhotoPreview();
         updateCurrentPhotoHint();
+        updatePhotoPreviewActionState();
     });
 
     if (openPhotoPreview && photoPreviewModal) {
@@ -1099,8 +1176,13 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                     photoItem.style.display = 'none';
                 }
                 updateCurrentPhotoHint();
+                updatePhotoPreviewActionState();
             });
         });
+    }
+
+    if (photoInput) {
+        photoInput.addEventListener('change', renderPendingPhotoPreview);
     }
 
     if (photoInput && equipmentForm && isEditMode) {
