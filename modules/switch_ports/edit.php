@@ -626,7 +626,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php $optId = (string)($opt['id'] ?? ''); ?>
+                                        <option value="<?php echo sanitize($optId); ?>" <?php echo ((string)$displayVal === $optId) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
