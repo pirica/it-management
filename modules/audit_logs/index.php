@@ -21,13 +21,14 @@ $params = [$companyId];
 $types = 'i';
 
 if ($search !== '') {
-    $where[] = '(al.table_name LIKE ? OR CAST(al.record_id AS CHAR) LIKE ? OR CONCAT(COALESCE(u.first_name, ""), " ", COALESCE(u.last_name, "")) LIKE ? OR COALESCE(u.username, "") LIKE ?)';
+    $where[] = '(al.table_name LIKE ? OR CAST(al.record_id AS CHAR) LIKE ? OR CONCAT(COALESCE(u.first_name, ""), " ", COALESCE(u.last_name, "")) LIKE ? OR COALESCE(al.actor_username, u.username, "") LIKE ? OR COALESCE(al.actor_email, u.email, "") LIKE ?)';
     $searchLike = '%' . $search . '%';
     $params[] = $searchLike;
     $params[] = $searchLike;
     $params[] = $searchLike;
     $params[] = $searchLike;
-    $types .= 'ssss';
+    $params[] = $searchLike;
+    $types .= 'sssss';
 }
 
 if ($action !== '') {
@@ -48,7 +49,7 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
     $types .= 's';
 }
 
-$sql = 'SELECT al.*, u.username, u.first_name, u.last_name '
+$sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
      . 'LEFT JOIN users u ON u.id = al.user_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
@@ -115,6 +116,14 @@ function itm_audit_preview($text, $limit = 120) {
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        .audit-cell-added {
+            background-color: #e6f6ea;
+        }
+
+        .audit-cell-removed {
+            background-color: #fde8e8;
+        }
     </style>
 </head>
 <body>
@@ -178,11 +187,24 @@ function itm_audit_preview($text, $limit = 120) {
                         <?php foreach ($rows as $row): ?>
                             <?php
                             $userName = trim((string)(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')));
+                            $userEmail = trim((string)($row['actor_email'] ?? $row['email'] ?? ''));
+                            if ($userName === '') {
+                                $userName = trim((string)($row['actor_username'] ?? ''));
+                            }
+                            if ($userName === '' && $userEmail !== '') {
+                                $userName = $userEmail;
+                            }
                             if ($userName === '') {
                                 $userName = trim((string)($row['username'] ?? ''));
                             }
                             if ($userName === '') {
                                 $userName = $row['user_id'] ? ('User #' . (int)$row['user_id']) : 'System';
+                            }
+                            $actionClass = '';
+                            if (($row['action'] ?? '') === 'INSERT') {
+                                $actionClass = 'audit-cell-added';
+                            } elseif (($row['action'] ?? '') === 'DELETE') {
+                                $actionClass = 'audit-cell-removed';
                             }
 
                             $oldValues = (string)($row['old_values'] ?? '');
@@ -191,11 +213,16 @@ function itm_audit_preview($text, $limit = 120) {
                             ?>
                             <tr>
                                 <td><?php echo sanitize((string)$row['changed_at']); ?></td>
-                                <td class="audit-user" title="<?php echo sanitize($userName); ?>"><?php echo sanitize($userName); ?></td>
+                                <td class="audit-user" title="<?php echo sanitize($userEmail !== '' ? ($userName . ' <' . $userEmail . '>') : $userName); ?>">
+                                    <?php echo sanitize($userName); ?>
+                                    <?php if ($userEmail !== ''): ?>
+                                        <br><small><?php echo sanitize($userEmail); ?></small>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo sanitize((string)$row['table_name']); ?></td>
                                 <td><?php echo (int)$row['record_id']; ?></td>
                                 <td><?php echo sanitize((string)$row['action']); ?></td>
-                                <td class="itm-actions-cell itm-actions-left">
+                                <td class="itm-actions-cell itm-actions-left <?php echo sanitize($actionClass); ?>">
                                     <div class="audit-summary">
                                         <span><?php echo sanitize($previewText); ?></span>
                                         <details>
