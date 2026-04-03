@@ -809,7 +809,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             <div id="printer-fields" style="display:none;">
                 <div class="form-row">
                     <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                    <div class="form-group"><label><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label></div>
+                     <div class="role-flags-grid"><label><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label></div>
                 </div>
             </div>
             <div id="switch-fields" style="display:none;">
