@@ -491,7 +491,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
                     <div class="form-group">
                         <label>Photo Upload</label>
                         <input type="file" name="photo[]" accept="image/*" multiple="">
-                        <div class="form-hint">You can upload one or many photos at once.</div>
+                        <div class="form-hint">You can upload one or many photos at once.<?php if ($is_edit): ?> Files upload automatically after selection when editing.<?php endif; ?></div>
                         <?php if (!empty($existingTicketPhotos)): ?>
                             <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
                             <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
@@ -549,9 +549,12 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.querySelector('input[name="photo[]"]');
+    var ticketForm = document.querySelector('form[method="POST"]');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;
+    var isEditMode = <?php echo $is_edit ? 'true' : 'false'; ?>;
+    var isAutoSubmitting = false;
 
     function resetPendingPhotoDeletionState() {
         pendingDeletedPhotoIndexes.clear();
@@ -656,6 +659,16 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
                 }
                 updateCurrentPhotoHint();
             });
+        });
+    }
+
+    if (photoInput && ticketForm && isEditMode) {
+        photoInput.addEventListener('change', function () {
+            if (isAutoSubmitting || !photoInput.files || photoInput.files.length === 0) {
+                return;
+            }
+            isAutoSubmitting = true;
+            ticketForm.requestSubmit();
         });
     }
 })();
