@@ -212,6 +212,35 @@ function cr_render_cell_value($table, $field, $value) {
     return sanitize($text);
 }
 
+function cr_switch_port_rack_label($equipmentId) {
+    $equipmentId = (int)$equipmentId;
+    if ($equipmentId <= 0) {
+        return '';
+    }
+
+    $sql = 'SELECT r.name AS rack_name
+            FROM `equipment` e
+            LEFT JOIN `racks` r ON r.id = e.rack_id
+            WHERE e.id = ' . $equipmentId;
+
+    if ((int)($GLOBALS['company_id'] ?? 0) > 0) {
+        $sql .= ' AND e.company_id = ' . (int)$GLOBALS['company_id'];
+    }
+    $sql .= ' LIMIT 1';
+
+    $res = mysqli_query($GLOBALS['conn'], $sql);
+    if (!$res) {
+        return '';
+    }
+
+    $row = mysqli_fetch_assoc($res);
+    if (!$row || !isset($row['rack_name'])) {
+        return '';
+    }
+
+    return (string)$row['rack_name'];
+}
+
 
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -309,6 +338,13 @@ foreach ($fieldColumns as $c) {
 $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_display_field($col['Field']);
 }));
+$hasRackDisplayColumn = false;
+foreach ($visibleFieldColumns as $visibleFieldColumn) {
+    if (($visibleFieldColumn['Field'] ?? '') === 'port_number') {
+        $hasRackDisplayColumn = true;
+        break;
+    }
+}
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -627,6 +663,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         <?php endif; ?>
                                     </a>
                                 </th>
+                                <?php if ($field === 'port_number'): ?>
+                                    <th>Rack</th>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                                 <th style="display:none;">
                                     <input type="checkbox" id="select-all-rows" aria-label="Select all rows">
@@ -634,7 +673,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <th>Actions</th>
                         </tr>
                         <tr>
-                            <th colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:left;">
+                            <th colspan="<?php echo count($visibleFieldColumns) + ($hasRackDisplayColumn ? 1 : 0) + 2; ?>" style="text-align:left;">
                                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
@@ -654,6 +693,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
                                     </td>
+                                    <?php if ($f === 'port_number'): ?>
+                                        <td><?php echo sanitize(cr_switch_port_rack_label($row['equipment_id'] ?? 0)); ?></td>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                                 <td style="display:none;">
                                     <input
@@ -677,7 +719,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + ($hasRackDisplayColumn ? 1 : 0) + 2; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
