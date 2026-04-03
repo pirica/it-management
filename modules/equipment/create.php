@@ -688,9 +688,9 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         margin: 0;
     }
     .role-flags-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(180px, 1fr));
-        gap: 12px 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
         margin-top: 8px;
     }
     .role-flag-option {
@@ -698,6 +698,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         align-items: center;
         gap: 10px;
         min-height: 38px;
+        padding: 8px 12px;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
+        background: var(--panel, #fff);
+        white-space: nowrap;
     }
     .role-flag-option input[type="checkbox"] {
         margin: 0;
@@ -712,8 +717,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     }
     @media (max-width: 900px) {
         .form-row-3,
-        .switch-details-grid,
-        .role-flags-grid {
+        .switch-details-grid {
             grid-template-columns: 1fr;
         }
     }
