@@ -1,6 +1,25 @@
 <?php
 require '../../config/config.php';
 
+function ticket_is_valid_hex_color(string $value): bool
+{
+    return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1;
+}
+
+function ticket_hex_to_rgba(string $hexColor, float $alpha): string
+{
+    if (!ticket_is_valid_hex_color($hexColor)) {
+        return 'transparent';
+    }
+
+    $red = hexdec(substr($hexColor, 1, 2));
+    $green = hexdec(substr($hexColor, 3, 2));
+    $blue = hexdec(substr($hexColor, 5, 2));
+    $safeAlpha = max(0, min(1, $alpha));
+
+    return 'rgba(' . $red . ',' . $green . ',' . $blue . ',' . $safeAlpha . ')';
+}
+
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
 if ($searchRaw !== '') {
@@ -80,8 +99,9 @@ $items = mysqli_query(
                     </thead>
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($t = mysqli_fetch_assoc($items)): ?>
-                        <?php $rowColor = (isset($t['ui_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', (string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; ?>
-                        <tr<?php echo $rowColor !== '' ? ' style="background-color:' . sanitize($rowColor) . '22;"' : ''; ?>>
+                        <?php $rowColor = (isset($t['ui_color']) && ticket_is_valid_hex_color((string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; ?>
+                        <?php $rowBackground = $rowColor !== '' ? ticket_hex_to_rgba($rowColor, 0.18) : ''; ?>
+                        <tr<?php echo $rowColor !== '' ? ' style="background-color:' . sanitize($rowBackground) . ';border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
                             <td><?php echo (int)$t['id']; ?></td>
                             <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>

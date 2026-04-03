@@ -25,7 +25,26 @@ function ticket_photo_public_path(string $filename): string
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT
+            t.*,
+            tc.name AS category_name,
+            ts.name AS status_name,
+            tp.name AS priority_name,
+            assigned_user.username AS assigned_to_username,
+            created_user.username AS created_by_username,
+            e.name AS asset_name
+        FROM tickets t
+        LEFT JOIN ticket_categories tc ON tc.id = t.category_id
+        LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+        LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
+        LEFT JOIN users assigned_user ON assigned_user.id = t.assigned_to_user_id
+        LEFT JOIN users created_user ON created_user.id = t.created_by_user_id
+        LEFT JOIN equipment e ON e.id = t.asset_id
+        WHERE t.id = ? AND t.company_id = ?
+        LIMIT 1'
+    );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
@@ -56,13 +75,40 @@ if ($id > 0) {
                 <?php if (!$item): ?>
                     <div class="alert alert-danger">Record not found.</div>
                 <?php else: ?>
+                    <?php
+                    $fieldLabels = [
+                        'id' => 'ID',
+                        'ticket_external_code' => 'External Code',
+                        'title' => 'Title',
+                        'description' => 'Description',
+                        'category_id' => 'Category',
+                        'status_id' => 'Status',
+                        'priority_id' => 'Priority',
+                        'created_by_user_id' => 'Created By',
+                        'assigned_to_user_id' => 'Assigned To',
+                        'asset_id' => 'Related Asset',
+                        'ui_color' => 'UI Color Tag',
+                        'tickets_photos' => 'Photos',
+                        'created_at' => 'Created At',
+                    ];
+
+                    $fieldDisplayValues = [
+                        'category_id' => $item['category_name'] ?? '',
+                        'status_id' => $item['status_name'] ?? '',
+                        'priority_id' => $item['priority_name'] ?? '',
+                        'created_by_user_id' => $item['created_by_username'] ?? '',
+                        'assigned_to_user_id' => $item['assigned_to_username'] ?? '',
+                        'asset_id' => $item['asset_name'] ?? '',
+                    ];
+                    ?>
                     <table>
                         <tbody>
-                        <?php foreach ($item as $field => $value): ?>
+                        <?php foreach ($fieldLabels as $field => $label): ?>
+                            <?php $value = $item[$field] ?? null; ?>
                             <?php if ($field === 'tickets_photos'): ?>
                                 <?php $ticketPhotos = ticket_parse_photo_filenames((string)$value); ?>
                                 <tr>
-                                    <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
                                     <td>
                                         <?php if (empty($ticketPhotos)): ?>
                                             <span>—</span>
@@ -83,8 +129,13 @@ if ($id > 0) {
                                 </tr>
                                 <?php continue; ?>
                             <?php endif; ?>
+                            <?php if (array_key_exists($field, $fieldDisplayValues) && (string)$fieldDisplayValues[$field] !== ''): ?>
+                                <?php $value = (string)$fieldDisplayValues[$field]; ?>
+                            <?php elseif ($value === null || $value === ''): ?>
+                                <?php $value = '—'; ?>
+                            <?php endif; ?>
                             <tr>
-                                <th style="width:220px;"><?php echo sanitize((string)$field); ?></th>
+                                <th style="width:220px;"><?php echo sanitize($label); ?></th>
                                 <td><?php echo sanitize((string)($value ?? '')); ?></td>
                             </tr>
                         <?php endforeach; ?>
