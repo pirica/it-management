@@ -328,6 +328,7 @@ usort($backupFiles, static function ($a, $b) {
                                         <?php echo sanitize($label); ?>
                                     </option>
                                 <?php endforeach; ?>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="itm-form-actions itm-align-left">
