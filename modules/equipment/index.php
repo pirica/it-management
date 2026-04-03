@@ -310,7 +310,8 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-id-col="id"
                                         data-add-label-col="vlan_name"
                                         data-add-company-scoped="1"
-                                        data-add-friendly="vlan">
+                                        data-add-friendly="vlan"
+                                        data-add-extra-fields='[{"name":"vlan_number","label":"VLAN Number","type":"number"}]'>
                                         <option value="">-- choose VLAN --</option>
                                     </select>
                                 </div>
