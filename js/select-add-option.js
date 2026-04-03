@@ -118,6 +118,10 @@
                 background-color:var(--bg-primary);
                 color:var(--text-primary);
             }
+            input[type="color"].itm-add-option-input{
+                padding:4px;
+                min-height:38px;
+            }
             .itm-add-option-actions{
                 display:flex;
                 justify-content:flex-end;
@@ -178,8 +182,16 @@
                     input.innerHTML = buildSelectOptionsHtml(field.options);
                 } else {
                     input = document.createElement('input');
-                    input.type = field.type === 'number' ? 'number' : 'text';
-                    input.placeholder = 'Enter ' + field.label.toLowerCase();
+                    if (field.type === 'number') {
+                        input.type = 'number';
+                        input.placeholder = 'Enter ' + field.label.toLowerCase();
+                    } else if (field.type === 'color') {
+                        input.type = 'color';
+                        input.value = '#000000';
+                    } else {
+                        input.type = 'text';
+                        input.placeholder = 'Enter ' + field.label.toLowerCase();
+                    }
                 }
 
                 input.required = true;
