@@ -485,6 +485,10 @@ $rackExtraFieldsJson = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
+$currentPhotoUrl = '';
+if (!empty($data['photo_filename'])) {
+    $currentPhotoUrl = UPLOAD_URL . rawurlencode((string)$data['photo_filename']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -493,6 +497,40 @@ $rackExtraFieldsJson = htmlspecialchars(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $isEdit ? 'Edit' : 'New'; ?> Equipment</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+    .photo-preview-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 1200;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .photo-preview-content {
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--border, #ddd);
+        border-radius: 10px;
+        max-width: min(90vw, 900px);
+        max-height: 90vh;
+        overflow: auto;
+        padding: 12px;
+        text-align: center;
+    }
+    .photo-preview-content img {
+        max-width: 100%;
+        max-height: calc(90vh - 120px);
+        border-radius: 8px;
+    }
+    .photo-preview-actions {
+        margin-bottom: 10px;
+        text-align: right;
+    }
+    .photo-preview-link {
+        margin-left: 8px;
+    }
+    </style>
 </head>
 <body>
 <div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
@@ -532,7 +570,7 @@ $rackExtraFieldsJson = htmlspecialchars(
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
-                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo" accept="image/*"><?php if (!empty($data['photo_filename'])): ?><div class="form-hint">Current: <?php echo sanitize($data['photo_filename']); ?></div><?php endif; ?></div>
+                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo" accept="image/*"><?php if (!empty($data['photo_filename'])): ?><div class="form-hint">Current: <?php echo sanitize($data['photo_filename']); ?><a href="#" class="photo-preview-link" id="openPhotoPreview">View</a></div><?php endif; ?></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -607,6 +645,16 @@ $rackExtraFieldsJson = htmlspecialchars(
         </form>
     </div>
 </div></div></div>
+<?php if ($currentPhotoUrl !== ''): ?>
+<div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
+    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current equipment photo" onclick="event.stopPropagation()">
+        <div class="photo-preview-actions">
+            <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
+        </div>
+        <img src="<?php echo sanitize($currentPhotoUrl); ?>" alt="Current equipment photo">
+    </div>
+</div>
+<?php endif; ?>
 <script src="../../js/theme.js"></script>
 <script src="../../js/select-add-option.js"></script>
 <script>
@@ -681,6 +729,38 @@ $rackExtraFieldsJson = htmlspecialchars(
     if (isPrinterCheckbox) {
         isPrinterCheckbox.addEventListener('change', togglePrinterFields);
         togglePrinterFields();
+    }
+
+    var openPhotoPreview = document.getElementById('openPhotoPreview');
+    var photoPreviewModal = document.getElementById('photoPreviewModal');
+    var closePhotoPreview = document.getElementById('closePhotoPreview');
+
+    function hidePhotoModal() {
+        if (!photoPreviewModal) {
+            return;
+        }
+        photoPreviewModal.style.display = 'none';
+        photoPreviewModal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (openPhotoPreview && photoPreviewModal) {
+        openPhotoPreview.addEventListener('click', function (event) {
+            event.preventDefault();
+            photoPreviewModal.style.display = 'flex';
+            photoPreviewModal.setAttribute('aria-hidden', 'false');
+        });
+
+        photoPreviewModal.addEventListener('click', hidePhotoModal);
+
+        if (closePhotoPreview) {
+            closePhotoPreview.addEventListener('click', hidePhotoModal);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePhotoModal();
+            }
+        });
     }
 })();
 </script>
