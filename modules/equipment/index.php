@@ -70,7 +70,7 @@ $result = mysqli_query($conn, $sql);
 $switches = [];
 $switchResult = mysqli_query(
     $conn,
-    "SELECT e.id, e.name,
+    "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
             COALESCE(er.name, '24 ports') AS rj45_name,
             COALESCE(ef.name, '') AS fiber_name,
             COALESCE(efc.name, '0') AS fiber_count,
@@ -400,8 +400,15 @@ if (!empty($_SESSION['crud_success'])) {
             try {
                 const canvas = await html2canvas(node, {scale: 2, backgroundColor: '#ffffff'});
                 const anchor = document.createElement('a');
+                const rawHostname = String((selectedSwitchMeta && selectedSwitchMeta.hostname) || '').trim();
+                const safeHostname = rawHostname
+                    .toLowerCase()
+                    .replace(/[^a-z0-9._-]+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+                const fileBase = safeHostname !== '' ? safeHostname : `switch-${selectedSwitchId}`;
                 anchor.href = canvas.toDataURL('image/png');
-                anchor.download = `switch-<?php echo (int)$selectedSwitchId; ?>-ports.png`;
+                anchor.download = `${fileBase}.png`;
                 anchor.click();
             } catch (error) {
                 console.error(error);
