@@ -230,6 +230,8 @@ $workstationRamOptions = fetch_options($conn, 'workstation_ram');
 $workstationOfficeOptions = fetch_options($conn, 'workstation_office');
 $switchRj45Options = fetch_options($conn, 'equipment_rj45');
 $switchFiberOptions = fetch_options($conn, 'equipment_fiber');
+$switchFiberPatchOptions = fetch_options($conn, 'equipment_fiber_patch');
+$switchFiberRackOptions = fetch_options($conn, 'equipment_fiber_rack');
 $switchPoeOptions = fetch_options($conn, 'equipment_poe');
 $switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
 $switchFiberCountOptions = fetch_options($conn, 'equipment_fiber_count');
@@ -263,7 +265,7 @@ $data = [
     'is_workstation' => 0, 'is_server' => 0, 'is_pos' => 0, 'is_switch' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_office_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
     'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
-    'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_count_id' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
+    'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_count_id' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '', 'active' => 1
 ];
 
@@ -301,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
@@ -462,6 +464,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $switch_rj45_id = (int)$data['switch_rj45_id'] ?: 'NULL';
         $switch_port_numbering_layout_id = (int)$data['switch_port_numbering_layout_id'] ?: '1';
         $switch_fiber_id = (int)$data['switch_fiber_id'] ?: 'NULL';
+        $switch_fiber_patch_id = (int)$data['switch_fiber_patch_id'] ?: 'NULL';
+        $switch_fiber_rack_id = (int)$data['switch_fiber_rack_id'] ?: 'NULL';
         $switch_fiber_count_id = (int)$data['switch_fiber_count_id'] ?: 'NULL';
         $switch_poe_id = (int)$data['switch_poe_id'] ?: 'NULL';
         $switch_environment_id = (int)$data['switch_environment_id'] ?: 'NULL';
@@ -496,7 +500,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
                     $workstationOfficeUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
                     workstation_processor=$workstation_processor, $workstationStorageUpdateSql$workstationOsInstalledOnUpdateSql
-                    switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_count_id=$switch_fiber_count_id, switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
+                    switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_count_id=$switch_fiber_count_id, switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
                     notes=$notes,
                     photo_filename=$photo, active=$active
                     WHERE id=$id AND company_id=$company_id";
@@ -504,17 +508,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
                     ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
                     printer_device_type_id, printer_color_capable, printer_scan, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
+                    workstation_os_type_id$workstationOfficeInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+                    $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
         if (mysqli_query($conn, $sql)) {
             if ($isEdit && $originalData) {
                 $switchConfigChanged = (int)$originalData['switch_rj45_id'] !== (int)$data['switch_rj45_id']
                     || (int)$originalData['switch_fiber_id'] !== (int)$data['switch_fiber_id']
+                    || (int)$originalData['switch_fiber_patch_id'] !== (int)$data['switch_fiber_patch_id']
+                    || (int)$originalData['switch_fiber_rack_id'] !== (int)$data['switch_fiber_rack_id']
                     || (int)$originalData['switch_fiber_count_id'] !== (int)$data['switch_fiber_count_id'];
                 $changedAwayFromSwitch = (int)$originalData['equipment_type_id'] === $switchTypeId && $equipment_type_id !== $switchTypeId;
 
@@ -824,6 +830,8 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                     <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Port Numbering Layout</label><select name="switch_port_numbering_layout_id" data-addable-select="1" data-add-table="switch_port_numbering_layout" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="port numbering layout"><option value="">-- Select --</option><?php render_options($switchPortNumberingLayoutOptions, $data['switch_port_numbering_layout_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id" data-addable-select="1" data-add-table="equipment_fiber" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber port option"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Patch</label><select name="switch_fiber_patch_id" data-addable-select="1" data-add-table="equipment_fiber_patch" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber patch option"><option value="">-- None --</option><?php render_options($switchFiberPatchOptions, $data['switch_fiber_patch_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Rack</label><select name="switch_fiber_rack_id" data-addable-select="1" data-add-table="equipment_fiber_rack" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber rack option"><option value="">-- None --</option><?php render_options($switchFiberRackOptions, $data['switch_fiber_rack_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Fiber Count</label><select name="switch_fiber_count_id" data-addable-select="1" data-add-table="equipment_fiber_count" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber count option"><option value="">-- None --</option><?php render_options($switchFiberCountOptions, $data['switch_fiber_count_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>PoE Type</label><select name="switch_poe_id" data-addable-select="1" data-add-table="equipment_poe" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="poe type"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Management</label><select name="switch_environment_id" data-addable-select="1" data-add-table="equipment_environment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="management type"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?><option value="__add_new__">➕</option></select></div>
