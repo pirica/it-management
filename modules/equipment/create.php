@@ -108,6 +108,47 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
     );
 }
 
+function equipment_detect_upload_mime(array $file): string
+{
+    $tmpName = (string)($file['tmp_name'] ?? '');
+    if ($tmpName === '' || !is_file($tmpName)) {
+        return '';
+    }
+
+    if (function_exists('finfo_open') && defined('FILEINFO_MIME_TYPE')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = (string)@finfo_file($finfo, $tmpName);
+            @finfo_close($finfo);
+            if ($mime !== '') {
+                return strtolower($mime);
+            }
+        }
+    }
+
+    if (function_exists('mime_content_type')) {
+        $mime = (string)@mime_content_type($tmpName);
+        if ($mime !== '') {
+            return strtolower($mime);
+        }
+    }
+
+    $imageInfo = @getimagesize($tmpName);
+    if (is_array($imageInfo) && isset($imageInfo['mime']) && $imageInfo['mime'] !== '') {
+        return strtolower((string)$imageInfo['mime']);
+    }
+
+    $extension = strtolower((string)pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
+    $extensionMimeMap = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+    ];
+    return $extensionMimeMap[$extension] ?? '';
+}
+
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
@@ -241,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_FILES['photo']['size'] > MAX_FILE_SIZE) {
             $error = 'Photo exceeds max allowed size.';
         } else {
-            $mime = mime_content_type($_FILES['photo']['tmp_name']);
+            $mime = equipment_detect_upload_mime($_FILES['photo']);
             if (!in_array($mime, ALLOWED_TYPES, true)) {
                 $error = 'Unsupported image type.';
             } else {
