@@ -632,7 +632,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <th colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:left;">
                                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" onclick="return confirm('Delete selected records?');">Delete Selected</button>
+                                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                                 </form>
                             </th>
@@ -761,14 +761,61 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     </div>
 </div>
 <script>
-const selectAllRows = document.getElementById('select-all-rows');
-if (selectAllRows) {
-    selectAllRows.addEventListener('change', function () {
-        document.querySelectorAll('input[name="ids[]"]').forEach(function (checkbox) {
-            checkbox.checked = selectAllRows.checked;
+(function () {
+    const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
+    const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
         });
-    });
-}
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function () {
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = selectAllRows.checked;
+            });
+        });
+    }
+
+    if (bulkDeleteForm && toggleButton) {
+        setSelectionVisibility(false);
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            if (event.submitter !== toggleButton) {
+                return;
+            }
+
+            if (!selectionMode) {
+                event.preventDefault();
+                selectionMode = true;
+                setSelectionVisibility(true);
+                toggleButton.textContent = 'Delete Selected';
+                return;
+            }
+
+            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
+            if (!anySelected) {
+                event.preventDefault();
+                alert('Please select at least one record to delete.');
+                return;
+            }
+
+            if (!confirm('Delete selected records?')) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
 </script>
 <script src="../../js/theme.js"></script>
 <script>
