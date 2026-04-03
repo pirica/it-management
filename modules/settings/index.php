@@ -54,6 +54,10 @@ $recordsPerPageOptions = [
     '100' => '100',
     'all' => 'ALL',
 ];
+$currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
+if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
+    $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
+}
 
 if (isset($_SESSION['settings_flash_message'])) {
     $message = (string)$_SESSION['settings_flash_message'];
@@ -324,10 +328,11 @@ usort($backupFiles, static function ($a, $b) {
                             <label for="records_per_page">Records per page</label>
                             <select id="records_per_page" name="records_per_page">
                                 <?php foreach ($recordsPerPageOptions as $value => $label): ?>
-                                    <option value="<?php echo sanitize($value); ?>" <?php echo strtolower((string)($currentUiConfig['records_per_page'] ?? '25')) === $value ? 'selected' : ''; ?>>
+                                    <option value="<?php echo sanitize($value); ?>" <?php echo $currentRecordsPerPage === $value ? 'selected' : ''; ?>>
                                         <?php echo sanitize($label); ?>
                                     </option>
                                 <?php endforeach; ?>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="itm-form-actions itm-align-left">
@@ -465,6 +470,80 @@ usort($backupFiles, static function ($a, $b) {
 (function () {
     const form = document.getElementById('ui-config-form');
     if (!form) return;
+
+    const recordsPerPageSelect = document.getElementById('records_per_page');
+    const addOptionValue = '__add_new__';
+
+    function isValidRecordsPerPageInput(raw) {
+        const normalized = String(raw || '').trim().toLowerCase();
+        if (normalized === 'all') {
+            return 'all';
+        }
+        if (!/^\d+$/.test(normalized)) {
+            return '';
+        }
+
+        const numeric = parseInt(normalized, 10);
+        if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 1000000) {
+            return '';
+        }
+
+        return String(numeric);
+    }
+
+    function ensureRecordsPerPageOption(value) {
+        if (!recordsPerPageSelect || !value || value === addOptionValue) return;
+
+        const exists = Array.from(recordsPerPageSelect.options).find((option) => option.value === value);
+        if (exists) {
+            return;
+        }
+
+        const customOption = document.createElement('option');
+        customOption.value = value;
+        customOption.textContent = value === 'all' ? 'ALL' : value;
+
+        const addOption = Array.from(recordsPerPageSelect.options).find((option) => option.value === addOptionValue);
+        if (addOption) {
+            recordsPerPageSelect.insertBefore(customOption, addOption);
+        } else {
+            recordsPerPageSelect.appendChild(customOption);
+        }
+    }
+
+    if (recordsPerPageSelect) {
+        recordsPerPageSelect.dataset.previousValue = recordsPerPageSelect.value;
+
+        recordsPerPageSelect.addEventListener('focus', () => {
+            if (recordsPerPageSelect.value !== addOptionValue) {
+                recordsPerPageSelect.dataset.previousValue = recordsPerPageSelect.value;
+            }
+        });
+
+        recordsPerPageSelect.addEventListener('change', () => {
+            if (recordsPerPageSelect.value !== addOptionValue) {
+                recordsPerPageSelect.dataset.previousValue = recordsPerPageSelect.value;
+                return;
+            }
+
+            const input = window.prompt('Enter records per page (positive number) or "all":', recordsPerPageSelect.dataset.previousValue || '25');
+            if (input === null) {
+                recordsPerPageSelect.value = recordsPerPageSelect.dataset.previousValue || '25';
+                return;
+            }
+
+            const normalized = isValidRecordsPerPageInput(input);
+            if (!normalized) {
+                window.alert('Please enter a positive number (e.g., 25) or "all".');
+                recordsPerPageSelect.value = recordsPerPageSelect.dataset.previousValue || '25';
+                return;
+            }
+
+            ensureRecordsPerPageOption(normalized);
+            recordsPerPageSelect.value = normalized;
+            recordsPerPageSelect.dataset.previousValue = normalized;
+        });
+    }
 
     const root = document.getElementById('sidebar-settings-list');
     const initialMainOrder = <?php echo json_encode($currentUiConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order()); ?>;

@@ -395,8 +395,13 @@ function itm_normalize_ui_configuration($values) {
     $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
 
     $recordsPerPage = strtolower((string)($values['records_per_page'] ?? $defaults['records_per_page']));
-    $allowedRecordsPerPage = ['25', '50', '100', 'all'];
-    $values['records_per_page'] = in_array($recordsPerPage, $allowedRecordsPerPage, true) ? $recordsPerPage : $defaults['records_per_page'];
+    if ($recordsPerPage === 'all') {
+        $values['records_per_page'] = 'all';
+    } elseif (ctype_digit($recordsPerPage) && (int)$recordsPerPage > 0 && (int)$recordsPerPage <= 1000000) {
+        $values['records_per_page'] = (string)((int)$recordsPerPage);
+    } else {
+        $values['records_per_page'] = $defaults['records_per_page'];
+    }
 
     return $values;
 }
@@ -740,6 +745,12 @@ function itm_resolve_records_per_page($uiConfig) {
         return 1000000;
     }
 
-    $value = (int)$raw;
-    return in_array($value, [25, 50, 100], true) ? $value : 25;
+    if (ctype_digit($raw)) {
+        $value = (int)$raw;
+        if ($value > 0 && $value <= 1000000) {
+            return $value;
+        }
+    }
+
+    return 25;
 }
