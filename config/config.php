@@ -38,8 +38,8 @@ if ($itm_basePath === '/') {
 
 define('BASE_URL', $itm_scheme . '://' . $itm_host . ($itm_basePath !== '' ? $itm_basePath . '/' : '/'));
 define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
-define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'equipment'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
-define('UPLOAD_URL', BASE_URL . 'equipment/');
+define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'images'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+define('UPLOAD_URL', BASE_URL . 'images/');
 define('BACKUP_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'backups'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('BACKUP_URL', BASE_URL . 'backups/');
 
