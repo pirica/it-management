@@ -752,13 +752,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             <div id="printer-fields" style="display:none;">
                 <div class="form-row">
                     <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                     <div class="role-flags-grid">
-                         <label class="role-flag-option"><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label>
-                         <label class="role-flag-option"><input type="checkbox" name="printer_scan" <?php echo (int)$data['printer_scan'] === 1 ? 'checked' : ''; ?>> Printer & Scan</label>
-                     </div>
+                    <div class="role-flags-grid">
+                        <label class="role-flag-option"><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label>
+                        <label class="role-flag-option"><input type="checkbox" name="printer_scan" <?php echo (int)$data['printer_scan'] === 1 ? 'checked' : ''; ?>> Printer & Scan</label>
                     </div>
                 </div>
-            </div>
             </div>
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
@@ -845,7 +843,6 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                     <?php render_options($statuses, $data['status_id']); ?>
                     <option value="__add_new__">➕</option>
                 </select>
-            </div>
             </div>
             <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
             <div class="form-actions">
