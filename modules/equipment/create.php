@@ -356,6 +356,24 @@ $locationExtraFieldsJson = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
+$rackExtraFieldsConfig = [
+    [
+        'name' => 'location_id',
+        'label' => 'Location',
+        'type' => 'select',
+        'options' => array_map(static function ($location) {
+            return [
+                'value' => (string)((int)($location['id'] ?? 0)),
+                'label' => (string)($location['label'] ?? ''),
+            ];
+        }, $locations),
+    ],
+];
+$rackExtraFieldsJson = htmlspecialchars(
+    json_encode($rackExtraFieldsConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -382,7 +400,7 @@ $locationExtraFieldsJson = htmlspecialchars(
                 <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack" data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
                 <div class="form-group"></div>
             </div>
             <div class="form-row">
