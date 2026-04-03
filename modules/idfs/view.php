@@ -87,7 +87,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 <head>
     <meta charset="utf-8" />
     <title>IDF View</title>
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
 </head>
 <body>
 <div class="layout">
