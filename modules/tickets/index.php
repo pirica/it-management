@@ -6,10 +6,10 @@ $searchSql = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (\n        CAST(t.id AS CHAR) LIKE '{$searchEsc}'\n        OR t.ticket_code LIKE '{$searchEsc}'\n        OR t.title LIKE '{$searchEsc}'\n        OR ts.name LIKE '{$searchEsc}'\n        OR tp.name LIKE '{$searchEsc}'\n        OR CAST(t.created_at AS CHAR) LIKE '{$searchEsc}'\n    )";
+    $searchSql = " AND (\n        CAST(t.id AS CHAR) LIKE '{$searchEsc}'\n        OR t.ticket_external_code LIKE '{$searchEsc}'\n        OR t.title LIKE '{$searchEsc}'\n        OR ts.name LIKE '{$searchEsc}'\n        OR tp.name LIKE '{$searchEsc}'\n        OR CAST(t.created_at AS CHAR) LIKE '{$searchEsc}'\n    )";
 }
 
-$sortableColumns = ['id', 'ticket_code', 'title', 'status_name', 'priority_name', 'created_at'];
+$sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'created_at'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -20,7 +20,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $orderByMap = [
     'id' => 't.id',
-    'ticket_code' => 't.ticket_code',
+    'ticket_external_code' => 't.ticket_external_code',
     'title' => 't.title',
     'status_name' => 'ts.name',
     'priority_name' => 'tp.name',
@@ -71,7 +71,7 @@ $items = mysqli_query(
                 <table>
                     <thead>
                     <tr>
-                        <?php foreach (['id' => 'ID', 'ticket_code' => 'Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'created_at' => 'Created'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'created_at' => 'Created'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -80,9 +80,10 @@ $items = mysqli_query(
                     </thead>
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($t = mysqli_fetch_assoc($items)): ?>
-                        <tr>
+                        <?php $rowColor = (isset($t['ui_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', (string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; ?>
+                        <tr<?php echo $rowColor !== '' ? ' style="background-color:' . sanitize($rowColor) . '22;"' : ''; ?>>
                             <td><?php echo (int)$t['id']; ?></td>
-                            <td><?php echo sanitize($t['ticket_code'] ?? '-'); ?></td>
+                            <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>
                             <td><span class="badge" style="background-color:<?php echo sanitize($t['status_color'] ?: '#9aa4b2'); ?>33;color:<?php echo sanitize($t['status_color'] ?: '#9aa4b2'); ?>;"><?php echo sanitize($t['status_name'] ?: 'Open'); ?></span></td>
                             <td><?php echo sanitize($t['priority_name'] ?: '-'); ?></td>
