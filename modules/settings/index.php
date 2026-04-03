@@ -46,7 +46,6 @@ $uiFieldOptions = [
     ],
 ];
 
-$currentUiConfig = $ui_config ?? itm_ui_config_defaults();
 $sidebarStructure = itm_sidebar_structure();
 $recordsPerPageOptions = [
     '25' => '25',
@@ -54,10 +53,6 @@ $recordsPerPageOptions = [
     '100' => '100',
     'all' => 'ALL',
 ];
-$currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
-if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
-    $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
-}
 
 if (isset($_SESSION['settings_flash_message'])) {
     $message = (string)$_SESSION['settings_flash_message'];
@@ -272,6 +267,12 @@ if (is_dir(BACKUP_PATH)) {
 usort($backupFiles, static function ($a, $b) {
     return $b['modified'] <=> $a['modified'];
 });
+
+$currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+$currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
+if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
+    $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
