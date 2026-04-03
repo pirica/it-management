@@ -82,6 +82,8 @@ function itm_audit_preview($text, $limit = 120) {
 
     return mb_substr($text, 0, $limit) . '...';
 }
+
+$moduleListHeading = '🧾 Audit Logs';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -133,8 +135,8 @@ function itm_audit_preview($text, $limit = 120) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>Audit Logs</h1>
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
             </div>
 
