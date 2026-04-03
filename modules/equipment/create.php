@@ -848,7 +848,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             </div>
             </div>
             <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
-            <div style="display:flex;gap:10px;">
+            <div class="form-actions">
                 <button class="btn btn-primary" type="submit">💾</button>
                 <a href="index.php" class="btn">✖️</a>
             </div>
