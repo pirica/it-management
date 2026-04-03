@@ -756,7 +756,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
             <div class="card">
-                <form method="POST" enctype="multipart/form-data">
+                <form id="equipmentForm" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
@@ -990,7 +990,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.querySelector('input[name="photo[]"]');
-    var equipmentForm = document.querySelector('form[method="POST"]');
+    var equipmentForm = document.getElementById('equipmentForm');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;

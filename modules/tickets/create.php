@@ -397,7 +397,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
             <?php endif; ?>
 
             <div class="card">
-                <form method="POST" enctype="multipart/form-data">
+                <form id="ticketForm" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
                         <div class="form-group">
@@ -549,7 +549,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.querySelector('input[name="photo[]"]');
-    var ticketForm = document.querySelector('form[method="POST"]');
+    var ticketForm = document.getElementById('ticketForm');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;
