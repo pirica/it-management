@@ -25,37 +25,6 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
     );
 }
 
-function equipment_parse_photo_filenames($rawValue): array
-{
-    if ($rawValue === null) {
-        return [];
-    }
-
-    $value = trim((string)$rawValue);
-    if ($value === '') {
-        return [];
-    }
-
-    $decoded = json_decode($value, true);
-    if (is_array($decoded)) {
-        $items = $decoded;
-    } elseif (str_contains($value, ',')) {
-        $items = explode(',', $value);
-    } else {
-        $items = [$value];
-    }
-
-    $filenames = [];
-    foreach ($items as $item) {
-        $filename = basename((string)$item);
-        if ($filename !== '') {
-            $filenames[$filename] = $filename;
-        }
-    }
-
-    return array_values($filenames);
-}
-
 $debugRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
 $debugPost = $_POST;
@@ -88,7 +57,7 @@ if (!itm_can_delete_record($conn, 'equipment', 'id', $id, $company_id, $usageErr
     exit;
 }
 
-$checkSql = "SELECT photo_filename FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
+$checkSql = "SELECT id FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
 $checkResult = mysqli_query($conn, $checkSql);
 
 if (!$checkResult) {
@@ -102,9 +71,6 @@ if (mysqli_num_rows($checkResult) !== 1) {
     header('Location: index.php');
     exit;
 }
-
-$row = mysqli_fetch_assoc($checkResult);
-$photoFilenames = equipment_parse_photo_filenames($row['photo_filename'] ?? '');
 
 $deleteSql = "DELETE FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
 $deleteResult = mysqli_query($conn, $deleteSql);
@@ -122,13 +88,6 @@ if (mysqli_affected_rows($conn) < 1) {
 }
 
 equipment_delete_idf_data($conn, (int)$company_id, $id);
-
-foreach ($photoFilenames as $photoFilename) {
-    $path = UPLOAD_PATH . $photoFilename;
-    if (is_file($path)) {
-        @unlink($path);
-    }
-}
 
 //$_SESSION['crud_success'] = 'Record deleted successfully.';
 header('Location: index.php');

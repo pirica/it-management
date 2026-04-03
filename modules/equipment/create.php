@@ -994,6 +994,19 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;
 
+    function resetPendingPhotoDeletionState() {
+        pendingDeletedPhotoIndexes.clear();
+        if (deletePhotoInput) {
+            deletePhotoInput.value = '0';
+        }
+        if (deletePhotoIndexesInput) {
+            deletePhotoIndexesInput.value = '';
+        }
+        if (deletePhotoButton) {
+            deletePhotoButton.disabled = false;
+        }
+    }
+
     function syncDeletePhotoIndexes() {
         if (!deletePhotoIndexesInput) {
             return;
@@ -1024,6 +1037,13 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         photoPreviewModal.style.display = 'none';
         photoPreviewModal.setAttribute('aria-hidden', 'true');
     }
+
+    resetPendingPhotoDeletionState();
+    updateCurrentPhotoHint();
+    window.addEventListener('pageshow', function () {
+        resetPendingPhotoDeletionState();
+        updateCurrentPhotoHint();
+    });
 
     if (openPhotoPreview && photoPreviewModal) {
         openPhotoPreview.addEventListener('click', function (event) {
