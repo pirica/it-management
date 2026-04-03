@@ -149,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $assigned_to_user_id = (int)$assigned_to_user_id_post ?: 'NULL';
     $asset_id = (int)$asset_id_post ?: 'NULL';
     $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
+    $ticketPhotoFilenamesToDeleteAfterSave = [];
     $deleteCurrentPhotos = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
     $deletePhotoIndexesRaw = trim((string)($_POST['delete_photo_indexes'] ?? ''));
     $deletePhotoIndexes = [];
@@ -165,25 +166,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         })));
     }
     if (!$error && $is_edit && $deleteCurrentPhotos && !empty($ticketPhotoFilenames)) {
-        foreach ($ticketPhotoFilenames as $existingPhotoFilename) {
-            $existingPhotoPath = $ticketUploadPath . $existingPhotoFilename;
-            if (is_file($existingPhotoPath)) {
-                @unlink($existingPhotoPath);
-            }
-        }
+        $ticketPhotoFilenamesToDeleteAfterSave = array_values(array_unique(array_merge(
+            $ticketPhotoFilenamesToDeleteAfterSave,
+            $ticketPhotoFilenames
+        )));
         $ticketPhotoFilenames = [];
     } elseif (!$error && $is_edit && !empty($deletePhotoIndexes) && !empty($ticketPhotoFilenames)) {
         foreach ($deletePhotoIndexes as $deletePhotoIndex) {
             if (!array_key_exists($deletePhotoIndex, $ticketPhotoFilenames)) {
                 continue;
             }
-            $existingPhotoPath = $ticketUploadPath . (string)$ticketPhotoFilenames[$deletePhotoIndex];
-            if (is_file($existingPhotoPath)) {
-                @unlink($existingPhotoPath);
-            }
+            $ticketPhotoFilenamesToDeleteAfterSave[] = (string)$ticketPhotoFilenames[$deletePhotoIndex];
             unset($ticketPhotoFilenames[$deletePhotoIndex]);
         }
         $ticketPhotoFilenames = array_values($ticketPhotoFilenames);
+        $ticketPhotoFilenamesToDeleteAfterSave = array_values(array_unique($ticketPhotoFilenamesToDeleteAfterSave));
     }
 
     $created_at_raw = $_POST['created_at'] ?? '';
@@ -308,6 +305,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dbErrorCode = 0;
             $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+                foreach ($ticketPhotoFilenamesToDeleteAfterSave as $deletedFilename) {
+                    $existingPhotoPath = $ticketUploadPath . $deletedFilename;
+                    if (is_file($existingPhotoPath)) {
+                        @unlink($existingPhotoPath);
+                    }
+                }
                 header('Location: index.php');
                 exit;
             }

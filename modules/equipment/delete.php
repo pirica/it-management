@@ -104,15 +104,7 @@ if (mysqli_num_rows($checkResult) !== 1) {
 }
 
 $row = mysqli_fetch_assoc($checkResult);
-
-equipment_delete_idf_data($conn, (int)$company_id, $id);
-
-foreach (equipment_parse_photo_filenames($row['photo_filename'] ?? '') as $photoFilename) {
-    $path = UPLOAD_PATH . $photoFilename;
-    if (is_file($path)) {
-        @unlink($path);
-    }
-}
+$photoFilenames = equipment_parse_photo_filenames($row['photo_filename'] ?? '');
 
 $deleteSql = "DELETE FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
 $deleteResult = mysqli_query($conn, $deleteSql);
@@ -127,6 +119,15 @@ if (mysqli_affected_rows($conn) < 1) {
     $_SESSION['crud_error'] = 'Nothing was deleted.';
     header('Location: index.php');
     exit;
+}
+
+equipment_delete_idf_data($conn, (int)$company_id, $id);
+
+foreach ($photoFilenames as $photoFilename) {
+    $path = UPLOAD_PATH . $photoFilename;
+    if (is_file($path)) {
+        @unlink($path);
+    }
 }
 
 //$_SESSION['crud_success'] = 'Record deleted successfully.';

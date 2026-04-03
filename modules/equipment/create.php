@@ -333,6 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $photoFilenames = equipment_parse_photo_filenames($data['photo_filename']);
+    $photoFilenamesToDeleteAfterSave = [];
     $deleteCurrentPhoto = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
     $deletePhotoIndexesRaw = trim((string)($_POST['delete_photo_indexes'] ?? ''));
     $deletePhotoIndexes = [];
@@ -348,25 +349,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         })));
     }
     if (!$error && $isEdit && $deleteCurrentPhoto && !empty($photoFilenames)) {
-        foreach ($photoFilenames as $existingPhotoFilename) {
-            $existingPhotoPath = UPLOAD_PATH . $existingPhotoFilename;
-            if (is_file($existingPhotoPath)) {
-                @unlink($existingPhotoPath);
-            }
-        }
+        $photoFilenamesToDeleteAfterSave = array_values(array_unique(array_merge(
+            $photoFilenamesToDeleteAfterSave,
+            $photoFilenames
+        )));
         $photoFilenames = [];
     } elseif (!$error && $isEdit && !empty($deletePhotoIndexes) && !empty($photoFilenames)) {
         foreach ($deletePhotoIndexes as $deletePhotoIndex) {
             if (!array_key_exists($deletePhotoIndex, $photoFilenames)) {
                 continue;
             }
-            $existingPhotoPath = UPLOAD_PATH . (string)$photoFilenames[$deletePhotoIndex];
-            if (is_file($existingPhotoPath)) {
-                @unlink($existingPhotoPath);
-            }
+            $photoFilenamesToDeleteAfterSave[] = (string)$photoFilenames[$deletePhotoIndex];
             unset($photoFilenames[$deletePhotoIndex]);
         }
         $photoFilenames = array_values($photoFilenames);
+        $photoFilenamesToDeleteAfterSave = array_values(array_unique($photoFilenamesToDeleteAfterSave));
     }
 
     if (
@@ -529,6 +526,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (mysqli_query($conn, $sql)) {
+            foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
+                $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
+                if (is_file($existingPhotoPath)) {
+                    @unlink($existingPhotoPath);
+                }
+            }
             if ($isEdit && $originalData) {
                 $switchConfigChanged = (int)$originalData['switch_rj45_id'] !== (int)$data['switch_rj45_id']
                     || (int)$originalData['switch_fiber_id'] !== (int)$data['switch_fiber_id']
