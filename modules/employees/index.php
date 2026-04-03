@@ -563,6 +563,8 @@ function emp_build_query($params) {
     }
     return http_build_query($normalized);
 }
+
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '👤 Employees';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -603,8 +605,8 @@ function emp_build_query($params) {
                 </div>
             <?php endif; ?>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-                <h1 style="margin:0;">Employees</h1>
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="create.php" class="btn btn-primary">➕ New Employee</a>
                     <?php if ($showDuplicatesOnly): ?>

@@ -81,8 +81,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
         <div class="container">
             <div class="idf-toolbar">
-                <div class="left">
-                    <h2 style="margin:0;">🗄️ IDFs</h2>
+                <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;min-height:40px;">
+                    <h2 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">🗄️ IDFs</h2>
                     <span class="idf-badge">Modern rack-face view</span>
                 </div>
             </div>

@@ -235,6 +235,22 @@ function itm_sidebar_item_catalog() {
     return $catalog;
 }
 
+
+function itm_sidebar_label_for_module($moduleDir) {
+    $moduleDir = trim((string)$moduleDir);
+    if ($moduleDir === '') {
+        return null;
+    }
+
+    foreach (itm_sidebar_item_catalog() as $item) {
+        if (($item['match_dir'] ?? '') === $moduleDir) {
+            return (string)($item['label'] ?? '');
+        }
+    }
+
+    return null;
+}
+
 function itm_sidebar_default_item_parent_map() {
     $map = [];
     foreach (itm_sidebar_structure() as $section) {

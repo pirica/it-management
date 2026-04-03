@@ -129,7 +129,7 @@ if ($hasSelectedSwitch) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
 <?php
 if (!empty($_SESSION['crud_error'])) {
     echo '<div class="crud_error">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
@@ -141,7 +141,7 @@ if (!empty($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 ?>
-                <h1>🖥️ Equipment</h1>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($equipmentModuleTitle ?? '🖥️ Equipment'); ?></h1>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <?php if ($hasSelectedSwitch): ?>
                         <button type="button" class="btn btn-sm" id="exportEquipmentPdfBtn">Export PDF</button>

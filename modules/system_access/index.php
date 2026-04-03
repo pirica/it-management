@@ -165,8 +165,8 @@ if ($stmt) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>🛡️ System Access</h1>
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">🛡️ System Access</h1>
                 <a class="btn btn-primary" href="create.php">➕</a>
             </div>
 
