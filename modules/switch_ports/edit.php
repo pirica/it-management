@@ -402,7 +402,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $existing = mysqli_query($conn, $findSql);
                 if ($existing && mysqli_num_rows($existing) > 0) {
                     $row = mysqli_fetch_assoc($existing);
-                    $data[$name] = (string)(int)$row['id'];
+                    $data[$name] = (string)$row['id'];
                 } else {
                     $insertFields = [cr_escape_identifier($labelCol)];
                     $insertValues = ["'" . $newValueEsc . "'"];
@@ -415,7 +415,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $dbErrorCode = 0;
                     $dbErrorMessage = '';
                     if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                        $data[$name] = (string)(int)mysqli_insert_id($conn);
+                        $data[$name] = ($fkCol === $labelCol)
+                            ? $newValueRaw
+                            : (string)(int)mysqli_insert_id($conn);
                     } else {
                         $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
                         $data[$name] = 'NULL';
