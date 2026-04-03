@@ -93,6 +93,7 @@ function equipment_field_label($key) {
         'workstation_ram_name' => 'RAM',
         'workstation_storage' => 'Storage (GB/TB)',
         'workstation_os_installed_on' => 'Workstation OS Installed On',
+        'switch_fiber_port_label' => 'Fiber Port Label',
         'notes' => 'Comments',
     ];
 
