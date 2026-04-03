@@ -293,6 +293,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($data as $k => $v) {
         if (in_array($k, ['is_printer', 'printer_color_capable', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
             $data[$k] = isset($_POST[$k]) ? 1 : 0;
+        } elseif ($k === 'photo_filename') {
+            $data[$k] = $isEdit ? (string)($originalData['photo_filename'] ?? $v) : '';
         } elseif ($k === 'active') {
             $postedActive = $_POST['active'] ?? $data['active'];
             $data[$k] = (int)$postedActive === 1 ? 1 : 0;
@@ -713,7 +715,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
-                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo[]" accept="image/*" multiple><div class="form-hint">You can upload one or many photos at once.</div><?php if (!empty($currentPhotoFilenames)): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value=""><div class="form-hint" id="currentPhotoHint">Current photos: <?php echo count($currentPhotoFilenames); ?><button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button></div><?php endif; ?></div>
+                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo[]" accept="image/*" multiple><div class="form-hint">You can upload one or many photos at once.</div><?php if (!empty($currentPhotoFilenames)): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value=""><div class="form-hint" id="currentPhotoHint"><span id="currentPhotoHintText">Current photos: <?php echo count($currentPhotoFilenames); ?></span><button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button></div><?php endif; ?></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -887,10 +889,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var deletePhotoButton = document.getElementById('deletePhotoButton');
     var deletePhotoInput = document.getElementById('deletePhotoInput');
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
-    var currentPhotoHint = document.getElementById('currentPhotoHint');
+    var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.querySelector('input[name="photo[]"]');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var pendingDeletedPhotoIndexes = new Set();
+    var totalCurrentPhotos = deletePhotoItemButtons.length;
 
     function syncDeletePhotoIndexes() {
         if (!deletePhotoIndexesInput) {
@@ -900,16 +903,19 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     }
 
     function updateCurrentPhotoHint() {
-        if (!currentPhotoHint) {
+        if (!currentPhotoHintText) {
             return;
         }
         if (deletePhotoInput && deletePhotoInput.value === '1') {
-            currentPhotoHint.textContent = 'Current photos will be deleted after you save.';
+            currentPhotoHintText.textContent = 'Current photos will be deleted after you save.';
             return;
         }
         if (pendingDeletedPhotoIndexes.size > 0) {
-            currentPhotoHint.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save.';
+            var remainingPhotos = Math.max(totalCurrentPhotos - pendingDeletedPhotoIndexes.size, 0);
+            currentPhotoHintText.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save. Remaining: ' + remainingPhotos + '.';
+            return;
         }
+        currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos;
     }
 
     function hidePhotoModal() {
