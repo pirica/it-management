@@ -614,6 +614,13 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $hasSelectedOption = false;
+                                    foreach ($opts as $optCheck) {
+                                        if ((string)($optCheck['id'] ?? '') === (string)$displayVal) {
+                                            $hasSelectedOption = true;
+                                            break;
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -625,6 +632,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
                                 >
                                     <option value="">-- Select --</option>
+                                    <?php if ($displayVal !== '' && !$hasSelectedOption): ?>
+                                        <option value="<?php echo sanitize($displayVal); ?>" selected><?php echo sanitize($displayVal); ?></option>
+                                    <?php endif; ?>
                                     <?php foreach ($opts as $opt): ?>
                                         <?php $optId = (string)($opt['id'] ?? ''); ?>
                                         <option value="<?php echo sanitize($optId); ?>" <?php echo ((string)$displayVal === $optId) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
