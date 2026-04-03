@@ -171,9 +171,9 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                     <h3>System Access</h3>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
-                            <label><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo emp_access_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <?php echo sanitize((string)$access['name']); ?></label>
+                            <label class="role-flag-option"><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo emp_access_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <span><?php echo sanitize((string)$access['name']); ?></span></label>
                         <?php endforeach; ?>
-                        <label><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> Active</label>
+                        <label class="role-flag-option"><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> <span>Active</span></label>
                     </div>
 
                     <div class="form-actions" style="margin-top:16px;">

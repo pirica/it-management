@@ -162,7 +162,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                             <input type="number" step="0.01" min="0" name="price_eur" value="<?php echo sanitize((string)($data['price_eur'] ?? '')); ?>">
                         </div>
                         <div class="form-group">
-                            <label><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> Active</label>
+                            <label class="role-flag-option"><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> <span>Active</span></label>
                         </div>
                     </div>
 
