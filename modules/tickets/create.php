@@ -335,52 +335,52 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
     .photo-preview-modal {
+        display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.55);
-        display: none;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 1200;
         align-items: center;
         justify-content: center;
-        z-index: 1200;
-        padding: 16px;
+        padding: 20px;
     }
     .photo-preview-content {
-        width: min(920px, 100%);
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--border, #ddd);
+        border-radius: 10px;
+        max-width: min(90vw, 900px);
         max-height: 90vh;
         overflow: auto;
-        background: #fff;
-        border-radius: 10px;
-        padding: 16px;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+        padding: 12px;
+        text-align: center;
     }
     .photo-preview-content img {
         max-width: 100%;
+        max-height: calc(90vh - 120px);
         border-radius: 8px;
-        display: block;
     }
     .photo-preview-actions {
-        display: flex;
-        justify-content: flex-end;
         margin-bottom: 10px;
+        text-align: right;
     }
     .photo-preview-trigger {
         margin-left: 8px;
     }
     .photo-preview-gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
     .photo-preview-item {
-        border: 1px solid #d0d7de;
-        border-radius: 8px;
-        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
     .photo-preview-gallery img {
         width: 100%;
-        height: 130px;
-        object-fit: cover;
-        margin-bottom: 8px;
+        height: auto;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
     }
     </style>
 </head>
@@ -528,7 +528,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
             <?php foreach ($existingTicketPhotos as $photoIndex => $ticketPhoto): ?>
                 <div class="photo-preview-item">
                     <a href="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" target="_blank" rel="noopener noreferrer">
-                        <img src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" alt="Ticket photo <?php echo (int)$photoIndex + 1; ?>">
+                        <img src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" alt="Current ticket photo <?php echo (int)$photoIndex + 1; ?>">
                     </a>
                     <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
                 </div>
