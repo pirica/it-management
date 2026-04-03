@@ -329,7 +329,8 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             <label for="records_per_page">Records per page</label>
                             <select id="records_per_page" name="records_per_page">
                                 <?php foreach ($recordsPerPageOptions as $value => $label): ?>
-                                    <option value="<?php echo sanitize($value); ?>" <?php echo $currentRecordsPerPage === $value ? 'selected' : ''; ?>>
+                                    <?php $optionValue = strtolower((string)$value); ?>
+                                    <option value="<?php echo sanitize($optionValue); ?>" <?php echo $currentRecordsPerPage === $optionValue ? 'selected' : ''; ?>>
                                         <?php echo sanitize($label); ?>
                                     </option>
                                 <?php endforeach; ?>
