@@ -23,7 +23,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
-$perPage = 25;
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
 $countSql = "SELECT COUNT(*) AS total_rows FROM departments WHERE company_id = ?{$searchSql}";
 $countStmt = mysqli_prepare($conn, $countSql);
 $totalRows = 0;

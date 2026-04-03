@@ -48,6 +48,12 @@ $uiFieldOptions = [
 
 $currentUiConfig = $ui_config ?? itm_ui_config_defaults();
 $sidebarStructure = itm_sidebar_structure();
+$recordsPerPageOptions = [
+    '25' => '25',
+    '50' => '50',
+    '100' => '100',
+    'all' => 'ALL',
+];
 
 if (isset($_SESSION['settings_flash_message'])) {
     $message = (string)$_SESSION['settings_flash_message'];
@@ -203,6 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
         $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
+        $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
 
         $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
         $sidebarMainOrderInput = json_decode((string)($_POST['sidebar_main_order'] ?? ''), true);
@@ -310,6 +317,18 @@ usort($backupFiles, static function ($a, $b) {
                                     </select>
                                 </div>
                             <?php endforeach; ?>
+                        </div>
+
+
+                        <div class="form-group" style="max-width:220px;margin-top:8px;">
+                            <label for="records_per_page">Records per page</label>
+                            <select id="records_per_page" name="records_per_page">
+                                <?php foreach ($recordsPerPageOptions as $value => $label): ?>
+                                    <option value="<?php echo sanitize($value); ?>" <?php echo strtolower((string)($currentUiConfig['records_per_page'] ?? '25')) === $value ? 'selected' : ''; ?>>
+                                        <?php echo sanitize($label); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
 
                         <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
