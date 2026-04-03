@@ -280,6 +280,14 @@ tr:hover {
     background-color: var(--bg-secondary);
 }
 
+tr.ticket-row-colorized {
+    background-color: color-mix(in srgb, var(--ticket-row-color) 18%, var(--bg-primary));
+}
+
+tr.ticket-row-colorized:hover {
+    background-color: color-mix(in srgb, var(--ticket-row-color) 24%, var(--bg-primary));
+}
+
 /* Cards */
 .card {
     background-color: var(--bg-primary);
