@@ -233,19 +233,22 @@ if (!empty($_SESSION['crud_success'])) {
                 <div class="card" id="switch-port-manager" style="margin-top:20px;">
                     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                         <h2>Switch Port Manager</h2>
-                        <form method="get" style="display:flex;align-items:center;gap:8px;">
-                            <?php if ($searchRaw !== ''): ?>
-                                <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
-                            <?php endif; ?>
-                            <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
-                            <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
-                                <?php foreach ($switches as $switchItem): ?>
-                                    <option value="<?php echo (int)$switchItem['id']; ?>" <?php echo (int)$switchItem['id'] === $selectedSwitchId ? 'selected' : ''; ?>>
-                                        <?php echo sanitize($switchItem['name']) . ' (#' . (int)$switchItem['id'] . ')'; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </form>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-sm" id="switchExportImageBtn" type="button" title="Export switch layout as image">Export Image</button>
+                            <form method="get" style="display:flex;align-items:center;gap:8px;">
+                                <?php if ($searchRaw !== ''): ?>
+                                    <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
+                                <?php endif; ?>
+                                <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
+                                <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
+                                    <?php foreach ($switches as $switchItem): ?>
+                                        <option value="<?php echo (int)$switchItem['id']; ?>" <?php echo (int)$switchItem['id'] === $selectedSwitchId ? 'selected' : ''; ?>>
+                                            <?php echo sanitize($switchItem['name']) . ' (#' . (int)$switchItem['id'] . ')'; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </form>
+                        </div>
                     </div>
                     <div class="switch-manager" id="switchManager">
                         <div class="card" style="margin-bottom:14px;padding:12px;">
@@ -333,6 +336,7 @@ if (!empty($_SESSION['crud_success'])) {
 </div>
 <script src="../../js/theme.js"></script>
 <?php if ($hasSelectedSwitch): ?>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
     (function () {
         const apiGet = '<?php echo BASE_URL; ?>get_ports.php';
@@ -382,6 +386,32 @@ if (!empty($_SESSION['crud_success'])) {
                 return 'sfp';
             }
             return 'rj45';
+        }
+
+        async function exportSwitchImage() {
+            const node = document.getElementById('switchManager');
+            if (!node) return;
+
+            if (typeof html2canvas === 'undefined') {
+                alert('Image export library is not loaded.');
+                return;
+            }
+
+            try {
+                const canvas = await html2canvas(node, {scale: 2, backgroundColor: '#ffffff'});
+                const anchor = document.createElement('a');
+                anchor.href = canvas.toDataURL('image/png');
+                anchor.download = `switch-<?php echo (int)$selectedSwitchId; ?>-ports.png`;
+                anchor.click();
+            } catch (error) {
+                console.error(error);
+                alert('Unable to export image right now. Please try again.');
+            }
+        }
+
+        const switchExportImageBtn = document.getElementById('switchExportImageBtn');
+        if (switchExportImageBtn) {
+            switchExportImageBtn.addEventListener('click', exportSwitchImage);
         }
 
         function getColorCss(color) {
