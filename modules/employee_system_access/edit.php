@@ -62,7 +62,7 @@ function esa_module_checked($ids, $id) {
                     <input type="hidden" name="employee_id" value="<?php echo (int)$employeeId; ?>">
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
-                            <label><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo esa_module_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <?php echo sanitize((string)$access['name']); ?></label>
+                            <label class="role-flag-option"><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo esa_module_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <span><?php echo sanitize((string)$access['name']); ?></span></label>
                         <?php endforeach; ?>
                     </div>
                     <div class="form-actions" style="margin-top:16px;">

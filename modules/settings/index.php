@@ -338,9 +338,9 @@ usort($backupFiles, static function ($a, $b) {
                                 <?php $sectionId = $section['id']; ?>
                                 <div class="sidebar-setting-section" data-section-id="<?php echo sanitize($sectionId); ?>">
                                     <div class="sidebar-setting-row sidebar-setting-main" data-main-id="<?php echo sanitize($sectionId); ?>">
-                                        <label>
+                                        <label class="role-flag-option">
                                             <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$sectionId] ?? 1) === 1) ? 'checked' : ''; ?>>
-                                            <?php echo sanitize($section['title']); ?>
+                                            <span><?php echo sanitize($section['title']); ?></span>
                                         </label>
                                         <div>
                                             <button type="button" class="btn btn-sm sidebar-move-up">↑</button>
@@ -351,9 +351,9 @@ usort($backupFiles, static function ($a, $b) {
                                         <?php foreach ($section['items'] as $item): ?>
                                             <?php $itemId = $item['id']; ?>
                                             <div class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
-                                                <label>
+                                                <label class="role-flag-option">
                                                     <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
-                                                    <?php echo sanitize($item['label']); ?>
+                                                    <span><?php echo sanitize($item['label']); ?></span>
                                                 </label>
                                                 <div>
                                                     <button type="button" class="btn btn-sm sidebar-submove-up">↑</button>
@@ -368,9 +368,9 @@ usort($backupFiles, static function ($a, $b) {
 
                         <h3 style="margin-top:16px;">System</h3>
                         <div class="form-group">
-                            <label for="enable_all_error_reporting">
+                            <label class="role-flag-option" for="enable_all_error_reporting">
                                 <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 0) === 1) ? 'checked' : ''; ?>>
-                                Enable all error reporting
+                                <span>Enable all error reporting</span>
                             </label>
                         </div>
 

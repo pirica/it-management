@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group"><label>VAT</label><input type="text" name="vat" value="<?php echo sanitize($data['vat'] ?? ''); ?>"></div>
                     </div>
                     <div class="form-group"><label>Comments</label><textarea name="comments" rows="4"><?php echo sanitize($data['comments'] ?? ''); ?></textarea></div>
-                    <div class="form-group"><label><input type="checkbox" name="active" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>> Active</label></div>
+                    <div class="form-group"><label class="role-flag-option"><input type="checkbox" name="active" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>> <span>Active</span></label></div>
                     <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">✖️</a></div>
                 </form>
             </div>
