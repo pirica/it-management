@@ -164,7 +164,8 @@ if ($switchId <= 0) {
 
 $legacyNumberPortSql = $hasLegacyNumberPort ? 'e.numberport AS legacy_numberport,' : 'NULL AS legacy_numberport,';
 $switchSql = "SELECT e.id, e.name, {$legacyNumberPortSql} COALESCE(er.name, '24 ports') AS rj45_name,
-                     COALESCE(ef.name, '') AS fiber_name, COALESCE(efc.name, '0') AS fiber_count
+                     COALESCE(ef.name, '') AS fiber_name, COALESCE(efc.name, '0') AS fiber_count,
+                     COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number
               FROM equipment e
               LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
               LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
@@ -197,7 +198,9 @@ if ($rj45Count <= 0) {
 if ($rj45Count <= 0) {
     $rj45Count = 24;
 }
-$fiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
+$fiberPortsNumber = (int)preg_replace('/\D+/', '', (string)$switch['fiber_ports_number']);
+$legacyFiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
+$fiberCount = $fiberPortsNumber > 0 ? $fiberPortsNumber : $legacyFiberCount;
 $fiberName = strtolower(trim((string)$switch['fiber_name']));
 $sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
 $sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;

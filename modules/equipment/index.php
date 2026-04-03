@@ -65,6 +65,7 @@ $switchResult = mysqli_query(
             COALESCE(er.name, '24 ports') AS rj45_name,
             COALESCE(ef.name, '') AS fiber_name,
             COALESCE(efc.name, '0') AS fiber_count,
+            COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
             COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
      FROM equipment e
      INNER JOIN equipment_types et ON et.id = e.equipment_type_id
@@ -641,7 +642,9 @@ if (!empty($_SESSION['crud_success'])) {
 
         function fallbackLayout() {
             const rj45 = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.rj45_name) || '').replace(/\D+/g, ''), 10) || 24;
-            const fiberCount = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_count) || '').replace(/\D+/g, ''), 10) || 0;
+            const fiberPortsNumber = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_ports_number) || '').replace(/\D+/g, ''), 10) || 0;
+            const legacyFiberCount = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_count) || '').replace(/\D+/g, ''), 10) || 0;
+            const fiberCount = fiberPortsNumber > 0 ? fiberPortsNumber : legacyFiberCount;
             const fiberName = String((selectedSwitchMeta && selectedSwitchMeta.fiber_name) || '').toLowerCase();
             const sfpPlus = hasPortType('sfp_plus') && fiberName.includes('sfp+') ? fiberCount : 0;
             const sfp = hasPortType('sfp') && !fiberName.includes('sfp+') && fiberName.includes('sfp') ? fiberCount : 0;
