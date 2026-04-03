@@ -1508,10 +1508,10 @@ CREATE TABLE `workstation_os_versions` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `workstation_os_versions`
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '1', '10');
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '2', '11');
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Server 2022');
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Server 2025');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '1', '24H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '2', '25H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '3', '26H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '4', '10 LTSC');
 
 -- Table structure for `workstation_ram`
 DROP TABLE IF EXISTS `workstation_ram`;
