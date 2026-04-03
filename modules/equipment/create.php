@@ -768,6 +768,12 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
                 <div class="form-group"></div>
             </div>
+            <div id="server-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group"><label>Certificate Expiry</label><input type="date" name="certificate_expiry" value="<?php echo sanitize($data['certificate_expiry']); ?>"></div>
+                    <div class="form-group"></div>
+                </div>
+            </div>
             <div class="form-row">
                 <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
                 <div class="form-group"><label>Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" value="<?php echo sanitize($data['purchase_cost']); ?>"></div>
@@ -792,12 +798,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             <div class="form-row">
                 <div class="form-group"></div>
             </div>
-            <div id="server-fields" style="display:none;">
-                <div class="form-row">
-                    <div class="form-group"><label>Certificate Expiry</label><input type="date" name="certificate_expiry" value="<?php echo sanitize($data['certificate_expiry']); ?>"></div>
-                    <div class="form-group"></div>
-                </div>
-            </div>
+
 
             <div class="form-row">
                 
