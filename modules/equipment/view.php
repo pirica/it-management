@@ -164,22 +164,29 @@ function equipment_field_matches_context($key, $item) {
         <td><?php echo sanitize(equipment_field_value($k, $v)); ?></td>
     </tr>
 <?php endforeach; ?>
-</tbody></table>
 <?php $photoFilenames = equipment_parse_photo_filenames($item['photo_filename'] ?? ''); ?>
-<?php if (!empty($photoFilenames)): ?>
-    <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;">
-        <?php foreach ($photoFilenames as $photoIndex => $photoFilename): ?>
-            <?php $photoUrl = UPLOAD_URL . sanitize($photoFilename); ?>
-            <a href="<?php echo $photoUrl; ?>" target="_blank" rel="noopener noreferrer" title="Open full-size image in a new tab">
-                <img
-                    src="<?php echo $photoUrl; ?>"
-                    alt="Equipment Photo <?php echo (int)$photoIndex + 1; ?>"
-                    style="width:96px;height:96px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
-                >
-            </a>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
+<tr>
+    <th style="width:240px;">Photos</th>
+    <td>
+        <?php if (empty($photoFilenames)): ?>
+            <span>—</span>
+        <?php else: ?>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <?php foreach ($photoFilenames as $photoFilename): ?>
+                    <?php $photoUrl = UPLOAD_URL . sanitize($photoFilename); ?>
+                    <a href="<?php echo $photoUrl; ?>" target="_blank" rel="noopener noreferrer" title="Open full-size image in a new tab">
+                        <img
+                            src="<?php echo $photoUrl; ?>"
+                            alt="Ticket photo"
+                            style="width:96px;height:96px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
+                        >
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </td>
+</tr>
+</tbody></table>
 <p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>
