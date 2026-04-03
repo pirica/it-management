@@ -149,6 +149,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $assigned_to_user_id = (int)$assigned_to_user_id_post ?: 'NULL';
     $asset_id = (int)$asset_id_post ?: 'NULL';
     $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
+    $deleteCurrentPhotos = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
+    $deletePhotoIndexesRaw = trim((string)($_POST['delete_photo_indexes'] ?? ''));
+    $deletePhotoIndexes = [];
+    if ($deletePhotoIndexesRaw !== '') {
+        $deletePhotoIndexes = array_values(array_unique(array_filter(array_map(static function ($indexValue) {
+            if (!is_numeric($indexValue)) {
+                return null;
+            }
+
+            $index = (int)$indexValue;
+            return $index >= 0 ? $index : null;
+        }, explode(',', $deletePhotoIndexesRaw)), static function ($value) {
+            return $value !== null;
+        })));
+    }
+    if (!$error && $is_edit && $deleteCurrentPhotos && !empty($ticketPhotoFilenames)) {
+        foreach ($ticketPhotoFilenames as $existingPhotoFilename) {
+            $existingPhotoPath = $ticketUploadPath . $existingPhotoFilename;
+            if (is_file($existingPhotoPath)) {
+                @unlink($existingPhotoPath);
+            }
+        }
+        $ticketPhotoFilenames = [];
+    } elseif (!$error && $is_edit && !empty($deletePhotoIndexes) && !empty($ticketPhotoFilenames)) {
+        foreach ($deletePhotoIndexes as $deletePhotoIndex) {
+            if (!array_key_exists($deletePhotoIndex, $ticketPhotoFilenames)) {
+                continue;
+            }
+            $existingPhotoPath = $ticketUploadPath . (string)$ticketPhotoFilenames[$deletePhotoIndex];
+            if (is_file($existingPhotoPath)) {
+                @unlink($existingPhotoPath);
+            }
+            unset($ticketPhotoFilenames[$deletePhotoIndex]);
+        }
+        $ticketPhotoFilenames = array_values($ticketPhotoFilenames);
+    }
 
     $created_at_raw = $_POST['created_at'] ?? '';
     $created_at = $created_at_raw
@@ -294,6 +330,56 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $is_edit ? 'Edit' : 'New'; ?> Ticket</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+    .photo-preview-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1200;
+        padding: 16px;
+    }
+    .photo-preview-content {
+        width: min(920px, 100%);
+        max-height: 90vh;
+        overflow: auto;
+        background: #fff;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+    }
+    .photo-preview-content img {
+        max-width: 100%;
+        border-radius: 8px;
+        display: block;
+    }
+    .photo-preview-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+    .photo-preview-trigger {
+        margin-left: 8px;
+    }
+    .photo-preview-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+    }
+    .photo-preview-item {
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        padding: 8px;
+    }
+    .photo-preview-gallery img {
+        width: 100%;
+        height: 130px;
+        object-fit: cover;
+        margin-bottom: 8px;
+    }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -404,17 +490,12 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
                         <input type="file" name="photo[]" accept="image/*" multiple="">
                         <div class="form-hint">You can upload one or many photos at once.</div>
                         <?php if (!empty($existingTicketPhotos)): ?>
-                            <div class="form-hint" style="margin-top:8px;">Existing photos:</div>
-                            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
-                                <?php foreach ($existingTicketPhotos as $ticketPhoto): ?>
-                                    <a href="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" target="_blank" rel="noopener noreferrer">
-                                        <img
-                                            src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>"
-                                            alt="Ticket photo"
-                                            style="width:92px;height:92px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
-                                        >
-                                    </a>
-                                <?php endforeach; ?>
+                            <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
+                            <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
+                            <div class="form-hint" id="currentPhotoHint">
+                                <span id="currentPhotoHintText">Current photos: <?php echo count($existingTicketPhotos); ?></span>
+                                <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button>
+                                <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -434,7 +515,125 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
         </div>
     </div>
 </div>
+<?php if (!empty($existingTicketPhotos)): ?>
+<div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
+    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current ticket photos" onclick="event.stopPropagation()">
+        <div class="photo-preview-actions">
+            <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
+        </div>
+        <div class="photo-preview-gallery">
+            <?php foreach ($existingTicketPhotos as $photoIndex => $ticketPhoto): ?>
+                <div class="photo-preview-item">
+                    <img src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" alt="Ticket photo <?php echo (int)$photoIndex + 1; ?>">
+                    <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <script src="../../js/theme.js"></script>
 <script src="../../js/select-add-option.js"></script>
+<script>
+(function () {
+    var openPhotoPreview = document.getElementById('openPhotoPreview');
+    var photoPreviewModal = document.getElementById('photoPreviewModal');
+    var closePhotoPreview = document.getElementById('closePhotoPreview');
+    var deletePhotoButton = document.getElementById('deletePhotoButton');
+    var deletePhotoInput = document.getElementById('deletePhotoInput');
+    var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
+    var currentPhotoHintText = document.getElementById('currentPhotoHintText');
+    var photoInput = document.querySelector('input[name="photo[]"]');
+    var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
+    var pendingDeletedPhotoIndexes = new Set();
+    var totalCurrentPhotos = deletePhotoItemButtons.length;
+
+    function syncDeletePhotoIndexes() {
+        if (!deletePhotoIndexesInput) {
+            return;
+        }
+        deletePhotoIndexesInput.value = Array.from(pendingDeletedPhotoIndexes).sort(function (a, b) { return a - b; }).join(',');
+    }
+
+    function updateCurrentPhotoHint() {
+        if (!currentPhotoHintText) {
+            return;
+        }
+        if (deletePhotoInput && deletePhotoInput.value === '1') {
+            currentPhotoHintText.textContent = 'Current photos will be deleted after you save.';
+            return;
+        }
+        if (pendingDeletedPhotoIndexes.size > 0) {
+            var remainingPhotos = Math.max(totalCurrentPhotos - pendingDeletedPhotoIndexes.size, 0);
+            currentPhotoHintText.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save. Remaining: ' + remainingPhotos + '.';
+            return;
+        }
+        currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos;
+    }
+
+    function hidePhotoModal() {
+        if (!photoPreviewModal) {
+            return;
+        }
+        photoPreviewModal.style.display = 'none';
+        photoPreviewModal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (openPhotoPreview && photoPreviewModal) {
+        openPhotoPreview.addEventListener('click', function (event) {
+            event.preventDefault();
+            photoPreviewModal.style.display = 'flex';
+            photoPreviewModal.setAttribute('aria-hidden', 'false');
+        });
+
+        photoPreviewModal.addEventListener('click', hidePhotoModal);
+
+        if (closePhotoPreview) {
+            closePhotoPreview.addEventListener('click', hidePhotoModal);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePhotoModal();
+            }
+        });
+    }
+
+    if (deletePhotoButton && deletePhotoInput) {
+        deletePhotoButton.addEventListener('click', function () {
+            deletePhotoInput.value = '1';
+            pendingDeletedPhotoIndexes.clear();
+            syncDeletePhotoIndexes();
+            hidePhotoModal();
+            updateCurrentPhotoHint();
+            if (photoInput) {
+                photoInput.value = '';
+            }
+            deletePhotoButton.disabled = true;
+        });
+    }
+
+    if (deletePhotoItemButtons.length > 0 && deletePhotoInput) {
+        deletePhotoItemButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (deletePhotoInput.value === '1') {
+                    return;
+                }
+                var photoIndex = parseInt(button.getAttribute('data-photo-index') || '', 10);
+                if (!Number.isInteger(photoIndex) || photoIndex < 0) {
+                    return;
+                }
+                pendingDeletedPhotoIndexes.add(photoIndex);
+                syncDeletePhotoIndexes();
+                var photoItem = button.closest('.photo-preview-item');
+                if (photoItem) {
+                    photoItem.style.display = 'none';
+                }
+                updateCurrentPhotoHint();
+            });
+        });
+    }
+})();
+</script>
 </body>
 </html>
