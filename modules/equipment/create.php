@@ -679,12 +679,20 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     </style>
 </head>
 <body>
-<div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
-    <h1><?php echo $isEdit ? '✏️ Edit' : '➕ New'; ?> Equipment</h1>
-    <?php if ($success): ?><div class="alert alert-success">Equipment updated successfully.</div><?php endif; ?>
-    <?php if ($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
-    <div class="card">
-        <form method="POST" enctype="multipart/form-data">
+<div class="container">
+    <?php include '../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <?php include '../../includes/header.php'; ?>
+        <div class="content">
+            <h1><?php echo $isEdit ? '✏️ Edit' : '➕ New'; ?> Equipment</h1>
+            <?php if ($success): ?>
+                <div class="alert alert-success">Equipment updated successfully.</div>
+            <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
+            <?php endif; ?>
+            <div class="card">
+                <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-row">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
@@ -717,7 +725,20 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
-                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo[]" accept="image/*" multiple><div class="form-hint">You can upload one or many photos at once.</div><?php if (!empty($currentPhotoFilenames)): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value=""><div class="form-hint" id="currentPhotoHint"><span id="currentPhotoHintText">Current photos: <?php echo count($currentPhotoFilenames); ?></span><button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button></div><?php endif; ?></div>
+                <div class="form-group">
+                    <label>Photo Upload</label>
+                    <input type="file" name="photo[]" accept="image/*" multiple>
+                    <div class="form-hint">You can upload one or many photos at once.</div>
+                    <?php if (!empty($currentPhotoFilenames)): ?>
+                        <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
+                        <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
+                        <div class="form-hint" id="currentPhotoHint">
+                            <span id="currentPhotoHintText">Current photos: <?php echo count($currentPhotoFilenames); ?></span>
+                            <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button>
+                            <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -785,13 +806,25 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label><input type="checkbox" name="is_pos" <?php echo (int)$data['is_pos'] === 1 ? 'checked' : ''; ?>> Is POS</label></div>
-                <div class="form-group"><label>Status</label><select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status"><option value="">-- Select --</option><?php render_options($statuses, $data['status_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status">
+                        <option value="">-- Select --</option>
+                        <?php render_options($statuses, $data['status_id']); ?>
+                        <option value="__add_new__">➕</option>
+                    </select>
+                </div>
             </div>
             <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
-            <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">✖️</a></div>
-        </form>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-primary" type="submit">💾</button>
+                <a href="index.php" class="btn">✖️</a>
+            </div>
+                </form>
+            </div>
+        </div>
     </div>
-</div></div></div>
+</div>
 <?php if (!empty($currentPhotoUrls)): ?>
 <div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
     <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Current equipment photos" onclick="event.stopPropagation()">
