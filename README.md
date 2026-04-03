@@ -3,5 +3,6 @@
   4. Create `images/` folder for images uploads<br>5. Create `backups/` folder for backups<br>
   6. Access `http://localhost/it-management/`<br><br>### Modules<br><br>- Equipment - Manage IT equipment<br>- Printers - Track printers and supplies<br>- Workstations - Manage workstations<br>- Tickets - Support ticket system<br>- Inventory - Track supplies<br>- Users - User management<br>- Departments - Department management<br>- Employees - Employee tracking<br>- Companies - Multi-company support<br><br><br>  <br>### System Requirements<br><br>- PHP 8.4+<br>- MySQL 8.0+<br>- Apache 2.4+<br>###</p>
 
-<br><br>### Security Checks<br><br>- Run CSRF handler coverage audit:<br>`php scripts/check_csrf_coverage.php`<br>
+<br><br>### Security Checks<br><br>
+- Run CSRF handler coverage audit:<br>`php scripts/check_csrf_coverage.php`<br>
 - Run SQL injection static audit:<br>`php scripts/check_sql_injection_coverage.php`<br>
