@@ -19,7 +19,7 @@ function ticket_parse_photo_filenames($rawValue): array
 
 function ticket_photo_public_path(string $filename): string
 {
-    return '../../tickets_photos/' . rawurlencode($filename);
+    return TICKET_UPLOAD_URL . rawurlencode($filename);
 }
 
 function ticket_detect_upload_mime_type(string $tmpName): string
@@ -70,7 +70,7 @@ $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
 $csrfToken = itm_get_csrf_token();
-$ticketUploadPath = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'tickets_photos'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+$ticketUploadPath = TICKET_UPLOAD_PATH;
 
 $data = [
     'ticket_code' => '',
