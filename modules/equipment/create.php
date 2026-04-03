@@ -102,6 +102,9 @@ $warrantyTypes = fetch_options($conn, 'warranty_types');
 $printerTypes = fetch_options($conn, 'printer_device_types');
 $workstationDeviceTypes = fetch_options($conn, 'workstation_device_types');
 $workstationOsTypes = fetch_options($conn, 'workstation_os_types');
+$workstationOsBuilds = fetch_options($conn, 'workstation_os_builds');
+$workstationOsVersions = fetch_options($conn, 'workstation_os_versions');
+$workstationRamOptions = fetch_options($conn, 'workstation_ram');
 $workstationOfficeOptions = fetch_options($conn, 'workstation_office');
 $switchRj45Options = fetch_options($conn, 'equipment_rj45');
 $switchFiberOptions = fetch_options($conn, 'equipment_fiber');
@@ -110,6 +113,11 @@ $switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
 $switchFiberCountOptions = fetch_options($conn, 'equipment_fiber_count');
 $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_layout');
 $hasWorkstationOfficeIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_office_id');
+$hasWorkstationOsBuildIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_build_id');
+$hasWorkstationOsVersionIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_version_id');
+$hasWorkstationRamIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_ram_id');
+$hasWorkstationStorageColumn = equipment_table_has_column($conn, 'equipment', 'workstation_storage');
+$hasWorkstationOsInstalledOnColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_installed_on');
 
 $switchTypeId = 0;
 $serverTypeId = 0;
@@ -132,8 +140,8 @@ $data = [
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0,
     'is_workstation' => 0, 'is_server' => 0, 'is_pos' => 0, 'is_switch' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
-    'workstation_office_id' => '',
-    'workstation_processor' => '', 'workstation_memory_gb' => '',
+    'workstation_office_id' => '', 'workstation_os_build_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
+    'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_count_id' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '', 'active' => 1
 ];
@@ -170,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','workstation_os_build_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
@@ -248,8 +256,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $workstation_device_type_id = (int)$data['workstation_device_type_id'] ?: 'NULL';
         $workstation_os_type_id = (int)$data['workstation_os_type_id'] ?: 'NULL';
         $workstation_office_id = (int)$data['workstation_office_id'] ?: 'NULL';
+        $workstation_os_build_id = (int)$data['workstation_os_build_id'] ?: 'NULL';
+        $workstation_os_version_id = (int)$data['workstation_os_version_id'] ?: 'NULL';
+        $workstation_ram_id = (int)$data['workstation_ram_id'] ?: 'NULL';
         $workstation_processor = $data['workstation_processor'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_processor'], $conn) . "'";
-        $workstation_memory_gb = $data['workstation_memory_gb'] === '' ? 'NULL' : (int)$data['workstation_memory_gb'];
+        $workstation_storage = $data['workstation_storage'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_storage'], $conn) . "'";
+        $workstation_os_installed_on = $data['workstation_os_installed_on'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_os_installed_on'], $conn) . "'";
         $switch_rj45_id = (int)$data['switch_rj45_id'] ?: 'NULL';
         $switch_port_numbering_layout_id = (int)$data['switch_port_numbering_layout_id'] ?: '1';
         $switch_fiber_id = (int)$data['switch_fiber_id'] ?: 'NULL';
@@ -263,6 +275,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
         $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
         $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
+        $workstationOsBuildUpdateSql = $hasWorkstationOsBuildIdColumn ? "workstation_os_build_id=$workstation_os_build_id,\n                    " : '';
+        $workstationOsBuildInsertColumns = $hasWorkstationOsBuildIdColumn ? ', workstation_os_build_id' : '';
+        $workstationOsBuildInsertValues = $hasWorkstationOsBuildIdColumn ? ", $workstation_os_build_id" : '';
+        $workstationOsVersionUpdateSql = $hasWorkstationOsVersionIdColumn ? "workstation_os_version_id=$workstation_os_version_id,\n                    " : '';
+        $workstationOsVersionInsertColumns = $hasWorkstationOsVersionIdColumn ? ', workstation_os_version_id' : '';
+        $workstationOsVersionInsertValues = $hasWorkstationOsVersionIdColumn ? ", $workstation_os_version_id" : '';
+        $workstationRamUpdateSql = $hasWorkstationRamIdColumn ? "workstation_ram_id=$workstation_ram_id,\n                    " : '';
+        $workstationRamInsertColumns = $hasWorkstationRamIdColumn ? ', workstation_ram_id' : '';
+        $workstationRamInsertValues = $hasWorkstationRamIdColumn ? ", $workstation_ram_id" : '';
+        $workstationStorageUpdateSql = $hasWorkstationStorageColumn ? "workstation_storage=$workstation_storage,\n                    " : '';
+        $workstationStorageInsertColumns = $hasWorkstationStorageColumn ? ', workstation_storage' : '';
+        $workstationStorageInsertValues = $hasWorkstationStorageColumn ? ", $workstation_storage" : '';
+        $workstationOsInstalledOnUpdateSql = $hasWorkstationOsInstalledOnColumn ? "workstation_os_installed_on=$workstation_os_installed_on,\n                    " : '';
+        $workstationOsInstalledOnInsertColumns = $hasWorkstationOsInstalledOnColumn ? ', workstation_os_installed_on' : '';
+        $workstationOsInstalledOnInsertValues = $hasWorkstationOsInstalledOnColumn ? ", $workstation_os_installed_on" : '';
 
         if ($isEdit) {
             $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id,
@@ -272,7 +299,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     printer_color_capable=$printer_color_capable,
                     is_workstation=$is_workstation, is_server=$is_server, is_pos=$is_pos, is_switch=$is_switch,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
-                    $workstationOfficeUpdateSqlworkstation_processor=$workstation_processor, workstation_memory_gb=$workstation_memory_gb,
+                    $workstationOfficeUpdateSql$workstationOsBuildUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
+                    workstation_processor=$workstation_processor, $workstationStorageUpdateSql$workstationOsInstalledOnUpdateSql
                     switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_count_id=$switch_fiber_count_id, switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
                     notes=$notes,
                     photo_filename=$photo, active=$active
@@ -281,11 +309,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
                     ip_address, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
                     printer_device_type_id, printer_color_capable, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns, workstation_processor, workstation_memory_gb, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
+                    workstation_os_type_id$workstationOfficeInsertColumns$workstationOsBuildInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
                     $printer_device_type_id, $printer_color_capable, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues, $workstation_processor, $workstation_memory_gb, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+                    $workstation_os_type_id$workstationOfficeInsertValues$workstationOsBuildInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
         if (mysqli_query($conn, $sql)) {
@@ -460,7 +488,15 @@ $rackExtraFieldsJson = htmlspecialchars(
                 <div class="form-group"><label>Workstation OS Type</label><select name="workstation_os_type_id" data-addable-select="1" data-add-table="workstation_os_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os type"><option value="">-- None --</option><?php render_options($workstationOsTypes, $data['workstation_os_type_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Workstation Memory (GB)</label><input type="number" name="workstation_memory_gb" value="<?php echo sanitize($data['workstation_memory_gb']); ?>"></div>
+                <div class="form-group"><label>RAM</label><select name="workstation_ram_id" data-addable-select="1" data-add-table="workstation_ram" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="ram"><option value="">-- None --</option><?php render_options($workstationRamOptions, $data['workstation_ram_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Storage (GB/TB)</label><input name="workstation_storage" value="<?php echo sanitize($data['workstation_storage']); ?>" placeholder="e.g. 512 GB / 1 TB"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Workstation OS Build</label><select name="workstation_os_build_id" data-addable-select="1" data-add-table="workstation_os_builds" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os build"><option value="">-- None --</option><?php render_options($workstationOsBuilds, $data['workstation_os_build_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Workstation OS Installed On</label><input type="date" name="workstation_os_installed_on" value="<?php echo sanitize($data['workstation_os_installed_on']); ?>"></div>
                 <div class="form-group"></div>
             </div>
             <div id="switch-fields" style="display:none;">

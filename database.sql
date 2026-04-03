@@ -304,7 +304,11 @@ CREATE TABLE `equipment` (
   `workstation_device_type_id` int DEFAULT NULL,
   `workstation_os_type_id` int DEFAULT NULL,
   `workstation_processor` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `workstation_memory_gb` int DEFAULT NULL,
+  `workstation_storage` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `workstation_os_installed_on` date DEFAULT NULL,
+  `workstation_ram_id` int DEFAULT NULL,
+  `workstation_os_build_id` int DEFAULT NULL,
+  `workstation_os_version_id` int DEFAULT NULL,
   `switch_rj45_id` int DEFAULT NULL,
   `switch_port_numbering_layout_id` int DEFAULT '1',
   `switch_fiber_id` int DEFAULT NULL,
@@ -332,6 +336,9 @@ CREATE TABLE `equipment` (
   KEY `printer_device_type_id` (`printer_device_type_id`),
   KEY `workstation_device_type_id` (`workstation_device_type_id`),
   KEY `workstation_os_type_id` (`workstation_os_type_id`),
+  KEY `workstation_ram_id` (`workstation_ram_id`),
+  KEY `workstation_os_build_id` (`workstation_os_build_id`),
+  KEY `workstation_os_version_id` (`workstation_os_version_id`),
   KEY `switch_rj45_id` (`switch_rj45_id`),
   KEY `switch_port_numbering_layout_id` (`switch_port_numbering_layout_id`),
   KEY `switch_fiber_id` (`switch_fiber_id`),
@@ -340,6 +347,9 @@ CREATE TABLE `equipment` (
   KEY `switch_environment_id` (`switch_environment_id`),
   CONSTRAINT `equipment_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `equipment_ibfk_10` FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types` (`id`),
+  CONSTRAINT `equipment_ibfk_17` FOREIGN KEY (`workstation_ram_id`) REFERENCES `workstation_ram` (`id`),
+  CONSTRAINT `equipment_ibfk_18` FOREIGN KEY (`workstation_os_build_id`) REFERENCES `workstation_os_builds` (`id`),
+  CONSTRAINT `equipment_ibfk_19` FOREIGN KEY (`workstation_os_version_id`) REFERENCES `workstation_os_versions` (`id`),
   CONSTRAINT `equipment_ibfk_11` FOREIGN KEY (`switch_rj45_id`) REFERENCES `equipment_rj45` (`id`),
   CONSTRAINT `equipment_ibfk_12` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`),
   CONSTRAINT `equipment_ibfk_13` FOREIGN KEY (`switch_fiber_id`) REFERENCES `equipment_fiber` (`id`),
@@ -357,7 +367,7 @@ CREATE TABLE `equipment` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment`
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `is_workstation`, `is_server`, `is_pos`, `is_switch`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', '0', NULL, '0', '1', '0', '0', '0', NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `is_workstation`, `is_server`, `is_pos`, `is_switch`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_build_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', '0', NULL, '0', '1', '0', '0', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
 
 -- Table structure for `equipment_environment`
 DROP TABLE IF EXISTS `equipment_environment`;
@@ -1466,6 +1476,62 @@ INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '13
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '14', 'macOS');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '15', 'Other');
 
+-- Table structure for `workstation_os_builds`
+DROP TABLE IF EXISTS `workstation_os_builds`;
+CREATE TABLE `workstation_os_builds` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_os_builds_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `workstation_os_builds`
+INSERT INTO `workstation_os_builds` (`company_id`, `id`, `name`) VALUES ('1', '1', '21H2');
+INSERT INTO `workstation_os_builds` (`company_id`, `id`, `name`) VALUES ('1', '2', '22H2');
+INSERT INTO `workstation_os_builds` (`company_id`, `id`, `name`) VALUES ('1', '3', '23H2');
+INSERT INTO `workstation_os_builds` (`company_id`, `id`, `name`) VALUES ('1', '4', '24H2');
+
+-- Table structure for `workstation_os_versions`
+DROP TABLE IF EXISTS `workstation_os_versions`;
+CREATE TABLE `workstation_os_versions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_os_versions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `workstation_os_versions`
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '1', '10');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '2', '11');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Server 2022');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Server 2025');
+
+-- Table structure for `workstation_ram`
+DROP TABLE IF EXISTS `workstation_ram`;
+CREATE TABLE `workstation_ram` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `workstation_ram_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `workstation_ram`
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '1', '4 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '2', '8 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '3', '16 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '4', '32 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '5', '64 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '6', '128 GB');
+
 -- Table structure for `workstations`
 DROP TABLE IF EXISTS `workstations`;
 CREATE TABLE `workstations` (
@@ -1530,10 +1596,13 @@ INSERT INTO `warranty_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM
 INSERT INTO `workstation_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstation_modes` (`company_id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) SELECT c.`id`, t.`mode_name`, t.`mode_code`, t.`description`, t.`monitor_count`, t.`has_keyboard_mouse`, t.`pos`, t.`active` FROM `workstation_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstation_office` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_os_builds` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_builds` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstation_os_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_os_versions` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_versions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_ram` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_ram` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `departments` (`company_id`, `name`, `code`, `description`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`active` FROM `departments` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `employee_onboarding_requests` (`company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) SELECT c.`id`, t.`employee_id`, t.`first_name`, t.`last_name`, t.`position_title`, t.`department_name`, t.`request_date`, t.`termination_date`, t.`network_access`, t.`micros_emc`, t.`opera`, t.`micros_card`, t.`pms_id`, t.`synergy_mms`, t.`email_account`, t.`landline_phone`, t.`hu_the_lobby`, t.`mobile_phone`, t.`navision`, t.`mobile_email`, t.`onq_ri`, t.`birchstreet`, t.`delphi`, t.`omina`, t.`vingcard_system`, t.`digital_rev`, t.`office_key_card`, t.`comments`, t.`starting_date`, t.`requested_by`, t.`requested_on`, t.`hod_approval`, t.`hrd_approval`, t.`ism_approval`, t.`created_at` FROM `employee_onboarding_requests` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
-INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `is_workstation`, `is_server`, `is_pos`, `is_switch`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_memory_gb`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`)
+INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `is_printer`, `printer_device_type_id`, `printer_color_capable`, `is_workstation`, `is_server`, `is_pos`, `is_switch`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_build_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_count_id`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`)
 SELECT
     c.`id`,
     COALESCE(et_target.`id`, et_fallback.`id`),
@@ -1550,7 +1619,10 @@ SELECT
     t.`is_workstation`, t.`is_server`, t.`is_pos`, t.`is_switch`,
     wdt_target.`id`,
     wot_target.`id`,
-    t.`workstation_processor`, t.`workstation_memory_gb`,
+    t.`workstation_processor`, t.`workstation_storage`, t.`workstation_os_installed_on`,
+    wr_target.`id`,
+    wob_target.`id`,
+    wov_target.`id`,
     rj45_target.`id`,
     spnl_target.`id`,
     fiber_target.`id`,
@@ -1588,6 +1660,12 @@ LEFT JOIN `workstation_device_types` wdt_source ON wdt_source.`id` = t.`workstat
 LEFT JOIN `workstation_device_types` wdt_target ON wdt_target.`company_id` = c.`id` AND wdt_target.`name` = wdt_source.`name`
 LEFT JOIN `workstation_os_types` wot_source ON wot_source.`id` = t.`workstation_os_type_id`
 LEFT JOIN `workstation_os_types` wot_target ON wot_target.`company_id` = c.`id` AND wot_target.`name` = wot_source.`name`
+LEFT JOIN `workstation_ram` wr_source ON wr_source.`id` = t.`workstation_ram_id`
+LEFT JOIN `workstation_ram` wr_target ON wr_target.`company_id` = c.`id` AND wr_target.`name` = wr_source.`name`
+LEFT JOIN `workstation_os_builds` wob_source ON wob_source.`id` = t.`workstation_os_build_id`
+LEFT JOIN `workstation_os_builds` wob_target ON wob_target.`company_id` = c.`id` AND wob_target.`name` = wob_source.`name`
+LEFT JOIN `workstation_os_versions` wov_source ON wov_source.`id` = t.`workstation_os_version_id`
+LEFT JOIN `workstation_os_versions` wov_target ON wov_target.`company_id` = c.`id` AND wov_target.`name` = wov_source.`name`
 LEFT JOIN `equipment_rj45` rj45_source ON rj45_source.`id` = t.`switch_rj45_id`
 LEFT JOIN `equipment_rj45` rj45_target ON rj45_target.`company_id` = c.`id` AND rj45_target.`name` = rj45_source.`name`
 LEFT JOIN `switch_port_numbering_layout` spnl_source ON spnl_source.`id` = t.`switch_port_numbering_layout_id`
