@@ -259,7 +259,7 @@ foreach ($types as $typeItem) {
 
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'name' => '',
-    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'mac_address' => '',
+    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '',
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0,
     'is_workstation' => 0, 'is_server' => 0, 'is_pos' => 0, 'is_switch' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
@@ -435,6 +435,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $model = $data['model'] === '' ? 'NULL' : "'" . escape_sql($data['model'], $conn) . "'";
         $hostname = $data['hostname'] === '' ? 'NULL' : "'" . escape_sql($data['hostname'], $conn) . "'";
         $ip_address = $data['ip_address'] === '' ? 'NULL' : "'" . escape_sql($data['ip_address'], $conn) . "'";
+        $patch_port = $data['patch_port'] === '' ? 'NULL' : "'" . escape_sql($data['patch_port'], $conn) . "'";
         $mac_address = $data['mac_address'] === '' ? 'NULL' : "'" . escape_sql($data['mac_address'], $conn) . "'";
         $status_id = (int)$data['status_id'] ?: 'NULL';
         $purchase_date = $data['purchase_date'] === '' ? 'NULL' : "'" . escape_sql($data['purchase_date'], $conn) . "'";
@@ -492,7 +493,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($isEdit) {
             $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id,
-                    name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, mac_address=$mac_address,
+                    name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
                     status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
                     warranty_type_id=$warranty_type_id, is_printer=$is_printer, printer_device_type_id=$printer_device_type_id,
                     printer_color_capable=$printer_color_capable,
@@ -506,11 +507,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
-                    ip_address, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
+                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
                     printer_device_type_id, printer_color_capable, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
                     workstation_os_type_id$workstationOfficeInsertColumns$workstationOsBuildInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
-                    $ip_address, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
+                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
                     $printer_device_type_id, $printer_color_capable, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
                     $workstation_os_type_id$workstationOfficeInsertValues$workstationOsBuildInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
@@ -706,6 +707,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="form-group"><label>IP Address</label><input name="ip_address" value="<?php echo sanitize($data['ip_address']); ?>"></div>
             </div>
             <div class="form-row">
+                <div class="form-group"><label>Patch Port</label><input name="patch_port" value="<?php echo sanitize($data['patch_port']); ?>"></div>
                 <div class="form-group"><label>MAC Address</label><input name="mac_address" value="<?php echo sanitize($data['mac_address']); ?>"></div>
                 <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
