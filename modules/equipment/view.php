@@ -166,7 +166,7 @@ function equipment_field_matches_context($key, $item) {
 <?php endforeach; ?>
 </tbody></table>
 <?php $photoFilenames = equipment_parse_photo_filenames($item['photo_filename'] ?? ''); ?>
-<?php if (!empty($photoFilenames)): ?><div style="margin-top:16px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));"><?php foreach ($photoFilenames as $photoIndex => $photoFilename): ?><img src="<?php echo UPLOAD_URL . sanitize($photoFilename); ?>" alt="Equipment Photo <?php echo (int)$photoIndex + 1; ?>" style="max-width:100%;border:1px solid var(--border);border-radius:8px;"><?php endforeach; ?></div><?php endif; ?>
+<?php if (!empty($photoFilenames)): ?><div style="margin-top:16px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));"><?php foreach ($photoFilenames as $photoIndex => $photoFilename): ?><a href="<?php echo UPLOAD_URL . sanitize($photoFilename); ?>" target="_blank" rel="noopener noreferrer"><img src="<?php echo UPLOAD_URL . sanitize($photoFilename); ?>" alt="Equipment Photo <?php echo (int)$photoIndex + 1; ?>" style="max-width:100%;border:1px solid var(--border);border-radius:8px;"></a><?php endforeach; ?></div><?php endif; ?>
 <p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>

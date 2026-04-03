@@ -115,9 +115,10 @@ if ($id > 0) {
                                         <?php else: ?>
                                             <div style="display:flex;flex-wrap:wrap;gap:10px;">
                                                 <?php foreach ($ticketPhotos as $ticketPhoto): ?>
-                                                    <a href="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" target="_blank" rel="noopener noreferrer">
+                                                    <?php $ticketPhotoUrl = ticket_photo_public_path($ticketPhoto); ?>
+                                                    <a href="<?php echo sanitize($ticketPhotoUrl); ?>" target="_blank" rel="noopener noreferrer" title="Open full-size image in a new tab">
                                                         <img
-                                                            src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>"
+                                                            src="<?php echo sanitize($ticketPhotoUrl); ?>"
                                                             alt="Ticket photo"
                                                             style="width:96px;height:96px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
                                                         >

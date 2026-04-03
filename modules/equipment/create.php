@@ -889,7 +889,9 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         <div class="photo-preview-gallery">
             <?php foreach ($currentPhotoUrls as $photoIndex => $photoUrl): ?>
                 <div class="photo-preview-item">
-                    <img src="<?php echo sanitize($photoUrl); ?>" alt="Current equipment photo <?php echo (int)$photoIndex + 1; ?>">
+                    <a href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
+                        <img src="<?php echo sanitize($photoUrl); ?>" alt="Current equipment photo <?php echo (int)$photoIndex + 1; ?>">
+                    </a>
                     <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
                 </div>
             <?php endforeach; ?>
