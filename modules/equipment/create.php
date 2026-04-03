@@ -83,6 +83,7 @@ $manufacturers = fetch_options($conn, 'manufacturers');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
 $locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
 $racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
+$rackStatuses = fetch_options($conn, 'rack_statuses');
 $statuses = fetch_options($conn, 'equipment_statuses');
 $defaultStatusId = '';
 foreach ($statuses as $statusItem) {
@@ -367,6 +368,17 @@ $rackExtraFieldsConfig = [
                 'label' => (string)($location['label'] ?? ''),
             ];
         }, $locations),
+    ],
+    [
+        'name' => 'status_id',
+        'label' => 'Rack Status',
+        'type' => 'select',
+        'options' => array_map(static function ($status) {
+            return [
+                'value' => (string)((int)($status['id'] ?? 0)),
+                'label' => (string)($status['label'] ?? ''),
+            ];
+        }, $rackStatuses),
     ],
 ];
 $rackExtraFieldsJson = htmlspecialchars(
