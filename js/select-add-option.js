@@ -5,6 +5,7 @@
     window.ITM_SELECT_ADD_OPTION_INITIALIZED = true;
 
     const ADD_VALUE = '__add_new__';
+    let modalStylesInjected = false;
 
     function escapeHtml(value) {
         return String(value)
@@ -69,19 +70,92 @@
         return `<option value="">-- Select --</option>${optionHtml}`;
     }
 
+    function ensureModalStyles() {
+        if (modalStylesInjected) return;
+        modalStylesInjected = true;
+
+        const style = document.createElement('style');
+        style.id = 'itm-select-add-option-modal-styles';
+        style.textContent = `
+            .itm-add-option-overlay{
+                position:fixed;
+                inset:0;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                z-index:9999;
+                padding:16px;
+                background:rgba(0,0,0,.45);
+                backdrop-filter: blur(2px);
+            }
+            .itm-add-option-card{
+                width:min(560px,100%);
+                border:1px solid var(--border);
+                border-radius:12px;
+                background:var(--bg-primary);
+                color:var(--text-primary);
+                box-shadow:var(--shadow-lg);
+                padding:18px;
+            }
+            .itm-add-option-heading{
+                margin:0 0 12px 0;
+                color:var(--text-primary);
+            }
+            .itm-add-option-group{
+                margin-bottom:10px;
+            }
+            .itm-add-option-label{
+                display:block;
+                font-weight:600;
+                margin-bottom:4px;
+                color:var(--text-primary);
+            }
+            .itm-add-option-input{
+                width:100%;
+                padding:8px;
+                border:1px solid var(--border);
+                border-radius:6px;
+                background-color:var(--bg-primary);
+                color:var(--text-primary);
+            }
+            .itm-add-option-actions{
+                display:flex;
+                justify-content:flex-end;
+                gap:8px;
+                margin-top:8px;
+            }
+            .itm-add-option-actions button{
+                border:1px solid var(--border);
+                border-radius:6px;
+                padding:8px 12px;
+                font-size:14px;
+                cursor:pointer;
+                background:var(--bg-secondary);
+                color:var(--text-primary);
+            }
+            .itm-add-option-actions button[type="submit"]{
+                border-color:var(--accent);
+                background:var(--accent);
+                color:#fff;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     function openAddModal(selectEl, fields) {
         return new Promise((resolve) => {
+            ensureModalStyles();
             const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;';
+            overlay.className = 'itm-add-option-overlay';
 
             const card = document.createElement('div');
-            card.style.cssText = 'width:min(560px,100%);background:#fff;border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.25);padding:18px;';
+            card.className = 'itm-add-option-card';
             overlay.appendChild(card);
 
             const title = selectEl.getAttribute('data-add-friendly') || 'value';
             const heading = document.createElement('h3');
             heading.textContent = 'Add New ' + title.charAt(0).toUpperCase() + title.slice(1);
-            heading.style.margin = '0 0 12px 0';
+            heading.className = 'itm-add-option-heading';
             card.appendChild(heading);
 
             const form = document.createElement('form');
@@ -92,10 +166,10 @@
 
             allFields.forEach((field) => {
                 const group = document.createElement('div');
-                group.style.marginBottom = '10px';
+                group.className = 'itm-add-option-group';
                 const label = document.createElement('label');
                 label.textContent = field.label + ' *';
-                label.style.cssText = 'display:block;font-weight:600;margin-bottom:4px;';
+                label.className = 'itm-add-option-label';
                 group.appendChild(label);
 
                 let input;
@@ -110,13 +184,13 @@
 
                 input.required = true;
                 input.name = field.name;
-                input.style.cssText = 'width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;';
+                input.className = 'itm-add-option-input';
                 group.appendChild(input);
                 form.appendChild(group);
             });
 
             const actions = document.createElement('div');
-            actions.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:8px;';
+            actions.className = 'itm-add-option-actions';
             actions.innerHTML = '<button type="button" data-cancel="1">Cancel</button><button type="submit">Save</button>';
             form.appendChild(actions);
 
