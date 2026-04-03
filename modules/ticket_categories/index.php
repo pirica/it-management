@@ -479,7 +479,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-$perPage = 25;
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
 $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
 $totalRows = 0;
 if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
