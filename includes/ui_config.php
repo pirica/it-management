@@ -516,7 +516,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
     $config = itm_normalize_ui_configuration($input);
 
     $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
