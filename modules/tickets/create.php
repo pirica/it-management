@@ -17,6 +17,11 @@ function ticket_parse_photo_filenames($rawValue): array
     }));
 }
 
+function ticket_photo_public_path(string $filename): string
+{
+    return '../../tickets_photos/' . rawurlencode($filename);
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
@@ -202,6 +207,7 @@ $statuses = mysqli_query($conn, "SELECT id,name,color FROM ticket_statuses WHERE
 $priorities = mysqli_query($conn, "SELECT id,name,color FROM ticket_priorities WHERE company_id=$company_id AND active=1 ORDER BY level");
 $users = mysqli_query($conn, "SELECT id,username FROM users WHERE company_id=$company_id AND active=1 ORDER BY username");
 $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$company_id AND active=1 ORDER BY name");
+$existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -319,6 +325,20 @@ $assets = mysqli_query($conn, "SELECT id,name FROM equipment WHERE company_id=$c
                         <label>Photo Upload</label>
                         <input type="file" name="photo[]" accept="image/*" multiple="">
                         <div class="form-hint">You can upload one or many photos at once.</div>
+                        <?php if (!empty($existingTicketPhotos)): ?>
+                            <div class="form-hint" style="margin-top:8px;">Existing photos:</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
+                                <?php foreach ($existingTicketPhotos as $ticketPhoto): ?>
+                                    <a href="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>" target="_blank" rel="noopener noreferrer">
+                                        <img
+                                            src="<?php echo sanitize(ticket_photo_public_path($ticketPhoto)); ?>"
+                                            alt="Ticket photo"
+                                            style="width:92px;height:92px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
+                                        >
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="form-group">
