@@ -572,7 +572,7 @@ if (!empty($_SESSION['crud_success'])) {
 
             const switchManager = document.getElementById('switchManager');
             switchManager.style.setProperty('--rj45-row-count', '12');
-            switchManager.style.setProperty('--switch-port-size', rj45Ports.length > 25 ? '62.9px' : '74px');
+            switchManager.style.setProperty('--switch-port-size', rj45Ports.length > 25 ? '55.5px' : '74px');
             switchManager.classList.remove('switch-manager-compact', 'switch-manager-half');
 
             const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
