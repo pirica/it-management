@@ -553,6 +553,19 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     var pendingDeletedPhotoIndexes = new Set();
     var totalCurrentPhotos = deletePhotoItemButtons.length;
 
+    function resetPendingPhotoDeletionState() {
+        pendingDeletedPhotoIndexes.clear();
+        if (deletePhotoInput) {
+            deletePhotoInput.value = '0';
+        }
+        if (deletePhotoIndexesInput) {
+            deletePhotoIndexesInput.value = '';
+        }
+        if (deletePhotoButton) {
+            deletePhotoButton.disabled = false;
+        }
+    }
+
     function syncDeletePhotoIndexes() {
         if (!deletePhotoIndexesInput) {
             return;
@@ -583,6 +596,13 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
         photoPreviewModal.style.display = 'none';
         photoPreviewModal.setAttribute('aria-hidden', 'true');
     }
+
+    resetPendingPhotoDeletionState();
+    updateCurrentPhotoHint();
+    window.addEventListener('pageshow', function () {
+        resetPendingPhotoDeletionState();
+        updateCurrentPhotoHint();
+    });
 
     if (openPhotoPreview && photoPreviewModal) {
         openPhotoPreview.addEventListener('click', function (event) {
