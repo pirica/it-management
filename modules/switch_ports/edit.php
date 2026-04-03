@@ -407,6 +407,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $newKey = $name . '__new_value';
             $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
 
+            if ($name === 'port_type' && $value !== null && $value !== '' && $value !== '__add_new__' && $value !== '__new__') {
+                $fk = $fkMap[$name];
+                $fkTable = $fk['REFERENCED_TABLE_NAME'];
+                $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+                $valueEsc = mysqli_real_escape_string($conn, (string)$value);
+                $canonicalSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
+                    . ' WHERE LOWER(' . cr_escape_identifier($fkCol) . ")=LOWER('" . $valueEsc . "')";
+                if ($company_id > 0 && itm_table_has_column($conn, $fkTable, 'company_id')) {
+                    $canonicalSql .= ' AND company_id=' . (int)$company_id;
+                }
+                $canonicalSql .= ' ORDER BY ' . cr_escape_identifier($fkCol) . ' ASC LIMIT 1';
+                $canonicalRes = mysqli_query($conn, $canonicalSql);
+                if ($canonicalRes && ($canonicalRow = mysqli_fetch_assoc($canonicalRes)) && isset($canonicalRow['id'])) {
+                    $value = (string)$canonicalRow['id'];
+                }
+            }
+
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
                 $data[$name] = 'NULL';
@@ -666,7 +683,13 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <?php endif; ?>
                                     <?php foreach ($opts as $opt): ?>
                                         <?php $optId = (string)($opt['id'] ?? ''); ?>
-                                        <option value="<?php echo sanitize($optId); ?>" <?php echo ((string)$displayVal === $optId) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php
+                                            $isSelected = ((string)$displayVal === $optId);
+                                            if (!$isSelected && $crud_table === 'switch_ports' && $name === 'port_type') {
+                                                $isSelected = (strcasecmp((string)$displayVal, $optId) === 0);
+                                            }
+                                        ?>
+                                        <option value="<?php echo sanitize($optId); ?>" <?php echo $isSelected ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
