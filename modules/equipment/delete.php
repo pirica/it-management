@@ -25,6 +25,37 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
     );
 }
 
+function equipment_parse_photo_filenames($rawValue): array
+{
+    if ($rawValue === null) {
+        return [];
+    }
+
+    $value = trim((string)$rawValue);
+    if ($value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        $items = $decoded;
+    } elseif (str_contains($value, ',')) {
+        $items = explode(',', $value);
+    } else {
+        $items = [$value];
+    }
+
+    $filenames = [];
+    foreach ($items as $item) {
+        $filename = basename((string)$item);
+        if ($filename !== '') {
+            $filenames[$filename] = $filename;
+        }
+    }
+
+    return array_values($filenames);
+}
+
 $debugRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
 $debugPost = $_POST;
@@ -76,8 +107,8 @@ $row = mysqli_fetch_assoc($checkResult);
 
 equipment_delete_idf_data($conn, (int)$company_id, $id);
 
-if (!empty($row['photo_filename'])) {
-    $path = UPLOAD_PATH . $row['photo_filename'];
+foreach (equipment_parse_photo_filenames($row['photo_filename'] ?? '') as $photoFilename) {
+    $path = UPLOAD_PATH . $photoFilename;
     if (is_file($path)) {
         @unlink($path);
     }
