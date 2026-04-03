@@ -231,18 +231,6 @@
 
     async function collectInput(selectEl) {
         const extraFields = parseExtraFieldConfig(selectEl);
-        if (extraFields.length === 0) {
-            const label = selectEl.getAttribute('data-add-friendly') || 'value';
-            const typed = window.prompt('Add new ' + label + ':');
-            if (typed === null) return null;
-            const newValue = typed.trim();
-            if (!newValue) {
-                window.alert('Please type a value first.');
-                return false;
-            }
-            return { new_value: newValue, extra_fields: {} };
-        }
-
         const result = await openAddModal(selectEl, extraFields);
         if (result === null) return null;
         const extraPayload = {};
