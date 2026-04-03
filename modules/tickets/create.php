@@ -28,21 +28,38 @@ function ticket_detect_upload_mime_type(string $tmpName): string
         return '';
     }
 
-    if (function_exists('finfo_open')) {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    if (function_exists('finfo_open') && defined('FILEINFO_MIME_TYPE')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
         if ($finfo !== false) {
-            $mime = finfo_file($finfo, $tmpName);
-            finfo_close($finfo);
+            $mime = @finfo_file($finfo, $tmpName);
+            @finfo_close($finfo);
             if (is_string($mime) && $mime !== '') {
-                return $mime;
+                return strtolower($mime);
             }
         }
     }
 
     if (function_exists('mime_content_type')) {
-        $mime = mime_content_type($tmpName);
+        $mime = @mime_content_type($tmpName);
         if (is_string($mime) && $mime !== '') {
-            return $mime;
+            return strtolower($mime);
+        }
+    }
+
+    $imageInfo = @getimagesize($tmpName);
+    if (is_array($imageInfo) && isset($imageInfo['mime']) && $imageInfo['mime'] !== '') {
+        return strtolower((string)$imageInfo['mime']);
+    }
+
+    if (function_exists('exif_imagetype')) {
+        $imageType = @exif_imagetype($tmpName);
+        $imageTypeMimeMap = [
+            IMAGETYPE_JPEG => 'image/jpeg',
+            IMAGETYPE_PNG => 'image/png',
+            IMAGETYPE_GIF => 'image/gif',
+        ];
+        if (isset($imageTypeMimeMap[$imageType])) {
+            return $imageTypeMimeMap[$imageType];
         }
     }
 
@@ -141,6 +158,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tmpName = (string)($_FILES['photo']['tmp_name'][$index] ?? '');
             $name = (string)($_FILES['photo']['name'][$index] ?? '');
             $mime = ticket_detect_upload_mime_type($tmpName);
+            $mimeAliases = [
+                'image/x-png' => 'image/png',
+                'image/pjpeg' => 'image/jpeg',
+            ];
+            if (isset($mimeAliases[$mime])) {
+                $mime = $mimeAliases[$mime];
+            }
+
             if (!in_array($mime, ALLOWED_TYPES, true)) {
                 $error = 'One of the uploaded files has an unsupported image type.';
                 break;
