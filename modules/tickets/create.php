@@ -311,6 +311,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         @unlink($existingPhotoPath);
                     }
                 }
+                if ($is_edit) {
+                    header('Location: edit.php?id=' . $id . '&saved=1');
+                    exit;
+                }
                 header('Location: index.php');
                 exit;
             }
