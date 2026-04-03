@@ -71,6 +71,20 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+$itmAuditUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+$itmAuditCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+$itmAuditUsername = isset($_SESSION['username']) ? (string)$_SESSION['username'] : '';
+$itmAuditEmail = isset($_SESSION['email']) ? (string)$_SESSION['email'] : '';
+$itmAuditIp = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
+$itmAuditUserAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
+
+mysqli_query($conn, 'SET @app_user_id = ' . ($itmAuditUserId === null ? 'NULL' : (string)$itmAuditUserId));
+mysqli_query($conn, 'SET @app_company_id = ' . (string)$itmAuditCompanyId);
+mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $itmAuditUsername) . "'");
+mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $itmAuditEmail) . "'");
+mysqli_query($conn, "SET @app_ip_address = '" . mysqli_real_escape_string($conn, $itmAuditIp) . "'");
+mysqli_query($conn, "SET @app_user_agent = '" . mysqli_real_escape_string($conn, $itmAuditUserAgent) . "'");
+
 // Redirect if not logged in (except auth/public pages)
 $current_file = basename($_SERVER['PHP_SELF']);
 if (!isset($_SESSION['user_id']) && !in_array($current_file, ['login.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)) {
@@ -125,45 +139,12 @@ function escape_sql($data, $conn) {
 function itm_run_query($conn, $sql, &$errorCode = null, &$errorMessage = null) {
     $errorCode = null;
     $errorMessage = null;
-    $auditMeta = function_exists('itm_parse_audit_sql') ? itm_parse_audit_sql($sql) : null;
-    $auditOldValues = null;
-
-    if ($auditMeta && in_array($auditMeta['action'], ['UPDATE', 'DELETE'], true) && (int)$auditMeta['record_id'] > 0) {
-        $auditOldValues = itm_fetch_audit_record($conn, $auditMeta['table'], (int)$auditMeta['record_id']);
-        if ($auditOldValues === null) {
-            $auditOldValues = itm_fetch_audit_record_by_id($conn, $auditMeta['table'], (int)$auditMeta['record_id']);
-        }
-    }
 
     try {
         $result = mysqli_query($conn, $sql);
         if ($result === false) {
             $errorCode = (int)mysqli_errno($conn);
             $errorMessage = (string)mysqli_error($conn);
-        } elseif ($auditMeta) {
-            $auditRecordId = (int)$auditMeta['record_id'];
-            if ($auditMeta['action'] === 'INSERT' && $auditRecordId <= 0) {
-                $auditRecordId = (int)mysqli_insert_id($conn);
-            }
-
-            if ($auditRecordId > 0) {
-                $auditNewValues = null;
-                if (in_array($auditMeta['action'], ['INSERT', 'UPDATE'], true)) {
-                    $auditNewValues = itm_fetch_audit_record($conn, $auditMeta['table'], $auditRecordId);
-                    if ($auditNewValues === null) {
-                        $auditNewValues = itm_fetch_audit_record_by_id($conn, $auditMeta['table'], $auditRecordId);
-                    }
-                }
-
-                itm_log_audit(
-                    $conn,
-                    $auditMeta['table'],
-                    $auditRecordId,
-                    $auditMeta['action'],
-                    $auditOldValues,
-                    $auditNewValues
-                );
-            }
         }
         return $result;
     } catch (Throwable $t) {

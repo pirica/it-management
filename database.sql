@@ -1356,6 +1356,8 @@ CREATE TABLE `audit_logs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `user_id` int DEFAULT NULL,
+  `actor_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `actor_email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `record_id` int NOT NULL,
   `action` enum('INSERT','UPDATE','DELETE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -1367,6 +1369,8 @@ CREATE TABLE `audit_logs` (
   PRIMARY KEY (`id`),
   KEY `idx_audit_logs_company` (`company_id`),
   KEY `idx_audit_logs_user` (`user_id`),
+  KEY `idx_audit_logs_actor_username` (`actor_username`),
+  KEY `idx_audit_logs_actor_email` (`actor_email`),
   KEY `idx_audit_logs_table_record` (`table_name`,`record_id`),
   KEY `idx_audit_logs_action` (`action`),
   KEY `idx_audit_logs_changed_at` (`changed_at`),
@@ -1829,5 +1833,115 @@ WHERE t.`company_id` = 1
 INSERT INTO `ui_configuration` (`company_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `records_per_page`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`records_per_page`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id`);
 INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `workstations` (`company_id`, `equipment_id`, `hostname`, `workstation_code`, `workstation_mode_id`, `assigned_to_employee_id`, `assigned_to_department_id`, `assignment_type_id`, `department`, `status_id`) SELECT c.`id`, t.`equipment_id`, t.`hostname`, t.`workstation_code`, t.`workstation_mode_id`, t.`assigned_to_employee_id`, t.`assigned_to_department_id`, t.`assignment_type_id`, t.`department`, t.`status_id` FROM `workstations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+
+
+-- Build database-level audit triggers for every application table.
+DROP PROCEDURE IF EXISTS `sp_install_audit_triggers`;
+DELIMITER $$
+CREATE PROCEDURE `sp_install_audit_triggers`()
+BEGIN
+    DECLARE done INT DEFAULT 0;
+    DECLARE v_table VARCHAR(128);
+    DECLARE v_json_new LONGTEXT;
+    DECLARE v_json_old LONGTEXT;
+    DECLARE v_has_company INT DEFAULT 0;
+    DECLARE v_has_id INT DEFAULT 0;
+    DECLARE v_company_expr_insert VARCHAR(255);
+    DECLARE v_company_expr_update VARCHAR(255);
+    DECLARE v_company_expr_delete VARCHAR(255);
+    DECLARE v_record_expr_insert VARCHAR(255);
+    DECLARE v_record_expr_update VARCHAR(255);
+    DECLARE v_record_expr_delete VARCHAR(255);
+
+    DECLARE table_cursor CURSOR FOR
+        SELECT TABLE_NAME
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_TYPE = 'BASE TABLE'
+          AND TABLE_NAME <> 'audit_logs';
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+    OPEN table_cursor;
+
+    table_loop: LOOP
+        FETCH table_cursor INTO v_table;
+        IF done = 1 THEN
+            LEAVE table_loop;
+        END IF;
+
+        SELECT CONCAT('JSON_OBJECT(', GROUP_CONCAT(CONCAT("'", COLUMN_NAME, "', NEW.`", COLUMN_NAME, "`") ORDER BY ORDINAL_POSITION SEPARATOR ', '), ')')
+          INTO v_json_new
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = v_table;
+
+        SELECT CONCAT('JSON_OBJECT(', GROUP_CONCAT(CONCAT("'", COLUMN_NAME, "', OLD.`", COLUMN_NAME, "`") ORDER BY ORDINAL_POSITION SEPARATOR ', '), ')')
+          INTO v_json_old
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = v_table;
+
+        SELECT COUNT(*)
+          INTO v_has_company
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = v_table
+          AND COLUMN_NAME = 'company_id';
+
+        SELECT COUNT(*)
+          INTO v_has_id
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = v_table
+          AND COLUMN_NAME = 'id';
+
+        SET v_company_expr_insert = IF(v_has_company > 0, 'COALESCE(@app_company_id, NEW.`company_id`, 0)', 'COALESCE(@app_company_id, 0)');
+        SET v_company_expr_update = IF(v_has_company > 0, 'COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0)', 'COALESCE(@app_company_id, 0)');
+        SET v_company_expr_delete = IF(v_has_company > 0, 'COALESCE(@app_company_id, OLD.`company_id`, 0)', 'COALESCE(@app_company_id, 0)');
+        SET v_record_expr_insert = IF(v_has_id > 0, 'COALESCE(NEW.`id`, 0)', '0');
+        SET v_record_expr_update = IF(v_has_id > 0, 'COALESCE(NEW.`id`, OLD.`id`, 0)', '0');
+        SET v_record_expr_delete = IF(v_has_id > 0, 'COALESCE(OLD.`id`, 0)', '0');
+
+        SET @sql_drop_insert = CONCAT('DROP TRIGGER IF EXISTS `trg_', v_table, '_audit_insert`');
+        PREPARE stmt FROM @sql_drop_insert; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_drop_update = CONCAT('DROP TRIGGER IF EXISTS `trg_', v_table, '_audit_update`');
+        PREPARE stmt FROM @sql_drop_update; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_drop_delete = CONCAT('DROP TRIGGER IF EXISTS `trg_', v_table, '_audit_delete`');
+        PREPARE stmt FROM @sql_drop_delete; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_create_insert = CONCAT(
+            'CREATE TRIGGER `trg_', v_table, '_audit_insert` AFTER INSERT ON `', v_table, '` FOR EACH ROW BEGIN ',
+            'INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`) ',
+            'VALUES (', v_company_expr_insert, ', @app_user_id, @app_username, @app_email, ', QUOTE(v_table), ', ', v_record_expr_insert, ', ''INSERT'', NULL, ', v_json_new, ', @app_ip_address, @app_user_agent); ',
+            'END'
+        );
+        PREPARE stmt FROM @sql_create_insert; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_create_update = CONCAT(
+            'CREATE TRIGGER `trg_', v_table, '_audit_update` AFTER UPDATE ON `', v_table, '` FOR EACH ROW BEGIN ',
+            'INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`) ',
+            'VALUES (', v_company_expr_update, ', @app_user_id, @app_username, @app_email, ', QUOTE(v_table), ', ', v_record_expr_update, ', ''UPDATE'', ', v_json_old, ', ', v_json_new, ', @app_ip_address, @app_user_agent); ',
+            'END'
+        );
+        PREPARE stmt FROM @sql_create_update; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+        SET @sql_create_delete = CONCAT(
+            'CREATE TRIGGER `trg_', v_table, '_audit_delete` AFTER DELETE ON `', v_table, '` FOR EACH ROW BEGIN ',
+            'INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`) ',
+            'VALUES (', v_company_expr_delete, ', @app_user_id, @app_username, @app_email, ', QUOTE(v_table), ', ', v_record_expr_delete, ', ''DELETE'', ', v_json_old, ', NULL, @app_ip_address, @app_user_agent); ',
+            'END'
+        );
+        PREPARE stmt FROM @sql_create_delete; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+    END LOOP;
+
+    CLOSE table_cursor;
+END$$
+DELIMITER ;
+CALL `sp_install_audit_triggers`();
+DROP PROCEDURE IF EXISTS `sp_install_audit_triggers`;
 
 SET FOREIGN_KEY_CHECKS=1;
