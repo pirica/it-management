@@ -57,7 +57,7 @@ $items = mysqli_query(
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>🎫 Tickets</h1>
+                <h1>🎟️ Tickets</h1>
                 <a class="btn btn-primary" href="create.php">➕</a>
             </div>
             <div class="card" style="margin-bottom:16px;">
