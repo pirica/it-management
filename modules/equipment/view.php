@@ -83,6 +83,7 @@ function equipment_field_label($key) {
         'is_printer' => 'Is Printer',
         'printer_device_type_name' => 'Printer Type',
         'printer_color_capable' => 'Printer Color Capable',
+        'printer_scan' => 'Printer Scan',
         'is_workstation' => 'Is Workstation',
         'is_server' => 'Is Server',
         'is_pos' => 'Is POS',
@@ -99,7 +100,7 @@ function equipment_field_label($key) {
 }
 
 function equipment_field_value($key, $value) {
-    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
+    if (in_array($key, ['is_printer', 'printer_scan', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
         return (int)$value === 1 ? 'Yes' : 'No';
     }
 
@@ -111,7 +112,7 @@ function equipment_field_is_populated($key, $value) {
         return false;
     }
 
-    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
+    if (in_array($key, ['is_printer', 'printer_scan', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
         return (int)$value === 1;
     }
 
@@ -134,7 +135,7 @@ function equipment_field_should_display($key) {
 }
 
 function equipment_field_matches_context($key, $item) {
-    if (!in_array($key, ['printer_color_capable', 'printer_device_type_name'], true)) {
+    if (!in_array($key, ['printer_color_capable', 'printer_scan', 'printer_device_type_name'], true)) {
         return true;
     }
 

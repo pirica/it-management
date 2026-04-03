@@ -259,7 +259,7 @@ $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'name' => '',
     'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '',
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
-    'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0,
+    'is_printer' => 0, 'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'is_workstation' => 0, 'is_server' => 0, 'is_pos' => 0, 'is_switch' => 0, 'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_office_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
     'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
@@ -289,7 +289,7 @@ if ($isEdit) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
     foreach ($data as $k => $v) {
-        if (in_array($k, ['is_printer', 'printer_color_capable', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
+        if (in_array($k, ['is_printer', 'printer_color_capable', 'printer_scan', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
             $data[$k] = isset($_POST[$k]) ? 1 : 0;
         } elseif ($k === 'photo_filename') {
             $data[$k] = $isEdit ? (string)($originalData['photo_filename'] ?? $v) : '';
@@ -446,6 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_printer = (int)$data['is_printer'];
         $printer_device_type_id = (int)$data['printer_device_type_id'] ?: 'NULL';
         $printer_color_capable = (int)$data['printer_color_capable'];
+        $printer_scan = (int)$data['printer_scan'];
         $is_workstation = (int)$data['is_workstation'];
         $is_server = (int)$data['is_server'];
         $is_pos = (int)$data['is_pos'];
@@ -490,7 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
                     status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
                     warranty_type_id=$warranty_type_id, is_printer=$is_printer, printer_device_type_id=$printer_device_type_id,
-                    printer_color_capable=$printer_color_capable,
+                    printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
                     is_workstation=$is_workstation, is_server=$is_server, is_pos=$is_pos, is_switch=$is_switch,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
                     $workstationOfficeUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
@@ -502,11 +503,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
                     ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
-                    printer_device_type_id, printer_color_capable, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
+                    printer_device_type_id, printer_color_capable, printer_scan, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
                     workstation_os_type_id$workstationOfficeInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_count_id, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
-                    $printer_device_type_id, $printer_color_capable, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
+                    $printer_device_type_id, $printer_color_capable, $printer_scan, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
                     $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_count_id, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
@@ -929,6 +930,10 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             var colorCapableInput = printerFields.querySelector('input[name="printer_color_capable"]');
             if (colorCapableInput) {
                 colorCapableInput.checked = false;
+            }
+            var printerScanInput = printerFields.querySelector('input[name="printer_scan"]');
+            if (printerScanInput) {
+                printerScanInput.checked = false;
             }
         }
     }
