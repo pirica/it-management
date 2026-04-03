@@ -276,6 +276,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $photoFilename = $data['photo_filename'];
+    $deleteCurrentPhoto = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
+    if (!$error && $isEdit && $deleteCurrentPhoto && $photoFilename !== '') {
+        $existingPhotoPath = UPLOAD_PATH . $photoFilename;
+        if (is_file($existingPhotoPath)) {
+            @unlink($existingPhotoPath);
+        }
+        $photoFilename = '';
+    }
+
     if (!$error && isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
         if ($_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
             $error = 'Photo upload failed.';
@@ -293,6 +302,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $photoFilename = 'equipment_' . time() . '_' . mt_rand(1000, 9999) . '.' . strtolower($ext);
                 if (!move_uploaded_file($_FILES['photo']['tmp_name'], UPLOAD_PATH . $photoFilename)) {
                     $error = 'Unable to save photo file.';
+                } elseif ($isEdit && !empty($data['photo_filename']) && $data['photo_filename'] !== $photoFilename) {
+                    $oldPhotoPath = UPLOAD_PATH . $data['photo_filename'];
+                    if (is_file($oldPhotoPath)) {
+                        @unlink($oldPhotoPath);
+                    }
                 }
             }
         }
@@ -570,7 +584,7 @@ if (!empty($data['photo_filename'])) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
-                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo" accept="image/*"><?php if (!empty($data['photo_filename'])): ?><div class="form-hint">Current: <?php echo sanitize($data['photo_filename']); ?><a href="#" class="photo-preview-link" id="openPhotoPreview">View</a></div><?php endif; ?></div>
+                <div class="form-group"><label>Photo Upload</label><input type="file" name="photo" accept="image/*"><?php if (!empty($data['photo_filename'])): ?><input type="hidden" name="delete_photo" id="deletePhotoInput" value="0"><div class="form-hint" id="currentPhotoHint">Current: <?php echo sanitize($data['photo_filename']); ?><a href="#" class="photo-preview-link" id="openPhotoPreview">View</a><button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete</button></div><?php endif; ?></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -734,6 +748,10 @@ if (!empty($data['photo_filename'])) {
     var openPhotoPreview = document.getElementById('openPhotoPreview');
     var photoPreviewModal = document.getElementById('photoPreviewModal');
     var closePhotoPreview = document.getElementById('closePhotoPreview');
+    var deletePhotoButton = document.getElementById('deletePhotoButton');
+    var deletePhotoInput = document.getElementById('deletePhotoInput');
+    var currentPhotoHint = document.getElementById('currentPhotoHint');
+    var photoInput = document.querySelector('input[name="photo"]');
 
     function hidePhotoModal() {
         if (!photoPreviewModal) {
@@ -760,6 +778,20 @@ if (!empty($data['photo_filename'])) {
             if (event.key === 'Escape') {
                 hidePhotoModal();
             }
+        });
+    }
+
+    if (deletePhotoButton && deletePhotoInput) {
+        deletePhotoButton.addEventListener('click', function () {
+            deletePhotoInput.value = '1';
+            hidePhotoModal();
+            if (currentPhotoHint) {
+                currentPhotoHint.textContent = 'Current photo will be deleted after you save.';
+            }
+            if (photoInput) {
+                photoInput.value = '';
+            }
+            deletePhotoButton.disabled = true;
         });
     }
 })();
