@@ -482,6 +482,7 @@ $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 $recordsPerPageSetting = strtolower((string)($ui_config['records_per_page'] ?? '25'));
 $showBulkTableActions = ctype_digit($recordsPerPageSetting) && (int)$recordsPerPageSetting > 0;
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$showBulkTableActions = ($perPage !== 1000000);
 $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
 $totalRows = 0;
 if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
