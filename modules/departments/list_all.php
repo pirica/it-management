@@ -414,9 +414,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
-$where = '';
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$searchClauses = [];
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchPatternEsc = mysqli_real_escape_string($conn, $searchPattern);
+    foreach ($fieldColumns as $col) {
+        $searchClauses[] = cr_escape_identifier($col['Field']) . " LIKE '" . $searchPatternEsc . "'";
+    }
+}
+
+$whereParts = [];
 if ($hasCompany && $company_id > 0) {
-    $where = ' WHERE company_id=' . (int)$company_id;
+    $whereParts[] = 'company_id=' . (int)$company_id;
+}
+if (!empty($searchClauses)) {
+    $whereParts[] = '(' . implode(' OR ', $searchClauses) . ')';
+}
+$where = '';
+if (!empty($whereParts)) {
+    $where = ' WHERE ' . implode(' AND ', $whereParts);
 }
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
@@ -457,6 +474,16 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <h1><?php echo sanitize($crud_title); ?></h1>
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;">
+                        <div class="form-group" style="margin:0;flex:1;">
+                            <label for="departmentSearch">Search (all fields)</label>
+                            <input type="text" id="departmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%abc%%">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <a href="list_all.php" class="btn">Clear</a>
+                    </form>
+                </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
@@ -465,7 +492,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
