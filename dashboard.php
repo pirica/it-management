@@ -124,7 +124,7 @@ if ($userDisplayName !== '' && $userEmail !== '') {
         <div class="main-content">
             <?php include 'includes/header.php'; ?>
 
-<!--            <div> -->
+
             <div  class="content" style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">📊 Dashboard</h1>
                 
