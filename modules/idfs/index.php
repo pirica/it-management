@@ -41,6 +41,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
+    itm_require_post_csrf();
+
+    $idf_id = (int)($_POST['idf_id'] ?? 0);
+    if ($idf_id <= 0 || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Invalid IDF selected for deletion.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $checkSql = "SELECT id FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1";
+    $checkRes = mysqli_query($conn, $checkSql);
+    if (!$checkRes || !mysqli_fetch_assoc($checkRes)) {
+        $_SESSION['crud_error'] = 'IDF not found.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $deleteSql = "DELETE FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1";
+    if (!mysqli_query($conn, $deleteSql)) {
+        $_SESSION['crud_error'] = 'DB error deleting IDF: ' . mysqli_error($conn);
+        header('Location: index.php');
+        exit;
+    }
+
+    $_SESSION['crud_success'] = 'IDF deleted successfully.';
+    header('Location: index.php');
+    exit;
+}
+
 $locations = [];
 if ($company_id > 0) {
     $resLoc = mysqli_query($conn, "SELECT id, name FROM it_locations WHERE company_id=$company_id ORDER BY name");
@@ -195,8 +225,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
                                 <td><?php echo sanitize($idf['location_name']); ?></td>
                                 <td><?php echo sanitize((string)$idf['created_at']); ?></td>
-                                <td>
+                                <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>">Open</a>
+                                    <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
+                                        <input type="hidden" name="delete_idf" value="1">
+                                        <input type="hidden" name="idf_id" value="<?php echo (int)$idf['id']; ?>">
+                                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
