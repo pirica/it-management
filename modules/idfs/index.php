@@ -135,6 +135,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
         }
         .idf-panel h3 { margin: 0 0 12px; display:flex; justify-content:space-between; align-items:center; }
         .idf-list-table tbody tr:hover { background: var(--bg-secondary); }
+        .idf-list-table tbody tr[data-open-url] { cursor: pointer; }
         @media (max-width: 1080px) {
             .idf-layout-grid { grid-template-columns: 1fr; }
             .idf-stat-grid { width: 100%; min-width: unset; }
@@ -219,7 +220,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <tr><td colspan="6" style="opacity:.8;">No IDFs yet.</td></tr>
                         <?php endif; ?>
                         <?php foreach ($idfs as $idf): ?>
-                            <tr>
+                            <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
                                 <td><?php echo (int)$idf['id']; ?></td>
                                 <td><?php echo sanitize($idf['name']); ?></td>
                                 <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
@@ -245,5 +246,20 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </div>
 </div>
 <script src="../../js/select-add-option.js"></script>
+<script>
+document.addEventListener('click', function (event) {
+    var openControl = event.target.closest('a, button, input, select, textarea, form');
+    if (openControl) {
+        return;
+    }
+
+    var row = event.target.closest('tr[data-open-url]');
+    if (!row) {
+        return;
+    }
+
+    window.location.href = row.getAttribute('data-open-url');
+});
+</script>
 </body>
 </html>
