@@ -112,6 +112,26 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalRows = 0;
+$countSql = "SELECT COUNT(*) AS total_rows FROM system_access WHERE company_id = ?{$searchSql}";
+$countStmt = mysqli_prepare($conn, $countSql);
+if ($countStmt) {
+    if ($bindSearch !== '') {
+        mysqli_stmt_bind_param($countStmt, 'issss', $company_id, $bindSearch, $bindSearch, $bindSearch, $bindSearch);
+    } else {
+        mysqli_stmt_bind_param($countStmt, 'i', $company_id);
+    }
+    mysqli_stmt_execute($countStmt);
+    $countRes = mysqli_stmt_get_result($countStmt);
+    if ($countRes) {
+        $countRow = mysqli_fetch_assoc($countRes);
+        $totalRows = (int)($countRow['total_rows'] ?? 0);
+    }
+    mysqli_stmt_close($countStmt);
+}
+$showBulkTableActions = ($perPage <= $totalRows);
+
 if (($_GET['export'] ?? '') === 'csv') {
     $rows = false;
     $exportSql = "SELECT code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql}";
@@ -201,6 +221,15 @@ if ($stmt) {
                     </div>
                     <button type="submit" class="btn btn-sm">📥 Import</button>
                 </form>
+            </div>
+
+            <div class="card" style="margin-bottom:16px;">
+                <?php if ($showBulkTableActions): ?>
+                    <form method="POST" action="delete.php" style="display:flex;gap:8px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    </form>
+                <?php endif; ?>
             </div>
 
             <div class="card">

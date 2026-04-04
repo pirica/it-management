@@ -11,6 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 itm_require_post_csrf();
 
+$bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+
+if ($bulkAction === 'clear_table') {
+    mysqli_query($conn, 'DELETE FROM system_access WHERE company_id=' . (int)$company_id);
+    header('Location: index.php');
+    exit;
+}
+
 $id = (int)($_POST['id'] ?? 0);
 if ($id > 0) {
     $usageError = '';
