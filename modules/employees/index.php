@@ -566,6 +566,10 @@ function emp_build_query($params) {
     return http_build_query($normalized);
 }
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '👤 Employees';
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 
 ?>
 <!DOCTYPE html>
@@ -607,10 +611,17 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                 </div>
             <?php endif; ?>
 
-            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <a href="create.php" class="btn btn-primary">➕ New Employee</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="create.php" class="btn btn-primary">➕ New Employee</a>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <a href="create.php" class="btn btn-primary">➕ New Employee</a>
+                    <?php endif; ?>
                     <?php if ($showDuplicatesOnly): ?>
                         <a href="index.php?<?php echo sanitize(emp_build_query(['search' => $searchRaw])); ?>" class="btn btn-sm">Show All</a>
                     <?php else: ?>

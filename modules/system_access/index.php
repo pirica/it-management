@@ -179,6 +179,10 @@ if ($stmt) {
     $items = mysqli_stmt_get_result($stmt);
     mysqli_stmt_close($stmt);
 }
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -194,9 +198,18 @@ if ($stmt) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <a class="btn btn-primary" href="create.php">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1>🛡️ System Access</h1>
-                <a class="btn btn-primary" href="create.php">➕</a>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <a class="btn btn-primary" href="create.php">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <?php foreach ($messages as $message): ?>
