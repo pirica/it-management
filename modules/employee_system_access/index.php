@@ -50,12 +50,30 @@ $sortSql = $sort === 'employee_name'
     ? "COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) {$dir}"
     : ($sort === 'email' ? "e.email {$dir}" : "COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) ASC");
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalRows = 0;
+$countSql = "SELECT COUNT(*) AS total_rows FROM employees e{$where}";
+$countRes = mysqli_query($conn, $countSql);
+if ($countRes) {
+    $countRow = mysqli_fetch_assoc($countRes);
+    $totalRows = (int)($countRow['total_rows'] ?? 0);
+}
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+
 $sql = "SELECT e.id AS employee_id,
             COALESCE(NULLIF(e.display_name, ''), CONCAT(e.first_name, ' ', e.last_name)) AS employee_name,
             e.email
         FROM employees e"
         . $where
-        . ' ORDER BY ' . $sortSql . ' LIMIT 1000';
+        . ' ORDER BY ' . $sortSql . " LIMIT {$offset}, {$perPage}";
 $rows = mysqli_query($conn, $sql);
 
 $employees = [];
@@ -200,6 +218,20 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                     </tbody>
                 </table>
             </div>
+            <?php if ($totalRows > $perPage): ?>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                    <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1])); ?>">Previous</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1])); ?>">Next</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
