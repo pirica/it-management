@@ -208,8 +208,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                 <div class="idf-rack-title">Rack Face (10 positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
-                                    · Company ID: <?php echo (int)($idf['company_id'] ?? 0); ?>
-                                    · Location ID: <?php echo (int)($idf['location_id'] ?? 0); ?>
+                                    · Location: <?php echo sanitize((string)($idf['location_name'] ?? 'Unknown Location')); ?>
                                     · Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
                                     · IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
                                 </div>
