@@ -41,6 +41,10 @@ $items = mysqli_query(
      ORDER BY {$orderByMap[$sort]} {$dir}
      LIMIT " . (int)$perPage
 );
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -56,9 +60,18 @@ $items = mysqli_query(
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <a class="btn btn-primary" href="create.php">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1>📦 Inventory Items</h1>
-                <a class="btn btn-primary" href="create.php">➕</a>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <a class="btn btn-primary" href="create.php">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">

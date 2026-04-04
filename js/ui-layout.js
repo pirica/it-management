@@ -94,6 +94,9 @@
         });
 
         bars.forEach((bar, index) => {
+            if (bar.dataset.itmNewButtonManaged === 'server') {
+                return;
+            }
             const heading = bar.querySelector(':scope > h1, :scope > h2, :scope > h3');
             const primaryLink = bar.querySelector(':scope > a.btn.btn-primary, :scope .btn.btn-primary[href*=\"create\"], :scope .btn.btn-primary[href*=\"new\"]');
             if (!heading || !primaryLink) return;

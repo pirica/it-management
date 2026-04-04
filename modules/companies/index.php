@@ -38,6 +38,10 @@ if ($stmt) {
 $csrfToken = itm_get_csrf_token();
 $error = (string)($_SESSION['crud_error'] ?? '');
 unset($_SESSION['crud_error']);
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,9 +57,18 @@ unset($_SESSION['crud_error']);
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <a href="create.php" class="btn btn-primary">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1>🏢 Companies</h1>
-                <a href="create.php" class="btn btn-primary">➕</a>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <a href="create.php" class="btn btn-primary">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <?php if ($error !== ''): ?>

@@ -114,6 +114,10 @@ if ($hasSelectedSwitch) {
         }
     }
 }
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -129,7 +133,7 @@ if ($hasSelectedSwitch) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
 <?php
 if (!empty($_SESSION['crud_error'])) {
     echo '<div class="crud_error">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
@@ -141,12 +145,19 @@ if (!empty($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 ?>
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <a href="create.php" class="btn btn-primary">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($equipmentModuleTitle ?? '🖥️ Equipment'); ?></h1>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <?php if ($hasSelectedSwitch): ?>
                         <button type="button" class="btn btn-sm" id="exportEquipmentPdfBtn">Export PDF</button>
                     <?php endif; ?>
-                    <a href="create.php" class="btn btn-primary">➕</a>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <a href="create.php" class="btn btn-primary">➕</a>
+                    <?php endif; ?>
                 </div>
             </div>
 
