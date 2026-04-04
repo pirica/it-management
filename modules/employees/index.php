@@ -563,8 +563,8 @@ function emp_build_query($params) {
     }
     return http_build_query($normalized);
 }
-
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '👤 Employees';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
