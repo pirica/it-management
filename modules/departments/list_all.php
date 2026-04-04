@@ -253,6 +253,52 @@ if ($crud_action === 'delete') {
 
     cr_require_valid_csrf_token();
 
+    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+
+    if ($bulkAction === 'clear_table') {
+        $where = '';
+        if ($hasCompany && $company_id > 0) {
+            $where = ' WHERE company_id=' . (int)$company_id;
+        }
+        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    if ($bulkAction === 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $idList = [];
+        foreach ($ids as $rawId) {
+            $id = (int)$rawId;
+            if ($id > 0) {
+                $idList[$id] = $id;
+            }
+        }
+
+        if (!empty($idList)) {
+            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
+            if ($hasCompany && $company_id > 0) {
+                $where .= ' AND company_id=' . (int)$company_id;
+            }
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            }
+        } else {
+            $_SESSION['crud_error'] = 'No records selected for deletion.';
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
@@ -260,8 +306,6 @@ if ($crud_action === 'delete') {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);
@@ -485,9 +529,11 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     </form>
                 </div>
                 <div class="card" style="overflow:auto;">
+                    <?php $tableColumnCount = count($fieldColumns) + 2; ?>
                     <table>
                         <thead>
                         <tr>
+                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php foreach ($fieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -502,10 +548,20 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
+                        <tr>
+                            <th colspan="<?php echo $tableColumnCount; ?>" style="text-align:left;">
+                                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                                </form>
+                            </th>
+                        </tr>
                         </thead>
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
+                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
@@ -514,13 +570,14 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo $tableColumnCount; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -627,6 +684,62 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+(function () {
+    const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
+    const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function () {
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = selectAllRows.checked;
+            });
+        });
+    }
+
+    if (bulkDeleteForm && toggleButton) {
+        setSelectionVisibility(false);
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            if (event.submitter !== toggleButton) {
+                return;
+            }
+
+            if (!selectionMode) {
+                event.preventDefault();
+                selectionMode = true;
+                setSelectionVisibility(true);
+                toggleButton.textContent = 'Delete Selected';
+                return;
+            }
+
+            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
+            if (!anySelected) {
+                event.preventDefault();
+                alert('Please select at least one record to delete.');
+                return;
+            }
+
+            if (!confirm('Delete selected records?')) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
 </script>
 
 </body>
