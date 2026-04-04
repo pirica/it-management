@@ -12,7 +12,7 @@ $device_type = (string)($data['device_type'] ?? 'other');
 $device_name = trim((string)($data['device_name'] ?? ''));
 $equipment_id = isset($data['equipment_id']) ? (int)$data['equipment_id'] : 0;
 $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] : 0;
-$port_count = 0;
+$port_count = isset($data['port_count']) ? (int)$data['port_count'] : 0;
 $notes = trim((string)($data['notes'] ?? ''));
 
 if ($switch_rj45_id > 0) {
@@ -78,6 +78,10 @@ if ($equipment_id > 0) {
              LIMIT 1"
         );
     }
+}
+
+if ($device_type === 'switch' && $switch_rj45_id <= 0) {
+    idf_fail('RJ45 Ports are required for switch devices');
 }
 
 $resIdf = mysqli_query($conn, "SELECT id FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1");

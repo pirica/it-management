@@ -392,13 +392,17 @@ foreach ($equipmentOptions as $equipmentOption) {
 
             <div>
                 <label class="label">Port Count</label>
-                <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
-                    <option value="">-- None --</option>
-                    <?php foreach ($switchRj45Options as $switchRj45Option): ?>
-                        <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
-                    <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
-                </select>
+                <input class="input" name="port_count" type="number" min="0" max="128" step="1" placeholder="e.g. 4">
+                <div id="idfSwitchRj45Wrap" style="display:none; margin-top:8px;">
+                    <label class="label" style="margin-bottom:4px;">RJ45 Ports *</label>
+                    <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
+                        <option value="">-- Select --</option>
+                        <?php foreach ($switchRj45Options as $switchRj45Option): ?>
+                            <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
+                        <?php endforeach; ?>
+                        <option value="__add_new__">➕</option>
+                    </select>
+                </div>
             </div>
 
             <div style="grid-column: 1 / -1;">
@@ -492,7 +496,9 @@ function applyEquipmentRelation(form) {
 
     form.device_name.value = equipment.name || '';
     form.switch_rj45_id.value = equipment.switch_rj45_id ? String(equipment.switch_rj45_id) : '';
+    form.port_count.value = equipment.port_count ? String(equipment.port_count) : '';
     form.notes.value = equipment.notes || '';
+    refreshPortCountInputs(form);
 }
 
 async function apiPost(path, body) {
@@ -543,12 +549,15 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.value = position.equipment_id || '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.switch_rj45_id.value = position.switch_rj45_id || '';
+                form.port_count.value = position.port_count || '';
                 form.notes.value = position.notes || '';
+                refreshPortCountInputs(form);
                 syncFieldsFromEquipment(form, false);
                 openModal();
             })
             .catch(err => alert(err.message));
     } else {
+        refreshPortCountInputs(form);
         syncFieldsFromEquipment(form, false);
         openModal();
     }
@@ -561,10 +570,26 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 
     form.device_name.value = meta.name || '';
     form.switch_rj45_id.value = meta.switch_rj45_id ? String(meta.switch_rj45_id) : '';
+    form.port_count.value = meta.port_count ? String(meta.port_count) : '';
     form.notes.value = meta.notes || '';
+    refreshPortCountInputs(form);
 
     if (shouldAlert) {
         alert('Device Name, Port Count, and Notes were filled from linked equipment.');
+    }
+}
+
+function refreshPortCountInputs(form) {
+    const isSwitch = form.device_type.value === 'switch';
+    const switchWrap = document.getElementById('idfSwitchRj45Wrap');
+    if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
+    form.switch_rj45_id.required = isSwitch;
+    form.port_count.readOnly = isSwitch;
+    if (isSwitch) {
+        form.port_count.placeholder = 'Auto from RJ45 selection';
+    } else {
+        form.port_count.placeholder = 'e.g. 4';
+        form.switch_rj45_id.value = '';
     }
 }
 
@@ -579,6 +604,7 @@ function saveDevice() {
         device_name: form.device_name.value.trim(),
         equipment_id: form.equipment_id.value ? Number(form.equipment_id.value) : null,
         switch_rj45_id: form.switch_rj45_id.value ? Number(form.switch_rj45_id.value) : null,
+        port_count: form.port_count.value === '' ? null : Number(form.port_count.value),
         notes: form.notes.value.trim(),
     };
     apiPost('position_save.php', payload)
@@ -589,6 +615,10 @@ function saveDevice() {
 document.getElementById('idfDeviceForm').equipment_id.addEventListener('change', function () {
     const form = document.getElementById('idfDeviceForm');
     syncFieldsFromEquipment(form, false);
+});
+document.getElementById('idfDeviceForm').device_type.addEventListener('change', function () {
+    const form = document.getElementById('idfDeviceForm');
+    refreshPortCountInputs(form);
 });
 
 function openCopyModal(positionNo, positionId) {
