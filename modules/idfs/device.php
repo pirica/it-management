@@ -104,6 +104,85 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <meta charset="utf-8" />
     <title>Device</title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
+    <style>
+        .idf-toolbar {
+            border:1px solid var(--border);
+            border-radius:18px;
+            padding:14px;
+            margin-bottom:14px;
+            background: linear-gradient(120deg, rgba(9,105,218,.14), rgba(9,105,218,.04));
+            box-shadow: var(--shadow);
+            display:flex;
+            justify-content:space-between;
+            gap:14px;
+            flex-wrap:wrap;
+            align-items:center;
+        }
+        .idf-toolbar .left,
+        .idf-toolbar .right {
+            display:flex;
+            align-items:center;
+            gap:10px;
+            flex-wrap:wrap;
+        }
+        .idf-rack-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .idf-badge {
+            display:inline-flex;
+            align-items:center;
+            gap:4px;
+            border:1px solid var(--border);
+            border-radius:999px;
+            font-size:11px;
+            padding:2px 8px;
+            background:var(--bg-secondary);
+        }
+        .idf-ports-table td,
+        .idf-ports-table th { vertical-align:middle; }
+        .idf-ports-table tr.idf-port-selected {
+            background: rgba(9, 105, 218, .14);
+            box-shadow: inset 0 0 0 1px rgba(9, 105, 218, .35);
+        }
+        .idf-swatch {
+            display:inline-block;
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            border:1px solid rgba(0,0,0,.2);
+            margin-right:6px;
+            vertical-align:middle;
+        }
+        .idf-grid-2 { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+        .idf-modal-backdrop {
+            display:none;
+            position:fixed;
+            top:0;
+            right:0;
+            bottom:0;
+            left:250px;
+            background:rgba(0, 0, 0, .45);
+            z-index:1200;
+            padding:20px;
+            overflow:auto;
+            align-items:flex-start;
+            justify-content:center;
+        }
+        .idf-modal {
+            width:min(560px, calc(100vw - 300px));
+            margin:24px auto;
+            border-radius:14px;
+            border:1px solid var(--border);
+            background:var(--bg-primary);
+            box-shadow: var(--shadow-lg);
+            padding:14px;
+        }
+        .idf-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; }
+        body.sidebar-collapsed .idf-modal-backdrop { left:0; }
+        @media (max-width: 768px) {
+            .idf-modal-backdrop { left:0; padding:12px; }
+            .idf-modal { width:100%; margin:10px auto; }
+            .idf-grid-2 { grid-template-columns:1fr; }
+        }
+    </style>
 </head>
 <body>
 <div class="container">
