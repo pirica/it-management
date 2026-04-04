@@ -3,14 +3,15 @@ require '../../config/config.php';
 
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
+
 if ($id > 0) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM departments WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT id, name, description, active FROM departments WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
-        $query = mysqli_stmt_get_result($stmt);
-        if ($query && mysqli_num_rows($query) === 1) {
-            $item = mysqli_fetch_assoc($query);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($result && mysqli_num_rows($result) === 1) {
+            $item = mysqli_fetch_assoc($result);
         }
         mysqli_stmt_close($stmt);
     }
@@ -21,7 +22,7 @@ if ($id > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Departments</title>
+    <title>View Department</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -30,36 +31,24 @@ if ($id > 0) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1>🔎 View Departments Record</h1>
+            <h1>🔎 Department Details</h1>
             <div class="card">
                 <?php if (!$item): ?>
-                    <div class="alert alert-danger">Record not found.</div>
+                    <div class="alert alert-danger">Department not found.</div>
                 <?php else: ?>
                     <table>
                         <tbody>
-                        <tr>
-                            <th style="width:220px;">ID</th>
-                            <td><?php echo (int)$item['id']; ?></td>
-                        </tr>
-                        <tr>
-                            <th>Name</th>
-                            <td><?php echo sanitize((string)($item['name'] ?? '')); ?></td>
-                        </tr>
-                        <tr>
-                            <th>Description</th>
-                            <td><?php echo sanitize((string)($item['description'] ?? '')); ?></td>
-                        </tr>
-                        <tr>
-                            <th>Active</th>
-                            <td><?php echo (int)($item['active'] ?? 0) === 1 ? '✅' : '❌'; ?></td>
-                        </tr>
+                        <tr><th style="width:220px;">ID</th><td><?php echo (int)$item['id']; ?></td></tr>
+                        <tr><th>Name</th><td><?php echo sanitize($item['name']); ?></td></tr>
+                        <tr><th>Description</th><td><?php echo sanitize((string)($item['description'] ?? '')); ?></td></tr>
+                        <tr><th>Status</th><td><?php echo (int)$item['active'] === 1 ? '✅ Active' : '❌ Inactive'; ?></td></tr>
                         </tbody>
                     </table>
                 <?php endif; ?>
-                <div style="display:flex;gap:10px;margin-top:20px;">
-                    <a href="index.php" class="btn">Back</a>
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <a class="btn" href="index.php">Back</a>
                     <?php if ($item): ?>
-                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a>
+                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️ Edit</a>
                     <?php endif; ?>
                 </div>
             </div>
