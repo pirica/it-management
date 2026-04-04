@@ -60,8 +60,8 @@ $notesSql = $notes !== '' ? ("'" . idf_escape($conn, $notes) . "'") : 'NULL';
 
 if (!mysqli_query(
     $conn,
-    "INSERT INTO idf_links (port_id_a, port_id_b, cable_color, cable_label, notes)
-     VALUES ($low,$high,$colorSql,$labelSql,$notesSql)"
+    "INSERT INTO idf_links (company_id, port_id_a, port_id_b, cable_color, cable_label, notes)
+     VALUES ($company_id,$low,$high,$colorSql,$labelSql,$notesSql)"
 )) {
     idf_fail('DB error creating link: ' . mysqli_error($conn), 500);
 }
