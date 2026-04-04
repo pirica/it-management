@@ -720,7 +720,8 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         padding: 8px 12px;
         border: 1px solid var(--border, #ddd);
         border-radius: 8px;
-        background: var(--panel, #fff);
+        background: var(--bg-secondary, #f6f8fa);
+        color: var(--text-primary, #24292f);
         white-space: nowrap;
     }
     .role-flag-option input[type="checkbox"] {
