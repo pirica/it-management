@@ -96,6 +96,19 @@ if ($otherIds) {
     }
 }
 
+$equipmentOptions = [];
+$resEq = mysqli_query(
+    $conn,
+    "SELECT e.id, e.name, e.serial_number
+     FROM equipment e
+     WHERE e.company_id=$company_id
+     ORDER BY e.name ASC
+     LIMIT 500"
+);
+while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
+    $equipmentOptions[] = $row;
+}
+
 $ui_config = itm_get_ui_configuration($conn, $company_id);
 ?>
 <!doctype html>
@@ -362,6 +375,18 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <input class="input" name="source_display" value="" readonly>
             </div>
             <div style="grid-column: 1 / -1;">
+                <label class="label">Link to Equipment (optional)</label>
+                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-previous-value="">
+                    <option value="">-- None --</option>
+                    <?php foreach ($equipmentOptions as $e): ?>
+                        <option value="<?php echo (int)$e['id']; ?>">
+                            <?php echo sanitize($e['name'] . (!empty($e['serial_number']) ? (' • SN ' . $e['serial_number']) : '')); ?>
+                        </option>
+                    <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
+                </select>
+            </div>
+            <div style="grid-column: 1 / -1;">
                 <label class="label">Destination port</label>
                 <select class="input" name="port_id_b">
                     <option value="">Select destination port</option>
@@ -530,6 +555,7 @@ function createLink() {
         csrf_token: CSRF,
         port_id_a: Number(f.port_id_a.value),
         port_id_b: Number(f.port_id_b.value),
+        equipment_id: f.equipment_id.value ? Number(f.equipment_id.value) : null,
         cable_color: f.cable_color.value.trim() || 'yellow',
         cable_label: f.cable_label.value.trim(),
         notes: f.notes.value.trim(),
