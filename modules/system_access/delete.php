@@ -19,6 +19,31 @@ if ($bulkAction === 'clear_table') {
     exit;
 }
 
+if ($bulkAction === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if (!is_array($ids)) {
+        $ids = [];
+    }
+
+    $idList = [];
+    foreach ($ids as $rawId) {
+        $id = (int)$rawId;
+        if ($id > 0) {
+            $idList[$id] = $id;
+        }
+    }
+
+    if (!empty($idList)) {
+        $deleteSql = 'DELETE FROM system_access WHERE id IN (' . implode(',', array_values($idList)) . ') AND company_id=' . (int)$company_id;
+        mysqli_query($conn, $deleteSql);
+    } else {
+        $_SESSION['crud_error'] = 'No records selected for deletion.';
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 $id = (int)($_POST['id'] ?? 0);
 if ($id > 0) {
     $usageError = '';
