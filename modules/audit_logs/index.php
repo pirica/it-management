@@ -49,11 +49,13 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
     $types .= 's';
 }
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+
 $sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
      . 'LEFT JOIN users u ON u.id = al.user_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
-     . 'ORDER BY al.changed_at DESC LIMIT 300';
+     . 'ORDER BY al.changed_at DESC LIMIT ' . (int)$perPage;
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {

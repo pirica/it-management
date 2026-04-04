@@ -23,7 +23,8 @@ if ($searchRaw !== '') {
 }
 
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
-$sql = 'SELECT * FROM companies' . $whereSql . ' ORDER BY ' . $sortSql;
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$sql = 'SELECT * FROM companies' . $whereSql . ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage;
 $stmt = mysqli_prepare($conn, $sql);
 $rows = null;
 if ($stmt) {

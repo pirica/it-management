@@ -32,6 +32,8 @@ $orderByMap = [
     'created_at' => 't.created_at',
 ];
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+
 $items = mysqli_query(
     $conn,
     "SELECT t.*, ts.name AS status_name, ts.color AS status_color, tp.name AS priority_name
@@ -39,7 +41,8 @@ $items = mysqli_query(
      LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
      LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
      WHERE t.company_id = $company_id{$searchSql}
-     ORDER BY {$orderByMap[$sort]} {$dir}"
+     ORDER BY {$orderByMap[$sort]} {$dir}
+     LIMIT " . (int)$perPage
 );
 ?>
 <!DOCTYPE html>
