@@ -635,25 +635,14 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
-                <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                            <label for="switchPortsSearch">Search (all fields)</label>
-                            <input type="text" id="switchPortsSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%port%%">
-                        </div>
-                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
-                            <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn btn-sm">Clear</a>
-                        </div>
-                    </form>
-                </div>
-                <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                    </form>
-                </div>
+            <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                </form>
+            </div>
+
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
