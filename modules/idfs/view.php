@@ -378,7 +378,7 @@ foreach ($equipmentOptions as $equipmentOption) {
             </div>
 
             <div>
-                <label class="label">Link to Equipment (optional)</label>
+                <label class="label">Linked to Equipment (optional)</label>
                 <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-add-extra-fields='<?php echo sanitize((string)$equipmentAddExtraFields); ?>'>
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
@@ -392,7 +392,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 
             <div>
                 <label class="label">Port Count</label>
-                <input class="input" name="port_count" type="number" min="0" max="128" step="1" placeholder="e.g. 4">
+                <input class="input" name="port_count" type="number" min="0" max="9999" step="1" placeholder="e.g. 4">
                 <div id="idfSwitchRj45Wrap" style="display:none; margin-top:8px;">
                     <label class="label" style="margin-bottom:4px;">RJ45 Ports *</label>
                     <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
@@ -581,12 +581,15 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 
 function refreshPortCountInputs(form) {
     const isSwitch = form.device_type.value === 'switch';
+    const hasLinkedEquipment = String(form.equipment_id.value || '') !== '';
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
     form.switch_rj45_id.required = isSwitch;
-    form.port_count.readOnly = isSwitch;
+    form.port_count.readOnly = isSwitch || hasLinkedEquipment;
     if (isSwitch) {
         form.port_count.placeholder = 'Auto from RJ45 selection';
+    } else if (hasLinkedEquipment) {
+        form.port_count.placeholder = 'Auto from linked equipment';
     } else {
         form.port_count.placeholder = 'e.g. 4';
         form.switch_rj45_id.value = '';
@@ -615,6 +618,7 @@ function saveDevice() {
 document.getElementById('idfDeviceForm').equipment_id.addEventListener('change', function () {
     const form = document.getElementById('idfDeviceForm');
     syncFieldsFromEquipment(form, false);
+    refreshPortCountInputs(form);
 });
 document.getElementById('idfDeviceForm').device_type.addEventListener('change', function () {
     const form = document.getElementById('idfDeviceForm');

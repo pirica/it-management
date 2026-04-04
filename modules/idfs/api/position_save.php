@@ -38,7 +38,7 @@ if ($idf_id <= 0 || $position_no < 1 || $position_no > 10) {
 if ($device_name === '') {
     idf_fail('Device name is required');
 }
-if ($port_count < 0 || $port_count > 128) {
+if ($port_count < 0 || $port_count > 9999) {
     idf_fail('Invalid port_count');
 }
 
