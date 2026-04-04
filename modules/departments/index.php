@@ -63,6 +63,12 @@ if ($stmt) {
     $items = mysqli_stmt_get_result($stmt);
     mysqli_stmt_close($stmt);
 }
+
+$allDepartmentsCount = 0;
+$allCountResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM departments');
+if ($allCountResult && ($allCountRow = mysqli_fetch_assoc($allCountResult))) {
+    $allDepartmentsCount = (int)($allCountRow['total_rows'] ?? 0);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -95,6 +101,12 @@ if ($stmt) {
                 </form>
             </div>
             <div class="card">
+                <?php if ($totalRows === 0 && $allDepartmentsCount > 0): ?>
+                    <div class="alert alert-danger" style="margin-bottom:16px;">
+                        No departments are assigned to your active company (ID <?php echo (int)$company_id; ?>).
+                        Total departments in database: <?php echo (int)$allDepartmentsCount; ?>.
+                    </div>
+                <?php endif; ?>
                 <table>
                     <thead>
                     <tr>
