@@ -309,6 +309,81 @@
 
         bindToolbarEvents(toolbar, table);
         placeToolbar(table, toolbar);
+        attachInlineSearch(table);
+    }
+
+    function rowSearchText(row) {
+        return Array.from(row.querySelectorAll('td'))
+            .map((cell) => getCellText(cell).toLowerCase())
+            .join(' ');
+    }
+
+    function attachInlineSearch(table) {
+        if (table.dataset.tableSearchAttached === '1') {
+            return;
+        }
+
+        const content = table.closest('.content');
+        if (content && content.querySelector('input[name="search"]')) {
+            return;
+        }
+
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        if (!rows.length) return;
+
+        table.dataset.tableSearchAttached = '1';
+
+        const searchWrap = document.createElement('div');
+        searchWrap.className = 'table-search-inline';
+        searchWrap.style.cssText = 'display:flex;gap:8px;align-items:center;margin:8px 0 10px;flex-wrap:wrap;';
+
+        const label = document.createElement('label');
+        label.textContent = 'Search table:';
+        label.style.fontWeight = '600';
+
+        const input = document.createElement('input');
+        input.type = 'search';
+        input.placeholder = 'Type to filter visible rows...';
+        input.style.cssText = 'min-width:240px;max-width:420px;width:100%;';
+
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn btn-sm';
+        clearBtn.textContent = 'Clear';
+
+        const emptyState = document.createElement('div');
+        emptyState.textContent = 'No matching records found.';
+        emptyState.style.cssText = 'display:none;color:var(--text-secondary,#6b7280);font-size:13px;padding:6px 0;';
+
+        function applyFilter() {
+            const query = input.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            rows.forEach((row) => {
+                const show = query === '' || rowSearchText(row).includes(query);
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount += 1;
+            });
+
+            emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        input.addEventListener('input', applyFilter);
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            applyFilter();
+            input.focus();
+        });
+
+        searchWrap.appendChild(label);
+        searchWrap.appendChild(input);
+        searchWrap.appendChild(clearBtn);
+
+        table.parentNode.insertBefore(searchWrap, table);
+        table.parentNode.insertBefore(emptyState, table.nextSibling);
     }
 
     function exportViewAsPdf(table) {
