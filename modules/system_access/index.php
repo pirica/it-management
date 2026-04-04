@@ -130,6 +130,15 @@ if ($countStmt) {
     }
     mysqli_stmt_close($countStmt);
 }
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
 $showBulkTableActions = ($perPage <= $totalRows);
 
 if (($_GET['export'] ?? '') === 'csv') {
@@ -158,13 +167,13 @@ if (($_GET['export'] ?? '') === 'csv') {
 }
 
 $items = false;
-$itemsSql = "SELECT id, code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql}";
+$itemsSql = "SELECT id, code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql} LIMIT ?, ?";
 $stmt = mysqli_prepare($conn, $itemsSql);
 if ($stmt) {
     if ($bindSearch !== '') {
-        mysqli_stmt_bind_param($stmt, 'issss', $company_id, $bindSearch, $bindSearch, $bindSearch, $bindSearch);
+        mysqli_stmt_bind_param($stmt, 'issssii', $company_id, $bindSearch, $bindSearch, $bindSearch, $bindSearch, $offset, $perPage);
     } else {
-        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_bind_param($stmt, 'iii', $company_id, $offset, $perPage);
     }
     mysqli_stmt_execute($stmt);
     $items = mysqli_stmt_get_result($stmt);
@@ -199,6 +208,8 @@ if ($stmt) {
 
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                         <label for="systemAccessSearch">Search (all fields)</label>
                         <input type="text" id="systemAccessSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%network%%">
@@ -240,7 +251,7 @@ if ($stmt) {
                         <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                         <?php foreach (['code' => 'Code', 'name' => 'Name', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                            <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <th><a href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $field, 'dir' => $nextDir, 'page' => $page])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
                         <th>Actions</th>
                     </tr>
@@ -272,6 +283,20 @@ if ($stmt) {
                     </tbody>
                 </table>
             </div>
+            <?php if ($totalRows > $perPage): ?>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                    <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1])); ?>">Previous</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1])); ?>">Next</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
