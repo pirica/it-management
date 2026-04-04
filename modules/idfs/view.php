@@ -116,6 +116,37 @@ foreach ($equipmentOptions as $equipmentOption) {
         .idf-slot { border:1px solid var(--border); background:var(--bg-primary); border-radius:12px; padding:10px; margin-bottom:8px; }
         .idf-slot:hover { box-shadow: var(--shadow); transform: translateY(-1px); transition:all .15s ease; }
         .idf-mini { min-width: 58px; }
+        .idf-grid-2 { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+        .idf-modal-backdrop {
+            display:none;
+            position:fixed;
+            top:0;
+            right:0;
+            bottom:0;
+            left:250px;
+            background:rgba(0, 0, 0, .45);
+            z-index:1200;
+            padding:20px;
+            overflow:auto;
+            align-items:flex-start;
+            justify-content:center;
+        }
+        .idf-modal {
+            width:min(560px, calc(100vw - 300px));
+            margin:24px auto;
+            border-radius:14px;
+            border:1px solid var(--border);
+            background:var(--bg-primary);
+            box-shadow: var(--shadow-lg);
+            padding:14px;
+        }
+        .idf-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; }
+        body.sidebar-collapsed .idf-modal-backdrop { left:0; }
+        @media (max-width: 768px) {
+            .idf-modal-backdrop { left:0; padding:12px; }
+            .idf-modal { width:100%; margin:10px auto; }
+            .idf-grid-2 { grid-template-columns:1fr; }
+        }
     </style>
 </head>
 <body>
