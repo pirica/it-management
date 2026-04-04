@@ -207,42 +207,13 @@ if ($stmt) {
             <?php endforeach; ?>
 
             <div class="card" style="margin-bottom:16px;">
-                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
-                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
-                    <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                        <label for="systemAccessSearch">Search (all fields)</label>
-                        <input type="text" id="systemAccessSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%network%%">
-                    </div>
-                    <div class="form-actions" style="margin:0;display:flex;gap:8px;">
-                        <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php" class="btn btn-sm">Clear</a>
-                        <a href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'export' => 'csv'])); ?>" class="btn btn-sm">⬇ Export CSV</a>
-                    </div>
-                </form>
-            </div>
-
-            <div class="card" style="margin-bottom:16px;">
-                <form method="POST">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <input type="hidden" name="action" value="import_system_access">
-                    <div class="form-group" style="margin-bottom:10px;">
-                        <label for="systemAccessImport">Import CSV text (code,name,active)</label>
-                        <textarea id="systemAccessImport" name="import_text" rows="4" placeholder="NET01,Network Access,1\nERP,ERP Access,1"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-sm">📥 Import</button>
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
 
-            <div class="card" style="margin-bottom:16px;">
-                <?php if ($showBulkTableActions): ?>
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                    </form>
-                <?php endif; ?>
-            </div>
 
             <div class="card">
                 <table>
