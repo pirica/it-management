@@ -101,6 +101,21 @@ while ($resEqTypes && ($row = mysqli_fetch_assoc($resEqTypes))) {
     }
 }
 
+$equipmentStatusFieldOptions = [];
+$resEquipmentStatuses = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_statuses
+     WHERE company_id=$company_id
+     ORDER BY name ASC"
+);
+while ($resEquipmentStatuses && ($row = mysqli_fetch_assoc($resEquipmentStatuses))) {
+    $equipmentStatusFieldOptions[] = [
+        'value' => (int)($row['id'] ?? 0),
+        'label' => (string)($row['name'] ?? ''),
+    ];
+}
+
 $switchRj45FieldOptions = [];
 foreach ($switchRj45Options as $switchRj45Option) {
     $switchRj45FieldOptions[] = [
@@ -126,6 +141,12 @@ $equipmentAddExtraFields = json_encode([
             'field' => 'equipment_type_id',
             'equals' => (string)$switchEquipmentTypeId,
         ],
+    ],
+    [
+        'name' => 'status_id',
+        'label' => 'Status',
+        'type' => 'select',
+        'options' => $equipmentStatusFieldOptions,
     ],
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
