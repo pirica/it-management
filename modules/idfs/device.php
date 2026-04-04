@@ -259,7 +259,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
-                                <button class="btn btn-sm" type="button" onclick="selectForLink(<?php echo (int)$p['id']; ?>)">Link</button>
+                                <button class="btn btn-sm" type="button" onclick="openLinkModal(<?php echo (int)$p['id']; ?>)">Link</button>
                                 <?php echo $unlinkBtn; ?>
                             </td>
                         </tr>
@@ -357,7 +357,16 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
         <form id="linkForm" class="idf-grid-2">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
             <input type="hidden" name="port_id_a" value="">
-            <input type="hidden" name="port_id_b" value="">
+            <div style="grid-column: 1 / -1;">
+                <label class="label">Source port</label>
+                <input class="input" name="source_display" value="" readonly>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label class="label">Destination port</label>
+                <select class="input" name="port_id_b">
+                    <option value="">Select destination port</option>
+                </select>
+            </div>
             <div>
                 <label class="label">Cable color</label>
                 <input class="input" name="cable_color" placeholder="e.g. yellow, blue, #ffcc00" value="yellow">
@@ -381,6 +390,17 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
+const PORTS = <?php
+$portsMeta = array_map(static function (array $port): array {
+    return [
+        'id' => (int)($port['id'] ?? 0),
+        'port_no' => (int)($port['port_no'] ?? 0),
+        'label' => (string)($port['label'] ?? ''),
+        'is_linked' => !empty($port['link_id']),
+    ];
+}, $ports);
+echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?>;
 
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
@@ -449,52 +469,47 @@ function idfPortsExportExcel() {
     XLSX.writeFile(wb, `ports-position-${POSITION_ID}.xlsx`);
 }
 
-let linkFirstPortId = null;
-
-function rowByPortId(pid) {
-    return document.querySelector(`tr[data-port-id="${pid}"]`);
-}
-
-function clearLinkSelection() {
-    if (linkFirstPortId) {
-        const r = rowByPortId(linkFirstPortId);
-        if (r) r.classList.remove('idf-port-selected');
-    }
-    linkFirstPortId = null;
-}
-
-function selectForLink(portId) {
-    const row = rowByPortId(portId);
-    if (!row) return;
-
-    if (!linkFirstPortId) {
-        clearLinkSelection();
-        linkFirstPortId = portId;
-        row.classList.add('idf-port-selected');
+function openLinkModal(portId) {
+    const source = PORTS.find(p => Number(p.id) === Number(portId));
+    if (!source) {
+        alert('Source port not found.');
         return;
     }
-
-    if (linkFirstPortId === portId) {
-        clearLinkSelection();
+    if (source.is_linked) {
+        alert('This port is already linked. Unlink it first.');
         return;
     }
-
     const f = document.getElementById('linkForm');
-    f.port_id_a.value = linkFirstPortId;
-    f.port_id_b.value = portId;
+    const destinationSelect = f.port_id_b;
+    const destinations = PORTS.filter(p => Number(p.id) !== Number(portId) && !p.is_linked);
+
+    destinationSelect.innerHTML = '<option value="">Select destination port</option>';
+    destinations.forEach((port) => {
+        const option = document.createElement('option');
+        option.value = String(port.id);
+        option.textContent = `Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
+        destinationSelect.appendChild(option);
+    });
+
+    f.port_id_a.value = String(source.id);
+    f.source_display.value = `Port ${source.port_no}${source.label ? ` • ${source.label}` : ''}`;
     f.cable_color.value = 'yellow';
     f.cable_label.value = '';
     f.notes.value = '';
+    destinationSelect.value = '';
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
 
 function closeLinkModal() {
     document.getElementById('linkBackdrop').style.display = 'none';
-    clearLinkSelection();
 }
 
 function createLink() {
     const f = document.getElementById('linkForm');
+    if (!f.port_id_b.value) {
+        alert('Please choose a destination port.');
+        return;
+    }
     const payload = {
         csrf_token: CSRF,
         port_id_a: Number(f.port_id_a.value),
