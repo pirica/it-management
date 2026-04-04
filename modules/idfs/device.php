@@ -416,7 +416,10 @@ async function apiPost(path, body) {
             data = JSON.parse(raw);
         } catch (e) {
             if (res.ok) {
-                throw new Error(`Unexpected server response (HTTP ${res.status}). Please refresh and try again.`);
+                const rawSummary = raw.replace(/\s+/g, ' ').trim();
+                const snippet = rawSummary.slice(0, 180);
+                const suffix = snippet ? ` Response: ${snippet}` : '';
+                throw new Error(`Unexpected server response (HTTP ${res.status}).${suffix}`);
             }
         }
     }
