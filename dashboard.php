@@ -125,10 +125,11 @@ if ($userDisplayName !== '' && $userEmail !== '') {
             <?php include 'includes/header.php'; ?>
 
 
-            <div  class="content" style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
-                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">📊 Dashboard</h1>
-                
-                <p style="color: var(--text-secondary); margin-bottom: 30px;"><?php echo sanitize($welcomeMessage); ?></p>
+            <div class="content">
+                <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">📊 Dashboard</h1>
+                    <p style="color: var(--text-secondary); margin: 0;"><?php echo sanitize($welcomeMessage); ?></p>
+                </div>
 
                 <div class="stats-grid">
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
