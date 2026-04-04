@@ -392,7 +392,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 
             <div>
                 <label class="label">Port Count</label>
-                <input class="input" name="port_count" type="number" min="0" max="9999" step="1" placeholder="e.g. 4">
+                <input class="input" name="port_count" type="number" min="0" max="9999" step="1">
                 <div id="idfSwitchRj45Wrap" style="display:none; margin-top:8px;">
                     <label class="label" style="margin-bottom:4px;">RJ45 Ports *</label>
                     <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
@@ -585,13 +585,7 @@ function refreshPortCountInputs(form) {
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
     form.switch_rj45_id.required = isSwitch;
-    form.port_count.readOnly = isSwitch || hasLinkedEquipment;
-    if (isSwitch) {
-        form.port_count.placeholder = 'Auto from RJ45 selection';
-    } else if (hasLinkedEquipment) {
-        form.port_count.placeholder = 'Auto from linked equipment';
-    } else {
-        form.port_count.placeholder = 'e.g. 4';
+    if (!isSwitch) {
         form.switch_rj45_id.value = '';
     }
 }
