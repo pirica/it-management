@@ -189,12 +189,11 @@
             const allFields = [{ name: 'new_value', label: 'Name', type: 'text', required: true, required_when: null }]
                 .concat(fields.map(normalizeFieldConfig).filter((f) => f.name));
 
+            const renderedFields = [];
             allFields.forEach((field) => {
                 const group = document.createElement('div');
                 group.className = 'itm-add-option-group';
                 const label = document.createElement('label');
-                const maybeRequiredSuffix = field.required_when || field.required !== false ? ' *' : '';
-                label.textContent = field.label + maybeRequiredSuffix;
                 label.className = 'itm-add-option-label';
                 group.appendChild(label);
 
@@ -216,12 +215,35 @@
                     }
                 }
 
-                input.required = field.required !== false;
+                input.required = field.required !== false && !field.required_when;
                 input.name = field.name;
                 input.className = 'itm-add-option-input';
                 group.appendChild(input);
                 form.appendChild(group);
+                renderedFields.push({ field, group, label, input });
             });
+
+            function refreshConditionalFields() {
+                const payload = {};
+                renderedFields.forEach(({ input }) => {
+                    payload[input.name] = String(input.value || '').trim();
+                });
+
+                renderedFields.forEach(({ field, group, label, input }) => {
+                    const requiredNow = isFieldRequired(field, payload);
+                    const hasCondition = !!field.required_when;
+                    const shouldShow = !hasCondition || requiredNow || String(input.value || '').trim() !== '';
+                    group.style.display = shouldShow ? '' : 'none';
+                    input.required = requiredNow;
+                    label.textContent = field.label + (requiredNow ? ' *' : '');
+                });
+            }
+
+            renderedFields.forEach(({ input }) => {
+                input.addEventListener('change', refreshConditionalFields);
+                input.addEventListener('input', refreshConditionalFields);
+            });
+            refreshConditionalFields();
 
             const actions = document.createElement('div');
             actions.className = 'itm-add-option-actions';
