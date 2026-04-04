@@ -289,7 +289,9 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1>⚙️ Settings</h1>
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">⚙️ Settings</h1>
+            </div>
             <p style="margin-bottom:20px;">Options: configure UI button positions, create required SQL tables, and manage full SQL backups.</p>
 
             <?php if ($message): ?>
