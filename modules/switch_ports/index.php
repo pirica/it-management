@@ -183,7 +183,7 @@ function cr_render_cell_value($table, $field, $value) {
             $label = sanitize((string)$lookupRow['label']);
             if (($GLOBALS['crud_table'] ?? '') === 'switch_ports' && $field === 'equipment_id') {
                 $equipmentId = (int)$value;
-                return '<a href="../equipment/view.php?id=' . $equipmentId . '">' . $label . '</a>';
+                return '<a href="../equipment/index.php?switch_id=' . $equipmentId . '#switch-port-manager">' . $label . '</a>';
             }
             return $label;
         }
