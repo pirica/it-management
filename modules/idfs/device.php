@@ -109,6 +109,51 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
     $equipmentOptions[] = $row;
 }
 
+$equipmentTypeOptions = [];
+$resEqTypes = mysqli_query(
+    $conn,
+    "SELECT et.id, et.name
+     FROM equipment_types et
+     WHERE et.company_id=$company_id
+     ORDER BY et.name ASC"
+);
+while ($resEqTypes && ($row = mysqli_fetch_assoc($resEqTypes))) {
+    $equipmentTypeOptions[] = [
+        'value' => (int)($row['id'] ?? 0),
+        'label' => (string)($row['name'] ?? ''),
+    ];
+}
+
+$equipmentStatusOptions = [];
+$resEqStatuses = mysqli_query(
+    $conn,
+    "SELECT es.id, es.name
+     FROM equipment_statuses es
+     WHERE es.company_id=$company_id
+     ORDER BY es.name ASC"
+);
+while ($resEqStatuses && ($row = mysqli_fetch_assoc($resEqStatuses))) {
+    $equipmentStatusOptions[] = [
+        'value' => (int)($row['id'] ?? 0),
+        'label' => (string)($row['name'] ?? ''),
+    ];
+}
+
+$equipmentAddExtraFields = json_encode([
+    [
+        'name' => 'equipment_type_id',
+        'label' => 'Equipment Type',
+        'type' => 'select',
+        'options' => $equipmentTypeOptions,
+    ],
+    [
+        'name' => 'status_id',
+        'label' => 'Status',
+        'type' => 'select',
+        'options' => $equipmentStatusOptions,
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
 $ui_config = itm_get_ui_configuration($conn, $company_id);
 ?>
 <!doctype html>
@@ -376,7 +421,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div style="grid-column: 1 / -1;">
                 <label class="label">Link to Equipment (optional)</label>
-                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-previous-value="">
+                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-add-extra-fields='<?php echo sanitize((string)$equipmentAddExtraFields); ?>' data-previous-value="">
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
