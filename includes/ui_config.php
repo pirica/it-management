@@ -235,8 +235,77 @@ function itm_sidebar_item_catalog() {
     }
     return $catalog;
 }
-
-
+diff --git a/includes/ui_config.php b/includes/ui_config.php
+index d8b2a4daf6c0099269de05150670eb76b167b9ad..8fc2568d4fae6fae4832cb7119bb858e59f71c45 100644
+--- a/includes/ui_config.php
++++ b/includes/ui_config.php
+@@ -213,50 +213,66 @@ function itm_default_sidebar_main_order() {
+     return array_map(static function ($section) {
+         return $section['id'];
+     }, itm_sidebar_structure());
+ }
+ 
+ function itm_default_sidebar_submenu_order() {
+     $submenuOrder = [];
+     foreach (itm_sidebar_structure() as $section) {
+         $submenuOrder[$section['id']] = array_map(static function ($item) {
+             return $item['id'];
+         }, $section['items']);
+     }
+     return $submenuOrder;
+ }
+ 
+ function itm_sidebar_item_catalog() {
+     $catalog = [];
+     foreach (itm_sidebar_structure() as $section) {
+         foreach ($section['items'] as $item) {
+             $catalog[$item['id']] = $item;
+         }
+     }
+     return $catalog;
+ }
+ 
++
++function itm_sidebar_label_for_module($moduleDir) {
++    $moduleDir = trim((string)$moduleDir);
++    if ($moduleDir === '') {
++        return null;
++    }
++
++    foreach (itm_sidebar_item_catalog() as $item) {
++        if (($item['match_dir'] ?? '') === $moduleDir) {
++            return (string)($item['label'] ?? '');
++        }
++    }
++
++    return null;
++}
++
+ function itm_sidebar_default_item_parent_map() {
+     $map = [];
+     foreach (itm_sidebar_structure() as $section) {
+         foreach ($section['items'] as $item) {
+             $map[$item['id']] = $section['id'];
+         }
+     }
+     return $map;
+ }
+ 
+ function itm_ui_config_defaults() {
+     return [
+         'table_actions_position' => 'left_right',
+         'new_button_position' => 'left_right',
+         'export_buttons_position' => 'left_right',
+         'back_save_position' => 'left_right',
+         'enable_all_error_reporting' => 1,
+         'enable_audit_logs' => 1,
+         'records_per_page' => '25',
+         'sidebar_visibility' => itm_default_sidebar_visibility(),
+         'sidebar_main_order' => itm_default_sidebar_main_order(),
+         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
+     ];
+ }
+ 
 function itm_sidebar_label_for_module($moduleDir) {
     $moduleDir = trim((string)$moduleDir);
     if ($moduleDir === '') {
