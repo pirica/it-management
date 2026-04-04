@@ -2,48 +2,74 @@
 require '../../config/config.php';
 
 $id = (int)($_GET['id'] ?? 0);
-$is_edit = $id > 0;
+$isEdit = $id > 0;
 $error = '';
 $data = ['name' => '', 'description' => '', 'active' => 1];
-$csrfToken = itm_get_csrf_token();
 
-if ($is_edit) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM departments WHERE id = ? AND company_id = ? LIMIT 1');
+if ($isEdit) {
+    $stmt = mysqli_prepare($conn, 'SELECT id, name, description, active FROM departments WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
-        $q = mysqli_stmt_get_result($stmt);
-        if ($q && mysqli_num_rows($q) === 1) {
-            $data = mysqli_fetch_assoc($q);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($result && mysqli_num_rows($result) === 1) {
+            $data = mysqli_fetch_assoc($result);
         } else {
             $error = 'Department not found.';
-            $is_edit = false;
+            $isEdit = false;
         }
         mysqli_stmt_close($stmt);
+    } else {
+        $error = 'Unable to load department.';
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $name = escape_sql($_POST['name'] ?? '', $conn);
-    $description = escape_sql($_POST['description'] ?? '', $conn);
+    $name = trim((string)($_POST['name'] ?? ''));
+    $description = trim((string)($_POST['description'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if (!$name) {
+    $data = [
+        'name' => $name,
+        'description' => $description,
+        'active' => $active,
+    ];
+
+    if ($name === '') {
         $error = 'Department name is required.';
     } else {
-        $sql = $is_edit
-            ? "UPDATE departments SET name='$name', description='$description', active=$active WHERE id=$id AND company_id=$company_id"
-            : "INSERT INTO departments (company_id,name,description,active) VALUES ($company_id,'$name','$description',$active)";
+        if ($isEdit) {
+            $stmt = mysqli_prepare($conn, 'UPDATE departments SET name = ?, description = ?, active = ? WHERE id = ? AND company_id = ?');
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ssiii', $name, $description, $active, $id, $company_id);
+                $ok = mysqli_stmt_execute($stmt);
+                $affected = mysqli_stmt_affected_rows($stmt);
+                mysqli_stmt_close($stmt);
 
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: index.php');
-            exit;
+                if ($ok) {
+                    if ($affected === 0) {
+                        $_SESSION['crud_error'] = 'No changes were made or department was not found.';
+                    }
+                    header('Location: index.php');
+                    exit;
+                }
+            }
+            $error = 'Failed to update department.';
+        } else {
+            $stmt = mysqli_prepare($conn, 'INSERT INTO departments (company_id, name, description, active) VALUES (?, ?, ?, ?)');
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'issi', $company_id, $name, $description, $active);
+                $ok = mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+                if ($ok) {
+                    header('Location: index.php');
+                    exit;
+                }
+            }
+            $error = 'Failed to create department.';
         }
-        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 ?>
@@ -52,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $is_edit ? 'Edit' : 'Add'; ?> Department</title>
+    <title><?php echo $isEdit ? 'Edit' : 'Create'; ?> Department</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -61,35 +87,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1><?php echo $is_edit ? '✏️ Edit' : '➕ Add'; ?> Department</h1>
-            <?php if ($error): ?>
+            <h1><?php echo $isEdit ? '✏️ Edit' : '➕ Create'; ?> Department</h1>
+            <?php if ($error !== ''): ?>
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
             <div class="card">
                 <form method="POST">
-                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_post_csrf_token()); ?>">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Name *</label>
-                            <input required name="name" value="<?php echo sanitize($data['name']); ?>">
+                            <label for="department-name">Name *</label>
+                            <input id="department-name" name="name" required value="<?php echo sanitize($data['name']); ?>">
                         </div>
                     </div>
-
                     <div class="form-group">
-                        <label>Description</label>
-                        <textarea name="description"><?php echo sanitize($data['description']); ?></textarea>
+                        <label for="department-description">Description</label>
+                        <textarea id="department-description" name="description"><?php echo sanitize($data['description']); ?></textarea>
                     </div>
-
                     <div class="form-group">
                         <label class="itm-checkbox-control">
                             <input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>>
-                            <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)$data['active'] === 1 ? '✅' : '❌'; ?></span></span>
+                            <span>Active</span>
                         </label>
                     </div>
-
                     <div style="display:flex;gap:10px;">
-                        <button class="btn btn-primary" type="submit">💾</button>
-                        <a class="btn" href="index.php">✖️</a>
+                        <button type="submit" class="btn btn-primary">💾 Save</button>
+                        <a class="btn" href="index.php">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -97,12 +120,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
-<script>
-document.addEventListener('change', function (event) {
-    if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
-    const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
-    if (indicator) indicator.textContent = event.target.checked ? '✅' : '❌';
-});
-</script>
 </body>
 </html>

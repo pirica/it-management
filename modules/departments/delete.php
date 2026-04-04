@@ -27,21 +27,21 @@ if ($bulkAction === 'bulk_delete') {
         $ids = [];
     }
 
-    $idMap = [];
+    $uniqueIds = [];
     foreach ($ids as $rawId) {
         $id = (int)$rawId;
         if ($id > 0) {
-            $idMap[$id] = $id;
+            $uniqueIds[$id] = $id;
         }
     }
 
-    if (empty($idMap)) {
+    if (empty($uniqueIds)) {
         $_SESSION['crud_error'] = 'No departments selected for deletion.';
         header('Location: index.php');
         exit;
     }
 
-    foreach (array_values($idMap) as $id) {
+    foreach ($uniqueIds as $id) {
         $usageError = '';
         if (!itm_can_delete_record($conn, 'departments', 'id', $id, $company_id, $usageError)) {
             $_SESSION['crud_error'] = $usageError;
@@ -55,6 +55,7 @@ if ($bulkAction === 'bulk_delete') {
             mysqli_stmt_close($stmt);
         }
     }
+
     header('Location: index.php');
     exit;
 }
