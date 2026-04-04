@@ -11,28 +11,25 @@ $position_id = isset($data['position_id']) ? (int)$data['position_id'] : 0;
 $device_type = (string)($data['device_type'] ?? 'other');
 $device_name = trim((string)($data['device_name'] ?? ''));
 $equipment_id = isset($data['equipment_id']) ? (int)$data['equipment_id'] : 0;
-$port_count = (int)($data['port_count'] ?? 0);
+$switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] : 0;
+$port_count = 0;
 $notes = trim((string)($data['notes'] ?? ''));
 
-if ($equipment_id > 0) {
-    $resEquipment = mysqli_query(
+if ($switch_rj45_id > 0) {
+    $resSwitchRj45 = mysqli_query(
         $conn,
-        "SELECT e.name, e.notes, er.name AS switch_rj45_name
-         FROM equipment e
-         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-         WHERE e.id=$equipment_id AND e.company_id=$company_id
+        "SELECT name
+         FROM equipment_rj45
+         WHERE id=$switch_rj45_id AND company_id=$company_id
          LIMIT 1"
     );
-    if (!$resEquipment || mysqli_num_rows($resEquipment) !== 1) {
-        idf_fail('Equipment not found', 404);
+    $switchRj45 = $resSwitchRj45 ? mysqli_fetch_assoc($resSwitchRj45) : null;
+    if (!$switchRj45) {
+        idf_fail('Invalid port count option');
     }
-    $equipmentRow = mysqli_fetch_assoc($resEquipment) ?: [];
-    $device_name = trim((string)($equipmentRow['name'] ?? ''));
-    $port_count = 0;
-    if (!empty($equipmentRow['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentRow['switch_rj45_name'], $matches)) {
+    if (!empty($switchRj45['name']) && preg_match('/(\d+)/', (string)$switchRj45['name'], $matches)) {
         $port_count = (int)$matches[1];
     }
-    $notes = trim((string)($equipmentRow['notes'] ?? ''));
 }
 
 if ($idf_id <= 0 || $position_no < 1 || $position_no > 10) {
@@ -67,9 +64,19 @@ if ($equipment_id > 0) {
     $device_name = trim((string)($equipment['name'] ?? ''));
     $notes = trim((string)($equipment['notes'] ?? ''));
 
-    $port_count = 0;
-    if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
-        $port_count = (int)$matches[1];
+    if ($switch_rj45_id <= 0) {
+        $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
+        if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
+            $port_count = (int)$matches[1];
+        }
+    } else {
+        mysqli_query(
+            $conn,
+            "UPDATE equipment
+             SET switch_rj45_id=$switch_rj45_id
+             WHERE id=$equipment_id AND company_id=$company_id
+             LIMIT 1"
+        );
     }
 }
 

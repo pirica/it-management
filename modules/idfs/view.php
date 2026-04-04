@@ -68,6 +68,18 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
     $equipmentOptions[] = $row;
 }
 
+$switchRj45Options = [];
+$resRj45 = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_rj45
+     WHERE company_id=$company_id
+     ORDER BY name ASC"
+);
+while ($resRj45 && ($row = mysqli_fetch_assoc($resRj45))) {
+    $switchRj45Options[] = $row;
+}
+
 $ui_config = itm_get_ui_configuration($conn, $company_id);
 
 $equipmentLookup = [];
@@ -78,6 +90,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     }
     $equipmentLookup[(int)$equipmentOption['id']] = [
         'name' => (string)($equipmentOption['name'] ?? ''),
+        'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
         'port_count' => $portCount,
         'notes' => (string)($equipmentOption['notes'] ?? ''),
     ];
@@ -330,7 +343,13 @@ foreach ($equipmentOptions as $equipmentOption) {
 
             <div>
                 <label class="label">Port Count</label>
-                <input class="input" name="port_count" type="number" min="0" max="128" value="0">
+                <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
+                    <option value="">-- None --</option>
+                    <?php foreach ($switchRj45Options as $switchRj45Option): ?>
+                        <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
+                    <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
+                </select>
             </div>
 
             <div style="grid-column: 1 / -1;">
@@ -395,6 +414,7 @@ foreach ($equipmentOptions as $equipmentOption) {
         'id' => (int)$equipmentOption['id'],
         'name' => (string)($equipmentOption['name'] ?? ''),
         'notes' => (string)($equipmentOption['notes'] ?? ''),
+        'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
         'port_count' => $portCount,
     ];
 }
@@ -422,7 +442,7 @@ function applyEquipmentRelation(form) {
     if (!equipment) return;
 
     form.device_name.value = equipment.name || '';
-    form.port_count.value = Number(equipment.port_count || 0);
+    form.switch_rj45_id.value = equipment.switch_rj45_id ? String(equipment.switch_rj45_id) : '';
     form.notes.value = equipment.notes || '';
 }
 
@@ -473,7 +493,7 @@ function openDeviceModal(positionNo, positionId) {
                 form.device_name.value = position.device_name;
                 form.equipment_id.value = position.equipment_id || '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
-                form.port_count.value = position.port_count || 0;
+                form.switch_rj45_id.value = position.switch_rj45_id || '';
                 form.notes.value = position.notes || '';
                 syncFieldsFromEquipment(form, false);
                 openModal();
@@ -491,7 +511,7 @@ function syncFieldsFromEquipment(form, shouldAlert) {
     if (!meta) return;
 
     form.device_name.value = meta.name || '';
-    form.port_count.value = Number(meta.port_count || 0);
+    form.switch_rj45_id.value = meta.switch_rj45_id ? String(meta.switch_rj45_id) : '';
     form.notes.value = meta.notes || '';
 
     if (shouldAlert) {
@@ -509,7 +529,7 @@ function saveDevice() {
         device_type: form.device_type.value,
         device_name: form.device_name.value.trim(),
         equipment_id: form.equipment_id.value ? Number(form.equipment_id.value) : null,
-        port_count: Number(form.port_count.value || 0),
+        switch_rj45_id: form.switch_rj45_id.value ? Number(form.switch_rj45_id.value) : null,
         notes: form.notes.value.trim(),
     };
     apiPost('position_save.php', payload)
@@ -658,5 +678,6 @@ async function idfExportPdf() {
     });
 })();
 </script>
+<script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
 </body>
 </html>
