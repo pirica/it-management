@@ -51,7 +51,28 @@
             label: String(field.label || field.name || 'Field').trim(),
             type: String(field.type || 'text').trim().toLowerCase(),
             options: Array.isArray(field.options) ? field.options : [],
+            required: field.required !== false,
+            required_when: (field && typeof field.required_when === 'object' && field.required_when !== null) ? field.required_when : null,
         };
+    }
+
+    function isFieldRequired(field, payload) {
+        if (!field.required_when) return field.required !== false;
+
+        const refField = String(field.required_when.field || '').trim();
+        if (!refField) return field.required !== false;
+
+        const actual = String(payload[refField] || '').trim();
+        if (Object.prototype.hasOwnProperty.call(field.required_when, 'equals')) {
+            return actual === String(field.required_when.equals || '').trim();
+        }
+
+        if (Array.isArray(field.required_when.in)) {
+            const validValues = field.required_when.in.map((value) => String(value).trim());
+            return validValues.includes(actual);
+        }
+
+        return field.required !== false;
     }
 
     function buildSelectOptionsHtml(options) {
@@ -165,14 +186,15 @@
             const form = document.createElement('form');
             card.appendChild(form);
 
-            const allFields = [{ name: 'new_value', label: 'Name', type: 'text' }]
+            const allFields = [{ name: 'new_value', label: 'Name', type: 'text', required: true, required_when: null }]
                 .concat(fields.map(normalizeFieldConfig).filter((f) => f.name));
 
             allFields.forEach((field) => {
                 const group = document.createElement('div');
                 group.className = 'itm-add-option-group';
                 const label = document.createElement('label');
-                label.textContent = field.label + ' *';
+                const maybeRequiredSuffix = field.required_when || field.required !== false ? ' *' : '';
+                label.textContent = field.label + maybeRequiredSuffix;
                 label.className = 'itm-add-option-label';
                 group.appendChild(label);
 
@@ -194,7 +216,7 @@
                     }
                 }
 
-                input.required = true;
+                input.required = field.required !== false;
                 input.name = field.name;
                 input.className = 'itm-add-option-input';
                 group.appendChild(input);
@@ -227,7 +249,8 @@
                     return;
                 }
                 for (const field of allFields) {
-                    if (!payload[field.name]) {
+                    const requiredNow = isFieldRequired(field, payload);
+                    if (requiredNow && !payload[field.name]) {
                         window.alert(field.label + ' is required.');
                         return;
                     }
