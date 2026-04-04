@@ -414,16 +414,17 @@ foreach ($equipmentOptions as $equipmentOption) {
             <div id="idfPortCountWrap">
                 <label class="label">Port Count</label>
                 <input class="input" name="port_count" type="number" min="0" max="9999" step="1">
-                <div id="idfSwitchRj45Wrap" style="display:none; margin-top:8px;">
-                    <label class="label" style="margin-bottom:4px;">RJ45 Ports *</label>
-                    <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
-                        <option value="">-- Select --</option>
-                        <?php foreach ($switchRj45Options as $switchRj45Option): ?>
-                            <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
-                        <?php endforeach; ?>
-                        <option value="__add_new__">➕</option>
-                    </select>
-                </div>
+            </div>
+
+            <div id="idfSwitchRj45Wrap" style="display:none;">
+                <label class="label">RJ45 Ports *</label>
+                <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
+                    <option value="">-- Select --</option>
+                    <?php foreach ($switchRj45Options as $switchRj45Option): ?>
+                        <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
+                    <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
+                </select>
             </div>
 
             <div style="grid-column: 1 / -1;">
