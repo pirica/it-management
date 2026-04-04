@@ -124,8 +124,10 @@ if ($userDisplayName !== '' && $userEmail !== '') {
         <div class="main-content">
             <?php include 'includes/header.php'; ?>
 
-            <div class="content">
-                <h1>📊 Dashboard</h1>
+<!--            <div class="content"> -->
+            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">📊 Dashboard</h1>
+                
                 <p style="color: var(--text-secondary); margin-bottom: 30px;"><?php echo sanitize($welcomeMessage); ?></p>
 
                 <div class="stats-grid">
