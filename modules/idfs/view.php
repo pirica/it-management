@@ -19,7 +19,7 @@ function idf_csrf_token(): string {
 function idf_type_badge(string $t): string {
     return match ($t) {
         'switch' => '🔀 Switch',
-        'patch_panel' => '🧷 Patch Panel',
+        'patch_panel' => '➰ Patch Panel',
         'ups' => '🔋 UPS',
         'server' => '🖥️ Server',
         default => '📦 Other',
