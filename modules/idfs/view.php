@@ -80,6 +80,55 @@ while ($resRj45 && ($row = mysqli_fetch_assoc($resRj45))) {
     $switchRj45Options[] = $row;
 }
 
+$equipmentTypeOptions = [];
+$switchEquipmentTypeId = 0;
+$resEqTypes = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_types
+     WHERE company_id=$company_id
+     ORDER BY name ASC"
+);
+while ($resEqTypes && ($row = mysqli_fetch_assoc($resEqTypes))) {
+    $typeId = (int)($row['id'] ?? 0);
+    $typeName = (string)($row['name'] ?? '');
+    $equipmentTypeOptions[] = [
+        'value' => $typeId,
+        'label' => $typeName,
+    ];
+    if ($switchEquipmentTypeId === 0 && strcasecmp(trim($typeName), 'switch') === 0) {
+        $switchEquipmentTypeId = $typeId;
+    }
+}
+
+$switchRj45FieldOptions = [];
+foreach ($switchRj45Options as $switchRj45Option) {
+    $switchRj45FieldOptions[] = [
+        'value' => (int)($switchRj45Option['id'] ?? 0),
+        'label' => (string)($switchRj45Option['name'] ?? ''),
+    ];
+}
+
+$equipmentAddExtraFields = json_encode([
+    [
+        'name' => 'equipment_type_id',
+        'label' => 'Equipment Type',
+        'type' => 'select',
+        'options' => $equipmentTypeOptions,
+    ],
+    [
+        'name' => 'switch_rj45_id',
+        'label' => 'RJ45 Ports (required for Switch)',
+        'type' => 'select',
+        'options' => $switchRj45FieldOptions,
+        'required' => false,
+        'required_when' => [
+            'field' => 'equipment_type_id',
+            'equals' => (string)$switchEquipmentTypeId,
+        ],
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
 $ui_config = itm_get_ui_configuration($conn, $company_id);
 
 $equipmentLookup = [];
@@ -330,7 +379,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 
             <div>
                 <label class="label">Link to Equipment (optional)</label>
-                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment">
+                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-add-extra-fields='<?php echo sanitize((string)$equipmentAddExtraFields); ?>'>
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
