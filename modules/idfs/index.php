@@ -72,6 +72,44 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <meta charset="utf-8" />
     <title>IDFs</title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
+    <style>
+        .idf-page-shell { display:grid; gap:16px; }
+        .idf-hero {
+            background: linear-gradient(135deg, rgba(9,105,218,.18), rgba(88,166,255,.08));
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow);
+        }
+        .idf-hero h2 { margin: 0; font-size: 26px; }
+        .idf-hero p { margin: 6px 0 0; color: var(--text-secondary); }
+        .idf-stat-grid { display:grid; grid-template-columns: repeat(2,minmax(140px,1fr)); gap:10px; min-width:300px; }
+        .idf-stat {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 12px;
+        }
+        .idf-stat strong { font-size: 20px; display:block; }
+        .idf-layout-grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; }
+        .idf-panel {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            background: var(--bg-primary);
+            box-shadow: var(--shadow);
+        }
+        .idf-panel h3 { margin: 0 0 12px; display:flex; justify-content:space-between; align-items:center; }
+        .idf-list-table tbody tr:hover { background: var(--bg-secondary); }
+        @media (max-width: 1080px) {
+            .idf-layout-grid { grid-template-columns: 1fr; }
+            .idf-stat-grid { width: 100%; min-width: unset; }
+        }
+    </style>
 </head>
 <body>
 <div class="layout">
@@ -80,16 +118,28 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
         <div class="container">
-            <div class="idf-toolbar">
-                <div class="left">
-                    <h2 style="margin:0;">🗄️ IDFs</h2>
-                    <span class="idf-badge">Modern rack-face view</span>
-                </div>
-            </div>
+            <div class="idf-page-shell">
+                <section class="idf-hero">
+                    <div>
+                        <h2>🗄️ IDF Dashboard Studio</h2>
+                        <p>Design and manage your telecom closets with faster provisioning and clean rack visibility.</p>
+                    </div>
+                    <div class="idf-stat-grid">
+                        <div class="idf-stat">
+                            <small>Total IDFs</small>
+                            <strong><?php echo count($idfs); ?></strong>
+                        </div>
+                        <div class="idf-stat">
+                            <small>Known Locations</small>
+                            <strong><?php echo count($locations); ?></strong>
+                        </div>
+                    </div>
+                </section>
 
-            <div class="card" style="padding:14px; border-radius:18px;">
-                <h3 style="margin-top:0;">➕ Create IDF</h3>
-                <form method="post" class="idf-grid-2">
+                <div class="idf-layout-grid">
+                    <section class="idf-panel">
+                        <h3>➕ Create IDF <span class="idf-badge">New closet profile</span></h3>
+                        <form method="post" class="idf-grid-2">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                     <input type="hidden" name="create_idf" value="1">
                     <div>
@@ -121,16 +171,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <input class="input" name="notes" placeholder="Optional notes">
                     </div>
                     <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
-                        <button class="btn" type="submit">Create</button>
+                        <button class="btn btn-primary" type="submit">Create IDF</button>
                     </div>
                 </form>
-            </div>
+                    </section>
 
-            <div style="height:14px;"></div>
-
-            <div class="card" style="padding:14px; border-radius:18px;">
-                <h3 style="margin-top:0;">📋 Existing IDFs</h3>
-                <table class="table">
+                    <section class="idf-panel">
+                        <h3>📋 Existing IDFs <span class="idf-badge">Tap an IDF to open</span></h3>
+                        <table class="table idf-list-table">
                     <thead>
                         <tr>
                             <th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Created</th><th>Actions</th>
@@ -154,6 +202,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                    </section>
+                </div>
             </div>
         </div>
     </div>

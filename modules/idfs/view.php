@@ -88,6 +88,35 @@ foreach ($equipmentOptions as $equipmentOption) {
     <meta charset="utf-8" />
     <title>IDF View</title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
+    <style>
+        .idf-view-shell { display:grid; gap:16px; }
+        .idf-command-bar {
+            border:1px solid var(--border);
+            border-radius:18px;
+            padding:14px;
+            background: linear-gradient(120deg, rgba(9,105,218,.14), rgba(9,105,218,.04));
+            box-shadow: var(--shadow);
+            display:flex;
+            justify-content:space-between;
+            gap:14px;
+            flex-wrap:wrap;
+            align-items:center;
+        }
+        .idf-command-title { display:flex; flex-direction:column; gap:4px; }
+        .idf-command-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .idf-rack-wrap {
+            border:1px solid var(--border);
+            background:var(--bg-secondary);
+            border-radius:20px;
+            padding:14px;
+            box-shadow: var(--shadow);
+        }
+        .idf-rack { background:var(--bg-primary); border-radius:16px; border:1px solid var(--border); padding:12px; }
+        .idf-rack-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+        .idf-slot { border:1px solid var(--border); background:var(--bg-primary); border-radius:12px; padding:10px; margin-bottom:8px; }
+        .idf-slot:hover { box-shadow: var(--shadow); transform: translateY(-1px); transition:all .15s ease; }
+        .idf-mini { min-width: 58px; }
+    </style>
 </head>
 <body>
 <div class="layout">
@@ -96,76 +125,77 @@ foreach ($equipmentOptions as $equipmentOption) {
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
         <div class="container">
-            <div class="idf-toolbar">
-                <div class="left">
-                    <a class="btn btn-sm" href="index.php">← Back</a>
-                    <div style="display:flex; flex-direction:column;">
-                        <div class="idf-rack-title">
-                            🗄️ <?php echo sanitize($idf['name']); ?>
-                            <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
+            <div class="idf-view-shell">
+                <section class="idf-command-bar">
+                    <div class="idf-command-title">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <a class="btn btn-sm" href="index.php">← Back</a>
+                            <div class="idf-rack-title">
+                                🗄️ <?php echo sanitize($idf['name']); ?>
+                                <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
+                            </div>
                         </div>
                         <div style="opacity:.85; font-size:12px;">
-                            📍 <?php echo sanitize($idf['location_name']); ?>
+                            📍 <?php echo sanitize($idf['location_name']); ?> · <span class="idf-badge idf-drag-hint">Drag &amp; drop enabled</span>
                         </div>
                     </div>
-                </div>
-                <div class="right">
-                    <span class="idf-badge idf-drag-hint">Drag &amp; drop to reorder (auto-save)</span>
-                    <button class="btn btn-sm" type="button" onclick="idfExportExcel()">Export Excel</button>
-                    <button class="btn btn-sm" type="button" onclick="idfExportImage()">Export Image</button>
-                    <button class="btn btn-sm" type="button" onclick="idfExportPdf()">Export PDF</button>
-                </div>
-            </div>
-
-            <div id="idfCaptureRoot" class="idf-rack-wrap">
-                <div class="idf-rack">
-                    <div class="idf-rack-header">
-                        <div class="idf-rack-title">Rack Face (10 positions)</div>
-                        <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
+                    <div class="idf-command-actions">
+                        <button class="btn btn-sm" type="button" onclick="idfExportExcel()">Export Excel</button>
+                        <button class="btn btn-sm" type="button" onclick="idfExportImage()">Export Image</button>
+                        <button class="btn btn-sm" type="button" onclick="idfExportPdf()">Export PDF</button>
                     </div>
+                </section>
 
-                    <div class="idf-slots" id="idfSlots">
-                        <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
-                            <div class="idf-slot" data-position="<?php echo $i; ?>">
-                                <div class="idf-slot-left">
-                                    <div class="idf-slot-no"><?php echo $i; ?></div>
+                <div id="idfCaptureRoot" class="idf-rack-wrap">
+                    <div class="idf-rack">
+                        <div class="idf-rack-header">
+                            <div class="idf-rack-title">Rack Face (10 positions)</div>
+                            <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
+                        </div>
 
-                                    <div class="idf-slot-meta">
-                                        <?php if (!$pos): ?>
-                                            <div class="idf-slot-name idf-empty">Empty position</div>
-                                            <div class="idf-slot-sub">
-                                                <span class="idf-badge">No device</span>
-                                            </div>
+                        <div class="idf-slots" id="idfSlots">
+                            <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
+                                <div class="idf-slot" data-position="<?php echo $i; ?>">
+                                    <div class="idf-slot-left">
+                                        <div class="idf-slot-no"><?php echo $i; ?></div>
+
+                                        <div class="idf-slot-meta">
+                                            <?php if (!$pos): ?>
+                                                <div class="idf-slot-name idf-empty">Empty position</div>
+                                                <div class="idf-slot-sub">
+                                                    <span class="idf-badge">No device</span>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="idf-slot-name"><?php echo sanitize($pos['device_name']); ?></div>
+                                                <div class="idf-slot-sub">
+                                                    <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)$pos['device_type'])); ?></span>
+                                                    <?php if ((int)$pos['port_count'] > 0): ?>
+                                                        <span class="idf-badge">🔌 <?php echo (int)$pos['port_count']; ?> ports</span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($pos['equipment_id'])): ?>
+                                                        <span class="idf-badge">🧾 Asset #<?php echo (int)$pos['equipment_id']; ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+
+                                    <div class="idf-slot-actions">
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">↑</button>
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
+
+                                        <?php if ($pos): ?>
+                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">View</a>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Edit</button>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>)">Delete</button>
                                         <?php else: ?>
-                                            <div class="idf-slot-name"><?php echo sanitize($pos['device_name']); ?></div>
-                                            <div class="idf-slot-sub">
-                                                <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)$pos['device_type'])); ?></span>
-                                                <?php if ((int)$pos['port_count'] > 0): ?>
-                                                    <span class="idf-badge">🔌 <?php echo (int)$pos['port_count']; ?> ports</span>
-                                                <?php endif; ?>
-                                                <?php if (!empty($pos['equipment_id'])): ?>
-                                                    <span class="idf-badge">🧾 Asset #<?php echo (int)$pos['equipment_id']; ?></span>
-                                                <?php endif; ?>
-                                            </div>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-
-                                <div class="idf-slot-actions">
-                                    <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">↑</button>
-                                    <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
-
-                                    <?php if ($pos): ?>
-                                        <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">View</a>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Edit</button>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>)">Delete</button>
-                                    <?php else: ?>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endfor; ?>
+                            <?php endfor; ?>
+                        </div>
                     </div>
                 </div>
             </div>
