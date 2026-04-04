@@ -32,9 +32,10 @@ $idf = null;
 if ($idf_id > 0 && $company_id > 0) {
     $res = mysqli_query(
         $conn,
-        "SELECT i.*, l.name AS location_name
+        "SELECT i.*, l.name AS location_name, c.company AS company_name
          FROM idfs i
          JOIN it_locations l ON l.id=i.location_id
+         LEFT JOIN companies c ON c.id=i.company_id
          WHERE i.id=$idf_id AND i.company_id=$company_id
          LIMIT 1"
     );
@@ -203,7 +204,15 @@ foreach ($equipmentOptions as $equipmentOption) {
                 <div id="idfCaptureRoot" class="idf-rack-wrap">
                     <div class="idf-rack">
                         <div class="idf-rack-header">
-                            <div class="idf-rack-title">Rack Face (10 positions)</div>
+                            <div>
+                                <div class="idf-rack-title">Rack Face (10 positions)</div>
+                                <div style="font-size:12px; opacity:.8; margin-top:2px;">
+                                    <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
+                                    · Location: <?php echo sanitize((string)($idf['location_name'] ?? 'Unknown Location')); ?>
+                                    · Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
+                                    · IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
+                                </div>
+                            </div>
                             <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
                         </div>
 
