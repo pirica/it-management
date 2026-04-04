@@ -547,11 +547,6 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
-                        <tr>
-                            <th colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:left;">
-                                
-                            </th>
-                        </tr>
                         </thead>
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
