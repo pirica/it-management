@@ -542,13 +542,13 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                         </tr>
                         <tr>
                             <th colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:left;">
-                                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                    <?php if ($perPage <= $totalRows): ?>
+                                <div class="card" style="margin-bottom:16px;">
+                                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                                    <?php endif; ?>
-                                </form>
+                                    </form>
+                                </div>
                             </th>
                         </tr>
                         </thead>
