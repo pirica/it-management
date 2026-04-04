@@ -112,12 +112,12 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </style>
 </head>
 <body>
-<div class="layout">
+<div class="container">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
-    <div class="main">
+    <div class="main-content">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
-        <div class="container">
+        <div class="content">
             <div class="idf-page-shell">
                 <section class="idf-hero">
                     <div>
