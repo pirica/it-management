@@ -480,6 +480,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$showBulkTableActions = ($perPage !== 1000000);
 $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
 $totalRows = 0;
 if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
@@ -522,10 +523,13 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
                 <div class="card" style="overflow:auto;">
+                    <?php $tableColumnCount = count($fieldColumns) + 1 + ($showBulkTableActions ? 1 : 0); ?>
                     <table>
                         <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php if ($showBulkTableActions): ?>
+                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php endif; ?>
                             <?php foreach ($fieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -540,20 +544,24 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
-                        <tr>
-                            <th colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:left;">
-                                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                                </form>
-                            </th>
-                        </tr>
+                        <?php if ($showBulkTableActions): ?>
+                            <tr>
+                                <th colspan="<?php echo $tableColumnCount; ?>" style="text-align:left;">
+                                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                                    </form>
+                                </th>
+                            </tr>
+                        <?php endif; ?>
                         </thead>
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkTableActions): ?>
+                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php endif; ?>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
@@ -575,7 +583,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo $tableColumnCount; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
