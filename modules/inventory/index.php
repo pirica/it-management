@@ -30,13 +30,16 @@ $orderByMap = [
     'active' => 'i.active',
 ];
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+
 $items = mysqli_query(
     $conn,
     "SELECT i.*, c.name AS category_name
      FROM inventory_items i
      LEFT JOIN inventory_categories c ON c.id = i.category_id
      WHERE i.company_id = $company_id{$searchSql}
-     ORDER BY {$orderByMap[$sort]} {$dir}"
+     ORDER BY {$orderByMap[$sort]} {$dir}
+     LIMIT " . (int)$perPage
 );
 ?>
 <!DOCTYPE html>

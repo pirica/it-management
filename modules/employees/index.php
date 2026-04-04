@@ -529,6 +529,8 @@ if ($searchRaw !== '') {
 
 $sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+
 $rows = mysqli_query(
     $conn,
     'SELECT e.*, d.name AS department_name, es.name AS employment_status_name,
@@ -540,7 +542,7 @@ $rows = mysqli_query(
      LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
      LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
     . $where .
-    ' ORDER BY ' . $sortSql . ' LIMIT 500'
+    ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage
 );
 
 function emp_label($field) {
