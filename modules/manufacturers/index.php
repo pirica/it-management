@@ -470,6 +470,25 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
+    foreach ($displayFieldColumns as $col) {
+        $fieldName = (string)($col['Field'] ?? '');
+        if ($fieldName === '') {
+            continue;
+        }
+        $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
+    }
+
+    if (!empty($searchConditions)) {
+        $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
+    }
+}
+
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -534,6 +553,21 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                 </form>
             </div>
 
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <input type="hidden" name="page" value="1">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="moduleSearch">Search (all fields)</label>
+                            <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn btn-sm">Clear</a>
+                        </div>
+                    </form>
+                </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
@@ -543,7 +577,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
@@ -589,11 +623,11 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>">Previous</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>">Previous</a>
                             <?php endif; ?>
                             <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>">Next</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>">Next</a>
                             <?php endif; ?>
                         </div>
                     </div>
