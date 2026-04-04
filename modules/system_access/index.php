@@ -225,8 +225,9 @@ if ($stmt) {
 
             <div class="card" style="margin-bottom:16px;">
                 <?php if ($showBulkTableActions): ?>
-                    <form method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 <?php endif; ?>
@@ -236,6 +237,7 @@ if ($stmt) {
                 <table>
                     <thead>
                     <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                         <?php foreach (['code' => 'Code', 'name' => 'Name', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -246,6 +248,7 @@ if ($stmt) {
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($item = mysqli_fetch_assoc($items)): ?>
                         <tr>
+                            <td><input type="checkbox" name="ids[]" value="<?php echo (int)$item['id']; ?>" form="bulk-delete-form"></td>
                             <td><?php echo sanitize($item['code']); ?></td>
                             <td><?php echo sanitize($item['name']); ?></td>
                             <td>
@@ -264,7 +267,7 @@ if ($stmt) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="4" style="text-align:center;">No system access records found.</td></tr>
+                        <tr><td colspan="5" style="text-align:center;">No system access records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -272,5 +275,62 @@ if ($stmt) {
         </div>
     </div>
 </div>
+<script>
+(function () {
+    const selectAllRows = document.getElementById('select-all-rows');
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function () {
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = selectAllRows.checked;
+            });
+        });
+    }
+
+    if (bulkDeleteForm && toggleButton) {
+        setSelectionVisibility(false);
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            if (event.submitter !== toggleButton) {
+                return;
+            }
+
+            if (!selectionMode) {
+                event.preventDefault();
+                selectionMode = true;
+                setSelectionVisibility(true);
+                toggleButton.textContent = 'Delete Selected';
+                return;
+            }
+
+            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
+            if (!anySelected) {
+                event.preventDefault();
+                alert('Please select at least one record to delete.');
+                return;
+            }
+
+            if (!confirm('Delete selected records?')) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
+</script>
 </body>
 </html>
