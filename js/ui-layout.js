@@ -24,7 +24,7 @@
                 const headers = Array.from(table.querySelectorAll('thead th'));
                 const actionsIndex = headers.findIndex((th) => {
                     const txt = (th.textContent || '').trim().toLowerCase();
-                    return txt === 'actions' || txt === 'table actions' || txt === 'options';
+                    return txt === 'actions' || txt === 'action' || txt === 'table actions' || txt === 'options';
                 });
                 if (actionsIndex < 0) return;
 
@@ -85,11 +85,17 @@
 
     function moveNewButtons() {
         const mode = configValue('new_button_position', 'left_right');
-        const bars = document.querySelectorAll('.content > div[style*="justify-content:space-between"]');
+        const bars = Array.from(document.querySelectorAll('.content > div, .content .card > div')).filter((bar) => {
+            if (!(bar instanceof HTMLElement)) return false;
+            const heading = bar.querySelector(':scope > h1, :scope > h2, :scope > h3');
+            if (!heading) return false;
+            const primaryLink = bar.querySelector(':scope > a.btn.btn-primary, :scope .btn.btn-primary[href*=\"create\"], :scope .btn.btn-primary[href*=\"new\"]');
+            return !!primaryLink;
+        });
 
         bars.forEach((bar, index) => {
-            const heading = bar.querySelector('h1');
-            const primaryLink = bar.querySelector('a.btn.btn-primary');
+            const heading = bar.querySelector(':scope > h1, :scope > h2, :scope > h3');
+            const primaryLink = bar.querySelector(':scope > a.btn.btn-primary, :scope .btn.btn-primary[href*=\"create\"], :scope .btn.btn-primary[href*=\"new\"]');
             if (!heading || !primaryLink) return;
 
             bar.classList.add('itm-new-button-bar');
@@ -115,7 +121,7 @@
     function detectFormActionRow(form) {
         return Array.from(form.querySelectorAll('div, p')).find((el) => {
             const hasSubmit = !!el.querySelector('button[type="submit"], input[type="submit"]');
-            const hasBack = !!el.querySelector('a.btn[href*="index.php"], a.btn[href$="index.php"]');
+            const hasBack = !!el.querySelector('a.btn[href*="index.php"], a.btn[href$="index.php"], a.btn[href*="list"], a.btn[href*="view"], a.btn[href*="javascript:history.back"], button[type="button"]');
             return hasSubmit && hasBack;
         }) || null;
     }
