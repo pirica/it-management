@@ -433,8 +433,21 @@ async function apiPost(path, body) {
         body: JSON.stringify(body),
         credentials: 'same-origin',
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.error || `Request failed: ${res.status}`);
+    const raw = await res.text();
+    let data = {};
+    if (raw) {
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            if (res.ok) {
+                throw new Error(`Unexpected server response (HTTP ${res.status}). Please refresh and try again.`);
+            }
+        }
+    }
+    if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
+    if (Object.prototype.hasOwnProperty.call(data, 'ok') && !data.ok) {
+        throw new Error(data.error || `Request failed: ${res.status}`);
+    }
     return data;
 }
 
