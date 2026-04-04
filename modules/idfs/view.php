@@ -411,7 +411,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </select>
             </div>
 
-            <div>
+            <div id="idfPortCountWrap">
                 <label class="label">Port Count</label>
                 <input class="input" name="port_count" type="number" min="0" max="9999" step="1">
                 <div id="idfSwitchRj45Wrap" style="display:none; margin-top:8px;">
@@ -602,8 +602,9 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 
 function refreshPortCountInputs(form) {
     const isSwitch = form.device_type.value === 'switch';
-    const hasLinkedEquipment = String(form.equipment_id.value || '') !== '';
+    const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
+    if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
     form.switch_rj45_id.required = isSwitch;
     if (!isSwitch) {
