@@ -498,9 +498,37 @@ document.getElementById('idfDeviceForm').equipment_id.addEventListener('change',
 });
 
 function openCopyModal(positionNo, positionId) {
+    ensureCopyModalOptions();
     document.getElementById('idfCopyPositionId').value = positionId;
     document.getElementById('idfCopyTarget').value = positionNo;
     openCopy();
+}
+
+function ensureCopyModalOptions() {
+    const targetSelect = document.getElementById('idfCopyTarget');
+    if (targetSelect && targetSelect.options.length === 0) {
+        for (let i = 1; i <= 10; i++) {
+            const option = document.createElement('option');
+            option.value = String(i);
+            option.textContent = String(i);
+            targetSelect.appendChild(option);
+        }
+    }
+
+    const copyForm = document.getElementById('idfCopyForm');
+    if (!copyForm || !copyForm.overwrite) return;
+
+    if (copyForm.overwrite.options.length === 0) {
+        const failOption = document.createElement('option');
+        failOption.value = '0';
+        failOption.textContent = 'Fail if occupied';
+        copyForm.overwrite.appendChild(failOption);
+
+        const overwriteOption = document.createElement('option');
+        overwriteOption.value = '1';
+        overwriteOption.textContent = 'Overwrite target';
+        copyForm.overwrite.appendChild(overwriteOption);
+    }
 }
 
 function copyDevice() {
