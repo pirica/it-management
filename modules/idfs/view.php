@@ -119,12 +119,12 @@ foreach ($equipmentOptions as $equipmentOption) {
     </style>
 </head>
 <body>
-<div class="layout">
+<div class="container">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
-    <div class="main">
+    <div class="main-content">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
-        <div class="container">
+        <div class="content">
             <div class="idf-view-shell">
                 <section class="idf-command-bar">
                     <div class="idf-command-title">
