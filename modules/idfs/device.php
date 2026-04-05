@@ -124,9 +124,7 @@ foreach ($ports as $p) {
         'remote_port_no' => $linkedRemotePortNo,
         'cable_color' => (string)($p['cable_color'] ?? 'yellow'),
         'cable_label' => (string)($p['cable_label'] ?? ''),
-        'equipment_hostname' => (string)($p['equipment_hostname'] ?? ''),
-        'equipment_port_type' => (string)($p['equipment_port_type'] ?? ''),
-        'equipment_port' => (string)($p['equipment_port'] ?? ''),
+        'link_notes' => (string)($p['link_notes'] ?? ''),
     ];
 }
 
@@ -445,14 +443,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <th>Local Port</th>
                         <th>Remote Device</th>
                         <th>Remote Port</th>
-                        <th>Equipment Host</th>
-                        <th>Equipment Port</th>
                         <th>Cable</th>
+                        <th>Notes (optional)</th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php if (!$linkOverview): ?>
-                        <tr><td colspan="6" style="opacity:.8;">No links yet for this device.</td></tr>
+                        <tr><td colspan="5" style="opacity:.8;">No links yet for this device.</td></tr>
                     <?php else: ?>
                         <?php foreach ($linkOverview as $row): ?>
                             <tr>
@@ -464,14 +461,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 </td>
                                 <td>Pos <?php echo (int)$row['remote_position_no']; ?> • <?php echo sanitize($row['remote_device_name']); ?></td>
                                 <td><?php echo (int)$row['remote_port_no']; ?></td>
-                                <td><?php echo $row['equipment_hostname'] !== '' ? sanitize($row['equipment_hostname']) : '<span style="opacity:.75;">—</span>'; ?></td>
-                                <td>
-                                    <?php if ($row['equipment_port'] !== ''): ?>
-                                        <?php echo sanitize(strtoupper($row['equipment_port_type'])); ?> <?php echo sanitize($row['equipment_port']); ?>
-                                    <?php else: ?>
-                                        <span style="opacity:.75;">—</span>
-                                    <?php endif; ?>
-                                </td>
                                 <td>
                                     <span class="idf-swatch" style="background:<?php echo sanitize($row['cable_color']); ?>"></span>
                                     <?php echo sanitize($row['cable_color']); ?>
@@ -479,6 +468,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                         <span style="opacity:.75;">• <?php echo sanitize($row['cable_label']); ?></span>
                                     <?php endif; ?>
                                 </td>
+                                <td><?php echo $row['link_notes'] !== '' ? sanitize($row['link_notes']) : '<span style="opacity:.75;">—</span>'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
