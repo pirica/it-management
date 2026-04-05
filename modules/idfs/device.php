@@ -103,13 +103,21 @@ foreach ($ports as $p) {
         continue;
     }
     $remote = $otherMap[$otherPortId];
+    $linkedEquipmentName = trim((string)($p['equipment_hostname'] ?? ''));
+    $linkedEquipmentPort = trim((string)($p['equipment_port'] ?? ''));
+    $linkedRemoteDeviceName = $linkedEquipmentName !== ''
+        ? $linkedEquipmentName
+        : (string)($remote['device_name'] ?? '');
+    $linkedRemotePortNo = ctype_digit($linkedEquipmentPort)
+        ? (int)$linkedEquipmentPort
+        : (int)($remote['port_no'] ?? 0);
     $linkOverview[] = [
         'link_id' => (int)$p['link_id'],
         'local_port_no' => (int)($p['port_no'] ?? 0),
         'local_label' => (string)($p['label'] ?? ''),
         'remote_position_no' => (int)($remote['position_no'] ?? 0),
-        'remote_device_name' => (string)($remote['device_name'] ?? ''),
-        'remote_port_no' => (int)($remote['port_no'] ?? 0),
+        'remote_device_name' => $linkedRemoteDeviceName,
+        'remote_port_no' => $linkedRemotePortNo,
         'cable_color' => (string)($p['cable_color'] ?? 'yellow'),
         'cable_label' => (string)($p['cable_label'] ?? ''),
         'equipment_hostname' => (string)($p['equipment_hostname'] ?? ''),

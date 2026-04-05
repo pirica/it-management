@@ -144,6 +144,8 @@ if ($switchPortId > 0) {
         $equipmentConnectedToLabel = trim((string)($switchPort['equipment_serial_number'] ?? ''));
         if ($equipmentConnectedToLabel === '') {
             $equipmentConnectedToLabel = trim((string)$equipmentHostname_val);
+        } else {
+            $equipmentHostname_val = $equipmentConnectedToLabel;
         }
         $equipmentVlanId_val = isset($switchPort['equipment_vlan_id']) && $switchPort['equipment_vlan_id'] !== null
             ? (int)$switchPort['equipment_vlan_id']
@@ -181,6 +183,8 @@ if ($switchPortId > 0) {
         $equipmentConnectedToLabel = trim((string)($equipment['serial_number'] ?? ''));
         if ($equipmentConnectedToLabel === '') {
             $equipmentConnectedToLabel = trim((string)$equipmentHostname_val);
+        } else {
+            $equipmentHostname_val = $equipmentConnectedToLabel;
         }
     }
 }
