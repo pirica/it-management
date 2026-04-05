@@ -394,7 +394,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($ports as $p): ?>
                         <?php
                         $isSwitchDevice = strcasecmp(trim((string)($pos['device_type'] ?? '')), 'switch') === 0;
-                        $canEditLinkedSwitch = $isSwitchDevice && !empty($pos['equipment_id']);
+                        $canEditLinkedSwitch = $isSwitchDevice
+                            && !empty($pos['equipment_id'])
+                            && !empty($p['link_id']);
                         $editLinkedUrl = '../equipment/index.php?switch_id=' . (int)$pos['equipment_id'] . '#switch-port-manager';
                         $linkText = '';
                         $connectedToText = trim((string)($p['connected_to'] ?? ''));
