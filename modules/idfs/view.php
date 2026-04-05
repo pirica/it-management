@@ -69,7 +69,7 @@ if ($stmtPos) {
 $equipmentOptions = [];
 $stmtEq = mysqli_prepare(
     $conn,
-    "SELECT e.id, e.name, e.serial_number, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
      FROM equipment e
      LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
      WHERE e.company_id=?
@@ -440,7 +440,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
-                            <?php echo sanitize($e['name'] . (!empty($e['serial_number']) ? (' • SN ' . $e['serial_number']) : '')); ?>
+                            <?php echo sanitize($e['name'] . (!empty($e['hostname']) ? (' • Host ' . $e['hostname']) : '')); ?>
                         </option>
                     <?php endforeach; ?>
                     <option value="__add_new__">➕</option>
