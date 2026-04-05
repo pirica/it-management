@@ -123,6 +123,45 @@ if ($stmtIdf) {
     }
 }
 
+if ($equipment_id > 0) {
+    $equipmentIdString = (string)$equipment_id;
+    $stmtDuplicateEquipment = null;
+    if ($position_id > 0) {
+        $stmtDuplicateEquipment = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_positions
+             WHERE idf_id=? AND equipment_id=? AND id<>?
+             LIMIT 1"
+        );
+        if ($stmtDuplicateEquipment) {
+            mysqli_stmt_bind_param($stmtDuplicateEquipment, 'isi', $idf_id, $equipmentIdString, $position_id);
+        }
+    } else {
+        $stmtDuplicateEquipment = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_positions
+             WHERE idf_id=? AND equipment_id=?
+             LIMIT 1"
+        );
+        if ($stmtDuplicateEquipment) {
+            mysqli_stmt_bind_param($stmtDuplicateEquipment, 'is', $idf_id, $equipmentIdString);
+        }
+    }
+
+    if ($stmtDuplicateEquipment) {
+        mysqli_stmt_execute($stmtDuplicateEquipment);
+        $resDuplicateEquipment = mysqli_stmt_get_result($stmtDuplicateEquipment);
+        $duplicateEquipmentExists = $resDuplicateEquipment && mysqli_num_rows($resDuplicateEquipment) > 0;
+        mysqli_stmt_close($stmtDuplicateEquipment);
+
+        if ($duplicateEquipmentExists) {
+            idf_fail('Equipment already on the list');
+        }
+    }
+}
+
 $notes_val = $notes !== '' ? $notes : null;
 $equipmentId_val = $equipment_id > 0 ? (string)$equipment_id : idf_generate_unlinked_equipment_token();
 
