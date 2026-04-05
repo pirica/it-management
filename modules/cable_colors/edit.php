@@ -177,6 +177,35 @@ function cr_normalize_color_value($value) {
         return '';
     }
 
+    $namedColors = [
+        'black' => '#000000',
+        'white' => '#FFFFFF',
+        'red' => '#FF0000',
+        'lime' => '#00FF00',
+        'blue' => '#0000FF',
+        'yellow' => '#FFFF00',
+        'cyan' => '#00FFFF',
+        'aqua' => '#00FFFF',
+        'magenta' => '#FF00FF',
+        'fuchsia' => '#FF00FF',
+        'silver' => '#C0C0C0',
+        'gray' => '#808080',
+        'grey' => '#808080',
+        'maroon' => '#800000',
+        'olive' => '#808000',
+        'green' => '#008000',
+        'purple' => '#800080',
+        'teal' => '#008080',
+        'navy' => '#000080',
+        'orange' => '#FFA500',
+        'brown' => '#A52A2A',
+        'pink' => '#FFC0CB',
+    ];
+    $rawLower = strtolower($raw);
+    if (isset($namedColors[$rawLower])) {
+        return $namedColors[$rawLower];
+    }
+
     if (!str_starts_with($raw, '#')) {
         $raw = '#' . $raw;
     }
@@ -685,6 +714,32 @@ document.querySelectorAll('[data-color-picker="1"]').forEach(function (picker) {
     function normalizeHex(value) {
         const trimmed = String(value || '').trim();
         if (!trimmed) return '';
+        const namedColors = {
+            black: '#000000',
+            white: '#FFFFFF',
+            red: '#FF0000',
+            lime: '#00FF00',
+            blue: '#0000FF',
+            yellow: '#FFFF00',
+            cyan: '#00FFFF',
+            aqua: '#00FFFF',
+            magenta: '#FF00FF',
+            fuchsia: '#FF00FF',
+            silver: '#C0C0C0',
+            gray: '#808080',
+            grey: '#808080',
+            maroon: '#800000',
+            olive: '#808000',
+            green: '#008000',
+            purple: '#800080',
+            teal: '#008080',
+            navy: '#000080',
+            orange: '#FFA500',
+            brown: '#A52A2A',
+            pink: '#FFC0CB'
+        };
+        const named = namedColors[trimmed.toLowerCase()];
+        if (named) return named;
         const withHash = trimmed.startsWith('#') ? trimmed : '#' + trimmed;
         if (!/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(withHash)) return '';
         if (withHash.length === 4) {
