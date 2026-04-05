@@ -421,14 +421,19 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div style="grid-column: 1 / -1;">
                 <label class="label">Link to Equipment (optional)</label>
-                <select class="input" name="equipment_id" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-add-extra-fields='<?php echo sanitize((string)$equipmentAddExtraFields); ?>' data-previous-value="">
+                <select class="input" name="equipment_id">
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
                             <?php echo sanitize($e['name'] . (!empty($e['serial_number']) ? (' • SN ' . $e['serial_number']) : '')); ?>
                         </option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                </select>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label class="label">Equipment port (optional)</label>
+                <select class="input" name="switch_port_id" disabled>
+                    <option value="">Select equipment first</option>
                 </select>
             </div>
             <div style="grid-column: 1 / -1;">
@@ -582,6 +587,9 @@ function openLinkModal(portId) {
     f.cable_color.value = 'yellow';
     f.cable_label.value = '';
     f.notes.value = '';
+    f.equipment_id.value = '';
+    f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
+    f.switch_port_id.disabled = true;
     destinationSelect.value = '';
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
@@ -601,6 +609,7 @@ function createLink() {
         port_id_a: Number(f.port_id_a.value),
         port_id_b: Number(f.port_id_b.value),
         equipment_id: f.equipment_id.value ? Number(f.equipment_id.value) : null,
+        switch_port_id: f.switch_port_id.value ? Number(f.switch_port_id.value) : null,
         cable_color: f.cable_color.value.trim() || 'yellow',
         cable_label: f.cable_label.value.trim(),
         notes: f.notes.value.trim(),
@@ -610,6 +619,65 @@ function createLink() {
         .then(() => location.reload())
         .catch(err => alert(err.message));
 }
+
+function formatSwitchPortOption(port) {
+    const hostname = port.equipment_hostname || '-';
+    const vlan = port.equipment_vlan_id !== null && port.equipment_vlan_id !== undefined && port.equipment_vlan_id !== ''
+        ? String(port.equipment_vlan_id)
+        : '-';
+    const label = port.equipment_label || '-';
+    const comments = port.equipment_comments || '-';
+    const statusId = port.equipment_status_id !== null && port.equipment_status_id !== undefined && port.equipment_status_id !== ''
+        ? String(port.equipment_status_id)
+        : '-';
+    const colorId = port.equipment_color_id !== null && port.equipment_color_id !== undefined && port.equipment_color_id !== ''
+        ? String(port.equipment_color_id)
+        : '-';
+
+    return `${port.equipment_id} - ${hostname} - ${port.equipment_port_type || '-'} - ${port.equipment_port || '-'} - ${vlan} - ${label} - ${comments} - ${statusId} - ${colorId}`;
+}
+
+async function loadEquipmentPorts(equipmentId) {
+    const f = document.getElementById('linkForm');
+    const select = f.switch_port_id;
+
+    if (!equipmentId) {
+        select.innerHTML = '<option value="">Select equipment first</option>';
+        select.disabled = true;
+        return;
+    }
+
+    select.disabled = true;
+    select.innerHTML = '<option value="">Loading...</option>';
+
+    try {
+        const data = await apiPost('switch_ports_by_equipment.php', {
+            csrf_token: CSRF,
+            equipment_id: Number(equipmentId),
+        });
+
+        select.innerHTML = '<option value="">-- None --</option>';
+        (data.ports || []).forEach((port) => {
+            const option = document.createElement('option');
+            option.value = String(port.id);
+            option.textContent = formatSwitchPortOption(port);
+            select.appendChild(option);
+        });
+        select.disabled = false;
+    } catch (err) {
+        select.innerHTML = '<option value="">Failed to load equipment ports</option>';
+        select.disabled = true;
+        alert(err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const f = document.getElementById('linkForm');
+    if (!f || !f.equipment_id) return;
+    f.equipment_id.addEventListener('change', (event) => {
+        loadEquipmentPorts(event.target.value);
+    });
+});
 
 function unlinkPort(linkId) {
     if (!confirm('Remove this cable link?')) return;
