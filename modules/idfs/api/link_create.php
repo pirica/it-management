@@ -27,9 +27,6 @@ if ($switchPortId > 0 && $equipmentId <= 0) {
     idf_fail('Equipment is required when selecting an equipment port');
 }
 
-$low = min($portA, $portB);
-$high = max($portA, $portB);
-
 $stmt = mysqli_prepare(
     $conn,
     "SELECT pr.id AS port_id, i.company_id, p.id AS position_id, p.device_name
@@ -43,7 +40,7 @@ $seen = [];
 $positionSeen = [];
 $deviceSeen = [];
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'ii', $low, $high);
+    mysqli_stmt_bind_param($stmt, 'ii', $portA, $portB);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($res && ($r = mysqli_fetch_assoc($res))) {
@@ -57,11 +54,11 @@ if ($stmt) {
 if (count($seen) !== 2) {
     idf_fail('Port not found', 404);
 }
-if ($seen[$low] !== $company_id || $seen[$high] !== $company_id) {
+if (($seen[$portA] ?? null) !== $company_id || ($seen[$portB] ?? null) !== $company_id) {
     idf_fail('Forbidden', 403);
 }
-if (($positionSeen[$low] ?? 0) === ($positionSeen[$high] ?? 0)) {
-    $deviceName = trim((string)($deviceSeen[$low] ?? 'this device'));
+if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
+    $deviceName = trim((string)($deviceSeen[$portA] ?? 'this device'));
     idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
 }
 
@@ -72,7 +69,7 @@ $stmtUsed = mysqli_prepare(
      LIMIT 1"
 );
 if ($stmtUsed) {
-    mysqli_stmt_bind_param($stmtUsed, 'iiii', $low, $high, $low, $high);
+    mysqli_stmt_bind_param($stmtUsed, 'iiii', $portA, $portB, $portA, $portB);
     mysqli_stmt_execute($stmtUsed);
     $resUsed = mysqli_stmt_get_result($stmtUsed);
     $foundUsed = $resUsed && mysqli_num_rows($resUsed) > 0;
@@ -241,7 +238,7 @@ $stmtFinal = mysqli_prepare(
 if ($stmtFinal) {
     mysqli_stmt_bind_param(
         $stmtFinal, 'iiiisssissiisss',
-        $company_id, $low, $high, $equipmentId_val, $equipmentHostname_val,
+        $company_id, $portA, $portB, $equipmentId_val, $equipmentHostname_val,
         $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
         $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
         $label_val, $notes_val
