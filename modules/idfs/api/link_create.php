@@ -11,6 +11,8 @@ $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== nu
 $color = trim((string)($data['cable_color'] ?? 'yellow'));
 $label = trim((string)($data['cable_label'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
+$linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
+$linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 
 if ($portA <= 0 || $portB <= 0) {
     idf_fail('Invalid port ids');
@@ -127,6 +129,52 @@ if ($switchPortId > 0) {
     }
     $equipmentIdSql = (string)((int)$equipment['id']);
     $equipmentHostnameSql = "'" . idf_escape($conn, (string)$equipment['name']) . "'";
+}
+
+if ($switchPortId > 0) {
+    $newPortNumber = null;
+    if ($linkedEquipmentPort !== '' && ctype_digit($linkedEquipmentPort)) {
+        $newPortNumber = (int)$linkedEquipmentPort;
+    } elseif ($linkedDestinationPort !== '' && ctype_digit($linkedDestinationPort)) {
+        $newPortNumber = (int)$linkedDestinationPort;
+    }
+
+    $switchLabel = $label !== '' ? ("'" . idf_escape($conn, $label) . "'") : 'NULL';
+    $switchComments = $notes !== '' ? ("'" . idf_escape($conn, $notes) . "'") : 'NULL';
+
+    $colorLookup = mysqli_query(
+        $conn,
+        "SELECT id
+         FROM switch_cablecolors
+         WHERE company_id = $company_id
+           AND LOWER(color) = LOWER('" . idf_escape($conn, $color) . "')
+         LIMIT 1"
+    );
+    $colorRow = $colorLookup ? mysqli_fetch_assoc($colorLookup) : null;
+    $switchColorIdSql = $colorRow ? (string)((int)$colorRow['id']) : null;
+
+    $updates = [
+        "label = $switchLabel",
+        "comments = $switchComments",
+    ];
+    if ($switchColorIdSql !== null) {
+        $updates[] = "color_id = $switchColorIdSql";
+    }
+    if ($newPortNumber !== null && $newPortNumber > 0) {
+        $updates[] = "port_number = $newPortNumber";
+    }
+
+    if (!mysqli_query(
+        $conn,
+        "UPDATE switch_ports
+         SET " . implode(', ', $updates) . "
+         WHERE id = $switchPortId
+           AND company_id = $company_id
+           AND equipment_id = $equipmentId
+         LIMIT 1"
+    )) {
+        idf_fail('DB error updating switch port: ' . mysqli_error($conn), 500);
+    }
 }
 
 if (!mysqli_query(

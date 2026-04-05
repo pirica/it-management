@@ -420,7 +420,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <input class="input" name="source_display" value="" readonly>
             </div>
             <div style="grid-column: 1 / -1;">
-                <label class="label">Link to Equipment (optional)</label>
+                <label class="label">Linked to Equipment (optional)</label>
                 <select class="input" name="equipment_id">
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
@@ -436,23 +436,48 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="">Select equipment first</option>
                 </select>
             </div>
-            <div style="grid-column: 1 / -1;">
+            <div style="grid-column: 1 / -1;" data-link-default-field="destination">
                 <label class="label">Destination port</label>
                 <select class="input" name="port_id_b">
                     <option value="">Select destination port</option>
                 </select>
             </div>
-            <div>
+            <div data-link-default-field="cable_color">
                 <label class="label">Cable color</label>
                 <input class="input" name="cable_color" placeholder="e.g. yellow, blue, #ffcc00" value="yellow">
             </div>
-            <div>
+            <div data-link-default-field="cable_label">
                 <label class="label">Cable label (optional)</label>
                 <input class="input" name="cable_label" placeholder="e.g. FIB-12 / CAT6-34">
             </div>
-            <div style="grid-column: 1 / -1;">
+            <div style="grid-column: 1 / -1;" data-link-default-field="notes">
                 <label class="label">Notes (optional)</label>
                 <input class="input" name="notes" placeholder="Optional">
+            </div>
+            <div style="grid-column: 1 / -1; display:none;" id="linkedEquipmentFields">
+                <div class="idf-grid-2">
+                    <div>
+                        <label class="label">Equipment port</label>
+                        <input class="input" name="linked_equipment_port" placeholder="e.g. 12">
+                    </div>
+                    <div>
+                        <label class="label">Destination port</label>
+                        <input class="input" name="linked_destination_port" placeholder="e.g. 24">
+                    </div>
+                    <div>
+                        <label class="label">Cable color</label>
+                        <input class="input" type="color" name="linked_cable_color_picker" value="#ffff00" style="height:40px; padding:4px;">
+                        <input class="input" name="linked_cable_color" placeholder="e.g. yellow, blue, #ffcc00" value="yellow" style="margin-top:8px;">
+                    </div>
+                    <div>
+                        <label class="label">Cable label</label>
+                        <input class="input" name="linked_cable_label" placeholder="e.g. FIB-12 / CAT6-34">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label class="label">Notes</label>
+                        <input class="input" name="linked_notes" placeholder="Optional">
+                    </div>
+                </div>
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn" type="button" onclick="createLink()">Create link</button>
@@ -590,6 +615,7 @@ function openLinkModal(portId) {
     f.equipment_id.value = '';
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
+    toggleLinkedEquipmentFields(false);
     destinationSelect.value = '';
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
@@ -604,15 +630,22 @@ function createLink() {
         alert('Please choose a destination port.');
         return;
     }
+    const linkedMode = Boolean(f.equipment_id.value && f.switch_port_id.value);
+    const cableColor = linkedMode ? (f.linked_cable_color.value.trim() || 'yellow') : (f.cable_color.value.trim() || 'yellow');
+    const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
+    const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
+
     const payload = {
         csrf_token: CSRF,
         port_id_a: Number(f.port_id_a.value),
         port_id_b: Number(f.port_id_b.value),
         equipment_id: f.equipment_id.value ? Number(f.equipment_id.value) : null,
         switch_port_id: f.switch_port_id.value ? Number(f.switch_port_id.value) : null,
-        cable_color: f.cable_color.value.trim() || 'yellow',
-        cable_label: f.cable_label.value.trim(),
-        notes: f.notes.value.trim(),
+        cable_color: cableColor,
+        cable_label: cableLabel,
+        notes,
+        linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
+        linked_destination_port: linkedMode ? f.linked_destination_port.value.trim() : '',
     };
 
     apiPost('link_create.php', payload)
@@ -663,9 +696,11 @@ async function loadEquipmentPorts(equipmentId) {
             const option = document.createElement('option');
             option.value = String(port.id);
             option.textContent = formatSwitchPortOption(port);
+            option.dataset.portJson = JSON.stringify(port);
             select.appendChild(option);
         });
         select.disabled = false;
+        toggleLinkedEquipmentFields(false);
     } catch (err) {
         select.innerHTML = '<option value="">Failed to load equipment ports</option>';
         select.disabled = true;
@@ -673,11 +708,59 @@ async function loadEquipmentPorts(equipmentId) {
     }
 }
 
+function normalizeColorToHex(colorValue) {
+    const probe = document.createElement('div');
+    probe.style.color = colorValue || 'yellow';
+    document.body.appendChild(probe);
+    const normalized = getComputedStyle(probe).color;
+    document.body.removeChild(probe);
+    const match = normalized.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/i);
+    if (!match) return '#ffff00';
+    return `#${[match[1], match[2], match[3]].map((part) => Number(part).toString(16).padStart(2, '0')).join('')}`;
+}
+
+function toggleLinkedEquipmentFields(isLinked) {
+    const linkedFields = document.getElementById('linkedEquipmentFields');
+    if (linkedFields) {
+        linkedFields.style.display = isLinked ? 'block' : 'none';
+    }
+    document.querySelectorAll('[data-link-default-field]').forEach((field) => {
+        field.style.display = isLinked ? 'none' : '';
+    });
+}
+
+function populateLinkedEquipmentFields() {
+    const f = document.getElementById('linkForm');
+    const selectedOption = f.switch_port_id.options[f.switch_port_id.selectedIndex];
+    if (!selectedOption || !selectedOption.dataset.portJson) {
+        toggleLinkedEquipmentFields(false);
+        return;
+    }
+
+    const port = JSON.parse(selectedOption.dataset.portJson);
+    f.linked_equipment_port.value = port.equipment_port || '';
+    f.linked_destination_port.value = port.equipment_port || '';
+    f.linked_cable_color.value = port.equipment_color || 'yellow';
+    f.linked_cable_color_picker.value = normalizeColorToHex(port.equipment_color || 'yellow');
+    f.linked_cable_label.value = port.equipment_label || '';
+    f.linked_notes.value = port.equipment_comments || '';
+    toggleLinkedEquipmentFields(true);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const f = document.getElementById('linkForm');
     if (!f || !f.equipment_id) return;
     f.equipment_id.addEventListener('change', (event) => {
         loadEquipmentPorts(event.target.value);
+    });
+    f.switch_port_id.addEventListener('change', () => {
+        populateLinkedEquipmentFields();
+    });
+    f.linked_cable_color_picker.addEventListener('input', (event) => {
+        f.linked_cable_color.value = event.target.value;
+    });
+    f.linked_cable_color.addEventListener('input', (event) => {
+        f.linked_cable_color_picker.value = normalizeColorToHex(event.target.value || 'yellow');
     });
 });
 
