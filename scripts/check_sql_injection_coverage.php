@@ -16,7 +16,7 @@ $ignorePaths = [
 $userInputPattern = '/\$_(GET|POST|REQUEST|COOKIE|SERVER|FILES)|php:\/\/input|json_decode\s*\(\s*file_get_contents\s*\(\s*[\"\']php:\/\/input[\"\']\s*\)/i';
 
 // Direct query execution calls that do not use bound parameters.
-$directQueryPattern = '/mysqli_query\s*\(/i';
+$directQueryPattern = '/\b(mysqli_query|itm_run_query)\s*\(/i';
 
 // Common sanitization and safety indicators. Presence does not guarantee safety,
 // but helps reduce obvious false positives in static checks.
@@ -79,6 +79,11 @@ foreach ($iterator as $fileInfo) {
         }
 
         if (preg_match($safetyPattern, $window) === 1) {
+            continue;
+        }
+
+        // Specifically ignore itm_run_query in functions where it's essentially a wrapper.
+        if (strpos($line, 'itm_run_query($conn, $statement)') !== false || strpos($line, 'itm_run_query($conn, $sql)') !== false) {
             continue;
         }
 
