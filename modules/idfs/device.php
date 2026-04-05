@@ -82,10 +82,13 @@ if ($otherIds) {
            p.id AS position_id,
            p.position_no,
            p.device_name,
+           p.equipment_id,
+           e.serial_number AS equipment_serial_number,
            i.id AS idf_id
          FROM idf_ports pr
          JOIN idf_positions p ON p.id=pr.position_id
          JOIN idfs i ON i.id=p.idf_id
+         LEFT JOIN equipment e ON e.id = p.equipment_id
          WHERE pr.id IN ($list) AND i.company_id=$company_id"
     );
     while ($resOther && ($r = mysqli_fetch_assoc($resOther))) {
@@ -103,13 +106,22 @@ foreach ($ports as $p) {
         continue;
     }
     $remote = $otherMap[$otherPortId];
+    $linkedEquipmentName = trim((string)($p['equipment_hostname'] ?? ''));
+    $linkedEquipmentPort = trim((string)($p['equipment_port'] ?? ''));
+    $positionEquipmentSerial = trim((string)($remote['equipment_serial_number'] ?? ''));
+    $linkedRemoteDeviceName = $linkedEquipmentName !== ''
+        ? $linkedEquipmentName
+        : ($positionEquipmentSerial !== '' ? $positionEquipmentSerial : (string)($remote['device_name'] ?? ''));
+    $linkedRemotePortNo = ctype_digit($linkedEquipmentPort)
+        ? (int)$linkedEquipmentPort
+        : (int)($remote['port_no'] ?? 0);
     $linkOverview[] = [
         'link_id' => (int)$p['link_id'],
         'local_port_no' => (int)($p['port_no'] ?? 0),
         'local_label' => (string)($p['label'] ?? ''),
         'remote_position_no' => (int)($remote['position_no'] ?? 0),
-        'remote_device_name' => (string)($remote['device_name'] ?? ''),
-        'remote_port_no' => (int)($remote['port_no'] ?? 0),
+        'remote_device_name' => $linkedRemoteDeviceName,
+        'remote_port_no' => $linkedRemotePortNo,
         'cable_color' => (string)($p['cable_color'] ?? 'yellow'),
         'cable_label' => (string)($p['cable_label'] ?? ''),
         'equipment_hostname' => (string)($p['equipment_hostname'] ?? ''),

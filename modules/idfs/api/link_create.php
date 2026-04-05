@@ -59,7 +59,7 @@ if ($stmt) {
         $positionNoSeen[(int)$r['port_id']] = (int)$r['position_no'];
         $portNoSeen[(int)$r['port_id']] = (int)$r['port_no'];
         $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
-        $positionEquipmentSeen[(int)$r['port_id']] = isset($r['position_equipment_id']) ? (string)$r['position_equipment_id'] : '';
+        $positionEquipmentSeen[(int)$r['port_id']] = isset($r['position_equipment_id']) ? (int)$r['position_equipment_id'] : 0;
     }
     mysqli_stmt_close($stmt);
 }
@@ -73,6 +73,31 @@ if (($seen[$portA] ?? null) !== $company_id || ($seen[$portB] ?? null) !== $comp
 if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
     $deviceName = trim((string)($deviceSeen[$portA] ?? 'this device'));
     idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
+}
+
+$positionEquipmentSerialSeen = [];
+$positionEquipmentIds = array_values(array_unique(array_filter(array_map('intval', $positionEquipmentSeen), static function ($id) {
+    return $id > 0;
+})));
+if ($positionEquipmentIds) {
+    $list = implode(',', $positionEquipmentIds);
+    $resPositionEquipment = mysqli_query(
+        $conn,
+        "SELECT id, serial_number
+         FROM equipment
+         WHERE company_id = $company_id
+           AND id IN ($list)"
+    );
+    while ($resPositionEquipment && ($row = mysqli_fetch_assoc($resPositionEquipment))) {
+        $equipmentIdKey = (int)($row['id'] ?? 0);
+        if ($equipmentIdKey <= 0) {
+            continue;
+        }
+        $serial = trim((string)($row['serial_number'] ?? ''));
+        if ($serial !== '') {
+            $positionEquipmentSerialSeen[$equipmentIdKey] = $serial;
+        }
+    }
 }
 
 $stmtUsed = mysqli_prepare(
@@ -103,6 +128,7 @@ $equipmentLabel_val = null;
 $equipmentComments_val = null;
 $equipmentStatusId_val = null;
 $equipmentColorId_val = null;
+$equipmentConnectedToLabel = null;
 
 if ($switchPortId > 0) {
     $stmtSwitchPort = mysqli_prepare(
@@ -110,6 +136,7 @@ if ($switchPortId > 0) {
         "SELECT
             sp.equipment_id,
             COALESCE(NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
+            e.serial_number AS equipment_serial_number,
             sp.port_type AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
@@ -139,6 +166,12 @@ if ($switchPortId > 0) {
         $equipmentHostname_val = (string)$switchPort['equipment_hostname'];
         $equipmentPortType_val = (string)$switchPort['equipment_port_type'];
         $equipmentPort_val = (string)$switchPort['equipment_port'];
+        $equipmentConnectedToLabel = trim((string)($switchPort['equipment_serial_number'] ?? ''));
+        if ($equipmentConnectedToLabel === '') {
+            $equipmentConnectedToLabel = trim((string)$equipmentHostname_val);
+        } else {
+            $equipmentHostname_val = $equipmentConnectedToLabel;
+        }
         $equipmentVlanId_val = isset($switchPort['equipment_vlan_id']) && $switchPort['equipment_vlan_id'] !== null
             ? (int)$switchPort['equipment_vlan_id']
             : null;
@@ -154,7 +187,7 @@ if ($switchPortId > 0) {
 } elseif ($equipmentId > 0) {
     $stmtEquipment = mysqli_prepare(
         $conn,
-        "SELECT e.id, e.name
+        "SELECT e.id, e.name, e.serial_number
          FROM equipment e
          WHERE e.id = ?
            AND e.company_id = ?
@@ -172,6 +205,12 @@ if ($switchPortId > 0) {
         }
         $equipmentId_val = (string)$equipment['id'];
         $equipmentHostname_val = (string)$equipment['name'];
+        $equipmentConnectedToLabel = trim((string)($equipment['serial_number'] ?? ''));
+        if ($equipmentConnectedToLabel === '') {
+            $equipmentConnectedToLabel = trim((string)$equipmentHostname_val);
+        } else {
+            $equipmentHostname_val = $equipmentConnectedToLabel;
+        }
     }
 }
 
@@ -318,8 +357,25 @@ if ($stmtFinal) {
 if (
     isset($positionNoSeen[$portA], $positionNoSeen[$portB], $portNoSeen[$portA], $portNoSeen[$portB], $deviceSeen[$portA], $deviceSeen[$portB])
 ) {
-    $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . trim((string)$deviceSeen[$portB]) . ' • Port ' . (int)$portNoSeen[$portB];
-    $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . trim((string)$deviceSeen[$portA]) . ' • Port ' . (int)$portNoSeen[$portA];
+    $connectedDeviceB = trim((string)$deviceSeen[$portB]);
+    $connectedDeviceA = trim((string)$deviceSeen[$portA]);
+    $positionEquipmentB = (int)($positionEquipmentSeen[$portB] ?? 0);
+    $positionEquipmentA = (int)($positionEquipmentSeen[$portA] ?? 0);
+    if ($positionEquipmentB > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentB])) {
+        $connectedDeviceB = $positionEquipmentSerialSeen[$positionEquipmentB];
+    }
+    if ($positionEquipmentA > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentA])) {
+        $connectedDeviceA = $positionEquipmentSerialSeen[$positionEquipmentA];
+    }
+    if (is_string($equipmentConnectedToLabel)) {
+        $equipmentConnectedToLabel = trim($equipmentConnectedToLabel);
+        if ($equipmentConnectedToLabel !== '') {
+            $connectedDeviceB = $equipmentConnectedToLabel;
+            $connectedDeviceA = $equipmentConnectedToLabel;
+        }
+    }
+    $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
+    $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 
     $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");
     if ($stmtUpdatePort) {
