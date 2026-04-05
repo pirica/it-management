@@ -359,8 +359,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <span class="idf-badge"><?php echo sanitize((string)$pos['device_type']); ?></span>
                         </div>
                         <div style="opacity:.85; font-size:12px;">
-                            IDF: <?php echo sanitize($pos['idf_name']); ?>
-                            <?php if (!empty($pos['equipment_id'])): ?> • Asset #<?php echo (int)$pos['equipment_id']; ?><?php endif; ?>
+                            IDF: <?php echo sanitize((string)$pos['idf_name']); ?>
+                            <?php if (!empty($pos['equipment_id'])): ?> • Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?><?php endif; ?>
                         </div>
                     </div>
                 </div>
