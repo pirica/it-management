@@ -1,6 +1,18 @@
 <?php
 require '../../config/config.php';
 
+function companies_build_query($params) {
+    $normalized = [];
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === '') {
+            continue;
+        }
+        $normalized[$key] = $value;
+    }
+
+    return http_build_query($normalized);
+}
+
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $sortableColumns = ['id', 'company', 'incode', 'city', 'country', 'phone', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
@@ -90,13 +102,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <table>
                     <thead>
                     <tr>
-                        <th><a href="?sort=id&dir=<?php echo $sort === 'id' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">ID</a></th>
-                        <th><a href="?sort=company&dir=<?php echo $sort === 'company' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Company</a></th>
-                        <th><a href="?sort=incode&dir=<?php echo $sort === 'incode' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">InCode</a></th>
-                        <th><a href="?sort=city&dir=<?php echo $sort === 'city' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">City</a></th>
-                        <th><a href="?sort=country&dir=<?php echo $sort === 'country' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Country</a></th>
-                        <th><a href="?sort=phone&dir=<?php echo $sort === 'phone' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Phone</a></th>
-                        <th><a href="?sort=active&dir=<?php echo $sort === 'active' && $dir === 'ASC' ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($searchRaw); ?>">Status</a></th>
+                        <?php foreach (['id' => 'ID', 'company' => 'Company', 'incode' => 'InCode', 'city' => 'City', 'country' => 'Country', 'phone' => 'Phone', 'active' => 'Status'] as $field => $label): ?>
+                            <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?<?php echo sanitize(companies_build_query(['search' => $searchRaw, 'sort' => $field, 'dir' => $nextDir])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                        <?php endforeach; ?>
                         <th class="itm-actions-cell">Actions</th>
                     </tr>
                     </thead>
