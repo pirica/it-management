@@ -878,7 +878,66 @@ document.addEventListener('input', function (event) {
             ? '<span title="' + value + '" aria-label="Color swatch ' + value + '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + value + ';vertical-align:middle;border-radius:2px;"></span>'
             : '<span style="color:#666;">—</span>';
     }
+    if (isHex && key === 'hex_color') {
+        itmSyncCableColorEnglishName(value);
+    }
 });
+
+function itmHexToRgb(hex) {
+    const raw = (hex || '').trim().replace('#', '');
+    if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(raw)) return null;
+    const full = raw.length === 3
+        ? raw.split('').map(function (c) { return c + c; }).join('')
+        : raw;
+
+    return {
+        r: parseInt(full.slice(0, 2), 16),
+        g: parseInt(full.slice(2, 4), 16),
+        b: parseInt(full.slice(4, 6), 16)
+    };
+}
+
+function itmClosestEnglishColorName(hex) {
+    const rgb = itmHexToRgb(hex);
+    if (!rgb) return '';
+
+    const namedColors = [
+        ['Black', '#000000'], ['White', '#FFFFFF'], ['Gray', '#808080'], ['Silver', '#C0C0C0'],
+        ['Red', '#FF0000'], ['Maroon', '#800000'], ['Pink', '#FFC0CB'], ['Crimson', '#DC143C'],
+        ['Orange', '#FFA500'], ['Coral', '#FF7F50'], ['Brown', '#A52A2A'], ['Gold', '#FFD700'],
+        ['Yellow', '#FFFF00'], ['Olive', '#808000'], ['Lime', '#00FF00'], ['Green', '#008000'],
+        ['Teal', '#008080'], ['Cyan', '#00FFFF'], ['Turquoise', '#40E0D0'], ['Blue', '#0000FF'],
+        ['Navy', '#000080'], ['Sky Blue', '#87CEEB'], ['Purple', '#800080'], ['Violet', '#EE82EE'],
+        ['Magenta', '#FF00FF'], ['Indigo', '#4B0082'], ['Beige', '#F5F5DC']
+    ];
+
+    let winner = namedColors[0][0];
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    namedColors.forEach(function (entry) {
+        const swatch = itmHexToRgb(entry[1]);
+        if (!swatch) return;
+        const dr = rgb.r - swatch.r;
+        const dg = rgb.g - swatch.g;
+        const db = rgb.b - swatch.b;
+        const distance = (dr * dr) + (dg * dg) + (db * db);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            winner = entry[0];
+        }
+    });
+
+    return winner;
+}
+
+function itmSyncCableColorEnglishName(hexValue) {
+    const colorNameInput = document.querySelector('input[name="color"]');
+    if (!colorNameInput) return;
+
+    const normalized = (hexValue || '').trim();
+    if (!/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalized)) return;
+    colorNameInput.value = itmClosestEnglishColorName(normalized);
+}
 
 document.addEventListener('change', function (event) {
     const picker = event.target.closest('[data-color-picker-for]');
@@ -890,6 +949,7 @@ document.addEventListener('change', function (event) {
         colorInput.value = picker.value;
         colorInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
+    itmSyncCableColorEnglishName(picker.value);
 });
 </script>
 
