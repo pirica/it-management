@@ -276,6 +276,10 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
+$visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return !(($GLOBALS['crud_table'] ?? '') === 'cable_colors' && $col['Field'] === 'company_id');
+}));
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
@@ -614,7 +618,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
-                            <?php foreach ($fieldColumns as $col): ?>
+                            <?php foreach ($visibleFieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -636,7 +640,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
-                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                     <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
                                         <td><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($row)); ?></td>
@@ -654,8 +658,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('hex_color', array_column($fieldColumns, 'Field'), true)); ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
+                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('hex_color', array_column($visibleFieldColumns, 'Field'), true)); ?>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -679,7 +683,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php if ($crud_table === 'cable_colors' && $hasCompany && $company_id > 0): ?>
+                        <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                    <?php endif; ?>
+                    <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
@@ -739,7 +746,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
