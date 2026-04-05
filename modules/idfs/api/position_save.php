@@ -117,7 +117,7 @@ if ($stmtIdf) {
 }
 
 $notes_val = $notes !== '' ? $notes : null;
-$equip_val = $equipment_id > 0 ? $equipment_id : null;
+$equipmentId_val = $equipment_id > 0 ? $equipment_id : random_int(1000, 9999);
 
 if ($position_id > 0) {
     $stmtPos = mysqli_prepare(
@@ -152,7 +152,7 @@ if ($position_id > 0) {
          LIMIT 1"
     );
     if ($stmtUpdatePos) {
-        mysqli_stmt_bind_param($stmtUpdatePos, 'ssiisi', $device_type, $device_name, $equip_val, $port_count, $notes_val, $position_id);
+        mysqli_stmt_bind_param($stmtUpdatePos, 'ssiisi', $device_type, $device_name, $equipmentId_val, $port_count, $notes_val, $position_id);
         if (!mysqli_stmt_execute($stmtUpdatePos)) {
             idf_fail('DB error updating position: ' . mysqli_stmt_error($stmtUpdatePos), 500);
         }
@@ -172,7 +172,7 @@ if ($position_id > 0) {
            notes=VALUES(notes)"
     );
     if ($stmtInsertPos) {
-        mysqli_stmt_bind_param($stmtInsertPos, 'iiisssis', $company_id, $idf_id, $position_no, $device_type, $device_name, $equip_val, $port_count, $notes_val);
+        mysqli_stmt_bind_param($stmtInsertPos, 'iiisssis', $company_id, $idf_id, $position_no, $device_type, $device_name, $equipmentId_val, $port_count, $notes_val);
         if (!mysqli_stmt_execute($stmtInsertPos)) {
             idf_fail('DB error saving position: ' . mysqli_stmt_error($stmtInsertPos), 500);
         }
