@@ -25,6 +25,7 @@ function cr_escape_identifier($name) {
 
 function cr_table_columns($conn, $table) {
     $cols = [];
+    if (!itm_is_safe_identifier($table)) return $cols;
     $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $cols[] = $row;
@@ -33,16 +34,22 @@ function cr_table_columns($conn, $table) {
 }
 
 function cr_fk_map($conn, $table) {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $map = [];
+    if (!itm_is_safe_identifier($table)) return $map;
     $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
             FROM information_schema.KEY_COLUMN_USAGE
             WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = '{$tableEsc}'
+              AND TABLE_NAME = ?
               AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $map = [];
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $map[$row['COLUMN_NAME']] = $row;
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $table);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $map[$row['COLUMN_NAME']] = $row;
+        }
+        mysqli_stmt_close($stmt);
     }
     return $map;
 }
@@ -50,21 +57,32 @@ function cr_fk_map($conn, $table) {
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
+    $rows = [];
+
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($col)) {
+        return $rows;
+    }
 
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
-    $where = '';
-    if (in_array('company_id', $available, true) && $company_id > 0) {
-        $where = ' WHERE company_id=' . (int)$company_id;
-    }
+    $hasCompany = (in_array('company_id', $available, true) && $company_id > 0);
+    $where = $hasCompany ? ' WHERE company_id=?' : '';
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
-    $rows = [];
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rows[] = $row;
+    
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        if ($hasCompany) {
+            mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
     }
     return $rows;
 }
@@ -265,17 +283,27 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
-        $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) {
-            $where .= ' AND company_id=' . (int)$company_id;
+        $hasCompanyFilter = ($hasCompany && $company_id > 0);
+        $where = ' WHERE id=?';
+        if ($hasCompanyFilter) {
+            $where .= ' AND company_id=?';
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            header('Location: ' . $listUrl);
-            exit;
+        
+        $stmt = mysqli_prepare($conn, $deleteSql);
+        if ($stmt) {
+            if ($hasCompanyFilter) {
+                mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+            } else {
+                mysqli_stmt_bind_param($stmt, 'i', $id);
+            }
+            if (!mysqli_stmt_execute($stmt)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                mysqli_stmt_close($stmt);
+                header('Location: ' . $listUrl);
+                exit;
+            }
+            mysqli_stmt_close($stmt);
         }
     }
     header('Location: ' . $listUrl);
@@ -295,12 +323,25 @@ foreach ($fieldColumns as $col) {
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
-    $where = ' WHERE id=' . $editId;
-    if ($hasCompany && $company_id > 0) {
-        $where .= ' AND company_id=' . (int)$company_id;
+    $hasCompanyFilter = ($hasCompany && $company_id > 0);
+    $where = ' WHERE id=?';
+    if ($hasCompanyFilter) {
+        $where .= ' AND company_id=?';
     }
-    $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
-    $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
+    $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        if ($hasCompanyFilter) {
+            mysqli_stmt_bind_param($stmt, 'ii', $editId, $company_id);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $editId);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $data = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : [];
+        mysqli_stmt_close($stmt);
+    }
+    
     if (!$data) {
         $errors[] = 'Record not found.';
     }
@@ -329,7 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
-                $data[$name] = 'NULL';
+                $data[$name] = null;
                 continue;
             }
 
@@ -340,34 +381,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $meta = cr_fk_metadata($conn, $fkTable);
                 $labelCol = $meta['label_col'];
                 $available = $meta['available'];
-                $newValueEsc = mysqli_real_escape_string($conn, $newValueRaw);
 
+                $hasCompanyFilter = (in_array('company_id', $available, true) && $company_id > 0);
                 $findSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
-                    . ' WHERE ' . cr_escape_identifier($labelCol) . "='" . $newValueEsc . "'";
-                if (in_array('company_id', $available, true) && $company_id > 0) {
-                    $findSql .= ' AND company_id=' . (int)$company_id;
+                    . ' WHERE ' . cr_escape_identifier($labelCol) . "=?";
+                if ($hasCompanyFilter) {
+                    $findSql .= ' AND company_id=?';
                 }
                 $findSql .= ' LIMIT 1';
-                $existing = mysqli_query($conn, $findSql);
-                if ($existing && mysqli_num_rows($existing) > 0) {
-                    $row = mysqli_fetch_assoc($existing);
-                    $data[$name] = (string)(int)$row['id'];
+                
+                $stmtFind = mysqli_prepare($conn, $findSql);
+                $existingId = null;
+                if ($stmtFind) {
+                    if ($hasCompanyFilter) {
+                        mysqli_stmt_bind_param($stmtFind, 'si', $newValueRaw, $company_id);
+                    } else {
+                        mysqli_stmt_bind_param($stmtFind, 's', $newValueRaw);
+                    }
+                    mysqli_stmt_execute($stmtFind);
+                    $resEx = mysqli_stmt_get_result($stmtFind);
+                    if ($resEx && mysqli_num_rows($resEx) > 0) {
+                        $row = mysqli_fetch_assoc($resEx);
+                        $existingId = (int)$row['id'];
+                    }
+                    mysqli_stmt_close($stmtFind);
+                }
+
+                if ($existingId !== null) {
+                    $data[$name] = $existingId;
                 } else {
                     $insertFields = [cr_escape_identifier($labelCol)];
-                    $insertValues = ["'" . $newValueEsc . "'"];
-                    if (in_array('company_id', $available, true) && $company_id > 0) {
+                    $placeholders = ['?'];
+                    $params = [$newValueRaw];
+                    $types = 's';
+                    if ($hasCompanyFilter) {
                         $insertFields[] = '`company_id`';
-                        $insertValues[] = (string)(int)$company_id;
+                        $placeholders[] = '?';
+                        $params[] = (int)$company_id;
+                        $types .= 'i';
                     }
                     $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
-                        . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
-                    $dbErrorCode = 0;
-                    $dbErrorMessage = '';
-                    if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                        $data[$name] = (string)(int)mysqli_insert_id($conn);
-                    } else {
-                        $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-                        $data[$name] = 'NULL';
+                        . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $placeholders) . ')';
+                    
+                    $stmtIns = mysqli_prepare($conn, $insertSql);
+                    if ($stmtIns) {
+                        mysqli_stmt_bind_param($stmtIns, $types, ...$params);
+                        if (mysqli_stmt_execute($stmtIns)) {
+                            $data[$name] = (int)mysqli_insert_id($conn);
+                        } else {
+                            $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtIns), mysqli_stmt_error($stmtIns));
+                            $data[$name] = null;
+                        }
+                        mysqli_stmt_close($stmtIns);
                     }
                 }
                 continue;
@@ -376,51 +441,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            $data[$name] = 'NULL';
+            $data[$name] = null;
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
             $normalizedNumeric = null;
             $numericError = '';
             if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {
                 $errors[] = $numericError;
-                $data[$name] = 'NULL';
+                $data[$name] = null;
             } else {
                 $data[$name] = $normalizedNumeric;
             }
         } else {
-            $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+            $data[$name] = (string)$value;
         }
     }
 
     if (empty($errors)) {
-        if ($crud_action === 'create') {
-            $fields = [];
-            $values = [];
-            foreach ($fieldColumns as $col) {
-                $name = $col['Field'];
-                $fields[] = cr_escape_identifier($name);
-                $values[] = $data[$name];
+        $fields = [];
+        $placeholders = [];
+        $params = [];
+        $types = '';
+
+        foreach ($fieldColumns as $col) {
+            $name = $col['Field'];
+            $fields[] = cr_escape_identifier($name);
+            $placeholders[] = '?';
+            $params[] = $data[$name];
+            
+            $colType = strtolower($col['Type']);
+            if (str_contains($colType, 'int') || str_contains($colType, 'decimal') || str_contains($colType, 'float') || str_contains($colType, 'double')) {
+                $types .= ($data[$name] === null) ? 's' : (str_contains($colType, 'int') ? 'i' : 'd');
+            } else {
+                $types .= 's';
             }
-            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
-        } else {
-            $sets = [];
-            foreach ($fieldColumns as $col) {
-                $name = $col['Field'];
-                $sets[] = cr_escape_identifier($name) . '=' . $data[$name];
-            }
-            $where = ' WHERE id=' . $editId;
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
-            }
-            $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: ' . $listUrl);
-            exit;
+        if ($crud_action === 'create') {
+            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, $types, ...$params);
+                if (mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    header('Location: ' . $listUrl);
+                    exit;
+                }
+                $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                mysqli_stmt_close($stmt);
+            }
+        } else {
+            $sets = [];
+            foreach ($fields as $f) {
+                $sets[] = $f . '=?';
+            }
+            $hasCompanyFilter = ($hasCompany && $company_id > 0);
+            $where = ' WHERE id=?';
+            if ($hasCompanyFilter) {
+                $where .= ' AND company_id=?';
+            }
+            $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
+            
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                $types .= 'i';
+                $params[] = $editId;
+                if ($hasCompanyFilter) {
+                    $types .= 'i';
+                    $params[] = $company_id;
+                }
+                mysqli_stmt_bind_param($stmt, $types, ...$params);
+                if (mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    header('Location: ' . $listUrl);
+                    exit;
+                }
+                $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                mysqli_stmt_close($stmt);
+            }
         }
-        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 
