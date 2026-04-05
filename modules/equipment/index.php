@@ -232,8 +232,13 @@ if (!empty($_SESSION['crud_success'])) {
                                     <?php if ($isSwitch): ?>
                                         <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
-                                    <?php $deleteUrl = './delete.php?id=' . (int)$row['id']; ?>
-<a class="btn btn-sm btn-danger" href="<?php echo $deleteUrl; ?>" onclick="return confirm('Delete this equipment?');">🗑️</a>
+                                    <?php
+                                    $deleteUrl = './delete.php?id=' . (int)$row['id'];
+                                    $deleteConfirmText = $isSwitch
+                                        ? 'Delete this switch and all related switch port data? This action cannot be undone.'
+                                        : 'Delete this equipment?';
+                                    ?>
+                                    <a class="btn btn-sm btn-danger" href="<?php echo $deleteUrl; ?>" data-confirm="<?php echo sanitize($deleteConfirmText); ?>">🗑️</a>
 
                                 </td>
                             </tr>
