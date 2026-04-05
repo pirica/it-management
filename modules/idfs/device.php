@@ -822,6 +822,8 @@ function createLink() {
     const cableColor = linkedMode ? (f.linked_cable_color.value.trim() || 'yellow') : (f.cable_color.value.trim() || 'yellow');
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
+    const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
+    const linkedDestinationPort = selectedDestinationPort ? String(selectedDestinationPort.port_no || '') : '';
 
     const payload = {
         csrf_token: CSRF,
@@ -833,7 +835,7 @@ function createLink() {
         cable_label: cableLabel,
         notes,
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
-        linked_destination_port: '',
+        linked_destination_port: linkedMode ? linkedDestinationPort : '',
     };
 
     apiPost('link_create.php', payload)
