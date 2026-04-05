@@ -230,7 +230,7 @@ if ($switchPortId > 0) {
 }
 
 if ($equipmentId_val === null || $equipmentId_val <= 0) {
-    $equipmentId_val = random_int(1000, 9999);
+    $equipmentId_val = 0;
 }
 
 $stmtFinal = mysqli_prepare(
