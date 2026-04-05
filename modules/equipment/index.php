@@ -293,7 +293,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <div class="switch-control-input">
                                     <select id="colorSelect"
                                         data-addable-select="1"
-                                        data-add-table="switch_cablecolors"
+                                        data-add-table="cable_colors"
                                         data-add-id-col="id"
                                         data-add-label-col="color"
                                         data-add-company-scoped="1"

@@ -162,11 +162,11 @@ if (!$hasStatusId || !$hasColorId) {
 }
 
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
-$colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
+$colors = fetch_lookup_map($conn, 'cable_colors', 'color');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 if (empty($statuses) || empty($colors)) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'switch_status/switch_cablecolors lookup tables are empty']);
+    echo json_encode(['success' => false, 'error' => 'switch_status/cable_colors lookup tables are empty']);
     exit;
 }
 
@@ -352,7 +352,7 @@ if ($hasEquipmentId && $hasPortType) {
     $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
-            LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+            LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
             WHERE sp.company_id = ?
               AND sp.equipment_id = ?
@@ -371,7 +371,7 @@ if ($hasEquipmentId && $hasPortType) {
     $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
-            LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+            LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
             WHERE sp.company_id = ?
             ORDER BY sp.port_number ASC";

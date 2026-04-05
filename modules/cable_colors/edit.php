@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'switch_cablecolors';
-$crud_title = 'Switch Cable Colors';
-$crud_action = 'index';
+$crud_table = 'cable_colors';
+$crud_title = 'Cable Colors';
+$crud_action = 'edit';
 ?>
 <?php
 require '../../config/config.php';
@@ -126,13 +126,8 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === 'active') {
-        $isActive = ((int)$value === 1);
-        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
-    }
-
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
-        $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
@@ -258,52 +253,6 @@ if ($crud_action === 'delete') {
 
     cr_require_valid_csrf_token();
 
-    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
-
-    if ($bulkAction === 'clear_table') {
-        $where = '';
-        if ($hasCompany && $company_id > 0) {
-            $where = ' WHERE company_id=' . (int)$company_id;
-        }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-        }
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    if ($bulkAction === 'bulk_delete') {
-        $ids = $_POST['ids'] ?? [];
-        if (!is_array($ids)) {
-            $ids = [];
-        }
-        $idList = [];
-        foreach ($ids as $rawId) {
-            $id = (int)$rawId;
-            if ($id > 0) {
-                $idList[$id] = $id;
-            }
-        }
-
-        if (!empty($idList)) {
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
-            }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            }
-        } else {
-            $_SESSION['crud_error'] = 'No records selected for deletion.';
-        }
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
@@ -311,8 +260,12 @@ if ($crud_action === 'delete') {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            header('Location: ' . $listUrl);
+            exit;
         }
     }
     header('Location: ' . $listUrl);
@@ -349,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt) {
+        if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -465,25 +418,6 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
-
-$searchRaw = trim((string)($_GET['search'] ?? ''));
-if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($displayFieldColumns as $col) {
-        $fieldName = (string)($col['Field'] ?? '');
-        if ($fieldName === '') {
-            continue;
-        }
-        $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
-    }
-
-    if (!empty($searchConditions)) {
-        $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
-    }
-}
-
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -498,28 +432,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-$perPage = itm_resolve_records_per_page($ui_config ?? null);
-$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
-$totalRows = 0;
-if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-    $totalRows = (int)($countRow['total_rows'] ?? 0);
-}
-$totalPages = max(1, (int)ceil($totalRows / $perPage));
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) {
-    $page = 1;
-}
-if ($page > $totalPages) {
-    $page = $totalPages;
-}
-$offset = ($page - 1) * $perPage;
-
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
-$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -540,53 +453,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
-                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
-                    <?php else: ?>
-                        <span></span>
-                    <?php endif; ?>
-                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
-                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
-                    <?php else: ?>
-                        <span></span>
-                    <?php endif; ?>
-                </div>
-            <div class="card" style="margin-bottom:16px;">
-                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                </form>
-            </div>
-
-
-                <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
-                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
-                        <input type="hidden" name="page" value="1">
-                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                            <label for="moduleSearch">Search (all fields)</label>
-                            <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
-                        </div>
-                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
-                            <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn btn-sm">Clear</a>
-                        </div>
-                    </form>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <h1><?php echo sanitize($crud_title); ?></h1>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php foreach ($fieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
@@ -600,47 +479,25 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
-                                    <td>
-                                        <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
-                                        <?php endif; ?>
-                                    </td>
+                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
-                <?php if ($totalRows > $perPage): ?>
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
-                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>">Previous</a>
-                            <?php endif; ?>
-                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
-                            <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>">Next</a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
@@ -654,11 +511,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
+                        <?php if ($name === 'company_id'): ?>
+                            <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
-                            <?php elseif ($isTinyInt): ?>
+                            <?php if ($isTinyInt || $name === 'active'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -720,63 +579,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         </div>
     </div>
 </div>
-<script>
-(function () {
-    const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
-    const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
-    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
-    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
-    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
-    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
-    let selectionMode = false;
-
-    function setSelectionVisibility(visible) {
-        if (selectAllHeaderCell) {
-            selectAllHeaderCell.style.display = visible ? '' : 'none';
-        }
-        deleteCells.forEach(function (cell) {
-            cell.style.display = visible ? '' : 'none';
-        });
-    }
-
-    if (selectAllRows) {
-        selectAllRows.addEventListener('change', function () {
-            rowCheckboxes.forEach(function (checkbox) {
-                checkbox.checked = selectAllRows.checked;
-            });
-        });
-    }
-
-    if (bulkDeleteForm && toggleButton) {
-        setSelectionVisibility(false);
-
-        bulkDeleteForm.addEventListener('submit', function (event) {
-            if (event.submitter !== toggleButton) {
-                return;
-            }
-
-            if (!selectionMode) {
-                event.preventDefault();
-                selectionMode = true;
-                setSelectionVisibility(true);
-                toggleButton.textContent = 'Delete Selected';
-                return;
-            }
-
-            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
-            if (!anySelected) {
-                event.preventDefault();
-                alert('Please select at least one record to delete.');
-                return;
-            }
-
-            if (!confirm('Delete selected records?')) {
-                event.preventDefault();
-            }
-        });
-    }
-})();
-</script>
 <script src="../../js/theme.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;

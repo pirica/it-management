@@ -27,7 +27,7 @@ $sql = "SELECT
         JOIN equipment e ON e.id = sp.equipment_id
         LEFT JOIN vlans v ON v.id = sp.vlan_id
         LEFT JOIN switch_status ss ON ss.id = sp.status_id
-        LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
+        LEFT JOIN cable_colors sc ON sc.id = sp.color_id
         WHERE sp.company_id = ?
           AND sp.equipment_id = ?
         ORDER BY sp.equipment_id ASC, sp.port_number ASC, sp.id ASC";

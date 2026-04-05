@@ -229,7 +229,7 @@ if ($switchPortId > 0) {
     $stmtColor = mysqli_prepare(
         $conn,
         "SELECT id
-         FROM switch_cablecolors
+         FROM cable_colors
          WHERE company_id = ?
            AND LOWER(color) = LOWER(?)
          LIMIT 1"

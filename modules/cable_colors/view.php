@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'switch_cablecolors';
-$crud_title = 'Switch Cable Colors';
-$crud_action = 'delete';
+$crud_table = 'cable_colors';
+$crud_title = 'Cable Colors';
+$crud_action = 'view';
 ?>
 <?php
 require '../../config/config.php';
@@ -253,68 +253,15 @@ if ($crud_action === 'delete') {
 
     cr_require_valid_csrf_token();
 
-    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
-
-    if ($bulkAction === 'clear_table') {
-        $where = '';
-        if ($hasCompany && $company_id > 0) {
-            $where = ' WHERE company_id=' . (int)$company_id;
-        }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            header('Location: ' . $listUrl);
-            exit;
-        }
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    if ($bulkAction === 'bulk_delete') {
-        $ids = $_POST['ids'] ?? [];
-        if (!is_array($ids)) {
-            $ids = [];
-        }
-        $idList = [];
-        foreach ($ids as $rawId) {
-            $id = (int)$rawId;
-            if ($id > 0) {
-                $idList[$id] = $id;
-            }
-        }
-
-        if (!empty($idList)) {
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
-            }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            }
-        } else {
-            $_SESSION['crud_error'] = 'No records selected for deletion.';
-        }
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
-        $usageError = '';
-        if (!itm_can_delete_record($conn, $crud_table, 'id', $id, $company_id, $usageError)) {
-            $_SESSION['crud_error'] = $usageError;
-            header('Location: ' . $listUrl);
-            exit;
-        }
-
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);

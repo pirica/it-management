@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'switch_cablecolors';
-$crud_title = 'Switch Cable Colors';
-$crud_action = 'list_all';
+$crud_table = 'cable_colors';
+$crud_title = 'Cable Colors';
+$crud_action = 'create';
 ?>
 <?php
 require '../../config/config.php';
@@ -166,6 +166,32 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+function cr_is_color_field($fieldName) {
+    $name = strtolower((string)$fieldName);
+    return str_contains($name, 'color') || str_contains($name, 'colour') || str_contains($name, 'hex');
+}
+
+function cr_normalize_color_value($value) {
+    $raw = trim((string)$value);
+    if ($raw === '') {
+        return '';
+    }
+
+    if (!str_starts_with($raw, '#')) {
+        $raw = '#' . $raw;
+    }
+
+    if (preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $raw) !== 1) {
+        return '';
+    }
+
+    if (strlen($raw) === 4) {
+        return '#' . $raw[1] . $raw[1] . $raw[2] . $raw[2] . $raw[3] . $raw[3];
+    }
+
+    return strtoupper($raw);
+}
+
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -302,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt) {
+        if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -443,6 +469,38 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
+<style>
+.itm-color-picker {
+    display: grid;
+    gap: 8px;
+}
+.itm-color-picker input[type="text"] {
+    text-transform: uppercase;
+}
+.itm-color-picker-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.itm-color-swatch-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.itm-color-swatch {
+    width: 28px;
+    height: 28px;
+    border: 2px solid #d1d5db;
+    border-radius: 999px;
+    cursor: pointer;
+    padding: 0;
+}
+.itm-color-swatch.is-selected {
+    border-color: #111827;
+    box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.25);
+}
+</style>
 <div class="container">
     <?php include '../../includes/sidebar.php'; ?>
     <div class="main-content">
@@ -511,11 +569,13 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
+                        <?php if ($name === 'company_id'): ?>
+                            <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
-                            <?php elseif ($isTinyInt): ?>
+                            <?php if ($isTinyInt || $name === 'active'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -547,6 +607,19 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
+                            <?php elseif (cr_is_color_field($name)): ?>
+                                <?php $normalizedColor = cr_normalize_color_value($displayVal); ?>
+                                <div class="itm-color-picker" data-color-picker="1">
+                                    <div class="itm-color-picker-row">
+                                        <input type="color" value="<?php echo sanitize($normalizedColor !== '' ? $normalizedColor : '#000000'); ?>" data-color-native="1">
+                                        <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="#RRGGBB" data-color-text="1">
+                                    </div>
+                                    <div class="itm-color-swatch-list">
+                                        <?php foreach (['#000000', '#FFFFFF', '#FF0000', '#FF7F00', '#FFFF00', '#00A651', '#00AEEF', '#0057B8', '#7F3FBF', '#EC008C', '#A67C52', '#808080'] as $paletteColor): ?>
+                                            <button type="button" class="itm-color-swatch<?php echo (strtoupper($normalizedColor) === strtoupper($paletteColor)) ? ' is-selected' : ''; ?>" data-color-swatch="<?php echo sanitize($paletteColor); ?>" style="background:<?php echo sanitize($paletteColor); ?>;" aria-label="Select <?php echo sanitize($paletteColor); ?>"></button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -599,6 +672,55 @@ document.addEventListener('change', function (event) {
     if (indicator) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
+});
+
+document.querySelectorAll('[data-color-picker="1"]').forEach(function (picker) {
+    const textInput = picker.querySelector('[data-color-text="1"]');
+    const nativeInput = picker.querySelector('[data-color-native="1"]');
+    const swatches = picker.querySelectorAll('[data-color-swatch]');
+
+    function normalizeHex(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return '';
+        const withHash = trimmed.startsWith('#') ? trimmed : '#' + trimmed;
+        if (!/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(withHash)) return '';
+        if (withHash.length === 4) {
+            return '#' + withHash[1] + withHash[1] + withHash[2] + withHash[2] + withHash[3] + withHash[3];
+        }
+        return withHash.toUpperCase();
+    }
+
+    function setColor(value, shouldUpdateText = false) {
+        const normalized = normalizeHex(value);
+        if (normalized) {
+            nativeInput.value = normalized;
+            if (shouldUpdateText) textInput.value = normalized;
+        }
+
+        swatches.forEach(function (swatch) {
+            swatch.classList.toggle('is-selected', normalized !== '' && normalizeHex(swatch.dataset.colorSwatch) === normalized);
+        });
+    }
+
+    setColor(textInput.value, false);
+
+    nativeInput.addEventListener('input', function () {
+        const value = nativeInput.value.toUpperCase();
+        textInput.value = value;
+        setColor(value, false);
+    });
+
+    textInput.addEventListener('input', function () {
+        setColor(textInput.value, false);
+    });
+
+    swatches.forEach(function (swatch) {
+        swatch.addEventListener('click', function () {
+            const value = swatch.dataset.colorSwatch || '';
+            textInput.value = value.toUpperCase();
+            setColor(value, false);
+        });
+    });
 });
 </script>
 
