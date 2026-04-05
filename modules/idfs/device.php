@@ -362,6 +362,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($ports as $p): ?>
                         <?php
                         $linkText = '';
+                        $connectedToText = trim((string)($p['connected_to'] ?? ''));
                         $unlinkBtn = '';
                         if (!empty($p['link_id']) && !empty($p['other_port_id']) && isset($otherMap[(int)$p['other_port_id']])) {
                             $o = $otherMap[(int)$p['other_port_id']];
@@ -371,6 +372,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
                                 . 'Pos ' . (int)$o['position_no'] . ' • ' . sanitize($o['device_name']) . ' • Port ' . (int)$o['port_no'] . $label
                                 . ($isLoopRisk ? ' <span class="badge badge-danger" title="Same-device link detected. This can create a Layer 2 loop on switches without STP.">Loop Risk</span>' : '');
+                            if ($connectedToText === '') {
+                                $connectedToText = 'Pos ' . (int)$o['position_no'] . ' • ' . (string)$o['device_name'] . ' • Port ' . (int)$o['port_no'];
+                            }
                             $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                         }
                         ?>
@@ -379,7 +383,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize($p['port_type']); ?></td>
                             <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
                             <td><?php echo sanitize($p['status']); ?></td>
-                            <td><?php echo sanitize((string)($p['connected_to'] ?? '')); ?></td>
+                            <td><?php echo sanitize($connectedToText); ?></td>
                             <td><?php echo sanitize((string)($p['vlan'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['speed'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['poe'] ?? '')); ?></td>
