@@ -461,10 +461,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <input class="input" name="linked_equipment_port" placeholder="e.g. 12">
                     </div>
                     <div>
-                        <label class="label">Destination port</label>
-                        <input class="input" name="linked_destination_port" placeholder="e.g. 24">
-                    </div>
-                    <div>
                         <label class="label">Cable color</label>
                         <input class="input" type="color" name="linked_cable_color_picker" value="#ffff00" style="height:40px; padding:4px;">
                         <input class="input" name="linked_cable_color" placeholder="e.g. yellow, blue, #ffcc00" value="yellow" style="margin-top:8px;">
@@ -626,11 +622,32 @@ function closeLinkModal() {
 
 function createLink() {
     const f = document.getElementById('linkForm');
-    if (!f.port_id_b.value) {
+    const linkedMode = Boolean(f.equipment_id.value && f.switch_port_id.value);
+    let destinationPortId = f.port_id_b.value ? Number(f.port_id_b.value) : 0;
+
+    if (linkedMode) {
+        const linkedPortNo = Number((f.linked_equipment_port.value || '').trim());
+        if (!linkedPortNo || Number.isNaN(linkedPortNo)) {
+            alert('Unable to determine destination port from selected equipment port.');
+            return;
+        }
+        const matchingPort = PORTS.find((port) =>
+            Number(port.id) !== Number(f.port_id_a.value)
+            && !port.is_linked
+            && Number(port.port_no) === linkedPortNo
+        );
+        if (!matchingPort) {
+            alert(`No available destination port found for port ${linkedPortNo}.`);
+            return;
+        }
+        destinationPortId = Number(matchingPort.id);
+    }
+
+    if (!destinationPortId) {
         alert('Please choose a destination port.');
         return;
     }
-    const linkedMode = Boolean(f.equipment_id.value && f.switch_port_id.value);
+
     const cableColor = linkedMode ? (f.linked_cable_color.value.trim() || 'yellow') : (f.cable_color.value.trim() || 'yellow');
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
@@ -638,14 +655,14 @@ function createLink() {
     const payload = {
         csrf_token: CSRF,
         port_id_a: Number(f.port_id_a.value),
-        port_id_b: Number(f.port_id_b.value),
+        port_id_b: destinationPortId,
         equipment_id: f.equipment_id.value ? Number(f.equipment_id.value) : null,
         switch_port_id: f.switch_port_id.value ? Number(f.switch_port_id.value) : null,
         cable_color: cableColor,
         cable_label: cableLabel,
         notes,
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
-        linked_destination_port: linkedMode ? f.linked_destination_port.value.trim() : '',
+        linked_destination_port: '',
     };
 
     apiPost('link_create.php', payload)
@@ -739,7 +756,6 @@ function populateLinkedEquipmentFields() {
 
     const port = JSON.parse(selectedOption.dataset.portJson);
     f.linked_equipment_port.value = port.equipment_port || '';
-    f.linked_destination_port.value = port.equipment_port || '';
     f.linked_cable_color.value = port.equipment_color || 'yellow';
     f.linked_cable_color_picker.value = normalizeColorToHex(port.equipment_color || 'yellow');
     f.linked_cable_label.value = port.equipment_label || '';
