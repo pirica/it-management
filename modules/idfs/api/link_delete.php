@@ -32,17 +32,25 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
 
-$stmtDel = mysqli_prepare($conn, "DELETE FROM idf_links WHERE id=? LIMIT 1");
+$portA = (int)($row['port_id_a'] ?? 0);
+$portB = (int)($row['port_id_b'] ?? 0);
+
+$stmtDel = mysqli_prepare(
+    $conn,
+    "DELETE FROM idf_links
+     WHERE company_id = ?
+       AND (
+            (port_id_a = ? AND port_id_b = ?)
+            OR (port_id_a = ? AND port_id_b = ?)
+       )"
+);
 if ($stmtDel) {
-    mysqli_stmt_bind_param($stmtDel, 'i', $link_id);
+    mysqli_stmt_bind_param($stmtDel, 'iiiii', $company_id, $portA, $portB, $portB, $portA);
     if (!mysqli_stmt_execute($stmtDel)) {
         idf_fail('DB error deleting link: ' . mysqli_stmt_error($stmtDel), 500);
     }
     mysqli_stmt_close($stmtDel);
 }
-
-$portA = (int)($row['port_id_a'] ?? 0);
-$portB = (int)($row['port_id_b'] ?? 0);
 if ($portA > 0 && $portB > 0) {
     $clearConnected = '';
     $stmtPortClear = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");

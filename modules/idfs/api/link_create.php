@@ -229,6 +229,10 @@ if ($switchPortId > 0) {
     }
 }
 
+if ($equipmentId_val === null || $equipmentId_val <= 0) {
+    $equipmentId_val = random_int(1000, 9999);
+}
+
 $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
@@ -239,16 +243,27 @@ $stmtFinal = mysqli_prepare(
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
 
+$insertedLinkIds = [];
 if ($stmtFinal) {
-    mysqli_stmt_bind_param(
-        $stmtFinal, 'iiiisssissiisss',
-        $company_id, $portA, $portB, $equipmentId_val, $equipmentHostname_val,
-        $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
-        $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
-        $label_val, $notes_val
-    );
-    if (!mysqli_stmt_execute($stmtFinal)) {
-        idf_fail('DB error creating link: ' . mysqli_stmt_error($stmtFinal), 500);
+    $pairs = [
+        [$portA, $portB],
+        [$portB, $portA],
+    ];
+
+    foreach ($pairs as $pair) {
+        $portIdA = (int)$pair[0];
+        $portIdB = (int)$pair[1];
+        mysqli_stmt_bind_param(
+            $stmtFinal, 'iiiisssissiisss',
+            $company_id, $portIdA, $portIdB, $equipmentId_val, $equipmentHostname_val,
+            $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
+            $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
+            $label_val, $notes_val
+        );
+        if (!mysqli_stmt_execute($stmtFinal)) {
+            idf_fail('DB error creating link: ' . mysqli_stmt_error($stmtFinal), 500);
+        }
+        $insertedLinkIds[] = (int)mysqli_insert_id($conn);
     }
     mysqli_stmt_close($stmtFinal);
 }
@@ -269,4 +284,7 @@ if (
     }
 }
 
-idf_ok(['link_id' => (int)mysqli_insert_id($conn)]);
+idf_ok([
+    'link_id' => (int)($insertedLinkIds[0] ?? 0),
+    'link_ids' => $insertedLinkIds,
+]);

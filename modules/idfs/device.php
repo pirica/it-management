@@ -53,13 +53,9 @@ $resPorts = mysqli_query(
        l.cable_color,
        l.cable_label,
        l.notes AS link_notes,
-       CASE
-         WHEN l.port_id_a = pr.id THEN l.port_id_b
-         WHEN l.port_id_b = pr.id THEN l.port_id_a
-         ELSE NULL
-       END AS other_port_id
+       l.port_id_b AS other_port_id
      FROM idf_ports pr
-     LEFT JOIN idf_links l ON (l.port_id_a = pr.id OR l.port_id_b = pr.id)
+     LEFT JOIN idf_links l ON l.port_id_a = pr.id
      WHERE pr.position_id=$position_id
      ORDER BY pr.port_no ASC"
 );
@@ -138,7 +134,7 @@ $stmtDestinationPorts = mysqli_prepare(
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
      JOIN idfs i ON i.id = p.idf_id
-     LEFT JOIN idf_links l ON (l.port_id_a = pr.id OR l.port_id_b = pr.id)
+     LEFT JOIN idf_links l ON l.port_id_a = pr.id
      WHERE p.idf_id = ?
        AND i.company_id = ?
        AND p.id <> ?
