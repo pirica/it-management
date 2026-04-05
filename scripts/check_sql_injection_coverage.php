@@ -20,7 +20,7 @@ $directQueryPattern = '/mysqli_query\s*\(/i';
 
 // Common sanitization and safety indicators. Presence does not guarantee safety,
 // but helps reduce obvious false positives in static checks.
-$safetyPattern = '/mysqli_prepare\s*\(|mysqli_stmt_bind_param\s*\(|\(int\)\s*\$|intval\s*\(|cr_escape_identifier\s*\(|so_escape_identifier\s*\(|mysqli_real_escape_string\s*\(/i';
+$safetyPattern = '/mysqli_prepare\s*\(|mysqli_stmt_bind_param\s*\(|\(int\)\s*\(?\$|intval\s*\(|cr_escape_identifier\s*\(|so_escape_identifier\s*\(|itm_is_safe_identifier\s*\(|mysqli_real_escape_string\s*\(/i';
 
 $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
