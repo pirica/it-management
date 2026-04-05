@@ -355,7 +355,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         <span class="idf-badge">🔌 <?php echo (int)$pos['port_count']; ?> ports</span>
                                                     <?php endif; ?>
                                                     <?php if (!empty($pos['equipment_id'])): ?>
-                                                        <span class="idf-badge">🧾 Asset ID <?php echo (int)$pos['equipment_id']; ?></span>
+                                                        <span class="idf-badge">🧾 Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
                                                     <?php endif; ?>
                                                 </div>
                                             <?php endif; ?>
@@ -395,7 +395,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                         <td><?php echo $pos ? sanitize((string)$pos['device_type']) : ''; ?></td>
                         <td><?php echo $pos ? sanitize((string)$pos['device_name']) : ''; ?></td>
                         <td><?php echo $pos ? (int)$pos['port_count'] : 0; ?></td>
-                        <td><?php echo $pos ? (int)($pos['equipment_id'] ?? 0) : 0; ?></td>
+                        <td><?php echo $pos ? sanitize((string)($pos['equipment_id'] ?? '')) : ''; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['notes'] ?? '')) : ''; ?></td>
                     </tr>
                 <?php endfor; ?>
