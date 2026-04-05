@@ -27,12 +27,9 @@ if ($switchPortId > 0 && $equipmentId <= 0) {
     idf_fail('Equipment is required when selecting an equipment port');
 }
 
-$low = min($portA, $portB);
-$high = max($portA, $portB);
-
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT pr.id AS port_id, i.company_id, p.id AS position_id, p.device_name
+    "SELECT pr.id AS port_id, pr.port_no, i.company_id, p.id AS position_id, p.position_no, p.device_name
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
@@ -41,14 +38,18 @@ $stmt = mysqli_prepare(
 
 $seen = [];
 $positionSeen = [];
+$positionNoSeen = [];
+$portNoSeen = [];
 $deviceSeen = [];
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'ii', $low, $high);
+    mysqli_stmt_bind_param($stmt, 'ii', $portA, $portB);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($res && ($r = mysqli_fetch_assoc($res))) {
         $seen[(int)$r['port_id']] = (int)$r['company_id'];
         $positionSeen[(int)$r['port_id']] = (int)$r['position_id'];
+        $positionNoSeen[(int)$r['port_id']] = (int)$r['position_no'];
+        $portNoSeen[(int)$r['port_id']] = (int)$r['port_no'];
         $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
     }
     mysqli_stmt_close($stmt);
@@ -57,11 +58,11 @@ if ($stmt) {
 if (count($seen) !== 2) {
     idf_fail('Port not found', 404);
 }
-if ($seen[$low] !== $company_id || $seen[$high] !== $company_id) {
+if (($seen[$portA] ?? null) !== $company_id || ($seen[$portB] ?? null) !== $company_id) {
     idf_fail('Forbidden', 403);
 }
-if (($positionSeen[$low] ?? 0) === ($positionSeen[$high] ?? 0)) {
-    $deviceName = trim((string)($deviceSeen[$low] ?? 'this device'));
+if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
+    $deviceName = trim((string)($deviceSeen[$portA] ?? 'this device'));
     idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
 }
 
@@ -72,7 +73,7 @@ $stmtUsed = mysqli_prepare(
      LIMIT 1"
 );
 if ($stmtUsed) {
-    mysqli_stmt_bind_param($stmtUsed, 'iiii', $low, $high, $low, $high);
+    mysqli_stmt_bind_param($stmtUsed, 'iiii', $portA, $portB, $portA, $portB);
     mysqli_stmt_execute($stmtUsed);
     $resUsed = mysqli_stmt_get_result($stmtUsed);
     $foundUsed = $resUsed && mysqli_num_rows($resUsed) > 0;
@@ -241,7 +242,7 @@ $stmtFinal = mysqli_prepare(
 if ($stmtFinal) {
     mysqli_stmt_bind_param(
         $stmtFinal, 'iiiisssissiisss',
-        $company_id, $low, $high, $equipmentId_val, $equipmentHostname_val,
+        $company_id, $portA, $portB, $equipmentId_val, $equipmentHostname_val,
         $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
         $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
         $label_val, $notes_val
@@ -250,6 +251,22 @@ if ($stmtFinal) {
         idf_fail('DB error creating link: ' . mysqli_stmt_error($stmtFinal), 500);
     }
     mysqli_stmt_close($stmtFinal);
+}
+
+if (
+    isset($positionNoSeen[$portA], $positionNoSeen[$portB], $portNoSeen[$portA], $portNoSeen[$portB], $deviceSeen[$portA], $deviceSeen[$portB])
+) {
+    $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . trim((string)$deviceSeen[$portB]) . ' • Port ' . (int)$portNoSeen[$portB];
+    $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . trim((string)$deviceSeen[$portA]) . ' • Port ' . (int)$portNoSeen[$portA];
+
+    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");
+    if ($stmtUpdatePort) {
+        mysqli_stmt_bind_param($stmtUpdatePort, 'si', $connectedToA, $portA);
+        mysqli_stmt_execute($stmtUpdatePort);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'si', $connectedToB, $portB);
+        mysqli_stmt_execute($stmtUpdatePort);
+        mysqli_stmt_close($stmtUpdatePort);
+    }
 }
 
 idf_ok(['link_id' => (int)mysqli_insert_id($conn)]);
