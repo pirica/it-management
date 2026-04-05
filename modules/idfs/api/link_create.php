@@ -29,7 +29,14 @@ if ($switchPortId > 0 && $equipmentId <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT pr.id AS port_id, pr.port_no, i.company_id, p.id AS position_id, p.position_no, p.device_name
+    "SELECT
+        pr.id AS port_id,
+        pr.port_no,
+        i.company_id,
+        p.id AS position_id,
+        p.position_no,
+        p.device_name,
+        p.equipment_id AS position_equipment_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
@@ -41,6 +48,7 @@ $positionSeen = [];
 $positionNoSeen = [];
 $portNoSeen = [];
 $deviceSeen = [];
+$positionEquipmentSeen = [];
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'ii', $portA, $portB);
     mysqli_stmt_execute($stmt);
@@ -51,6 +59,7 @@ if ($stmt) {
         $positionNoSeen[(int)$r['port_id']] = (int)$r['position_no'];
         $portNoSeen[(int)$r['port_id']] = (int)$r['port_no'];
         $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
+        $positionEquipmentSeen[(int)$r['port_id']] = isset($r['position_equipment_id']) ? (string)$r['position_equipment_id'] : '';
     }
     mysqli_stmt_close($stmt);
 }
@@ -229,10 +238,6 @@ if ($switchPortId > 0) {
     }
 }
 
-if ($equipmentId_val === null || $equipmentId_val === '') {
-    $equipmentId_val = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
-}
-
 $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
@@ -253,9 +258,16 @@ if ($stmtFinal) {
     foreach ($pairs as $pair) {
         $portIdA = (int)$pair[0];
         $portIdB = (int)$pair[1];
+        $equipmentIdInsert = $equipmentId_val;
+        if ($equipmentIdInsert === null || $equipmentIdInsert === '') {
+            $equipmentIdInsert = (string)($positionEquipmentSeen[$portIdB] ?? '');
+        }
+        if ($equipmentIdInsert === '') {
+            $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
+        }
         mysqli_stmt_bind_param(
             $stmtFinal, 'iiissssissiisss',
-            $company_id, $portIdA, $portIdB, $equipmentId_val, $equipmentHostname_val,
+            $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
             $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
             $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
             $label_val, $notes_val
