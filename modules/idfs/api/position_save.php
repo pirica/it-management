@@ -116,8 +116,129 @@ if ($stmtIdf) {
     }
 }
 
+if ($equipment_id <= 0) {
+    $equipmentColumns = [];
+    $resEquipmentDescribe = mysqli_query($conn, "DESCRIBE equipment");
+    while ($resEquipmentDescribe && ($column = mysqli_fetch_assoc($resEquipmentDescribe))) {
+        $equipmentColumns[(string)$column['Field']] = $column;
+    }
+    if (!$equipmentColumns || !isset($equipmentColumns['name'])) {
+        idf_fail('Equipment table is missing required structure', 500);
+    }
+
+    $generatedEquipmentToken = random_int(1000, 9999);
+    $generatedEquipmentName = $device_name !== ''
+        ? $device_name . ' #' . $generatedEquipmentToken
+        : 'IDF Device #' . $generatedEquipmentToken;
+
+    $insertColumns = ['name'];
+    $insertTypes = 's';
+    $insertValues = [$generatedEquipmentName];
+
+    if (isset($equipmentColumns['company_id'])) {
+        $insertColumns[] = 'company_id';
+        $insertTypes .= 'i';
+        $insertValues[] = $company_id;
+    }
+    if (isset($equipmentColumns['active'])) {
+        $insertColumns[] = 'active';
+        $insertTypes .= 'i';
+        $insertValues[] = 1;
+    }
+    if (isset($equipmentColumns['switch_rj45_id']) && $switch_rj45_id > 0) {
+        $insertColumns[] = 'switch_rj45_id';
+        $insertTypes .= 'i';
+        $insertValues[] = $switch_rj45_id;
+    }
+    if (isset($equipmentColumns['notes']) && $notes !== '') {
+        $insertColumns[] = 'notes';
+        $insertTypes .= 's';
+        $insertValues[] = $notes;
+    }
+
+    if (isset($equipmentColumns['equipment_type_id'])) {
+        $fallbackEquipmentTypeId = 0;
+        $stmtFallbackType = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM equipment_types
+             WHERE company_id=?
+             ORDER BY CASE WHEN LOWER(TRIM(name))='other' THEN 0 ELSE 1 END, id ASC
+             LIMIT 1"
+        );
+        if ($stmtFallbackType) {
+            mysqli_stmt_bind_param($stmtFallbackType, 'i', $company_id);
+            mysqli_stmt_execute($stmtFallbackType);
+            $resFallbackType = mysqli_stmt_get_result($stmtFallbackType);
+            $rowFallbackType = $resFallbackType ? mysqli_fetch_assoc($resFallbackType) : null;
+            $fallbackEquipmentTypeId = $rowFallbackType ? (int)$rowFallbackType['id'] : 0;
+            mysqli_stmt_close($stmtFallbackType);
+        }
+        if ($fallbackEquipmentTypeId > 0) {
+            $insertColumns[] = 'equipment_type_id';
+            $insertTypes .= 'i';
+            $insertValues[] = $fallbackEquipmentTypeId;
+        }
+    }
+
+    if (isset($equipmentColumns['status_id'])) {
+        $fallbackStatusId = 0;
+        $stmtFallbackStatus = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM equipment_statuses
+             WHERE company_id=?
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        if ($stmtFallbackStatus) {
+            mysqli_stmt_bind_param($stmtFallbackStatus, 'i', $company_id);
+            mysqli_stmt_execute($stmtFallbackStatus);
+            $resFallbackStatus = mysqli_stmt_get_result($stmtFallbackStatus);
+            $rowFallbackStatus = $resFallbackStatus ? mysqli_fetch_assoc($resFallbackStatus) : null;
+            $fallbackStatusId = $rowFallbackStatus ? (int)$rowFallbackStatus['id'] : 0;
+            mysqli_stmt_close($stmtFallbackStatus);
+        }
+        if ($fallbackStatusId > 0) {
+            $insertColumns[] = 'status_id';
+            $insertTypes .= 'i';
+            $insertValues[] = $fallbackStatusId;
+        }
+    }
+
+    foreach ($equipmentColumns as $field => $meta) {
+        $isAutoIncrement = stripos((string)$meta['Extra'], 'auto_increment') !== false;
+        $hasDefault = $meta['Default'] !== null;
+        $isNullable = strtoupper((string)$meta['Null']) === 'YES';
+        if ($isAutoIncrement || $hasDefault || $isNullable) {
+            continue;
+        }
+        if (in_array($field, $insertColumns, true)) {
+            continue;
+        }
+        idf_fail('Cannot auto-create equipment because required field "' . $field . '" is missing', 422);
+    }
+
+    $escapedColumns = array_map(static fn($column) => '`' . $column . '`', $insertColumns);
+    $placeholders = implode(', ', array_fill(0, count($insertColumns), '?'));
+    $insertSql = 'INSERT INTO equipment (' . implode(', ', $escapedColumns) . ') VALUES (' . $placeholders . ')';
+    $stmtCreateEquipment = mysqli_prepare($conn, $insertSql);
+    if (!$stmtCreateEquipment) {
+        idf_fail('DB error creating equipment placeholder', 500);
+    }
+    mysqli_stmt_bind_param($stmtCreateEquipment, $insertTypes, ...$insertValues);
+    if (!mysqli_stmt_execute($stmtCreateEquipment)) {
+        idf_fail('DB error creating equipment placeholder: ' . mysqli_stmt_error($stmtCreateEquipment), 500);
+    }
+    $equipment_id = (int)mysqli_insert_id($conn);
+    mysqli_stmt_close($stmtCreateEquipment);
+    if ($equipment_id <= 0) {
+        idf_fail('Failed to create equipment placeholder', 500);
+    }
+}
+
 $notes_val = $notes !== '' ? $notes : null;
-$equipmentId_val = $equipment_id > 0 ? $equipment_id : random_int(1000, 9999);
+$equipmentId_val = $equipment_id > 0 ? $equipment_id : null;
 
 if ($position_id > 0) {
     $stmtPos = mysqli_prepare(
