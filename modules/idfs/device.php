@@ -97,6 +97,31 @@ if ($otherIds) {
     }
 }
 
+$linkOverview = [];
+foreach ($ports as $p) {
+    if (empty($p['link_id']) || empty($p['other_port_id'])) {
+        continue;
+    }
+    $otherPortId = (int)$p['other_port_id'];
+    if (!isset($otherMap[$otherPortId])) {
+        continue;
+    }
+    $remote = $otherMap[$otherPortId];
+    $linkOverview[] = [
+        'link_id' => (int)$p['link_id'],
+        'local_port_no' => (int)($p['port_no'] ?? 0),
+        'local_label' => (string)($p['label'] ?? ''),
+        'remote_position_no' => (int)($remote['position_no'] ?? 0),
+        'remote_device_name' => (string)($remote['device_name'] ?? ''),
+        'remote_port_no' => (int)($remote['port_no'] ?? 0),
+        'cable_color' => (string)($p['cable_color'] ?? 'yellow'),
+        'cable_label' => (string)($p['cable_label'] ?? ''),
+        'equipment_hostname' => (string)($p['equipment_hostname'] ?? ''),
+        'equipment_port_type' => (string)($p['equipment_port_type'] ?? ''),
+        'equipment_port' => (string)($p['equipment_port'] ?? ''),
+    ];
+}
+
 $destinationPorts = [];
 $stmtDestinationPorts = mysqli_prepare(
     $conn,
@@ -107,6 +132,8 @@ $stmtDestinationPorts = mysqli_prepare(
         p.id AS position_id,
         p.position_no,
         p.device_name,
+        p.device_type,
+        p.equipment_id,
         l.id AS link_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
@@ -129,6 +156,8 @@ if ($stmtDestinationPorts) {
             'position_id' => (int)($row['position_id'] ?? 0),
             'position_no' => (int)($row['position_no'] ?? 0),
             'device_name' => (string)($row['device_name'] ?? ''),
+            'device_type' => (string)($row['device_type'] ?? ''),
+            'equipment_id' => isset($row['equipment_id']) ? (int)$row['equipment_id'] : 0,
             'is_linked' => !empty($row['link_id']),
         ];
     }
@@ -363,6 +392,58 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             </td>
                         </tr>
                     <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card" style="padding:14px; border-radius:18px; margin-top:14px;">
+                <h3 style="margin-top:0;">🔗 Equipment Link Map</h3>
+                <div style="opacity:.8; margin-bottom:10px; font-size:12px;">
+                    Quick view of this device's patch links to other equipment, including selected equipment metadata.
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Local Port</th>
+                        <th>Remote Device</th>
+                        <th>Remote Port</th>
+                        <th>Equipment Host</th>
+                        <th>Equipment Port</th>
+                        <th>Cable</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (!$linkOverview): ?>
+                        <tr><td colspan="6" style="opacity:.8;">No links yet for this device.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($linkOverview as $row): ?>
+                            <tr>
+                                <td>
+                                    <?php echo (int)$row['local_port_no']; ?>
+                                    <?php if ($row['local_label'] !== ''): ?>
+                                        <span style="opacity:.75;">• <?php echo sanitize($row['local_label']); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>Pos <?php echo (int)$row['remote_position_no']; ?> • <?php echo sanitize($row['remote_device_name']); ?></td>
+                                <td><?php echo (int)$row['remote_port_no']; ?></td>
+                                <td><?php echo $row['equipment_hostname'] !== '' ? sanitize($row['equipment_hostname']) : '<span style="opacity:.75;">—</span>'; ?></td>
+                                <td>
+                                    <?php if ($row['equipment_port'] !== ''): ?>
+                                        <?php echo sanitize(strtoupper($row['equipment_port_type'])); ?> <?php echo sanitize($row['equipment_port']); ?>
+                                    <?php else: ?>
+                                        <span style="opacity:.75;">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="idf-swatch" style="background:<?php echo sanitize($row['cable_color']); ?>"></span>
+                                    <?php echo sanitize($row['cable_color']); ?>
+                                    <?php if ($row['cable_label'] !== ''): ?>
+                                        <span style="opacity:.75;">• <?php echo sanitize($row['cable_label']); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -679,13 +760,15 @@ function createLink() {
             alert('Unable to determine destination port from selected equipment port.');
             return;
         }
-        const matchingPort = PORTS.find((port) =>
+        const selectedEquipmentId = Number(f.equipment_id.value);
+        const matchingPort = DESTINATION_PORTS.find((port) =>
             Number(port.id) !== Number(f.port_id_a.value)
             && !port.is_linked
             && Number(port.port_no) === linkedPortNo
+            && Number(port.equipment_id) === selectedEquipmentId
         );
         if (!matchingPort) {
-            alert(`No available destination port found for port ${linkedPortNo}.`);
+            alert(`No available destination port found on the selected equipment for port ${linkedPortNo}.`);
             return;
         }
         destinationPortId = Number(matchingPort.id);
