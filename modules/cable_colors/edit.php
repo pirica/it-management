@@ -608,11 +608,14 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php elseif (cr_is_color_field($name)): ?>
-                                <?php $normalizedColor = cr_normalize_color_value($displayVal); ?>
+                                <?php
+                                    $normalizedColor = cr_normalize_color_value($displayVal);
+                                    $colorInputValue = $normalizedColor !== '' ? $normalizedColor : $displayVal;
+                                ?>
                                 <div class="itm-color-picker" data-color-picker="1">
                                     <div class="itm-color-picker-row">
                                         <input type="color" value="<?php echo sanitize($normalizedColor !== '' ? $normalizedColor : '#000000'); ?>" data-color-native="1">
-                                        <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="#RRGGBB" data-color-text="1">
+                                        <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($colorInputValue); ?>" placeholder="#RRGGBB" data-color-text="1">
                                     </div>
                                     <div class="itm-color-swatch-list">
                                         <?php foreach (['#000000', '#FFFFFF', '#FF0000', '#FF7F00', '#FFFF00', '#00A651', '#00AEEF', '#0057B8', '#7F3FBF', '#EC008C', '#A67C52', '#808080'] as $paletteColor): ?>
@@ -702,7 +705,7 @@ document.querySelectorAll('[data-color-picker="1"]').forEach(function (picker) {
         });
     }
 
-    setColor(textInput.value, false);
+    setColor(textInput.value, true);
 
     nativeInput.addEventListener('input', function () {
         const value = nativeInput.value.toUpperCase();
