@@ -717,6 +717,27 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                            <?php elseif ($crud_table === 'cable_colors' && $name === 'hex_color'): ?>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <input
+                                        type="color"
+                                        value="<?php echo cr_is_safe_color_value($displayVal) ? sanitize($displayVal) : '#000000'; ?>"
+                                        data-color-picker-for="<?php echo sanitize($name); ?>"
+                                        aria-label="Pick <?php echo sanitize(cr_humanize_field($name)); ?>"
+                                        style="width:42px;height:38px;padding:2px;border:1px solid #d0d7de;border-radius:6px;background:#fff;"
+                                    >
+                                    <input
+                                        type="text"
+                                        name="<?php echo sanitize($name); ?>"
+                                        value="<?php echo sanitize($displayVal); ?>"
+                                        data-color-text="<?php echo sanitize($name); ?>"
+                                        placeholder="#RRGGBB"
+                                        style="min-width:130px;"
+                                    >
+                                    <span data-color-preview="<?php echo sanitize($name); ?>">
+                                        <?php echo cr_render_color_swatch($displayVal); ?>
+                                    </span>
+                                </div>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -742,7 +763,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
+                                        <span style="margin-left:8px;"><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($data)); ?></span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -831,6 +857,38 @@ document.addEventListener('change', function (event) {
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
+    }
+});
+
+document.addEventListener('input', function (event) {
+    const colorInput = event.target.closest('[data-color-text]');
+    if (!colorInput) return;
+
+    const key = colorInput.getAttribute('data-color-text');
+    const picker = document.querySelector('[data-color-picker-for="' + key + '"]');
+    const preview = document.querySelector('[data-color-preview="' + key + '"]');
+    const value = colorInput.value.trim();
+    const isHex = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+
+    if (isHex && picker) {
+        picker.value = value;
+    }
+    if (preview) {
+        preview.innerHTML = isHex
+            ? '<span title="' + value + '" aria-label="Color swatch ' + value + '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + value + ';vertical-align:middle;border-radius:2px;"></span>'
+            : '<span style="color:#666;">—</span>';
+    }
+});
+
+document.addEventListener('change', function (event) {
+    const picker = event.target.closest('[data-color-picker-for]');
+    if (!picker) return;
+
+    const key = picker.getAttribute('data-color-picker-for');
+    const colorInput = document.querySelector('[data-color-text="' + key + '"]');
+    if (colorInput) {
+        colorInput.value = picker.value;
+        colorInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
 });
 </script>
