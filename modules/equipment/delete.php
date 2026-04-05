@@ -29,6 +29,35 @@ function equipment_delete_idf_data(mysqli $conn, string $companyId, int $equipme
     );
 }
 
+function equipment_delete_switch_port_data(mysqli $conn, int $companyId, int $equipmentId): void
+{
+    if ($companyId <= 0 || $equipmentId <= 0) {
+        return;
+    }
+    if (!equipment_table_has_column($conn, 'switch_ports', 'equipment_id')) {
+        return;
+    }
+
+    $hasCompanyColumn = equipment_table_has_column($conn, 'switch_ports', 'company_id');
+    $sql = 'DELETE FROM switch_ports WHERE equipment_id = ?';
+    $types = 'i';
+    $params = [$equipmentId];
+
+    if ($hasCompanyColumn) {
+        $sql .= ' AND company_id = ?';
+        $types .= 'i';
+        $params[] = $companyId;
+    }
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return;
+    }
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+}
+
 $debugRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
 $debugPost = $_POST;
@@ -92,6 +121,7 @@ if (mysqli_affected_rows($conn) < 1) {
 }
 
 equipment_delete_idf_data($conn, (string)$company_id, $id);
+equipment_delete_switch_port_data($conn, (int)$company_id, $id);
 
 //$_SESSION['crud_success'] = 'Record deleted successfully.';
 header('Location: index.php');
