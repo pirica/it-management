@@ -125,6 +125,24 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_safe_color_value($value) {
+    $color = trim((string)$value);
+    if ($color === '') {
+        return false;
+    }
+
+    return (bool)preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
+}
+
+function cr_render_color_swatch($value) {
+    $color = trim((string)$value);
+    if (!cr_is_safe_color_value($color)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -593,6 +611,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <?php endif; ?>
                                     </a>
                                 </th>
+                                <?php if ($crud_table === 'cable_colors' && $field === 'color'): ?>
+                                    <th>Color</th>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
@@ -603,6 +624,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <?php if ($crud_table === 'cable_colors' && $f === 'color'): ?>
+                                        <td><?php echo cr_render_color_swatch($row[$f] ?? ''); ?></td>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
@@ -616,7 +640,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('color', array_column($fieldColumns, 'Field'), true)); ?>
+                            <tr><td colspan="<?php echo count($fieldColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
