@@ -22,9 +22,11 @@ $pos = null;
 if ($position_id > 0 && $company_id > 0) {
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT p.*, i.name AS idf_name, i.id AS idf_id
+        'SELECT p.*, i.name AS idf_name, i.id AS idf_id,
+                COALESCE(e.is_switch, 0) AS equipment_is_switch
          FROM idf_positions p
          JOIN idfs i ON i.id = p.idf_id
+         LEFT JOIN equipment e ON e.id = p.equipment_id
          WHERE p.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -393,8 +395,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
                     <?php foreach ($ports as $p): ?>
                         <?php
-                        $isSwitchDevice = strcasecmp(trim((string)($pos['device_type'] ?? '')), 'switch') === 0;
-                        $canEditLinkedSwitch = $isSwitchDevice
+                        $equipmentIsSwitch = (int)($pos['equipment_is_switch'] ?? 0) === 1;
+                        $canEditLinkedSwitch = $equipmentIsSwitch
                             && !empty($pos['equipment_id'])
                             && !empty($p['link_id']);
                         $editLinkedUrl = '../equipment/index.php?switch_id=' . (int)$pos['equipment_id'] . '#switch-port-manager';
