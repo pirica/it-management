@@ -393,6 +393,11 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
                     <?php foreach ($ports as $p): ?>
                         <?php
+                        $isSwitchDevice = strcasecmp(trim((string)($pos['device_type'] ?? '')), 'switch') === 0;
+                        $canEditLinkedSwitch = $isSwitchDevice
+                            && !empty($pos['equipment_id'])
+                            && !empty($p['link_id']);
+                        $editLinkedUrl = '../equipment/index.php?switch_id=' . (int)$pos['equipment_id'] . '#switch-port-manager';
                         $linkText = '';
                         $connectedToText = trim((string)($p['connected_to'] ?? ''));
                         $unlinkBtn = '';
@@ -423,6 +428,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
+                                <?php if ($canEditLinkedSwitch): ?>
+                                    <a class="btn btn-sm" href="<?php echo $editLinkedUrl; ?>">Edit Linked</a>
+                                <?php endif; ?>
                                 <button class="btn btn-sm" type="button" onclick="openLinkModal(<?php echo (int)$p['id']; ?>)">Link</button>
                                 <?php echo $unlinkBtn; ?>
                             </td>
