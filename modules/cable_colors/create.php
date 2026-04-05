@@ -125,9 +125,46 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_safe_color_value($value) {
+    $color = trim((string)$value);
+    if ($color === '') {
+        return false;
+    }
+
+    return (bool)preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
+}
+
+function cr_render_color_swatch($value) {
+    $color = trim((string)$value);
+    if (!cr_is_safe_color_value($color)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
+
+function cr_cable_color_swatch_source($row) {
+    if (!is_array($row)) {
+        return '';
+    }
+
+    $hex = trim((string)($row['hex_color'] ?? ''));
+    if ($hex !== '') {
+        return $hex;
+    }
+
+    return (string)($row['color'] ?? '');
+}
+
 function cr_render_cell_value($table, $field, $value) {
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
-        $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
@@ -164,32 +201,6 @@ function cr_require_valid_csrf_token() {
 
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
-}
-
-function cr_is_color_field($fieldName) {
-    $name = strtolower((string)$fieldName);
-    return str_contains($name, 'color') || str_contains($name, 'colour') || str_contains($name, 'hex');
-}
-
-function cr_normalize_color_value($value) {
-    $raw = trim((string)$value);
-    if ($raw === '') {
-        return '';
-    }
-
-    if (!str_starts_with($raw, '#')) {
-        $raw = '#' . $raw;
-    }
-
-    if (preg_match('/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/', $raw) !== 1) {
-        return '';
-    }
-
-    if (strlen($raw) === 4) {
-        return '#' . $raw[1] . $raw[1] . $raw[2] . $raw[2] . $raw[3] . $raw[3];
-    }
-
-    return strtoupper($raw);
 }
 
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
@@ -279,6 +290,52 @@ if ($crud_action === 'delete') {
 
     cr_require_valid_csrf_token();
 
+    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+
+    if ($bulkAction === 'clear_table') {
+        $where = '';
+        if ($hasCompany && $company_id > 0) {
+            $where = ' WHERE company_id=' . (int)$company_id;
+        }
+        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    if ($bulkAction === 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $idList = [];
+        foreach ($ids as $rawId) {
+            $id = (int)$rawId;
+            if ($id > 0) {
+                $idList[$id] = $id;
+            }
+        }
+
+        if (!empty($idList)) {
+            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
+            if ($hasCompany && $company_id > 0) {
+                $where .= ' AND company_id=' . (int)$company_id;
+            }
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            }
+        } else {
+            $_SESSION['crud_error'] = 'No records selected for deletion.';
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
@@ -286,12 +343,8 @@ if ($crud_action === 'delete') {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            header('Location: ' . $listUrl);
-            exit;
         }
     }
     header('Location: ' . $listUrl);
@@ -328,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt || $name === 'active') {
+        if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -444,6 +497,25 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
+    foreach ($displayFieldColumns as $col) {
+        $fieldName = (string)($col['Field'] ?? '');
+        if ($fieldName === '') {
+            continue;
+        }
+        $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
+    }
+
+    if (!empty($searchConditions)) {
+        $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
+    }
+}
+
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -458,7 +530,28 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
+$totalRows = 0;
+if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+    $totalRows = (int)($countRow['total_rows'] ?? 0);
+}
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+
+$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -469,38 +562,6 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
-<style>
-.itm-color-picker {
-    display: grid;
-    gap: 8px;
-}
-.itm-color-picker input[type="text"] {
-    text-transform: uppercase;
-}
-.itm-color-picker-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.itm-color-swatch-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.itm-color-swatch {
-    width: 28px;
-    height: 28px;
-    border: 2px solid #d1d5db;
-    border-radius: 999px;
-    cursor: pointer;
-    padding: 0;
-}
-.itm-color-swatch.is-selected {
-    border-color: #111827;
-    box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.25);
-}
-</style>
 <div class="container">
     <?php include '../../includes/sidebar.php'; ?>
     <div class="main-content">
@@ -511,25 +572,62 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
             <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <h1><?php echo sanitize($crud_title); ?></h1>
-                    <a href="create.php" class="btn btn-primary">➕</a>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <a href="create.php" class="btn btn-primary">➕</a>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <a href="create.php" class="btn btn-primary">➕</a>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                </div>
+            <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                </form>
+            </div>
+
+
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <input type="hidden" name="page" value="1">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="moduleSearch">Search (all fields)</label>
+                            <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn btn-sm">Clear</a>
+                        </div>
+                    </form>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
                         <tr>
+                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php foreach ($fieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
                                         <?php endif; ?>
                                     </a>
                                 </th>
+                                <?php if ($crud_table === 'cable_colors' && $field === 'hex_color'): ?>
+                                    <th>Swatch</th>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                             <th>Actions</th>
                         </tr>
@@ -537,25 +635,45 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
+                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
+                                        <td><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($row)); ?></td>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('hex_color', array_column($fieldColumns, 'Field'), true)); ?>
+                            <tr><td colspan="<?php echo count($fieldColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
+                <?php if ($totalRows > $perPage): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <?php if ($page > 1): ?>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>">Previous</a>
+                            <?php endif; ?>
+                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>">Next</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
@@ -569,13 +687,11 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
-                        <?php if ($name === 'company_id'): ?>
-                            <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
-                            <?php continue; ?>
-                        <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($name === 'company_id' && $company_id > 0): ?>
+                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
+                            <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -601,25 +717,33 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                            <?php elseif ($crud_table === 'cable_colors' && $name === 'hex_color'): ?>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <input
+                                        type="color"
+                                        value="<?php echo cr_is_safe_color_value($displayVal) ? sanitize($displayVal) : '#000000'; ?>"
+                                        data-color-picker-for="<?php echo sanitize($name); ?>"
+                                        aria-label="Pick <?php echo sanitize(cr_humanize_field($name)); ?>"
+                                        style="width:42px;height:38px;padding:2px;border:1px solid #d0d7de;border-radius:6px;background:#fff;"
+                                    >
+                                    <input
+                                        type="text"
+                                        name="<?php echo sanitize($name); ?>"
+                                        value="<?php echo sanitize($displayVal); ?>"
+                                        data-color-text="<?php echo sanitize($name); ?>"
+                                        placeholder="#RRGGBB"
+                                        style="min-width:130px;"
+                                    >
+                                    <span data-color-preview="<?php echo sanitize($name); ?>">
+                                        <?php echo cr_render_color_swatch($displayVal); ?>
+                                    </span>
+                                </div>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
-                            <?php elseif (cr_is_color_field($name)): ?>
-                                <?php $normalizedColor = cr_normalize_color_value($displayVal); ?>
-                                <div class="itm-color-picker" data-color-picker="1">
-                                    <div class="itm-color-picker-row">
-                                        <input type="color" value="<?php echo sanitize($normalizedColor !== '' ? $normalizedColor : '#000000'); ?>" data-color-native="1">
-                                        <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="#RRGGBB" data-color-text="1">
-                                    </div>
-                                    <div class="itm-color-swatch-list">
-                                        <?php foreach (['#000000', '#FFFFFF', '#FF0000', '#FF7F00', '#FFFF00', '#00A651', '#00AEEF', '#0057B8', '#7F3FBF', '#EC008C', '#A67C52', '#808080'] as $paletteColor): ?>
-                                            <button type="button" class="itm-color-swatch<?php echo (strtoupper($normalizedColor) === strtoupper($paletteColor)) ? ' is-selected' : ''; ?>" data-color-swatch="<?php echo sanitize($paletteColor); ?>" style="background:<?php echo sanitize($paletteColor); ?>;" aria-label="Select <?php echo sanitize($paletteColor); ?>"></button>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -639,7 +763,12 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
+                                        <span style="margin-left:8px;"><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($data)); ?></span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -650,6 +779,63 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
         </div>
     </div>
 </div>
+<script>
+(function () {
+    const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
+    const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function () {
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = selectAllRows.checked;
+            });
+        });
+    }
+
+    if (bulkDeleteForm && toggleButton) {
+        setSelectionVisibility(false);
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            if (event.submitter !== toggleButton) {
+                return;
+            }
+
+            if (!selectionMode) {
+                event.preventDefault();
+                selectionMode = true;
+                setSelectionVisibility(true);
+                toggleButton.textContent = 'Delete Selected';
+                return;
+            }
+
+            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
+            if (!anySelected) {
+                event.preventDefault();
+                alert('Please select at least one record to delete.');
+                return;
+            }
+
+            if (!confirm('Delete selected records?')) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
+</script>
 <script src="../../js/theme.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
@@ -674,53 +860,96 @@ document.addEventListener('change', function (event) {
     }
 });
 
-document.querySelectorAll('[data-color-picker="1"]').forEach(function (picker) {
-    const textInput = picker.querySelector('[data-color-text="1"]');
-    const nativeInput = picker.querySelector('[data-color-native="1"]');
-    const swatches = picker.querySelectorAll('[data-color-swatch]');
+document.addEventListener('input', function (event) {
+    const colorInput = event.target.closest('[data-color-text]');
+    if (!colorInput) return;
 
-    function normalizeHex(value) {
-        const trimmed = String(value || '').trim();
-        if (!trimmed) return '';
-        const withHash = trimmed.startsWith('#') ? trimmed : '#' + trimmed;
-        if (!/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(withHash)) return '';
-        if (withHash.length === 4) {
-            return '#' + withHash[1] + withHash[1] + withHash[2] + withHash[2] + withHash[3] + withHash[3];
-        }
-        return withHash.toUpperCase();
+    const key = colorInput.getAttribute('data-color-text');
+    const picker = document.querySelector('[data-color-picker-for="' + key + '"]');
+    const preview = document.querySelector('[data-color-preview="' + key + '"]');
+    const value = colorInput.value.trim();
+    const isHex = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+
+    if (isHex && picker) {
+        picker.value = value;
     }
-
-    function setColor(value, shouldUpdateText = false) {
-        const normalized = normalizeHex(value);
-        if (normalized) {
-            nativeInput.value = normalized;
-            if (shouldUpdateText) textInput.value = normalized;
-        }
-
-        swatches.forEach(function (swatch) {
-            swatch.classList.toggle('is-selected', normalized !== '' && normalizeHex(swatch.dataset.colorSwatch) === normalized);
-        });
+    if (preview) {
+        preview.innerHTML = isHex
+            ? '<span title="' + value + '" aria-label="Color swatch ' + value + '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + value + ';vertical-align:middle;border-radius:2px;"></span>'
+            : '<span style="color:#666;">—</span>';
     }
+    if (isHex && key === 'hex_color') {
+        itmSyncCableColorEnglishName(value);
+    }
+});
 
-    setColor(textInput.value, false);
+function itmHexToRgb(hex) {
+    const raw = (hex || '').trim().replace('#', '');
+    if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(raw)) return null;
+    const full = raw.length === 3
+        ? raw.split('').map(function (c) { return c + c; }).join('')
+        : raw;
 
-    nativeInput.addEventListener('input', function () {
-        const value = nativeInput.value.toUpperCase();
-        textInput.value = value;
-        setColor(value, false);
+    return {
+        r: parseInt(full.slice(0, 2), 16),
+        g: parseInt(full.slice(2, 4), 16),
+        b: parseInt(full.slice(4, 6), 16)
+    };
+}
+
+function itmClosestEnglishColorName(hex) {
+    const rgb = itmHexToRgb(hex);
+    if (!rgb) return '';
+
+    const namedColors = [
+        ['Black', '#000000'], ['White', '#FFFFFF'], ['Gray', '#808080'], ['Silver', '#C0C0C0'],
+        ['Red', '#FF0000'], ['Maroon', '#800000'], ['Pink', '#FFC0CB'], ['Crimson', '#DC143C'],
+        ['Orange', '#FFA500'], ['Coral', '#FF7F50'], ['Brown', '#A52A2A'], ['Gold', '#FFD700'],
+        ['Yellow', '#FFFF00'], ['Olive', '#808000'], ['Lime', '#00FF00'], ['Green', '#008000'],
+        ['Teal', '#008080'], ['Cyan', '#00FFFF'], ['Turquoise', '#40E0D0'], ['Blue', '#0000FF'],
+        ['Navy', '#000080'], ['Sky Blue', '#87CEEB'], ['Purple', '#800080'], ['Violet', '#EE82EE'],
+        ['Magenta', '#FF00FF'], ['Indigo', '#4B0082'], ['Beige', '#F5F5DC']
+    ];
+
+    let winner = namedColors[0][0];
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    namedColors.forEach(function (entry) {
+        const swatch = itmHexToRgb(entry[1]);
+        if (!swatch) return;
+        const dr = rgb.r - swatch.r;
+        const dg = rgb.g - swatch.g;
+        const db = rgb.b - swatch.b;
+        const distance = (dr * dr) + (dg * dg) + (db * db);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            winner = entry[0];
+        }
     });
 
-    textInput.addEventListener('input', function () {
-        setColor(textInput.value, false);
-    });
+    return winner;
+}
 
-    swatches.forEach(function (swatch) {
-        swatch.addEventListener('click', function () {
-            const value = swatch.dataset.colorSwatch || '';
-            textInput.value = value.toUpperCase();
-            setColor(value, false);
-        });
-    });
+function itmSyncCableColorEnglishName(hexValue) {
+    const colorNameInput = document.querySelector('input[name="color"]');
+    if (!colorNameInput) return;
+
+    const normalized = (hexValue || '').trim();
+    if (!/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalized)) return;
+    colorNameInput.value = itmClosestEnglishColorName(normalized);
+}
+
+document.addEventListener('change', function (event) {
+    const picker = event.target.closest('[data-color-picker-for]');
+    if (!picker) return;
+
+    const key = picker.getAttribute('data-color-picker-for');
+    const colorInput = document.querySelector('[data-color-text="' + key + '"]');
+    if (colorInput) {
+        colorInput.value = picker.value;
+        colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    itmSyncCableColorEnglishName(picker.value);
 });
 </script>
 
