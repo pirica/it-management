@@ -585,13 +585,17 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div data-link-default-field="cable_color">
                 <label class="label">Cable color</label>
-                <select class="input" name="cable_color">
-                    <?php foreach ($cableColorOptions as $cableColor): ?>
-                        <option value="<?php echo sanitize($cableColor); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
-                            <?php echo sanitize($cableColor); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="cableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:yellow; flex:0 0 auto;"></span>
+                    <select class="input" name="cable_color" data-add-table="switch_cablecolors" style="flex:1 1 auto;">
+                        <?php foreach ($cableColorOptions as $cableColor): ?>
+                            <option value="<?php echo sanitize($cableColor); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
+                                <?php echo sanitize($cableColor); ?>
+                            </option>
+                        <?php endforeach; ?>
+                        <option value="__add_new__">➕ Add</option>
+                    </select>
+                </div>
             </div>
             <div data-link-default-field="cable_label">
                 <label class="label">Cable label (optional)</label>
@@ -766,6 +770,7 @@ function openLinkModal(portId) {
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
     toggleLinkedEquipmentFields(false);
+    updateCableColorSwatch(f.cable_color.value || 'yellow');
     destinationSelect.value = '';
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
@@ -844,7 +849,10 @@ function createLink() {
         return;
     }
 
-    const cableColor = linkedMode ? (f.linked_cable_color.value.trim() || 'yellow') : (f.cable_color.value.trim() || 'yellow');
+    const defaultCableColor = (f.cable_color.value && f.cable_color.value !== '__add_new__')
+        ? f.cable_color.value.trim()
+        : 'yellow';
+    const cableColor = linkedMode ? (f.linked_cable_color.value.trim() || 'yellow') : (defaultCableColor || 'yellow');
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
     const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
@@ -934,6 +942,12 @@ function normalizeColorToHex(colorValue) {
     return `#${[match[1], match[2], match[3]].map((part) => Number(part).toString(16).padStart(2, '0')).join('')}`;
 }
 
+function updateCableColorSwatch(colorValue) {
+    const swatch = document.getElementById('cableColorSwatch');
+    if (!swatch) return;
+    swatch.style.background = colorValue || 'yellow';
+}
+
 function toggleLinkedEquipmentFields(isLinked) {
     const linkedFields = document.getElementById('linkedEquipmentFields');
     if (linkedFields) {
@@ -976,6 +990,19 @@ document.addEventListener('DOMContentLoaded', () => {
     f.linked_cable_color.addEventListener('input', (event) => {
         f.linked_cable_color_picker.value = normalizeColorToHex(event.target.value || 'yellow');
     });
+    if (f.cable_color) {
+        updateCableColorSwatch(f.cable_color.value || 'yellow');
+        f.cable_color.addEventListener('change', (event) => {
+            const selected = event.target.value || '';
+            if (selected === '__add_new__') {
+                window.open(`${IDF_BASE.replace('/idfs', '/switch_cablecolors')}/create.php`, '_blank');
+                event.target.value = 'yellow';
+                updateCableColorSwatch('yellow');
+                return;
+            }
+            updateCableColorSwatch(selected || 'yellow');
+        });
+    }
 });
 
 function unlinkPort(linkId) {
