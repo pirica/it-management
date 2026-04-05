@@ -168,10 +168,10 @@ if ($switchPortId > 0) {
 
 if ($switchPortId > 0) {
     $newPortNumber = null;
-    if ($linkedEquipmentPort !== '' && ctype_digit($linkedEquipmentPort)) {
-        $newPortNumber = (int)$linkedEquipmentPort;
-    } elseif ($linkedDestinationPort !== '' && ctype_digit($linkedDestinationPort)) {
+    if ($linkedDestinationPort !== '' && ctype_digit($linkedDestinationPort)) {
         $newPortNumber = (int)$linkedDestinationPort;
+    } elseif ($linkedEquipmentPort !== '' && ctype_digit($linkedEquipmentPort)) {
+        $newPortNumber = (int)$linkedEquipmentPort;
     }
 
     $switchLabel = $label !== '' ? $label : null;
