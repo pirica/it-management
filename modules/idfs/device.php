@@ -83,6 +83,7 @@ if ($otherIds) {
         "SELECT
            pr.id AS port_id,
            pr.port_no,
+           p.id AS position_id,
            p.position_no,
            p.device_name,
            i.id AS idf_id
@@ -94,6 +95,44 @@ if ($otherIds) {
     while ($resOther && ($r = mysqli_fetch_assoc($resOther))) {
         $otherMap[(int)$r['port_id']] = $r;
     }
+}
+
+$destinationPorts = [];
+$stmtDestinationPorts = mysqli_prepare(
+    $conn,
+    "SELECT
+        pr.id,
+        pr.port_no,
+        pr.label,
+        p.id AS position_id,
+        p.position_no,
+        p.device_name,
+        l.id AS link_id
+     FROM idf_ports pr
+     JOIN idf_positions p ON p.id = pr.position_id
+     JOIN idfs i ON i.id = p.idf_id
+     LEFT JOIN idf_links l ON (l.port_id_a = pr.id OR l.port_id_b = pr.id)
+     WHERE p.idf_id = ?
+       AND i.company_id = ?
+       AND p.id <> ?
+     ORDER BY p.position_no ASC, pr.port_no ASC"
+);
+if ($stmtDestinationPorts) {
+    mysqli_stmt_bind_param($stmtDestinationPorts, 'iii', $pos['idf_id'], $company_id, $position_id);
+    mysqli_stmt_execute($stmtDestinationPorts);
+    $resDestinationPorts = mysqli_stmt_get_result($stmtDestinationPorts);
+    while ($resDestinationPorts && ($row = mysqli_fetch_assoc($resDestinationPorts))) {
+        $destinationPorts[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'port_no' => (int)($row['port_no'] ?? 0),
+            'label' => (string)($row['label'] ?? ''),
+            'position_id' => (int)($row['position_id'] ?? 0),
+            'position_no' => (int)($row['position_no'] ?? 0),
+            'device_name' => (string)($row['device_name'] ?? ''),
+            'is_linked' => !empty($row['link_id']),
+        ];
+    }
+    mysqli_stmt_close($stmtDestinationPorts);
 }
 
 $equipmentOptions = [];
@@ -299,8 +338,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $o = $otherMap[(int)$p['other_port_id']];
                             $color = (string)($p['cable_color'] ?? 'yellow');
                             $label = !empty($p['cable_label']) ? (' • ' . sanitize((string)$p['cable_label'])) : '';
+                            $isLoopRisk = ((int)($o['position_id'] ?? 0) === (int)$position_id);
                             $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
-                                . 'Pos ' . (int)$o['position_no'] . ' • ' . sanitize($o['device_name']) . ' • Port ' . (int)$o['port_no'] . $label;
+                                . 'Pos ' . (int)$o['position_no'] . ' • ' . sanitize($o['device_name']) . ' • Port ' . (int)$o['port_no'] . $label
+                                . ($isLoopRisk ? ' <span class="badge badge-danger" title="Same-device link detected. This can create a Layer 2 loop on switches without STP.">Loop Risk</span>' : '');
                             $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                         }
                         ?>
@@ -497,6 +538,7 @@ $portsMeta = array_map(static function (array $port): array {
 }, $ports);
 echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>;
+const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
@@ -593,15 +635,21 @@ function openLinkModal(portId) {
     }
     const f = document.getElementById('linkForm');
     const destinationSelect = f.port_id_b;
-    const destinations = PORTS.filter(p => Number(p.id) !== Number(portId) && !p.is_linked);
+    const destinations = DESTINATION_PORTS.filter(p => !p.is_linked);
 
     destinationSelect.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
         const option = document.createElement('option');
         option.value = String(port.id);
-        option.textContent = `Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
+        option.textContent = `Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
         destinationSelect.appendChild(option);
     });
+    if (!destinations.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No available ports on other equipment';
+        destinationSelect.appendChild(option);
+    }
 
     f.port_id_a.value = String(source.id);
     f.source_display.value = `Port ${source.port_no}${source.label ? ` • ${source.label}` : ''}`;
