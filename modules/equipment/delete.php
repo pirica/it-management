@@ -11,17 +11,21 @@ if (!function_exists('equipment_table_has_column')) {
     }
 }
 
-function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentId): void
+function equipment_delete_idf_data(mysqli $conn, string $companyId, int $equipmentId): void
 {
-    if ($equipmentId <= 0 || $companyId <= 0) {
+    $companyId = trim($companyId);
+    if ($equipmentId <= 0 || $companyId === '') {
         return;
     }
 
+    $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
     $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
-    $companyFilter = $hasCompanyColumn ? " AND company_id = {$companyId}" : '';
+    $companyFilter = $hasCompanyColumn
+        ? " AND company_id = '" . mysqli_real_escape_string($conn, $companyId) . "'"
+        : '';
     mysqli_query(
         $conn,
-        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentId}{$companyFilter}"
+        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
     );
 }
 
@@ -87,7 +91,7 @@ if (mysqli_affected_rows($conn) < 1) {
     exit;
 }
 
-equipment_delete_idf_data($conn, (int)$company_id, $id);
+equipment_delete_idf_data($conn, (string)$company_id, $id);
 
 //$_SESSION['crud_success'] = 'Record deleted successfully.';
 header('Location: index.php');
