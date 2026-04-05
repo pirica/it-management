@@ -216,7 +216,35 @@ if ($switchPortId > 0) {
         $types .= 'i';
         $params[] = $switchColorId;
     }
+    $canUpdatePortNumber = false;
     if ($newPortNumber !== null && $newPortNumber > 0) {
+        $currentPortNumber = isset($switchPort['equipment_port']) ? (int)$switchPort['equipment_port'] : 0;
+        if ($newPortNumber === $currentPortNumber) {
+            $canUpdatePortNumber = true;
+        } else {
+            $stmtPortConflict = mysqli_prepare(
+                $conn,
+                "SELECT id
+                 FROM switch_ports
+                 WHERE company_id = ?
+                   AND equipment_id = ?
+                   AND port_type = ?
+                   AND port_number = ?
+                   AND id <> ?
+                 LIMIT 1"
+            );
+            if ($stmtPortConflict) {
+                $portType = (string)($switchPort['equipment_port_type'] ?? '');
+                mysqli_stmt_bind_param($stmtPortConflict, 'iisii', $company_id, $equipmentId, $portType, $newPortNumber, $switchPortId);
+                mysqli_stmt_execute($stmtPortConflict);
+                $resPortConflict = mysqli_stmt_get_result($stmtPortConflict);
+                $hasConflict = $resPortConflict && mysqli_num_rows($resPortConflict) > 0;
+                mysqli_stmt_close($stmtPortConflict);
+                $canUpdatePortNumber = !$hasConflict;
+            }
+        }
+    }
+    if ($canUpdatePortNumber) {
         $updates[] = "port_number = ?";
         $types .= 'i';
         $params[] = $newPortNumber;
@@ -231,8 +259,15 @@ if ($switchPortId > 0) {
     $stmtUpd = mysqli_prepare($conn, $sqlUpd);
     if ($stmtUpd) {
         mysqli_stmt_bind_param($stmtUpd, $types, ...$params);
-        if (!mysqli_stmt_execute($stmtUpd)) {
-            idf_fail('DB error updating switch port: ' . mysqli_stmt_error($stmtUpd), 500);
+        try {
+            if (!mysqli_stmt_execute($stmtUpd)) {
+                idf_fail('DB error updating switch port: ' . mysqli_stmt_error($stmtUpd), 500);
+            }
+        } catch (mysqli_sql_exception $e) {
+            if ((int)$e->getCode() === 1062) {
+                idf_fail('Selected destination port number conflicts with an existing switch port on this equipment.');
+            }
+            throw $e;
         }
         mysqli_stmt_close($stmtUpd);
     }
