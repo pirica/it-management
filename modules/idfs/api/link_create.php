@@ -32,7 +32,7 @@ $high = max($portA, $portB);
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT pr.id AS port_id, i.company_id, p.id AS position_id
+    "SELECT pr.id AS port_id, i.company_id, p.id AS position_id, p.device_name
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
@@ -41,6 +41,7 @@ $stmt = mysqli_prepare(
 
 $seen = [];
 $positionSeen = [];
+$deviceSeen = [];
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'ii', $low, $high);
     mysqli_stmt_execute($stmt);
@@ -48,6 +49,7 @@ if ($stmt) {
     while ($res && ($r = mysqli_fetch_assoc($res))) {
         $seen[(int)$r['port_id']] = (int)$r['company_id'];
         $positionSeen[(int)$r['port_id']] = (int)$r['position_id'];
+        $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
     }
     mysqli_stmt_close($stmt);
 }
@@ -59,7 +61,8 @@ if ($seen[$low] !== $company_id || $seen[$high] !== $company_id) {
     idf_fail('Forbidden', 403);
 }
 if (($positionSeen[$low] ?? 0) === ($positionSeen[$high] ?? 0)) {
-    idf_fail('Cannot link two ports on the same device. Choose a port from another device to avoid switching loops.');
+    $deviceName = trim((string)($deviceSeen[$low] ?? 'this device'));
+    idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
 }
 
 $stmtUsed = mysqli_prepare(
