@@ -82,10 +82,13 @@ if ($otherIds) {
            p.id AS position_id,
            p.position_no,
            p.device_name,
+           p.equipment_id,
+           e.serial_number AS equipment_serial_number,
            i.id AS idf_id
          FROM idf_ports pr
          JOIN idf_positions p ON p.id=pr.position_id
          JOIN idfs i ON i.id=p.idf_id
+         LEFT JOIN equipment e ON e.id = p.equipment_id
          WHERE pr.id IN ($list) AND i.company_id=$company_id"
     );
     while ($resOther && ($r = mysqli_fetch_assoc($resOther))) {
@@ -105,9 +108,10 @@ foreach ($ports as $p) {
     $remote = $otherMap[$otherPortId];
     $linkedEquipmentName = trim((string)($p['equipment_hostname'] ?? ''));
     $linkedEquipmentPort = trim((string)($p['equipment_port'] ?? ''));
+    $positionEquipmentSerial = trim((string)($remote['equipment_serial_number'] ?? ''));
     $linkedRemoteDeviceName = $linkedEquipmentName !== ''
         ? $linkedEquipmentName
-        : (string)($remote['device_name'] ?? '');
+        : ($positionEquipmentSerial !== '' ? $positionEquipmentSerial : (string)($remote['device_name'] ?? ''));
     $linkedRemotePortNo = ctype_digit($linkedEquipmentPort)
         ? (int)$linkedEquipmentPort
         : (int)($remote['port_no'] ?? 0);

@@ -59,7 +59,7 @@ if ($stmt) {
         $positionNoSeen[(int)$r['port_id']] = (int)$r['position_no'];
         $portNoSeen[(int)$r['port_id']] = (int)$r['port_no'];
         $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
-        $positionEquipmentSeen[(int)$r['port_id']] = isset($r['position_equipment_id']) ? (string)$r['position_equipment_id'] : '';
+        $positionEquipmentSeen[(int)$r['port_id']] = isset($r['position_equipment_id']) ? (int)$r['position_equipment_id'] : 0;
     }
     mysqli_stmt_close($stmt);
 }
@@ -73,6 +73,31 @@ if (($seen[$portA] ?? null) !== $company_id || ($seen[$portB] ?? null) !== $comp
 if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
     $deviceName = trim((string)($deviceSeen[$portA] ?? 'this device'));
     idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
+}
+
+$positionEquipmentSerialSeen = [];
+$positionEquipmentIds = array_values(array_unique(array_filter(array_map('intval', $positionEquipmentSeen), static function ($id) {
+    return $id > 0;
+})));
+if ($positionEquipmentIds) {
+    $list = implode(',', $positionEquipmentIds);
+    $resPositionEquipment = mysqli_query(
+        $conn,
+        "SELECT id, serial_number
+         FROM equipment
+         WHERE company_id = $company_id
+           AND id IN ($list)"
+    );
+    while ($resPositionEquipment && ($row = mysqli_fetch_assoc($resPositionEquipment))) {
+        $equipmentIdKey = (int)($row['id'] ?? 0);
+        if ($equipmentIdKey <= 0) {
+            continue;
+        }
+        $serial = trim((string)($row['serial_number'] ?? ''));
+        if ($serial !== '') {
+            $positionEquipmentSerialSeen[$equipmentIdKey] = $serial;
+        }
+    }
 }
 
 $stmtUsed = mysqli_prepare(
@@ -334,6 +359,14 @@ if (
 ) {
     $connectedDeviceB = trim((string)$deviceSeen[$portB]);
     $connectedDeviceA = trim((string)$deviceSeen[$portA]);
+    $positionEquipmentB = (int)($positionEquipmentSeen[$portB] ?? 0);
+    $positionEquipmentA = (int)($positionEquipmentSeen[$portA] ?? 0);
+    if ($positionEquipmentB > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentB])) {
+        $connectedDeviceB = $positionEquipmentSerialSeen[$positionEquipmentB];
+    }
+    if ($positionEquipmentA > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentA])) {
+        $connectedDeviceA = $positionEquipmentSerialSeen[$positionEquipmentA];
+    }
     if (is_string($equipmentConnectedToLabel)) {
         $equipmentConnectedToLabel = trim($equipmentConnectedToLabel);
         if ($equipmentConnectedToLabel !== '') {
