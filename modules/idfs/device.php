@@ -755,23 +755,61 @@ function createLink() {
     let destinationPortId = f.port_id_b.value ? Number(f.port_id_b.value) : 0;
 
     if (linkedMode) {
-        const linkedPortNo = Number((f.linked_equipment_port.value || '').trim());
-        if (!linkedPortNo || Number.isNaN(linkedPortNo)) {
+        const linkedPortRaw = (f.linked_equipment_port.value || '').trim();
+        const linkedPortNo = Number(linkedPortRaw);
+        const extractedLinkedPortMatch = linkedPortRaw.match(/(\d+)(?!.*\d)/);
+        const normalizedLinkedPortNo = (!Number.isNaN(linkedPortNo) && linkedPortNo > 0)
+            ? linkedPortNo
+            : (extractedLinkedPortMatch ? Number(extractedLinkedPortMatch[1]) : NaN);
+
+        if (!normalizedLinkedPortNo || Number.isNaN(normalizedLinkedPortNo)) {
             alert('Unable to determine destination port from selected equipment port.');
             return;
         }
         const selectedEquipmentId = Number(f.equipment_id.value);
-        const matchingPort = DESTINATION_PORTS.find((port) =>
+        const equipmentPorts = DESTINATION_PORTS.filter((port) =>
             Number(port.id) !== Number(f.port_id_a.value)
-            && !port.is_linked
-            && Number(port.port_no) === linkedPortNo
             && Number(port.equipment_id) === selectedEquipmentId
         );
-        if (!matchingPort) {
-            alert(`No available destination port found on the selected equipment for port ${linkedPortNo}.`);
+        const availableEquipmentPorts = equipmentPorts.filter((port) => !port.is_linked);
+        const matchingPort = availableEquipmentPorts.find((port) => Number(port.port_no) === normalizedLinkedPortNo);
+
+        if (!availableEquipmentPorts.length) {
+            alert('No available destination ports were found on the selected equipment.');
             return;
         }
-        destinationPortId = Number(matchingPort.id);
+        if (!matchingPort) {
+            const preselectedDestination = availableEquipmentPorts.find((port) => Number(port.id) === destinationPortId);
+            if (preselectedDestination) {
+                destinationPortId = Number(preselectedDestination.id);
+            } else if (availableEquipmentPorts.length === 1) {
+                destinationPortId = Number(availableEquipmentPorts[0].id);
+            } else {
+                const linkedPortExistsButInUse = equipmentPorts.some((port) =>
+                    Number(port.port_no) === normalizedLinkedPortNo
+                    && port.is_linked
+                );
+                const availablePortsPreview = availableEquipmentPorts
+                    .slice(0, 6)
+                    .map((port) => port.port_no)
+                    .join(', ');
+                const linkedInUseHint = linkedPortExistsButInUse
+                    ? ' The matching destination port is already linked.'
+                    : '';
+                alert(JSON.stringify({
+                    debug: 'destination_port_match_failed',
+                    selected_equipment_id: selectedEquipmentId,
+                    linked_equipment_port_raw: linkedPortRaw,
+                    normalized_linked_port_no: normalizedLinkedPortNo,
+                    available_destination_port_ids: availableEquipmentPorts.map((port) => port.id),
+                    available_destination_port_nos: availableEquipmentPorts.map((port) => port.port_no),
+                }, null, 2));
+                alert(`No available destination port found on the selected equipment for port ${normalizedLinkedPortNo}.${linkedInUseHint} Available destination ports: ${availablePortsPreview || 'none'}.`);
+                return;
+            }
+        } else {
+            destinationPortId = Number(matchingPort.id);
+        }
     }
 
     if (!destinationPortId) {
