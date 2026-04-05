@@ -16,12 +16,18 @@ $sql = "SELECT
             sp.port_type AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
+            COALESCE(v.vlan_name, '') AS equipment_vlan_name,
             sp.label AS equipment_label,
             sp.comments AS equipment_comments,
             sp.status_id AS equipment_status_id,
-            sp.color_id AS equipment_color_id
+            COALESCE(ss.status, '') AS equipment_status,
+            sp.color_id AS equipment_color_id,
+            COALESCE(sc.color, '') AS equipment_color
         FROM switch_ports sp
         JOIN equipment e ON e.id = sp.equipment_id
+        LEFT JOIN vlans v ON v.id = sp.vlan_id
+        LEFT JOIN switch_status ss ON ss.id = sp.status_id
+        LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
         WHERE sp.company_id = $company_id
           AND sp.equipment_id = $equipmentId
         ORDER BY sp.equipment_id ASC, sp.port_number ASC, sp.id ASC";
@@ -40,10 +46,13 @@ while ($row = mysqli_fetch_assoc($res)) {
         'equipment_port_type' => (string)($row['equipment_port_type'] ?? ''),
         'equipment_port' => (string)($row['equipment_port'] ?? ''),
         'equipment_vlan_id' => isset($row['equipment_vlan_id']) ? (int)$row['equipment_vlan_id'] : null,
+        'equipment_vlan_name' => (string)($row['equipment_vlan_name'] ?? ''),
         'equipment_label' => (string)($row['equipment_label'] ?? ''),
         'equipment_comments' => (string)($row['equipment_comments'] ?? ''),
         'equipment_status_id' => isset($row['equipment_status_id']) ? (int)$row['equipment_status_id'] : null,
+        'equipment_status' => (string)($row['equipment_status'] ?? ''),
         'equipment_color_id' => isset($row['equipment_color_id']) ? (int)$row['equipment_color_id'] : null,
+        'equipment_color' => (string)($row['equipment_color'] ?? ''),
     ];
 }
 

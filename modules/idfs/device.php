@@ -622,19 +622,21 @@ function createLink() {
 
 function formatSwitchPortOption(port) {
     const hostname = port.equipment_hostname || '-';
-    const vlan = port.equipment_vlan_id !== null && port.equipment_vlan_id !== undefined && port.equipment_vlan_id !== ''
-        ? String(port.equipment_vlan_id)
+    const portType = String(port.equipment_port_type || '-').toUpperCase();
+    const portNumber = port.equipment_port || '-';
+    const vlanText = port.equipment_vlan_name
+        ? `${port.equipment_vlan_name}${port.equipment_vlan_id ? ` (#${port.equipment_vlan_id})` : ''}`
         : '-';
     const label = port.equipment_label || '-';
     const comments = port.equipment_comments || '-';
-    const statusId = port.equipment_status_id !== null && port.equipment_status_id !== undefined && port.equipment_status_id !== ''
-        ? String(port.equipment_status_id)
+    const statusText = port.equipment_status
+        ? `${port.equipment_status}${port.equipment_status_id ? ` (#${port.equipment_status_id})` : ''}`
         : '-';
-    const colorId = port.equipment_color_id !== null && port.equipment_color_id !== undefined && port.equipment_color_id !== ''
-        ? String(port.equipment_color_id)
+    const colorText = port.equipment_color
+        ? `${port.equipment_color}${port.equipment_color_id ? ` (#${port.equipment_color_id})` : ''}`
         : '-';
 
-    return `${port.equipment_id} - ${hostname} - ${port.equipment_port_type || '-'} - ${port.equipment_port || '-'} - ${vlan} - ${label} - ${comments} - ${statusId} - ${colorId}`;
+    return `EQ ${port.equipment_id} | Host: ${hostname} | Type: ${portType} | Port: ${portNumber} | VLAN: ${vlanText} | Label: ${label} | Comments: ${comments} | Status: ${statusText} | Color: ${colorText}`;
 }
 
 async function loadEquipmentPorts(equipmentId) {
