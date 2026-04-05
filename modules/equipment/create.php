@@ -100,11 +100,14 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
         return;
     }
 
+    $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
     $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
-    $companyFilter = $hasCompanyColumn ? " AND company_id = {$companyId}" : '';
+    $companyFilter = $hasCompanyColumn
+        ? " AND company_id = '" . mysqli_real_escape_string($conn, (string)$companyId) . "'"
+        : '';
     mysqli_query(
         $conn,
-        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentId}{$companyFilter}"
+        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
     );
 }
 
