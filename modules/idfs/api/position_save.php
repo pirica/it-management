@@ -123,6 +123,44 @@ if ($stmtIdf) {
     }
 }
 
+if ($device_name !== '') {
+    $stmtDuplicateDeviceName = null;
+    if ($position_id > 0) {
+        $stmtDuplicateDeviceName = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_positions
+             WHERE idf_id=? AND device_name=? AND id<>?
+             LIMIT 1"
+        );
+        if ($stmtDuplicateDeviceName) {
+            mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $idf_id, $device_name, $position_id);
+        }
+    } else {
+        $stmtDuplicateDeviceName = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_positions
+             WHERE idf_id=? AND device_name=?
+             LIMIT 1"
+        );
+        if ($stmtDuplicateDeviceName) {
+            mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'is', $idf_id, $device_name);
+        }
+    }
+
+    if ($stmtDuplicateDeviceName) {
+        mysqli_stmt_execute($stmtDuplicateDeviceName);
+        $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
+        $duplicateDeviceNameExists = $resDuplicateDeviceName && mysqli_num_rows($resDuplicateDeviceName) > 0;
+        mysqli_stmt_close($stmtDuplicateDeviceName);
+
+        if ($duplicateDeviceNameExists) {
+            idf_fail('Equipment with the same device name is already on the list.');
+        }
+    }
+}
+
 if ($equipment_id > 0) {
     $equipmentIdString = (string)$equipment_id;
     $stmtDuplicateEquipment = null;
