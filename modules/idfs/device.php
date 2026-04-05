@@ -173,6 +173,25 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
     $equipmentOptions[] = $row;
 }
 
+$cableColorOptions = [];
+$resCableColors = mysqli_query(
+    $conn,
+    "SELECT color
+     FROM switch_cablecolors
+     WHERE company_id = $company_id
+     ORDER BY color ASC"
+);
+while ($resCableColors && ($row = mysqli_fetch_assoc($resCableColors))) {
+    $color = trim((string)($row['color'] ?? ''));
+    if ($color !== '') {
+        $cableColorOptions[] = $color;
+    }
+}
+if (!in_array('yellow', $cableColorOptions, true)) {
+    $cableColorOptions[] = 'yellow';
+}
+sort($cableColorOptions, SORT_NATURAL | SORT_FLAG_CASE);
+
 $equipmentTypeOptions = [];
 $resEqTypes = mysqli_query(
     $conn,
@@ -566,7 +585,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div data-link-default-field="cable_color">
                 <label class="label">Cable color</label>
-                <input class="input" name="cable_color" placeholder="e.g. yellow, blue, #ffcc00" value="yellow">
+                <select class="input" name="cable_color">
+                    <?php foreach ($cableColorOptions as $cableColor): ?>
+                        <option value="<?php echo sanitize($cableColor); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
+                            <?php echo sanitize($cableColor); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div data-link-default-field="cable_label">
                 <label class="label">Cable label (optional)</label>
