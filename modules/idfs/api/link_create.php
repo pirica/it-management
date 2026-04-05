@@ -32,7 +32,7 @@ $high = max($portA, $portB);
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT pr.id AS port_id, i.company_id
+    "SELECT pr.id AS port_id, i.company_id, p.id AS position_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
@@ -40,12 +40,14 @@ $stmt = mysqli_prepare(
 );
 
 $seen = [];
+$positionSeen = [];
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'ii', $low, $high);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($res && ($r = mysqli_fetch_assoc($res))) {
         $seen[(int)$r['port_id']] = (int)$r['company_id'];
+        $positionSeen[(int)$r['port_id']] = (int)$r['position_id'];
     }
     mysqli_stmt_close($stmt);
 }
@@ -55,6 +57,9 @@ if (count($seen) !== 2) {
 }
 if ($seen[$low] !== $company_id || $seen[$high] !== $company_id) {
     idf_fail('Forbidden', 403);
+}
+if (($positionSeen[$low] ?? 0) === ($positionSeen[$high] ?? 0)) {
+    idf_fail('Cannot link two ports on the same device. Choose a port from another device to avoid switching loops.');
 }
 
 $stmtUsed = mysqli_prepare(
