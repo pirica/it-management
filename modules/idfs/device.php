@@ -130,11 +130,18 @@ $stmtDestinationPorts = mysqli_prepare(
         p.device_name,
         p.device_type,
         p.equipment_id,
-        l.id AS link_id
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM idf_links l
+                WHERE l.port_id_a = pr.id
+                   OR l.port_id_b = pr.id
+            ) THEN 1
+            ELSE 0
+        END AS is_linked
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
      JOIN idfs i ON i.id = p.idf_id
-     LEFT JOIN idf_links l ON l.port_id_a = pr.id
      WHERE p.idf_id = ?
        AND i.company_id = ?
        AND p.id <> ?
@@ -154,7 +161,7 @@ if ($stmtDestinationPorts) {
             'device_name' => (string)($row['device_name'] ?? ''),
             'device_type' => (string)($row['device_type'] ?? ''),
             'equipment_id' => isset($row['equipment_id']) ? (int)$row['equipment_id'] : 0,
-            'is_linked' => !empty($row['link_id']),
+            'is_linked' => !empty($row['is_linked']),
         ];
     }
     mysqli_stmt_close($stmtDestinationPorts);
@@ -821,23 +828,7 @@ function createLink() {
         } else if (candidateDestinationPorts.length === 1) {
             destinationPortId = Number(candidateDestinationPorts[0].id);
         } else {
-            const linkedPortExistsButInUse = DESTINATION_PORTS.some((port) =>
-                Number(port.equipment_id) === selectedEquipmentId
-                && Number(port.port_no) === normalizedLinkedPortNo
-                && port.is_linked
-            );
-            const availablePortsPreview = candidateDestinationPorts
-                .slice(0, 6)
-                .map((port) => port.port_no)
-                .join(', ');
-            const selectedEquipmentHint = selectedEquipmentPorts.length
-                ? ''
-                : ' No free destination ports were found for the selected equipment, so all available destination ports were considered instead.';
-            const linkedInUseHint = linkedPortExistsButInUse
-                ? ' The matching destination port is already linked.'
-                : '';
-            alert(`No available destination port found for port ${normalizedLinkedPortNo}.${linkedInUseHint}${selectedEquipmentHint} Available destination ports: ${availablePortsPreview || 'none'}.`);
-            return;
+            destinationPortId = Number(candidateDestinationPorts[0].id);
         }
     }
 
