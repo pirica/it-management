@@ -58,6 +58,32 @@ function equipment_delete_switch_port_data(mysqli $conn, int $companyId, int $eq
     mysqli_stmt_close($stmt);
 }
 
+function equipment_is_switch(mysqli $conn, int $companyId, int $equipmentId): bool
+{
+    if ($companyId <= 0 || $equipmentId <= 0) {
+        return false;
+    }
+    $sql = "SELECT et.name
+            FROM equipment e
+            LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+            WHERE e.id = ? AND e.company_id = ?
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId);
+    $isSwitch = false;
+    if (mysqli_stmt_execute($stmt)) {
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        $equipmentTypeName = strtolower(trim((string)($row['name'] ?? '')));
+        $isSwitch = str_contains($equipmentTypeName, 'switch');
+    }
+    mysqli_stmt_close($stmt);
+    return $isSwitch;
+}
+
 $debugRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $debugQueryString = $_SERVER['QUERY_STRING'] ?? '';
 $debugPost = $_POST;
@@ -83,12 +109,7 @@ if ($id <= 0) {
 }
 
 $usageError = '';
-
-if (!itm_can_delete_record($conn, 'equipment', 'id', $id, $company_id, $usageError)) {
-    $_SESSION['crud_error'] = $usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.';
-    header('Location: index.php');
-    exit;
-}
+$isSwitchEquipment = equipment_is_switch($conn, (int)$company_id, $id);
 
 $checkSql = "SELECT id FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
 $checkResult = mysqli_query($conn, $checkSql);
@@ -105,23 +126,39 @@ if (mysqli_num_rows($checkResult) !== 1) {
     exit;
 }
 
-$deleteSql = "DELETE FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
-$deleteResult = mysqli_query($conn, $deleteSql);
+mysqli_begin_transaction($conn);
+try {
+    if ($isSwitchEquipment) {
+        equipment_delete_switch_port_data($conn, (int)$company_id, $id);
+    }
 
-if (!$deleteResult) {
-    $_SESSION['crud_error'] = 'Delete failed: ' . mysqli_error($conn);
+    if (!itm_can_delete_record($conn, 'equipment', 'id', $id, $company_id, $usageError)) {
+        throw new RuntimeException($usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.');
+    }
+
+    $deleteSql = "DELETE FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
+    $deleteResult = mysqli_query($conn, $deleteSql);
+
+    if (!$deleteResult) {
+        throw new RuntimeException('Delete failed: ' . mysqli_error($conn));
+    }
+
+    if (mysqli_affected_rows($conn) < 1) {
+        throw new RuntimeException('Nothing was deleted.');
+    }
+
+    equipment_delete_idf_data($conn, (string)$company_id, $id);
+    if (!$isSwitchEquipment) {
+        equipment_delete_switch_port_data($conn, (int)$company_id, $id);
+    }
+
+    mysqli_commit($conn);
+} catch (Throwable $e) {
+    mysqli_rollback($conn);
+    $_SESSION['crud_error'] = $e->getMessage();
     header('Location: index.php');
     exit;
 }
-
-if (mysqli_affected_rows($conn) < 1) {
-    $_SESSION['crud_error'] = 'Nothing was deleted.';
-    header('Location: index.php');
-    exit;
-}
-
-equipment_delete_idf_data($conn, (string)$company_id, $id);
-equipment_delete_switch_port_data($conn, (int)$company_id, $id);
 
 //$_SESSION['crud_success'] = 'Record deleted successfully.';
 header('Location: index.php');
