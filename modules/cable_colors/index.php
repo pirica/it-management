@@ -143,6 +143,20 @@ function cr_render_color_swatch($value) {
     return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
 }
 
+
+function cr_cable_color_swatch_source($row) {
+    if (!is_array($row)) {
+        return '';
+    }
+
+    $hex = trim((string)($row['hex_color'] ?? ''));
+    if ($hex !== '') {
+        return $hex;
+    }
+
+    return (string)($row['color'] ?? '');
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -611,8 +625,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <?php endif; ?>
                                     </a>
                                 </th>
-                                <?php if ($crud_table === 'cable_colors' && $field === 'color'): ?>
-                                    <th>Color</th>
+                                <?php if ($crud_table === 'cable_colors' && $field === 'hex_color'): ?>
+                                    <th>Swatch</th>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                             <th>Actions</th>
@@ -624,8 +638,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
-                                    <?php if ($crud_table === 'cable_colors' && $f === 'color'): ?>
-                                        <td><?php echo cr_render_color_swatch($row[$f] ?? ''); ?></td>
+                                    <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
+                                        <td><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($row)); ?></td>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
                                 <td>
@@ -640,7 +654,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('color', array_column($fieldColumns, 'Field'), true)); ?>
+                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('hex_color', array_column($fieldColumns, 'Field'), true)); ?>
                             <tr><td colspan="<?php echo count($fieldColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
