@@ -552,7 +552,7 @@ CREATE TABLE `idf_links` (
   `company_id` int NOT NULL,
   `port_id_a` int NOT NULL,
   `port_id_b` int NOT NULL,
-  `equipment_id` int DEFAULT NULL,
+  `equipment_id` varchar(9) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `equipment_hostname` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `equipment_port_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `equipment_port` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
