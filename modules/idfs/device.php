@@ -130,11 +130,18 @@ $stmtDestinationPorts = mysqli_prepare(
         p.device_name,
         p.device_type,
         p.equipment_id,
-        l.id AS link_id
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM idf_links l
+                WHERE l.port_id_a = pr.id
+                   OR l.port_id_b = pr.id
+            ) THEN 1
+            ELSE 0
+        END AS is_linked
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
      JOIN idfs i ON i.id = p.idf_id
-     LEFT JOIN idf_links l ON l.port_id_a = pr.id
      WHERE p.idf_id = ?
        AND i.company_id = ?
        AND p.id <> ?
@@ -154,7 +161,7 @@ if ($stmtDestinationPorts) {
             'device_name' => (string)($row['device_name'] ?? ''),
             'device_type' => (string)($row['device_type'] ?? ''),
             'equipment_id' => isset($row['equipment_id']) ? (int)$row['equipment_id'] : 0,
-            'is_linked' => !empty($row['link_id']),
+            'is_linked' => !empty($row['is_linked']),
         ];
     }
     mysqli_stmt_close($stmtDestinationPorts);
@@ -798,18 +805,19 @@ function createLink() {
             return;
         }
         const selectedEquipmentId = Number(f.equipment_id.value);
-        const equipmentPorts = DESTINATION_PORTS.filter((port) =>
+        const allAvailableDestinationPorts = DESTINATION_PORTS.filter((port) =>
             Number(port.id) !== Number(f.port_id_a.value)
-            && Number(port.equipment_id) === selectedEquipmentId
+            && !port.is_linked
         );
-        const availableEquipmentPorts = equipmentPorts.filter((port) => !port.is_linked);
-        const matchingPort = availableEquipmentPorts.find((port) => Number(port.port_no) === normalizedLinkedPortNo);
+        const selectedEquipmentPorts = allAvailableDestinationPorts.filter((port) => Number(port.equipment_id) === selectedEquipmentId);
+        const candidateDestinationPorts = selectedEquipmentPorts.length ? selectedEquipmentPorts : allAvailableDestinationPorts;
+        const matchingPort = candidateDestinationPorts.find((port) => Number(port.port_no) === normalizedLinkedPortNo);
 
-        if (!availableEquipmentPorts.length) {
-            alert('No available destination ports were found on the selected equipment.');
+        if (!candidateDestinationPorts.length) {
+            alert('No available destination ports were found.');
             return;
         }
-        const preselectedDestination = availableEquipmentPorts.find((port) => Number(port.id) === destinationPortId);
+        const preselectedDestination = candidateDestinationPorts.find((port) => Number(port.id) === destinationPortId);
         if (hasExplicitDestinationSelection) {
             if (!preselectedDestination) {
                 alert('The selected destination port is no longer available. Please choose another destination port.');
@@ -817,30 +825,10 @@ function createLink() {
             }
         } else if (matchingPort) {
             destinationPortId = Number(matchingPort.id);
-        } else if (availableEquipmentPorts.length === 1) {
-            destinationPortId = Number(availableEquipmentPorts[0].id);
+        } else if (candidateDestinationPorts.length === 1) {
+            destinationPortId = Number(candidateDestinationPorts[0].id);
         } else {
-            const linkedPortExistsButInUse = equipmentPorts.some((port) =>
-                Number(port.port_no) === normalizedLinkedPortNo
-                && port.is_linked
-            );
-            const availablePortsPreview = availableEquipmentPorts
-                .slice(0, 6)
-                .map((port) => port.port_no)
-                .join(', ');
-            const linkedInUseHint = linkedPortExistsButInUse
-                ? ' The matching destination port is already linked.'
-                : '';
-            alert(JSON.stringify({
-                debug: 'destination_port_match_failed',
-                selected_equipment_id: selectedEquipmentId,
-                linked_equipment_port_raw: linkedPortRaw,
-                normalized_linked_port_no: normalizedLinkedPortNo,
-                available_destination_port_ids: availableEquipmentPorts.map((port) => port.id),
-                available_destination_port_nos: availableEquipmentPorts.map((port) => port.port_no),
-            }, null, 2));
-            alert(`No available destination port found on the selected equipment for port ${normalizedLinkedPortNo}.${linkedInUseHint} Available destination ports: ${availablePortsPreview || 'none'}.`);
-            return;
+            destinationPortId = Number(candidateDestinationPorts[0].id);
         }
     }
 
