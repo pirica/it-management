@@ -85,7 +85,7 @@ if ($stmtUsed) {
 
 $label_val = $label !== '' ? $label : null;
 $notes_val = $notes !== '' ? $notes : null;
-$equipmentId_val = $equipmentId > 0 ? $equipmentId : null;
+$equipmentId_val = $equipmentId > 0 ? (string)$equipmentId : null;
 $equipmentHostname_val = null;
 $equipmentPortType_val = null;
 $equipmentPort_val = null;
@@ -126,7 +126,7 @@ if ($switchPortId > 0) {
             idf_fail('Selected equipment port not found');
         }
 
-        $equipmentId_val = (int)$switchPort['equipment_id'];
+        $equipmentId_val = (string)$switchPort['equipment_id'];
         $equipmentHostname_val = (string)$switchPort['equipment_hostname'];
         $equipmentPortType_val = (string)$switchPort['equipment_port_type'];
         $equipmentPort_val = (string)$switchPort['equipment_port'];
@@ -161,7 +161,7 @@ if ($switchPortId > 0) {
         if (!$equipment) {
             idf_fail('Selected equipment not found');
         }
-        $equipmentId_val = (int)$equipment['id'];
+        $equipmentId_val = (string)$equipment['id'];
         $equipmentHostname_val = (string)$equipment['name'];
     }
 }
@@ -229,8 +229,8 @@ if ($switchPortId > 0) {
     }
 }
 
-if ($equipmentId_val === null || $equipmentId_val <= 0) {
-    $equipmentId_val = random_int(1000, 9999);
+if ($equipmentId_val === null || $equipmentId_val === '') {
+    $equipmentId_val = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
 }
 
 $stmtFinal = mysqli_prepare(
@@ -254,7 +254,7 @@ if ($stmtFinal) {
         $portIdA = (int)$pair[0];
         $portIdB = (int)$pair[1];
         mysqli_stmt_bind_param(
-            $stmtFinal, 'iiiisssissiisss',
+            $stmtFinal, 'iiissssissiisss',
             $company_id, $portIdA, $portIdB, $equipmentId_val, $equipmentHostname_val,
             $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
             $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
