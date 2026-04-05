@@ -16,19 +16,26 @@ $port_count = isset($data['port_count']) ? (int)$data['port_count'] : 0;
 $notes = trim((string)($data['notes'] ?? ''));
 
 if ($switch_rj45_id > 0) {
-    $resSwitchRj45 = mysqli_query(
+    $stmtSwitchRj45 = mysqli_prepare(
         $conn,
         "SELECT name
          FROM equipment_rj45
-         WHERE id=$switch_rj45_id AND company_id=$company_id
+         WHERE id=? AND company_id=?
          LIMIT 1"
     );
-    $switchRj45 = $resSwitchRj45 ? mysqli_fetch_assoc($resSwitchRj45) : null;
-    if (!$switchRj45) {
-        idf_fail('Invalid port count option');
-    }
-    if (!empty($switchRj45['name']) && preg_match('/(\d+)/', (string)$switchRj45['name'], $matches)) {
-        $port_count = (int)$matches[1];
+    if ($stmtSwitchRj45) {
+        mysqli_stmt_bind_param($stmtSwitchRj45, 'ii', $switch_rj45_id, $company_id);
+        mysqli_stmt_execute($stmtSwitchRj45);
+        $resSwitchRj45 = mysqli_stmt_get_result($stmtSwitchRj45);
+        $switchRj45 = $resSwitchRj45 ? mysqli_fetch_assoc($resSwitchRj45) : null;
+        mysqli_stmt_close($stmtSwitchRj45);
+
+        if (!$switchRj45) {
+            idf_fail('Invalid port count option');
+        }
+        if (!empty($switchRj45['name']) && preg_match('/(\d+)/', (string)$switchRj45['name'], $matches)) {
+            $port_count = (int)$matches[1];
+        }
     }
 }
 
@@ -48,35 +55,47 @@ if (!in_array($device_type, $validTypes, true)) {
 }
 
 if ($equipment_id > 0) {
-    $resEquipment = mysqli_query(
+    $stmtEquipment = mysqli_prepare(
         $conn,
         "SELECT e.name, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
          FROM equipment e
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-         WHERE e.id=$equipment_id AND e.company_id=$company_id
+         WHERE e.id=? AND e.company_id=?
          LIMIT 1"
     );
-    $equipment = $resEquipment ? mysqli_fetch_assoc($resEquipment) : null;
-    if (!$equipment) {
-        idf_fail('Selected equipment not found', 404);
-    }
+    if ($stmtEquipment) {
+        mysqli_stmt_bind_param($stmtEquipment, 'ii', $equipment_id, $company_id);
+        mysqli_stmt_execute($stmtEquipment);
+        $resEquipment = mysqli_stmt_get_result($stmtEquipment);
+        $equipment = $resEquipment ? mysqli_fetch_assoc($resEquipment) : null;
+        mysqli_stmt_close($stmtEquipment);
 
-    $device_name = trim((string)($equipment['name'] ?? ''));
-    $notes = trim((string)($equipment['notes'] ?? ''));
-
-    if ($switch_rj45_id <= 0) {
-        $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
-        if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
-            $port_count = (int)$matches[1];
+        if (!$equipment) {
+            idf_fail('Selected equipment not found', 404);
         }
-    } else {
-        mysqli_query(
-            $conn,
-            "UPDATE equipment
-             SET switch_rj45_id=$switch_rj45_id
-             WHERE id=$equipment_id AND company_id=$company_id
-             LIMIT 1"
-        );
+
+        $device_name = trim((string)($equipment['name'] ?? ''));
+        $notes = trim((string)($equipment['notes'] ?? ''));
+
+        if ($switch_rj45_id <= 0) {
+            $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
+            if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
+                $port_count = (int)$matches[1];
+            }
+        } else {
+            $stmtUpdateEq = mysqli_prepare(
+                $conn,
+                "UPDATE equipment
+                 SET switch_rj45_id=?
+                 WHERE id=? AND company_id=?
+                 LIMIT 1"
+            );
+            if ($stmtUpdateEq) {
+                mysqli_stmt_bind_param($stmtUpdateEq, 'iii', $switch_rj45_id, $equipment_id, $company_id);
+                mysqli_stmt_execute($stmtUpdateEq);
+                mysqli_stmt_close($stmtUpdateEq);
+            }
+        }
     }
 }
 
@@ -84,71 +103,116 @@ if ($device_type === 'switch' && $switch_rj45_id <= 0) {
     idf_fail('RJ45 Ports are required for switch devices');
 }
 
-$resIdf = mysqli_query($conn, "SELECT id FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1");
-if (!$resIdf || mysqli_num_rows($resIdf) !== 1) {
-    idf_fail('IDF not found', 404);
+$stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
+if ($stmtIdf) {
+    mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);
+    mysqli_stmt_execute($stmtIdf);
+    $resIdf = mysqli_stmt_get_result($stmtIdf);
+    $foundIdf = $resIdf && mysqli_num_rows($resIdf) === 1;
+    mysqli_stmt_close($stmtIdf);
+
+    if (!$foundIdf) {
+        idf_fail('IDF not found', 404);
+    }
 }
 
-$nameEsc = idf_escape($conn, $device_name);
-$notesSql = $notes !== '' ? ("'" . idf_escape($conn, $notes) . "'") : 'NULL';
-$equipSql = $equipment_id > 0 ? (string)$equipment_id : 'NULL';
+$notes_val = $notes !== '' ? $notes : null;
+$equip_val = $equipment_id > 0 ? $equipment_id : null;
 
 if ($position_id > 0) {
-    $resPos = mysqli_query(
+    $stmtPos = mysqli_prepare(
         $conn,
         "SELECT p.id
          FROM idf_positions p
          JOIN idfs i ON i.id=p.idf_id
-         WHERE p.id=$position_id AND i.company_id=$company_id
+         WHERE p.id=? AND i.company_id=?
          LIMIT 1"
     );
-    if (!$resPos || mysqli_num_rows($resPos) !== 1) {
-        idf_fail('Position not found', 404);
+    if ($stmtPos) {
+        mysqli_stmt_bind_param($stmtPos, 'ii', $position_id, $company_id);
+        mysqli_stmt_execute($stmtPos);
+        $resPos = mysqli_stmt_get_result($stmtPos);
+        $foundPos = $resPos && mysqli_num_rows($resPos) === 1;
+        mysqli_stmt_close($stmtPos);
+
+        if (!$foundPos) {
+            idf_fail('Position not found', 404);
+        }
     }
 
-    $sql = "UPDATE idf_positions
-            SET device_type='$device_type',
-                device_name='$nameEsc',
-                equipment_id=$equipSql,
-                port_count=$port_count,
-                notes=$notesSql
-            WHERE id=$position_id
-            LIMIT 1";
-    if (!mysqli_query($conn, $sql)) {
-        idf_fail('DB error updating position: ' . mysqli_error($conn), 500);
+    $stmtUpdatePos = mysqli_prepare(
+        $conn,
+        "UPDATE idf_positions
+         SET device_type=?,
+             device_name=?,
+             equipment_id=?,
+             port_count=?,
+             notes=?
+         WHERE id=?
+         LIMIT 1"
+    );
+    if ($stmtUpdatePos) {
+        mysqli_stmt_bind_param($stmtUpdatePos, 'ssiisi', $device_type, $device_name, $equip_val, $port_count, $notes_val, $position_id);
+        if (!mysqli_stmt_execute($stmtUpdatePos)) {
+            idf_fail('DB error updating position: ' . mysqli_stmt_error($stmtUpdatePos), 500);
+        }
+        mysqli_stmt_close($stmtUpdatePos);
     }
 } else {
-    $sql = "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
-            VALUES ($company_id, $idf_id, $position_no, '$device_type', '$nameEsc', $equipSql, $port_count, $notesSql)
-            ON DUPLICATE KEY UPDATE
-              company_id=VALUES(company_id),
-              device_type=VALUES(device_type),
-              device_name=VALUES(device_name),
-              equipment_id=VALUES(equipment_id),
-              port_count=VALUES(port_count),
-              notes=VALUES(notes)";
-    if (!mysqli_query($conn, $sql)) {
-        idf_fail('DB error saving position: ' . mysqli_error($conn), 500);
+    $stmtInsertPos = mysqli_prepare(
+        $conn,
+        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           company_id=VALUES(company_id),
+           device_type=VALUES(device_type),
+           device_name=VALUES(device_name),
+           equipment_id=VALUES(equipment_id),
+           port_count=VALUES(port_count),
+           notes=VALUES(notes)"
+    );
+    if ($stmtInsertPos) {
+        mysqli_stmt_bind_param($stmtInsertPos, 'iiisssis', $company_id, $idf_id, $position_no, $device_type, $device_name, $equip_val, $port_count, $notes_val);
+        if (!mysqli_stmt_execute($stmtInsertPos)) {
+            idf_fail('DB error saving position: ' . mysqli_stmt_error($stmtInsertPos), 500);
+        }
+        mysqli_stmt_close($stmtInsertPos);
     }
 }
 
-$resPid = mysqli_query($conn, "SELECT id FROM idf_positions WHERE idf_id=$idf_id AND position_no=$position_no LIMIT 1");
-$pidRow = $resPid ? mysqli_fetch_assoc($resPid) : null;
-$pid = $pidRow ? (int)$pidRow['id'] : 0;
+$stmtPid = mysqli_prepare($conn, "SELECT id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");
+if ($stmtPid) {
+    mysqli_stmt_bind_param($stmtPid, 'ii', $idf_id, $position_no);
+    mysqli_stmt_execute($stmtPid);
+    $resPid = mysqli_stmt_get_result($stmtPid);
+    $pidRow = $resPid ? mysqli_fetch_assoc($resPid) : null;
+    $pid = $pidRow ? (int)$pidRow['id'] : 0;
+    mysqli_stmt_close($stmtPid);
+}
 
 if ($pid > 0) {
-    $resCnt = mysqli_query($conn, "SELECT COUNT(*) AS c FROM idf_ports WHERE position_id=$pid");
+    $stmtCnt = mysqli_prepare($conn, "SELECT COUNT(*) AS c FROM idf_ports WHERE position_id=?");
     $existing = 0;
-    if ($resCnt && ($r = mysqli_fetch_assoc($resCnt))) {
-        $existing = (int)$r['c'];
+    if ($stmtCnt) {
+        mysqli_stmt_bind_param($stmtCnt, 'i', $pid);
+        mysqli_stmt_execute($stmtCnt);
+        $resCnt = mysqli_stmt_get_result($stmtCnt);
+        if ($resCnt && ($r = mysqli_fetch_assoc($resCnt))) {
+            $existing = (int)$r['c'];
+        }
+        mysqli_stmt_close($stmtCnt);
     }
 
     if ($port_count > 0 && $existing === 0) {
-        $values = [];
-        for ($n = 1; $n <= $port_count; $n++) {
-            $values[] = "($company_id,$pid,$n,'RJ45','unknown')";
+        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, 'RJ45', 'unknown')";
+        $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
+        if ($stmtInsertPort) {
+            for ($n = 1; $n <= $port_count; $n++) {
+                mysqli_stmt_bind_param($stmtInsertPort, 'iii', $company_id, $pid, $n);
+                mysqli_stmt_execute($stmtInsertPort);
+            }
+            mysqli_stmt_close($stmtInsertPort);
         }
-        mysqli_query($conn, 'INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES ' . implode(',', $values));
     }
 }
 

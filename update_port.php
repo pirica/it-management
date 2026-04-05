@@ -28,24 +28,33 @@ if (!itm_validate_csrf_token($csrfToken)) {
 }
 
 
-function table_has_column(mysqli $conn, string $table, string $column): bool
-{
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-    return $res && mysqli_num_rows($res) > 0;
-}
-
 function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
 {
     $rows = [];
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $labelEsc = mysqli_real_escape_string($conn, $labelColumn);
-    $companyFilter = '';
-    if (table_has_column($conn, $table, 'company_id') && isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0) {
-        $companyFilter = ' WHERE company_id = ' . (int)$GLOBALS['company_id'];
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($labelColumn)) {
+        return $rows;
     }
-    $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}`{$companyFilter} ORDER BY id ASC");
+
+    $hasCompanyId = itm_table_has_column($conn, $table, 'company_id');
+    $companyId = isset($GLOBALS['company_id']) ? (int)$GLOBALS['company_id'] : 0;
+
+    $res = false;
+    if ($hasCompanyId && $companyId > 0) {
+        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` WHERE company_id = ? ORDER BY id ASC";
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    if (!$res || mysqli_num_rows($res) === 0) {
+        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` ORDER BY id ASC";
+        $res = mysqli_query($conn, $sql);
+    }
+
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
     }
@@ -94,10 +103,10 @@ function find_lookup_id(array $rows, $value): int
     return 0;
 }
 
-$hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
-$hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
-$hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
-$hasVlanId = table_has_column($conn, 'switch_ports', 'vlan_id');
+$hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
+$hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
+$hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
+$hasVlanId = itm_table_has_column($conn, 'switch_ports', 'vlan_id');
 
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);

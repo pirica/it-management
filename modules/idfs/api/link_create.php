@@ -30,18 +30,24 @@ if ($switchPortId > 0 && $equipmentId <= 0) {
 $low = min($portA, $portB);
 $high = max($portA, $portB);
 
-$res = mysqli_query(
+$stmt = mysqli_prepare(
     $conn,
     "SELECT pr.id AS port_id, i.company_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
-     WHERE pr.id IN ($low,$high)"
+     WHERE pr.id IN (?, ?)"
 );
 
 $seen = [];
-while ($res && ($r = mysqli_fetch_assoc($res))) {
-    $seen[(int)$r['port_id']] = (int)$r['company_id'];
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'ii', $low, $high);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($r = mysqli_fetch_assoc($res))) {
+        $seen[(int)$r['port_id']] = (int)$r['company_id'];
+    }
+    mysqli_stmt_close($stmt);
 }
 
 if (count($seen) !== 2) {
@@ -51,31 +57,37 @@ if ($seen[$low] !== $company_id || $seen[$high] !== $company_id) {
     idf_fail('Forbidden', 403);
 }
 
-$resUsed = mysqli_query(
+$stmtUsed = mysqli_prepare(
     $conn,
     "SELECT id FROM idf_links
-     WHERE port_id_a IN ($low,$high) OR port_id_b IN ($low,$high)
+     WHERE port_id_a IN (?, ?) OR port_id_b IN (?, ?)
      LIMIT 1"
 );
-if ($resUsed && mysqli_num_rows($resUsed) > 0) {
-    idf_fail('One of the ports is already linked');
+if ($stmtUsed) {
+    mysqli_stmt_bind_param($stmtUsed, 'iiii', $low, $high, $low, $high);
+    mysqli_stmt_execute($stmtUsed);
+    $resUsed = mysqli_stmt_get_result($stmtUsed);
+    $foundUsed = $resUsed && mysqli_num_rows($resUsed) > 0;
+    mysqli_stmt_close($stmtUsed);
+    if ($foundUsed) {
+        idf_fail('One of the ports is already linked');
+    }
 }
 
-$colorSql = "'" . idf_escape($conn, $color) . "'";
-$labelSql = $label !== '' ? ("'" . idf_escape($conn, $label) . "'") : 'NULL';
-$notesSql = $notes !== '' ? ("'" . idf_escape($conn, $notes) . "'") : 'NULL';
-$equipmentIdSql = $equipmentId > 0 ? (string)$equipmentId : 'NULL';
-$equipmentHostnameSql = 'NULL';
-$equipmentPortTypeSql = 'NULL';
-$equipmentPortSql = 'NULL';
-$equipmentVlanIdSql = 'NULL';
-$equipmentLabelSql = 'NULL';
-$equipmentCommentsSql = 'NULL';
-$equipmentStatusIdSql = 'NULL';
-$equipmentColorIdSql = 'NULL';
+$label_val = $label !== '' ? $label : null;
+$notes_val = $notes !== '' ? $notes : null;
+$equipmentId_val = $equipmentId > 0 ? $equipmentId : null;
+$equipmentHostname_val = null;
+$equipmentPortType_val = null;
+$equipmentPort_val = null;
+$equipmentVlanId_val = null;
+$equipmentLabel_val = null;
+$equipmentComments_val = null;
+$equipmentStatusId_val = null;
+$equipmentColorId_val = null;
 
 if ($switchPortId > 0) {
-    $resSwitchPort = mysqli_query(
+    $stmtSwitchPort = mysqli_prepare(
         $conn,
         "SELECT
             sp.equipment_id,
@@ -89,46 +101,60 @@ if ($switchPortId > 0) {
             sp.color_id AS equipment_color_id
          FROM switch_ports sp
          JOIN equipment e ON e.id = sp.equipment_id
-         WHERE sp.id = $switchPortId
-           AND sp.company_id = $company_id
-           AND sp.equipment_id = $equipmentId
+         WHERE sp.id = ?
+           AND sp.company_id = ?
+           AND sp.equipment_id = ?
          LIMIT 1"
     );
-    $switchPort = $resSwitchPort ? mysqli_fetch_assoc($resSwitchPort) : null;
-    if (!$switchPort) {
-        idf_fail('Selected equipment port not found');
-    }
+    if ($stmtSwitchPort) {
+        mysqli_stmt_bind_param($stmtSwitchPort, 'iii', $switchPortId, $company_id, $equipmentId);
+        mysqli_stmt_execute($stmtSwitchPort);
+        $resSwitchPort = mysqli_stmt_get_result($stmtSwitchPort);
+        $switchPort = $resSwitchPort ? mysqli_fetch_assoc($resSwitchPort) : null;
+        mysqli_stmt_close($stmtSwitchPort);
 
-    $equipmentIdSql = (string)((int)$switchPort['equipment_id']);
-    $equipmentHostnameSql = "'" . idf_escape($conn, (string)$switchPort['equipment_hostname']) . "'";
-    $equipmentPortTypeSql = "'" . idf_escape($conn, (string)$switchPort['equipment_port_type']) . "'";
-    $equipmentPortSql = "'" . idf_escape($conn, (string)$switchPort['equipment_port']) . "'";
-    $equipmentVlanIdSql = isset($switchPort['equipment_vlan_id']) && $switchPort['equipment_vlan_id'] !== null
-        ? (string)((int)$switchPort['equipment_vlan_id'])
-        : 'NULL';
-    $equipmentLabelSql = "'" . idf_escape($conn, (string)$switchPort['equipment_label']) . "'";
-    $equipmentCommentsSql = "'" . idf_escape($conn, (string)$switchPort['equipment_comments']) . "'";
-    $equipmentStatusIdSql = isset($switchPort['equipment_status_id']) && $switchPort['equipment_status_id'] !== null
-        ? (string)((int)$switchPort['equipment_status_id'])
-        : 'NULL';
-    $equipmentColorIdSql = isset($switchPort['equipment_color_id']) && $switchPort['equipment_color_id'] !== null
-        ? (string)((int)$switchPort['equipment_color_id'])
-        : 'NULL';
+        if (!$switchPort) {
+            idf_fail('Selected equipment port not found');
+        }
+
+        $equipmentId_val = (int)$switchPort['equipment_id'];
+        $equipmentHostname_val = (string)$switchPort['equipment_hostname'];
+        $equipmentPortType_val = (string)$switchPort['equipment_port_type'];
+        $equipmentPort_val = (string)$switchPort['equipment_port'];
+        $equipmentVlanId_val = isset($switchPort['equipment_vlan_id']) && $switchPort['equipment_vlan_id'] !== null
+            ? (int)$switchPort['equipment_vlan_id']
+            : null;
+        $equipmentLabel_val = (string)$switchPort['equipment_label'];
+        $equipmentComments_val = (string)$switchPort['equipment_comments'];
+        $equipmentStatusId_val = isset($switchPort['equipment_status_id']) && $switchPort['equipment_status_id'] !== null
+            ? (int)$switchPort['equipment_status_id']
+            : null;
+        $equipmentColorId_val = isset($switchPort['equipment_color_id']) && $switchPort['equipment_color_id'] !== null
+            ? (int)$switchPort['equipment_color_id']
+            : null;
+    }
 } elseif ($equipmentId > 0) {
-    $resEquipment = mysqli_query(
+    $stmtEquipment = mysqli_prepare(
         $conn,
         "SELECT e.id, e.name
          FROM equipment e
-         WHERE e.id = $equipmentId
-           AND e.company_id = $company_id
+         WHERE e.id = ?
+           AND e.company_id = ?
          LIMIT 1"
     );
-    $equipment = $resEquipment ? mysqli_fetch_assoc($resEquipment) : null;
-    if (!$equipment) {
-        idf_fail('Selected equipment not found');
+    if ($stmtEquipment) {
+        mysqli_stmt_bind_param($stmtEquipment, 'ii', $equipmentId, $company_id);
+        mysqli_stmt_execute($stmtEquipment);
+        $resEquipment = mysqli_stmt_get_result($stmtEquipment);
+        $equipment = $resEquipment ? mysqli_fetch_assoc($resEquipment) : null;
+        mysqli_stmt_close($stmtEquipment);
+
+        if (!$equipment) {
+            idf_fail('Selected equipment not found');
+        }
+        $equipmentId_val = (int)$equipment['id'];
+        $equipmentHostname_val = (string)$equipment['name'];
     }
-    $equipmentIdSql = (string)((int)$equipment['id']);
-    $equipmentHostnameSql = "'" . idf_escape($conn, (string)$equipment['name']) . "'";
 }
 
 if ($switchPortId > 0) {
@@ -139,81 +165,83 @@ if ($switchPortId > 0) {
         $newPortNumber = (int)$linkedDestinationPort;
     }
 
-    $switchLabel = $label !== '' ? ("'" . idf_escape($conn, $label) . "'") : 'NULL';
-    $switchComments = $notes !== '' ? ("'" . idf_escape($conn, $notes) . "'") : 'NULL';
+    $switchLabel = $label !== '' ? $label : null;
+    $switchComments = $notes !== '' ? $notes : null;
 
-    $colorLookup = mysqli_query(
+    $switchColorId = null;
+    $stmtColor = mysqli_prepare(
         $conn,
         "SELECT id
          FROM switch_cablecolors
-         WHERE company_id = $company_id
-           AND LOWER(color) = LOWER('" . idf_escape($conn, $color) . "')
+         WHERE company_id = ?
+           AND LOWER(color) = LOWER(?)
          LIMIT 1"
     );
-    $colorRow = $colorLookup ? mysqli_fetch_assoc($colorLookup) : null;
-    $switchColorIdSql = $colorRow ? (string)((int)$colorRow['id']) : null;
+    if ($stmtColor) {
+        mysqli_stmt_bind_param($stmtColor, 'is', $company_id, $color);
+        mysqli_stmt_execute($stmtColor);
+        $resColor = mysqli_stmt_get_result($stmtColor);
+        $colorRow = $resColor ? mysqli_fetch_assoc($resColor) : null;
+        $switchColorId = $colorRow ? (int)$colorRow['id'] : null;
+        mysqli_stmt_close($stmtColor);
+    }
 
     $updates = [
-        "label = $switchLabel",
-        "comments = $switchComments",
+        "label = ?",
+        "comments = ?",
     ];
-    if ($switchColorIdSql !== null) {
-        $updates[] = "color_id = $switchColorIdSql";
+    $types = 'ss';
+    $params = [$switchLabel, $switchComments];
+
+    if ($switchColorId !== null) {
+        $updates[] = "color_id = ?";
+        $types .= 'i';
+        $params[] = $switchColorId;
     }
     if ($newPortNumber !== null && $newPortNumber > 0) {
-        $updates[] = "port_number = $newPortNumber";
+        $updates[] = "port_number = ?";
+        $types .= 'i';
+        $params[] = $newPortNumber;
     }
 
-    if (!mysqli_query(
-        $conn,
-        "UPDATE switch_ports
-         SET " . implode(', ', $updates) . "
-         WHERE id = $switchPortId
-           AND company_id = $company_id
-           AND equipment_id = $equipmentId
-         LIMIT 1"
-    )) {
-        idf_fail('DB error updating switch port: ' . mysqli_error($conn), 500);
+    $sqlUpd = "UPDATE switch_ports SET " . implode(', ', $updates) . " WHERE id = ? AND company_id = ? AND equipment_id = ? LIMIT 1";
+    $types .= 'iii';
+    $params[] = $switchPortId;
+    $params[] = $company_id;
+    $params[] = $equipmentId;
+
+    $stmtUpd = mysqli_prepare($conn, $sqlUpd);
+    if ($stmtUpd) {
+        mysqli_stmt_bind_param($stmtUpd, $types, ...$params);
+        if (!mysqli_stmt_execute($stmtUpd)) {
+            idf_fail('DB error updating switch port: ' . mysqli_stmt_error($stmtUpd), 500);
+        }
+        mysqli_stmt_close($stmtUpd);
     }
 }
 
-if (!mysqli_query(
+$stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
-        company_id,
-        port_id_a,
-        port_id_b,
-        equipment_id,
-        equipment_hostname,
-        equipment_port_type,
-        equipment_port,
-        equipment_vlan_id,
-        equipment_label,
-        equipment_comments,
-        equipment_status_id,
-        equipment_color_id,
-        cable_color,
-        cable_label,
-        notes
-    ) VALUES (
-        $company_id,
-        $low,
-        $high,
-        $equipmentIdSql,
-        $equipmentHostnameSql,
-        $equipmentPortTypeSql,
-        $equipmentPortSql,
-        $equipmentVlanIdSql,
-        $equipmentLabelSql,
-        $equipmentCommentsSql,
-        $equipmentStatusIdSql,
-        $equipmentColorIdSql,
-        $colorSql,
-        $labelSql,
-        $notesSql
-    )"
-)) {
-    idf_fail('DB error creating link: ' . mysqli_error($conn), 500);
+        company_id, port_id_a, port_id_b, equipment_id, equipment_hostname,
+        equipment_port_type, equipment_port, equipment_vlan_id, equipment_label,
+        equipment_comments, equipment_status_id, equipment_color_id, cable_color,
+        cable_label, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+);
+
+if ($stmtFinal) {
+    mysqli_stmt_bind_param(
+        $stmtFinal, 'iiiisssissiisss',
+        $company_id, $low, $high, $equipmentId_val, $equipmentHostname_val,
+        $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
+        $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
+        $label_val, $notes_val
+    );
+    if (!mysqli_stmt_execute($stmtFinal)) {
+        idf_fail('DB error creating link: ' . mysqli_stmt_error($stmtFinal), 500);
+    }
+    mysqli_stmt_close($stmtFinal);
 }
 
 idf_ok(['link_id' => (int)mysqli_insert_id($conn)]);

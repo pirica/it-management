@@ -9,16 +9,23 @@ if ($position_id <= 0) {
     idf_fail('Invalid position_id');
 }
 
-$res = mysqli_query(
+$stmt = mysqli_prepare(
     $conn,
     "SELECT p.*, i.company_id
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
-     WHERE p.id=$position_id
+     WHERE p.id=?
      LIMIT 1"
 );
 
-$row = $res ? mysqli_fetch_assoc($res) : null;
+$row = null;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $position_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+}
 if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }

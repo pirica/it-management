@@ -9,15 +9,23 @@ if ($position_id <= 0) {
     idf_fail('Invalid position_id');
 }
 
-$res = mysqli_query(
+$stmt = mysqli_prepare(
     $conn,
     "SELECT p.port_count, p.id, i.company_id
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
-     WHERE p.id=$position_id
+     WHERE p.id=?
      LIMIT 1"
 );
-$row = $res ? mysqli_fetch_assoc($res) : null;
+$row = null;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $position_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+}
+
 if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
@@ -29,16 +37,26 @@ if ($count <= 0) {
 
 mysqli_begin_transaction($conn);
 try {
-    mysqli_query($conn, "DELETE FROM idf_ports WHERE position_id=$position_id");
-    $vals = [];
-    for ($n = 1; $n <= $count; $n++) {
-        $vals[] = "($company_id,$position_id,$n,'RJ45','unknown')";
+    $stmtDel = mysqli_prepare($conn, "DELETE FROM idf_ports WHERE position_id=?");
+    if ($stmtDel) {
+        mysqli_stmt_bind_param($stmtDel, 'i', $position_id);
+        mysqli_stmt_execute($stmtDel);
+        mysqli_stmt_close($stmtDel);
     }
-    mysqli_query($conn, 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES ' . implode(',', $vals));
+
+    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, 'RJ45', 'unknown')");
+    if ($stmtIns) {
+        for ($n = 1; $n <= $count; $n++) {
+            mysqli_stmt_bind_param($stmtIns, 'iii', $company_id, $position_id, $n);
+            mysqli_stmt_execute($stmtIns);
+        }
+        mysqli_stmt_close($stmtIns);
+    }
+
     mysqli_commit($conn);
 } catch (Throwable $e) {
     mysqli_rollback($conn);
-    idf_fail('Regen failed', 500);
+    idf_fail('Regen failed: ' . $e->getMessage(), 500);
 }
 
 idf_ok();

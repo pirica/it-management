@@ -30,29 +30,33 @@ if ($company_id <= 0) {
     exit;
 }
 
-function table_has_column(mysqli $conn, string $table, string $column): bool
-{
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-    return $res && mysqli_num_rows($res) > 0;
-}
-
 function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
 {
     $rows = [];
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $labelEsc = mysqli_real_escape_string($conn, $labelColumn);
-    $hasCompanyId = table_has_column($conn, $table, 'company_id');
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($labelColumn)) {
+        return $rows;
+    }
+
+    $hasCompanyId = itm_table_has_column($conn, $table, 'company_id');
     $companyId = isset($GLOBALS['company_id']) ? (int)$GLOBALS['company_id'] : 0;
 
     $res = false;
     if ($hasCompanyId && $companyId > 0) {
-        $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` WHERE company_id = {$companyId} ORDER BY id ASC");
+        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` WHERE company_id = ? ORDER BY id ASC";
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            mysqli_stmt_close($stmt);
+        }
     }
+
     if (!$res || mysqli_num_rows($res) === 0) {
-        $res = mysqli_query($conn, "SELECT id, `{$labelEsc}` AS label FROM `{$tableEsc}` ORDER BY id ASC");
+        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` ORDER BY id ASC";
+        $res = mysqli_query($conn, $sql);
     }
+
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
     }
@@ -85,13 +89,18 @@ function fetch_company_vlans(mysqli $conn, int $companyId): array
 function fetch_available_port_types(mysqli $conn): array
 {
     $rows = [];
-    $res = mysqli_query($conn, 'SELECT type FROM switch_port_types ORDER BY id ASC');
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $normalized = normalize_port_type((string)($row['type'] ?? ''));
-        if ($normalized === '') {
-            continue;
+    $stmt = mysqli_prepare($conn, 'SELECT type FROM switch_port_types ORDER BY id ASC');
+    if ($stmt) {
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $normalized = normalize_port_type((string)($row['type'] ?? ''));
+            if ($normalized === '') {
+                continue;
+            }
+            $rows[$normalized] = true;
         }
-        $rows[$normalized] = true;
+        mysqli_stmt_close($stmt);
     }
     return array_keys($rows);
 }
@@ -123,14 +132,23 @@ function normalize_port_type(string $portType): string
 }
 
 
-$hasEquipmentId = table_has_column($conn, 'switch_ports', 'equipment_id');
-$hasPortType = table_has_column($conn, 'switch_ports', 'port_type');
-$hasStatusId = table_has_column($conn, 'switch_ports', 'status_id');
-$hasColorId = table_has_column($conn, 'switch_ports', 'color_id');
-$hasVlanId = table_has_column($conn, 'switch_ports', 'vlan_id');
-$hasLegacyNumberPort = table_has_column($conn, 'equipment', 'numberport');
-$hasPortTypesTable = mysqli_query($conn, "SHOW TABLES LIKE 'switch_port_types'");
-$availablePortTypes = ($hasPortTypesTable && mysqli_num_rows($hasPortTypesTable) > 0)
+$hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
+$hasPortType = itm_table_has_column($conn, 'switch_ports', 'port_type');
+$hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
+$hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
+$hasVlanId = itm_table_has_column($conn, 'switch_ports', 'vlan_id');
+$hasLegacyNumberPort = itm_table_has_column($conn, 'equipment', 'numberport');
+
+$hasPortTypesTable = false;
+$stmtTable = mysqli_prepare($conn, "SHOW TABLES LIKE 'switch_port_types'");
+if ($stmtTable) {
+    mysqli_stmt_execute($stmtTable);
+    $resTable = mysqli_stmt_get_result($stmtTable);
+    $hasPortTypesTable = $resTable && mysqli_num_rows($resTable) > 0;
+    mysqli_stmt_close($stmtTable);
+}
+
+$availablePortTypes = $hasPortTypesTable
     ? fetch_available_port_types($conn)
     : ['rj45', 'sfp', 'sfp_plus'];
 if (!in_array('rj45', $availablePortTypes, true)) {

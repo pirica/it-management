@@ -28,13 +28,22 @@ $sql = "SELECT
         LEFT JOIN vlans v ON v.id = sp.vlan_id
         LEFT JOIN switch_status ss ON ss.id = sp.status_id
         LEFT JOIN switch_cablecolors sc ON sc.id = sp.color_id
-        WHERE sp.company_id = $company_id
-          AND sp.equipment_id = $equipmentId
+        WHERE sp.company_id = ?
+          AND sp.equipment_id = ?
         ORDER BY sp.equipment_id ASC, sp.port_number ASC, sp.id ASC";
 
-$res = mysqli_query($conn, $sql);
-if (!$res) {
-    idf_fail('DB error loading equipment ports: ' . mysqli_error($conn), 500);
+$stmt = mysqli_prepare($conn, $sql);
+$res = null;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $equipmentId);
+    if (mysqli_stmt_execute($stmt)) {
+        $res = mysqli_stmt_get_result($stmt);
+    } else {
+        idf_fail('DB error loading equipment ports: ' . mysqli_stmt_error($stmt), 500);
+    }
+    mysqli_stmt_close($stmt);
+} else {
+    idf_fail('DB error preparing statement: ' . mysqli_error($conn), 500);
 }
 
 $ports = [];

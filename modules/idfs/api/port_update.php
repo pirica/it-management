@@ -9,16 +9,24 @@ if ($port_id <= 0) {
     idf_fail('Invalid port_id');
 }
 
-$res = mysqli_query(
+$stmt = mysqli_prepare(
     $conn,
     "SELECT pr.id, i.company_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
-     WHERE pr.id=$port_id
+     WHERE pr.id=?
      LIMIT 1"
 );
-$row = $res ? mysqli_fetch_assoc($res) : null;
+$row = null;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $port_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+}
+
 if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
@@ -43,27 +51,32 @@ $speed = trim((string)($data['speed'] ?? ''));
 $poe = trim((string)($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 
-$labelSql = $label !== '' ? ("'" . idf_escape($conn, $label) . "'") : 'NULL';
-$connSql = $connected_to !== '' ? ("'" . idf_escape($conn, $connected_to) . "'") : 'NULL';
-$vlanSql = $vlan !== '' ? ("'" . idf_escape($conn, $vlan) . "'") : 'NULL';
-$speedSql = $speed !== '' ? ("'" . idf_escape($conn, $speed) . "'") : 'NULL';
-$poeSql = $poe !== '' ? ("'" . idf_escape($conn, $poe) . "'") : 'NULL';
-$notesSql = $notes !== '' ? ("'" . idf_escape($conn, $notes) . "'") : 'NULL';
+$label_val = $label !== '' ? $label : null;
+$conn_val = $connected_to !== '' ? $connected_to : null;
+$vlan_val = $vlan !== '' ? $vlan : null;
+$speed_val = $speed !== '' ? $speed : null;
+$poe_val = $poe !== '' ? $poe : null;
+$notes_val = $notes !== '' ? $notes : null;
 
 $sql = "UPDATE idf_ports
-        SET port_type='$port_type',
-            label=$labelSql,
-            status='$status',
-            connected_to=$connSql,
-            vlan=$vlanSql,
-            speed=$speedSql,
-            poe=$poeSql,
-            notes=$notesSql
-        WHERE id=$port_id
+        SET port_type=?,
+            label=?,
+            status=?,
+            connected_to=?,
+            vlan=?,
+            speed=?,
+            poe=?,
+            notes=?
+        WHERE id=?
         LIMIT 1";
 
-if (!mysqli_query($conn, $sql)) {
-    idf_fail('DB error updating port: ' . mysqli_error($conn), 500);
+$stmtUpd = mysqli_prepare($conn, $sql);
+if ($stmtUpd) {
+    mysqli_stmt_bind_param($stmtUpd, 'ssssssssi', $port_type, $label_val, $status, $conn_val, $vlan_val, $speed_val, $poe_val, $notes_val, $port_id);
+    if (!mysqli_stmt_execute($stmtUpd)) {
+        idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
+    }
+    mysqli_stmt_close($stmtUpd);
 }
 
 idf_ok();

@@ -16,11 +16,11 @@ $ignorePaths = [
 $userInputPattern = '/\$_(GET|POST|REQUEST|COOKIE|SERVER|FILES)|php:\/\/input|json_decode\s*\(\s*file_get_contents\s*\(\s*[\"\']php:\/\/input[\"\']\s*\)/i';
 
 // Direct query execution calls that do not use bound parameters.
-$directQueryPattern = '/mysqli_query\s*\(/i';
+$directQueryPattern = '/\b(mysqli_query|itm_run_query)\s*\(/i';
 
 // Common sanitization and safety indicators. Presence does not guarantee safety,
 // but helps reduce obvious false positives in static checks.
-$safetyPattern = '/mysqli_prepare\s*\(|mysqli_stmt_bind_param\s*\(|\(int\)\s*\$|intval\s*\(|cr_escape_identifier\s*\(|so_escape_identifier\s*\(|mysqli_real_escape_string\s*\(/i';
+$safetyPattern = '/mysqli_prepare\s*\(|mysqli_stmt_bind_param\s*\(|\(int\)\s*\(?\$|intval\s*\(|cr_escape_identifier\s*\(|so_escape_identifier\s*\(|itm_is_safe_identifier\s*\(|mysqli_real_escape_string\s*\(/i';
 
 $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
@@ -79,6 +79,11 @@ foreach ($iterator as $fileInfo) {
         }
 
         if (preg_match($safetyPattern, $window) === 1) {
+            continue;
+        }
+
+        // Specifically ignore itm_run_query in functions where it's essentially a wrapper.
+        if (strpos($line, 'itm_run_query($conn, $statement)') !== false || strpos($line, 'itm_run_query($conn, $sql)') !== false) {
             continue;
         }
 

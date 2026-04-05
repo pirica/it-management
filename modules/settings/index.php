@@ -76,7 +76,10 @@ function build_sql_backup($conn) {
     }
 
     while ($tableRow = mysqli_fetch_array($tablesRes)) {
-        $table = $tableRow[0];
+        $table = (string)$tableRow[0];
+        if (!itm_is_safe_identifier($table)) {
+            continue;
+        }
 
         $createRes = mysqli_query($conn, 'SHOW CREATE TABLE `' . $table . '`');
         $createRow = $createRes ? mysqli_fetch_assoc($createRes) : null;
