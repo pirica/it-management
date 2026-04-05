@@ -661,7 +661,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             <div class="card" style="margin-bottom:16px;">
                 <h3 style="margin-top:0;">Import from Excel / CSV</h3>
-                <p style="margin-top:4px;color:#666;">Accepted headers: Hilton ID, Employee Code, User Name, Display Name, Email, Employee Status, First Name, Last Name, Job Code, Title, Department Name, Request Date, Requested By, Termination Requested By, Termination Date.</p>
+                <p style="margin-top:4px;color:#666;">Accepted headers: Id, Employee Code, User Name, Display Name, Email, Employee Status, First Name, Last Name, Job Code, Title, Department Name, Request Date, Requested By, Termination Requested By, Termination Date.</p>
                 <form method="POST" id="employeeImportForm">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="action" value="import_employees">
