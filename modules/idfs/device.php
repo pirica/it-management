@@ -55,9 +55,12 @@ $resPorts = mysqli_query(
        l.cable_color,
        l.cable_label,
        l.notes AS link_notes,
-       l.port_id_b AS other_port_id
+       l.port_id_b AS other_port_id,
+       l.equipment_id AS linked_equipment_id,
+       COALESCE(le.is_switch, 0) AS linked_equipment_is_switch
      FROM idf_ports pr
      LEFT JOIN idf_links l ON l.port_id_a = pr.id
+     LEFT JOIN equipment le ON le.id = l.equipment_id
      WHERE pr.position_id=$position_id
      ORDER BY pr.port_no ASC"
 );
@@ -395,11 +398,12 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
                     <?php foreach ($ports as $p): ?>
                         <?php
-                        $equipmentIsSwitch = (int)($pos['equipment_is_switch'] ?? 0) === 1;
-                        $canEditLinkedSwitch = $equipmentIsSwitch
-                            && !empty($pos['equipment_id'])
+                        $linkedEquipmentId = (int)($p['linked_equipment_id'] ?? 0);
+                        $linkedEquipmentIsSwitch = (int)($p['linked_equipment_is_switch'] ?? 0) === 1;
+                        $canEditLinkedSwitch = $linkedEquipmentId > 0
+                            && $linkedEquipmentIsSwitch
                             && !empty($p['link_id']);
-                        $editLinkedUrl = '../equipment/index.php?switch_id=' . (int)$pos['equipment_id'] . '#switch-port-manager';
+                        $editLinkedUrl = '../equipment/index.php?switch_id=' . $linkedEquipmentId . '#switch-port-manager';
                         $linkText = '';
                         $connectedToText = trim((string)($p['connected_to'] ?? ''));
                         $unlinkBtn = '';
