@@ -30,16 +30,22 @@ $csrf = idf_csrf_token();
 
 $idf = null;
 if ($idf_id > 0 && $company_id > 0) {
-    $res = mysqli_query(
+    $stmtIdf = mysqli_prepare(
         $conn,
         "SELECT i.*, l.name AS location_name, c.company AS company_name
          FROM idfs i
          JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN companies c ON c.id=i.company_id
-         WHERE i.id=$idf_id AND i.company_id=$company_id
+         WHERE i.id=? AND i.company_id=?
          LIMIT 1"
     );
-    $idf = $res ? mysqli_fetch_assoc($res) : null;
+    if ($stmtIdf) {
+        mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);
+        mysqli_stmt_execute($stmtIdf);
+        $res = mysqli_stmt_get_result($stmtIdf);
+        $idf = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmtIdf);
+    }
 }
 
 if (!$idf) {
@@ -49,71 +55,101 @@ if (!$idf) {
 }
 
 $positions = array_fill(1, 10, null);
-$resPos = mysqli_query($conn, "SELECT * FROM idf_positions WHERE idf_id=$idf_id ORDER BY position_no ASC");
-while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
-    $positions[(int)$row['position_no']] = $row;
+$stmtPos = mysqli_prepare($conn, "SELECT * FROM idf_positions WHERE idf_id=? ORDER BY position_no ASC");
+if ($stmtPos) {
+    mysqli_stmt_bind_param($stmtPos, 'i', $idf_id);
+    mysqli_stmt_execute($stmtPos);
+    $resPos = mysqli_stmt_get_result($stmtPos);
+    while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
+        $positions[(int)$row['position_no']] = $row;
+    }
+    mysqli_stmt_close($stmtPos);
 }
 
 $equipmentOptions = [];
-$resEq = mysqli_query(
+$stmtEq = mysqli_prepare(
     $conn,
     "SELECT e.id, e.name, e.serial_number, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
      FROM equipment e
      LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-     WHERE e.company_id=$company_id
+     WHERE e.company_id=?
      ORDER BY e.name ASC
      LIMIT 500"
 );
-while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
-    $equipmentOptions[] = $row;
+if ($stmtEq) {
+    mysqli_stmt_bind_param($stmtEq, 'i', $company_id);
+    mysqli_stmt_execute($stmtEq);
+    $resEq = mysqli_stmt_get_result($stmtEq);
+    while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
+        $equipmentOptions[] = $row;
+    }
+    mysqli_stmt_close($stmtEq);
 }
 
 $switchRj45Options = [];
-$resRj45 = mysqli_query(
+$stmtRj45 = mysqli_prepare(
     $conn,
     "SELECT id, name
      FROM equipment_rj45
-     WHERE company_id=$company_id
+     WHERE company_id=?
      ORDER BY name ASC"
 );
-while ($resRj45 && ($row = mysqli_fetch_assoc($resRj45))) {
-    $switchRj45Options[] = $row;
+if ($stmtRj45) {
+    mysqli_stmt_bind_param($stmtRj45, 'i', $company_id);
+    mysqli_stmt_execute($stmtRj45);
+    $resRj45 = mysqli_stmt_get_result($stmtRj45);
+    while ($resRj45 && ($row = mysqli_fetch_assoc($resRj45))) {
+        $switchRj45Options[] = $row;
+    }
+    mysqli_stmt_close($stmtRj45);
 }
 
 $equipmentTypeOptions = [];
 $switchEquipmentTypeId = 0;
-$resEqTypes = mysqli_query(
+$stmtEqTypes = mysqli_prepare(
     $conn,
     "SELECT id, name
      FROM equipment_types
-     WHERE company_id=$company_id
+     WHERE company_id=?
      ORDER BY name ASC"
 );
-while ($resEqTypes && ($row = mysqli_fetch_assoc($resEqTypes))) {
-    $typeId = (int)($row['id'] ?? 0);
-    $typeName = (string)($row['name'] ?? '');
-    $equipmentTypeOptions[] = [
-        'value' => $typeId,
-        'label' => $typeName,
-    ];
-    if ($switchEquipmentTypeId === 0 && strcasecmp(trim($typeName), 'switch') === 0) {
-        $switchEquipmentTypeId = $typeId;
+if ($stmtEqTypes) {
+    mysqli_stmt_bind_param($stmtEqTypes, 'i', $company_id);
+    mysqli_stmt_execute($stmtEqTypes);
+    $resEqTypes = mysqli_stmt_get_result($stmtEqTypes);
+    while ($resEqTypes && ($row = mysqli_fetch_assoc($resEqTypes))) {
+        $typeId = (int)($row['id'] ?? 0);
+        $typeName = (string)($row['name'] ?? '');
+        $equipmentTypeOptions[] = [
+            'value' => $typeId,
+            'label' => $typeName,
+        ];
+        if ($switchEquipmentTypeId === 0 && strcasecmp(trim($typeName), 'switch') === 0) {
+            $switchEquipmentTypeId = $typeId;
+        }
     }
+    mysqli_stmt_close($stmtEqTypes);
 }
 
 $equipmentStatusFieldOptions = [];
-$resEquipmentStatuses = mysqli_query(
+$stmtEquipmentStatuses = mysqli_prepare(
     $conn,
     "SELECT id, name
      FROM equipment_statuses
-     WHERE company_id=$company_id
+     WHERE company_id=?
      ORDER BY name ASC"
 );
-while ($resEquipmentStatuses && ($row = mysqli_fetch_assoc($resEquipmentStatuses))) {
-    $equipmentStatusFieldOptions[] = [
-        'value' => (int)($row['id'] ?? 0),
-        'label' => (string)($row['name'] ?? ''),
-    ];
+if ($stmtEquipmentStatuses) {
+    mysqli_stmt_bind_param($stmtEquipmentStatuses, 'i', $company_id);
+    mysqli_stmt_execute($stmtEquipmentStatuses);
+    $resEquipmentStatuses = mysqli_stmt_get_result($stmtEquipmentStatuses);
+    while ($resEquipmentStatuses && ($row = mysqli_fetch_assoc($resEquipmentStatuses))) {
+        $equipmentStatusFieldOptions[] = [
+            'value' => (int)($row['id'] ?? 0),
+            'label' => (string)($row['name'] ?? ''),
+        ];
+    }
+    mysqli_stmt_close($stmtEquipmentStatuses);
 }
 
 $switchRj45FieldOptions = [];

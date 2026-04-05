@@ -23,20 +23,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
         exit;
     }
 
-    $nameEsc = mysqli_real_escape_string($conn, $name);
-    $codeEsc = $idf_code !== '' ? ("'" . mysqli_real_escape_string($conn, $idf_code) . "'") : 'NULL';
-    $notesEsc = $notes !== '' ? ("'" . mysqli_real_escape_string($conn, $notes) . "'") : 'NULL';
+    $idf_code_val = $idf_code !== '' ? $idf_code : null;
+    $notes_val = $notes !== '' ? $notes : null;
 
-    $sql = "INSERT INTO idfs (company_id, location_id, name, idf_code, notes)
-            VALUES ($company_id, $location_id, '$nameEsc', $codeEsc, $notesEsc)";
-
-    if (!mysqli_query($conn, $sql)) {
-        $_SESSION['crud_error'] = 'DB error creating IDF: ' . mysqli_error($conn);
+    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, name, idf_code, notes) VALUES (?, ?, ?, ?, ?)");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $location_id, $name, $idf_code_val, $notes_val);
+        if (!mysqli_stmt_execute($stmt)) {
+            $_SESSION['crud_error'] = 'DB error creating IDF: ' . mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+            header('Location: index.php');
+            exit;
+        }
+        $newId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmt);
+    } else {
+        $_SESSION['crud_error'] = 'DB error preparing statement: ' . mysqli_error($conn);
         header('Location: index.php');
         exit;
     }
-
-    $newId = (int)mysqli_insert_id($conn);
     header('Location: view.php?id=' . $newId);
     exit;
 }
@@ -51,19 +56,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
         exit;
     }
 
-    $checkSql = "SELECT id FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1";
-    $checkRes = mysqli_query($conn, $checkSql);
-    if (!$checkRes || !mysqli_fetch_assoc($checkRes)) {
-        $_SESSION['crud_error'] = 'IDF not found.';
-        header('Location: index.php');
-        exit;
+    $checkStmt = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
+    if ($checkStmt) {
+        mysqli_stmt_bind_param($checkStmt, 'ii', $idf_id, $company_id);
+        mysqli_stmt_execute($checkStmt);
+        $checkRes = mysqli_stmt_get_result($checkStmt);
+        $found = $checkRes && mysqli_fetch_assoc($checkRes);
+        mysqli_stmt_close($checkStmt);
+
+        if (!$found) {
+            $_SESSION['crud_error'] = 'IDF not found.';
+            header('Location: index.php');
+            exit;
+        }
     }
 
-    $deleteSql = "DELETE FROM idfs WHERE id=$idf_id AND company_id=$company_id LIMIT 1";
-    if (!mysqli_query($conn, $deleteSql)) {
-        $_SESSION['crud_error'] = 'DB error deleting IDF: ' . mysqli_error($conn);
-        header('Location: index.php');
-        exit;
+    $deleteStmt = mysqli_prepare($conn, "DELETE FROM idfs WHERE id=? AND company_id=? LIMIT 1");
+    if ($deleteStmt) {
+        mysqli_stmt_bind_param($deleteStmt, 'ii', $idf_id, $company_id);
+        if (!mysqli_stmt_execute($deleteStmt)) {
+            $_SESSION['crud_error'] = 'DB error deleting IDF: ' . mysqli_stmt_error($deleteStmt);
+            mysqli_stmt_close($deleteStmt);
+            header('Location: index.php');
+            exit;
+        }
+        mysqli_stmt_close($deleteStmt);
     }
 
     $_SESSION['crud_success'] = 'IDF deleted successfully.';
@@ -73,24 +90,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
 
 $locations = [];
 if ($company_id > 0) {
-    $resLoc = mysqli_query($conn, "SELECT id, name FROM it_locations WHERE company_id=$company_id ORDER BY name");
-    while ($resLoc && ($row = mysqli_fetch_assoc($resLoc))) {
-        $locations[] = $row;
+    $stmtLoc = mysqli_prepare($conn, "SELECT id, name FROM it_locations WHERE company_id=? ORDER BY name");
+    if ($stmtLoc) {
+        mysqli_stmt_bind_param($stmtLoc, 'i', $company_id);
+        mysqli_stmt_execute($stmtLoc);
+        $resLoc = mysqli_stmt_get_result($stmtLoc);
+        while ($resLoc && ($row = mysqli_fetch_assoc($resLoc))) {
+            $locations[] = $row;
+        }
+        mysqli_stmt_close($stmtLoc);
     }
 }
 
 $idfs = [];
 if ($company_id > 0) {
-    $res = mysqli_query(
+    $stmtIdfs = mysqli_prepare(
         $conn,
         "SELECT i.*, l.name AS location_name
          FROM idfs i
          JOIN it_locations l ON l.id=i.location_id
-         WHERE i.company_id=$company_id
+         WHERE i.company_id=?
          ORDER BY i.created_at DESC, i.id DESC"
     );
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $idfs[] = $row;
+    if ($stmtIdfs) {
+        mysqli_stmt_bind_param($stmtIdfs, 'i', $company_id);
+        mysqli_stmt_execute($stmtIdfs);
+        $res = mysqli_stmt_get_result($stmtIdfs);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $idfs[] = $row;
+        }
+        mysqli_stmt_close($stmtIdfs);
     }
 }
 
