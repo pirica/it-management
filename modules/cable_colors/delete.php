@@ -239,6 +239,10 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
+$visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return !(($GLOBALS['crud_table'] ?? '') === 'cable_colors' && $col['Field'] === 'company_id');
+}));
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
@@ -514,7 +518,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <table>
                         <thead>
                         <tr>
-                            <?php foreach ($fieldColumns as $col): ?>
+                            <?php foreach ($visibleFieldColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -532,7 +536,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
@@ -546,7 +550,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -556,7 +560,10 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php if ($crud_table === 'cable_colors' && $hasCompany && $company_id > 0): ?>
+                        <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                    <?php endif; ?>
+                    <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
@@ -616,7 +623,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
