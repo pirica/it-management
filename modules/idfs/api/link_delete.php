@@ -11,7 +11,7 @@ if ($link_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT l.id, i.company_id
+    "SELECT l.id, l.port_id_a, l.port_id_b, i.company_id
      FROM idf_links l
      JOIN idf_ports a ON a.id=l.port_id_a
      JOIN idf_positions pa ON pa.id=a.position_id
@@ -39,6 +39,20 @@ if ($stmtDel) {
         idf_fail('DB error deleting link: ' . mysqli_stmt_error($stmtDel), 500);
     }
     mysqli_stmt_close($stmtDel);
+}
+
+$portA = (int)($row['port_id_a'] ?? 0);
+$portB = (int)($row['port_id_b'] ?? 0);
+if ($portA > 0 && $portB > 0) {
+    $clearConnected = '';
+    $stmtPortClear = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");
+    if ($stmtPortClear) {
+        mysqli_stmt_bind_param($stmtPortClear, 'si', $clearConnected, $portA);
+        mysqli_stmt_execute($stmtPortClear);
+        mysqli_stmt_bind_param($stmtPortClear, 'si', $clearConnected, $portB);
+        mysqli_stmt_execute($stmtPortClear);
+        mysqli_stmt_close($stmtPortClear);
+    }
 }
 
 idf_ok();
