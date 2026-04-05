@@ -240,7 +240,7 @@ $stmtFinal = mysqli_prepare(
 
 if ($stmtFinal) {
     mysqli_stmt_bind_param(
-        $stmtFinal, 'iiiisssissii sss',
+        $stmtFinal, 'iiiisssissiisss',
         $company_id, $low, $high, $equipmentId_val, $equipmentHostname_val,
         $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
         $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
