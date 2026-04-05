@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'switch_cablecolors';
-$crud_title = 'Switch Cable Colors';
-$crud_action = 'view';
+$crud_table = 'cable_colors';
+$crud_title = 'Cable Colors';
+$crud_action = 'list_all';
 ?>
 <?php
 require '../../config/config.php';

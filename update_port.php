@@ -115,7 +115,7 @@ if (!$hasStatusId || !$hasColorId) {
 }
 
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
-$colors = fetch_lookup_map($conn, 'switch_cablecolors', 'color');
+$colors = fetch_lookup_map($conn, 'cable_colors', 'color');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 
 

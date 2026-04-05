@@ -923,29 +923,30 @@ CREATE TABLE `suppliers` (
 -- Data for `suppliers`
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1');
 
--- Table structure for `switch_cablecolors`
-DROP TABLE IF EXISTS `switch_cablecolors`;
-CREATE TABLE `switch_cablecolors` (
+-- Table structure for `cable_colors`
+DROP TABLE IF EXISTS `cable_colors`;
+CREATE TABLE `cable_colors` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'grey',
+  `comments` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `color` (`company_id`,`color`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `switch_cablecolors_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+  CONSTRAINT `cable_colors_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data for `switch_cablecolors`
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '5', 'black');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '6', 'blue');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '2', 'green');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '1', 'grey');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '8', 'orange');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '10', 'other');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '9', 'purple');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '3', 'red');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '7', 'white');
-INSERT INTO `switch_cablecolors` (`company_id`, `id`, `color`) VALUES ('1', '4', 'yellow');
+-- Data for `cable_colors`
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '5', 'black', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '6', 'blue', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '2', 'green', 'Used for Printers');
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '1', 'grey', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '8', 'orange', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '10', 'other', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '9', 'purple', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '3', 'red', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '7', 'white', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color`, `comments`) VALUES ('1', '4', 'yellow', NULL);
 
 -- Table structure for `switch_port_numbering_layout`
 DROP TABLE IF EXISTS `switch_port_numbering_layout`;
@@ -1006,7 +1007,7 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
-  CONSTRAINT `switch_ports_ibfk_4` FOREIGN KEY (`color_id`) REFERENCES `switch_cablecolors` (`id`),
+  CONSTRAINT `switch_ports_ibfk_4` FOREIGN KEY (`color_id`) REFERENCES `cable_colors` (`id`),
   CONSTRAINT `switch_ports_ibfk_5` FOREIGN KEY (`company_id`,`port_type`) REFERENCES `switch_port_types` (`company_id`,`type`),
   CONSTRAINT `switch_ports_ibfk_6` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1624,7 +1625,7 @@ INSERT INTO `manufacturers` (`company_id`, `name`, `code`, `active`) SELECT c.`i
 INSERT INTO `printer_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `printer_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `rack_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `rack_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `supplier_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `supplier_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
-INSERT INTO `switch_cablecolors` (`company_id`, `color`) SELECT c.`id`, t.`color` FROM `switch_cablecolors` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `cable_colors` (`company_id`, `color`, `comments`) SELECT c.`id`, t.`color`, t.`comments` FROM `cable_colors` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `switch_port_numbering_layout` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `switch_port_types` (`company_id`, `type`) SELECT c.`id`, t.`type` FROM `switch_port_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `switch_status` (`company_id`, `status`) SELECT c.`id`, t.`status` FROM `switch_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
@@ -1782,11 +1783,11 @@ LEFT JOIN (
     FROM `switch_status`
     GROUP BY `company_id`
 ) ss_fallback ON ss_fallback.`company_id` = c.`id`
-LEFT JOIN `switch_cablecolors` sc_source ON sc_source.`id` = t.`color_id`
-LEFT JOIN `switch_cablecolors` sc_target ON sc_target.`company_id` = c.`id` AND sc_target.`color` = sc_source.`color`
+LEFT JOIN `cable_colors` sc_source ON sc_source.`id` = t.`color_id`
+LEFT JOIN `cable_colors` sc_target ON sc_target.`company_id` = c.`id` AND sc_target.`color` = sc_source.`color`
 LEFT JOIN (
     SELECT `company_id`, MIN(`id`) AS `id`
-    FROM `switch_cablecolors`
+    FROM `cable_colors`
     GROUP BY `company_id`
 ) sc_fallback ON sc_fallback.`company_id` = c.`id`
 LEFT JOIN `vlans` v_source ON v_source.`id` = t.`vlan_id`
@@ -2461,21 +2462,21 @@ CREATE TRIGGER `trg_suppliers_audit_delete` AFTER DELETE ON `suppliers` FOR EACH
 END$$
 DELIMITER ;
 
-DROP TRIGGER IF EXISTS `trg_switch_cablecolors_audit_insert`;
-DROP TRIGGER IF EXISTS `trg_switch_cablecolors_audit_update`;
-DROP TRIGGER IF EXISTS `trg_switch_cablecolors_audit_delete`;
+DROP TRIGGER IF EXISTS `trg_cable_colors_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_cable_colors_audit_update`;
+DROP TRIGGER IF EXISTS `trg_cable_colors_audit_delete`;
 DELIMITER $$
-CREATE TRIGGER `trg_switch_cablecolors_audit_insert` AFTER INSERT ON `switch_cablecolors` FOR EACH ROW BEGIN
+CREATE TRIGGER `trg_cable_colors_audit_insert` AFTER INSERT ON `cable_colors` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_cablecolors', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'color', NEW.`color`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'cable_colors', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'color', NEW.`color`, 'comments', NEW.`comments`), @app_ip_address, @app_user_agent);
 END$$
-CREATE TRIGGER `trg_switch_cablecolors_audit_update` AFTER UPDATE ON `switch_cablecolors` FOR EACH ROW BEGIN
+CREATE TRIGGER `trg_cable_colors_audit_update` AFTER UPDATE ON `cable_colors` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_cablecolors', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'color', OLD.`color`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'color', NEW.`color`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'cable_colors', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'color', OLD.`color`, 'comments', OLD.`comments`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'color', NEW.`color`, 'comments', NEW.`comments`), @app_ip_address, @app_user_agent);
 END$$
-CREATE TRIGGER `trg_switch_cablecolors_audit_delete` AFTER DELETE ON `switch_cablecolors` FOR EACH ROW BEGIN
+CREATE TRIGGER `trg_cable_colors_audit_delete` AFTER DELETE ON `cable_colors` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_cablecolors', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'color', OLD.`color`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'cable_colors', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'color', OLD.`color`, 'comments', OLD.`comments`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 

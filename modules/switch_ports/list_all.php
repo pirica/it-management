@@ -44,7 +44,7 @@ function cr_fk_map($conn, $table) {
         $manual = [
             'equipment_id' => ['COLUMN_NAME' => 'equipment_id', 'REFERENCED_TABLE_NAME' => 'equipment', 'REFERENCED_COLUMN_NAME' => 'id'],
             'status_id' => ['COLUMN_NAME' => 'status_id', 'REFERENCED_TABLE_NAME' => 'switch_status', 'REFERENCED_COLUMN_NAME' => 'id'],
-            'color_id' => ['COLUMN_NAME' => 'color_id', 'REFERENCED_TABLE_NAME' => 'switch_cablecolors', 'REFERENCED_COLUMN_NAME' => 'id'],
+            'color_id' => ['COLUMN_NAME' => 'color_id', 'REFERENCED_TABLE_NAME' => 'cable_colors', 'REFERENCED_COLUMN_NAME' => 'id'],
             'vlan_id' => ['COLUMN_NAME' => 'vlan_id', 'REFERENCED_TABLE_NAME' => 'vlans', 'REFERENCED_COLUMN_NAME' => 'id'],
             'port_type' => ['COLUMN_NAME' => 'port_type', 'REFERENCED_TABLE_NAME' => 'switch_port_types', 'REFERENCED_COLUMN_NAME' => 'type'],
         ];
@@ -92,7 +92,7 @@ function cr_fk_metadata($conn, $table) {
     $tableLabelCandidates = [
         'equipment' => ['hostname', 'name'],
         'switch_status' => ['name', 'status'],
-        'switch_cablecolors' => ['color', 'name'],
+        'cable_colors' => ['color', 'name'],
         'vlans' => ['vlan_name', 'name'],
         'switch_port_types' => ['name', 'type'],
     ];

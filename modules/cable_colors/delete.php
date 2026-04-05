@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'switch_cablecolors';
-$crud_title = 'Switch Cable Colors';
-$crud_action = 'edit';
+$crud_table = 'cable_colors';
+$crud_title = 'Cable Colors';
+$crud_action = 'delete';
 ?>
 <?php
 require '../../config/config.php';
@@ -253,15 +253,68 @@ if ($crud_action === 'delete') {
 
     cr_require_valid_csrf_token();
 
+    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+
+    if ($bulkAction === 'clear_table') {
+        $where = '';
+        if ($hasCompany && $company_id > 0) {
+            $where = ' WHERE company_id=' . (int)$company_id;
+        }
+        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            header('Location: ' . $listUrl);
+            exit;
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    if ($bulkAction === 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $idList = [];
+        foreach ($ids as $rawId) {
+            $id = (int)$rawId;
+            if ($id > 0) {
+                $idList[$id] = $id;
+            }
+        }
+
+        if (!empty($idList)) {
+            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
+            if ($hasCompany && $company_id > 0) {
+                $where .= ' AND company_id=' . (int)$company_id;
+            }
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            }
+        } else {
+            $_SESSION['crud_error'] = 'No records selected for deletion.';
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        $usageError = '';
+        if (!itm_can_delete_record($conn, $crud_table, 'id', $id, $company_id, $usageError)) {
+            $_SESSION['crud_error'] = $usageError;
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);
@@ -302,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt || $name === 'active') {
+        if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -511,13 +564,11 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
-                        <?php if ($name === 'company_id'): ?>
-                            <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
-                            <?php continue; ?>
-                        <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($name === 'company_id' && $company_id > 0): ?>
+                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
+                            <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>

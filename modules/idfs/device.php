@@ -199,7 +199,7 @@ $cableColorOptions = [];
 $resCableColors = mysqli_query(
     $conn,
     "SELECT color
-     FROM switch_cablecolors
+     FROM cable_colors
      WHERE company_id = $company_id
      ORDER BY color ASC"
 );
@@ -610,7 +610,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Cable color</label>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span id="cableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:yellow; flex:0 0 auto;"></span>
-                    <select class="input" name="cable_color" data-add-table="switch_cablecolors" style="flex:1 1 auto;">
+                    <select class="input" name="cable_color" data-add-table="cable_colors" style="flex:1 1 auto;">
                         <?php foreach ($cableColorOptions as $cableColor): ?>
                             <option value="<?php echo sanitize($cableColor); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
                                 <?php echo sanitize($cableColor); ?>
@@ -999,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
         f.cable_color.addEventListener('change', (event) => {
             const selected = event.target.value || '';
             if (selected === '__add_new__') {
-                window.open(`${IDF_BASE.replace('/idfs', '/switch_cablecolors')}/create.php`, '_blank');
+                window.open(`${IDF_BASE.replace('/idfs', '/cable_colors')}/create.php`, '_blank');
                 event.target.value = 'yellow';
                 updateCableColorSwatch('yellow');
                 return;
