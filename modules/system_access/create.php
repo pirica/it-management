@@ -29,8 +29,8 @@ if ($is_edit) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $code = escape_sql($_POST['code'] ?? '', $conn);
-    $name = escape_sql($_POST['name'] ?? '', $conn);
+    $code = trim((string)($_POST['code'] ?? ''));
+    $name = trim((string)($_POST['name'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
     if (!$code) {
@@ -38,17 +38,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!$name) {
         $error = 'Name is required.';
     } else {
-        $sql = $is_edit
-            ? "UPDATE system_access SET code='$code', name='$name', active=$active WHERE id=$id AND company_id=$company_id"
-            : "INSERT INTO system_access (company_id,code,name,active) VALUES ($company_id,'$code','$name',$active)";
+        $stmt = $is_edit
+            ? mysqli_prepare($conn, 'UPDATE system_access SET code = ?, name = ?, active = ? WHERE id = ? AND company_id = ?')
+            : mysqli_prepare($conn, 'INSERT INTO system_access (company_id, code, name, active) VALUES (?, ?, ?, ?)');
 
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: index.php');
-            exit;
+        if ($stmt) {
+            if ($is_edit) {
+                mysqli_stmt_bind_param($stmt, 'ssiii', $code, $name, $active, $id, $company_id);
+            } else {
+                mysqli_stmt_bind_param($stmt, 'issi', $company_id, $code, $name, $active);
+            }
+
+            if (mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_close($stmt);
+                header('Location: index.php');
+                exit;
+            }
+
+            $error = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+            mysqli_stmt_close($stmt);
+        } else {
+            $error = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
         }
-        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 ?>
