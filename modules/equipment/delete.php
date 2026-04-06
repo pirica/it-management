@@ -4,10 +4,20 @@ require '../../config/config.php';
 if (!function_exists('equipment_table_has_column')) {
     function equipment_table_has_column(mysqli $conn, string $table, string $column): bool
     {
-        $tableEsc = mysqli_real_escape_string($conn, $table);
-        $columnEsc = mysqli_real_escape_string($conn, $column);
-        $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-        return $res && mysqli_num_rows($res) > 0;
+        if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+            return false;
+        }
+        $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 's', $column);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $has = $res && mysqli_num_rows($res) > 0;
+            mysqli_stmt_close($stmt);
+            return $has;
+        }
+        return false;
     }
 }
 
@@ -18,15 +28,23 @@ function equipment_delete_idf_data(mysqli $conn, string $companyId, int $equipme
         return;
     }
 
-    $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
     $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
-    $companyFilter = $hasCompanyColumn
-        ? " AND company_id = '" . mysqli_real_escape_string($conn, $companyId) . "'"
-        : '';
-    mysqli_query(
-        $conn,
-        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
-    );
+    $sql = 'DELETE FROM idf_positions WHERE equipment_id = ?';
+    $types = 'i';
+    $params = [(int)$equipmentId];
+
+    if ($hasCompanyColumn) {
+        $sql .= ' AND company_id = ?';
+        $types .= 's';
+        $params[] = $companyId;
+    }
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
 }
 
 function equipment_delete_switch_port_data(mysqli $conn, int $companyId, int $equipmentId): void
@@ -111,11 +129,18 @@ if ($id <= 0) {
 $usageError = '';
 $isSwitchEquipment = equipment_is_switch($conn, (int)$company_id, $id);
 
-$checkSql = "SELECT id FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
-$checkResult = mysqli_query($conn, $checkSql);
+$checkSql = "SELECT id FROM equipment WHERE id = ? AND company_id = ? LIMIT 1";
+$checkStmt = mysqli_prepare($conn, $checkSql);
+$checkResult = false;
+if ($checkStmt) {
+    mysqli_stmt_bind_param($checkStmt, 'ii', $id, $company_id);
+    mysqli_stmt_execute($checkStmt);
+    $checkResult = mysqli_stmt_get_result($checkStmt);
+    mysqli_stmt_close($checkStmt);
+}
 
 if (!$checkResult) {
-    $_SESSION['crud_error'] = 'Unable to check record before delete: ' . mysqli_error($conn);
+    $_SESSION['crud_error'] = 'Unable to check record before delete.';
     header('Location: index.php');
     exit;
 }
@@ -136,14 +161,21 @@ try {
         throw new RuntimeException($usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.');
     }
 
-    $deleteSql = "DELETE FROM equipment WHERE id = $id AND company_id = $company_id LIMIT 1";
-    $deleteResult = mysqli_query($conn, $deleteSql);
-
-    if (!$deleteResult) {
-        throw new RuntimeException('Delete failed: ' . mysqli_error($conn));
+    $deleteSql = "DELETE FROM equipment WHERE id = ? AND company_id = ? LIMIT 1";
+    $deleteStmt = mysqli_prepare($conn, $deleteSql);
+    $deleteResult = false;
+    if ($deleteStmt) {
+        mysqli_stmt_bind_param($deleteStmt, 'ii', $id, $company_id);
+        $deleteResult = mysqli_stmt_execute($deleteStmt);
+        $affectedRows = mysqli_stmt_affected_rows($deleteStmt);
+        mysqli_stmt_close($deleteStmt);
     }
 
-    if (mysqli_affected_rows($conn) < 1) {
+    if (!$deleteResult) {
+        throw new RuntimeException('Delete failed.');
+    }
+
+    if ($affectedRows < 1) {
         throw new RuntimeException('Nothing was deleted.');
     }
 

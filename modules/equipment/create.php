@@ -10,28 +10,39 @@ $csrfToken = itm_get_csrf_token();
 
 function fetch_options($conn, $table, $label = 'name', $where = '') {
     $items = [];
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($label)) {
+        return $items;
+    }
     if (!equipment_table_exists($conn, $table)) {
         return $items;
     }
     $hasCompanyColumn = equipment_table_has_column($conn, $table, 'company_id');
-    $companyScope = ($hasCompanyColumn && isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0)
-        ? 'company_id = ' . (int)$GLOBALS['company_id']
-        : '';
+    $companyId = (isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0) ? (int)$GLOBALS['company_id'] : 0;
+    $companyScope = ($hasCompanyColumn && $companyId > 0) ? 'company_id = ?' : '';
 
     $where = trim((string)$where);
     if ($companyScope !== '') {
         if ($where === '') {
             $where = 'WHERE ' . $companyScope;
-        } elseif (stripos($where, 'where') === 0) {
+        } elseif (str_starts_with(strtoupper($where), 'WHERE')) {
             $where .= ' AND ' . $companyScope;
         } else {
             $where = 'WHERE ' . $where . ' AND ' . $companyScope;
         }
     }
 
-    $res = mysqli_query($conn, "SELECT id, $label AS label FROM $table $where ORDER BY $label");
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $items[] = $row;
+    $sql = "SELECT id, `{$label}` AS label FROM `{$table}` $where ORDER BY `{$label}`";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        if ($hasCompanyColumn && $companyId > 0) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $items[] = $row;
+        }
+        mysqli_stmt_close($stmt);
     }
     return $items;
 }
@@ -44,13 +55,22 @@ function equipment_table_exists(mysqli $conn, string $table): bool
         return $cache[$table];
     }
 
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $res = mysqli_query(
-        $conn,
-        "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$tableEsc}' LIMIT 1"
-    );
+    if (!itm_is_safe_identifier($table)) {
+        $cache[$table] = false;
+        return false;
+    }
 
-    $cache[$table] = $res && mysqli_num_rows($res) > 0;
+    $sql = "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $table);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $cache[$table] = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($stmt);
+    } else {
+        $cache[$table] = false;
+    }
     return $cache[$table];
 }
 
@@ -60,10 +80,21 @@ function equipment_table_has_column(mysqli $conn, string $table, string $column)
         return false;
     }
 
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-    return $res && mysqli_num_rows($res) > 0;
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+        return false;
+    }
+
+    $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $column);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $has = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($stmt);
+        return $has;
+    }
+    return false;
 }
 
 function equipment_table_varchar_length(mysqli $conn, string $table, string $column): int
@@ -80,14 +111,25 @@ function equipment_table_varchar_length(mysqli $conn, string $table, string $col
         return 0;
     }
 
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-    $row = $res ? mysqli_fetch_assoc($res) : null;
-    $type = strtolower((string)($row['Type'] ?? ''));
-    if (preg_match('/^varchar\((\d+)\)$/', $type, $matches) === 1) {
-        $cache[$cacheKey] = (int)$matches[1];
-        return $cache[$cacheKey];
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+        $cache[$cacheKey] = 0;
+        return 0;
+    }
+
+    $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $column);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        $type = strtolower((string)($row['Type'] ?? ''));
+        if (preg_match('/^varchar\((\d+)\)$/', $type, $matches) === 1) {
+            $cache[$cacheKey] = (int)$matches[1];
+            return $cache[$cacheKey];
+        }
     }
 
     $cache[$cacheKey] = 0;
@@ -100,15 +142,23 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
         return;
     }
 
-    $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
     $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
-    $companyFilter = $hasCompanyColumn
-        ? " AND company_id = '" . mysqli_real_escape_string($conn, (string)$companyId) . "'"
-        : '';
-    mysqli_query(
-        $conn,
-        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
-    );
+    $sql = 'DELETE FROM idf_positions WHERE equipment_id = ?';
+    $types = 'i';
+    $params = [$equipmentId];
+
+    if ($hasCompanyColumn) {
+        $sql .= ' AND company_id = ?';
+        $types .= 'i';
+        $params[] = $companyId;
+    }
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
 }
 
 function equipment_detect_upload_mime(array $file): string
@@ -206,9 +256,9 @@ function equipment_encode_photo_filenames(array $filenames): string
 
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
-$locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
-$locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
-$racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
+$locations = fetch_options($conn, 'it_locations', 'name');
+$locationTypes = fetch_options($conn, 'location_types', 'name');
+$racks = fetch_options($conn, 'racks', 'name');
 $rackStatuses = fetch_options($conn, 'rack_statuses');
 $statuses = fetch_options($conn, 'equipment_statuses');
 $defaultStatusId = '';
@@ -491,52 +541,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photo = $encodedPhotoFilenames === '' ? 'NULL' : "'" . escape_sql($encodedPhotoFilenames, $conn) . "'";
         $active = (int)$data['active'];
 
-        $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
-        $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
-        $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
-        $workstationOsVersionUpdateSql = $hasWorkstationOsVersionIdColumn ? "workstation_os_version_id=$workstation_os_version_id,\n                    " : '';
-        $workstationOsVersionInsertColumns = $hasWorkstationOsVersionIdColumn ? ', workstation_os_version_id' : '';
-        $workstationOsVersionInsertValues = $hasWorkstationOsVersionIdColumn ? ", $workstation_os_version_id" : '';
-        $workstationRamUpdateSql = $hasWorkstationRamIdColumn ? "workstation_ram_id=$workstation_ram_id,\n                    " : '';
-        $workstationRamInsertColumns = $hasWorkstationRamIdColumn ? ', workstation_ram_id' : '';
-        $workstationRamInsertValues = $hasWorkstationRamIdColumn ? ", $workstation_ram_id" : '';
-        $workstationStorageUpdateSql = $hasWorkstationStorageColumn ? "workstation_storage=$workstation_storage,\n                    " : '';
-        $workstationStorageInsertColumns = $hasWorkstationStorageColumn ? ', workstation_storage' : '';
-        $workstationStorageInsertValues = $hasWorkstationStorageColumn ? ", $workstation_storage" : '';
-        $workstationOsInstalledOnUpdateSql = $hasWorkstationOsInstalledOnColumn ? "workstation_os_installed_on=$workstation_os_installed_on,\n                    " : '';
-        $workstationOsInstalledOnInsertColumns = $hasWorkstationOsInstalledOnColumn ? ', workstation_os_installed_on' : '';
-        $workstationOsInstalledOnInsertValues = $hasWorkstationOsInstalledOnColumn ? ", $workstation_os_installed_on" : '';
-        $switchFiberPortLabelUpdateSql = $hasSwitchFiberPortLabelColumn ? "switch_fiber_port_label=$switch_fiber_port_label, " : '';
-        $switchFiberPortLabelInsertColumns = $hasSwitchFiberPortLabelColumn ? ', switch_fiber_port_label' : '';
-        $switchFiberPortLabelInsertValues = $hasSwitchFiberPortLabelColumn ? ", $switch_fiber_port_label" : '';
+        $fieldMap = [
+            'equipment_type_id' => 'i',
+            'manufacturer_id' => 'i',
+            'location_id' => 'i',
+            'rack_id' => 'i',
+            'name' => 's',
+            'serial_number' => 's',
+            'model' => 's',
+            'hostname' => 's',
+            'ip_address' => 's',
+            'patch_port' => 's',
+            'mac_address' => 's',
+            'status_id' => 'i',
+            'purchase_date' => 's',
+            'purchase_cost' => 'd',
+            'warranty_expiry' => 's',
+            'certificate_expiry' => 's',
+            'warranty_type_id' => 'i',
+            'is_printer' => 'i',
+            'printer_device_type_id' => 'i',
+            'printer_color_capable' => 'i',
+            'printer_scan' => 'i',
+            'is_workstation' => 'i',
+            'is_server' => 'i',
+            'is_pos' => 'i',
+            'is_switch' => 'i',
+            'workstation_device_type_id' => 'i',
+            'workstation_os_type_id' => 'i',
+            'workstation_processor' => 's',
+            'switch_rj45_id' => 'i',
+            'switch_port_numbering_layout_id' => 'i',
+            'switch_fiber_id' => 'i',
+            'switch_fiber_patch_id' => 'i',
+            'switch_fiber_rack_id' => 'i',
+            'switch_fiber_count_id' => 'i',
+            'switch_fiber_ports_number' => 's',
+            'switch_poe_id' => 'i',
+            'switch_environment_id' => 'i',
+            'notes' => 's',
+            'photo_filename' => 's',
+            'active' => 'i'
+        ];
 
-        if ($isEdit) {
-            $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id,
-                    name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
-                    status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
-                    warranty_type_id=$warranty_type_id, is_printer=$is_printer, printer_device_type_id=$printer_device_type_id,
-                    printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
-                    is_workstation=$is_workstation, is_server=$is_server, is_pos=$is_pos, is_switch=$is_switch,
-                    workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
-                    $workstationOfficeUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
-                    workstation_processor=$workstation_processor, $workstationStorageUpdateSql$workstationOsInstalledOnUpdateSql
-                    switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_count_id=$switch_fiber_count_id, switch_fiber_ports_number=$switch_fiber_ports_number, $switchFiberPortLabelUpdateSql
-                    switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
-                    notes=$notes,
-                    photo_filename=$photo, active=$active
-                    WHERE id=$id AND company_id=$company_id";
-        } else {
-            $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, name, serial_number, model, hostname,
-                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id, is_printer,
-                    printer_device_type_id, printer_color_capable, printer_scan, is_workstation, is_server, is_pos, is_switch, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_count_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, active)
-                    VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $name, $serial_number, $model, $hostname,
-                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id, $is_printer,
-                    $printer_device_type_id, $printer_color_capable, $printer_scan, $is_workstation, $is_server, $is_pos, $is_switch, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_count_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+        if ($hasWorkstationOfficeIdColumn) $fieldMap['workstation_office_id'] = 'i';
+        if ($hasWorkstationOsVersionIdColumn) $fieldMap['workstation_os_version_id'] = 'i';
+        if ($hasWorkstationRamIdColumn) $fieldMap['workstation_ram_id'] = 'i';
+        if ($hasWorkstationStorageColumn) $fieldMap['workstation_storage'] = 's';
+        if ($hasWorkstationOsInstalledOnColumn) $fieldMap['workstation_os_installed_on'] = 's';
+        if ($hasSwitchFiberPortLabelColumn) $fieldMap['switch_fiber_port_label'] = 's';
+
+        $queryFields = [];
+        $queryTypes = '';
+        $queryParams = [];
+
+        foreach ($fieldMap as $fieldName => $fieldType) {
+            $val = $data[$fieldName];
+            if ($fieldName === 'photo_filename') {
+                $val = equipment_encode_photo_filenames($photoFilenames);
+            }
+            if ($fieldName === 'certificate_expiry' && (!$isServerEquipment || $val === '')) {
+                $val = '';
+            }
+
+            if ($val === '' || $val === null) {
+                $queryFields[$fieldName] = 'NULL';
+            } else {
+                $queryFields[$fieldName] = '?';
+                $queryTypes .= $fieldType;
+                $queryParams[] = $val;
+            }
         }
 
-        if (mysqli_query($conn, $sql)) {
+        if ($isEdit) {
+            $sets = [];
+            foreach ($queryFields as $f => $v) {
+                $sets[] = cr_escape_identifier($f) . '=' . $v;
+            }
+            $sql = 'UPDATE equipment SET ' . implode(', ', $sets) . ' WHERE id = ? AND company_id = ?';
+            $queryTypes .= 'ii';
+            $queryParams[] = $id;
+            $queryParams[] = $company_id;
+        } else {
+            $cols = array_keys($queryFields);
+            $vals = array_values($queryFields);
+            $sql = 'INSERT INTO equipment (company_id, ' . implode(', ', array_map('cr_escape_identifier', $cols)) . ') VALUES (?, ' . implode(', ', $vals) . ')';
+            $queryTypes = 'i' . $queryTypes;
+            array_unshift($queryParams, $company_id);
+        }
+
+        $stmt = mysqli_prepare($conn, $sql);
+        $execOk = false;
+        if ($stmt) {
+            if ($queryTypes !== '') {
+                mysqli_stmt_bind_param($stmt, $queryTypes, ...$queryParams);
+            }
+            $execOk = mysqli_stmt_execute($stmt);
+            if (!$execOk) {
+                $dbErrorCode = (int)mysqli_stmt_errno($stmt);
+                $dbErrorMessage = (string)mysqli_stmt_error($stmt);
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        if ($execOk) {
             foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
                 $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
                 if (is_file($existingPhotoPath)) {
@@ -555,16 +663,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($switchConfigChanged || $changedAwayFromSwitch) {
                     $hasEquipmentId = equipment_table_has_column($conn, 'switch_ports', 'equipment_id');
-                    if ($hasEquipmentId) {
-                        mysqli_query(
-                            $conn,
-                            "DELETE FROM switch_ports WHERE company_id = $company_id AND equipment_id = $id"
-                        );
-                    } else {
-                        mysqli_query(
-                            $conn,
-                            "DELETE FROM switch_ports WHERE company_id = $company_id"
-                        );
+                    $sqlDelPorts = $hasEquipmentId
+                        ? 'DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ?'
+                        : 'DELETE FROM switch_ports WHERE company_id = ?';
+                    $stmtDelPorts = mysqli_prepare($conn, $sqlDelPorts);
+                    if ($stmtDelPorts) {
+                        if ($hasEquipmentId) {
+                            mysqli_stmt_bind_param($stmtDelPorts, 'ii', $company_id, $id);
+                        } else {
+                            mysqli_stmt_bind_param($stmtDelPorts, 'i', $company_id);
+                        }
+                        mysqli_stmt_execute($stmtDelPorts);
+                        mysqli_stmt_close($stmtDelPorts);
                     }
                 }
 
