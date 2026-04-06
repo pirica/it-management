@@ -2,9 +2,14 @@
 require '../../config/config.php';
 
 $hasSwitchFiberPortLabelColumn = false;
-$hasSwitchFiberPortLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_fiber_port_label'");
-if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabelColumnRes) > 0) {
-    $hasSwitchFiberPortLabelColumn = true;
+$stmtCol = mysqli_prepare($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_fiber_port_label'");
+if ($stmtCol) {
+    mysqli_stmt_execute($stmtCol);
+    $resCol = mysqli_stmt_get_result($stmtCol);
+    if ($resCol && mysqli_num_rows($resCol) > 0) {
+        $hasSwitchFiberPortLabelColumn = true;
+    }
+    mysqli_stmt_close($stmtCol);
 }
 $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     ? "COALESCE(e.switch_fiber_port_label, '')"
@@ -12,22 +17,23 @@ $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
+$searchParams = [];
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchSql = " AND (
-        CAST(e.id AS CHAR) LIKE '{$searchEsc}'
-        OR e.name LIKE '{$searchEsc}'
-        OR e.serial_number LIKE '{$searchEsc}'
-        OR e.model LIKE '{$searchEsc}'
-        OR e.hostname LIKE '{$searchEsc}'
-        OR e.ip_address LIKE '{$searchEsc}'
-        OR c.company LIKE '{$searchEsc}'
-        OR et.name LIKE '{$searchEsc}'
-        OR m.name LIKE '{$searchEsc}'
-        OR l.name LIKE '{$searchEsc}'
-        OR es.name LIKE '{$searchEsc}'
+        CAST(e.id AS CHAR) LIKE ?
+        OR e.name LIKE ?
+        OR e.serial_number LIKE ?
+        OR e.model LIKE ?
+        OR e.hostname LIKE ?
+        OR e.ip_address LIKE ?
+        OR c.company LIKE ?
+        OR et.name LIKE ?
+        OR m.name LIKE ?
+        OR l.name LIKE ?
+        OR es.name LIKE ?
     )";
+    $searchParams = array_fill(0, 11, $searchPattern);
 }
 
 $equipmentFlagField = isset($equipmentFlagField) ? (string)$equipmentFlagField : '';
@@ -39,7 +45,7 @@ $flagTypeMatchers = [
     'is_pos' => "LOWER(TRIM(et.name)) IN ('pos', 'point of sale', 'point-of-sale')",
 ];
 $moduleFilterSql = '';
-if ($equipmentFlagField !== '' && array_key_exists($equipmentFlagField, $flagTypeMatchers)) {
+if ($equipmentFlagField !== '' && array_key_exists($equipmentFlagField, $flagTypeMatchers) && itm_is_safe_identifier($equipmentFlagField)) {
     $moduleFilterSql = " AND (
         COALESCE(e.{$equipmentFlagField}, 0) = 1
         OR {$flagTypeMatchers[$equipmentFlagField]}
@@ -58,7 +64,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
         LEFT JOIN it_locations l ON l.id = e.location_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
-        WHERE e.company_id = $company_id
+        WHERE e.company_id = ?
         {$moduleFilterSql}
         {$searchSql}";
 $sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number'];
@@ -82,21 +88,27 @@ $orderByMap = [
     'serial_number' => 'e.serial_number',
 ];
 $sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
-$result = mysqli_query($conn, $sql);
 $equipmentRows = [];
-if ($result) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        $equipmentRows[] = $row;
+$stmt = mysqli_prepare($conn, $sql);
+if ($stmt) {
+    $types = 'i' . str_repeat('s', count($searchParams));
+    $params = array_merge([(int)$company_id], $searchParams);
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $equipmentRows[] = $row;
+        }
     }
+    mysqli_stmt_close($stmt);
 }
 
 $isGeneralEquipmentModule = $equipmentFlagField === '';
 $enableSwitchPortManager = $isGeneralEquipmentModule || $equipmentFlagField === 'is_switch';
 $switches = [];
 if ($enableSwitchPortManager) {
-    $switchResult = mysqli_query(
-        $conn,
-        "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
+    $switchSql = "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
                 COALESCE(er.name, '24 ports') AS rj45_name,
                 COALESCE(ef.name, '') AS fiber_name,
                 COALESCE(efc.name, '0') AS fiber_count,
@@ -109,12 +121,18 @@ if ($enableSwitchPortManager) {
          LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
          LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
-         WHERE e.company_id = $company_id
+         WHERE e.company_id = ?
            AND LOWER(TRIM(et.name)) LIKE '%switch%'
-         ORDER BY e.name ASC"
-    );
-    while ($switchResult && ($row = mysqli_fetch_assoc($switchResult))) {
-        $switches[] = $row;
+         ORDER BY e.name ASC";
+    $switchStmt = mysqli_prepare($conn, $switchSql);
+    if ($switchStmt) {
+        mysqli_stmt_bind_param($switchStmt, 'i', $company_id);
+        mysqli_stmt_execute($switchStmt);
+        $switchResult = mysqli_stmt_get_result($switchStmt);
+        while ($switchResult && ($row = mysqli_fetch_assoc($switchResult))) {
+            $switches[] = $row;
+        }
+        mysqli_stmt_close($switchStmt);
     }
 }
 $switchIds = array_map(static fn(array $switchItem): int => (int)($switchItem['id'] ?? 0), $switches);
@@ -270,12 +288,15 @@ if (!empty($_SESSION['crud_success'])) {
                                         <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?>&spm=1<?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
                                     <?php
-                                    $deleteUrl = './delete.php?id=' . (int)$row['id'];
                                     $deleteConfirmText = $isSwitch
                                         ? 'Delete this switch and all related switch port data? This action cannot be undone.'
                                         : 'Delete this equipment?';
                                     ?>
-                                    <a class="btn btn-sm btn-danger" href="<?php echo $deleteUrl; ?>" data-confirm="<?php echo sanitize($deleteConfirmText); ?>">🗑️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('<?php echo sanitize($deleteConfirmText); ?>');">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                    </form>
 
                                 </td>
                             </tr>

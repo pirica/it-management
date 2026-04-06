@@ -4,10 +4,20 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 function equipment_view_table_has_column(mysqli $conn, string $table, string $column): bool
 {
-    $tableEsc = mysqli_real_escape_string($conn, $table);
-    $columnEsc = mysqli_real_escape_string($conn, $column);
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
-    return $res && mysqli_num_rows($res) > 0;
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+        return false;
+    }
+    $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $column);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $has = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($stmt);
+        return $has;
+    }
+    return false;
 }
 
 $hasWorkstationOfficeIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_office_id');
@@ -43,9 +53,18 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         $workstationOfficeJoin
         $workstationOsVersionJoin
         $workstationRamJoin
-        WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
-$res = mysqli_query($conn, $sql);
-$item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+        WHERE e.id = ? AND e.company_id = ? LIMIT 1";
+$stmt = mysqli_prepare($conn, $sql);
+$item = null;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($res && mysqli_num_rows($res) === 1) {
+        $item = mysqli_fetch_assoc($res);
+    }
+    mysqli_stmt_close($stmt);
+}
 $equipmentViewBackPath = (string)($equipmentViewBackPath ?? 'index.php');
 $equipmentViewEditPath = (string)($equipmentViewEditPath ?? 'edit.php');
 $equipmentRequiredFlagField = (string)($equipmentRequiredFlagField ?? '');
