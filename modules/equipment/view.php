@@ -46,6 +46,34 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+$equipmentViewBackPath = (string)($equipmentViewBackPath ?? 'index.php');
+$equipmentViewEditPath = (string)($equipmentViewEditPath ?? 'edit.php');
+$equipmentRequiredFlagField = (string)($equipmentRequiredFlagField ?? '');
+
+if ($item && $equipmentRequiredFlagField !== '') {
+    $allowedFlags = [
+        'is_workstation' => "workstation",
+        'is_server' => "server",
+        'is_switch' => "switch",
+        'is_printer' => "printer",
+        'is_pos' => "pos",
+    ];
+    if (array_key_exists($equipmentRequiredFlagField, $allowedFlags)) {
+        $hasFlag = (int)($item[$equipmentRequiredFlagField] ?? 0) === 1;
+        $typeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
+        $typeMatch = false;
+        if ($equipmentRequiredFlagField === 'is_switch') {
+            $typeMatch = str_contains($typeName, 'switch');
+        } elseif ($equipmentRequiredFlagField === 'is_pos') {
+            $typeMatch = in_array($typeName, ['pos', 'point of sale', 'point-of-sale'], true);
+        } else {
+            $typeMatch = $typeName === $allowedFlags[$equipmentRequiredFlagField];
+        }
+        if (!$hasFlag && !$typeMatch) {
+            $item = null;
+        }
+    }
+}
 
 function equipment_parse_photo_filenames($rawValue): array
 {
@@ -187,7 +215,7 @@ function equipment_field_matches_context($key, $item) {
     </td>
 </tr>
 </tbody></table>
-<p style="margin-top:16px;"><a class="btn" href="index.php">Back</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
+<p style="margin-top:16px;"><a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>">Back</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script></body></html>
