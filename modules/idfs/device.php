@@ -403,7 +403,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         $canEditLinkedSwitch = $linkedEquipmentId > 0
                             && $linkedEquipmentIsSwitch
                             && !empty($p['link_id']);
-                        $editLinkedUrl = '../equipment/index.php?switch_id=' . $linkedEquipmentId . '#switch-port-manager';
+                        $editLinkedUrl = '../equipment/index.php?switch_id=' . $linkedEquipmentId . '&spm=1#switch-port-manager';
                         $linkText = '';
                         $connectedToText = trim((string)($p['connected_to'] ?? ''));
                         $unlinkBtn = '';

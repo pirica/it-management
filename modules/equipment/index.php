@@ -143,6 +143,7 @@ if ($hasSelectedSwitch) {
         }
     }
 }
+$showSwitchPortManager = $hasSelectedSwitch && (string)($_GET['spm'] ?? '') === '1';
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
@@ -182,7 +183,7 @@ if (!empty($_SESSION['crud_success'])) {
                 <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($equipmentModuleTitle ?? '🖥️ Equipment'); ?></h1>
                 <div style="display:flex;gap:8px;align-items:center;">
-                    <?php if ($hasSelectedSwitch): ?>
+                    <?php if ($showSwitchPortManager): ?>
                         <button type="button" class="btn btn-sm" id="exportEquipmentPdfBtn">Export PDF</button>
                     <?php endif; ?>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
@@ -196,13 +197,16 @@ if (!empty($_SESSION['crud_success'])) {
                     <?php if ($hasSelectedSwitch): ?>
                         <input type="hidden" name="switch_id" value="<?php echo (int)$selectedSwitchId; ?>">
                     <?php endif; ?>
+                    <?php if ($showSwitchPortManager): ?>
+                        <input type="hidden" name="spm" value="1">
+                    <?php endif; ?>
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                         <label for="equipmentSearch">Search (all fields)</label>
                         <input type="text" id="equipmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="<?php echo sanitize($moduleSearchPlaceholder); ?>">
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php<?php echo $hasSelectedSwitch ? '?switch_id=' . (int)$selectedSwitchId : ''; ?>" class="btn btn-sm">Clear</a>
+                        <a href="index.php<?php echo $hasSelectedSwitch ? '?switch_id=' . (int)$selectedSwitchId . ($showSwitchPortManager ? '&spm=1' : '') : ''; ?>" class="btn btn-sm">Clear</a>
                     </div>
                 </form>
             </div>
@@ -223,7 +227,7 @@ if (!empty($_SESSION['crud_success'])) {
                             'serial_number' => 'Serial Number',
                         ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                            <th><a href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <th><a href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?><?php echo $showSwitchPortManager ? '&spm=1' : ''; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
                         <th>Actions</th>
                     </tr>
@@ -263,7 +267,7 @@ if (!empty($_SESSION['crud_success'])) {
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($showSwitchPortManagerAction): ?>
-                                        <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
+                                        <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?>&spm=1<?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
                                     <?php
                                     $deleteUrl = './delete.php?id=' . (int)$row['id'];
@@ -283,7 +287,7 @@ if (!empty($_SESSION['crud_success'])) {
                 </table>
             </div>
 
-            <?php if ($hasSelectedSwitch): ?>
+            <?php if ($showSwitchPortManager): ?>
                 <div class="card" id="switch-port-manager" style="margin-top:20px;">
                     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                         <h2>Switch Port Manager</h2>
@@ -293,6 +297,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <?php if ($searchRaw !== ''): ?>
                                     <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
                                 <?php endif; ?>
+                                <input type="hidden" name="spm" value="1">
                                 <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
                                 <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
                                     <?php foreach ($switches as $switchItem): ?>
@@ -389,7 +394,7 @@ if (!empty($_SESSION['crud_success'])) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
-<?php if ($hasSelectedSwitch): ?>
+<?php if ($showSwitchPortManager): ?>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
