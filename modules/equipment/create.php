@@ -249,6 +249,8 @@ $hasSwitchFiberPortLabelColumn = equipment_table_has_column($conn, 'equipment', 
 $switchTypeId = 0;
 $serverTypeId = 0;
 $printerTypeId = 0;
+$workstationTypeId = 0;
+$posTypeId = 0;
 foreach ($types as $typeItem) {
     if (strcasecmp((string)$typeItem['label'], 'Switch') === 0) {
         $switchTypeId = (int)$typeItem['id'];
@@ -258,6 +260,12 @@ foreach ($types as $typeItem) {
     }
     if (strcasecmp((string)$typeItem['label'], 'Printer') === 0) {
         $printerTypeId = (int)$typeItem['id'];
+    }
+    if (strcasecmp((string)$typeItem['label'], 'Workstation') === 0) {
+        $workstationTypeId = (int)$typeItem['id'];
+    }
+    if (strcasecmp((string)$typeItem['label'], 'POS') === 0) {
+        $posTypeId = (int)$typeItem['id'];
     }
 }
 
@@ -918,9 +926,38 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var serverFields = document.getElementById('server-fields');
     var printerFields = document.getElementById('printer-fields');
     var isPrinterCheckbox = document.querySelector('input[name="is_printer"]');
+    var isWorkstationCheckbox = document.querySelector('input[name="is_workstation"]');
+    var isSwitchCheckbox = document.querySelector('input[name="is_switch"]');
+    var isServerCheckbox = document.querySelector('input[name="is_server"]');
+    var isPosCheckbox = document.querySelector('input[name="is_pos"]');
     var switchTypeId = '<?php echo (int)$switchTypeId; ?>';
     var serverTypeId = '<?php echo (int)$serverTypeId; ?>';
     var printerTypeId = '<?php echo (int)$printerTypeId; ?>';
+    var workstationTypeId = '<?php echo (int)$workstationTypeId; ?>';
+    var posTypeId = '<?php echo (int)$posTypeId; ?>';
+
+    function syncRoleFlagsWithType() {
+        if (!typeSelect) {
+            return;
+        }
+
+        var typeValue = typeSelect.value;
+        if (isPrinterCheckbox) {
+            isPrinterCheckbox.checked = printerTypeId !== '0' && typeValue === printerTypeId;
+        }
+        if (isWorkstationCheckbox) {
+            isWorkstationCheckbox.checked = workstationTypeId !== '0' && typeValue === workstationTypeId;
+        }
+        if (isSwitchCheckbox) {
+            isSwitchCheckbox.checked = switchTypeId !== '0' && typeValue === switchTypeId;
+        }
+        if (isServerCheckbox) {
+            isServerCheckbox.checked = serverTypeId !== '0' && typeValue === serverTypeId;
+        }
+        if (isPosCheckbox) {
+            isPosCheckbox.checked = posTypeId !== '0' && typeValue === posTypeId;
+        }
+    }
 
     function toggleSwitchFields() {
         if (!typeSelect || !switchFields) {
@@ -976,9 +1013,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     }
 
     if (typeSelect) {
+        typeSelect.addEventListener('change', syncRoleFlagsWithType);
         typeSelect.addEventListener('change', toggleSwitchFields);
         typeSelect.addEventListener('change', toggleServerFields);
         typeSelect.addEventListener('change', togglePrinterFields);
+        syncRoleFlagsWithType();
         toggleSwitchFields();
         toggleServerFields();
         togglePrinterFields();
