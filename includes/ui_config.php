@@ -121,6 +121,14 @@ function itm_auto_create_module_scaffold($moduleName) {
 }
 
 function itm_sidebar_structure($conn = null) {
+    // Static cache to store the sidebar structure once per request.
+    // This optimization avoids redundant directory scans (glob) and
+    // database queries (SHOW TABLES) when this function is called multiple times.
+    static $itm_sidebar_cache = null;
+    if ($itm_sidebar_cache !== null) {
+        return $itm_sidebar_cache;
+    }
+
     $structure = itm_sidebar_base_structure();
     $existingItemIds = [];
     foreach ($structure as $section) {
@@ -196,6 +204,7 @@ function itm_sidebar_structure($conn = null) {
     }
     unset($section);
 
+    $itm_sidebar_cache = $structure;
     return $structure;
 }
 
