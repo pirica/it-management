@@ -83,6 +83,12 @@ $orderByMap = [
 ];
 $sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
 $result = mysqli_query($conn, $sql);
+$equipmentRows = [];
+if ($result) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        $equipmentRows[] = $row;
+    }
+}
 
 $isGeneralEquipmentModule = $equipmentFlagField === '';
 $enableSwitchPortManager = $isGeneralEquipmentModule || $equipmentFlagField === 'is_switch';
@@ -111,19 +117,21 @@ if ($enableSwitchPortManager) {
         $switches[] = $row;
     }
 }
-
-$selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
-$hasSelectedSwitch = false;
-if ($selectedSwitchId > 0) {
-    foreach ($switches as $switchItem) {
-        if ((int)$switchItem['id'] === $selectedSwitchId) {
-            $hasSelectedSwitch = true;
-            break;
-        }
+$switchIds = array_map(static fn(array $switchItem): int => (int)($switchItem['id'] ?? 0), $switches);
+$visibleSwitchIds = [];
+foreach ($equipmentRows as $equipmentRow) {
+    $equipmentId = (int)($equipmentRow['id'] ?? 0);
+    $isSwitchType = str_contains(strtolower(trim((string)($equipmentRow['equipment_type_name'] ?? ''))), 'switch');
+    if ($equipmentId > 0 && $isSwitchType && in_array($equipmentId, $switchIds, true)) {
+        $visibleSwitchIds[] = $equipmentId;
     }
 }
-if (!$hasSelectedSwitch && !empty($switches)) {
-    $selectedSwitchId = (int)$switches[0]['id'];
+$visibleSwitchIds = array_values(array_unique($visibleSwitchIds));
+
+$selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
+$hasSelectedSwitch = in_array($selectedSwitchId, $visibleSwitchIds, true);
+if (!$hasSelectedSwitch && !empty($visibleSwitchIds)) {
+    $selectedSwitchId = (int)$visibleSwitchIds[0];
     $hasSelectedSwitch = true;
 }
 $selectedSwitchData = null;
@@ -221,9 +229,12 @@ if (!empty($_SESSION['crud_success'])) {
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                        <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                            <?php $isSwitch = str_contains(strtolower(trim((string)($row['equipment_type_name'] ?? ''))), 'switch'); ?>
+                    <?php if (!empty($equipmentRows)): ?>
+                        <?php foreach ($equipmentRows as $row): ?>
+                            <?php
+                            $isSwitch = str_contains(strtolower(trim((string)($row['equipment_type_name'] ?? ''))), 'switch');
+                            $showSwitchPortManagerAction = $isSwitch && in_array((int)$row['id'], $visibleSwitchIds, true);
+                            ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['name']); ?></td>
@@ -251,7 +262,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <?php if ($isSwitch): ?>
+                                    <?php if ($showSwitchPortManagerAction): ?>
                                         <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
                                     <?php
@@ -264,7 +275,7 @@ if (!empty($_SESSION['crud_success'])) {
 
                                 </td>
                             </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <tr><td colspan="10" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
