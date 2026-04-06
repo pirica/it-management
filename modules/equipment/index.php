@@ -111,6 +111,7 @@ if ($enableSwitchPortManager) {
         $switches[] = $row;
     }
 }
+$switchIds = array_map(static fn(array $switchItem): int => (int)($switchItem['id'] ?? 0), $switches);
 
 $selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
 $hasSelectedSwitch = false;
@@ -223,7 +224,10 @@ if (!empty($_SESSION['crud_success'])) {
                     <tbody>
                     <?php if ($result && mysqli_num_rows($result) > 0): ?>
                         <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                            <?php $isSwitch = str_contains(strtolower(trim((string)($row['equipment_type_name'] ?? ''))), 'switch'); ?>
+                            <?php
+                            $isSwitch = str_contains(strtolower(trim((string)($row['equipment_type_name'] ?? ''))), 'switch');
+                            $showSwitchPortManagerAction = $isSwitch && in_array((int)$row['id'], $switchIds, true);
+                            ?>
                             <tr>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['name']); ?></td>
@@ -251,7 +255,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <?php if ($isSwitch): ?>
+                                    <?php if ($showSwitchPortManagerAction): ?>
                                         <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?><?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
                                     <?php endif; ?>
                                     <?php
