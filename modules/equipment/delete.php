@@ -7,17 +7,10 @@ if (!function_exists('equipment_table_has_column')) {
         if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
             return false;
         }
-        $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 's', $column);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            $has = $res && mysqli_num_rows($res) > 0;
-            mysqli_stmt_close($stmt);
-            return $has;
-        }
-        return false;
+        $escapedColumn = mysqli_real_escape_string($conn, $column);
+        $sql = "SHOW COLUMNS FROM `{$table}` LIKE '{$escapedColumn}'";
+        $res = mysqli_query($conn, $sql);
+        return $res && mysqli_num_rows($res) > 0;
     }
 }
 
