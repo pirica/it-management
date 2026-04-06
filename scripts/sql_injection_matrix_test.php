@@ -2,74 +2,14 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/lib/sql_injection_detector.php';
+
 /**
  * Compact, table-driven SQL injection test matrix.
  *
  * Run:
  *   php scripts/sql_injection_matrix_test.php
  */
-
-function normalize_payload(string $payload): string
-{
-    $normalized = $payload;
-
-    // Decode up to two times for common encoding bypass attempts.
-    for ($i = 0; $i < 2; $i++) {
-        $decoded = rawurldecode($normalized);
-        if ($decoded === $normalized) {
-            break;
-        }
-        $normalized = $decoded;
-    }
-
-    // Collapse whitespace.
-    $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
-
-    return trim($normalized);
-}
-
-function detect_sqli(string $payload): array
-{
-    $normalized = normalize_payload($payload);
-
-    $patterns = [
-        'union_select' => '/\bunion\b(?:\/\*.*?\*\/|\s)+\bselect\b/i',
-        'comment_evasion' => '/(--|#|\/\*)/',
-        'stacked_query' => '/;\s*(select|insert|update|delete|drop|union|alter|create|truncate)\b/i',
-        'tautology' => '/\b(or|and)\b\s+[\'\"]?\w+[\'\"]?\s*=\s*[\'\"]?\w+[\'\"]?/i',
-        'boolean_probe' => '/\b(and|or)\b\s+\d+\s*=\s*\d+/i',
-        'time_based' => '/\b(sleep\s*\(|benchmark\s*\(|pg_sleep\s*\(|waitfor\s+delay)\b/i',
-        'error_based' => '/\b(extractvalue\s*\(|updatexml\s*\(|xmltype\s*\()/i',
-    ];
-
-    $matched = [];
-    foreach ($patterns as $rule => $pattern) {
-        if (preg_match($pattern, $normalized) === 1) {
-            $matched[] = $rule;
-        }
-    }
-
-    // Obfuscation heuristic: mixed case SQL keywords with inline comments.
-    if (preg_match('/u\s*n\s*i\s*o\s*n/i', str_replace(['/**/', '/*', '*/'], '', $normalized)) === 1
-        && preg_match('/s\s*e\s*l\s*e\s*c\s*t/i', str_replace(['/**/', '/*', '*/'], '', $normalized)) === 1
-        && preg_match('/\/\*.*?\*\//', $normalized) === 1) {
-        $matched[] = 'obfuscated_union';
-    }
-
-    // Encoded attack indicator.
-    if ($payload !== $normalized && preg_match('/\b(or|and)\b\s+\d+\s*=\s*\d+/i', $normalized) === 1) {
-        $matched[] = 'normalized_tautology';
-    }
-
-    $matched = array_values(array_unique($matched));
-
-    return [
-        'suspicious' => count($matched) > 0,
-        'matched_rules' => $matched,
-        'decision' => count($matched) > 0 ? 'blocked' : 'allowed',
-        'normalized_payload' => $normalized,
-    ];
-}
 
 $tests = [
     [
@@ -84,63 +24,63 @@ $tests = [
         'payload' => "' UNION SELECT 1,2--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['union_select'],
+        'expect_rules_any' => ['union-select'],
     ],
     [
         'id' => 'comment_truncation',
         'payload' => "' OR 1=1 --",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['comment_evasion', 'tautology'],
+        'expect_rules_any' => ['comment-sequence', 'tautology'],
     ],
     [
         'id' => 'stacked_query',
         'payload' => "'; DROP TABLE equipment;--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['stacked_query'],
+        'expect_rules_any' => ['stacked-query'],
     ],
     [
         'id' => 'boolean_blind_true',
         'payload' => "' AND 1=1--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['boolean_probe'],
+        'expect_rules_any' => ['boolean-probe'],
     ],
     [
         'id' => 'boolean_blind_false',
         'payload' => "' AND 1=2--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['boolean_probe'],
+        'expect_rules_any' => ['boolean-probe'],
     ],
     [
         'id' => 'time_based_mysql',
         'payload' => "' OR SLEEP(3)--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['time_based'],
+        'expect_rules_any' => ['time-based'],
     ],
     [
         'id' => 'obfuscated_union',
         'payload' => "' UnIoN/**/SeLeCt 1,2--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['union_select', 'obfuscated_union'],
+        'expect_rules_any' => ['union-select', 'obfuscated-union'],
     ],
     [
         'id' => 'url_encoded_tautology',
         'payload' => '%27%20OR%201%3D1--',
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['normalized_tautology', 'tautology'],
+        'expect_rules_any' => ['normalized-tautology', 'tautology'],
     ],
     [
         'id' => 'error_based_extractvalue',
         'payload' => "' AND extractvalue(1,concat(0x7e,user(),0x7e))--",
         'expect_suspicious' => true,
         'expect_decision' => 'blocked',
-        'expect_rules_any' => ['error_based'],
+        'expect_rules_any' => ['error-based'],
     ],
     [
         'id' => 'benign_apostrophe',
@@ -162,7 +102,14 @@ $failed = 0;
 $passed = 0;
 
 foreach ($tests as $test) {
-    $result = detect_sqli($test['payload']);
+    $matchedRules = [];
+    $isSuspicious = itm_has_sql_injection_signature($test['payload'], $matchedRules);
+
+    $result = [
+        'suspicious' => $isSuspicious,
+        'decision' => $isSuspicious ? 'blocked' : 'allowed',
+        'matched_rules' => $matchedRules,
+    ];
 
     $ok = true;
 
