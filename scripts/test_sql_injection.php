@@ -48,6 +48,7 @@ Why you may still see errors
 
 */
 require __DIR__ . '/../config/config.php';
+require __DIR__ . '/lib/sql_injection_detector.php';
 
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
@@ -79,27 +80,6 @@ if ($company_id <= 0) {
     exit;
 }
 
-function has_sql_injection_signature(string $value, array &$matchedRules = []): bool
-{
-    $patterns = [
-        'comment-sequence' => '/(--|#|\/\*)/',
-        'stacked-query' => '/;\s*(select|insert|update|delete|drop|union|alter|create)\b/i',
-        'tautology' => '/\b(or|and)\b\s+[\'\"]?\w+[\'\"]?\s*=\s*[\'\"]?\w+[\'\"]?/i',
-        'union-select' => '/\bunion\b\s+\bselect\b/i',
-        'time-based' => '/\b(sleep|benchmark|pg_sleep|waitfor\s+delay)\b/i',
-    ];
-
-    $found = false;
-    foreach ($patterns as $rule => $pattern) {
-        if (preg_match($pattern, $value) === 1) {
-            $matchedRules[] = $rule;
-            $found = true;
-        }
-    }
-
-    return $found;
-}
-
 $payload = (string)($jsonInput['payload']
     ?? $jsonInput['q']
     ?? ($_POST['payload'] ?? ($_POST['q'] ?? ($_GET['payload'] ?? ($_GET['q'] ?? ($_GET['input'] ?? ''))))));
@@ -129,7 +109,7 @@ if ($payload === '') {
 }
 
 $matchedRules = [];
-$isSuspicious = has_sql_injection_signature($payload, $matchedRules);
+$isSuspicious = itm_has_sql_injection_signature($payload, $matchedRules);
 
 $exampleResultCount = 0;
 $exampleSql = 'SELECT id, name FROM equipment WHERE company_id = ? AND name = ? LIMIT 5';
