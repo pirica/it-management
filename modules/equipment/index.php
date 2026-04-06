@@ -30,6 +30,22 @@ if ($searchRaw !== '') {
     )";
 }
 
+$equipmentFlagField = isset($equipmentFlagField) ? (string)$equipmentFlagField : '';
+$flagTypeMatchers = [
+    'is_workstation' => "LOWER(TRIM(et.name)) = 'workstation'",
+    'is_server' => "LOWER(TRIM(et.name)) = 'server'",
+    'is_switch' => "LOWER(TRIM(et.name)) LIKE '%switch%'",
+    'is_printer' => "LOWER(TRIM(et.name)) = 'printer'",
+    'is_pos' => "LOWER(TRIM(et.name)) IN ('pos', 'point of sale', 'point-of-sale')",
+];
+$moduleFilterSql = '';
+if ($equipmentFlagField !== '' && array_key_exists($equipmentFlagField, $flagTypeMatchers)) {
+    $moduleFilterSql = " AND (
+        COALESCE(e.{$equipmentFlagField}, 0) = 1
+        OR {$flagTypeMatchers[$equipmentFlagField]}
+    )";
+}
+
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
                c.company AS company_name,
                et.name AS equipment_type_name,
@@ -43,6 +59,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN it_locations l ON l.id = e.location_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
         WHERE e.company_id = $company_id
+        {$moduleFilterSql}
         {$searchSql}";
 $sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number'];
 $sort = (string)($_GET['sort'] ?? 'id');
@@ -67,28 +84,32 @@ $orderByMap = [
 $sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
 $result = mysqli_query($conn, $sql);
 
+$isGeneralEquipmentModule = $equipmentFlagField === '';
+$enableSwitchPortManager = $isGeneralEquipmentModule || $equipmentFlagField === 'is_switch';
 $switches = [];
-$switchResult = mysqli_query(
-    $conn,
-    "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
-            COALESCE(er.name, '24 ports') AS rj45_name,
-            COALESCE(ef.name, '') AS fiber_name,
-            COALESCE(efc.name, '0') AS fiber_count,
-            COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
-            {$switchFiberPortLabelSelect} AS fiber_port_label,
-            COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
-     FROM equipment e
-     INNER JOIN equipment_types et ON et.id = e.equipment_type_id
-     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-     LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-     LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
-     LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
-     WHERE e.company_id = $company_id
-       AND LOWER(TRIM(et.name)) LIKE '%switch%'
-     ORDER BY e.name ASC"
-);
-while ($switchResult && ($row = mysqli_fetch_assoc($switchResult))) {
-    $switches[] = $row;
+if ($enableSwitchPortManager) {
+    $switchResult = mysqli_query(
+        $conn,
+        "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
+                COALESCE(er.name, '24 ports') AS rj45_name,
+                COALESCE(ef.name, '') AS fiber_name,
+                COALESCE(efc.name, '0') AS fiber_count,
+                COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
+                {$switchFiberPortLabelSelect} AS fiber_port_label,
+                COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
+         FROM equipment e
+         INNER JOIN equipment_types et ON et.id = e.equipment_type_id
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+         LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+         LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
+         LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
+         WHERE e.company_id = $company_id
+           AND LOWER(TRIM(et.name)) LIKE '%switch%'
+         ORDER BY e.name ASC"
+    );
+    while ($switchResult && ($row = mysqli_fetch_assoc($switchResult))) {
+        $switches[] = $row;
+    }
 }
 
 $selectedSwitchId = isset($_GET['switch_id']) ? (int)$_GET['switch_id'] : 0;
@@ -118,6 +139,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
+$moduleSearchPlaceholder = (string)($equipmentSearchPlaceholder ?? 'Use SQL wildcards, e.g. %%switch%%');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -168,7 +190,7 @@ if (!empty($_SESSION['crud_success'])) {
                     <?php endif; ?>
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                         <label for="equipmentSearch">Search (all fields)</label>
-                        <input type="text" id="equipmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%switch%%">
+                        <input type="text" id="equipmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="<?php echo sanitize($moduleSearchPlaceholder); ?>">
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
