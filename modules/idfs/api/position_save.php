@@ -1,4 +1,22 @@
 <?php
+/**
+ * IDF API - Save Position
+ * 
+ * Handles the creation or update of a device record within an IDF rack slot.
+ * Logic:
+ * - Equipment Integration: If an `equipment_id` is provided, it pulls the 
+ *   device name and notes from the main assets table.
+ * - Port Count Detection: Automatically detects port counts from the 
+ *   `equipment_rj45` (port type) reference table if a specific model is selected.
+ * - Duplicate Prevention: Checks if a device with the same name or equipment 
+ *   mapping already exists in the same IDF to prevent duplicates.
+ * - Port Auto-Generation: If a device is newly created with a port count > 0, 
+ *   it automatically populates the `idf_ports` table with numbered entries.
+ * - Unlinked Handling: Generates a random unique token for `equipment_id` 
+ *   if the device is not linked to an official asset record, ensuring 
+ *   database unique constraints are satisfied for "manual" entries.
+ */
+
 require_once __DIR__ . '/_bootstrap.php';
 
 $data = idf_read_json();
@@ -15,6 +33,7 @@ $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] 
 $port_count = isset($data['port_count']) ? (int)$data['port_count'] : 0;
 $notes = trim((string)($data['notes'] ?? ''));
 
+// Helper to generate a unique string for devices not linked to the assets table.
 if (!function_exists('idf_generate_unlinked_equipment_token')) {
     function idf_generate_unlinked_equipment_token(): string
     {
@@ -22,6 +41,7 @@ if (!function_exists('idf_generate_unlinked_equipment_token')) {
     }
 }
 
+// Extract port count from the RJ45 Port Count reference if a specific type was chosen.
 if ($switch_rj45_id > 0) {
     $stmtSwitchRj45 = mysqli_prepare(
         $conn,
@@ -40,12 +60,14 @@ if ($switch_rj45_id > 0) {
         if (!$switchRj45) {
             idf_fail('Invalid port count option');
         }
+        // Extract the first number found in the name (e.g., "48 Port" -> 48).
         if (!empty($switchRj45['name']) && preg_match('/(\d+)/', (string)$switchRj45['name'], $matches)) {
             $port_count = (int)$matches[1];
         }
     }
 }
 
+// Bounds checking and basic validation.
 if ($idf_id <= 0 || $position_no < 1 || $position_no > 10) {
     idf_fail('Invalid idf_id/position_no');
 }
@@ -61,6 +83,7 @@ if (!in_array($device_type, $validTypes, true)) {
     idf_fail('Invalid device_type');
 }
 
+// If linked to an asset, override the name/notes with the official asset data.
 if ($equipment_id > 0) {
     $stmtEquipment = mysqli_prepare(
         $conn,
@@ -84,12 +107,14 @@ if ($equipment_id > 0) {
         $device_name = trim((string)($equipment['name'] ?? ''));
         $notes = trim((string)($equipment['notes'] ?? ''));
 
+        // If the equipment record has a defined port model, use it.
         if ($switch_rj45_id <= 0) {
             $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
             if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
                 $port_count = (int)$matches[1];
             }
         } else {
+            // Update the equipment asset with the new port configuration choice.
             $stmtUpdateEq = mysqli_prepare(
                 $conn,
                 "UPDATE equipment
@@ -106,10 +131,12 @@ if ($equipment_id > 0) {
     }
 }
 
+// Logical validation: a switch MUST have ports.
 if ($device_type === 'switch' && $switch_rj45_id <= 0) {
     idf_fail('RJ45 Ports are required for switch devices');
 }
 
+// Ownership verification.
 $stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
 if ($stmtIdf) {
     mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);
@@ -123,6 +150,7 @@ if ($stmtIdf) {
     }
 }
 
+// Ensure no other device in this IDF has the same name.
 if ($device_name !== '') {
     $stmtDuplicateDeviceName = null;
     if ($position_id > 0) {
@@ -161,6 +189,7 @@ if ($device_name !== '') {
     }
 }
 
+// Ensure no other device in this IDF is already linked to this asset record.
 if ($equipment_id > 0) {
     $equipmentIdString = (string)$equipment_id;
     $stmtDuplicateEquipment = null;
@@ -203,6 +232,7 @@ if ($equipment_id > 0) {
 $notes_val = $notes !== '' ? $notes : null;
 $equipmentId_val = $equipment_id > 0 ? (string)$equipment_id : idf_generate_unlinked_equipment_token();
 
+// UPDATE EXISTING RECORD
 if ($position_id > 0) {
     $stmtPos = mysqli_prepare(
         $conn,
@@ -242,7 +272,9 @@ if ($position_id > 0) {
         }
         mysqli_stmt_close($stmtUpdatePos);
     }
-} else {
+} 
+// INSERT NEW RECORD
+else {
     $stmtInsertPos = mysqli_prepare(
         $conn,
         "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
@@ -264,6 +296,7 @@ if ($position_id > 0) {
     }
 }
 
+// Fetch the current (possibly newly created) ID to handle port generation.
 $stmtPid = mysqli_prepare($conn, "SELECT id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");
 if ($stmtPid) {
     mysqli_stmt_bind_param($stmtPid, 'ii', $idf_id, $position_no);
@@ -274,6 +307,8 @@ if ($stmtPid) {
     mysqli_stmt_close($stmtPid);
 }
 
+// AUTO-POPULATE PORTS
+// If the device is new (0 existing ports) and has a capacity > 0, generate the physical port records.
 if ($pid > 0) {
     $stmtCnt = mysqli_prepare($conn, "SELECT COUNT(*) AS c FROM idf_ports WHERE position_id=?");
     $existing = 0;
