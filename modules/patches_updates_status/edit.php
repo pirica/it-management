@@ -271,6 +271,8 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        $oldAuditData = itm_fetch_audit_record($conn, $crud_table, $id, $company_id);
+
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
@@ -283,6 +285,8 @@ if ($crud_action === 'delete') {
             header('Location: ' . $listUrl);
             exit;
         }
+
+        itm_log_audit($conn, $crud_table, $id, 'DELETE', $oldAuditData, null);
     }
     header('Location: ' . $listUrl);
     exit;
@@ -420,9 +424,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
+        $auditRecordId = 0;
+        $auditAction = $crud_action === 'create' ? 'INSERT' : 'UPDATE';
+        $auditOldValues = null;
+        if ($crud_action === 'edit' && $editId > 0) {
+            $auditRecordId = $editId;
+            $auditOldValues = itm_fetch_audit_record($conn, $crud_table, $editId, $company_id);
+        }
+
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            if ($crud_action === 'create') {
+                $auditRecordId = (int)mysqli_insert_id($conn);
+            }
+
+            if ($auditRecordId > 0) {
+                $auditNewValues = itm_fetch_audit_record($conn, $crud_table, $auditRecordId, $company_id);
+                itm_log_audit($conn, $crud_table, $auditRecordId, $auditAction, $auditOldValues, $auditNewValues);
+            }
+
             header('Location: ' . $listUrl);
             exit;
         }
