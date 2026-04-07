@@ -536,6 +536,14 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                             <label class="role-flag-option" for="equipment_type_<?php echo sanitize($itemId); ?>" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
                                                 <span style="display:flex;align-items:center;gap:8px;min-width:0;">
                                                     <input
+                                                        type="checkbox"
+                                                        class="equipment-sidebar-toggle"
+                                                        id="equipment_type_<?php echo sanitize($itemId); ?>"
+                                                        name="equipment_sidebar_visibility[<?php echo sanitize($itemId); ?>]"
+                                                        value="1"
+                                                        <?php echo $isChecked ? 'checked' : ''; ?>
+                                                    >
+                                                    <input
                                                         type="text"
                                                         name="equipment_sidebar_emoji[<?php echo sanitize($itemId); ?>]"
                                                         value="<?php echo sanitize($resolvedEmoji); ?>"
@@ -544,14 +552,6 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                                     >
                                                     <span><?php echo sanitize('Is ' . $typeName); ?></span>
                                                 </span>
-                                                <input
-                                                    type="checkbox"
-                                                    class="equipment-sidebar-toggle"
-                                                    id="equipment_type_<?php echo sanitize($itemId); ?>"
-                                                    name="equipment_sidebar_visibility[<?php echo sanitize($itemId); ?>]"
-                                                    value="1"
-                                                    <?php echo $isChecked ? 'checked' : ''; ?>
-                                                >
                                             </label>
                                         </div>
                                     <?php endforeach; ?>
