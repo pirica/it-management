@@ -19,6 +19,7 @@ $csrfToken = itm_get_csrf_token();
 $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
 $mainOrder = $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
 $submenuOrder = $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order();
+$equipmentTypeSidebarVisibility = $sidebarConfig['equipment_type_sidebar_visibility'] ?? [];
 
 // Re-order top-level sections based on configuration
 $sectionsById = [];
@@ -61,8 +62,17 @@ foreach ($sectionsById as $section) {
             }
         }
 
-        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility) {
-            return ($visibility[$sidebarItem['id']] ?? 1) === 1;
+        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility, $equipmentTypeSidebarVisibility) {
+            if (($visibility[$sidebarItem['id']] ?? 1) !== 1) {
+                return false;
+            }
+
+            $itemId = (string)($sidebarItem['id'] ?? '');
+            if ($itemId !== '' && array_key_exists($itemId, $equipmentTypeSidebarVisibility)) {
+                return ((int)$equipmentTypeSidebarVisibility[$itemId]) === 1;
+            }
+
+            return true;
         }));
 
         // Don't render a section if it has no visible items

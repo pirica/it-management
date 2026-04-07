@@ -59,6 +59,13 @@ $uiFieldOptions = [
 ];
 
 $sidebarStructure = itm_sidebar_structure();
+$equipmentTypeRows = [];
+$equipmentTypeRes = mysqli_query($conn, 'SELECT id, name FROM equipment_types ORDER BY name ASC');
+if ($equipmentTypeRes) {
+    while ($row = mysqli_fetch_assoc($equipmentTypeRes)) {
+        $equipmentTypeRows[] = $row;
+    }
+}
 $recordsPerPageOptions = [
     '25' => '25',
     '50' => '50',
@@ -247,6 +254,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
         $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
+        $newConfig['equipment_type_sidebar_visibility'] = [];
+        foreach ($equipmentTypeRows as $equipmentTypeRow) {
+            $typeName = (string)($equipmentTypeRow['name'] ?? '');
+            $itemId = itm_equipment_type_sidebar_item_id($typeName);
+            if ($itemId === '') {
+                continue;
+            }
+            $newConfig['equipment_type_sidebar_visibility'][$itemId] = isset($_POST['equipment_sidebar_visibility'][$itemId]) ? 1 : 0;
+        }
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
 
         // Sidebar config is received as JSON strings from the hidden inputs populated by JS.
@@ -429,18 +445,51 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             <?php endforeach; ?>
                         </div>
 
-                        <h3 style="margin-top:16px;">System</h3>
-                        <div class="form-group">
-                            <label class="role-flag-option" for="enable_all_error_reporting">
-                                <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 1) === 1) ? 'checked' : ''; ?>>
-                                <span>Enable all error reporting</span>
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label class="role-flag-option" for="enable_audit_logs">
-                                <input type="checkbox" id="enable_audit_logs" name="enable_audit_logs" value="1" <?php echo (($currentUiConfig['enable_audit_logs'] ?? 1) === 1) ? 'checked' : ''; ?>>
-                                <span>Enable Audit Logs</span>
-                            </label>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px;">
+                            <div>
+                                <h3 style="margin-top:0;">System</h3>
+                                <div class="form-group">
+                                    <label class="role-flag-option" for="enable_all_error_reporting">
+                                        <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <span>Enable all error reporting</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="role-flag-option" for="enable_audit_logs">
+                                        <input type="checkbox" id="enable_audit_logs" name="enable_audit_logs" value="1" <?php echo (($currentUiConfig['enable_audit_logs'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <span>Enable Audit Logs</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 style="margin-top:0;">Equipment Type Sidebar</h3>
+                                <?php if (empty($equipmentTypeRows)): ?>
+                                    <p class="form-hint">No records found in equipment_types.</p>
+                                <?php else: ?>
+                                    <?php foreach ($equipmentTypeRows as $equipmentTypeRow): ?>
+                                        <?php
+                                        $typeName = (string)($equipmentTypeRow['name'] ?? '');
+                                        $itemId = itm_equipment_type_sidebar_item_id($typeName);
+                                        if ($itemId === '') {
+                                            continue;
+                                        }
+                                        $isChecked = (($currentUiConfig['equipment_type_sidebar_visibility'][$itemId] ?? 1) === 1);
+                                        ?>
+                                        <div class="form-group" style="margin-bottom:8px;">
+                                            <label class="role-flag-option" for="equipment_type_<?php echo sanitize($itemId); ?>">
+                                                <input
+                                                    type="checkbox"
+                                                    id="equipment_type_<?php echo sanitize($itemId); ?>"
+                                                    name="equipment_sidebar_visibility[<?php echo sanitize($itemId); ?>]"
+                                                    value="1"
+                                                    <?php echo $isChecked ? 'checked' : ''; ?>
+                                                >
+                                                <span>Is <?php echo sanitize($typeName); ?></span>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
                         </div>
 
                         <div class="itm-form-actions itm-align-left">
