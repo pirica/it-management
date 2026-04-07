@@ -799,6 +799,75 @@ INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUE
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '7', 'Lenovo', 'LENOVO', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '8', 'Microsoft', 'MSFT', '1');
 
+
+-- Table structure for `patches_updates_status`
+DROP TABLE IF EXISTS `patches_updates_status`;
+CREATE TABLE `patches_updates_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_closed` tinyint DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `patches_updates_status_company_idx` (`company_id`),
+  CONSTRAINT `patches_updates_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `patches_updates_status`
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','1', 'Open', '#FF0000', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','2', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','3', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','4', 'Closed', '#808080', '1', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('2','1', 'Open', '#FF0000', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3','2', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4','3', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','4', 'Closed', '#808080', '1', '1');
+
+-- Table structure for `patches_updates_level`
+DROP TABLE IF EXISTS `patches_updates_level`;
+CREATE TABLE `patches_updates_level` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `level` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `patches_updates_level_company_idx` (`company_id`),
+  CONSTRAINT `patches_updates_level_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `patches_updates_level`
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','1','Critical','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','2','High','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','3','Medium','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','4','Low','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','5','Other','Other');
+
+-- Table structure for `patches_updates`
+DROP TABLE IF EXISTS `patches_updates`;
+CREATE TABLE `patches_updates` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int DEFAULT NULL,
+  `equipment_id` int DEFAULT NULL,
+  `hostname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `date` date DEFAULT NULL,
+  `last_user_department` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `problem` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `troubleshooting` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `status_id` int DEFAULT NULL,
+  `level_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `patches_updates_company_idx` (`company_id`),
+  KEY `patches_updates_equipment_idx` (`equipment_id`),
+  KEY `patches_updates_status_idx` (`status_id`),
+  KEY `patches_updates_level_idx` (`level_id`),
+  CONSTRAINT `patches_updates_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `patches_updates_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `patches_updates_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `patches_updates_status` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `patches_updates_ibfk_level` FOREIGN KEY (`level_id`) REFERENCES `patches_updates_level` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `printer_device_types`
 DROP TABLE IF EXISTS `printer_device_types`;
 CREATE TABLE `printer_device_types` (
