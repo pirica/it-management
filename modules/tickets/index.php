@@ -1,39 +1,56 @@
 <?php
+/**
+ * Tickets Module - Index
+ * 
+ * Provides a central list of support tickets.
+ * Features:
+ * - Filterable and sortable ticket grid
+ * - Priority and Status color coding
+ * - Direct links to ticket details and editing
+ */
+
 require '../../config/config.php';
 
+/**
+ * Validates if a string is a valid Hex Color code
+ */
 function ticket_is_valid_hex_color(string $value): bool
 {
     return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1;
 }
 
+// Extraction of search and sorting parameters
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (\n        CAST(t.id AS CHAR) LIKE '{$searchEsc}'\n        OR t.ticket_external_code LIKE '{$searchEsc}'\n        OR t.title LIKE '{$searchEsc}'\n        OR ts.name LIKE '{$searchEsc}'\n        OR tp.name LIKE '{$searchEsc}'\n        OR CAST(t.created_at AS CHAR) LIKE '{$searchEsc}'\n    )";
+    $searchSql = " AND (
+        CAST(t.id AS CHAR) LIKE '{$searchEsc}'
+        OR t.ticket_external_code LIKE '{$searchEsc}'
+        OR t.title LIKE '{$searchEsc}'
+        OR ts.name LIKE '{$searchEsc}'
+        OR tp.name LIKE '{$searchEsc}'
+        OR CAST(t.created_at AS CHAR) LIKE '{$searchEsc}'
+    )";
 }
 
+// Sorting logic
 $sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'created_at'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true)) {
-    $sort = 'id';
-}
-if (!in_array($dir, ['ASC', 'DESC'], true)) {
-    $dir = 'DESC';
-}
+if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
+if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
+
 $orderByMap = [
-    'id' => 't.id',
-    'ticket_external_code' => 't.ticket_external_code',
-    'title' => 't.title',
-    'status_name' => 'ts.name',
-    'priority_name' => 'tp.name',
-    'created_at' => 't.created_at',
+    'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
+    'title' => 't.title', 'status_name' => 'ts.name',
+    'priority_name' => 'tp.name', 'created_at' => 't.created_at',
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 
+// Primary data fetch with joins for status and priority labels
 $items = mysqli_query(
     $conn,
     "SELECT t.*, ts.name AS status_name, ts.color AS status_color, tp.name AS priority_name
@@ -44,10 +61,8 @@ $items = mysqli_query(
      ORDER BY {$orderByMap[$sort]} {$dir}
      LIMIT " . (int)$perPage
 );
+
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,24 +78,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <!-- HEADER SECTION -->
             <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                    <a class="btn btn-primary" href="create.php">➕</a>
-                <?php else: ?>
-                    <span></span>
-                <?php endif; ?>
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a class="btn btn-primary" href="create.php">➕</a><?php else: ?><span></span><?php endif; ?>
                 <h1>🎟️ Tickets</h1>
-                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                    <a class="btn btn-primary" href="create.php">➕</a>
-                <?php else: ?>
-                    <span></span>
-                <?php endif; ?>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a class="btn btn-primary" href="create.php">➕</a><?php endif; ?>
             </div>
+
+            <!-- SEARCH BAR -->
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                         <label for="ticketSearch">Search (all fields)</label>
-                        <input type="text" id="ticketSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%wifi%%">
+                        <input type="text" id="ticketSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search...">
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
@@ -88,6 +98,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 </form>
             </div>
+
+            <!-- DATA TABLE -->
             <div class="card">
                 <table>
                     <thead>
@@ -101,8 +113,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </thead>
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($t = mysqli_fetch_assoc($items)): ?>
-                        <?php $rowColor = (isset($t['ui_color']) && ticket_is_valid_hex_color((string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; ?>
-                        <tr<?php echo $rowColor !== '' ? ' class="ticket-row-colorized" style="--ticket-row-color:' . sanitize($rowColor) . ';background-color:' . sanitize($rowColor) . ';border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
+                        <?php 
+                        // Allow for custom row colorization based on UI configuration
+                        $rowColor = (isset($t['ui_color']) && ticket_is_valid_hex_color((string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; 
+                        ?>
+                        <tr<?php echo $rowColor !== '' ? ' style="border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
                             <td><?php echo (int)$t['id']; ?></td>
                             <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>
@@ -110,9 +125,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <td><?php echo sanitize($t['priority_name'] ?: '-'); ?></td>
                             <td><?php echo sanitize($t['created_at']); ?></td>
                             <td>
-                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">👁️</a>
-                                <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$t['id']; ?>">✏️</a>
-                                <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$t['id']; ?>" onclick="return confirm('Delete ticket?');">🗑️</a>
+                                <div class="itm-actions-wrap">
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$t['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$t['id']; ?>" onclick="return confirm('Delete ticket?');">🗑️</a>
+                                </div>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>

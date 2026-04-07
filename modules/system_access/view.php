@@ -1,12 +1,20 @@
 <?php
+/**
+ * System Access Module - View
+ * 
+ * Provides a detailed summary of a system access type.
+ */
+
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
 
+// Lazy schema setup.
 esa_ensure_table($conn);
 
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
+    // Fetch record scoped by company.
     $stmt = mysqli_prepare($conn, 'SELECT * FROM system_access WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
@@ -62,7 +70,7 @@ if ($id > 0) {
                 <div style="display:flex;gap:10px;margin-top:20px;">
                     <a href="index.php" class="btn">Back</a>
                     <?php if ($item): ?>
-                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a>
+                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️ Edit</a>
                     <?php endif; ?>
                 </div>
             </div>

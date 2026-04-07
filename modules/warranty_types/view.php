@@ -1,4 +1,9 @@
 <?php
+/**
+ * Warranty Types - View Details
+ * 
+ * Read-only detailed view of a warranty type.
+ */
 $crud_table = 'warranty_types';
 $crud_title = 'Warranty Types';
 $crud_action = 'view';

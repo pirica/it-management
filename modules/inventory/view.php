@@ -1,9 +1,17 @@
 <?php
+/**
+ * Inventory Module - View
+ * 
+ * Provides a detailed summary of a single inventory record.
+ * Displays stock levels, pricing, and system metadata.
+ */
+
 require '../../config/config.php';
 
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
+    // Fetch the item record and ensure it belongs to the active company context.
     $stmt = mysqli_prepare($conn, 'SELECT * FROM inventory_items WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
@@ -16,6 +24,7 @@ if ($id > 0) {
     }
 }
 
+// Display labels for the dynamic table generation below.
 $labels = [
     'name' => 'Name',
     'item_code' => 'Item Code',
@@ -52,9 +61,12 @@ $labels = [
                     <table>
                         <tbody>
                         <?php foreach ($item as $field => $value): ?>
+                            <!-- Skip internal database IDs -->
                             <?php if ($field === 'id' || $field === 'company_id'): continue; endif; ?>
                             <tr>
-                                <th style="width:220px;"><?php echo sanitize($labels[$field] ?? ucwords(str_replace('_', ' ', (string)$field))); ?></th>
+                                <th style="width:220px;">
+                                    <?php echo sanitize($labels[$field] ?? ucwords(str_replace('_', ' ', (string)$field))); ?>
+                                </th>
                                 <td>
                                     <?php if ($field === 'price_eur'): ?>
                                         €<?php echo number_format((float)$value, 2); ?>
@@ -69,10 +81,11 @@ $labels = [
                         </tbody>
                     </table>
                 <?php endif; ?>
+
                 <div style="display:flex;gap:10px;margin-top:20px;">
                     <a href="index.php" class="btn">Back</a>
                     <?php if ($item): ?>
-                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a>
+                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️ Edit</a>
                     <?php endif; ?>
                 </div>
             </div>

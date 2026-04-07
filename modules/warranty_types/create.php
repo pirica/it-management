@@ -1,4 +1,9 @@
 <?php
+/**
+ * Warranty Types - Create Record
+ * 
+ * Interface for defining a new warranty type.
+ */
 $crud_table = 'warranty_types';
 $crud_title = 'Warranty Types';
 $crud_action = 'create';

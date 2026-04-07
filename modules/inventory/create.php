@@ -1,9 +1,22 @@
 <?php
+/**
+ * Inventory Module - Create/Edit
+ * 
+ * Handles both the addition of new inventory items and the updating of existing ones.
+ * Supports:
+ * - Dynamic category selection with inline "Add New" capability via JS.
+ * - Minimum stock threshold tracking (quantity_minimum).
+ * - Price tracking in EUR.
+ * - Activation toggles.
+ */
+
 require '../../config/config.php';
 
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
+
+// Default values for a fresh record.
 $data = [
     'name' => '',
     'item_code' => '',
@@ -17,6 +30,7 @@ $data = [
 ];
 $csrfToken = itm_get_csrf_token();
 
+// Load existing data if we are in Edit mode.
 if ($is_edit) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM inventory_items WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
@@ -33,20 +47,23 @@ if ($is_edit) {
     }
 }
 
+// Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    
+    // Sanitize basic string inputs.
     $name = escape_sql($_POST['name'] ?? '', $conn);
     $item_code = escape_sql($_POST['item_code'] ?? '', $conn);
     $serial = escape_sql($_POST['serial'] ?? '', $conn);
     $comments = escape_sql($_POST['comments'] ?? '', $conn);
 
+    // Normalize category selection.
     $category_post = $_POST['category_id'] ?? 0;
-    if ($category_post === '__add_new__') {
-        $category_post = 0;
-    }
-
+    if ($category_post === '__add_new__') { $category_post = 0; }
     $category_id = (int)$category_post;
     $category_sql = $category_id ?: 'NULL';
+
+    // Parse numeric inputs.
     $quantity_on_hand = (int)($_POST['quantity_on_hand'] ?? 0);
     $quantity_minimum = (int)($_POST['quantity_minimum'] ?? 5);
     $price_eur = (float)($_POST['price_eur'] ?? 0);
@@ -55,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$name) {
         $error = 'Item name is required.';
     } else {
+        // Construct SQL query based on mode (Insert vs Update).
         if ($is_edit) {
             $sql = "UPDATE inventory_items
                     SET name='$name',
@@ -76,14 +94,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $dbErrorCode = 0;
         $dbErrorMessage = '';
+        // Execute and redirect on success.
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
             header('Location: index.php');
             exit;
         }
+        // Handle database-level errors (like unique constraint violations).
         $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 
+// Fetch active categories for the dropdown.
 $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHERE company_id=$company_id AND active=1 ORDER BY name");
 ?>
 <!DOCTYPE html>
@@ -109,6 +130,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
             <div class="card">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label>Name *</label>
@@ -127,6 +149,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                         </div>
                         <div class="form-group">
                             <label>Category</label>
+                            <!-- data-addable-select="1" enables the JS inline addition of new options -->
                             <select name="category_id"
                                     data-addable-select="1"
                                     data-add-table="inventory_categories"
@@ -162,7 +185,10 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                             <input type="number" step="0.01" min="0" name="price_eur" value="<?php echo sanitize((string)($data['price_eur'] ?? '')); ?>">
                         </div>
                         <div class="form-group">
-                            <label class="role-flag-option"><input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> <span>Active</span></label>
+                            <label class="role-flag-option">
+                                <input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> 
+                                <span>Active</span>
+                            </label>
                         </div>
                     </div>
 

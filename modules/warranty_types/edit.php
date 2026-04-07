@@ -1,4 +1,9 @@
 <?php
+/**
+ * Warranty Types - Edit Record
+ * 
+ * Provides the interface for updating existing warranty type records.
+ */
 $crud_table = 'warranty_types';
 $crud_title = 'Warranty Types';
 $crud_action = 'edit';

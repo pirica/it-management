@@ -1,9 +1,21 @@
 <?php
+/**
+ * Settings Module
+ * 
+ * Central hub for system-wide configuration and maintenance.
+ * Features:
+ * - UI Customization: Button positioning and list pagination.
+ * - Sidebar Management: Visibility toggles and drag-and-drop reordering (via buttons).
+ * - Database Maintenance: One-click system table creation/verification.
+ * - Backup & Recovery: Manual SQL dump generation, export, and import.
+ */
+
 require '../../config/config.php';
 
 $message = '';
 $error = '';
 
+// Human-friendly labels for UI positioning settings stored in the database.
 $uiFieldLabels = [
     'table_actions_position' => 'Table Actions',
     'new_button_position' => '+ New Button',
@@ -54,6 +66,7 @@ $recordsPerPageOptions = [
     'all' => 'ALL',
 ];
 
+// Display flash messages from previous POST-redirect cycles.
 if (isset($_SESSION['settings_flash_message'])) {
     $message = (string)$_SESSION['settings_flash_message'];
     unset($_SESSION['settings_flash_message']);
@@ -61,13 +74,24 @@ if (isset($_SESSION['settings_flash_message'])) {
 
 $csrfToken = itm_get_csrf_token();
 
+/**
+ * Generates a timestamped filename for SQL backups.
+ */
 function backup_filename() {
     return 'backup_' . date('d_M_Y') . '_' . date('His') . '.sql';
 }
 
+/**
+ * Manually constructs a full SQL dump of the database.
+ * 
+ * Iterates through all tables, fetches CREATE TABLE statements, 
+ * and exports all rows as INSERT statements. 
+ * Note: Uses mysqli_real_escape_string for data safety during dump.
+ */
 function build_sql_backup($conn) {
     $dump = "-- IT Management SQL Backup\n";
     $dump .= '-- Generated at: ' . date('Y-m-d H:i:s') . " UTC\n";
+    // Disable foreign keys during import to allow tables to be dropped/recreated in any order.
     $dump .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
 
     $tablesRes = mysqli_query($conn, 'SHOW TABLES');
@@ -122,6 +146,12 @@ function build_sql_backup($conn) {
     return $dump;
 }
 
+/**
+ * Parses and executes a large multi-statement SQL string.
+ * 
+ * Splits the input by lines and identifies statement boundaries using semicolons.
+ * Filters out comments and empty lines to ensure only valid SQL reaches the server.
+ */
 function apply_sql_file($conn, $sqlText) {
     $lines = preg_split('/\R/', $sqlText);
     if ($lines === false) {
@@ -131,11 +161,13 @@ function apply_sql_file($conn, $sqlText) {
     $statement = '';
     foreach ($lines as $line) {
         $trimmed = trim($line);
+        // Ignore empty lines and various comment styles.
         if ($trimmed === '' || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0 || strpos($trimmed, '*/') === 0) {
             continue;
         }
 
         $statement .= $line . "\n";
+        // If the line ends with a semicolon, we assume the statement is complete.
         if (substr(rtrim($line), -1) === ';') {
             if (!itm_run_query($conn, $statement)) {
                 return false;
@@ -153,10 +185,12 @@ function apply_sql_file($conn, $sqlText) {
     return true;
 }
 
+// HANDLE CONFIGURATION UPDATES AND BACKUP ACTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
     $action = $_POST['action'] ?? '';
 
+    // Action: Generate a new SQL dump file in the backups/ directory.
     if ($action === 'create_backup') {
         $filename = backup_filename();
         $fullPath = BACKUP_PATH . $filename;
@@ -171,9 +205,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Action: Remove an existing backup file.
     if ($action === 'delete_backup') {
         $file = basename((string)($_POST['file'] ?? ''));
-        $target = BACKUP_PATH . $file;
         if ($file === '' || !is_file($target)) {
             $error = 'Backup file not found.';
         } elseif (!unlink($target)) {
@@ -183,8 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Action: Restore database state from an uploaded .sql file.
     if ($action === 'import_backup') {
-        if (!isset($_FILES['sql_file']) || $_FILES['sql_file']['error'] !== UPLOAD_ERR_OK) {
             $error = 'Please upload a valid SQL file to import.';
         } else {
             $name = $_FILES['sql_file']['name'] ?? '';
@@ -202,8 +236,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Action: Persist UI preferences (button positions, sidebar order, system flags).
     if ($action === 'save_ui_config') {
         $newConfig = [];
+        // Map form fields back to config keys.
         foreach (array_keys($uiFieldLabels) as $key) {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
@@ -211,6 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
 
+        // Sidebar config is received as JSON strings from the hidden inputs populated by JS.
         $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
         $sidebarMainOrderInput = json_decode((string)($_POST['sidebar_main_order'] ?? ''), true);
         $sidebarSubmenuOrderInput = json_decode((string)($_POST['sidebar_submenu_order'] ?? ''), true);
@@ -228,8 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Action: Ensure the `ui_configuration` table exists (useful for fresh installs).
     if ($action === 'create_system_tables') {
-        if (!itm_ensure_ui_configuration_table($conn)) {
             $error = 'Unable to create required system tables.';
         } else {
             $message = 'System tables verified/created successfully.';
@@ -237,9 +274,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// HANDLE FILE EXPORT REQUESTS
 if (isset($_GET['download'])) {
     $downloadFile = basename((string)$_GET['download']);
-    $downloadPath = BACKUP_PATH . $downloadFile;
     if ($downloadFile !== '' && is_file($downloadPath)) {
         header('Content-Type: application/sql');
         header('Content-Disposition: attachment; filename="' . $downloadFile . '"');
@@ -249,9 +286,9 @@ if (isset($_GET['download'])) {
     }
 }
 
+// POPULATE BACKUP LIST FOR THE VIEW
 $backupFiles = [];
 if (is_dir(BACKUP_PATH)) {
-    $files = scandir(BACKUP_PATH);
     if ($files !== false) {
         foreach ($files as $file) {
             if (substr($file, -4) === '.sql' && is_file(BACKUP_PATH . $file)) {
@@ -269,8 +306,10 @@ usort($backupFiles, static function ($a, $b) {
     return $b['modified'] <=> $a['modified'];
 });
 
+// Initialize configuration for form pre-filling.
 $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
+// If the database has a custom pagination value not in our default array, add it to the dropdown.
 if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
     $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
 }

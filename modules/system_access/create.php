@@ -1,7 +1,15 @@
 <?php
+/**
+ * System Access Module - Create/Edit
+ * 
+ * Handles addition and modification of system access types.
+ * Enforces company-scoping and validates unique codes.
+ */
+
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
 
+// Lazy schema check.
 esa_ensure_table($conn);
 
 $id = (int)($_GET['id'] ?? 0);
@@ -10,6 +18,7 @@ $error = '';
 $data = ['code' => '', 'name' => '', 'active' => 1];
 $csrfToken = itm_get_csrf_token();
 
+// Load existing record for editing.
 if ($is_edit) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM system_access WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
@@ -26,6 +35,7 @@ if ($is_edit) {
     }
 }
 
+// Handle submission.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
@@ -38,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!$name) {
         $error = 'Name is required.';
     } else {
+        // Build query using prepared statements for security.
         $stmt = $is_edit
             ? mysqli_prepare($conn, 'UPDATE system_access SET code = ?, name = ?, active = ? WHERE id = ? AND company_id = ?')
             : mysqli_prepare($conn, 'INSERT INTO system_access (company_id, code, name, active) VALUES (?, ?, ?, ?)');
@@ -112,6 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 <script>
+/**
+ * Visual indicator for checkbox state.
+ */
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');

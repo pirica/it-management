@@ -1,4 +1,9 @@
 <?php
+/**
+ * Warranty Types - Delete Handler
+ * 
+ * Processes the deletion of warranty type records.
+ */
 $crud_table = 'warranty_types';
 $crud_title = 'Warranty Types';
 $crud_action = 'delete';

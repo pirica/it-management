@@ -1,14 +1,35 @@
 <?php
+/**
+ * Inventory Module - Index
+ * 
+ * Displays a sortable, searchable list of inventory items.
+ * Includes category relationships and tracks quantity on hand (QOH) versus minimum thresholds.
+ * Status badges indicate active/inactive items.
+ */
+
 require '../../config/config.php';
 
+// HANDLE SEARCH LOGIC
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
 if ($searchRaw !== '') {
+    // Support both explicit wildcards and partial matching.
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (\n        i.name LIKE '{$searchEsc}'\n        OR i.item_code LIKE '{$searchEsc}'\n        OR i.serial LIKE '{$searchEsc}'\n        OR c.name LIKE '{$searchEsc}'\n        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'\n        OR CAST(i.price_eur AS CHAR) LIKE '{$searchEsc}'\n        OR i.comments LIKE '{$searchEsc}'\n        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'\n    )";
+    $searchSql = " AND (
+        i.name LIKE '{$searchEsc}'
+        OR i.item_code LIKE '{$searchEsc}'
+        OR i.serial LIKE '{$searchEsc}'
+        OR c.name LIKE '{$searchEsc}'
+        OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'
+        OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'
+        OR CAST(i.price_eur AS CHAR) LIKE '{$searchEsc}'
+        OR i.comments LIKE '{$searchEsc}'
+        OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'
+    )";
 }
 
+// HANDLE SORTING
 $sortableColumns = ['name', 'item_code', 'serial', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'active'];
 $sort = (string)($_GET['sort'] ?? 'name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
@@ -30,8 +51,10 @@ $orderByMap = [
     'active' => 'i.active',
 ];
 
+// Determine pagination limit based on global UI config.
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 
+// Fetch items joined with categories.
 $items = mysqli_query(
     $conn,
     "SELECT i.*, c.name AS category_name
@@ -41,6 +64,8 @@ $items = mysqli_query(
      ORDER BY {$orderByMap[$sort]} {$dir}
      LIMIT " . (int)$perPage
 );
+
+// Determine position of the "Add New" button based on UI preferences.
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
@@ -73,6 +98,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <span></span>
                 <?php endif; ?>
             </div>
+
+            <!-- SEARCH BAR -->
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
@@ -85,6 +112,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 </form>
             </div>
+
+            <!-- DATA TABLE -->
             <div class="card">
                 <table>
                     <thead>
@@ -101,7 +130,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             'active' => 'Status'
                         ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                            <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <th>
+                                <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
+                                    <?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                </a>
+                            </th>
                         <?php endforeach; ?>
                         <th>Actions</th>
                     </tr>
@@ -118,14 +151,20 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <td>€<?php echo number_format((float)($i['price_eur'] ?? 0), 2); ?></td>
                             <td>
                                 <?php if (trim((string)($i['comments'] ?? '')) !== ''): ?>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
+                                    <span title="<?php echo sanitize((string)$i['comments']); ?>">💬</span>
                                 <?php endif; ?>
                             </td>
-                            <td><span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?></span></td>
                             <td>
-                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
-                                <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
-                                <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">🗑️</a>
+                                <span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>">
+                                    <?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?>
+                                </span>
+                            </td>
+                            <td class="itm-actions-cell">
+                                <div class="itm-actions-wrap">
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">🗑️</a>
+                                </div>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>

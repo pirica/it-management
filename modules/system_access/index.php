@@ -1,15 +1,28 @@
 <?php
+/**
+ * System Access Module - Index
+ * 
+ * Manages the catalog of available system access types (e.g., 'OPERA', 'Network Access').
+ * Features:
+ * - Lazy Schema Initialization: Calls `esa_ensure_table()` to setup modern relation tables.
+ * - Bulk Import: Supports CSV-style text import for batch creating/updating access types.
+ * - Export: Provides CSV exportation of the access catalog.
+ * - Multi-tenant Filtering: All actions are scoped to the active `company_id`.
+ */
+
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
 
+// Ensure database schema is ready before any logic.
 esa_ensure_table($conn);
 
+/**
+ * Strips empty/null values from a query parameter array before encoding.
+ */
 function sa_build_query($params) {
     $normalized = [];
     foreach ($params as $k => $v) {
-        if ($v === null || $v === '') {
-            continue;
-        }
+        if ($v === null || $v === '') { continue; }
         $normalized[$k] = $v;
     }
     return http_build_query($normalized);
@@ -19,6 +32,7 @@ $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
 
+// HANDLE BULK IMPORT
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_system_access')) {
     itm_require_post_csrf();
 
@@ -27,27 +41,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
         $errors[] = 'Import text is empty.';
     } else {
         $lines = preg_split('/\r\n|\n|\r/', $importText);
-        $created = 0;
-        $updated = 0;
+        $created = 0; $updated = 0;
         foreach ($lines as $line) {
             $line = trim((string)$line);
-            if ($line === '') {
-                continue;
-            }
+            if ($line === '') { continue; }
             $parts = str_getcsv($line);
-            if (count($parts) < 2) {
-                continue;
-            }
+            if (count($parts) < 2) { continue; }
 
             $code = trim((string)$parts[0]);
             $name = trim((string)$parts[1]);
             $activeRaw = strtolower(trim((string)($parts[2] ?? '1')));
             $active = in_array($activeRaw, ['1', 'true', 'active', 'yes', 'y'], true) ? 1 : 0;
 
-            if ($code === '' || $name === '') {
-                continue;
-            }
+            if ($code === '' || $name === '') { continue; }
 
+            // UPSERT logic using prepared statements.
             $find = mysqli_prepare($conn, 'SELECT id FROM system_access WHERE company_id = ? AND code = ? LIMIT 1');
             $findResult = false;
             if ($find) {
@@ -62,9 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     $update = mysqli_prepare($conn, 'UPDATE system_access SET name = ?, active = ? WHERE id = ? AND company_id = ?');
                     if ($update) {
                         mysqli_stmt_bind_param($update, 'siii', $name, $active, $id, $company_id);
-                        if (mysqli_stmt_execute($update)) {
-                            $updated += 1;
-                        }
+                        if (mysqli_stmt_execute($update)) { $updated += 1; }
                         mysqli_stmt_close($update);
                     }
                 }
@@ -72,21 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 $insert = mysqli_prepare($conn, 'INSERT INTO system_access (company_id, code, name, active) VALUES (?, ?, ?, ?)');
                 if ($insert) {
                     mysqli_stmt_bind_param($insert, 'issi', $company_id, $code, $name, $active);
-                    if (mysqli_stmt_execute($insert)) {
-                        $created += 1;
-                    }
+                    if (mysqli_stmt_execute($insert)) { $created += 1; }
                     mysqli_stmt_close($insert);
                 }
             }
-            if ($find) {
-                mysqli_stmt_close($find);
-            }
+            if ($find) { mysqli_stmt_close($find); }
         }
-
         $messages[] = "Import completed. Created: {$created}, Updated: {$updated}.";
     }
 }
 
+// HANDLE SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
 $bindSearch = '';
@@ -101,17 +103,15 @@ if ($searchRaw !== '') {
     )";
 }
 
+// HANDLE SORTING
 $sortableColumns = ['code', 'name', 'active'];
 $sort = (string)($_GET['sort'] ?? 'name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true)) {
-    $sort = 'name';
-}
-if (!in_array($dir, ['ASC', 'DESC'], true)) {
-    $dir = 'DESC';
-}
+if (!in_array($sort, $sortableColumns, true)) { $sort = 'name'; }
+if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
 
+// HANDLE PAGINATION
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $totalRows = 0;
 $countSql = "SELECT COUNT(*) AS total_rows FROM system_access WHERE company_id = ?{$searchSql}";
@@ -132,15 +132,11 @@ if ($countStmt) {
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) {
-    $page = 1;
-}
-if ($page > $totalPages) {
-    $page = $totalPages;
-}
+if ($page < 1) { $page = 1; }
+if ($page > $totalPages) { $page = $totalPages; }
 $offset = ($page - 1) * $perPage;
-$showBulkTableActions = ($perPage <= $totalRows);
 
+// HANDLE CSV EXPORT
 if (($_GET['export'] ?? '') === 'csv') {
     $rows = false;
     $exportSql = "SELECT code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql}";
@@ -166,6 +162,7 @@ if (($_GET['export'] ?? '') === 'csv') {
     exit;
 }
 
+// FETCH DATA
 $items = false;
 $itemsSql = "SELECT id, code, name, active FROM system_access WHERE company_id = ?{$searchSql} ORDER BY {$sortSql} LIMIT ?, ?";
 $stmt = mysqli_prepare($conn, $itemsSql);
@@ -179,10 +176,9 @@ if ($stmt) {
     $items = mysqli_stmt_get_result($stmt);
     mysqli_stmt_close($stmt);
 }
+
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -219,6 +215,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <div class="alert alert-danger" style="margin-bottom:10px;"><?php echo sanitize($error); ?></div>
             <?php endforeach; ?>
 
+            <!-- TABLE MAINTENANCE -->
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -227,7 +224,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </form>
             </div>
 
-
+            <!-- DATA TABLE -->
             <div class="card">
                 <table>
                     <thead>
@@ -267,6 +264,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </tbody>
                 </table>
             </div>
+
+            <!-- PAGINATION -->
             <?php if ($totalRows > $perPage): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
                     <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
@@ -285,6 +284,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     </div>
 </div>
 <script>
+/**
+ * Bulk deletion selection management.
+ */
 (function () {
     const selectAllRows = document.getElementById('select-all-rows');
     const bulkDeleteForm = document.getElementById('bulk-delete-form');
@@ -295,30 +297,20 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     let selectionMode = false;
 
     function setSelectionVisibility(visible) {
-        if (selectAllHeaderCell) {
-            selectAllHeaderCell.style.display = visible ? '' : 'none';
-        }
-        deleteCells.forEach(function (cell) {
-            cell.style.display = visible ? '' : 'none';
-        });
+        if (selectAllHeaderCell) { selectAllHeaderCell.style.display = visible ? '' : 'none'; }
+        deleteCells.forEach(function (cell) { cell.style.display = visible ? '' : 'none'; });
     }
 
     if (selectAllRows) {
         selectAllRows.addEventListener('change', function () {
-            rowCheckboxes.forEach(function (checkbox) {
-                checkbox.checked = selectAllRows.checked;
-            });
+            rowCheckboxes.forEach(function (checkbox) { checkbox.checked = selectAllRows.checked; });
         });
     }
 
     if (bulkDeleteForm && toggleButton) {
         setSelectionVisibility(false);
-
         bulkDeleteForm.addEventListener('submit', function (event) {
-            if (event.submitter !== toggleButton) {
-                return;
-            }
-
+            if (event.submitter !== toggleButton) { return; }
             if (!selectionMode) {
                 event.preventDefault();
                 selectionMode = true;
@@ -326,17 +318,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 toggleButton.textContent = 'Delete Selected';
                 return;
             }
-
             const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
             if (!anySelected) {
                 event.preventDefault();
                 alert('Please select at least one record to delete.');
                 return;
             }
-
-            if (!confirm('Delete selected records?')) {
-                event.preventDefault();
-            }
+            if (!confirm('Delete selected records?')) { event.preventDefault(); }
         });
     }
 })();
