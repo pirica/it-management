@@ -35,7 +35,7 @@ $errors = [];
 $form = [
     'first_name' => '', 'last_name' => '', 'display_name' => '', 'email' => '', 'hilton_id' => '',
     'username' => '', 'job_code' => '', 'job_title' => '', 'department_id' => '', 'raw_status_code' => 'A',
-    'employment_status_id' => '1', 'comments' => '', 'office_key_card_department_id' => '', 'active' => '1',
+    'employment_status_id' => '1', 'comments' => '', 'office_key_card_department_id' => '',
 ];
 
 $selectedSystemAccessIds = [];
@@ -73,16 +73,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rawStatusCode = $form['raw_status_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['raw_status_code']) . "'";
         $employmentStatusId = $form['employment_status_id'] === '' ? '1' : (string)(int)$form['employment_status_id'];
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
-        $active = isset($_POST['active']) ? '1' : '0';
-
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, email, hilton_id, username,
             department_id, job_code, job_title, comments, raw_status_code, employment_status_id,
-            office_key_card_department_id, active
+            office_key_card_department_id
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$email}, {$hiltonId}, {$username},
             {$departmentId}, {$jobCode}, {$jobTitle}, {$comments}, {$rawStatusCode}, {$employmentStatusId},
-            {$officeDeptId}, {$active}
+            {$officeDeptId}
         )";
 
         if (mysqli_query($conn, $sql)) {
@@ -179,7 +177,6 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <span><?php echo sanitize((string)$access['name']); ?></span>
                             </label>
                         <?php endforeach; ?>
-                        <label class="role-flag-option"><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> <span>Active</span></label>
                     </div>
 
                     <div class="form-actions" style="margin-top:16px;">

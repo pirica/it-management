@@ -28,7 +28,7 @@ $sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_depar
 $res = mysqli_query($conn, $sql);
 $employee = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 
-$booleanFields = ['active', 'duplicate'];
+$booleanFields = ['duplicate'];
 $hiddenFields = ['company_id', 'user_id', 'location_id', 'phone', 'location'];
 
 // Fetch a list of all systems this employee currently has access to

@@ -132,6 +132,16 @@ function emp_ensure_duplicate_column($conn) {
 }
 
 /**
+ * Removes deprecated employees.active column if still present
+ */
+function emp_drop_active_column_if_exists($conn) {
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'active'");
+    if ($res && mysqli_num_rows($res) === 1) {
+        mysqli_query($conn, 'ALTER TABLE employees DROP COLUMN `active`');
+    }
+}
+
+/**
  * Generates a helpful label for identify skipped rows during import
  */
 function emp_import_identity_label($mapped) {
@@ -216,6 +226,7 @@ $messages = [];
 $errors = [];
 $skippedDetails = [];
 $csrfToken = itm_get_csrf_token();
+emp_drop_active_column_if_exists($conn);
 
 // --- ACTION: DELETE ALL ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'delete_all_employees')) {
@@ -274,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
             // Build an in-memory index of existing employees for fast lookup during import
             $existingRowMap = [];
-            $existingSql = 'SELECT id,email,employee_code,hilton_id,duplicate,first_name,last_name,username,display_name,job_code,job_title,comments,raw_status_code,termination_date,request_date,requested_by,termination_requested_by,department_id,employment_status_id,active FROM employees WHERE company_id=' . (int)$company_id;
+            $existingSql = 'SELECT id,email,employee_code,hilton_id,duplicate,first_name,last_name,username,display_name,job_code,job_title,comments,raw_status_code,termination_date,request_date,requested_by,termination_requested_by,department_id,employment_status_id FROM employees WHERE company_id=' . (int)$company_id;
             $existingRes = mysqli_query($conn, $existingSql);
             while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
                 $existingId = (int)($existingRow['id'] ?? 0);
@@ -293,7 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'email' => '', 'employee_code' => '',
                     'hilton_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '', 'job_title' => '',
                     'comments' => '', 'raw_status_code' => '', 'termination_date' => '', 'request_date' => '', 'requested_by' => '',
-                    'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'active' => 1, 'duplicate' => 0
+                    'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0
                 ];
 
                 foreach ($validIdx as $idx => $field) {
@@ -316,9 +327,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     continue;
                 }
 
-                // Map status and active flags
+                // Map status flag
                 $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
-                $mapped['active'] = strtoupper($mapped['raw_status_code']) === 'I' ? 0 : 1;
 
                 // Auto-map departments
                 if (!empty($mapped['department_name'])) {
@@ -361,13 +371,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id','active'];
+                $columns = ['company_id','duplicate','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
                     $value = $mapped[$col] ?? null;
                     if ($value === '' || $value === null) { $values[$col] = 'NULL'; }
-                    elseif (in_array($col, ['company_id','employment_status_id','active','duplicate'], true)) { $values[$col] = (string)(int)$value; }
+                    elseif (in_array($col, ['company_id','employment_status_id','duplicate'], true)) { $values[$col] = (string)(int)$value; }
                     else { $values[$col] = "'" . mysqli_real_escape_string($conn, (string)$value) . "'"; }
                 }
 
@@ -433,8 +443,8 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','active','comments'];
-$hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id','active'];
+$preferredOrder = ['id','duplicate','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','comments'];
+$hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
 
