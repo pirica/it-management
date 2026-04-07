@@ -146,32 +146,64 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
 
     $modulesRoot = dirname(__DIR__) . '/modules';
     $moduleDir = $modulesRoot . '/' . $moduleName;
-    $indexPath = $moduleDir . '/index.php';
-
     if (!is_dir($moduleDir) && !mkdir($moduleDir, 0775, true) && !is_dir($moduleDir)) {
         return false;
     }
+    $fileContents = [];
 
-    if (is_file($indexPath)) {
-        return true;
-    }
-
-    $content = "<?php\n";
-    $content .= '$equipmentModuleTitle = ' . var_export($moduleTitle, true) . ";\n";
-    $content .= '$equipmentFlagField = ' . var_export($flagField, true) . ";\n";
+    $indexContent = "<?php\n";
+    $indexContent .= '$equipmentModuleTitle = ' . var_export($moduleTitle, true) . ";\n";
+    $indexContent .= '$equipmentFlagField = ' . var_export($flagField, true) . ";\n";
     if ($flagField === '') {
-        $content .= '$equipmentTypeNameFilter = ' . var_export($displayTypeName, true) . ";\n";
+        $indexContent .= '$equipmentTypeNameFilter = ' . var_export($displayTypeName, true) . ";\n";
     }
-    $content .= '$equipmentSearchPlaceholder = ' . var_export($searchPlaceholder, true) . ";\n";
-    $content .= '$equipmentModuleBasePath = ' . var_export('../equipment/', true) . ";\n";
-    $content .= '$equipmentViewPath = ' . var_export('', true) . ";\n";
-    $content .= '$equipmentEditPath = ' . var_export('../equipment/', true) . ";\n";
-    $content .= '$equipmentAllowCreate = false;' . "\n";
-    $content .= '$equipmentAllowDelete = false;' . "\n";
-    $content .= '$equipmentAllowImport = false;' . "\n";
-    $content .= "require '../equipment/index.php';\n";
+    $indexContent .= '$equipmentSearchPlaceholder = ' . var_export($searchPlaceholder, true) . ";\n";
+    $indexContent .= '$equipmentModuleBasePath = ' . var_export('../equipment/', true) . ";\n";
+    $indexContent .= '$equipmentViewPath = ' . var_export('', true) . ";\n";
+    $indexContent .= '$equipmentEditPath = ' . var_export('../equipment/', true) . ";\n";
+    $indexContent .= '$equipmentAllowCreate = false;' . "\n";
+    $indexContent .= '$equipmentAllowDelete = false;' . "\n";
+    $indexContent .= '$equipmentAllowImport = false;' . "\n";
+    $indexContent .= "require '../equipment/index.php';\n";
+    $fileContents['index.php'] = $indexContent;
 
-    return file_put_contents($indexPath, $content) !== false;
+    $viewContent = "<?php\n";
+    $viewContent .= '$equipmentRequiredFlagField = ' . var_export($flagField, true) . ";\n";
+    $viewContent .= '$equipmentViewBackPath = ' . var_export('index.php', true) . ";\n";
+    $viewContent .= '$equipmentViewEditPath = ' . var_export('edit.php', true) . ";\n";
+    $viewContent .= "require '../equipment/view.php';\n";
+    $fileContents['view.php'] = $viewContent;
+
+    $fileContents['edit.php'] = "<?php\nrequire '../equipment/edit.php';\n";
+    $fileContents['create.php'] = "<?php\nrequire '../equipment/create.php';\n";
+    $fileContents['delete.php'] = "<?php\nrequire '../equipment/delete.php';\n";
+    $fileContents['list_all.php'] = "<?php\nrequire '../equipment/list_all.php';\n";
+    $fileContents['view_all.php'] = "<?php\nrequire 'list_all.php';\n";
+
+    $createdFiles = [];
+    foreach ($fileContents as $fileName => $content) {
+        $targetPath = $moduleDir . '/' . $fileName;
+        if (is_file($targetPath)) {
+            continue;
+        }
+        if (file_put_contents($targetPath, $content) === false) {
+            return false;
+        }
+        $createdFiles[] = $fileName;
+    }
+
+    if (!empty($createdFiles) && function_exists('itm_log_audit') && isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
+        itm_log_audit(
+            $GLOBALS['conn'],
+            'modules/' . $moduleName,
+            0,
+            'INSERT',
+            null,
+            ['created_files' => $createdFiles]
+        );
+    }
+
+    return is_file($moduleDir . '/index.php');
 }
 
 /**
