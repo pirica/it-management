@@ -267,7 +267,14 @@ if (!empty($_SESSION['crud_success'])) {
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($showSwitchPortManagerAction): ?>
-                                        <a class="btn btn-sm btn-primary" href="index.php?switch_id=<?php echo (int)$row['id']; ?>&spm=1<?php echo $searchRaw !== '' ? '&search=' . urlencode($searchRaw) : ''; ?>#switch-port-manager">Switch Port Manager</a>
+                                        <?php
+                                        $isSelectedSwitchManagerOpen = $showSwitchPortManager && (int)$row['id'] === $selectedSwitchId;
+                                        $switchPortManagerHref = 'index.php?switch_id=' . (int)$row['id']
+                                            . ($isSelectedSwitchManagerOpen ? '' : '&spm=1')
+                                            . ($searchRaw !== '' ? '&search=' . urlencode($searchRaw) : '')
+                                            . ($isSelectedSwitchManagerOpen ? '' : '#switch-port-manager');
+                                        ?>
+                                        <a class="btn btn-sm btn-primary" href="<?php echo $switchPortManagerHref; ?>"><?php echo $isSelectedSwitchManagerOpen ? 'Hide Switch Port Manager' : 'Switch Port Manager'; ?></a>
                                     <?php endif; ?>
                                     <?php
                                     $deleteUrl = './delete.php?id=' . (int)$row['id'];
