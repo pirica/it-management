@@ -57,7 +57,7 @@ function emp_label($field) {
         'department_name' => 'Department',
         'office_key_card_department_id' => 'Office Key Card Department ID',
         'office_key_card_department_name' => 'Office Key Card Department',
-        'hilton_id' => 'Hilton ID',
+        'hilton_id' => 'Id',
     ];
     if (isset($map[$field])) return $map[$field];
     if ($field === 'id') return 'ID';
