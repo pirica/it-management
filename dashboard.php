@@ -3,7 +3,7 @@
  * Main Dashboard Page
  * 
  * Displays key statistics and overview information for the selected company.
- * Shows counts for equipment, workstations, tickets, and employees.
+ * Shows counts for equipment, tickets, and employees.
  */
 
 require 'config/config.php';
@@ -89,20 +89,15 @@ function table_has_column(mysqli $conn, string $table, string $column): bool
     return $cache[$cacheKey];
 }
 
-// Build dynamic queries for equipment and workstations based on available columns
+// Build dynamic queries for dashboard cards based on available columns
 $equipmentSql = 'SELECT COUNT(*) AS count FROM equipment WHERE company_id = ?';
 if (table_has_column($conn, 'equipment', 'active')) {
     $equipmentSql .= ' AND active = 1';
 }
 
-$workstationsSql = 'SELECT COUNT(*) AS count FROM workstations WHERE company_id = ?';
-if (table_has_column($conn, 'workstations', 'active')) {
-    $workstationsSql .= ' AND active = 1';
-}
 
 // Fetch the actual counts for the dashboard cards
 $equipment_count = fetch_company_count($conn, $equipmentSql, $companyId);
-$workstations_count = fetch_company_count($conn, $workstationsSql, $companyId);
 $tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM tickets WHERE company_id = ?', $companyId);
 $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
 
@@ -162,10 +157,6 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
                         <div class="stat-label">Equipment</div>
                         <div class="stat-number"><?php echo $equipment_count; ?></div>
-                    </a>
-                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/workstations/">
-                        <div class="stat-label">Workstations</div>
-                        <div class="stat-number"><?php echo $workstations_count; ?></div>
                     </a>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/tickets/">
                         <div class="stat-label">Tickets</div>
