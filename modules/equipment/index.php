@@ -399,8 +399,8 @@ if (!empty($_SESSION['crud_success'])) {
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
     (function () {
-        const apiGet = '<?php echo BASE_URL; ?>get_ports.php';
-        const apiUpdate = '<?php echo BASE_URL; ?>update_port.php';
+        const apiGet = '<?php echo BASE_URL; ?>includes/get_ports.php';
+        const apiUpdate = '<?php echo BASE_URL; ?>includes/update_port.php';
         const selectedSwitchId = <?php echo (int)$selectedSwitchId; ?>;
         const selectedSwitchMeta = <?php echo json_encode($selectedSwitchData ?? []); ?>;
         let ports = [];
