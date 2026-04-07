@@ -1,12 +1,22 @@
 <?php
+/**
+ * Company Selection Page
+ * 
+ * This is the entry point after login. It allows users to select which company
+ * context they want to work in. Admin users can see all active companies,
+ * while regular users only see companies they are assigned to.
+ */
+
 require 'config/config.php';
 
+// Redirect to login if the user is not authenticated
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
 
 // Early error reporting for database connection issues
+// This helps diagnose connection failures before the UI is rendered
 if (!$conn) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -15,6 +25,9 @@ if (!$conn) {
 $userId = (int)$_SESSION['user_id'];
 $csrfToken = itm_get_csrf_token();
 $isAdmin = false;
+
+// Check if the current user has administrative privileges
+// We check both the role name and the username for 'admin'
 $adminStmt = mysqli_prepare(
     $conn,
     'SELECT 1
@@ -31,12 +44,16 @@ if ($adminStmt) {
     mysqli_stmt_close($adminStmt);
 }
 
+// Handle company selection
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Validate CSRF token for security
     itm_require_post_csrf();
+    
     $company_id = (int)($_POST['company_id'] ?? 0);
     $company = null;
 
     if ($isAdmin) {
+        // Admins can select any active company
         $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c WHERE c.id = ? AND c.active = 1 LIMIT 1');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'i', $company_id);
@@ -47,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             mysqli_stmt_close($stmt);
         }
     } else {
+        // Regular users must be assigned to the company
         $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.user_id = ? AND c.active = 1 LIMIT 1');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'ii', $company_id, $userId);
@@ -58,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // If valid company selected, store in session and proceed to dashboard
     if ($company) {
         $_SESSION['company_id'] = $company_id;
         $_SESSION['company_name'] = $company['company'];
@@ -66,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
+// Fetch available companies for the selection dropdown
 if ($isAdmin) {
     $companies = mysqli_query($conn, 'SELECT c.* FROM companies c WHERE c.active = 1 ORDER BY c.company');
 } else {
@@ -146,6 +166,7 @@ if ($isAdmin) {
     </style>
 </head>
 <body>
+    <!-- Logout form with CSRF protection -->
     <form method="POST" action="logout.php" style="margin:0;">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
         <button type="submit" class="logout-btn">Logout</button>
@@ -188,15 +209,24 @@ if ($isAdmin) {
     <script src="js/select-add-option.js"></script>
 
     <script>
+        /**
+         * Update the hidden company name input when selection changes
+         */
         function updateName() {
             const select = document.getElementById('company');
             document.getElementById('company_name').value = select.options[select.selectedIndex].getAttribute('data-name');
         }
+
+        /**
+         * Toggle between light and dark themes
+         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
             localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
         }
+        
+        // Initialize theme from local storage
         document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
     </script>
 </body>

@@ -1,4 +1,12 @@
 <?php
+/**
+ * User Configuration Page
+ * 
+ * Allows users to update their email address and change their password.
+ * Implements a strict "current password" verification for all changes.
+ * Supports a "Read-Only" mode for users whose employee status is not 'Active'.
+ */
+
 session_start();
 require 'config/config.php';
 
@@ -8,13 +16,14 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$user_id;
 $csrfToken = itm_get_csrf_token();
+// Read-only mode is active if the user doesn't have a corresponding 'Active' employee record
 $isReadOnlyMode = !empty($_SESSION['read_only_user_config']);
 $message = '';
 $message_type = ''; // success, error, info
 
-// 1. Fetch current user data to show in the form
+// 1. Fetch current user data to populate the form
 $stmt_init = mysqli_prepare($conn, 'SELECT email FROM users WHERE id = ? LIMIT 1');
 $current_user = ['email' => ''];
 if ($stmt_init) {
@@ -33,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
     $confirm_password = (string)($_POST['confirm_password'] ?? '');
     $current_password_input = (string)($_POST['current_password_verify'] ?? '');
 
-    // --- VERIFICATION STEP 1: Check Current Password ---
+    // --- VERIFICATION STEP 1: Authenticate with Current Password ---
+    // Every change requires the user to re-verify their identity
     $stmt_auth = mysqli_prepare($conn, 'SELECT password FROM users WHERE id = ? LIMIT 1');
     $user_data = null;
     if ($stmt_auth) {
@@ -49,9 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
         $types = '';
         $params = [];
 
-        // --- VERIFICATION STEP 2: Handle Email Change ---
+        // --- VERIFICATION STEP 2: Process Email Change ---
         if ($new_email !== '' && $new_email !== (string)$current_user['email']) {
-            // Check if new email is already taken by someone else
+            // Ensure the new email is unique across all users
             $stmt_check = mysqli_prepare($conn, 'SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1');
             if ($stmt_check) {
                 mysqli_stmt_bind_param($stmt_check, 'si', $new_email, $user_id);
@@ -70,9 +80,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
             }
         }
 
-        // --- VERIFICATION STEP 3: Handle Password Change ---
+        // --- VERIFICATION STEP 3: Process Password Change ---
         if ($new_password !== '') {
             if ($new_password === $confirm_password) {
+                // Securely hash the new password
                 $update_fields[] = 'password = ?';
                 $params[] = password_hash($new_password, PASSWORD_DEFAULT);
                 $types .= 's';
@@ -82,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
             }
         }
 
-        // --- FINAL STEP: Execute Update ---
+        // --- FINAL STEP: Execute database update if there are changes ---
         if ($message === '' && !empty($update_fields)) {
             $sql_update = 'UPDATE users SET ' . implode(', ', $update_fields) . ' WHERE id = ?';
             $types .= 'i';
@@ -116,10 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isReadOnlyMode) {
         $message_type = 'error';
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $isReadOnlyMode) {
+    // Prevent POST processing if user is restricted to read-only
     $message = 'Read-only mode is enabled. Account changes are not available.';
     $message_type = 'info';
 }
 
+// Set CSS classes for user feedback messages
 $messageClass = '';
 if ($message_type === 'success') {
     $messageClass = 'crud_success';
@@ -136,6 +149,7 @@ if ($message_type === 'success') {
     <link rel="stylesheet" href="css/styles.css">
     <?php if ($isReadOnlyMode): ?>
     <style>
+        /* Specific styling for the read-only restriction view */
         .readonly-wrap {
             min-height: 100vh;
             display: flex;
@@ -165,6 +179,7 @@ if ($message_type === 'success') {
 </head>
 <body>
     <?php if ($isReadOnlyMode): ?>
+    <!-- Restriction Notice for Inactive Employee Accounts -->
     <div class="readonly-wrap">
         <div class="readonly-card">
             <h1>👤 User Configuration</h1>
@@ -187,6 +202,7 @@ if ($message_type === 'success') {
     </div>
     <script src="js/theme.js"></script>
     <?php else: ?>
+    <!-- Full User Settings Form for Active Accounts -->
     <div class="container">
         <?php include 'includes/sidebar.php'; ?>
 

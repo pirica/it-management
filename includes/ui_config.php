@@ -1,5 +1,15 @@
 <?php
+/**
+ * UI Configuration and Sidebar Management Functions
+ * 
+ * Handles the application's dynamic UI settings, including sidebar structure,
+ * custom module discovery, auto-scaffolding, and user preferences for
+ * display positions and visibility.
+ */
 
+/**
+ * Returns the default hardcoded sidebar structure
+ */
 function itm_sidebar_base_structure() {
     return [
         [
@@ -69,6 +79,9 @@ function itm_sidebar_base_structure() {
     ];
 }
 
+/**
+ * Formats a table name into a human-readable title
+ */
 function itm_sidebar_humanize_table_name($tableName) {
     $label = str_replace('_', ' ', (string)$tableName);
     $label = trim($label);
@@ -79,6 +92,12 @@ function itm_sidebar_humanize_table_name($tableName) {
     return ucwords($label);
 }
 
+/**
+ * Automatically creates a new module directory and CRUD files
+ * 
+ * Uses the 'manufacturers' module as a template for new database tables
+ * that don't yet have an associated UI module.
+ */
 function itm_auto_create_module_scaffold($moduleName) {
     $moduleName = trim((string)$moduleName);
     if ($moduleName === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $moduleName)) {
@@ -120,10 +139,11 @@ function itm_auto_create_module_scaffold($moduleName) {
     return is_file($moduleDir . '/index.php');
 }
 
+/**
+ * Returns the complete sidebar structure, including auto-discovered modules
+ */
 function itm_sidebar_structure($conn = null) {
-    // Static cache to store the sidebar structure once per request.
-    // This optimization avoids redundant directory scans (glob) and
-    // database queries (SHOW TABLES) when this function is called multiple times.
+    // Static cache to avoid redundant filesystem and DB scans in a single request
     static $itm_sidebar_cache = null;
     if ($itm_sidebar_cache !== null) {
         return $itm_sidebar_cache;
@@ -143,6 +163,7 @@ function itm_sidebar_structure($conn = null) {
 
     $moduleNames = [];
     $modulesRoot = dirname(__DIR__) . '/modules';
+    // Discover modules by scanning the filesystem
     if (is_dir($modulesRoot)) {
         $moduleDirs = glob($modulesRoot . '/*', GLOB_ONLYDIR) ?: [];
         foreach ($moduleDirs as $moduleDir) {
@@ -157,6 +178,7 @@ function itm_sidebar_structure($conn = null) {
         }
     }
 
+    // Discover modules by scanning database tables and auto-scaffolding if needed
     if ($conn) {
         $tablesRes = mysqli_query($conn, 'SHOW TABLES');
         if ($tablesRes) {
@@ -192,10 +214,12 @@ function itm_sidebar_structure($conn = null) {
         return $structure;
     }
 
+    // Sort newly discovered items alphabetically
     usort($discoveredItems, static function ($a, $b) {
         return strcmp($a['label'], $b['label']);
     });
 
+    // Append discovered items to the 'Reference Data' section
     foreach ($structure as &$section) {
         if (($section['id'] ?? '') === 'reference_data') {
             $section['items'] = array_merge($section['items'], $discoveredItems);
@@ -208,6 +232,9 @@ function itm_sidebar_structure($conn = null) {
     return $structure;
 }
 
+/**
+ * Returns default visibility settings (all visible)
+ */
 function itm_default_sidebar_visibility() {
     $visibility = [];
     foreach (itm_sidebar_structure() as $section) {
@@ -219,12 +246,18 @@ function itm_default_sidebar_visibility() {
     return $visibility;
 }
 
+/**
+ * Returns default section order
+ */
 function itm_default_sidebar_main_order() {
     return array_map(static function ($section) {
         return $section['id'];
     }, itm_sidebar_structure());
 }
 
+/**
+ * Returns default submenu item order
+ */
 function itm_default_sidebar_submenu_order() {
     $submenuOrder = [];
     foreach (itm_sidebar_structure() as $section) {
@@ -235,6 +268,9 @@ function itm_default_sidebar_submenu_order() {
     return $submenuOrder;
 }
 
+/**
+ * Returns a flat mapping of all menu item IDs to their configurations
+ */
 function itm_sidebar_item_catalog() {
     $catalog = [];
     foreach (itm_sidebar_structure() as $section) {
@@ -244,6 +280,10 @@ function itm_sidebar_item_catalog() {
     }
     return $catalog;
 }
+
+/**
+ * Retrieves the sidebar label for a given module directory
+ */
 function itm_sidebar_label_for_module($moduleDir) {
     $moduleDir = trim((string)$moduleDir);
     if ($moduleDir === '') {
@@ -259,6 +299,9 @@ function itm_sidebar_label_for_module($moduleDir) {
     return null;
 }
 
+/**
+ * Returns a mapping of items to their parent sections
+ */
 function itm_sidebar_default_item_parent_map() {
     $map = [];
     foreach (itm_sidebar_structure() as $section) {
@@ -269,6 +312,9 @@ function itm_sidebar_default_item_parent_map() {
     return $map;
 }
 
+/**
+ * Returns the hardcoded default UI configuration
+ */
 function itm_ui_config_defaults() {
     return [
         'table_actions_position' => 'left_right',
@@ -284,6 +330,9 @@ function itm_ui_config_defaults() {
     ];
 }
 
+/**
+ * Returns the list of valid position values for UI elements
+ */
 function itm_ui_allowed_positions() {
     return [
         'table_actions_position' => ['left_right', 'left', 'right'],
@@ -297,10 +346,16 @@ function itm_ui_allowed_positions() {
     ];
 }
 
+/**
+ * Normalizes boolean-ish flags to 1 or 0
+ */
 function itm_normalize_flag($value) {
     return ((string)$value === '1' || $value === 1 || $value === true) ? 1 : 0;
 }
 
+/**
+ * Ensures the ui_configuration table exists and has the current schema
+ */
 function itm_ensure_ui_configuration_table($conn) {
     $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -325,6 +380,7 @@ function itm_ensure_ui_configuration_table($conn) {
         return false;
     }
 
+    // Add missing columns if they don't exist
     $columns = [
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
@@ -347,6 +403,9 @@ function itm_ensure_ui_configuration_table($conn) {
     return itm_ensure_sidebar_layout_table($conn);
 }
 
+/**
+ * Ensures the sidebar_layout junction table exists
+ */
 function itm_ensure_sidebar_layout_table($conn) {
     $sql = "CREATE TABLE IF NOT EXISTS `sidebar_layout` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -366,6 +425,9 @@ function itm_ensure_sidebar_layout_table($conn) {
     return mysqli_query($conn, $sql) === true;
 }
 
+/**
+ * Fetches the UI configuration for a specific company
+ */
 function itm_get_ui_configuration($conn, $company_id) {
     $defaults = itm_ui_config_defaults();
     $company_id = (int)$company_id;
@@ -374,6 +436,7 @@ function itm_get_ui_configuration($conn, $company_id) {
         return $defaults;
     }
 
+    // Retrieve settings from the database
     $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -387,6 +450,7 @@ function itm_get_ui_configuration($conn, $company_id) {
     mysqli_stmt_close($stmt);
 
     if (!$row) {
+        // Fallback to layout configuration if main config missing
         $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
         if ($layoutConfig !== null) {
             $defaults['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
@@ -397,6 +461,7 @@ function itm_get_ui_configuration($conn, $company_id) {
     }
 
     $config = itm_normalize_ui_configuration($row);
+    // Overlay detailed layout configuration
     $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
     if ($layoutConfig !== null) {
         $config['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
@@ -407,21 +472,27 @@ function itm_get_ui_configuration($conn, $company_id) {
     return $config;
 }
 
+/**
+ * Validates and normalizes configuration values
+ */
 function itm_normalize_ui_configuration($values) {
     $defaults = itm_ui_config_defaults();
     $allowed = itm_ui_allowed_positions();
 
+    // Sanitize position settings
     foreach ($allowed as $key => $options) {
         $value = isset($values[$key]) ? (string)$values[$key] : $defaults[$key];
         $values[$key] = in_array($value, $options, true) ? $value : $defaults[$key];
     }
 
+    // Normalize complex JSON structures
     $values['sidebar_visibility'] = itm_normalize_sidebar_visibility($values['sidebar_visibility'] ?? null);
     $values['sidebar_main_order'] = itm_normalize_sidebar_main_order($values['sidebar_main_order'] ?? null);
     $values['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($values['sidebar_submenu_order'] ?? null);
     $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
     $values['enable_audit_logs'] = itm_normalize_flag($values['enable_audit_logs'] ?? $defaults['enable_audit_logs']);
 
+    // Validate records per page
     $recordsPerPage = strtolower((string)($values['records_per_page'] ?? $defaults['records_per_page']));
     if ($recordsPerPage === 'all') {
         $values['records_per_page'] = 'all';
@@ -434,6 +505,9 @@ function itm_normalize_ui_configuration($values) {
     return $values;
 }
 
+/**
+ * Normalizes sidebar visibility mapping
+ */
 function itm_normalize_sidebar_visibility($raw) {
     $defaults = itm_default_sidebar_visibility();
     if (is_string($raw)) {
@@ -452,6 +526,9 @@ function itm_normalize_sidebar_visibility($raw) {
     return $defaults;
 }
 
+/**
+ * Normalizes the order of top-level sidebar sections
+ */
 function itm_normalize_sidebar_main_order($raw) {
     $default = itm_default_sidebar_main_order();
     if (is_string($raw)) {
@@ -471,6 +548,7 @@ function itm_normalize_sidebar_main_order($raw) {
             $seen[$id] = true;
         }
     }
+    // Append missing default items at the end
     foreach ($default as $id) {
         if (!isset($seen[$id])) {
             $order[] = $id;
@@ -479,6 +557,9 @@ function itm_normalize_sidebar_main_order($raw) {
     return $order;
 }
 
+/**
+ * Normalizes the order of submenu items within their sections
+ */
 function itm_normalize_sidebar_submenu_order($raw) {
     $default = itm_default_sidebar_submenu_order();
     $catalog = itm_sidebar_item_catalog();
@@ -495,6 +576,7 @@ function itm_normalize_sidebar_submenu_order($raw) {
     $normalized = [];
     $assigned = [];
 
+    // Process explicitly ordered items
     foreach ($default as $sectionId => $defaultIds) {
         $sectionRaw = $raw[$sectionId] ?? [];
         if (!is_array($sectionRaw)) {
@@ -513,6 +595,7 @@ function itm_normalize_sidebar_submenu_order($raw) {
         $normalized[$sectionId] = $sectionOrder;
     }
 
+    // Assign un-ordered items to their default sections
     foreach (array_keys($catalog) as $itemId) {
         if (isset($assigned[$itemId])) {
             continue;
@@ -531,6 +614,9 @@ function itm_normalize_sidebar_submenu_order($raw) {
     return $normalized;
 }
 
+/**
+ * Saves UI configuration to the database
+ */
 function itm_save_ui_configuration($conn, $company_id, $input) {
     $company_id = (int)$company_id;
     if ($company_id <= 0 || !itm_ensure_ui_configuration_table($conn)) {
@@ -587,6 +673,9 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
     return itm_save_sidebar_layout($conn, $company_id, $config);
 }
 
+/**
+ * Retrieves granular sidebar layout configuration
+ */
 function itm_get_sidebar_layout_config($conn, $company_id) {
     $company_id = (int)$company_id;
     if ($company_id <= 0 || !itm_ensure_sidebar_layout_table($conn)) {
@@ -616,6 +705,7 @@ function itm_get_sidebar_layout_config($conn, $company_id) {
     $mainOrder = [];
     $submenuOrder = [];
 
+    // Reconstruct hierarchical configuration from flat database rows
     foreach ($rows as $row) {
         $entryType = (string)($row['entry_type'] ?? '');
         $entryId = (string)($row['entry_id'] ?? '');
@@ -648,6 +738,9 @@ function itm_get_sidebar_layout_config($conn, $company_id) {
     ];
 }
 
+/**
+ * Transforms configuration structure into flat database rows for storage
+ */
 function itm_sidebar_layout_rows_from_config($config) {
     $sidebarStructure = itm_sidebar_structure();
     $defaultParentMap = itm_sidebar_default_item_parent_map();
@@ -655,6 +748,7 @@ function itm_sidebar_layout_rows_from_config($config) {
     $rows = [];
     $order = 0;
 
+    // Build section rows
     foreach ($config['sidebar_main_order'] as $sectionId) {
         $rows[] = [
             'entry_type' => 'section',
@@ -665,6 +759,7 @@ function itm_sidebar_layout_rows_from_config($config) {
         ];
     }
 
+    // Build item rows
     foreach ($config['sidebar_submenu_order'] as $sectionId => $items) {
         if (!is_array($items)) {
             continue;
@@ -684,6 +779,7 @@ function itm_sidebar_layout_rows_from_config($config) {
         }
     }
 
+    // Ensure all known sections and items are included, even if not in the config
     $knownRows = [];
     foreach ($rows as $row) {
         $knownRows[$row['entry_type'] . ':' . $row['entry_id']] = true;
@@ -719,6 +815,9 @@ function itm_sidebar_layout_rows_from_config($config) {
     return $rows;
 }
 
+/**
+ * Synchronizes the sidebar_layout table with the provided configuration
+ */
 function itm_save_sidebar_layout($conn, $company_id, $config) {
     $company_id = (int)$company_id;
     if ($company_id <= 0 || !itm_ensure_sidebar_layout_table($conn)) {
@@ -728,6 +827,7 @@ function itm_save_sidebar_layout($conn, $company_id, $config) {
     $rows = itm_sidebar_layout_rows_from_config($config);
 
     mysqli_begin_transaction($conn);
+    // Clear old layout
     $deleteStmt = mysqli_prepare($conn, 'DELETE FROM sidebar_layout WHERE company_id = ?');
     if (!$deleteStmt) {
         mysqli_rollback($conn);
@@ -741,6 +841,7 @@ function itm_save_sidebar_layout($conn, $company_id, $config) {
         return false;
     }
 
+    // Insert new layout row by row
     $insertStmt = mysqli_prepare(
         $conn,
         'INSERT INTO sidebar_layout (company_id, entry_type, entry_id, section_id, display_order, is_visible) VALUES (?, ?, ?, ?, ?, ?)'
@@ -768,11 +869,13 @@ function itm_save_sidebar_layout($conn, $company_id, $config) {
     return mysqli_commit($conn);
 }
 
-
+/**
+ * Resolves the final integer value for records per page
+ */
 function itm_resolve_records_per_page($uiConfig) {
     $raw = strtolower((string)($uiConfig['records_per_page'] ?? '25'));
     if ($raw === 'all') {
-        return 1000000;
+        return 1000000; // Effectively "all" for most use cases
     }
 
     if (ctype_digit($raw)) {
@@ -782,5 +885,5 @@ function itm_resolve_records_per_page($uiConfig) {
         }
     }
 
-    return 25;
+    return 25; // Standard fallback
 }

@@ -1,6 +1,15 @@
 <?php
+/**
+ * Master CRUD Controller Template
+ * 
+ * Provides a standardized logic for Create, Read, Update, and Delete operations
+ * for simple lookup tables (e.g., categories, statuses).
+ * Includes CSRF protection, audit logging, search, and basic UI rendering.
+ */
+
 require '../../config/config.php';
 
+// Configuration: $crud_table and $crud_title should be defined before including this file
 $crud_table = $crud_table ?? '';
 $crud_title = $crud_title ?? '';
 $pk = 'id';
@@ -9,17 +18,21 @@ if (!$crud_table) {
     die("Table not specified");
 }
 
+// Route parameters
 $action = $_GET['action'] ?? 'list';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 $errors = [];
 $success = '';
 
+// Global CSRF enforcement for all state-changing operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 }
 
+// --- DELETE Action Handler ---
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Fetch old record state for audit logging
     $stmt = mysqli_prepare($conn, "SELECT * FROM `$crud_table` WHERE $pk = ? AND company_id = ?");
     mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
     mysqli_stmt_execute($stmt);
@@ -30,6 +43,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = mysqli_prepare($conn, "DELETE FROM `$crud_table` WHERE $pk = ? AND company_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         if (mysqli_stmt_execute($stmt)) {
+            // Log the deletion to the audit trail
             itm_log_audit($conn, $crud_table, $id, 'DELETE', $old_values);
             header("Location: index.php?success=deleted");
             exit;
@@ -42,6 +56,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// --- CREATE / EDIT Action Handler ---
 if (in_array($action, ['create', 'edit']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     
@@ -51,6 +66,7 @@ if (in_array($action, ['create', 'edit']) && $_SERVER['REQUEST_METHOD'] === 'POS
 
     if (empty($errors)) {
         if ($action === 'edit') {
+            // Fetch old record state before updating
             $stmt = mysqli_prepare($conn, "SELECT * FROM `$crud_table` WHERE $pk = ? AND company_id = ?");
             mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
             mysqli_stmt_execute($stmt);
@@ -60,6 +76,7 @@ if (in_array($action, ['create', 'edit']) && $_SERVER['REQUEST_METHOD'] === 'POS
             $stmt = mysqli_prepare($conn, "UPDATE `$crud_table` SET name = ? WHERE $pk = ? AND company_id = ?");
             mysqli_stmt_bind_param($stmt, 'sii', $name, $id, $company_id);
             if (mysqli_stmt_execute($stmt)) {
+                // Log the update to the audit trail
                 itm_log_audit($conn, $crud_table, $id, 'UPDATE', $old_values, ['name' => $name]);
                 header("Location: index.php?success=updated");
                 exit;
@@ -68,10 +85,12 @@ if (in_array($action, ['create', 'edit']) && $_SERVER['REQUEST_METHOD'] === 'POS
             }
             mysqli_stmt_close($stmt);
         } else {
+            // Handle new record insertion
             $stmt = mysqli_prepare($conn, "INSERT INTO `$crud_table` (company_id, name) VALUES (?, ?)");
             mysqli_stmt_bind_param($stmt, 'is', $company_id, $name);
             if (mysqli_stmt_execute($stmt)) {
                 $new_id = mysqli_insert_id($conn);
+                // Log the insertion to the audit trail
                 itm_log_audit($conn, $crud_table, $new_id, 'INSERT', null, ['company_id' => $company_id, 'name' => $name]);
                 header("Location: index.php?success=created");
                 exit;
@@ -83,12 +102,14 @@ if (in_array($action, ['create', 'edit']) && $_SERVER['REQUEST_METHOD'] === 'POS
     }
 }
 
+// Display flash messages from URL parameters
 if (isset($_GET['success'])) {
     if ($_GET['success'] === 'created') $success = "$crud_title created successfully.";
     if ($_GET['success'] === 'updated') $success = "$crud_title updated successfully.";
     if ($_GET['success'] === 'deleted') $success = "$crud_title deleted successfully.";
 }
 
+// --- Fetch Single Record for View/Edit ---
 $data = ['name' => ''];
 if (($action === 'edit' || $action === 'view') && $id > 0) {
     $stmt = mysqli_prepare($conn, "SELECT * FROM `$crud_table` WHERE $pk = ? AND company_id = ?");
@@ -104,6 +125,7 @@ if (($action === 'edit' || $action === 'view') && $id > 0) {
     mysqli_stmt_close($stmt);
 }
 
+// --- Fetch List of Records with Search Filtering ---
 $search = $_GET['search'] ?? '';
 $where = " WHERE company_id = ?";
 $params = [$company_id];
@@ -135,6 +157,7 @@ $csrfToken = itm_get_csrf_token();
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <!-- Global Feedback Messages -->
             <?php if ($errors): ?>
                 <?php foreach ($errors as $err): ?>
                     <div class="alert alert-danger"><?php echo sanitize($err); ?></div>
@@ -145,6 +168,7 @@ $csrfToken = itm_get_csrf_token();
             <?php endif; ?>
 
             <?php if ($action === 'list'): ?>
+                <!-- List View Container -->
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo $crud_title; ?></h1>
                     <a href="?action=create" class="btn btn-primary">➕ Add New</a>
@@ -190,6 +214,7 @@ $csrfToken = itm_get_csrf_token();
                 </div>
 
             <?php elseif (in_array($action, ['create', 'edit'])): ?>
+                <!-- Form View Container -->
                 <h1><?php echo ($action === 'edit' ? '✏️ Edit' : '➕ Add'); ?> <?php echo $crud_title; ?></h1>
                 <div class="card">
                     <form method="POST">
@@ -206,6 +231,7 @@ $csrfToken = itm_get_csrf_token();
                 </div>
 
             <?php elseif ($action === 'view'): ?>
+                <!-- Detailed Record View Container -->
                 <h1>👁️ View <?php echo $crud_title; ?></h1>
                 <div class="card">
                     <table class="detail-table">

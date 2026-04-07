@@ -1,25 +1,36 @@
 <?php
+/**
+ * Switch Port Update API
+ * 
+ * AJAX endpoint to update individual port details such as label, status,
+ * color, VLAN, and comments. Supports both JSON and form-encoded input.
+ */
+
 require '../config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 
+// Access Control: Authentication check
 if ($company_id <= 0) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }
 
-
+// Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
     exit;
 }
 
+// Input parsing (handles multiple content types)
 $raw = file_get_contents('php://input');
 $decoded = json_decode($raw, true);
 $input = is_array($decoded) ? $decoded : $_POST;
+
+// CSRF Validation
 $csrfToken = (string)($input['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
 if (!itm_validate_csrf_token($csrfToken)) {
     http_response_code(403);
@@ -27,7 +38,9 @@ if (!itm_validate_csrf_token($csrfToken)) {
     exit;
 }
 
-
+/**
+ * Fetches lookup data from the database
+ */
 function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
 {
     $rows = [];
@@ -61,6 +74,9 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     return $rows;
 }
 
+/**
+ * Fetches VLAN list for the company
+ */
 function fetch_company_vlans(mysqli $conn, int $companyId): array
 {
     $rows = [];
@@ -80,6 +96,9 @@ function fetch_company_vlans(mysqli $conn, int $companyId): array
     return $rows;
 }
 
+/**
+ * Maps a name or ID string back to a valid database ID
+ */
 function find_lookup_id(array $rows, $value): int
 {
     if ($value === null || $value === '') {
@@ -103,6 +122,7 @@ function find_lookup_id(array $rows, $value): int
     return 0;
 }
 
+// Schema detection
 $hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
@@ -114,11 +134,12 @@ if (!$hasStatusId || !$hasColorId) {
     exit;
 }
 
+// Pre-fetch reference data
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'cable_colors', 'color');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 
-
+// Parameter validation
 if (empty($input['id'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Missing id']);
@@ -138,12 +159,14 @@ if ($switchId <= 0) {
     exit;
 }
 
+// Resolve lookup values
 $colorId = find_lookup_id($colors, $input['color'] ?? null);
 $statusId = find_lookup_id($statuses, $input['status'] ?? null);
 $vlanId = $hasVlanId ? find_lookup_id($vlans, $input['vlan'] ?? null) : 0;
 $label = isset($input['label']) ? trim((string)$input['label']) : null;
 $comments = isset($input['comments']) ? trim((string)$input['comments']) : null;
 
+// Build dynamic UPDATE query based on provided fields
 $fields = [];
 $types = '';
 $params = [];
@@ -183,10 +206,12 @@ if (empty($fields)) {
     exit;
 }
 
+// Scoped update query for security
 $sql = 'UPDATE switch_ports SET ' . implode(', ', $fields) . ' WHERE id = ? AND company_id = ?';
 $types .= 'ii';
 $params[] = $id;
 $params[] = (int)$company_id;
+
 if ($hasEquipmentId) {
     $sql .= ' AND equipment_id = ?';
     $types .= 'i';

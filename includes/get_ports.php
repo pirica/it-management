@@ -1,9 +1,19 @@
 <?php
+/**
+ * Switch Port Fetcher API
+ * 
+ * An AJAX endpoint that retrieves all ports for a specific network switch.
+ * Handles automatic "seeding" of missing ports based on switch capacity.
+ * Returns ports, available statuses, colors, and VLAN configurations.
+ */
+
 require '../config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
+// Disable direct error output to avoid corrupting JSON response
 ini_set('display_errors', '0');
 
+// Access Control: Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
@@ -11,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// CSRF Validation (checks multiple possible header/body locations)
 $rawInput = file_get_contents('php://input');
 $jsonInput = json_decode((string)$rawInput, true);
 if (!is_array($jsonInput)) {
@@ -24,12 +35,16 @@ if (!itm_validate_csrf_token($csrfToken)) {
     exit;
 }
 
+// Ensure the user has a valid company context
 if ($company_id <= 0) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }
 
+/**
+ * Fetches a simple ID-Label map from a lookup table
+ */
 function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
 {
     $rows = [];
@@ -41,6 +56,7 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     $companyId = isset($GLOBALS['company_id']) ? (int)$GLOBALS['company_id'] : 0;
 
     $res = false;
+    // Prefer company-specific lookup values
     if ($hasCompanyId && $companyId > 0) {
         $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` WHERE company_id = ? ORDER BY id ASC";
         $stmt = mysqli_prepare($conn, $sql);
@@ -52,6 +68,7 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
         }
     }
 
+    // Fallback to global values if no company-specific values found
     if (!$res || mysqli_num_rows($res) === 0) {
         $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` ORDER BY id ASC";
         $res = mysqli_query($conn, $sql);
@@ -63,6 +80,9 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     return $rows;
 }
 
+/**
+ * Fetches VLAN configurations for a company
+ */
 function fetch_company_vlans(mysqli $conn, int $companyId): array
 {
     $rows = [];
@@ -86,6 +106,9 @@ function fetch_company_vlans(mysqli $conn, int $companyId): array
     return $rows;
 }
 
+/**
+ * Fetches all possible port types (RJ45, SFP, etc.) from the catalog
+ */
 function fetch_available_port_types(mysqli $conn): array
 {
     $rows = [];
@@ -105,6 +128,9 @@ function fetch_available_port_types(mysqli $conn): array
     return array_keys($rows);
 }
 
+/**
+ * Finds an ID in a list of items by name
+ */
 function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
 {
     foreach ($items as $item) {
@@ -115,7 +141,9 @@ function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
     return $fallback > 0 ? $fallback : (int)($items[0]['id'] ?? 0);
 }
 
-
+/**
+ * Normalizes port type strings to standard internal identifiers
+ */
 function normalize_port_type(string $portType): string
 {
     $normalized = strtolower(trim($portType));
@@ -131,7 +159,7 @@ function normalize_port_type(string $portType): string
     return 'rj45';
 }
 
-
+// Feature Detection: Check for modern schema vs legacy schema
 $hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasPortType = itm_table_has_column($conn, 'switch_ports', 'port_type');
 $hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
@@ -155,12 +183,14 @@ if (!in_array('rj45', $availablePortTypes, true)) {
     $availablePortTypes[] = 'rj45';
 }
 
+// Schema validation
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns']);
     exit;
 }
 
+// Pre-fetch lookups
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'cable_colors', 'color');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
@@ -180,6 +210,7 @@ if ($switchId <= 0) {
     exit;
 }
 
+// Fetch switch configuration from the equipment table
 $legacyNumberPortSql = $hasLegacyNumberPort ? 'e.numberport AS legacy_numberport,' : 'NULL AS legacy_numberport,';
 $switchSql = "SELECT e.id, e.name, {$legacyNumberPortSql} COALESCE(er.name, '24 ports') AS rj45_name,
                      COALESCE(ef.name, '') AS fiber_name, COALESCE(efc.name, '0') AS fiber_count,
@@ -209,26 +240,28 @@ if (!$switch) {
     exit;
 }
 
+// Calculate RJ45 port count
 $rj45Count = (int)($switch['legacy_numberport'] ?? 0);
 if ($rj45Count <= 0) {
     $rj45Count = (int)preg_replace('/\D+/', '', (string)$switch['rj45_name']);
 }
 if ($rj45Count <= 0) {
-    $rj45Count = 24;
+    $rj45Count = 24; // Standard fallback
 }
+
+// Calculate SFP/SFP+ port counts
 $fiberPortsNumber = (int)preg_replace('/\D+/', '', (string)$switch['fiber_ports_number']);
 $legacyFiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
 $fiberCount = $fiberPortsNumber > 0 ? $fiberPortsNumber : $legacyFiberCount;
 $fiberName = strtolower(trim((string)$switch['fiber_name']));
 $sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
 $sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
-if (!in_array('sfp', $availablePortTypes, true)) {
-    $sfpCount = 0;
-}
-if (!in_array('sfp_plus', $availablePortTypes, true)) {
-    $sfpPlusCount = 0;
-}
+if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
+if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
 
+/**
+ * Automatically creates missing port records or removes excess port records
+ */
 function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, int $defaultStatusId, int $defaultColorId): void
 {
     if ($count <= 0) {
@@ -236,6 +269,7 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
     }
 
     if ($hasEquipmentId && $hasPortType) {
+        // Modern schema: Ports are linked to a switch
         $existingPortNumbers = [];
         $existingSql = 'SELECT port_number FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ? ORDER BY port_number ASC';
         $existingStmt = mysqli_prepare($conn, $existingSql);
@@ -253,6 +287,7 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
             mysqli_stmt_close($existingStmt);
         }
 
+        // Insert missing ports
         $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, label, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
         $insertStmt = mysqli_prepare($conn, $insertSql);
         if (!$insertStmt) {
@@ -268,15 +303,8 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         }
         mysqli_stmt_close($insertStmt);
 
+        // Delete excess ports
         $deleteSql = 'DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ? AND port_number > ?';
-        $deleteStmt = mysqli_prepare($conn, $deleteSql);
-        if ($deleteStmt) {
-            mysqli_stmt_bind_param($deleteStmt, 'iisi', $companyId, $switchId, $portType, $count);
-            mysqli_stmt_execute($deleteStmt);
-            mysqli_stmt_close($deleteStmt);
-        }
-        return;
-        $deleteSql = 'DELETE FROM idf_ports WHERE company_id = ? AND position_id = ? AND port_type = ? AND port_no > ?';
         $deleteStmt = mysqli_prepare($conn, $deleteSql);
         if ($deleteStmt) {
             mysqli_stmt_bind_param($deleteStmt, 'iisi', $companyId, $switchId, $portType, $count);
@@ -286,6 +314,7 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         return;
     }
 
+    // Legacy schema: Ports are only scoped by company (deprecated)
     if ($portType !== 'rj45') {
         return;
     }
@@ -317,6 +346,9 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
     mysqli_stmt_close($insertStmt);
 }
 
+/**
+ * Removes duplicate port records for a specific switch
+ */
 function remove_duplicate_ports(mysqli $conn, int $companyId, int $switchId, bool $hasEquipmentId, bool $hasPortType): void
 {
     if (!$hasEquipmentId || !$hasPortType) {
@@ -342,11 +374,13 @@ function remove_duplicate_ports(mysqli $conn, int $companyId, int $switchId, boo
     mysqli_stmt_close($deleteStmt);
 }
 
+// Synchronize port records
 seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
 remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
+// Fetch all port details including status, color, and VLAN
 if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
@@ -367,6 +401,7 @@ if ($hasEquipmentId && $hasPortType) {
         }
     }
 } else {
+    // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
             FROM switch_ports sp
@@ -387,9 +422,7 @@ if ($hasEquipmentId && $hasPortType) {
 }
 
 if (!$result) {
-    if ($stmt) {
-        mysqli_stmt_close($stmt);
-    }
+    if ($stmt) { mysqli_stmt_close($stmt); }
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'DB error']);
     exit;
@@ -400,10 +433,9 @@ while ($row = mysqli_fetch_assoc($result)) {
     $row['port_type'] = normalize_port_type((string)($row['port_type'] ?? 'rj45'));
     $ports[] = $row;
 }
-if ($stmt) {
-    mysqli_stmt_close($stmt);
-}
+if ($stmt) { mysqli_stmt_close($stmt); }
 
+// If using legacy schema, SFPs are only "virtual" in memory
 if (!($hasEquipmentId && $hasPortType)) {
     for ($n = 1; $n <= $sfpCount; $n++) {
         $ports[] = [
@@ -436,6 +468,7 @@ if (!($hasEquipmentId && $hasPortType)) {
     }
 }
 
+// Return final JSON payload
 echo json_encode([
     'success' => true,
     'ports' => $ports,

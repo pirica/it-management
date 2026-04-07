@@ -1,12 +1,24 @@
 <?php
+/**
+ * Password Reset Page
+ * 
+ * Finalizes the password reset process. Validates the reset token from the URL,
+ * updates the user's password with a new hash, and clears the token.
+ */
+
 include('config/config.php');
+// Get the token from the URL query parameter
 $token = $_GET['token'] ?? '';
 $csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     itm_require_post_csrf();
+    
+    // Hash the new password before storing it
     $new_password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
 
+    // Update the password only if the token matches an existing user
+    // We clear the reset_token after use to prevent reuse
     $stmt = mysqli_prepare($conn, 'UPDATE users SET password = ?, reset_token = NULL WHERE reset_token = ?');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ss', $new_password, $token);
@@ -58,6 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
         <div class="links"><a href="login.php">Back to Login</a></div>
     </div>
     <script>
+        /**
+         * Toggle between light and dark themes
+         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');

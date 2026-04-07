@@ -1,8 +1,16 @@
 <?php
+/**
+ * Main Dashboard Page
+ * 
+ * Displays key statistics and overview information for the selected company.
+ * Shows counts for equipment, workstations, tickets, and employees.
+ */
+
 require 'config/config.php';
 
 $companyId = (int)$company_id;
 
+// Fetch details for the currently selected company
 $company_data = null;
 $companyStmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? LIMIT 1');
 if ($companyStmt) {
@@ -14,6 +22,14 @@ if ($companyStmt) {
     mysqli_stmt_close($companyStmt);
 }
 
+/**
+ * Helper function to fetch record counts scoped to a company
+ * 
+ * @param mysqli $conn The database connection
+ * @param string $sql The SQL query (must include a placeholder for company_id)
+ * @param int $companyId The company ID to filter by
+ * @return int The number of records found
+ */
 function fetch_company_count(mysqli $conn, string $sql, int $companyId): int
 {
     $stmt = mysqli_prepare($conn, $sql);
@@ -31,6 +47,12 @@ function fetch_company_count(mysqli $conn, string $sql, int $companyId): int
     return $count;
 }
 
+/**
+ * Checks if a table has a specific column
+ * 
+ * Useful for conditional queries when the schema might vary.
+ * Uses a static cache to avoid redundant database queries.
+ */
 function table_has_column(mysqli $conn, string $table, string $column): bool
 {
     static $cache = [];
@@ -67,6 +89,7 @@ function table_has_column(mysqli $conn, string $table, string $column): bool
     return $cache[$cacheKey];
 }
 
+// Build dynamic queries for equipment and workstations based on available columns
 $equipmentSql = 'SELECT COUNT(*) AS count FROM equipment WHERE company_id = ?';
 if (table_has_column($conn, 'equipment', 'active')) {
     $equipmentSql .= ' AND active = 1';
@@ -77,11 +100,13 @@ if (table_has_column($conn, 'workstations', 'active')) {
     $workstationsSql .= ' AND active = 1';
 }
 
+// Fetch the actual counts for the dashboard cards
 $equipment_count = fetch_company_count($conn, $equipmentSql, $companyId);
 $workstations_count = fetch_company_count($conn, $workstationsSql, $companyId);
 $tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM tickets WHERE company_id = ?', $companyId);
 $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
 
+// Fetch logged-in user details for the welcome message
 $userDisplayName = '';
 $userEmail = '';
 
@@ -100,6 +125,7 @@ if ($userId > 0) {
     }
 }
 
+// Compose the personalized welcome message
 $welcomeMessage = 'Welcome to DataCenter Plus';
 if ($userDisplayName !== '' && $userEmail !== '') {
     $welcomeMessage .= ', ' . $userDisplayName . ' (' . $userEmail . ')';
@@ -132,6 +158,7 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                 </div>
 
                 <div class="stats-grid">
+                    <!-- Dashboard Statistics Cards -->
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
                         <div class="stat-label">Equipment</div>
                         <div class="stat-number"><?php echo $equipment_count; ?></div>
@@ -150,6 +177,7 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                     </a>
                 </div>
 
+                <!-- System Settings Quick Link -->
                 <div class="card">
                     <div class="card-header"><h2>Settings</h2></div>
                     <div class="card-body">
@@ -158,6 +186,7 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                     </div>
                 </div>
 
+                <!-- Company Information Summary -->
                 <div class="card">
                     <div class="card-header">
                         <h2>Information</h2>

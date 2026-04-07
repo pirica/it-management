@@ -1,8 +1,17 @@
 <?php
 /**
- * Audit helpers for centralized change logging.
+ * Audit Logging Functions
+ * 
+ * Provides a centralized mechanism for logging database changes (INSERT, UPDATE, DELETE).
+ * Captures old and new values in JSON format, along with user context, IP, and user agent.
  */
 
+/**
+ * Encodes an array or object into a JSON string for audit storage
+ * 
+ * @param mixed $values The data to encode
+ * @return string|null The JSON string or null on failure
+ */
 function itm_audit_encode_values($values) {
     if ($values === null) {
         return null;
@@ -16,7 +25,19 @@ function itm_audit_encode_values($values) {
     return $json === false ? null : $json;
 }
 
+/**
+ * Logs a single audit event to the audit_logs table
+ * 
+ * @param mysqli $conn Database connection
+ * @param string $table The table being modified
+ * @param int $record_id The ID of the record being modified
+ * @param string $action The action performed (INSERT, UPDATE, or DELETE)
+ * @param mixed $old_values The record state before the change
+ * @param mixed $new_values The record state after the change
+ * @return bool True on success, false on failure
+ */
 function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $new_values = null) {
+    // Only log if a company context exists in the session
     if (!isset($_SESSION['company_id'])) {
         return false;
     }
@@ -33,6 +54,7 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
     }
 
     $company_id = (int)$_SESSION['company_id'];
+    // Check if audit logging is enabled in the UI configuration
     $uiConfig = itm_get_ui_configuration($conn, $company_id);
     if ((int)($uiConfig['enable_audit_logs'] ?? 1) !== 1) {
         return false;
@@ -71,6 +93,9 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
     return $result;
 }
 
+/**
+ * Fetches a record for auditing purposes, scoped to a company if necessary
+ */
 function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
     if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
         return null;
@@ -104,6 +129,9 @@ function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
     return $row ?: null;
 }
 
+/**
+ * Checks if a specific table has a given column (used for dynamic audit logic)
+ */
 function itm_audit_table_has_column($conn, $table, $column) {
     if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
         return false;
@@ -113,9 +141,7 @@ function itm_audit_table_has_column($conn, $table, $column) {
         return false;
     }
 
-    // NOTE:
-    // Older MySQL/MariaDB versions do not allow parameter placeholders in
-    // SHOW statements, so we query INFORMATION_SCHEMA instead.
+    // INFORMATION_SCHEMA is used for compatibility across MySQL/MariaDB versions
     $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -131,6 +157,9 @@ function itm_audit_table_has_column($conn, $table, $column) {
     return $exists;
 }
 
+/**
+ * Fetches a record by its primary key ID from any table
+ */
 function itm_fetch_audit_record_by_id($conn, $table, $record_id) {
     if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
         return null;
@@ -152,6 +181,11 @@ function itm_fetch_audit_record_by_id($conn, $table, $record_id) {
     return $row ?: null;
 }
 
+/**
+ * Parses an SQL query to extract the action, table, and record ID for auditing
+ * 
+ * Used for "intercepted" SQL queries that aren't using the standard CRUD helpers.
+ */
 function itm_parse_audit_sql($sql) {
     $sql = trim((string)$sql);
     if ($sql === '') {
@@ -169,10 +203,12 @@ function itm_parse_audit_sql($sql) {
         return null;
     }
 
+    // Avoid recursive auditing
     if ($meta['table'] === 'audit_logs') {
         return null;
     }
 
+    // Try to extract the ID from a simple WHERE clause
     if (preg_match('/\bWHERE\b[\s\S]*?\bid\s*=\s*(\d+)/i', $sql, $idMatch)) {
         $meta['record_id'] = (int)$idMatch[1];
     }

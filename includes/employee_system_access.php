@@ -1,5 +1,15 @@
 <?php
+/**
+ * Employee System Access Management Functions
+ * 
+ * Manages the permissions and system access levels for employees.
+ * Handles synchronization between legacy flat-table permissions and
+ * a modern normalized relation-based permissions system.
+ */
 
+/**
+ * Returns a map of standard access field codes to their human-readable labels
+ */
 function esa_ability_fields() {
     return [
         'network_access' => 'Network Access',
@@ -20,15 +30,28 @@ function esa_ability_fields() {
     ];
 }
 
+/**
+ * Safely escapes a database identifier (table or column name)
+ */
 function esa_escape_identifier($name) {
     return '`' . str_replace('`', '``', (string)$name) . '`';
 }
 
+/**
+ * Helper to get the current company ID from the session
+ */
 function esa_current_company_id() {
     return isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
 }
 
+/**
+ * Ensures all required tables for system access management exist
+ * 
+ * This function is called to "lazy-initialize" the database schema
+ * if it hasn't been set up yet.
+ */
 function esa_ensure_table($conn) {
+    // 1. Legacy flat table for backwards compatibility
     $legacySql = "CREATE TABLE IF NOT EXISTS `employee_system_access` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         `company_id` INT NOT NULL,
@@ -59,6 +82,7 @@ function esa_ensure_table($conn) {
         return false;
     }
 
+    // 2. Catalog of available systems/access types
     $catalogSql = "CREATE TABLE IF NOT EXISTS `system_access` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         `company_id` INT NOT NULL,
@@ -75,6 +99,7 @@ function esa_ensure_table($conn) {
         return false;
     }
 
+    // 3. Junction table for many-to-many employee-system relations
     $relationSql = "CREATE TABLE IF NOT EXISTS `employee_system_access_relations` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         `company_id` INT NOT NULL,
@@ -94,6 +119,7 @@ function esa_ensure_table($conn) {
         return false;
     }
 
+    // Seed default systems and sync data
     if (!esa_seed_system_access($conn)) {
         return false;
     }
@@ -105,6 +131,9 @@ function esa_ensure_table($conn) {
     return esa_sync_relations_from_legacy($conn);
 }
 
+/**
+ * Populates the system_access catalog with default entries for the current company
+ */
 function esa_seed_system_access($conn) {
     $companyId = esa_current_company_id();
     if ($companyId <= 0) {
@@ -128,7 +157,11 @@ function esa_seed_system_access($conn) {
     return mysqli_query($conn, $sql) !== false;
 }
 
+/**
+ * Migrates permission data from the 'employees' table to 'employee_system_access'
+ */
 function esa_sync_from_employees_legacy($conn) {
+    // Determine which columns actually exist in the employees table
     $employeeColumns = [];
     $columnsRes = mysqli_query($conn, 'SHOW COLUMNS FROM employees');
     while ($columnsRes && ($column = mysqli_fetch_assoc($columnsRes))) {
@@ -146,6 +179,7 @@ function esa_sync_from_employees_legacy($conn) {
         }
     }
 
+    // Perform bulk insertion of missing records
     $sql = 'INSERT INTO `employee_system_access` (`company_id`, `employee_id`, ' . implode(', ', array_map('esa_escape_identifier', array_keys($abilityFields))) . ') '
         . 'SELECT e.`company_id`, e.`id`, ' . implode(', ', $selectParts) . ' '
         . 'FROM `employees` e '
@@ -155,6 +189,9 @@ function esa_sync_from_employees_legacy($conn) {
     return mysqli_query($conn, $sql) !== false;
 }
 
+/**
+ * Migrates permissions from the legacy flat table to the normalized relations table
+ */
 function esa_sync_relations_from_legacy($conn) {
     $abilityFields = esa_ability_fields();
     $accessMap = esa_system_access_id_map($conn);
@@ -168,6 +205,7 @@ function esa_sync_relations_from_legacy($conn) {
             continue;
         }
         $fieldEsc = esa_escape_identifier($field);
+        // Build a UNION ALL query to transform columns into rows
         $selectParts[] = 'SELECT esa.`company_id`, esa.`employee_id`, ' . (int)$accessMap[$field] . ' AS `system_access_id` FROM `employee_system_access` esa WHERE esa.' . $fieldEsc . '=1';
     }
 
@@ -182,6 +220,9 @@ function esa_sync_relations_from_legacy($conn) {
     return mysqli_query($conn, $sql) !== false;
 }
 
+/**
+ * Returns a mapping of system codes to their database IDs for the current company
+ */
 function esa_system_access_id_map($conn) {
     $companyId = esa_current_company_id();
     $map = [];
@@ -195,6 +236,9 @@ function esa_system_access_id_map($conn) {
     return $map;
 }
 
+/**
+ * Retrieves the catalog of available systems for a specific company
+ */
 function esa_get_system_access_catalog($conn, $companyId, $includeInactive = false) {
     $companyId = (int)$companyId;
     $rows = [];
@@ -221,6 +265,9 @@ function esa_get_system_access_catalog($conn, $companyId, $includeInactive = fal
     return $rows;
 }
 
+/**
+ * Gets a list of system IDs that a specific employee has access to
+ */
 function esa_get_employee_access_ids($conn, $companyId, $employeeId) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
@@ -239,11 +286,17 @@ function esa_get_employee_access_ids($conn, $companyId, $employeeId) {
     return array_values(array_unique($ids));
 }
 
+/**
+ * Saves employee access permissions using system IDs
+ * 
+ * Synchronizes both the normalized relations table and the legacy flat table.
+ */
 function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAccessIds) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
     $systemAccessIds = is_array($systemAccessIds) ? $systemAccessIds : [];
 
+    // Filter and validate IDs
     $cleanIds = [];
     foreach ($systemAccessIds as $id) {
         $id = (int)$id;
@@ -253,6 +306,7 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
     }
     $cleanIds = array_keys($cleanIds);
 
+    // Verify provided IDs belong to the company
     $validAccessById = [];
     if (!empty($cleanIds)) {
         $idSql = implode(',', array_map('intval', $cleanIds));
@@ -267,10 +321,12 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
     }
 
     $ok = true;
+    // Clear existing relations
     if (!mysqli_query($conn, 'DELETE FROM `employee_system_access_relations` WHERE `company_id`=' . $companyId . ' AND `employee_id`=' . $employeeId)) {
         $ok = false;
     }
 
+    // Insert new relations
     if ($ok) {
         foreach ($validAccessById as $accessId => $code) {
             $insertSql = 'INSERT INTO `employee_system_access_relations` (`company_id`, `employee_id`, `system_access_id`, `granted`) VALUES ('
@@ -282,6 +338,7 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
         }
     }
 
+    // Update legacy flat table for compatibility
     if ($ok) {
         $legacyFields = esa_ability_fields();
         $normalized = [];
@@ -320,6 +377,11 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
     return false;
 }
 
+/**
+ * Gets the system access map for an employee
+ * 
+ * Attempts to read from normalized relations, falling back to legacy flat table.
+ */
 function esa_get_employee_access($conn, $companyId, $employeeId) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
@@ -330,6 +392,7 @@ function esa_get_employee_access($conn, $companyId, $employeeId) {
         $defaults[$field] = 0;
     }
 
+    // Attempt to read from the normalized relations table
     $sql = 'SELECT sa.`code` '
         . 'FROM `employee_system_access_relations` esar '
         . 'INNER JOIN `system_access` sa ON sa.`id` = esar.`system_access_id` '
@@ -349,6 +412,7 @@ function esa_get_employee_access($conn, $companyId, $employeeId) {
         return $defaults;
     }
 
+    // Fallback to legacy flat table if no relations exist
     $legacySql = 'SELECT * FROM `employee_system_access` WHERE `company_id`=' . $companyId . ' AND `employee_id`=' . $employeeId . ' LIMIT 1';
     $legacyRes = mysqli_query($conn, $legacySql);
     if ($legacyRes && mysqli_num_rows($legacyRes) === 1) {
@@ -361,12 +425,18 @@ function esa_get_employee_access($conn, $companyId, $employeeId) {
     return $defaults;
 }
 
+/**
+ * Saves employee access using a payload of system codes
+ * 
+ * Synchronizes both modern and legacy storage.
+ */
 function esa_save_employee_access($conn, $companyId, $employeeId, $payload) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
     $fields = esa_ability_fields();
     $normalized = [];
 
+    // Normalize payload to 1/0
     foreach (array_keys($fields) as $field) {
         $normalized[$field] = !empty($payload[$field]) ? 1 : 0;
     }
@@ -381,11 +451,13 @@ function esa_save_employee_access($conn, $companyId, $employeeId, $payload) {
     }
 
     $ok = true;
+    // Clear relations
     $deleteSql = 'DELETE FROM `employee_system_access_relations` WHERE `company_id`=' . $companyId . ' AND `employee_id`=' . $employeeId;
     if (!mysqli_query($conn, $deleteSql)) {
         $ok = false;
     }
 
+    // Insert new relations
     if ($ok) {
         foreach ($normalized as $field => $value) {
             if ((int)$value !== 1 || !isset($accessMap[$field])) {
@@ -400,6 +472,7 @@ function esa_save_employee_access($conn, $companyId, $employeeId, $payload) {
         }
     }
 
+    // Update legacy flat table
     if ($ok) {
         $columns = ['company_id', 'employee_id'];
         $values = [$companyId, $employeeId];

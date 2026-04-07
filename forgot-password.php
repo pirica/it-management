@@ -1,26 +1,38 @@
 <?php
+/**
+ * Forgot Password Page
+ * 
+ * Initiates the password reset process by generating a unique token
+ * and sending it to the user's email via the MailerLite API.
+ */
+
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    
     $email = trim($_POST['email'] ?? '');
+    // Generate a secure random reset token
     $token = bin2hex(random_bytes(20));
 
+    // Store the token for the user if the email exists
     $stmt = mysqli_prepare($conn, 'UPDATE users SET reset_token = ? WHERE email = ?');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ss', $token, $email);
         mysqli_stmt_execute($stmt);
 
+        // Only attempt to send email if an account was actually found and updated
         if (mysqli_stmt_affected_rows($stmt) > 0) {
             $link = BASE_URL . 'reset-password.php?token=' . urlencode($token);
             $payload = json_encode([
-                'from' => 'verified@yourdomain.com',
+                'from' => 'verified@yourdomain.com', // Replace with your verified sender
                 'to' => $email,
                 'subject' => 'Reset Your Password',
-                'html' => "Click here to reset: <a href='$link'>$link</a>",
+                'html' => "Click here to reset your IT Management System password: <a href='$link'>$link</a>",
             ]);
 
+            // Send the reset link using the configured MailerLite API
             $ch = curl_init(MAILERLITE_URL);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
@@ -37,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($stmt);
     }
 
+    // Always show the same message to prevent email enumeration
     $message = 'If your email exists, a reset link has been sent.';
 }
 ?>
@@ -80,6 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="links"><a href="login.php">Back to Login</a></div>
     </div>
     <script>
+        /**
+         * Toggle between light and dark themes
+         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');

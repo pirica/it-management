@@ -1,7 +1,15 @@
 <?php
+/**
+ * User Registration Page
+ * 
+ * Allows new users to create an account and select which companies they belong to.
+ * Automatically assigns default roles and access levels based on the primary company.
+ */
+
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
 
+// Fetch all active companies for the multi-select dropdown
 $companiesStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company');
 $companies = false;
 if ($companiesStmt) {
@@ -16,18 +24,23 @@ if ($companies) {
     }
 }
 
+// Handle registration form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $rawPassword = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     $selected_company_ids = $_POST['company_ids'] ?? [];
+    
+    // Normalize and sanitize selected company IDs
     if (!is_array($selected_company_ids)) {
         $selected_company_ids = [];
     }
     $selected_company_ids = array_values(array_unique(array_filter(array_map('intval', $selected_company_ids))));
 
+    // Basic validation
     if ($rawPassword === '' || $confirmPassword === '') {
         $error = 'Password and confirmation are required.';
     } elseif ($rawPassword !== $confirmPassword) {
@@ -35,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($selected_company_ids)) {
         $error = 'Please select at least one valid company.';
     } else {
+        // Verify that all selected companies are active and valid
         $placeholders = implode(',', array_fill(0, count($selected_company_ids), '?'));
         $types = str_repeat('i', count($selected_company_ids));
         $companyCheck = mysqli_prepare($conn, "SELECT id FROM companies WHERE active = 1 AND id IN ($placeholders)");
@@ -52,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_close($companyCheck);
         }
 
+        // Compare submitted IDs with valid IDs from the database
         sort($valid_company_ids);
         $submitted_ids = $selected_company_ids;
         sort($submitted_ids);
@@ -62,14 +77,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Proceed if there are no validation errors
     if (!isset($error)) {
         $password = password_hash($rawPassword, PASSWORD_DEFAULT);
         $primary_company_id = $selected_company_ids[0];
+        
+        // Insert new user into the database
+        // Assigns default "User" role and "Limited" access level for the primary company
         $stmt = mysqli_prepare($conn, 'INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, ?, (SELECT id FROM user_roles WHERE company_id = ? AND name = "User" LIMIT 1), (SELECT id FROM access_levels WHERE company_id = ? AND name = "Limited" LIMIT 1), 1)');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'isssii', $primary_company_id, $username, $email, $password, $primary_company_id, $primary_company_id);
             if (mysqli_stmt_execute($stmt)) {
                 $user_id = (int)mysqli_insert_id($conn);
+                
+                // Assign all selected companies to the new user in a transaction
                 mysqli_begin_transaction($conn);
                 $uc = mysqli_prepare($conn, 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (?, ?, NULL)');
                 if ($uc) {
@@ -82,10 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $insertedRows += mysqli_stmt_affected_rows($uc);
                     }
                     mysqli_stmt_close($uc);
+                    
                     if ($insertedRows === count($selected_company_ids)) {
                         mysqli_commit($conn);
                         $success = 'Registration successful! You can login now.';
                     } else {
+                        // Rollback and cleanup on partial failure
                         mysqli_rollback($conn);
                         $cleanup = mysqli_prepare($conn, 'DELETE FROM users WHERE id = ?');
                         if ($cleanup) {
@@ -113,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Preserve selected company IDs on form submission error
 $posted_company_ids = [];
 if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
     $posted_company_ids = array_map('intval', $_POST['company_ids']);
@@ -180,6 +204,9 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
         <div class="links"><a href="login.php">Back to Login</a></div>
     </div>
     <script>
+        /**
+         * Toggle between light and dark themes
+         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');

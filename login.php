@@ -1,13 +1,24 @@
 <?php
+/**
+ * User Login Page
+ * 
+ * Handles user authentication via email/username and password.
+ * Supports both hashed (secure) and plain text (legacy/temporary) password matching.
+ * Implements CSRF protection and role-based redirection.
+ */
+
 session_start();
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate CSRF token for all POST requests
     itm_require_post_csrf();
+    
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    // Search for an active user by email or username
     $stmt = mysqli_prepare(
         $conn,
         'SELECT id, password FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
@@ -21,6 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($stmt);
 
         $storedPassword = (string)($user['password'] ?? '');
+        
+        // Verify password against either hashed or plaintext stored values
+        // Note: Legacy support for plaintext passwords should be migrated to hashes
         $passwordMatches = $user && (
             password_verify($password, $storedPassword)
             || hash_equals($storedPassword, $password)
@@ -29,8 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($passwordMatches) {
             $userId = (int)$user['id'];
             $_SESSION['user_id'] = $userId;
+            
+            // Clear any previously stored company context to ensure a fresh selection
             unset($_SESSION['company_id'], $_SESSION['company_name']);
 
+            // Determine if the user is an admin
             $isAdmin = false;
             $adminStmt = mysqli_prepare(
                 $conn,
@@ -50,7 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $_SESSION['read_only_user_config'] = 0;
 
+            // Admin users bypass employee status checks and go straight to the dashboard
             if ($isAdmin) {
+                // Pre-select the first available company for admins for convenience
                 $companyStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company ASC LIMIT 1');
                 if ($companyStmt) {
                     mysqli_stmt_execute($companyStmt);
@@ -66,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
+            // Regular users must have an associated 'Active' employee record to gain full system access
             $statusStmt = mysqli_prepare(
                 $conn,
                 'SELECT 1
@@ -86,12 +106,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($statusStmt);
             }
 
+            // Users without an active employee record are restricted to the user-config page
             if (!$hasActiveEmployeeMatch) {
                 $_SESSION['read_only_user_config'] = 1;
                 header('Location: user-config.php');
                 exit();
             }
 
+            // Successfully authenticated regular user proceeds to company selection
             header('Location: index.php');
             exit();
         }
@@ -150,11 +172,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <script>
+        /**
+         * Toggle light/dark theme and persist choice to localStorage
+         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
             localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
         }
+        
+        // Load initial theme from storage
         document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
     </script>
 </body>

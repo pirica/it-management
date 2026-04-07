@@ -1,15 +1,25 @@
 <?php 
+/**
+ * Common Header Template
+ * 
+ * Included at the top of most pages. Renders the top navigation bar,
+ * handles common UI alerts (CRUD success/error), and injects global
+ * JavaScript configuration and dependencies.
+ */
+
 if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
 $csrfToken = itm_get_csrf_token();
 ?>
 <div class="header">
     <div>
         <h4 style="margin: 0; display: flex; gap: 10px; align-items: center;">
+            <!-- Mobile-friendly sidebar toggle -->
             <button type="button" id="sidebarToggleBtn" class="btn btn-sm sidebar-toggle-btn" title="Hide/Show Dashboard Menu" data-sidebar-bound="true">☰</button>
             ⚙️ <strong><?php echo sanitize($_SESSION['company_name'] ?? 'System'); ?></strong>
         </h4>
     </div>
     <div style="display: flex; gap: 15px; align-items: center;">
+        <!-- Global UI Action Buttons -->
         <button onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙</button>
         <form method="POST" action="<?php echo BASE_URL; ?>logout.php" style="display:inline; margin:0;">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -17,7 +27,9 @@ $csrfToken = itm_get_csrf_token();
         </form>
     </div>
 </div>
+
 <?php
+// Display one-time session-based notifications (Flash Messages)
 if (!empty($_SESSION['crud_error'])) {
     echo '<div class="crud_error">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
     unset($_SESSION['crud_error']);
@@ -28,26 +40,38 @@ if (!empty($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 ?>
+
+<!-- Load Theme Logic Early -->
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
 
-
 <script>
+/**
+ * Injects server-side configuration into the global window object for JS access
+ */
 window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 window.ITM_UI_CONFIG = <?php echo json_encode($ui_config ?? itm_ui_config_defaults()); ?>;
 </script>
+
+<!-- Global JS Library Dependencies -->
 <script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="<?php echo BASE_URL; ?>js/ui-layout.js"></script>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js"></script>
 
-
 <script>
+/**
+ * Global Delete Handler
+ * 
+ * Intercepts clicks on "delete" links and converts them into secure POST requests.
+ * This prevents accidental deletion via crawlers or direct GET requests.
+ */
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[href*="delete.php?id="]');
     if (!link) return;
     event.preventDefault();
 
+    // Browser-native confirmation before destructive action
     const ok = window.confirm(link.dataset.confirm || 'Are you sure you want to delete this record?');
     if (!ok) return;
 
@@ -59,6 +83,7 @@ document.addEventListener('click', function (event) {
         return;
     }
 
+    // Programmatically create and submit a POST form
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = target.pathname;
