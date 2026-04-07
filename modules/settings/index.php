@@ -60,10 +60,24 @@ $uiFieldOptions = [
 
 $sidebarStructure = itm_sidebar_structure();
 $equipmentTypeRows = [];
-$equipmentTypeRes = mysqli_query($conn, 'SELECT id, name FROM equipment_types ORDER BY name ASC');
-if ($equipmentTypeRes) {
-    while ($row = mysqli_fetch_assoc($equipmentTypeRes)) {
-        $equipmentTypeRows[] = $row;
+$hasEquipmentTypesCompanyId = itm_table_has_column($conn, 'equipment_types', 'company_id');
+if ($hasEquipmentTypesCompanyId && $company_id > 0) {
+    $equipmentTypeStmt = mysqli_prepare($conn, 'SELECT id, name FROM equipment_types WHERE company_id = ? ORDER BY name ASC');
+    if ($equipmentTypeStmt) {
+        mysqli_stmt_bind_param($equipmentTypeStmt, 'i', $company_id);
+        mysqli_stmt_execute($equipmentTypeStmt);
+        $equipmentTypeRes = mysqli_stmt_get_result($equipmentTypeStmt);
+        while ($equipmentTypeRes && ($row = mysqli_fetch_assoc($equipmentTypeRes))) {
+            $equipmentTypeRows[] = $row;
+        }
+        mysqli_stmt_close($equipmentTypeStmt);
+    }
+} else {
+    $equipmentTypeRes = mysqli_query($conn, 'SELECT id, name FROM equipment_types ORDER BY name ASC');
+    if ($equipmentTypeRes) {
+        while ($row = mysqli_fetch_assoc($equipmentTypeRes)) {
+            $equipmentTypeRows[] = $row;
+        }
     }
 }
 $recordsPerPageOptions = [
