@@ -681,7 +681,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     </a>
                                 </th>
                                 <?php if ($crud_table === 'cable_colors' && $field === 'hex_color'): ?>
-                                    <th>Swatch</th>
+                                    <th>Color</th>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                             <th>Actions</th>
