@@ -108,7 +108,18 @@ function itm_equipment_type_flag_field($typeName) {
         'pos' => 'is_pos',
     ];
 
-    return $map[$normalized] ?? '';
+    if (isset($map[$normalized])) {
+        return $map[$normalized];
+    }
+
+    if (substr($normalized, -1) === 's') {
+        $singular = rtrim($normalized, 's');
+        if (isset($map[$singular])) {
+            return $map[$singular];
+        }
+    }
+
+    return '';
 }
 
 /**
@@ -120,10 +131,7 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
         return false;
     }
 
-    $moduleName = itm_equipment_type_sidebar_item_id($typeName);
-    if ($moduleName === '') {
-        return false;
-    }
+    $moduleName = $flagField;
 
     $moduleTitleMap = [
         'is_workstation' => '💻 Is Workstation',
@@ -250,6 +258,13 @@ function itm_sidebar_structure($conn = null) {
                 continue;
             }
 
+            $equipmentTypeItemId = itm_equipment_type_flag_field($moduleName);
+            if ($equipmentTypeItemId !== ''
+                && ($equipmentTypeItemId !== $moduleName)
+                && (isset($existingItemIds[$equipmentTypeItemId]) || isset($moduleNames[$equipmentTypeItemId]))) {
+                continue;
+            }
+
             if (is_file($moduleDir . '/index.php')) {
                 $moduleNames[$moduleName] = true;
             }
@@ -263,7 +278,7 @@ function itm_sidebar_structure($conn = null) {
             while ($equipmentTypeRow = mysqli_fetch_assoc($equipmentTypeRes)) {
                 $typeName = (string)($equipmentTypeRow['name'] ?? '');
                 itm_ensure_equipment_type_module_scaffold($typeName);
-                $equipmentTypeModuleName = itm_equipment_type_sidebar_item_id($typeName);
+                $equipmentTypeModuleName = itm_equipment_type_flag_field($typeName);
                 if ($equipmentTypeModuleName !== '') {
                     $equipmentTypeModuleIndex = $modulesRoot . '/' . $equipmentTypeModuleName . '/index.php';
                     if (is_file($equipmentTypeModuleIndex) && !isset($existingItemIds[$equipmentTypeModuleName])) {
@@ -278,6 +293,13 @@ function itm_sidebar_structure($conn = null) {
             while ($tableRow = mysqli_fetch_array($tablesRes)) {
                 $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
                 if ($table === '' || isset($existingItemIds[$table])) {
+                    continue;
+                }
+
+                $potentialEquipmentTypeItemId = itm_equipment_type_flag_field($table);
+                if ($potentialEquipmentTypeItemId !== ''
+                    && ($potentialEquipmentTypeItemId !== $table)
+                    && (isset($existingItemIds[$potentialEquipmentTypeItemId]) || isset($moduleNames[$potentialEquipmentTypeItemId]))) {
                     continue;
                 }
 
