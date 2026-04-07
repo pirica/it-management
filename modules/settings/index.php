@@ -60,9 +60,24 @@ $uiFieldOptions = [
 
 $sidebarStructure = itm_sidebar_structure();
 $equipmentTypeRows = [];
+$equipmentTypeEmojiMap = [
+    'access_point' => '📶',
+    'cctv' => '🎥',
+    'firewall' => '🔥',
+    'phone' => '📞',
+    'port_patch_panel' => '➰',
+    'pos' => '🏧',
+    'printer' => '🖨️',
+    'router' => '🛜',
+    'server' => '🖥️',
+    'switch' => '🔀',
+    'workstation' => '💻',
+];
 $hasEquipmentTypesCompanyId = itm_table_has_column($conn, 'equipment_types', 'company_id');
+$hasEquipmentTypeEditEmoji = itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji');
+$equipmentTypeSelectFields = $hasEquipmentTypeEditEmoji ? 'id, name, field_edit_emoji' : 'id, name';
 if ($hasEquipmentTypesCompanyId && $company_id > 0) {
-    $equipmentTypeStmt = mysqli_prepare($conn, 'SELECT id, name FROM equipment_types WHERE company_id = ? ORDER BY name ASC');
+    $equipmentTypeStmt = mysqli_prepare($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types WHERE company_id = ? ORDER BY name ASC');
     if ($equipmentTypeStmt) {
         mysqli_stmt_bind_param($equipmentTypeStmt, 'i', $company_id);
         mysqli_stmt_execute($equipmentTypeStmt);
@@ -73,7 +88,7 @@ if ($hasEquipmentTypesCompanyId && $company_id > 0) {
         mysqli_stmt_close($equipmentTypeStmt);
     }
 } else {
-    $equipmentTypeRes = mysqli_query($conn, 'SELECT id, name FROM equipment_types ORDER BY name ASC');
+    $equipmentTypeRes = mysqli_query($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types ORDER BY name ASC');
     if ($equipmentTypeRes) {
         while ($row = mysqli_fetch_assoc($equipmentTypeRes)) {
             $equipmentTypeRows[] = $row;
@@ -476,13 +491,21 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                 </div>
                             </div>
                             <div>
-                                <h3 style="margin-top:0;">Equipment Type Sidebar</h3>
+                                <h3 style="margin-top:0;">Emoji Equipment Type Sidebar</h3>
                                 <?php if (empty($equipmentTypeRows)): ?>
                                     <p class="form-hint">No records found in equipment_types.</p>
                                 <?php else: ?>
+                                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                                        <button type="button" class="btn btn-sm" id="equipment-sidebar-select-all">Select All</button>
+                                        <button type="button" class="btn btn-sm" id="equipment-sidebar-remove-all">Remove All</button>
+                                    </div>
                                     <?php foreach ($equipmentTypeRows as $equipmentTypeRow): ?>
                                         <?php
                                         $typeName = (string)($equipmentTypeRow['name'] ?? '');
+                                        $normalizedTypeName = strtolower(trim(preg_replace('/[^a-z0-9]+/', '_', $typeName)));
+                                        $normalizedTypeName = trim($normalizedTypeName, '_');
+                                        $customEmoji = trim((string)($equipmentTypeRow['field_edit_emoji'] ?? ''));
+                                        $resolvedEmoji = $customEmoji !== '' ? $customEmoji : ($equipmentTypeEmojiMap[$normalizedTypeName] ?? '');
                                         $itemId = itm_equipment_type_sidebar_item_id($typeName);
                                         if ($itemId === '') {
                                             continue;
@@ -493,12 +516,13 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                             <label class="role-flag-option" for="equipment_type_<?php echo sanitize($itemId); ?>">
                                                 <input
                                                     type="checkbox"
+                                                    class="equipment-sidebar-toggle"
                                                     id="equipment_type_<?php echo sanitize($itemId); ?>"
                                                     name="equipment_sidebar_visibility[<?php echo sanitize($itemId); ?>]"
                                                     value="1"
                                                     <?php echo $isChecked ? 'checked' : ''; ?>
                                                 >
-                                                <span>Is <?php echo sanitize($typeName); ?></span>
+                                                <span><?php echo sanitize(trim($resolvedEmoji . ' Is ' . $typeName)); ?></span>
                                             </label>
                                         </div>
                                     <?php endforeach; ?>
@@ -667,6 +691,29 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
             ensureRecordsPerPageOption(normalized);
             recordsPerPageSelect.value = normalized;
             recordsPerPageSelect.dataset.previousValue = normalized;
+        });
+    }
+
+
+    const equipmentSelectAllButton = document.getElementById('equipment-sidebar-select-all');
+    const equipmentRemoveAllButton = document.getElementById('equipment-sidebar-remove-all');
+
+    function setEquipmentSidebarToggles(nextCheckedState) {
+        const toggles = form.querySelectorAll('.equipment-sidebar-toggle');
+        toggles.forEach((toggle) => {
+            toggle.checked = nextCheckedState;
+        });
+    }
+
+    if (equipmentSelectAllButton) {
+        equipmentSelectAllButton.addEventListener('click', () => {
+            setEquipmentSidebarToggles(true);
+        });
+    }
+
+    if (equipmentRemoveAllButton) {
+        equipmentRemoveAllButton.addEventListener('click', () => {
+            setEquipmentSidebarToggles(false);
         });
     }
 

@@ -523,6 +523,7 @@ CREATE TABLE `equipment_types` (
   `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `field_edit_emoji` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`company_id`,`name`),
@@ -532,18 +533,18 @@ CREATE TABLE `equipment_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_types`
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Server', 'SRV', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'Router', 'RTR', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Firewall', 'FW', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '6', 'Access Point', 'AP', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '7', 'Workstation', 'WS', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '8', 'POS', 'POS', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '9', 'Printer', 'PRN', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '10', 'Phone', 'PHONE', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '11', 'CCTV', 'CCCTV', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '12', 'Other', 'OTHER', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '2', 'Server', 'SRV', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '3', 'Router', 'RTR', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '4', 'Firewall', 'FW', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '6', 'Access Point', 'AP', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '7', 'Workstation', 'WS', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '8', 'POS', 'POS', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '9', 'Printer', 'PRN', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '10', 'Phone', 'PHONE', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '11', 'CCTV', 'CCCTV', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '12', 'Other', 'OTHER', NULL, '1');
 
 -- Table structure for `idf_links`
 DROP TABLE IF EXISTS `idf_links`;
@@ -1689,7 +1690,7 @@ INSERT INTO `equipment_fiber_count` (`company_id`, `name`) SELECT c.`id`, t.`nam
 INSERT INTO `equipment_poe` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_poe` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `equipment_rj45` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_rj45` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `equipment_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
-INSERT INTO `equipment_types` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `equipment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_types` (`company_id`, `name`, `code`, `field_edit_emoji`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`field_edit_emoji`, t.`active` FROM `equipment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `inventory_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `inventory_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `location_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `location_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `manufacturers` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `manufacturers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
