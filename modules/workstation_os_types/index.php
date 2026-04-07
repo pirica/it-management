@@ -1,4 +1,10 @@
 <?php
+/**
+ * Workstation OS Types - Main Entry Point
+ * 
+ * Provides a CRUD interface for managing operating system types 
+ * installed on workstations (e.g., Windows 10, Windows 11, macOS).
+ */
 $crud_table = 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'index';
@@ -10,14 +16,21 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
 
+// Ensure safe table configuration
 $crud_title = $crud_title ?? ucwords(str_replace('_', ' ', $crud_table));
 $crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
+/**
+ * Escapes SQL identifiers (table/column names).
+ */
 function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
+/**
+ * Retrieves column metadata for the table.
+ */
 function cr_table_columns($conn, $table) {
     $cols = [];
     $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -27,6 +40,9 @@ function cr_table_columns($conn, $table) {
     return $cols;
 }
 
+/**
+ * Maps foreign key constraints using information_schema.
+ */
 function cr_fk_map($conn, $table) {
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
@@ -42,6 +58,9 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
+/**
+ * Retrieves dropdown options for a foreign key field.
+ */
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
@@ -64,6 +83,9 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+/**
+ * Resolves the display label column for a related table.
+ */
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -83,12 +105,18 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+/**
+ * Filters out system columns for UI management.
+ */
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
         return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
     }));
 }
 
+/**
+ * Converts field names into readable labels.
+ */
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -125,6 +153,9 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+/**
+ * Custom renderer for cell values in the UI.
+ */
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -157,6 +188,9 @@ function cr_get_csrf_token() {
     return (string)$_SESSION['csrf_token'];
 }
 
+/**
+ * Validates CSRF tokens for security on POST.
+ */
 function cr_require_valid_csrf_token() {
     $token = (string)($_POST['csrf_token'] ?? '');
     $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
@@ -171,6 +205,9 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+/**
+ * Performs strict numeric validation based on MySQL column type.
+ */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -244,10 +281,12 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
+// Initialize paths and security
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Handle deletion logic
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
@@ -343,6 +382,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+// Handle Form Submissions (Create/Edit)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
@@ -466,6 +506,7 @@ if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
 
+// Initialize search conditions
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
@@ -488,6 +529,7 @@ $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
 
+// Handle Sorting and Pagination
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {

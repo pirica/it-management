@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation OS Types - Create Record
+ * 
+ * Interface for defining a new operating system type.
+ */
 $crud_table = 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'create';

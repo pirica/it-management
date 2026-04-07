@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation Office - Delete Handler
+ * 
+ * Processes the deletion of Office version records.
+ */
 $crud_table = 'workstation_office';
 $crud_title = 'Workstation Office';
 $crud_action = 'delete';

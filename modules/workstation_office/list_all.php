@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation Office - List Summary
+ * 
+ * Lists all defined Office versions.
+ */
 $crud_table = 'workstation_office';
 $crud_title = 'Workstation Office';
 $crud_action = 'list_all';

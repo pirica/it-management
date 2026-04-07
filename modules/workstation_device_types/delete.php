@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation Device Types - Delete Handler
+ * 
+ * Processes the deletion of workstation device type records.
+ */
 $crud_table = 'workstation_device_types';
 $crud_title = 'Workstation Device Types';
 $crud_action = 'delete';

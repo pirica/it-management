@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation OS Types - Delete Handler
+ * 
+ * Processes deletion requests for workstation OS type records.
+ */
 $crud_table = 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'delete';

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation Office - View Details
+ * 
+ * Read-only detailed view of an Office version record.
+ */
 $crud_table = 'workstation_office';
 $crud_title = 'Workstation Office';
 $crud_action = 'view';

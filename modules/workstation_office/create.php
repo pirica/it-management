@@ -1,4 +1,9 @@
 <?php
+/**
+ * Workstation Office - Create Record
+ * 
+ * Interface for adding a new Office version to the system.
+ */
 $crud_table = 'workstation_office';
 $crud_title = 'Workstation Office';
 $crud_action = 'create';
