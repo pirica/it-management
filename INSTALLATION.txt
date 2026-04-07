@@ -48,6 +48,17 @@ IT MANAGEMENT SYSTEM - INSTALLATION GUIDE
    - Ensure equipment/ folder is writable
    - Clear browser cache if theme not working
    - Check PHP error logs
+   - For HTTP 500 on multiple pages, run this deployment check sequence:
+     a) Validate syntax for all PHP files:
+        * find . -name "*.php" -print0 | xargs -0 -n1 php -l
+     b) Confirm database.sql matches GitHub main:
+        * curl -L https://raw.githubusercontent.com/pirica/it-management/main/database.sql -o /tmp/database.remote.sql
+        * diff -u /tmp/database.remote.sql database.sql
+     c) Confirm deployed code matches GitHub main:
+        * git fetch https://github.com/pirica/it-management.git main --depth=1
+        * git diff --name-status FETCH_HEAD..HEAD
+     d) If code is up to date but pages still fail, re-import database.sql (or run the missing table/column migrations)
+        because several modules expect the latest schema.
 
 8. SUPPORT
    - All files are self-contained
