@@ -77,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     emp_drop_email_unique_if_exists($conn);
 
     foreach ($form as $key => $default) {
-        if ($key === 'active') { $form[$key] = isset($_POST[$key]) ? '1' : '0'; }
-        else { $form[$key] = trim((string)($_POST[$key] ?? '')); }
+        if ($key === 'active') { continue; }
+        $form[$key] = trim((string)($_POST[$key] ?? ''));
     }
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
 
@@ -207,7 +207,6 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <span><?php echo sanitize($accessName); ?></span>
                             </label>
                         <?php endforeach; ?>
-                        <label class="role-flag-option"><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> <span>Active</span></label>
                     </div>
 
                     <div class="form-actions" style="margin-top:16px;display:flex;gap:8px;">
