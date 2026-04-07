@@ -281,13 +281,6 @@ function itm_sidebar_structure($conn = null) {
                     continue;
                 }
 
-                $potentialEquipmentTypeItemId = itm_equipment_type_sidebar_item_id($table);
-                if ($potentialEquipmentTypeItemId !== ''
-                    && ($potentialEquipmentTypeItemId !== $table)
-                    && (isset($existingItemIds[$potentialEquipmentTypeItemId]) || isset($moduleNames[$potentialEquipmentTypeItemId]))) {
-                    continue;
-                }
-
                 $moduleIndex = $modulesRoot . '/' . $table . '/index.php';
                 if (!is_file($moduleIndex)) {
                     itm_auto_create_module_scaffold($table);
