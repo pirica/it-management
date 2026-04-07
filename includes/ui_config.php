@@ -93,6 +93,84 @@ function itm_sidebar_humanize_table_name($tableName) {
 }
 
 /**
+ * Maps known equipment type names to equipment flag fields.
+ */
+function itm_equipment_type_flag_field($typeName) {
+    $normalized = strtolower(trim((string)$typeName));
+    $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized);
+    $normalized = trim((string)$normalized, '_');
+
+    $map = [
+        'workstation' => 'is_workstation',
+        'server' => 'is_server',
+        'switch' => 'is_switch',
+        'printer' => 'is_printer',
+        'pos' => 'is_pos',
+    ];
+
+    return $map[$normalized] ?? '';
+}
+
+/**
+ * Creates module wrappers that delegate to equipment/index.php for known types.
+ */
+function itm_ensure_equipment_type_module_scaffold($typeName) {
+    $flagField = itm_equipment_type_flag_field($typeName);
+    if ($flagField === '') {
+        return false;
+    }
+
+    $moduleName = itm_equipment_type_sidebar_item_id($typeName);
+    if ($moduleName === '') {
+        return false;
+    }
+
+    $moduleTitleMap = [
+        'workstations' => '💻 Workstations',
+        'servers' => '🖥️ Servers',
+        'switches' => '🔀 Switches',
+        'printers' => '🖨️ Printers',
+        'pos' => '🏧 POS',
+    ];
+    $searchPlaceholderMap = [
+        'is_workstation' => 'Use SQL wildcards, e.g. %%desk%%',
+        'is_server' => 'Use SQL wildcards, e.g. %%srv%%',
+        'is_switch' => 'Use SQL wildcards, e.g. %%sw%%',
+        'is_printer' => 'Use SQL wildcards, e.g. %%print%%',
+        'is_pos' => 'Use SQL wildcards, e.g. %%pos%%',
+    ];
+
+    $moduleTitle = $moduleTitleMap[$moduleName] ?? ('🖥️ ' . itm_sidebar_humanize_table_name($moduleName));
+    $searchPlaceholder = $searchPlaceholderMap[$flagField] ?? 'Use SQL wildcards, e.g. %%asset%%';
+
+    $modulesRoot = dirname(__DIR__) . '/modules';
+    $moduleDir = $modulesRoot . '/' . $moduleName;
+    $indexPath = $moduleDir . '/index.php';
+
+    if (!is_dir($moduleDir) && !mkdir($moduleDir, 0775, true) && !is_dir($moduleDir)) {
+        return false;
+    }
+
+    if (is_file($indexPath)) {
+        return true;
+    }
+
+    $content = "<?php\n";
+    $content .= '$equipmentModuleTitle = ' . var_export($moduleTitle, true) . ";\n";
+    $content .= '$equipmentFlagField = ' . var_export($flagField, true) . ";\n";
+    $content .= '$equipmentSearchPlaceholder = ' . var_export($searchPlaceholder, true) . ";\n";
+    $content .= '$equipmentModuleBasePath = ' . var_export('../equipment/', true) . ";\n";
+    $content .= '$equipmentViewPath = ' . var_export('', true) . ";\n";
+    $content .= '$equipmentEditPath = ' . var_export('../equipment/', true) . ";\n";
+    $content .= '$equipmentAllowCreate = false;' . "\n";
+    $content .= '$equipmentAllowDelete = false;' . "\n";
+    $content .= '$equipmentAllowImport = false;' . "\n";
+    $content .= "require '../equipment/index.php';\n";
+
+    return file_put_contents($indexPath, $content) !== false;
+}
+
+/**
  * Automatically creates a new module directory and CRUD files
  * 
  * Uses the 'manufacturers' module as a template for new database tables
@@ -180,6 +258,14 @@ function itm_sidebar_structure($conn = null) {
 
     // Discover modules by scanning database tables and auto-scaffolding if needed
     if ($conn) {
+        $equipmentTypeRes = mysqli_query($conn, 'SELECT name FROM equipment_types');
+        if ($equipmentTypeRes) {
+            while ($equipmentTypeRow = mysqli_fetch_assoc($equipmentTypeRes)) {
+                $typeName = (string)($equipmentTypeRow['name'] ?? '');
+                itm_ensure_equipment_type_module_scaffold($typeName);
+            }
+        }
+
         $tablesRes = mysqli_query($conn, 'SHOW TABLES');
         if ($tablesRes) {
             while ($tableRow = mysqli_fetch_array($tablesRes)) {
@@ -324,10 +410,29 @@ function itm_ui_config_defaults() {
         'enable_all_error_reporting' => 1,
         'enable_audit_logs' => 1,
         'records_per_page' => '25',
+        'equipment_type_sidebar_visibility' => [],
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
     ];
+}
+
+/**
+ * Builds a deterministic sidebar item id from an equipment type name.
+ */
+function itm_equipment_type_sidebar_item_id($typeName) {
+    $normalized = strtolower(trim((string)$typeName));
+    $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized);
+    $normalized = trim((string)$normalized, '_');
+    if ($normalized === '') {
+        return '';
+    }
+
+    if (substr($normalized, -1) !== 's') {
+        $normalized .= 's';
+    }
+
+    return $normalized;
 }
 
 /**
@@ -367,6 +472,7 @@ function itm_ensure_ui_configuration_table($conn) {
         `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1,
         `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25',
+        `equipment_type_sidebar_visibility` LONGTEXT NULL,
         `sidebar_visibility` LONGTEXT NULL,
         `sidebar_main_order` LONGTEXT NULL,
         `sidebar_submenu_order` LONGTEXT NULL,
@@ -385,6 +491,7 @@ function itm_ensure_ui_configuration_table($conn) {
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_audit_logs`",
+        'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `records_per_page`",
         'sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_visibility` LONGTEXT NULL AFTER `back_save_position`",
         'sidebar_main_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_main_order` LONGTEXT NULL AFTER `sidebar_visibility`",
         'sidebar_submenu_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_submenu_order` LONGTEXT NULL AFTER `sidebar_main_order`",
@@ -437,7 +544,7 @@ function itm_get_ui_configuration($conn, $company_id) {
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -491,6 +598,7 @@ function itm_normalize_ui_configuration($values) {
     $values['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($values['sidebar_submenu_order'] ?? null);
     $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
     $values['enable_audit_logs'] = itm_normalize_flag($values['enable_audit_logs'] ?? $defaults['enable_audit_logs']);
+    $values['equipment_type_sidebar_visibility'] = itm_normalize_equipment_type_sidebar_visibility($values['equipment_type_sidebar_visibility'] ?? []);
 
     // Validate records per page
     $recordsPerPage = strtolower((string)($values['records_per_page'] ?? $defaults['records_per_page']));
@@ -503,6 +611,30 @@ function itm_normalize_ui_configuration($values) {
     }
 
     return $values;
+}
+
+/**
+ * Normalizes equipment type -> visibility mapping.
+ */
+function itm_normalize_equipment_type_sidebar_visibility($raw) {
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($raw as $itemId => $visible) {
+        $safeId = trim((string)$itemId);
+        if ($safeId === '') {
+            continue;
+        }
+        $normalized[$safeId] = ((string)$visible === '0' || $visible === 0 || $visible === false) ? 0 : 1;
+    }
+
+    return $normalized;
 }
 
 /**
@@ -625,8 +757,8 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -635,6 +767,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
                 enable_all_error_reporting = VALUES(enable_all_error_reporting),
                 enable_audit_logs = VALUES(enable_audit_logs),
                 records_per_page = VALUES(records_per_page),
+                equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility),
                 sidebar_visibility = VALUES(sidebar_visibility),
                 sidebar_main_order = VALUES(sidebar_main_order),
                 sidebar_submenu_order = VALUES(sidebar_submenu_order)';
@@ -647,10 +780,11 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
     $sidebarVisibility = json_encode($config['sidebar_visibility']);
     $sidebarMainOrder = json_encode($config['sidebar_main_order']);
     $sidebarSubmenuOrder = json_encode($config['sidebar_submenu_order']);
+    $equipmentTypeSidebarVisibility = json_encode($config['equipment_type_sidebar_visibility']);
 
     mysqli_stmt_bind_param(
         $stmt,
-        'issssiissss',
+        'issssiisssss',
         $company_id,
         $config['table_actions_position'],
         $config['new_button_position'],
@@ -659,6 +793,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
         $config['enable_all_error_reporting'],
         $config['enable_audit_logs'],
         $config['records_per_page'],
+        $equipmentTypeSidebarVisibility,
         $sidebarVisibility,
         $sidebarMainOrder,
         $sidebarSubmenuOrder
