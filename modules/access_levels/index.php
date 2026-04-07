@@ -1,4 +1,11 @@
 <?php
+/**
+ * Access Levels Module - Index
+ * 
+ * Main list view for access levels. Users can view, create, edit, and delete
+ * access levels defined for the company.
+ */
+
 $crud_table = 'access_levels';
 $crud_title = 'Access Levels';
 $crud_action = 'index';
@@ -6,6 +13,7 @@ $crud_action = 'index';
 <?php
 require '../../config/config.php';
 
+// Validate table configuration to prevent unauthorized access to other tables
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
@@ -14,10 +22,16 @@ $crud_title = $crud_title ?? ucwords(str_replace('_', ' ', $crud_table));
 $crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
+/**
+ * Escapes a database identifier (table or column name)
+ */
 function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
+/**
+ * Fetches column metadata for the current table using DESCRIBE
+ */
 function cr_table_columns($conn, $table) {
     $cols = [];
     $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -27,6 +41,9 @@ function cr_table_columns($conn, $table) {
     return $cols;
 }
 
+/**
+ * Maps foreign key columns to their referenced tables using INFORMATION_SCHEMA
+ */
 function cr_fk_map($conn, $table) {
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
@@ -42,6 +59,9 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
+/**
+ * Fetches available options for a foreign key dropdown, scoped by company if applicable
+ */
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
@@ -64,6 +84,9 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+/**
+ * Detects metadata (like label column) for a referenced table
+ */
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -71,6 +94,7 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
+    // Preferred label columns in order of priority
     foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
@@ -83,12 +107,18 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+/**
+ * Filters out system-managed columns from the list of manageable fields
+ */
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
         return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
     }));
 }
 
+/**
+ * Converts a database field name into a human-readable label with overrides
+ */
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -116,6 +146,9 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
+/**
+ * Checks if a field should be hidden specifically in the employee module view
+ */
 function cr_is_hidden_employee_field($field) {
     if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
         return false;
@@ -125,6 +158,9 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+/**
+ * Renders a specific table cell value with formatting based on field type/module
+ */
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -171,6 +207,9 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+/**
+ * Validates and normalizes numeric input for database safety and range compliance
+ */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -233,6 +272,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+// Module initialization: load columns and foreign key maps
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -248,6 +288,7 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Handle deletion requests (bulk or single)
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
@@ -263,6 +304,7 @@ if ($crud_action === 'delete') {
     $dbErrorMessage = '';
 
     if ($bulkAction === 'clear_table') {
+        // Truncate the table within the company scope
         $where = '';
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
@@ -276,6 +318,7 @@ if ($crud_action === 'delete') {
     }
 
     if ($bulkAction === 'bulk_delete') {
+        // Delete selected multiple records
         $ids = $_POST['ids'] ?? [];
         if (!is_array($ids)) {
             $ids = [];
@@ -304,6 +347,7 @@ if ($crud_action === 'delete') {
         exit;
     }
 
+    // Delete a single record
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
@@ -331,6 +375,7 @@ foreach ($fieldColumns as $col) {
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
+// Fetch record details for Edit or View pages
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
     if ($hasCompany && $company_id > 0) {
@@ -343,22 +388,26 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+// Handle record submission (Create or Edit)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        // Normalize boolean flags from checkboxes
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
 
+        // Automatically assign company ID
         if ($name === 'company_id' && $company_id > 0) {
             $data[$name] = (int)$company_id;
             continue;
         }
 
+        // Special handling for foreign key inline creation
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
             $newKey = $name . '__new_value';
@@ -371,6 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
 
             if ($value === '__new__' && $newValueRaw !== '') {
+                // If a new value was typed into the dropdown, create it first
                 $fk = $fkMap[$name];
                 $fkTable = $fk['REFERENCED_TABLE_NAME'];
                 $fkCol = $fk['REFERENCED_COLUMN_NAME'];
@@ -411,6 +461,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         }
 
+        // Sanitize regular field values
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
@@ -428,6 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
+    // Build and execute the dynamic query
     if (empty($errors)) {
         if ($crud_action === 'create') {
             $fields = [];
@@ -461,17 +513,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
+// BUILD THE MAIN LIST DATA QUERY
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
 
+// Handle global text search across all columns
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($displayFieldColumns as $col) {
+    foreach ($fieldColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') {
             continue;
@@ -484,6 +538,7 @@ if ($searchRaw !== '') {
     }
 }
 
+// Handle sorting
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $fieldColumns);
@@ -498,6 +553,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
+// Pagination logic
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
 $totalRows = 0;
@@ -514,6 +570,7 @@ if ($page > $totalPages) {
 }
 $offset = ($page - 1) * $perPage;
 
+// Final data fetch
 $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: ('🧩 ' . $crud_title);
 ?>
@@ -536,6 +593,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
             <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
+                <!-- DATA LIST VIEW -->
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <a href="create.php" class="btn btn-primary">➕</a>
@@ -639,6 +697,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                 <?php endif; ?>
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
+                <!-- DATA ENTRY FORM VIEW -->
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -698,6 +757,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                 </form>
 
             <?php elseif ($crud_action === 'view'): ?>
+                <!-- DETAILED RECORD VIEW -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
                 <div class="card">
                     <table>
@@ -717,6 +777,9 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
     </div>
 </div>
 <script>
+/**
+ * Bulk Action and Row Selection Script
+ */
 (function () {
     const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
     const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
@@ -780,6 +843,9 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 <script src="../../js/select-add-option.js"></script>
 
 <script>
+/**
+ * Global UI Event Listeners
+ */
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[data-outlook-link="1"]');
     if (!link) return;

@@ -1,6 +1,16 @@
 <?php
+/**
+ * Companies Module - Index
+ * 
+ * Provides a management interface for all companies in the system.
+ * Includes search, sorting, and status badges.
+ */
+
 require '../../config/config.php';
 
+/**
+ * Helper to build a clean query string for sorting and filtering
+ */
 function companies_build_query($params) {
     $normalized = [];
     foreach ($params as $key => $value) {
@@ -13,6 +23,7 @@ function companies_build_query($params) {
     return http_build_query($normalized);
 }
 
+// Extraction of filtering and sorting parameters
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $sortableColumns = ['id', 'company', 'incode', 'city', 'country', 'phone', 'active'];
 $sort = (string)($_GET['sort'] ?? 'id');
@@ -24,6 +35,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
 
+// Construction of the SQL WHERE clause for search
 $whereSql = ' WHERE id > 0';
 $params = [];
 $types = '';
@@ -34,8 +46,11 @@ if ($searchRaw !== '') {
     $types = 'sssssss';
 }
 
+// Build the final sort SQL
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+
+// Execute the secure prepared query
 $sql = 'SELECT * FROM companies' . $whereSql . ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage;
 $stmt = mysqli_prepare($conn, $sql);
 $rows = null;
@@ -50,6 +65,8 @@ if ($stmt) {
 $csrfToken = itm_get_csrf_token();
 $error = (string)($_SESSION['crud_error'] ?? '');
 unset($_SESSION['crud_error']);
+
+// Resolve UI layout preferences
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
@@ -69,6 +86,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <!-- Header with dynamic Add button positioning -->
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <a href="create.php" class="btn btn-primary">➕</a>
@@ -87,6 +105,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
 
+            <!-- Search Filter Bar -->
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;">
                     <div class="form-group" style="margin:0;flex:1;">
@@ -98,6 +117,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </form>
             </div>
 
+            <!-- Companies Data Table -->
             <div class="card">
                 <table>
                     <thead>

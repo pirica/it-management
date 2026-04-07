@@ -1,4 +1,10 @@
 <?php
+/**
+ * Access Levels Module - Create
+ * 
+ * Provides the interface and logic for adding new access levels to the system.
+ */
+
 $crud_table = 'access_levels';
 $crud_title = 'Access Levels';
 $crud_action = 'create';
@@ -6,18 +12,24 @@ $crud_action = 'create';
 <?php
 require '../../config/config.php';
 
+// Ensure the module is configured correctly
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
 
 $crud_title = $crud_title ?? ucwords(str_replace('_', ' ', $crud_table));
-$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
+/**
+ * Escapes database identifiers
+ */
 function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
+/**
+ * Retrieves table columns from schema
+ */
 function cr_table_columns($conn, $table) {
     $cols = [];
     $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -27,6 +39,9 @@ function cr_table_columns($conn, $table) {
     return $cols;
 }
 
+/**
+ * Maps foreign keys for the current table
+ */
 function cr_fk_map($conn, $table) {
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
@@ -42,6 +57,9 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
+/**
+ * Fetches data for foreign key select boxes
+ */
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
@@ -64,6 +82,9 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+/**
+ * Helper to determine which column to use for display label
+ */
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -83,12 +104,18 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+/**
+ * Filters system-managed columns
+ */
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
         return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
     }));
 }
 
+/**
+ * Humanizes field names for display
+ */
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -116,6 +143,9 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
+/**
+ * Specific field visibility for employees module
+ */
 function cr_is_hidden_employee_field($field) {
     if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
         return false;
@@ -125,6 +155,9 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+/**
+ * Standardized cell rendering
+ */
 function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
@@ -166,6 +199,9 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+/**
+ * Performs strict validation on numeric input
+ */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -228,6 +264,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+// Module initialization
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -243,6 +280,7 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Handle deletion logic
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
@@ -284,6 +322,7 @@ foreach ($fieldColumns as $col) {
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
+// Fetch data for Edit or View actions
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
     if ($hasCompany && $company_id > 0) {
@@ -296,6 +335,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+// Process data entry and updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
@@ -312,6 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             continue;
         }
 
+        // Inline FK creation handling
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
             $newKey = $name . '__new_value';
@@ -364,6 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         }
 
+        // Sanitize regular inputs
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
@@ -381,6 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
+    // Build and run the SQL statement
     if (empty($errors)) {
         if ($crud_action === 'create') {
             $fields = [];
@@ -414,6 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
+// Prepare main list view query
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
@@ -586,6 +630,9 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 <script src="../../js/select-add-option.js"></script>
 
 <script>
+/**
+ * Interactive UI components for the form
+ */
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[data-outlook-link="1"]');
     if (!link) return;

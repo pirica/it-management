@@ -1,4 +1,11 @@
 <?php
+/**
+ * Cable Colors Module - Index
+ * 
+ * Manages the catalog of cable colors used for patch cables and wiring.
+ * Includes specialized rendering for color swatches based on hex values.
+ */
+
 $crud_table = 'cable_colors';
 $crud_title = 'Cable Colors';
 $crud_action = 'index';
@@ -14,10 +21,16 @@ $crud_title = $crud_title ?? ucwords(str_replace('_', ' ', $crud_table));
 $crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
+/**
+ * Escapes database identifiers
+ */
 function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
+/**
+ * Fetches column metadata
+ */
 function cr_table_columns($conn, $table) {
     $cols = [];
     $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -27,6 +40,9 @@ function cr_table_columns($conn, $table) {
     return $cols;
 }
 
+/**
+ * Maps foreign key relations
+ */
 function cr_fk_map($conn, $table) {
     $tableEsc = mysqli_real_escape_string($conn, $table);
     $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
@@ -42,6 +58,9 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
+/**
+ * Fetches data for FK dropdowns
+ */
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
@@ -64,6 +83,9 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+/**
+ * Detects metadata for referenced tables
+ */
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -83,12 +105,18 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+/**
+ * Filters manageable columns
+ */
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
         return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
     }));
 }
 
+/**
+ * Humanizes database field names
+ */
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -116,6 +144,9 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
+/**
+ * Special field hiding for employees
+ */
 function cr_is_hidden_employee_field($field) {
     if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
         return false;
@@ -125,6 +156,9 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+/**
+ * Validates if a string is a valid CSS Hex Color
+ */
 function cr_is_safe_color_value($value) {
     $color = trim((string)$value);
     if ($color === '') {
@@ -134,6 +168,9 @@ function cr_is_safe_color_value($value) {
     return (bool)preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
 }
 
+/**
+ * Renders a small color preview box
+ */
 function cr_render_color_swatch($value) {
     $color = trim((string)$value);
     if (!cr_is_safe_color_value($color)) {
@@ -143,7 +180,9 @@ function cr_render_color_swatch($value) {
     return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
 }
 
-
+/**
+ * Resolves the source value for the color swatch
+ */
 function cr_cable_color_swatch_source($row) {
     if (!is_array($row)) {
         return '';
@@ -157,6 +196,9 @@ function cr_cable_color_swatch_source($row) {
     return (string)($row['color'] ?? '');
 }
 
+/**
+ * Standard cell renderer
+ */
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -203,6 +245,9 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
+/**
+ * Numerical validation logic
+ */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -265,6 +310,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+// Initialization
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -276,6 +322,7 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
+// Special visibility filter for cable colors: hide company_id from the list if desired
 $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !(($GLOBALS['crud_table'] ?? '') === 'cable_colors' && $col['Field'] === 'company_id');
 }));
@@ -284,6 +331,7 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Deletion logic
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
@@ -367,6 +415,7 @@ foreach ($fieldColumns as $col) {
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
+// Fetch record
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
     if ($hasCompany && $company_id > 0) {
@@ -379,6 +428,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+// Submission handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
@@ -497,6 +547,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
+// Data fetch for list
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
@@ -761,6 +812,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     </div>
 </div>
 <script>
+/**
+ * Sidebar and UI utility initialization
+ */
 (function () {
     const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
     const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
@@ -824,6 +878,9 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 <script src="../../js/select-add-option.js"></script>
 
 <script>
+/**
+ * Event delegation for UI controls
+ */
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[data-outlook-link="1"]');
     if (!link) return;

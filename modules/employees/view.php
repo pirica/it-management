@@ -1,4 +1,12 @@
 <?php
+/**
+ * Employees Module - View
+ * 
+ * Provides a detailed, read-only view of an employee's profile.
+ * Displays all assigned attributes and includes a summary of their
+ * system access permissions.
+ */
+
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
 esa_ensure_table($conn);
@@ -9,6 +17,7 @@ if ($id <= 0) {
     exit;
 }
 
+// Fetch employee with joined labels for department and status
 $sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name
         FROM employees e
         LEFT JOIN departments d ON d.id = e.department_id
@@ -22,6 +31,7 @@ $employee = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : n
 $booleanFields = ['active', 'duplicate'];
 $hiddenFields = ['company_id', 'user_id', 'location_id', 'phone', 'location'];
 
+// Fetch a list of all systems this employee currently has access to
 $systemAccessNames = [];
 if ($employee) {
     $saSql = 'SELECT sa.name FROM employee_system_access_relations esar '
@@ -31,12 +41,13 @@ if ($employee) {
     $saRes = mysqli_query($conn, $saSql);
     while ($saRes && ($saRow = mysqli_fetch_assoc($saRes))) {
         $name = trim((string)($saRow['name'] ?? ''));
-        if ($name !== '') {
-            $systemAccessNames[] = $name;
-        }
+        if ($name !== '') { $systemAccessNames[] = $name; }
     }
 }
 
+/**
+ * Humanizes field labels for the employee view
+ */
 function emp_label($field) {
     $map = [
         'raw_status_code' => 'Raw Status',
@@ -77,6 +88,7 @@ function emp_label($field) {
                         <?php foreach ($employee as $field => $value): ?>
                             <?php if (in_array($field, $hiddenFields, true)) { continue; } ?>
                             <?php
+                                // Handle display logic based on field type
                                 if (in_array($field, $booleanFields, true)) {
                                     $display = ((int)$value === 1) ? '✅' : '❌';
                                 } elseif ($field === 'email' && (string)$value !== '') {
@@ -91,6 +103,8 @@ function emp_label($field) {
                                 <td><?php echo $display === '' ? '-' : $display; ?></td>
                             </tr>
                         <?php endforeach; ?>
+                        
+                        <!-- RENDER AGGREGATED SYSTEM ACCESS LIST -->
                         <tr>
                             <th style="width:260px;">System Access</th>
                             <td>
@@ -108,7 +122,7 @@ function emp_label($field) {
                 <div style="display:flex;gap:10px;margin-top:20px;">
                     <a href="index.php" class="btn">Back</a>
                     <?php if ($employee): ?>
-                        <a href="edit.php?id=<?php echo (int)$employee['id']; ?>" class="btn btn-primary">✏️ Edit</a>
+                        <a href="edit.php?id=<?php echo (int)$employee['id']; ?>" class="btn btn-primary">✏️</a>
                     <?php endif; ?>
                 </div>
             </div>

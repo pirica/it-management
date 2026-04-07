@@ -1,7 +1,17 @@
 <?php
+/**
+ * Employees Module - Edit
+ * 
+ * Provides an interface to update an existing employee's information.
+ * Manages profile data, department/status assignments, and granular system permissions.
+ */
+
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
 
+/**
+ * Ensures unique constraints don't block manual updates when duplicates are allowed in the UI
+ */
 function emp_drop_email_unique_if_exists($conn) {
     $legacyUniqueIndexes = [
         'uq_employees_email_per_company',
@@ -9,12 +19,7 @@ function emp_drop_email_unique_if_exists($conn) {
     ];
 
     foreach ($legacyUniqueIndexes as $indexName) {
-        $sql = "SELECT 1
-                FROM information_schema.statistics
-                WHERE table_schema = DATABASE()
-                  AND table_name = 'employees'
-                  AND index_name = '" . mysqli_real_escape_string($conn, $indexName) . "'
-                LIMIT 1";
+        $sql = "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'employees' AND index_name = '" . mysqli_real_escape_string($conn, $indexName) . "' LIMIT 1";
         $res = mysqli_query($conn, $sql);
         if ($res && mysqli_num_rows($res) === 1) {
             mysqli_query($conn, 'ALTER TABLE employees DROP INDEX `' . str_replace('`', '``', $indexName) . '`');
@@ -22,12 +27,14 @@ function emp_drop_email_unique_if_exists($conn) {
     }
 }
 
+// Validate ID
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 if ($id <= 0) {
     header('Location: index.php');
     exit;
 }
 
+// Load existing employee record
 $employeeSql = 'SELECT * FROM employees WHERE id=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
 $employeeRes = mysqli_query($conn, $employeeSql);
 $employee = ($employeeRes && mysqli_num_rows($employeeRes) === 1) ? mysqli_fetch_assoc($employeeRes) : null;
@@ -36,6 +43,7 @@ if (!$employee) {
     exit;
 }
 
+// Load reference data
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 esa_ensure_table($conn);
@@ -60,30 +68,24 @@ $form = [
     'active' => ((int)($employee['active'] ?? 1) === 1) ? '1' : '0',
 ];
 
+// Load current permission IDs
 $selectedSystemAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, $id);
 
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
     emp_drop_email_unique_if_exists($conn);
 
     foreach ($form as $key => $default) {
-        if ($key === 'active') {
-            $form[$key] = isset($_POST[$key]) ? '1' : '0';
-        } else {
-            $form[$key] = trim((string)($_POST[$key] ?? ''));
-        }
+        if ($key === 'active') { $form[$key] = isset($_POST[$key]) ? '1' : '0'; }
+        else { $form[$key] = trim((string)($_POST[$key] ?? '')); }
     }
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
 
-    if ($form['first_name'] === '') {
-        $errors[] = 'First Name is required.';
-    }
-    if ($form['last_name'] === '') {
-        $errors[] = 'Last Name is required.';
-    }
-    if ($form['display_name'] === '') {
-        $form['display_name'] = trim($form['first_name'] . ' ' . $form['last_name']);
-    }
+    // Validation
+    if ($form['first_name'] === '') { $errors[] = 'First Name is required.'; }
+    if ($form['last_name'] === '') { $errors[] = 'Last Name is required.'; }
+    if ($form['display_name'] === '') { $form['display_name'] = trim($form['first_name'] . ' ' . $form['last_name']); }
 
     if (!$errors) {
         $firstName = mysqli_real_escape_string($conn, $form['first_name']);
@@ -101,23 +103,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
 
         $sql = "UPDATE employees SET
-            first_name='{$firstName}',
-            last_name='{$lastName}',
-            display_name={$displayName},
-            email={$email},
-            hilton_id={$hiltonId},
-            username={$username},
-            department_id={$departmentId},
-            job_code={$jobCode},
-            job_title={$jobTitle},
-            comments={$comments},
-            raw_status_code={$rawStatusCode},
-            employment_status_id={$employmentStatusId},
-            office_key_card_department_id={$officeDeptId},
+            first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
+            email={$email}, hilton_id={$hiltonId}, username={$username},
+            department_id={$departmentId}, job_code={$jobCode}, job_title={$jobTitle},
+            comments={$comments}, raw_status_code={$rawStatusCode},
+            employment_status_id={$employmentStatusId}, office_key_card_department_id={$officeDeptId},
             active=" . (int)$form['active'] . "
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
+            // Update permissions in modern normalized table
             esa_save_employee_access_ids($conn, (int)$company_id, $id, $selectedSystemAccessIds);
             header('Location: view.php?id=' . $id);
             exit;
@@ -126,6 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+/**
+ * Checkbox helper
+ */
 function emp_access_checked($selectedSystemAccessIds, $accessId) {
     return in_array((int)$accessId, $selectedSystemAccessIds, true) ? 'checked' : '';
 }
@@ -149,9 +147,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                 <a href="index.php" class="btn">← Back</a>
             </div>
 
-            <?php foreach ($errors as $error): ?>
-                <div class="alert alert-error"><?php echo sanitize($error); ?></div>
-            <?php endforeach; ?>
+            <?php foreach ($errors as $error): ?><div class="alert alert-error"><?php echo sanitize($error); ?></div><?php endforeach; ?>
 
             <div class="card">
                 <form method="POST">
@@ -166,6 +162,8 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Job Title</label><input type="text" name="job_title" value="<?php echo sanitize($form['job_title']); ?>"></div>
+                        
+                        <!-- LOOKUP SELECTS -->
                         <div class="form-group"><label>Department</label>
                             <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department">
                                 <option value="">-- None --</option>
@@ -175,7 +173,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕ Add</option>
                             </select>
                         </div>
-                        <div class="form-group"><label>Office Key Card Department Id</label>
+                        <div class="form-group"><label>Office Key Card Department</label>
                             <select name="office_key_card_department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="office key card department">
                                 <option value="">-- None --</option>
                                 <?php if ($departments instanceof mysqli_result) { mysqli_data_seek($departments, 0); } ?>
@@ -198,12 +196,16 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
 
                     <div class="form-group" style="margin-top:12px;"><label>Comments</label><textarea name="comments" rows="3"><?php echo sanitize($form['comments']); ?></textarea></div>
 
+                    <!-- PERMISSION MANAGEMENT -->
                     <h3>System Access</h3>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
                             <?php $accessName = (string)$access['name']; ?>
                             <?php if ((int)$access['active'] !== 1) { $accessName .= ' (Inactive)'; } ?>
-                            <label class="role-flag-option"><input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo emp_access_checked($selectedSystemAccessIds, (int)$access['id']); ?>> <span><?php echo sanitize($accessName); ?></span></label>
+                            <label class="role-flag-option">
+                                <input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo emp_access_checked($selectedSystemAccessIds, (int)$access['id']); ?>>
+                                <span><?php echo sanitize($accessName); ?></span>
+                            </label>
                         <?php endforeach; ?>
                         <label class="role-flag-option"><input type="checkbox" name="active" value="1" <?php echo (($form['active'] ?? '1') === '1') ? 'checked' : ''; ?>> <span>Active</span></label>
                     </div>

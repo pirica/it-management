@@ -1,25 +1,46 @@
 <?php
+/**
+ * Audit Logs Module - Index
+ * 
+ * Provides a searchable, filterable history of all changes made within the system.
+ * Shows who made a change, when, in which table, and exactly what values changed.
+ * Logs are scoped to the current company context.
+ */
+
 require '../../config/config.php';
 
+/**
+ * Audit Logs - Search and List
+ * 
+ * Displays a historical record of all database changes (INSERT, UPDATE, DELETE)
+ * that occurred within the current company's context. 
+ * It allows IT staff to track who changed what and when.
+ */
+
+// Ensure the user has a valid company context
 $companyId = (int)($_SESSION['company_id'] ?? 0);
 if ($companyId <= 0) {
     http_response_code(403);
     exit('Company context is required.');
 }
 
+// Extract filter parameters from the URL for persistent search/filtering
 $search = trim((string)($_GET['search'] ?? ''));
 $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
+
 $allowedActions = ['INSERT', 'UPDATE', 'DELETE'];
 if (!in_array($action, $allowedActions, true)) {
     $action = '';
 }
 
+// Initialize dynamic query components
 $where = ['al.company_id = ?'];
 $params = [$companyId];
 $types = 'i';
 
+// Apply text search across multiple fields
 if ($search !== '') {
     $where[] = '(al.table_name LIKE ? OR CAST(al.record_id AS CHAR) LIKE ? OR CONCAT(COALESCE(u.first_name, ""), " ", COALESCE(u.last_name, "")) LIKE ? OR COALESCE(al.actor_username, u.username, "") LIKE ? OR COALESCE(al.actor_email, u.email, "") LIKE ?)';
     $searchLike = '%' . $search . '%';
@@ -31,26 +52,30 @@ if ($search !== '') {
     $types .= 'sssss';
 }
 
+// Apply action filter (INSERT/UPDATE/DELETE)
 if ($action !== '') {
     $where[] = 'al.action = ?';
     $params[] = $action;
     $types .= 's';
 }
 
+// Apply date range filters
 if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) === 1) {
     $where[] = 'al.changed_at >= ?';
     $params[] = $dateFrom . ' 00:00:00';
     $types .= 's';
 }
-
 if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
     $where[] = 'al.changed_at <= ?';
     $params[] = $dateTo . ' 23:59:59';
     $types .= 's';
 }
 
+// Resolve pagination limit
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 
+// Final query construction. 
+// Uses JOINs to resolve user details and Prepared Statements for security.
 $sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
      . 'LEFT JOIN users u ON u.id = al.user_id '
@@ -72,6 +97,9 @@ while ($result && ($row = mysqli_fetch_assoc($result))) {
 }
 mysqli_stmt_close($stmt);
 
+/**
+ * Utility to truncate long JSON strings for cleaner table display.
+ */
 function itm_audit_preview($text, $limit = 120) {
     $text = trim((string)$text);
     if ($text === '') {
@@ -142,6 +170,7 @@ $moduleListHeading = '🧾 Audit Logs';
                 <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
             </div>
 
+            <!-- SEARCH AND FILTER FORM -->
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:10px;align-items:end;">
                     <div class="form-group" style="margin:0;">
@@ -170,6 +199,7 @@ $moduleListHeading = '🧾 Audit Logs';
                 </form>
             </div>
 
+            <!-- LOG DATA TABLE -->
             <div class="card">
                 <table>
                     <thead>
@@ -190,6 +220,7 @@ $moduleListHeading = '🧾 Audit Logs';
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
                             <?php
+                            // Determine the most appropriate user display name
                             $userName = trim((string)(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')));
                             $userEmail = trim((string)($row['actor_email'] ?? $row['email'] ?? ''));
                             if ($userName === '') {
@@ -204,6 +235,8 @@ $moduleListHeading = '🧾 Audit Logs';
                             if ($userName === '') {
                                 $userName = $row['user_id'] ? ('User #' . (int)$row['user_id']) : 'System';
                             }
+
+                            // Styling based on action type
                             $actionClass = '';
                             if (($row['action'] ?? '') === 'INSERT') {
                                 $actionClass = 'audit-cell-added';

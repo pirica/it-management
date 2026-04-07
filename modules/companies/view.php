@@ -1,4 +1,11 @@
 <?php
+/**
+ * Companies Module - View
+ * 
+ * Displays the full profile of a single company, including contact details,
+ * VAT information, and creation/update timestamps.
+ */
+
 require '../../config/config.php';
 
 $id = (int)($_GET['id'] ?? 0);
@@ -7,10 +14,12 @@ $itemNormalized = null;
 $error = '';
 
 /**
- * Get value from row with case-insensitive key support and optional aliases.
+ * Robust value retrieval with support for case-insensitive keys and aliases
  *
- * @param array<string,mixed>|null $row
- * @param string[] $keys
+ * @param array|null $row The data row
+ * @param string[] $keys List of keys to check
+ * @param string $default Fallback value
+ * @return string The found value or default
  */
 function itm_company_view_value(?array $row, array $keys, string $default = ''): string
 {
@@ -28,6 +37,7 @@ function itm_company_view_value(?array $row, array $keys, string $default = ''):
     return $default;
 }
 
+// Fetch the company record by ID
 if ($id > 0) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? AND id > 0 LIMIT 1');
     if ($stmt) {
@@ -37,6 +47,7 @@ if ($id > 0) {
         if ($result && mysqli_num_rows($result) === 1) {
             $item = mysqli_fetch_assoc($result);
             if (is_array($item)) {
+                // Normalize keys to lowercase for robust lookup
                 $itemNormalized = [];
                 foreach ($item as $key => $value) {
                     if (is_string($key)) {
@@ -51,6 +62,7 @@ if ($id > 0) {
     }
 }
 
+// Validation reporting
 if ($item === null && $error === '') {
     if ($id > 0) {
         $error = 'Company not found for ID ' . $id . '.';

@@ -1,11 +1,21 @@
 <?php
+/**
+ * Companies Module - Create/Edit
+ * 
+ * Provides a unified form for adding new companies or updating existing ones.
+ * Implements strict input normalization (e.g., InCode uppercase) and
+ * comprehensive audit logging for all changes.
+ */
+
 require '../../config/config.php';
 
+// Determine if we are in Edit mode based on the presence of an ID
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
 $csrfToken = itm_get_csrf_token();
 
+// Default form data structure
 $data = [
     'company' => '',
     'incode' => '',
@@ -19,10 +29,11 @@ $data = [
     'active' => 1,
 ];
 
+// Load existing data if in Edit mode
 if ($is_edit) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? AND id > 0 LIMIT 1');
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'i', $id);
+        mysqli_stmt_bind_param('i', $id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         if ($res && mysqli_num_rows($res) === 1) {
@@ -38,9 +49,11 @@ if ($is_edit) {
     }
 }
 
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
+    // Sanitize and normalize inputs
     $company = trim((string)($_POST['company'] ?? ''));
     $incode = strtoupper(substr(trim((string)($_POST['incode'] ?? '')), 0, 6));
     $city = trim((string)($_POST['city'] ?? ''));
@@ -69,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Company is required.';
     } else {
         if ($is_edit) {
+            // Process UPDATE
             $old = itm_fetch_audit_record($conn, 'companies', $id, (int)($_SESSION['company_id'] ?? 0));
             $sql = 'UPDATE companies SET company=?, incode=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=? WHERE id=? AND id > 0';
             $stmt = mysqli_prepare($conn, $sql);
@@ -86,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Failed to update company.';
             }
         } else {
+            // Process INSERT
             $sql = 'INSERT INTO companies (company, incode, city, country, phone, email, website, vat, comments, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
