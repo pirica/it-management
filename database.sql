@@ -2880,22 +2880,5 @@ CREATE TRIGGER `trg_workstation_ram_audit_delete` AFTER DELETE ON `workstation_r
 END$$
 DELIMITER ;
 
-DROP TRIGGER IF EXISTS `trg_workstations_audit_insert`;
-DROP TRIGGER IF EXISTS `trg_workstations_audit_update`;
-DROP TRIGGER IF EXISTS `trg_workstations_audit_delete`;
-DELIMITER $$
-CREATE TRIGGER `trg_workstations_audit_insert` AFTER INSERT ON `workstations` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstations', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'equipment_id', NEW.`equipment_id`, 'hostname', NEW.`hostname`, 'workstation_code', NEW.`workstation_code`, 'workstation_mode_id', NEW.`workstation_mode_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'assigned_to_department_id', NEW.`assigned_to_department_id`, 'assignment_type_id', NEW.`assignment_type_id`, 'department', NEW.`department`, 'status_id', NEW.`status_id`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_workstations_audit_update` AFTER UPDATE ON `workstations` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstations', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'workstation_code', OLD.`workstation_code`, 'workstation_mode_id', OLD.`workstation_mode_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'assigned_to_department_id', OLD.`assigned_to_department_id`, 'assignment_type_id', OLD.`assignment_type_id`, 'department', OLD.`department`, 'status_id', OLD.`status_id`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'equipment_id', NEW.`equipment_id`, 'hostname', NEW.`hostname`, 'workstation_code', NEW.`workstation_code`, 'workstation_mode_id', NEW.`workstation_mode_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'assigned_to_department_id', NEW.`assigned_to_department_id`, 'assignment_type_id', NEW.`assignment_type_id`, 'department', NEW.`department`, 'status_id', NEW.`status_id`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_workstations_audit_delete` AFTER DELETE ON `workstations` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'workstation_code', OLD.`workstation_code`, 'workstation_mode_id', OLD.`workstation_mode_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'assigned_to_department_id', OLD.`assigned_to_department_id`, 'assignment_type_id', OLD.`assignment_type_id`, 'department', OLD.`department`, 'status_id', OLD.`status_id`), NULL, @app_ip_address, @app_user_agent);
-END$$
-DELIMITER ;
 
 SET FOREIGN_KEY_CHECKS=1;
