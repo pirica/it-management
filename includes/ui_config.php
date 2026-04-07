@@ -308,7 +308,7 @@ function itm_sidebar_structure($conn = null) {
         ];
         if (strpos($moduleName, 'is_') === 0) {
             $typeLabel = trim(preg_replace('/^is[_\s-]*/i', '', (string)$moduleName));
-            $item['label'] = '🖥️ Is ' . itm_sidebar_humanize_table_name($typeLabel);
+            $item['label'] = ' Is ' . itm_sidebar_humanize_table_name($typeLabel);
             $discoveredEquipmentTypeItems[] = $item;
             continue;
         }
