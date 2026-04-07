@@ -482,6 +482,7 @@ $rows = mysqli_query(
 function emp_label($field) {
     if ($field === 'department_id') return 'Department Name';
     if ($field === 'employment_status_id') return 'Employment Status';
+    if ($field === 'hilton_id') return 'Id';
     return ucwords(str_replace('_', ' ', trim((string)$field)));
 }
 
