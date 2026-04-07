@@ -828,6 +828,30 @@ if (!empty($_SESSION['crud_success'])) {
             return { rj45: rj45, sfp: sfp, sfp_plus: sfpPlus };
         }
 
+        function parseJsonResponseText(text) {
+            const raw = String(text || '').trim();
+            if (!raw) {
+                throw new Error('Empty response from server');
+            }
+
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                // Fallback: tolerate PHP notices/warnings before JSON payload.
+                const firstBrace = raw.indexOf('{');
+                const lastBrace = raw.lastIndexOf('}');
+                if (firstBrace !== -1 && lastBrace > firstBrace) {
+                    const candidate = raw.slice(firstBrace, lastBrace + 1);
+                    try {
+                        return JSON.parse(candidate);
+                    } catch (ignored) {
+                        // Keep original error below.
+                    }
+                }
+                throw new Error('Invalid server JSON response');
+            }
+        }
+
         function savePort(payload, showMessage) {
             if (!csrfToken) {
                 return Promise.reject(new Error('Missing CSRF token'));
@@ -835,15 +859,7 @@ if (!empty($_SESSION['crud_success'])) {
 
             function parseApiResponse(response) {
                 return response.text().then(function (text) {
-                    const raw = String(text || '').trim();
-                    if (!raw) {
-                        throw new Error('Empty response from server');
-                    }
-                    try {
-                        return JSON.parse(raw);
-                    } catch (e) {
-                        throw new Error('Invalid server JSON response');
-                    }
+                    return parseJsonResponseText(text);
                 });
             }
 
@@ -884,15 +900,7 @@ if (!empty($_SESSION['crud_success'])) {
             })
                 .then(function (r) {
                     return r.text().then(function (text) {
-                        const raw = String(text || '').trim();
-                        if (!raw) {
-                            throw new Error('Empty response from server');
-                        }
-                        try {
-                            return JSON.parse(raw);
-                        } catch (e) {
-                            throw new Error('Invalid server JSON response');
-                        }
+                        return parseJsonResponseText(text);
                     });
                 })
                 .then(function (data) {
