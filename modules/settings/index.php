@@ -8,7 +8,7 @@
  * - Sidebar Management: Visibility toggles and drag-and-drop reordering (via buttons).
  * - Database Maintenance: One-click system table creation/verification.
  * - Backup & Recovery: Manual SQL dump generation, export, and import.
- */
+ **/
 
 require '../../config/config.php';
 
