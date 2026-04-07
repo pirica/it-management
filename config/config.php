@@ -128,8 +128,15 @@ if (isset($_SESSION['user_id']) && !isset($_SESSION['company_id']) && !$isReadOn
 
 $company_id = $_SESSION['company_id'] ?? 0;
 
-// Load UI preferences and set error reporting based on configuration
-$ui_config = itm_get_ui_configuration($conn, $company_id);
+// Load UI preferences and fall back safely if configuration bootstrap fails.
+try {
+    $ui_config = itm_get_ui_configuration($conn, $company_id);
+} catch (Throwable $t) {
+    $ui_config = function_exists('itm_ui_config_defaults') ? itm_ui_config_defaults() : [];
+    error_log('UI configuration bootstrap failed: ' . $t->getMessage());
+}
+
+// Set runtime error reporting from configuration.
 if (($ui_config['enable_all_error_reporting'] ?? 1) === 1) {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
