@@ -92,6 +92,32 @@ function itm_sidebar_humanize_table_name($tableName) {
     return ucwords($label);
 }
 
+
+/**
+ * Returns a default emoji for known equipment type names.
+ */
+function itm_equipment_type_default_emoji($typeName) {
+    $normalized = strtolower(trim((string)$typeName));
+    $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized);
+    $normalized = trim((string)$normalized, '_');
+
+    $map = [
+        'access_point' => '📶',
+        'cctv' => '🎥',
+        'firewall' => '🔥',
+        'phone' => '📞',
+        'port_patch_panel' => '➰',
+        'pos' => '🏧',
+        'printer' => '🖨️',
+        'router' => '🛜',
+        'server' => '🖥️',
+        'switch' => '🔀',
+        'workstation' => '💻',
+    ];
+
+    return $map[$normalized] ?? '';
+}
+
 /**
  * Maps known equipment type names to equipment flag fields.
  */
@@ -287,23 +313,29 @@ function itm_sidebar_structure($conn = null) {
             }
 
             if (is_file($moduleDir . '/index.php')) {
-                $moduleNames[$moduleName] = true;
+                $moduleNames[$moduleName] = ['emoji' => ''];
             }
         }
     }
 
     // Discover modules by scanning database tables and auto-scaffolding if needed
     if ($conn) {
-        $equipmentTypeRes = mysqli_query($conn, 'SELECT name FROM equipment_types');
+        $hasEquipmentTypeEditEmoji = itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji');
+        $equipmentTypeSelectFields = $hasEquipmentTypeEditEmoji ? 'name, field_edit_emoji' : 'name';
+        $equipmentTypeRes = mysqli_query($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types');
         if ($equipmentTypeRes) {
             while ($equipmentTypeRow = mysqli_fetch_assoc($equipmentTypeRes)) {
                 $typeName = (string)($equipmentTypeRow['name'] ?? '');
+                $typeEmoji = trim((string)($equipmentTypeRow['field_edit_emoji'] ?? ''));
                 itm_ensure_equipment_type_module_scaffold($typeName);
                 $equipmentTypeModuleName = itm_equipment_type_sidebar_item_id($typeName);
                 if ($equipmentTypeModuleName !== '') {
                     $equipmentTypeModuleIndex = $modulesRoot . '/' . $equipmentTypeModuleName . '/index.php';
                     if (is_file($equipmentTypeModuleIndex) && !isset($existingItemIds[$equipmentTypeModuleName])) {
-                        $moduleNames[$equipmentTypeModuleName] = true;
+                        if ($typeEmoji === '') {
+                            $typeEmoji = itm_equipment_type_default_emoji($typeName);
+                        }
+                        $moduleNames[$equipmentTypeModuleName] = ['emoji' => $typeEmoji];
                     }
                 }
             }
@@ -323,7 +355,7 @@ function itm_sidebar_structure($conn = null) {
                 }
 
                 if (is_file($moduleIndex)) {
-                    $moduleNames[$table] = true;
+                    $moduleNames[$table] = ['emoji' => ''];
                 }
             }
         }
@@ -331,7 +363,7 @@ function itm_sidebar_structure($conn = null) {
 
     $discoveredEquipmentTypeItems = [];
     $discoveredItems = [];
-    foreach (array_keys($moduleNames) as $moduleName) {
+    foreach ($moduleNames as $moduleName => $moduleMeta) {
         $item = [
             'id' => $moduleName,
             'label' => '🧩 ' . itm_sidebar_humanize_table_name($moduleName),
@@ -340,7 +372,11 @@ function itm_sidebar_structure($conn = null) {
         ];
         if (strpos($moduleName, 'is_') === 0) {
             $typeLabel = trim(preg_replace('/^is[_\s-]*/i', '', (string)$moduleName));
-            $item['label'] = ' Is ' . itm_sidebar_humanize_table_name($typeLabel);
+            $moduleEmoji = trim((string)($moduleMeta['emoji'] ?? ''));
+            if ($moduleEmoji === '') {
+                $moduleEmoji = itm_equipment_type_default_emoji($typeLabel);
+            }
+            $item['label'] = trim($moduleEmoji . ' Is ' . itm_sidebar_humanize_table_name($typeLabel));
             $discoveredEquipmentTypeItems[] = $item;
             continue;
         }
