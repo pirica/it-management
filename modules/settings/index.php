@@ -208,6 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Action: Remove an existing backup file.
     if ($action === 'delete_backup') {
         $file = basename((string)($_POST['file'] ?? ''));
+        $target = BACKUP_PATH . $file;
         if ($file === '' || !is_file($target)) {
             $error = 'Backup file not found.';
         } elseif (!unlink($target)) {
@@ -219,6 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Restore database state from an uploaded .sql file.
     if ($action === 'import_backup') {
+        if (!isset($_FILES['sql_file']) || (int)($_FILES['sql_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['sql_file']['tmp_name'] ?? '')) {
             $error = 'Please upload a valid SQL file to import.';
         } else {
             $name = $_FILES['sql_file']['name'] ?? '';
@@ -265,8 +267,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Action: Ensure the `ui_configuration` table exists (useful for fresh installs).
+    // Action: Ensure required settings tables exist (useful for fresh installs).
     if ($action === 'create_system_tables') {
+        if (!itm_ensure_ui_configuration_table($conn) || !itm_ensure_sidebar_layout_table($conn)) {
             $error = 'Unable to create required system tables.';
         } else {
             $message = 'System tables verified/created successfully.';
@@ -277,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // HANDLE FILE EXPORT REQUESTS
 if (isset($_GET['download'])) {
     $downloadFile = basename((string)$_GET['download']);
+    $downloadPath = BACKUP_PATH . $downloadFile;
     if ($downloadFile !== '' && is_file($downloadPath)) {
         header('Content-Type: application/sql');
         header('Content-Disposition: attachment; filename="' . $downloadFile . '"');
@@ -289,6 +293,7 @@ if (isset($_GET['download'])) {
 // POPULATE BACKUP LIST FOR THE VIEW
 $backupFiles = [];
 if (is_dir(BACKUP_PATH)) {
+    $files = scandir(BACKUP_PATH);
     if ($files !== false) {
         foreach ($files as $file) {
             if (substr($file, -4) === '.sql' && is_file(BACKUP_PATH . $file)) {
