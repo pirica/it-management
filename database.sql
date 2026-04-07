@@ -533,17 +533,17 @@ CREATE TABLE `equipment_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_types`
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', '🔀', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '2', 'Server', 'SRV', '🖥️', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '3', 'Router', 'RTR', '🛜', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '4', 'Firewall', 'FW', '🔥', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', '➰', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '6', 'Access Point', 'AP', '📶', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '7', 'Workstation', 'WS', '💻', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '8', 'POS', 'POS', '🏧', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '9', 'Printer', 'PRN', '🖨️', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '10', 'Phone', 'PHONE', '📞', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '11', 'CCTV', 'CCCTV', '🎥', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '2', 'Server', 'SRV', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '3', 'Router', 'RTR', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '4', 'Firewall', 'FW', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '6', 'Access Point', 'AP', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '7', 'Workstation', 'WS', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '8', 'POS', 'POS', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '9', 'Printer', 'PRN', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '10', 'Phone', 'PHONE', NULL, '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '11', 'CCTV', 'CCCTV', NULL, '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '12', 'Other', 'OTHER', NULL, '1');
 
 -- Table structure for `idf_links`
