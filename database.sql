@@ -820,9 +820,21 @@ INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_cl
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','3', 'Resolved', '#00FF00', '0', '1');
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','4', 'Closed', '#808080', '1', '1');
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('2','5', 'Open', '#FF0000', '0', '1');
-INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3','6', 'In Progress', '#FFA500', '0', '1');
-INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4','7', 'Resolved', '#00FF00', '0', '1');
-INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','8', 'Closed', '#808080', '1', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('2','6', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('2','7', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('2','8', 'Closed', '#808080', '1', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3','9', 'Open', '#FF0000', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3','10', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3','11', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('3','12', 'Closed', '#808080', '1', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4','13', 'Open', '#FF0000', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4','14', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4','15', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('4','16', 'Closed', '#808080', '1', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','17', 'Open', '#FF0000', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','18', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','19', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','20', 'Closed', '#808080', '1', '1');
 
 -- Table structure for `patches_updates_level`
 DROP TABLE IF EXISTS `patches_updates_level`;
@@ -842,6 +854,26 @@ INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','3','Medium','Medium');
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','4','Low','Low');
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','5','Other','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','6','Critical','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','7','High','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','8','Medium','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','9','Low','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','10','Other','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','11','Critical','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','12','High','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','13','Medium','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','14','Low','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','15','Other','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','16','Critical','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','17','High','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','18','Medium','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','19','Low','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','20','Other','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','21','Critical','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','22','High','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','23','Medium','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','24','Low','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','25','Other','Other');
 
 -- Table structure for `patches_updates`
 DROP TABLE IF EXISTS `patches_updates`;
