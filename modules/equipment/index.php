@@ -49,6 +49,10 @@ $moduleFilterSql = '';
 if ($equipmentFlagField !== '' && array_key_exists($equipmentFlagField, $flagTypeMatchers) && itm_is_safe_identifier($equipmentFlagField)) {
     $moduleFilterSql = " AND (COALESCE(e.{$equipmentFlagField}, 0) = 1 OR {$flagTypeMatchers[$equipmentFlagField]})";
 }
+$equipmentTypeNameFilter = trim((string)($equipmentTypeNameFilter ?? ''));
+if ($moduleFilterSql === '' && $equipmentTypeNameFilter !== '') {
+    $moduleFilterSql = " AND LOWER(TRIM(et.name)) = '" . mysqli_real_escape_string($conn, strtolower($equipmentTypeNameFilter)) . "'";
+}
 
 // Build primary data query with joins for labels
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,

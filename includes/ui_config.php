@@ -116,10 +116,6 @@ function itm_equipment_type_flag_field($typeName) {
  */
 function itm_ensure_equipment_type_module_scaffold($typeName) {
     $flagField = itm_equipment_type_flag_field($typeName);
-    if ($flagField === '') {
-        return false;
-    }
-
     $moduleName = itm_equipment_type_sidebar_item_id($typeName);
     if ($moduleName === '') {
         return false;
@@ -140,7 +136,12 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
         'is_pos' => 'Use SQL wildcards, e.g. %%pos%%',
     ];
 
-    $moduleTitle = $moduleTitleMap[$moduleName] ?? ('🖥️ ' . itm_sidebar_humanize_table_name($moduleName));
+    $displayTypeName = trim((string)$typeName);
+    if ($displayTypeName === '') {
+        $displayTypeName = itm_sidebar_humanize_table_name($moduleName);
+    }
+
+    $moduleTitle = $moduleTitleMap[$moduleName] ?? ('🖥️ Is ' . $displayTypeName);
     $searchPlaceholder = $searchPlaceholderMap[$flagField] ?? 'Use SQL wildcards, e.g. %%asset%%';
 
     $modulesRoot = dirname(__DIR__) . '/modules';
@@ -158,6 +159,9 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
     $content = "<?php\n";
     $content .= '$equipmentModuleTitle = ' . var_export($moduleTitle, true) . ";\n";
     $content .= '$equipmentFlagField = ' . var_export($flagField, true) . ";\n";
+    if ($flagField === '') {
+        $content .= '$equipmentTypeNameFilter = ' . var_export($displayTypeName, true) . ";\n";
+    }
     $content .= '$equipmentSearchPlaceholder = ' . var_export($searchPlaceholder, true) . ";\n";
     $content .= '$equipmentModuleBasePath = ' . var_export('../equipment/', true) . ";\n";
     $content .= '$equipmentViewPath = ' . var_export('', true) . ";\n";
@@ -293,17 +297,25 @@ function itm_sidebar_structure($conn = null) {
         }
     }
 
+    $discoveredEquipmentTypeItems = [];
     $discoveredItems = [];
     foreach (array_keys($moduleNames) as $moduleName) {
-        $discoveredItems[] = [
+        $item = [
             'id' => $moduleName,
             'label' => '🧩 ' . itm_sidebar_humanize_table_name($moduleName),
             'href' => 'modules/' . $moduleName . '/',
             'match_dir' => $moduleName,
         ];
+        if (strpos($moduleName, 'is_') === 0) {
+            $typeLabel = trim(preg_replace('/^is[_\s-]*/i', '', (string)$moduleName));
+            $item['label'] = '🖥️ Is ' . itm_sidebar_humanize_table_name($typeLabel);
+            $discoveredEquipmentTypeItems[] = $item;
+            continue;
+        }
+        $discoveredItems[] = $item;
     }
 
-    if (!$discoveredItems) {
+    if (!$discoveredItems && !$discoveredEquipmentTypeItems) {
         return $structure;
     }
 
@@ -311,12 +323,18 @@ function itm_sidebar_structure($conn = null) {
     usort($discoveredItems, static function ($a, $b) {
         return strcmp($a['label'], $b['label']);
     });
+    usort($discoveredEquipmentTypeItems, static function ($a, $b) {
+        return strcmp($a['label'], $b['label']);
+    });
 
-    // Append discovered items to the 'Reference Data' section
+    // Append discovered items to their target sections
     foreach ($structure as &$section) {
+        if (($section['id'] ?? '') === 'management' && $discoveredEquipmentTypeItems) {
+            $section['items'] = array_merge($section['items'], $discoveredEquipmentTypeItems);
+            continue;
+        }
         if (($section['id'] ?? '') === 'reference_data') {
             $section['items'] = array_merge($section['items'], $discoveredItems);
-            break;
         }
     }
     unset($section);
