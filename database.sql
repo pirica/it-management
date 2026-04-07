@@ -1573,41 +1573,6 @@ INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '4', '32
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '5', '64 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '6', '128 GB');
 
--- Table structure for `workstations`
-DROP TABLE IF EXISTS `workstations`;
-CREATE TABLE `workstations` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `company_id` int NOT NULL,
-  `equipment_id` int DEFAULT NULL,
-  `hostname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `workstation_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `workstation_mode_id` int DEFAULT NULL,
-  `assigned_to_employee_id` int DEFAULT NULL,
-  `assigned_to_department_id` int DEFAULT NULL,
-  `assignment_type_id` int NOT NULL,
-  `department` int DEFAULT NULL,
-  `status_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `workstation_code` (`company_id`,`workstation_code`),
-  KEY `equipment_id` (`equipment_id`),
-  KEY `workstation_mode_id` (`workstation_mode_id`),
-  KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
-  KEY `assigned_to_department_id` (`assigned_to_department_id`),
-  KEY `company_id` (`company_id`),
-  KEY `assignment_type_id` (`assignment_type_id`),
-  KEY `idx_workstations_department` (`department`),
-  KEY `idx_workstations_status_id` (`status_id`),
-  CONSTRAINT `workstations_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `workstations_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `workstations_ibfk_3` FOREIGN KEY (`workstation_mode_id`) REFERENCES `workstation_modes` (`id`),
-  CONSTRAINT `workstations_ibfk_4` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`),
-  CONSTRAINT `workstations_ibfk_5` FOREIGN KEY (`assigned_to_department_id`) REFERENCES `departments` (`id`),
-  CONSTRAINT `workstations_ibfk_6` FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types` (`id`),
-  CONSTRAINT `workstations_ibfk_department` FOREIGN KEY (`department`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `workstations_ibfk_status_id` FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
 -- Replicate shared table data to all companies
 INSERT INTO `access_levels` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `assignment_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
