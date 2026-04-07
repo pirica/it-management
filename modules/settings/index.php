@@ -409,7 +409,14 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                             <div class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
                                                 <label class="role-flag-option">
                                                     <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
-                                                    <span><?php echo sanitize($item['label']); ?></span>
+                                                    <a
+                                                        href="<?php echo BASE_URL . ($item['href'] ?? ''); ?>"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style="text-decoration:none;color:inherit;"
+                                                    >
+                                                        <?php echo sanitize($item['label']); ?>
+                                                    </a>
                                                 </label>
                                                 <div>
                                                     <button type="button" class="btn btn-sm sidebar-submove-up">↑</button>
