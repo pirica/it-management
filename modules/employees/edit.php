@@ -158,7 +158,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" value="<?php echo sanitize($form['last_name']); ?>" required></div>
                         <div class="form-group"><label>Display Name</label><input type="text" name="display_name" value="<?php echo sanitize($form['display_name']); ?>"></div>
                         <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($form['email']); ?>"></div>
-                        <div class="form-group"><label>Hilton Id</label><input type="text" name="hilton_id" value="<?php echo sanitize($form['hilton_id']); ?>"></div>
+                        <div class="form-group"><label>Id</label><input type="text" name="hilton_id" value="<?php echo sanitize($form['hilton_id']); ?>"></div>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Job Title</label><input type="text" name="job_title" value="<?php echo sanitize($form['job_title']); ?>"></div>
