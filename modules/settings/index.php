@@ -277,6 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Action: Persist UI preferences (button positions, sidebar order, system flags).
     if ($action === 'save_ui_config') {
         $newConfig = [];
+        $equipmentTypeEmojiUpdates = [];
         // Map form fields back to config keys.
         foreach (array_keys($uiFieldLabels) as $key) {
             $newConfig[$key] = $_POST[$key] ?? '';
@@ -291,6 +292,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
             $newConfig['equipment_type_sidebar_visibility'][$itemId] = isset($_POST['equipment_sidebar_visibility'][$itemId]) ? 1 : 0;
+            $equipmentTypeEmojiUpdates[] = [
+                'id' => (int)($equipmentTypeRow['id'] ?? 0),
+                'emoji' => trim((string)($_POST['equipment_sidebar_emoji'][$itemId] ?? '')),
+            ];
         }
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
 
@@ -306,6 +311,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
             $error = 'Unable to save UI configuration.';
         } else {
+            if ($hasEquipmentTypeEditEmoji) {
+                $emojiUpdateStmt = mysqli_prepare($conn, 'UPDATE equipment_types SET field_edit_emoji = ? WHERE id = ? LIMIT 1');
+                if ($emojiUpdateStmt) {
+                    foreach ($equipmentTypeEmojiUpdates as $emojiUpdate) {
+                        if (($emojiUpdate['id'] ?? 0) <= 0) {
+                            continue;
+                        }
+                        $emojiValue = (string)($emojiUpdate['emoji'] ?? '');
+                        $emojiTypeId = (int)$emojiUpdate['id'];
+                        mysqli_stmt_bind_param($emojiUpdateStmt, 'si', $emojiValue, $emojiTypeId);
+                        mysqli_stmt_execute($emojiUpdateStmt);
+                    }
+                    mysqli_stmt_close($emojiUpdateStmt);
+                }
+            }
             $_SESSION['settings_flash_message'] = 'UI configuration saved successfully.';
             header('Location: index.php?ui_saved=1');
             exit;
@@ -513,7 +533,17 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                         $isChecked = (($currentUiConfig['equipment_type_sidebar_visibility'][$itemId] ?? 1) === 1);
                                         ?>
                                         <div class="form-group" style="margin-bottom:8px;">
-                                            <label class="role-flag-option" for="equipment_type_<?php echo sanitize($itemId); ?>">
+                                            <label class="role-flag-option" for="equipment_type_<?php echo sanitize($itemId); ?>" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                                <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                                                    <input
+                                                        type="text"
+                                                        name="equipment_sidebar_emoji[<?php echo sanitize($itemId); ?>]"
+                                                        value="<?php echo sanitize($resolvedEmoji); ?>"
+                                                        placeholder="Emoji"
+                                                        style="width:52px;min-width:52px;text-align:center;"
+                                                    >
+                                                    <span><?php echo sanitize('Is ' . $typeName); ?></span>
+                                                </span>
                                                 <input
                                                     type="checkbox"
                                                     class="equipment-sidebar-toggle"
@@ -522,7 +552,6 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                                     value="1"
                                                     <?php echo $isChecked ? 'checked' : ''; ?>
                                                 >
-                                                <span><?php echo sanitize(trim($resolvedEmoji . ' Is ' . $typeName)); ?></span>
                                             </label>
                                         </div>
                                     <?php endforeach; ?>
