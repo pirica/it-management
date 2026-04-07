@@ -38,6 +38,7 @@ if ($itm_documentRoot && $itm_projectRoot && strpos($itm_projectRoot, $itm_docum
     } else {
         $itm_basePath = str_replace('\\', '/', dirname($itm_scriptName));
     }
+}
 
 $itm_basePath = '/' . trim((string)$itm_basePath, '/');
 if ($itm_basePath === '/') {
@@ -211,7 +212,6 @@ if (!function_exists('itm_format_db_constraint_error')) {
             }
         }
     }
-}
 
 /**
  * Validates that a string is a safe SQL identifier (table/column name)
