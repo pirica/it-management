@@ -65,7 +65,6 @@ $form = [
     'employment_status_id' => (string)($employee['employment_status_id'] ?? '1'),
     'comments' => (string)($employee['comments'] ?? ''),
     'office_key_card_department_id' => (string)($employee['office_key_card_department_id'] ?? ''),
-    'active' => ((int)($employee['active'] ?? 1) === 1) ? '1' : '0',
 ];
 
 // Load current permission IDs
@@ -77,7 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     emp_drop_email_unique_if_exists($conn);
 
     foreach ($form as $key => $default) {
-        if ($key === 'active') { continue; }
         $form[$key] = trim((string)($_POST[$key] ?? ''));
     }
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
@@ -107,8 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             email={$email}, hilton_id={$hiltonId}, username={$username},
             department_id={$departmentId}, job_code={$jobCode}, job_title={$jobTitle},
             comments={$comments}, raw_status_code={$rawStatusCode},
-            employment_status_id={$employmentStatusId}, office_key_card_department_id={$officeDeptId},
-            active=" . (int)$form['active'] . "
+            employment_status_id={$employmentStatusId}, office_key_card_department_id={$officeDeptId}
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {

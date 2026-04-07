@@ -73,16 +73,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rawStatusCode = $form['raw_status_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['raw_status_code']) . "'";
         $employmentStatusId = $form['employment_status_id'] === '' ? '1' : (string)(int)$form['employment_status_id'];
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
-        $active = '1';
-
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, email, hilton_id, username,
             department_id, job_code, job_title, comments, raw_status_code, employment_status_id,
-            office_key_card_department_id, active
+            office_key_card_department_id
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$email}, {$hiltonId}, {$username},
             {$departmentId}, {$jobCode}, {$jobTitle}, {$comments}, {$rawStatusCode}, {$employmentStatusId},
-            {$officeDeptId}, {$active}
+            {$officeDeptId}
         )";
 
         if (mysqli_query($conn, $sql)) {
