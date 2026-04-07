@@ -38,7 +38,6 @@ if ($itm_documentRoot && $itm_projectRoot && strpos($itm_projectRoot, $itm_docum
     } else {
         $itm_basePath = str_replace('\\', '/', dirname($itm_scriptName));
     }
-}
 
 $itm_basePath = '/' . trim((string)$itm_basePath, '/');
 if ($itm_basePath === '/') {
@@ -142,238 +141,265 @@ if (($ui_config['enable_all_error_reporting'] ?? 1) === 1) {
 /**
  * Sanitizes data for safe HTML output
  */
-function sanitize($data) {
-    if ($data === null) {
-        return '';
-    }
-
-    if (!is_string($data)) {
-        if (is_scalar($data)) {
-            $data = (string)$data;
-        } else {
+if (!function_exists('sanitize')) {
+    function sanitize($data) {
+        if ($data === null) {
             return '';
         }
-    }
 
-    return htmlspecialchars(stripslashes($data), ENT_QUOTES, 'UTF-8');
+        if (!is_string($data)) {
+            if (is_scalar($data)) {
+                $data = (string)$data;
+            } else {
+                return '';
+            }
+        }
+
+        return htmlspecialchars(stripslashes($data), ENT_QUOTES, 'UTF-8');
+    }
 }
 
 /**
  * Escapes data for safe use in SQL queries (deprecated in favor of prepared statements)
  */
-function escape_sql($data, $conn) {
-    return mysqli_real_escape_string($conn, $data);
+if (!function_exists('escape_sql')) {
+    function escape_sql($data, $conn) {
+        return mysqli_real_escape_string($conn, $data);
+    }
 }
 
 /**
  * Runs a MySQL query with basic error trapping
  */
-function itm_run_query($conn, $sql, &$errorCode = null, &$errorMessage = null) {
-    $errorCode = null;
-    $errorMessage = null;
+if (!function_exists('itm_run_query')) {
+    function itm_run_query($conn, $sql, &$errorCode = null, &$errorMessage = null) {
+        $errorCode = null;
+        $errorMessage = null;
 
-    try {
-        $result = mysqli_query($conn, $sql);
-        if ($result === false) {
-            $errorCode = (int)mysqli_errno($conn);
-            $errorMessage = (string)mysqli_error($conn);
+        try {
+            $result = mysqli_query($conn, $sql);
+            if ($result === false) {
+                $errorCode = (int)mysqli_errno($conn);
+                $errorMessage = (string)mysqli_error($conn);
+            }
+            return $result;
+        } catch (Throwable $t) {
+            $errorCode = (int)$t->getCode();
+            $errorMessage = (string)$t->getMessage();
+            return false;
         }
-        return $result;
-    } catch (Throwable $t) {
-        $errorCode = (int)$t->getCode();
-        $errorMessage = (string)$t->getMessage();
-        return false;
     }
 }
 
 /**
  * Translates MySQL error codes into user-friendly messages
  */
-function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
-    switch ((int)$errorCode) {
-        case 1451:
-            return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
-        case 1452:
-            return 'The selected related record does not exist anymore. Refresh the page and choose a valid value.';
-        case 1062:
-            return 'A record with the same unique value already exists. Use a different value.';
-        default:
-            if ($fallbackMessage !== '') {
-                return 'Database error: ' . $fallbackMessage;
+if (!function_exists('itm_format_db_constraint_error')) {
+    function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
+        switch ((int)$errorCode) {
+            case 1451:
+                return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
+            case 1452:
+                return 'The selected related record does not exist anymore. Refresh the page and choose a valid value.';
+            case 1062:
+                return 'A record with the same unique value already exists. Use a different value.';
+            default:
+                if ($fallbackMessage !== '') {
+                    return 'Database error: ' . $fallbackMessage;
+                }
+                return 'A database error occurred. Please try again.';
             }
-            return 'A database error occurred. Please try again.';
+        }
     }
 }
 
 /**
  * Validates that a string is a safe SQL identifier (table/column name)
  */
-function itm_is_safe_identifier($name) {
-    return is_string($name) && preg_match('/^[a-zA-Z0-9_]+$/', $name) === 1;
+if (!function_exists('itm_is_safe_identifier')) {
+    function itm_is_safe_identifier($name) {
+        return is_string($name) && preg_match('/^[a-zA-Z0-9_]+$/', $name) === 1;
+    }
 }
 
 /**
  * Checks if a table has a specific column
  */
-function itm_table_has_column($conn, $table, $column) {
-    static $cache = [];
-    $key = $table . '.' . $column;
-    if (array_key_exists($key, $cache)) {
+if (!function_exists('itm_table_has_column')) {
+    function itm_table_has_column($conn, $table, $column) {
+        static $cache = [];
+        $key = $table . '.' . $column;
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+            $cache[$key] = false;
+            return false;
+        }
+
+        $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            $cache[$key] = false;
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $cache[$key] = ($res && mysqli_num_rows($res) > 0);
+        mysqli_stmt_close($stmt);
         return $cache[$key];
     }
-
-    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
-        $cache[$key] = false;
-        return false;
-    }
-
-    $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-        $cache[$key] = false;
-        return false;
-    }
-
-    mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    $cache[$key] = ($res && mysqli_num_rows($res) > 0);
-    mysqli_stmt_close($stmt);
-    return $cache[$key];
 }
 
 /**
  * Finds all records in other tables that reference a specific record
  */
-function itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId = 0) {
-    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($pkColumn)) {
-        return [];
-    }
+if (!function_exists('itm_find_record_usage')) {
+    function itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId = 0) {
+        if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($pkColumn)) {
+            return [];
+        }
 
-    $sql = "SELECT kcu.TABLE_NAME AS source_table, kcu.COLUMN_NAME AS source_column
+        $sql = "SELECT kcu.TABLE_NAME AS source_table, kcu.COLUMN_NAME AS source_column
 FROM information_schema.KEY_COLUMN_USAGE kcu
 WHERE kcu.TABLE_SCHEMA = DATABASE()
   AND kcu.REFERENCED_TABLE_NAME = ?
   AND kcu.REFERENCED_COLUMN_NAME = ?";
 
-    $usage = [];
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-        return [];
+        $usage = [];
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return [];
+        }
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $pkColumn);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $sourceTable = (string)($row['source_table'] ?? '');
+            $sourceColumn = (string)($row['source_column'] ?? '');
+            if (!itm_is_safe_identifier($sourceTable) || !itm_is_safe_identifier($sourceColumn)) {
+                continue;
+            }
+
+            $where = '`' . str_replace('`', '``', $sourceColumn) . '`=' . (int)$pkValue;
+            if ((int)$companyId > 0 && itm_table_has_column($conn, $sourceTable, 'company_id')) {
+                $where .= ' AND `company_id`=' . (int)$companyId;
+            }
+
+            $countSql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $sourceTable) . '` WHERE ' . $where;
+            $countRes = mysqli_query($conn, $countSql);
+            $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+            $count = (int)($countRow['c'] ?? 0);
+            if ($count > 0) {
+                $usage[] = [
+                    'table' => $sourceTable,
+                    'column' => $sourceColumn,
+                    'count' => $count,
+                ];
+            }
+        }
+        mysqli_stmt_close($stmt);
+
+        return $usage;
     }
-    mysqli_stmt_bind_param($stmt, 'ss', $table, $pkColumn);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $sourceTable = (string)($row['source_table'] ?? '');
-        $sourceColumn = (string)($row['source_column'] ?? '');
-        if (!itm_is_safe_identifier($sourceTable) || !itm_is_safe_identifier($sourceColumn)) {
-            continue;
-        }
-
-        $where = '`' . str_replace('`', '``', $sourceColumn) . '`=' . (int)$pkValue;
-        if ((int)$companyId > 0 && itm_table_has_column($conn, $sourceTable, 'company_id')) {
-            $where .= ' AND `company_id`=' . (int)$companyId;
-        }
-
-        $countSql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $sourceTable) . '` WHERE ' . $where;
-        $countRes = mysqli_query($conn, $countSql);
-        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-        $count = (int)($countRow['c'] ?? 0);
-        if ($count > 0) {
-            $usage[] = [
-                'table' => $sourceTable,
-                'column' => $sourceColumn,
-                'count' => $count,
-            ];
-        }
-    }
-    mysqli_stmt_close($stmt);
-
-    return $usage;
 }
 
 /**
  * Formats a list of record usages into a descriptive error message
  */
-function itm_format_record_usage_error($table, $usage) {
-    $tableLabel = ucwords(str_replace('_', ' ', (string)$table));
-    if (empty($usage)) {
-        return $tableLabel . ' cannot be deleted because it is currently in use.';
-    }
+if (!function_exists('itm_format_record_usage_error')) {
+    function itm_format_record_usage_error($table, $usage) {
+        $tableLabel = ucwords(str_replace('_', ' ', (string)$table));
+        if (empty($usage)) {
+            return $tableLabel . ' cannot be deleted because it is currently in use.';
+        }
 
-    $parts = [];
-    foreach ($usage as $row) {
-        $parts[] = ($row['table'] ?? 'unknown') . ' (' . (int)($row['count'] ?? 0) . ')';
-    }
+        $parts = [];
+        foreach ($usage as $row) {
+            $parts[] = ($row['table'] ?? 'unknown') . ' (' . (int)($row['count'] ?? 0) . ')';
+        }
 
-    return $tableLabel . ' cannot be deleted because it is currently in use by: ' . implode(', ', $parts) . '.';
+        return $tableLabel . ' cannot be deleted because it is currently in use by: ' . implode(', ', $parts) . '.';
+    }
 }
 
 /**
  * Validates if a record can be safely deleted without breaking referential integrity
  */
-function itm_can_delete_record($conn, $table, $pkColumn, $pkValue, $companyId = 0, &$error = '') {
-    $error = '';
-    $usage = itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId);
-    if (!empty($usage)) {
-        $error = itm_format_record_usage_error($table, $usage);
-        return false;
-    }
+if (!function_exists('itm_can_delete_record')) {
+    function itm_can_delete_record($conn, $table, $pkColumn, $pkValue, $companyId = 0, &$error = '') {
+        $error = '';
+        $usage = itm_find_record_usage($conn, $table, $pkColumn, $pkValue, $companyId);
+        if (!empty($usage)) {
+            $error = itm_format_record_usage_error($table, $usage);
+            return false;
+        }
 
-    return true;
+        return true;
+    }
 }
 
 /**
  * Validates a CSRF token against the session
  */
-function itm_validate_csrf_token($token) {
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    $token = (string)$token;
-    return $sessionToken !== '' && $token !== '' && hash_equals($sessionToken, $token);
+if (!function_exists('itm_validate_csrf_token')) {
+    function itm_validate_csrf_token($token) {
+        $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+        $token = (string)$token;
+        return $sessionToken !== '' && $token !== '' && hash_equals($sessionToken, $token);
+    }
 }
 
 /**
  * Enforces CSRF protection for POST requests
  */
-function itm_require_post_csrf() {
-    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
-        http_response_code(403);
-        exit('Invalid CSRF token.');
+if (!function_exists('itm_require_post_csrf')) {
+    function itm_require_post_csrf() {
+        if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+            http_response_code(403);
+            exit('Invalid CSRF token.');
+        }
     }
 }
 
 /**
  * Generates or retrieves the current CSRF token from the session
  */
-function itm_get_csrf_token() {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+if (!function_exists('itm_get_csrf_token')) {
+    function itm_get_csrf_token() {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return (string)$_SESSION['csrf_token'];
     }
-    return (string)$_SESSION['csrf_token'];
 }
 
 /**
  * Retrieves a company name by its ID
  */
-function get_company_name($company_id, $conn) {
-    $sql = 'SELECT company FROM companies WHERE id = ? LIMIT 1';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-        return 'Unknown';
-    }
-    $companyId = (int)$company_id;
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    if (!mysqli_stmt_execute($stmt)) {
+if (!function_exists('get_company_name')) {
+    function get_company_name($company_id, $conn) {
+        $sql = 'SELECT company FROM companies WHERE id = ? LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 'Unknown';
+        }
+        $companyId = (int)$company_id;
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return 'Unknown';
+        }
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
         mysqli_stmt_close($stmt);
+        if ($row) {
+            return $row['company'] ?? 'Unknown';
+        }
         return 'Unknown';
     }
-    $result = mysqli_stmt_get_result($stmt);
-    $row = $result ? mysqli_fetch_assoc($result) : null;
-    mysqli_stmt_close($stmt);
-    if ($row) {
-        return $row['company'] ?? 'Unknown';
-    }
-    return 'Unknown';
 }
 ?>
