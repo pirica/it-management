@@ -25,11 +25,11 @@ function itm_sidebar_base_structure() {
             'title' => '🏢 Management',
             'items' => [
                 ['id' => 'equipment', 'label' => '🖥️ Equipment', 'href' => 'modules/equipment/', 'match_dir' => 'equipment'],
-                ['id' => 'workstations', 'label' => '💻 Is Workstation', 'href' => 'modules/workstations/', 'match_dir' => 'workstations'],
-                ['id' => 'servers', 'label' => '🖥️ Is Server', 'href' => 'modules/servers/', 'match_dir' => 'servers'],
-                ['id' => 'switches', 'label' => '🔀 Is Switch', 'href' => 'modules/switches/', 'match_dir' => 'switches'],
-                ['id' => 'printers', 'label' => '🖨️ Is Printer', 'href' => 'modules/printers/', 'match_dir' => 'printers'],
-                ['id' => 'pos', 'label' => '🏧 Is POS', 'href' => 'modules/pos/', 'match_dir' => 'pos'],
+                ['id' => 'is_workstation', 'label' => '💻 Is Workstation', 'href' => 'modules/is_workstation/', 'match_dir' => 'is_workstation'],
+                ['id' => 'is_server', 'label' => '🖥️ Is Server', 'href' => 'modules/is_server/', 'match_dir' => 'is_server'],
+                ['id' => 'is_switch', 'label' => '🔀 Is Switch', 'href' => 'modules/is_switch/', 'match_dir' => 'is_switch'],
+                ['id' => 'is_printer', 'label' => '🖨️ Is Printer', 'href' => 'modules/is_printer/', 'match_dir' => 'is_printer'],
+                ['id' => 'is_pos', 'label' => '🏧 Is POS', 'href' => 'modules/is_pos/', 'match_dir' => 'is_pos'],
                 ['id' => 'switch_ports', 'label' => '🖧 Switch Ports', 'href' => 'modules/switch_ports/', 'match_dir' => 'switch_ports'],
                 ['id' => 'tickets', 'label' => '🎟️ Tickets', 'href' => 'modules/tickets/', 'match_dir' => 'tickets'],
             ],
@@ -126,11 +126,11 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
     }
 
     $moduleTitleMap = [
-        'workstations' => '💻 Workstations',
-        'servers' => '🖥️ Servers',
-        'switches' => '🔀 Switches',
-        'printers' => '🖨️ Printers',
-        'pos' => '🏧 POS',
+        'is_workstation' => '💻 Is Workstation',
+        'is_server' => '🖥️ Is Server',
+        'is_switch' => '🔀 Is Switch',
+        'is_printer' => '🖨️ Is Printer',
+        'is_pos' => '🏧 Is POS',
     ];
     $searchPlaceholderMap = [
         'is_workstation' => 'Use SQL wildcards, e.g. %%desk%%',
@@ -263,6 +263,13 @@ function itm_sidebar_structure($conn = null) {
             while ($equipmentTypeRow = mysqli_fetch_assoc($equipmentTypeRes)) {
                 $typeName = (string)($equipmentTypeRow['name'] ?? '');
                 itm_ensure_equipment_type_module_scaffold($typeName);
+                $equipmentTypeModuleName = itm_equipment_type_sidebar_item_id($typeName);
+                if ($equipmentTypeModuleName !== '') {
+                    $equipmentTypeModuleIndex = $modulesRoot . '/' . $equipmentTypeModuleName . '/index.php';
+                    if (is_file($equipmentTypeModuleIndex) && !isset($existingItemIds[$equipmentTypeModuleName])) {
+                        $moduleNames[$equipmentTypeModuleName] = true;
+                    }
+                }
             }
         }
 
@@ -428,8 +435,8 @@ function itm_equipment_type_sidebar_item_id($typeName) {
         return '';
     }
 
-    if (substr($normalized, -1) !== 's') {
-        $normalized .= 's';
+    if (strpos($normalized, 'is_') !== 0) {
+        $normalized = 'is_' . $normalized;
     }
 
     return $normalized;
