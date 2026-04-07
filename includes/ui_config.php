@@ -175,6 +175,7 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
     $fileContents['view.php'] = $viewContent;
 
     $fileContents['edit.php'] = "<?php\nrequire '../equipment/edit.php';\n";
+    $fileContents['create.php'] = "<?php\nrequire '../equipment/create.php';\n";
     $fileContents['delete.php'] = "<?php\nrequire '../equipment/delete.php';\n";
     $fileContents['list_all.php'] = "<?php\nrequire '../equipment/list_all.php';\n";
     $fileContents['view_all.php'] = "<?php\nrequire 'list_all.php';\n";
