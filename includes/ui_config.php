@@ -79,6 +79,22 @@ function itm_sidebar_base_structure() {
     ];
 }
 
+
+/**
+ * PHP 7.2-compatible replacement for array_key_first.
+ */
+function itm_array_key_first($array) {
+    if (!is_array($array) || empty($array)) {
+        return null;
+    }
+
+    foreach ($array as $key => $_value) {
+        return $key;
+    }
+
+    return null;
+}
+
 /**
  * Formats a table name into a human-readable title
  */
@@ -789,9 +805,9 @@ function itm_normalize_sidebar_submenu_order($raw) {
         if (isset($assigned[$itemId])) {
             continue;
         }
-        $targetSection = $defaultParent[$itemId] ?? array_key_first($default);
+        $targetSection = $defaultParent[$itemId] ?? itm_array_key_first($default);
         if ($targetSection === null || !isset($normalized[$targetSection])) {
-            $targetSection = array_key_first($normalized);
+            $targetSection = itm_array_key_first($normalized);
         }
         if ($targetSection === null) {
             continue;
