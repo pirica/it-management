@@ -78,10 +78,11 @@ function equipment_table_exists(mysqli $conn, string $table): bool {
 function equipment_table_has_column(mysqli $conn, string $table, string $column): bool {
     if (!equipment_table_exists($conn, $table)) { return false; }
     if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) { return false; }
-    $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
+
+    $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $column);
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $has = $res && mysqli_num_rows($res) > 0;
@@ -100,19 +101,17 @@ function equipment_table_varchar_length(mysqli $conn, string $table, string $col
     if (array_key_exists($cacheKey, $cache)) { return $cache[$cacheKey]; }
     if (!equipment_table_exists($conn, $table) || !itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) { return 0; }
 
-    $sql = "SHOW COLUMNS FROM `{$table}` LIKE ?";
+    $sql = 'SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $column);
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
-        $type = strtolower((string)($row['Type'] ?? ''));
-        if (preg_match('/^varchar\((\d+)\)$/', $type, $matches) === 1) {
-            $cache[$cacheKey] = (int)$matches[1];
-            return $cache[$cacheKey];
-        }
+        $length = isset($row['CHARACTER_MAXIMUM_LENGTH']) ? (int)$row['CHARACTER_MAXIMUM_LENGTH'] : 0;
+        $cache[$cacheKey] = $length > 0 ? $length : 0;
+        return $cache[$cacheKey];
     }
     return 0;
 }

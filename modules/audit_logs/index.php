@@ -122,40 +122,22 @@ $moduleListHeading = '🧾 Audit Logs';
     <title>Audit Logs - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .audit-json {
-            white-space: pre-wrap;
-            word-break: break-word;
-            max-width: 500px;
-            margin: 8px 0 0;
-            font-size: 12px;
-            line-height: 1.4;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        .audit-summary {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .audit-user {
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .audit-cell-added {
-            background-color: #e6f6ea;
-        }
-
-        .audit-cell-removed {
-            background-color: #fde8e8;
-        }
+        .audit-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+        .audit-toolbar h1 { margin:0; font-size:1.5rem; font-weight:700; }
+        .audit-filters form { display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto auto; gap:10px; align-items:end; }
+        .audit-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+        .audit-kpi { border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--input-bg); }
+        .audit-kpi .label { font-size:12px; opacity:.8; margin-bottom:4px; }
+        .audit-kpi .value { font-size:18px; font-weight:700; }
+        .audit-table-wrap { overflow-x:auto; }
+        .audit-row-chip { display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; }
+        .audit-row-chip.insert { background:#e8f8ee; border-color:#9cd8b1; color:#18794e; }
+        .audit-row-chip.update { background:#eef4ff; border-color:#9eb8ee; color:#1d4f91; }
+        .audit-row-chip.delete { background:#fdecec; border-color:#f0b6b6; color:#a52727; }
+        .audit-user { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .audit-summary { display:grid; gap:8px; }
+        .audit-json { white-space:pre-wrap; word-break:break-word; max-width:520px; margin:0; font-size:12px; line-height:1.4; background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px; }
+        @media (max-width:1080px) { .audit-filters form { grid-template-columns:1fr 1fr; } .audit-kpis { grid-template-columns:1fr 1fr; } }
     </style>
 </head>
 <body>
@@ -165,14 +147,14 @@ $moduleListHeading = '🧾 Audit Logs';
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
-                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+            <div class="audit-toolbar">
+                <h1><?php echo sanitize($moduleListHeading); ?></h1>
                 <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
             </div>
 
             <!-- SEARCH AND FILTER FORM -->
-            <div class="card" style="margin-bottom:16px;">
-                <form method="GET" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:10px;align-items:end;">
+            <div class="card audit-filters" style="margin-bottom:16px;">
+                <form method="GET">
                     <div class="form-group" style="margin:0;">
                         <label>Search</label>
                         <input type="text" name="search" value="<?php echo sanitize($search); ?>" placeholder="Table, record id, or user name">
@@ -199,8 +181,15 @@ $moduleListHeading = '🧾 Audit Logs';
                 </form>
             </div>
 
+            <div class="audit-kpis">
+                <div class="audit-kpi"><div class="label">Rows on Screen</div><div class="value"><?php echo (int)count($rows); ?></div></div>
+                <div class="audit-kpi"><div class="label">Insert Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'INSERT'))); ?></div></div>
+                <div class="audit-kpi"><div class="label">Update Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'UPDATE'))); ?></div></div>
+                <div class="audit-kpi"><div class="label">Delete Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'DELETE'))); ?></div></div>
+            </div>
+
             <!-- LOG DATA TABLE -->
-            <div class="card">
+            <div class="card audit-table-wrap">
                 <table>
                     <thead>
                         <tr>
@@ -237,11 +226,11 @@ $moduleListHeading = '🧾 Audit Logs';
                             }
 
                             // Styling based on action type
-                            $actionClass = '';
+                            $actionClass = 'update';
                             if (($row['action'] ?? '') === 'INSERT') {
-                                $actionClass = 'audit-cell-added';
+                                $actionClass = 'insert';
                             } elseif (($row['action'] ?? '') === 'DELETE') {
-                                $actionClass = 'audit-cell-removed';
+                                $actionClass = 'delete';
                             }
 
                             $oldValues = (string)($row['old_values'] ?? '');
@@ -258,8 +247,8 @@ $moduleListHeading = '🧾 Audit Logs';
                                 </td>
                                 <td><?php echo sanitize((string)$row['table_name']); ?></td>
                                 <td><?php echo (int)$row['record_id']; ?></td>
-                                <td><?php echo sanitize((string)$row['action']); ?></td>
-                                <td class="itm-actions-cell itm-actions-left <?php echo sanitize($actionClass); ?>">
+                                <td><span class="audit-row-chip <?php echo sanitize($actionClass); ?>"><?php echo sanitize((string)$row['action']); ?></span></td>
+                                <td class="itm-actions-cell itm-actions-left">
                                     <div class="audit-summary">
                                         <span><?php echo sanitize($previewText); ?></span>
                                         <details>
