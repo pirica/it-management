@@ -187,6 +187,20 @@ function equipment_encode_photo_filenames(array $filenames): string {
     return json_encode($clean, JSON_UNESCAPED_SLASHES);
 }
 
+/**
+ * Renders <option> tags from id/label rows while safely handling selection state
+ */
+function render_options(array $items, $selectedValue): void {
+    $selected = (string)$selectedValue;
+    foreach ($items as $item) {
+        $value = isset($item['id']) ? (string)$item['id'] : '';
+        $label = isset($item['label']) ? (string)$item['label'] : '';
+        if ($value === '' || $label === '') { continue; }
+        $isSelected = ($value === $selected) ? ' selected' : '';
+        echo '<option value="' . sanitize($value) . '"' . $isSelected . '>' . sanitize($label) . '</option>';
+    }
+}
+
 // PRE-FETCH FORM OPTIONS
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
@@ -233,6 +247,7 @@ $data = [
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_count_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '', 'active' => 1
 ];
+$currentPhotoFilenames = equipment_parse_photo_filenames($data['photo_filename']);
 
 // Load existing record
 if ($isEdit) {
@@ -244,6 +259,7 @@ if ($isEdit) {
         if ($res && mysqli_num_rows($res) === 1) {
             $data = array_merge($data, mysqli_fetch_assoc($res));
             $originalData = $data;
+            $currentPhotoFilenames = equipment_parse_photo_filenames($data['photo_filename'] ?? '');
         } else { $error = 'Equipment record not found.'; }
         mysqli_stmt_close($stmt);
     }
