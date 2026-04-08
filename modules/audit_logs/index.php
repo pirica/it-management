@@ -113,6 +113,21 @@ function itm_audit_preview($text, $limit = 120) {
     return mb_substr($text, 0, $limit) . '...';
 }
 
+/**
+ * Normalize audit payload text so empty-ish values render consistently.
+ *
+ * Why: Audit triggers can store blank strings or literal "null", and showing
+ * those as real payloads confuses operators when they expect "no value".
+ */
+function itm_audit_normalize_value($text) {
+    $text = trim((string)$text);
+    if ($text === '' || strcasecmp($text, 'null') === 0) {
+        return '—';
+    }
+
+    return $text;
+}
+
 $moduleListHeading = '🧾 Audit Logs';
 ?>
 <!DOCTYPE html>
@@ -233,8 +248,8 @@ $moduleListHeading = '🧾 Audit Logs';
                                 $actionClass = 'delete';
                             }
 
-                            $oldValues = (string)($row['old_values'] ?? '');
-                            $newValues = (string)($row['new_values'] ?? '');
+                            $oldValues = itm_audit_normalize_value($row['old_values'] ?? '');
+                            $newValues = itm_audit_normalize_value($row['new_values'] ?? '');
                             $previewText = 'Old: ' . itm_audit_preview($oldValues, 80) . ' | New: ' . itm_audit_preview($newValues, 80);
                             ?>
                             <tr>
@@ -253,8 +268,8 @@ $moduleListHeading = '🧾 Audit Logs';
                                         <span><?php echo sanitize($previewText); ?></span>
                                         <details>
                                             <summary class="btn btn-sm btn-primary" style="cursor:pointer;">Click to see more</summary>
-                                            <div class="audit-json"><strong>Old Values</strong><br><?php echo sanitize($oldValues !== '' ? $oldValues : '—'); ?></div>
-                                            <div class="audit-json"><strong>New Values</strong><br><?php echo sanitize($newValues !== '' ? $newValues : '—'); ?></div>
+                                            <div class="audit-json"><strong>Old Values</strong><br><?php echo sanitize($oldValues); ?></div>
+                                            <div class="audit-json"><strong>New Values</strong><br><?php echo sanitize($newValues); ?></div>
                                         </details>
                                     </div>
                                 </td>
