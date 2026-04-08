@@ -1,13 +1,11 @@
 <?php
 /**
- * Equipment Fiber Rack Module - Delete
+ * Fiber Racks Module - Delete
+ * 
+ * Wrapper for the local CRUD implementation.
  */
 
 $crud_table = 'equipment_fiber_rack';
 $crud_title = 'Fiber Racks';
 $crud_action = 'delete';
-?>
-<?php
-require '../../config/config.php';
-
-require '../access_levels/delete.php';
+require 'index.php';

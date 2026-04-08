@@ -1,13 +1,11 @@
 <?php
 /**
  * Equipment Statuses Module - View
+ * 
+ * Wrapper for the local CRUD implementation.
  */
 
 $crud_table = 'equipment_statuses';
 $crud_title = 'Equipment Statuses';
 $crud_action = 'view';
-?>
-<?php
-require '../../config/config.php';
-
-require '../access_levels/view.php';
+require 'index.php';

@@ -1,13 +1,11 @@
 <?php
 /**
  * Equipment Types Module - View
+ * 
+ * Wrapper for the local CRUD implementation.
  */
 
 $crud_table = 'equipment_types';
 $crud_title = 'Equipment Types';
 $crud_action = 'view';
-?>
-<?php
-require '../../config/config.php';
-
-require '../access_levels/view.php';
+require 'index.php';
