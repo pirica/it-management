@@ -64,7 +64,8 @@ Every module (excluding the Protection Zone) must implement:
 * **Search:** Comprehensive search across all visible fields.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
 * **Navigation:** Standardized server-side pagination based on the `records_per_page` value from Settings.
-
+* ** Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
+* ** Enable Audit Log:** `enable_audit_logs` value from Settings.
 ---
 
 ## 🔒 Security Protocol
