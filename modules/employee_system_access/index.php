@@ -221,7 +221,10 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                             <?php foreach (array_keys($accessLabelsById) as $accessId): ?>
                                 <td><?php echo isset($row['grants'][$accessId]) ? '✅' : '❌'; ?></td>
                             <?php endforeach; ?>
-                            <td><a class="btn btn-sm" href="edit.php?employee_id=<?php echo (int)$row['employee_id']; ?>">✏️</a></td>
+                            <td>
+                                <a class="btn btn-sm" href="../employees/view.php?id=<?php echo (int)$row['employee_id']; ?>">👁️</a>
+                                <a class="btn btn-sm" href="edit.php?employee_id=<?php echo (int)$row['employee_id']; ?>">✏️</a>
+                            </td>
                         </tr>
                     <?php endforeach; else: ?>
                         <tr><td colspan="<?php echo count($columns) + 1; ?>" style="text-align:center;">No rows found.</td></tr>

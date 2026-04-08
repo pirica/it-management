@@ -89,7 +89,14 @@
             if (!(bar instanceof HTMLElement)) return false;
             const heading = bar.querySelector(':scope > h1, :scope > h2, :scope > h3');
             if (!heading) return false;
-            const primaryLink = bar.querySelector(':scope > a.btn.btn-primary, :scope .btn.btn-primary[href*=\"create\"], :scope .btn.btn-primary[href*=\"new\"]');
+            const primaryLink = Array.from(bar.querySelectorAll(':scope > a.btn.btn-primary, :scope .btn.btn-primary')).find((link) => {
+                if (!(link instanceof HTMLAnchorElement)) return false;
+                const href = (link.getAttribute('href') || '').toLowerCase();
+                const label = (link.textContent || '').toLowerCase();
+                const looksLikeExport = href.includes('export=') || href.includes('download=') || label.includes('export') || label.includes('download');
+                if (looksLikeExport) return false;
+                return href.includes('create') || href.includes('new') || label.includes('new') || label.includes('add');
+            });
             return !!primaryLink;
         });
 
@@ -98,7 +105,14 @@
                 return;
             }
             const heading = bar.querySelector(':scope > h1, :scope > h2, :scope > h3');
-            const primaryLink = bar.querySelector(':scope > a.btn.btn-primary, :scope .btn.btn-primary[href*=\"create\"], :scope .btn.btn-primary[href*=\"new\"]');
+            const primaryLink = Array.from(bar.querySelectorAll(':scope > a.btn.btn-primary, :scope .btn.btn-primary')).find((link) => {
+                if (!(link instanceof HTMLAnchorElement)) return false;
+                const href = (link.getAttribute('href') || '').toLowerCase();
+                const label = (link.textContent || '').toLowerCase();
+                const looksLikeExport = href.includes('export=') || href.includes('download=') || label.includes('export') || label.includes('download');
+                if (looksLikeExport) return false;
+                return href.includes('create') || href.includes('new') || label.includes('new') || label.includes('add');
+            });
             if (!heading || !primaryLink) return;
 
             bar.classList.add('itm-new-button-bar');
