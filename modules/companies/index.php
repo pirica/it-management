@@ -86,6 +86,7 @@ if ($stmt) {
 }
 
 $csrfToken = itm_get_csrf_token();
+$showBulkActions = $totalRows >= $perPage;
 $error = (string)($_SESSION['crud_error'] ?? '');
 unset($_SESSION['crud_error']);
 
@@ -140,11 +141,24 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </form>
             </div>
 
+
+            <?php if ($showBulkActions): ?>
+                <!-- Bulk controls are intentionally gated by total rows vs per-page to reduce accidental destructive actions on short lists. -->
+                <div class="card" style="margin-bottom:16px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all companies? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
+            <?php endif; ?>
+
             <!-- Companies Data Table -->
             <div class="card">
                 <table>
                     <thead>
                     <tr>
+                        <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
                         <?php foreach (['id' => 'ID', 'company' => 'Company', 'incode' => 'InCode', 'city' => 'City', 'country' => 'Country', 'phone' => 'Phone', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(companies_build_query(['search' => $searchRaw, 'sort' => $field, 'dir' => $nextDir])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -156,6 +170,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php if ($rows && mysqli_num_rows($rows) > 0): ?>
                         <?php while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['company']); ?></td>
                                 <td><?php echo sanitize($row['incode']); ?></td>
@@ -174,6 +189,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this company?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="hidden" name="bulk_action" value="single_delete">
                                             <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                                         </form>
                                     </div>
@@ -181,7 +197,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="8" style="text-align:center;">No companies found.</td></tr>
+                        <tr><td colspan="9" style="text-align:center;">No companies found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
