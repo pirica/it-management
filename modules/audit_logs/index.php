@@ -34,6 +34,21 @@ $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
 
+if (!empty($_SESSION['audit_logs_flash_success']) && is_array($_SESSION['audit_logs_flash_success'])) {
+    $messages = array_merge($messages, array_map('strval', $_SESSION['audit_logs_flash_success']));
+    unset($_SESSION['audit_logs_flash_success']);
+}
+if (!empty($_SESSION['audit_logs_flash_error']) && is_array($_SESSION['audit_logs_flash_error'])) {
+    $errors = array_merge($errors, array_map('strval', $_SESSION['audit_logs_flash_error']));
+    unset($_SESSION['audit_logs_flash_error']);
+}
+
+// Keep compatibility with modules that pass one-off alerts through the URL.
+$alertMessage = trim((string)($_GET['alert'] ?? ''));
+if ($alertMessage !== '') {
+    $messages[] = $alertMessage;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
@@ -82,6 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    // Why: POST-Redirect-GET keeps alert banners visible after bulk actions and
+    // avoids duplicate submissions when operators refresh the page.
+    $_SESSION['audit_logs_flash_success'] = $messages;
+    $_SESSION['audit_logs_flash_error'] = $errors;
+    header('Location: index.php');
+    exit;
 }
 
 // Extract filter parameters from the URL for persistent search/filtering
