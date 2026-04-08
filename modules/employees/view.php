@@ -28,7 +28,15 @@ $sql = "SELECT e.*, d.name AS department_name, okd.name AS office_key_card_depar
 $res = mysqli_query($conn, $sql);
 $employee = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 
-$booleanFields = ['duplicate'];
+$booleanFields = [
+    'duplicate',
+    'active',
+    'enabled',
+    'is_active',
+    'is_enabled',
+    'has_laptop',
+    'has_phone',
+];
 $hiddenFields = ['company_id', 'user_id', 'location_id', 'phone', 'location'];
 
 // Fetch a list of all systems this employee currently has access to
@@ -89,8 +97,13 @@ function emp_label($field) {
                             <?php if (in_array($field, $hiddenFields, true)) { continue; } ?>
                             <?php
                                 // Handle display logic based on field type
-                                if (in_array($field, $booleanFields, true)) {
-                                    $display = ((int)$value === 1) ? '✅' : '❌';
+                                if (
+                                    in_array($field, $booleanFields, true)
+                                    || (is_string($value) && in_array(strtolower(trim($value)), ['yes', 'no', 'true', 'false'], true))
+                                ) {
+                                    $normalized = strtolower(trim((string)$value));
+                                    $isTrue = ((string)$value === '1' || $normalized === 'yes' || $normalized === 'true');
+                                    $display = $isTrue ? '✅' : '❌';
                                 } elseif ($field === 'email' && (string)$value !== '') {
                                     $safe = sanitize((string)$value);
                                     $display = '<a href="mailto:' . $safe . '">' . $safe . '</a>';
