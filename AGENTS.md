@@ -45,6 +45,7 @@ Do **not** modify the logic or structure of these modules unless explicitly requ
 * `/modules/equipment/` (including Switch Port Manager)
 * `/modules/idf/`, `/modules/idfs_links/`, `/modules/idf_positions/`
 * `/modules/audit_logs/`, `/modules/employees/`
+* `/modules/settings/`
 
 ### 4. Dynamic UI Configuration (Settings)
 Modules must read and validate settings via `itm_get_ui_configuration()`:
