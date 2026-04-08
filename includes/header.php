@@ -103,4 +103,53 @@ document.addEventListener('click', function (event) {
     document.body.appendChild(form);
     form.submit();
 });
+
+/**
+ * Adds lightweight emoji-prefixed tooltips to links/buttons that do not
+ * already define a title. This improves intent clarity without forcing
+ * module-by-module markup edits across the legacy codebase.
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    const intentRules = [
+        { test: /(delete|remove|trash)/i, emoji: '🗑️', label: 'Delete item' },
+        { test: /(edit|update|modify)/i, emoji: '✏️', label: 'Edit item' },
+        { test: /(view|details|open)/i, emoji: '👁️', label: 'View details' },
+        { test: /(create|add|new)/i, emoji: '➕', label: 'Add new item' },
+        { test: /(save|submit|apply)/i, emoji: '💾', label: 'Save changes' },
+        { test: /(logout|sign out)/i, emoji: '🚪', label: 'Log out' },
+        { test: /(search|find)/i, emoji: '🔎', label: 'Search' },
+        { test: /(export|download)/i, emoji: '📤', label: 'Export data' },
+        { test: /(import|upload)/i, emoji: '📥', label: 'Import data' },
+        { test: /(back|return)/i, emoji: '↩️', label: 'Go back' },
+    ];
+
+    const nodes = document.querySelectorAll('a, button, input[type="submit"], input[type="button"]');
+    nodes.forEach(function (node) {
+        if (!node || node.hasAttribute('title') || node.dataset.itmAutoTooltip === 'off') {
+            return;
+        }
+
+        const classText = node.className || '';
+        const ariaText = node.getAttribute('aria-label') || '';
+        const hrefText = node.getAttribute('href') || '';
+        const valueText = node.value || '';
+        const visibleText = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        const signal = [visibleText, ariaText, valueText, classText, hrefText].join(' ').trim();
+        if (!signal) {
+            return;
+        }
+
+        const matched = intentRules.find(function (rule) {
+            return rule.test.test(signal);
+        });
+
+        if (matched) {
+            node.setAttribute('title', matched.emoji + ' ' + matched.label);
+            return;
+        }
+
+        // Fallback keeps tooltip useful even when no known intent keyword matches.
+        node.setAttribute('title', '🔗 ' + visibleText.slice(0, 80));
+    });
+});
 </script>
