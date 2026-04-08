@@ -10,7 +10,7 @@ $crud_title = 'Access Levels';
 $crud_action = 'view';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 // Reuse logic from index.php
 require 'index.php';

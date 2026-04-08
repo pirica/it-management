@@ -11,7 +11,7 @@ $crud_title = 'Access Levels';
 $crud_action = 'index';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 // Validate table configuration to prevent unauthorized access to other tables
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
