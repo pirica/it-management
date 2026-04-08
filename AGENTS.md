@@ -1,77 +1,102 @@
 # AGENTS.md
 
-This file provides instructions and context for AI agents working on the IT Management System.
+This document provides essential instructions, architectural constraints, and coding standards for AI agents working on the **IT Management System**.
 
-## Project Overview
-An IT Asset Management System built with PHP and MySQL. It features a GitHub Copilot theme with light/dark mode and supports multi-company operations.
+## 🚀 Project Overview
+A multi-company IT Asset Management System built with PHP and MySQL. 
+* **Design Philosophy:** GitHub Copilot theme (Light/Dark mode).
+* **Architecture:** Procedural PHP with modular CRUD structures.
+* **Multi-tenancy:** Data is strictly scoped by `company_id`.
 
-## Tech Stack
-- **Language**: PHP 8.4+
-- **Database**: MySQL 8.0+ (using `mysqli` extension, NOT PDO).
-- **Frontend**: Custom CSS (`css/styles.css`), Vanilla JS, GitHub Copilot theme.
-- **Environment**: Apache 2.4+, No Composer dependency management.
+## 🛠 Tech Stack & Environment
+- **Backend:** PHP 8.4+ (Strictly **MySQLi**, do NOT use PDO).
+- **Database:** MySQL 8.0+.
+- **Frontend:** Vanilla JS, Custom CSS (`css/styles.css`), No Frameworks.
+- **Environment:** Apache 2.4+. **No Composer** dependency management.
 
-## Key Directories
-- `config/`: Configuration files (`config.php`).
-- `includes/`: Common UI components, headers, sidebars, and utility functions.
+## 📂 Directory Map
+- `config/`: Core settings and `config.php`.
+- `includes/`: UI components (headers, sidebars) and utility functions.
 - `modules/`: Feature-specific CRUD logic.
-- `scripts/`: Maintenance and security audit scripts.
-- `js/`: Shared JavaScript tools.
-- `images/`: Equipment photo uploads (must exist).
-- `tickets_photos/`: Support ticket image uploads (must exist).
-- `backups/`: Database backup storage (must exist).
+- `scripts/`: Maintenance, security audits, and CLI tools.
+- `js/` & `css/`: Assets (Note: `css/style.css` is **deprecated**; use `css/styles.css`).
+- **Required Dirs:** `images/`, `tickets_photos/`, and `backups/` must exist with write permissions.
 
-## Coding Standards
+---
 
-### Structure & Organization
-- **Modules**: Every module must have the files: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
-- **Master Templates**: Dont use master CRUD templates.
-- **Database Schema**:
-    - `database.sql` must be modified if there is a request to remove/delete a field or table.
-    - `database.sql` must be modified if there is a request to rename a table header.
-    - hide field `company_id` from every module, the files: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
-    - `company_id` Add safe inline FK creation logic that creates referenced rows when users add new values and scopes FK queries/inserts by company_id when appropriate, plus client-side scripts for select-add and bulk-delete workflows.
+## 🏗 Coding Standards
 
-### Documentation & Commenting
-- **Style**: Follow the **"why-focused"** commenting style for all files.
-    - **What**: Explaining *what* the code does (e.g., "// Increment i"). Avoid this for obvious code.
-    - **Why**: Explaining the *rationale* behind a decision (e.g., "// We use a static cache here to avoid redundant database queries within a single request cycle"). **Prioritize "Why" comments.**
+### 1. Module Structure
+Each module must maintain a flat structure with these specific files:
+`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
 
-### Security
-- **SQL Injection**:
-    - ALWAYS use MySQLi prepared statements for user-provided data.
-    - Use `itm_is_safe_identifier($name)` from `config/config.php` to validate dynamic table or column names.
-    - `(int)` type-casting is acceptable for simple numeric safety in queries.
-    - Use `itm_run_query($conn, $sql)` for general queries with error trapping.
-    - Run `php scripts/check_sql_injection_coverage.php` to audit your changes.
-- **CSRF Protection**:
-    - ALL POST request handlers must call `itm_require_post_csrf()` from `config/config.php`.
-    - Include a hidden input with `name="csrf_token"` and `value="<?= itm_get_csrf_token() ?>"` in all forms.
-    - Run `php scripts/check_csrf_coverage.php` to verify protection.
-- **Data Sanitization**:
-    - Use `sanitize($data)` for outputting user-provided strings in HTML to prevent XSS.
+> [!IMPORTANT]
+> **No Master Templates:** Do not attempt to abstract CRUD into a single master template. Each module must remain independent.
 
-### PHP Development Patterns
-- **Pathing**: Use `ROOT_PATH` (defined in `config/config.php`) with a trailing slash for filesystem operations.
-- **Variable Scoping**: When including shared files (like `includes/sidebar.php`), use unique, prefixed variable names (e.g., `$itm_item`, `$itm_section`) to avoid collisions with the calling script's variables.
-- **Error Logging**: Application errors are standardized to be written to `ROOT_PATH . 'error_log.txt'`.
-- **Database Connection**: Use the global `$conn` object.
-- **UI Configuration**: UI preferences and defaults are managed via `itm_get_ui_configuration()` in `includes/ui_config.php`.
+### 2. Database & Schema Rules
+- **Schema Updates:** If a field/table is deleted or a header renamed, you **must** update `database.sql`.
+- **Company Scoping:** - **Hide** `company_id` from all UI views.
+    - Add safe inline FK creation logic to create referenced rows automatically.
+    - Scope all queries and inserts by `company_id`.
+- **Audit Logging:** The system sets MySQL session variables (`@app_user_id`) in `config.php`. Do not overwrite these.
 
-### UI/UX Standards
-- **CSS**: Only use `css/styles.css`. The file `css/style.css` is deprecated and should not be referenced.
-- **Layout**: The standard page wrapper structure is: `<div class="container">` > `<div class="main-content">` > `<div class="content">`.
-- **Buttons**:
-    - Use `btn-primary` for main actions/add-buttons.
-    - Use `btn-sm` for table row actions.
-- **Tables**:
-    - Use `itm-actions-cell` and `itm-actions-wrap` classes for table action columns.
-    - Tables within `.content .card` automatically receive Export (Excel/PDF) and Import functionality via `js/table-tools.js`.
-- **Forms**:
-    - Use `data-addable-select="1"` on `<select>` elements to enable the "+" quick-add option via `js/select-add-option.js`.
-    - In `view.php`, boolean-like values map as follows: result `1` shows ✅, and result `0` shows ❌ (icon-only).
+### 3. Protection Zone (STRICT: No Auto-Changes)
+Do **not** modify the logic or structure of these modules unless explicitly requested:
+* `/modules/equipment/` (including Switch Port Manager)
+* `/modules/idf/`, `/modules/idfs_links/`, `/modules/idf_positions/`
+* `/modules/audit_logs/`, `/modules/employees/`
 
-### Maintenance & Setup
-- **Database Credentials**: Default development credentials are Host: `localhost`, User: `root`, Password: `usbw`, Database: `itmanagement`.
-- **Directory Requirements**: Ensure `images/`, `tickets_photos/`, and `backups/` directories exist and have proper write permissions.
-- **Audit Logging**: The application sets MySQL session variables (`@app_user_id`, etc.) in `config/config.php` to support database-level audit triggers.
+### 4. Dynamic UI Configuration (Settings)
+Modules must read and validate settings via `itm_get_ui_configuration()`:
+- **Button Positions:** Render the top refresh/add controls on the left, right, or both based on `new_button_position`.
+- **Table Actions:** Add `data-itm-actions-origin="1"` to the "Actions" header and row cells to allow the global layout engine to map `table_actions_position`.
+- **Global Behaviors:** Respect system toggles for:
+    * `enable_all_error_reporting`
+    * `enable_audit_logs`
+    * `records_per_page` (Used as the threshold for pagination and bulk action visibility).
+
+### 5. Standard Feature Set
+Every module (excluding the Protection Zone) must implement:
+* **Bulk Actions:** "Select to Delete" and "Clear Table". These must only be visible if the total record count is greater than or equal to the `records_per_page` setting.
+* **Search:** Comprehensive search across all visible fields.
+* **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
+* **Navigation:** Standardized server-side pagination based on the `records_per_page` value from Settings.
+
+---
+
+## 🔒 Security Protocol
+
+### SQL Injection (SQLi)
+1. **Prepared Statements:** ALWAYS use MySQLi prepared statements for user data.
+2. **Identifier Validation:** Use `itm_is_safe_identifier($name)` for dynamic table/column names.
+3. **Execution:** Use `itm_run_query($conn, $sql)` with error trapping.
+4. **Audit:** Run `php scripts/check_sql_injection_coverage.php` after changes.
+
+### CSRF & XSS
+- **CSRF:** All `POST` handlers must call `itm_require_post_csrf()`. Forms require:
+  `<input type="hidden" name="csrf_token" value="<?= itm_get_csrf_token() ?>">`
+- **XSS:** Wrap all echoed user-provided strings in `sanitize($data)`.
+
+---
+
+## 💡 Development Patterns
+
+### PHP Best Practices
+- **Paths:** Use `ROOT_PATH` with a trailing slash for filesystem operations.
+- **Variable Collisions:** Use unique, prefixed variables in `includes/` (e.g., `$itm_sidebar_user`).
+- **Commenting:** Follow the **"Why-Focused"** style. Every file must be commented.
+    * *What:* "Looping through array" (Avoid).
+    * *Why:* "Using a generator here to handle large datasets without hitting memory limits" (Prioritize).
+
+### UI/UX Requirements
+- **Layout:** `.container` > `.main-content` > `.content`.
+- **Buttons:** `btn-primary` for main actions; `btn-sm` for table actions.
+- **Tables:** Use `.itm-actions-cell` and `.itm-actions-wrap` for action columns.
+- **Boolean Display:** In `view.php`, result `1` = ✅, `0` = ❌ (icon-only).
+- **Dynamic Selects:** Use `data-addable-select="1"` to enable the quick-add "+" functionality.
+
+---
+
+## 🛠 Setup & Debugging
+- **Dev Credentials:** `localhost` | `root` | `usbw` | `itmanagement`.
+- **Logs:** Errors are standardized to `ROOT_PATH . 'error_log.txt'`.
