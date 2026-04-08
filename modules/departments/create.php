@@ -526,7 +526,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -535,14 +535,16 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
-                                <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                    </form>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                    <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
