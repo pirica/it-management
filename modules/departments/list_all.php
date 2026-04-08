@@ -8,6 +8,6 @@ $crud_title = $crud_title ?? 'Departments';
 $crud_action = 'list_all';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 require '../access_levels/list_all.php';

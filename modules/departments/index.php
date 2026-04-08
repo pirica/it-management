@@ -11,7 +11,7 @@ $crud_title = $crud_title ?? 'Departments';
 $crud_action = 'index';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 // Special logic for system_access table discovery if needed
 if (($crud_table ?? '') === 'system_access') {

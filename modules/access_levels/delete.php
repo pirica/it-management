@@ -11,7 +11,7 @@ $crud_title = 'Access Levels';
 $crud_action = 'delete';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 // Validate configuration
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {

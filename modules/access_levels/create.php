@@ -10,7 +10,7 @@ $crud_title = 'Access Levels';
 $crud_action = 'create';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 // Ensure the module is configured correctly
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
