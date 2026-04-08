@@ -264,7 +264,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td><?php echo sanitize($row['ip_address'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['serial_number'] ?? '-'); ?></td>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👀</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php if ($showSwitchPortManagerAction): ?>
                                         <?php
