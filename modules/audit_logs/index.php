@@ -211,6 +211,10 @@ function itm_audit_describe_payload($action, $normalizedValue, $isOldValue) {
 }
 
 $moduleListHeading = '🧾 Audit Logs';
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -244,9 +248,18 @@ $moduleListHeading = '🧾 Audit Logs';
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-            <div class="audit-toolbar">
+            <div class="audit-toolbar" data-itm-new-button-managed="server">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
+                <?php else: ?>
+                    <span aria-hidden="true"></span>
+                <?php endif; ?>
                 <h1><?php echo sanitize($moduleListHeading); ?></h1>
-                <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
+                <?php else: ?>
+                    <span aria-hidden="true"></span>
+                <?php endif; ?>
             </div>
 
             <?php foreach ($messages as $message): ?>
@@ -365,7 +378,7 @@ $moduleListHeading = '🧾 Audit Logs';
                                 <td><?php echo sanitize((string)$row['table_name']); ?></td>
                                 <td><?php echo (int)$row['record_id']; ?></td>
                                 <td><span class="audit-row-chip <?php echo sanitize($actionClass); ?>"><?php echo sanitize((string)$row['action']); ?></span></td>
-                                <td class="itm-actions-cell itm-actions-left">
+                                <td>
                                     <div class="audit-summary">
                                         <span><?php echo sanitize($previewText); ?></span>
                                         <details>
@@ -375,7 +388,7 @@ $moduleListHeading = '🧾 Audit Logs';
                                         </details>
                                     </div>
                                 </td>
-                                <td class="itm-actions-cell">
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm btn-primary" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View audit log">🔎</a>
                                     </div>
