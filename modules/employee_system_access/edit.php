@@ -93,9 +93,9 @@ function esa_module_checked($ids, $id) {
                         <?php endforeach; ?>
                     </div>
                     
-                    <div class="form-actions" style="margin-top:16px;display:flex;gap:8px;">
+                    <div class="form-actions itm-form-actions itm-align-left">
                         <button class="btn btn-primary" type="submit">💾</button>
-                        <a href="index.php" class="btn">✖️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
             </div>

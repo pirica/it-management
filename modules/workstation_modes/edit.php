@@ -573,9 +573,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                    <div class="form-actions">
+                    <div class="form-actions itm-form-actions itm-align-left">
                         <button class="btn btn-primary" type="submit">💾</button>
-                        <a class="btn" href="index.php">✖️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
 
