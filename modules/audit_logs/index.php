@@ -392,15 +392,65 @@ $moduleListHeading = '🧾 Audit Logs';
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const selectAllRows = document.getElementById('select-all-rows');
-    if (!selectAllRows) {
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    if (!selectAllRows || !bulkDeleteForm || !toggleButton) {
         return;
     }
 
+    /**
+     * Keep the delete-selection column hidden until explicitly enabled.
+     *
+     * Why: Audit logs are review-heavy, so hiding checkboxes by default keeps the
+     * table compact and mirrors the proven System Access interaction pattern.
+     */
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
     selectAllRows.addEventListener('change', function () {
-        const checkboxes = document.querySelectorAll('input[name="ids[]"]');
-        checkboxes.forEach(function (checkbox) {
+        rowCheckboxes.forEach(function (checkbox) {
             checkbox.checked = selectAllRows.checked;
         });
+    });
+
+    setSelectionVisibility(false);
+    bulkDeleteForm.addEventListener('submit', function (event) {
+        if (event.submitter !== toggleButton) {
+            return;
+        }
+
+        if (!selectionMode) {
+            event.preventDefault();
+            selectionMode = true;
+            setSelectionVisibility(true);
+            toggleButton.textContent = 'Delete Selected';
+            return;
+        }
+
+        const anySelected = Array.from(rowCheckboxes).some(function (checkbox) {
+            return checkbox.checked;
+        });
+
+        if (!anySelected) {
+            event.preventDefault();
+            alert('Please select at least one record to delete.');
+            return;
+        }
+
+        if (!confirm('Delete selected records?')) {
+            event.preventDefault();
+        }
     });
 });
 </script>
