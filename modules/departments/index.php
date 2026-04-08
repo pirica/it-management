@@ -404,8 +404,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        // Normalize boolean flags from checkboxes
-        if ($isTinyInt) {
+        // Keep legacy active columns editable as human-friendly toggles even when schema uses int.
+        $isBooleanToggle = $isTinyInt || $name === 'active';
+        if ($isBooleanToggle) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -719,6 +720,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     // stay hidden in create/edit forms while remaining available to backend save logic.
                     foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        // Some tables still store active as int; force checkbox UI so users never edit raw 1/0.
+                        $isBooleanToggle = $isTinyInt || $name === 'active';
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
@@ -729,7 +732,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
-                            <?php elseif ($isTinyInt): ?>
+                            <?php elseif ($isBooleanToggle): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
