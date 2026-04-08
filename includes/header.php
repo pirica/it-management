@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const intentRules = [
         { test: /(delete|remove|trash)/i, emoji: '🗑️', label: 'Delete item' },
         { test: /(edit|update|modify)/i, emoji: '✏️', label: 'Edit item' },
-        { test: /(view|details|open)/i, emoji: '👁️', label: 'View details' },
+        { test: /(view|details|open)/i, emoji: '👀', label: 'View details' },
         { test: /(create|add|new)/i, emoji: '➕', label: 'Add new item' },
         { test: /(save|submit|apply)/i, emoji: '💾', label: 'Save changes' },
         { test: /(logout|sign out)/i, emoji: '🚪', label: 'Log out' },
