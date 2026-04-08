@@ -24,6 +24,12 @@ if ($companyId <= 0) {
     exit('Company context is required.');
 }
 
+// Respect company-level UI policy so disabled audit logs remain hidden everywhere.
+if ((int)($ui_config['enable_audit_logs'] ?? 1) !== 1) {
+    http_response_code(403);
+    exit('Audit logs are disabled in Settings.');
+}
+
 $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
@@ -284,12 +290,13 @@ $moduleListHeading = '🧾 Audit Logs';
                             <th>Record ID</th>
                             <th>Action</th>
                             <th>Changes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="7">No audit logs found for the selected filters.</td>
+                            <td colspan="8">No audit logs found for the selected filters.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
@@ -342,6 +349,11 @@ $moduleListHeading = '🧾 Audit Logs';
                                             <div class="audit-json"><strong>Old Values</strong><br><?php echo sanitize($oldValues); ?></div>
                                             <div class="audit-json"><strong>New Values</strong><br><?php echo sanitize($newValues); ?></div>
                                         </details>
+                                    </div>
+                                </td>
+                                <td class="itm-actions-cell">
+                                    <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm btn-primary" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View audit log">👀</a>
                                     </div>
                                 </td>
                             </tr>

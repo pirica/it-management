@@ -62,12 +62,16 @@ foreach ($sectionsById as $section) {
             }
         }
 
-        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility, $equipmentTypeSidebarVisibility) {
+        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility, $equipmentTypeSidebarVisibility, $sidebarConfig) {
             if (($visibility[$sidebarItem['id']] ?? 1) !== 1) {
                 return false;
             }
 
             $itemId = (string)($sidebarItem['id'] ?? '');
+            if ($itemId === 'audit_logs' && ((int)($sidebarConfig['enable_audit_logs'] ?? 1) !== 1)) {
+                return false;
+            }
+
             if ($itemId !== '' && array_key_exists($itemId, $equipmentTypeSidebarVisibility)) {
                 return ((int)$equipmentTypeSidebarVisibility[$itemId]) === 1;
             }
