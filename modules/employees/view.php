@@ -119,7 +119,7 @@ function emp_label($field) {
                                 ) {
                                     $normalized = strtolower(trim((string)$value));
                                     $isTrue = ((string)$value === '1' || $normalized === 'yes' || $normalized === 'true');
-                                    $display = $isTrue ? '=✅' : '=❌';
+                                    $display = $isTrue ? '✅' : '❌';
                                 } elseif ($field === 'email' && (string)$value !== '') {
                                     $safe = sanitize((string)$value);
                                     $display = '<a href="mailto:' . $safe . '">' . $safe . '</a>';
