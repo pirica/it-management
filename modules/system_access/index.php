@@ -265,7 +265,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </span>
                             </td>
                             <td>
-                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$item['id']; ?>">👀</a>
+                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$item['id']; ?>">🔎</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a>
                                 <form method="POST" action="delete.php" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

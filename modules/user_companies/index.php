@@ -696,7 +696,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     </td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👀</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return itmConfirmUserCompanyDelete(this);" data-is-admin="<?php echo cr_is_admin_user_company_row($conn, $row) ? '1' : '0'; ?>">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">

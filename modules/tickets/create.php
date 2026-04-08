@@ -248,7 +248,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
                         <input type="file" name="photo[]" accept="image/*" multiple="">
                         <div class="form-hint" id="currentPhotoHint">
                             <span id="currentPhotoHintText"><?php echo count($existingTicketPhotos); ?> photos current.</span>
-                            <button type="button" class="btn btn-sm" id="openPhotoPreview">👀</button>
+                            <button type="button" class="btn btn-sm" id="openPhotoPreview">🔎</button>
                         </div>
                     </div>
 

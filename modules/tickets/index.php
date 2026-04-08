@@ -126,7 +126,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <td><?php echo sanitize($t['created_at']); ?></td>
                             <td>
                                 <div class="itm-actions-wrap">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">👀</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$t['id']; ?>">✏️</a>
                                     <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$t['id']; ?>" onclick="return confirm('Delete ticket?');">🗑️</a>
                                 </div>
