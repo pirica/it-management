@@ -1,13 +1,11 @@
 <?php
 /**
  * Employee Statuses Module - Delete
+ * 
+ * Wrapper for the local CRUD implementation.
  */
 
 $crud_table = 'employee_statuses';
 $crud_title = 'Employee Statuses';
 $crud_action = 'delete';
-?>
-<?php
-require '../../config/config.php';
-
-require '../access_levels/delete.php';
+require 'index.php';
