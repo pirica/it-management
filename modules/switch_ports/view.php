@@ -568,7 +568,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👀</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">

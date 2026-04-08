@@ -617,7 +617,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell">
                                     <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👀</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">

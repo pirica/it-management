@@ -674,7 +674,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                                     </td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">👀</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
