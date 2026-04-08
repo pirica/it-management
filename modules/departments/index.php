@@ -6,9 +6,9 @@
  * department records defined for the company.
  */
 
-$crud_table = 'departments';
-$crud_title = 'Departments';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'departments';
+$crud_title = $crud_title ?? 'Departments';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
