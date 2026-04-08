@@ -93,8 +93,9 @@ function esa_module_checked($ids, $id) {
                         <?php endforeach; ?>
                     </div>
                     
-                    <div class="form-actions" style="margin-top:16px;">
-                        <button type="submit" class="btn btn-primary">Save Access</button>
+                    <div class="form-actions" style="margin-top:16px;display:flex;gap:8px;">
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a href="index.php" class="btn">✖️</a>
                     </div>
                 </form>
             </div>
