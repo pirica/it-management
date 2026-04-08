@@ -197,18 +197,16 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                     <h3>System Access</h3>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
-                            <?php $accessName = (string)$access['name']; ?>
-                            <?php $accessName .= ((int)$access['active'] === 1) ? '✅' : '❌'; ?>
                             <label class="role-flag-option">
                                 <input type="checkbox" name="system_access_ids[]" value="<?php echo (int)$access['id']; ?>" <?php echo emp_access_checked($selectedSystemAccessIds, (int)$access['id']); ?>>
-                                <span><?php echo sanitize($accessName); ?></span>
+                                <span><?php echo sanitize((string)$access['name']); ?></span>
                             </label>
                         <?php endforeach; ?>
                     </div>
 
                     <div class="form-actions" style="margin-top:16px;display:flex;gap:8px;">
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                        <a href="view.php?id=<?php echo (int)$id; ?>" class="btn">Cancel</a>
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a href="index.php" class="btn">✖️</a>
                     </div>
                 </form>
             </div>
