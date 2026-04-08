@@ -175,8 +175,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                     <div class="idf-slot-actions">
                                         <!-- Actions for individual slots -->
                                         <?php if ($pos): ?>
-                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">View</a>
-                                            <button class="btn btn-sm idf-mini" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Edit</button>
+                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">👀</a>
+                                            <button class="btn btn-sm idf-mini" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">✏️</button>
                                         <?php else: ?>
                                             <button class="btn btn-sm idf-mini" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add</button>
                                         <?php endif; ?>

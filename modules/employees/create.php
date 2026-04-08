@@ -117,7 +117,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
                 <h1 style="margin:0;">Create Employee</h1>
-                <a href="index.php" class="btn">← Back</a>
+                <a href="index.php" class="btn">🔙</a>
             </div>
 
             <?php foreach ($errors as $error): ?><div class="alert alert-error"><?php echo sanitize($error); ?></div><?php endforeach; ?>
@@ -180,7 +180,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                     </div>
 
                     <div class="form-actions" style="margin-top:16px;">
-                        <button type="submit" class="btn btn-primary">Save Employee</button>
+                        <button type="submit" class="btn btn-primary">💾</button>
                     </div>
                 </form>
             </div>
