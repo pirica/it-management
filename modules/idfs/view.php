@@ -105,6 +105,11 @@ if ($stmtEq) {
 }
 
 // ... [LOOKUP FETCHING FOR STATUSES, TYPES, PORTS CONTINUES] ...
+// Ensure inline-add dropdown payloads always exist even when optional lookup
+// queries are skipped, so this view does not emit undefined-variable warnings.
+$equipmentTypeOptions = $equipmentTypeOptions ?? [];
+$switchRj45FieldOptions = $switchRj45FieldOptions ?? [];
+$equipmentStatusFieldOptions = $equipmentStatusFieldOptions ?? [];
 
 // BUILD DYNAMIC EXTRA FIELDS FOR INLINE ADDITION
 $equipmentAddExtraFields = json_encode([
