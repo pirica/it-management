@@ -36,6 +36,22 @@ $booleanFields = [
     'is_enabled',
     'has_laptop',
     'has_phone',
+    // System access capability flags are stored as 0/1 values and should use icon-only rendering.
+    'network_access',
+    'micros_emc',
+    'opera_username',
+    'micros_card',
+    'pms_id',
+    'synergy_mms',
+    'hu_the_lobby',
+    'navision',
+    'onq_ri',
+    'birchstreet',
+    'delphi',
+    'omina',
+    'vingcard_system',
+    'digital_rev',
+    'office_key_card',
 ];
 $hiddenFields = ['company_id', 'user_id', 'location_id', 'phone', 'location'];
 
@@ -103,7 +119,7 @@ function emp_label($field) {
                                 ) {
                                     $normalized = strtolower(trim((string)$value));
                                     $isTrue = ((string)$value === '1' || $normalized === 'yes' || $normalized === 'true');
-                                    $display = $isTrue ? '✅ 1' : '❌ 0';
+                                    $display = $isTrue ? '=✅' : '=❌';
                                 } elseif ($field === 'email' && (string)$value !== '') {
                                     $safe = sanitize((string)$value);
                                     $display = '<a href="mailto:' . $safe . '">' . $safe . '</a>';
