@@ -56,7 +56,7 @@ $form = [
     'last_name' => (string)($employee['last_name'] ?? ''),
     'display_name' => (string)($employee['display_name'] ?? ''),
     'email' => (string)($employee['email'] ?? ''),
-    'hilton_id' => (string)($employee['hilton_id'] ?? ''),
+    'external_id' => (string)($employee['external_id'] ?? ''),
     'username' => (string)($employee['username'] ?? ''),
     'job_code' => (string)($employee['job_code'] ?? ''),
     'job_title' => (string)($employee['job_title'] ?? ''),
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lastName = mysqli_real_escape_string($conn, $form['last_name']);
         $displayName = $form['display_name'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['display_name']) . "'";
         $email = $form['email'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['email']) . "'";
-        $hiltonId = $form['hilton_id'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['hilton_id']) . "'";
+        $externalId = $form['external_id'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_id']) . "'";
         $username = $form['username'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['username']) . "'";
         $jobCode = $form['job_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['job_code']) . "'";
         $jobTitle = $form['job_title'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['job_title']) . "'";
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $sql = "UPDATE employees SET
             first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
-            email={$email}, hilton_id={$hiltonId}, username={$username},
+            email={$email}, external_id={$externalId}, username={$username},
             department_id={$departmentId}, job_code={$jobCode}, job_title={$jobTitle},
             comments={$comments}, raw_status_code={$rawStatusCode},
             employment_status_id={$employmentStatusId}, office_key_card_department_id={$officeDeptId}
@@ -155,7 +155,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" value="<?php echo sanitize($form['last_name']); ?>" required></div>
                         <div class="form-group"><label>Display Name</label><input type="text" name="display_name" value="<?php echo sanitize($form['display_name']); ?>"></div>
                         <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($form['email']); ?>"></div>
-                        <div class="form-group"><label>Id</label><input type="text" name="hilton_id" value="<?php echo sanitize($form['hilton_id']); ?>"></div>
+                        <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Job Title</label><input type="text" name="job_title" value="<?php echo sanitize($form['job_title']); ?>"></div>
