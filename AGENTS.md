@@ -43,7 +43,7 @@ Each module must maintain a flat structure with these specific files:
 ### 3. Protection Zone (STRICT: No Auto-Changes)
 Do **not** modify the logic or structure of these modules unless explicitly requested:
 * `/modules/equipment/` (including Switch Port Manager)
-* `/modules/idf/`, `/modules/idfs_links/`, `/modules/idf_positions/`
+* `/modules/idfs/`, `/modules/idfs_links/`, `/modules/idf_positions/`
 * `/modules/audit_logs/`, `/modules/employees/`
 * `/modules/settings/`
 * `/modules/user_companies/`
