@@ -7,14 +7,14 @@ An IT Asset Management System built with PHP and MySQL. It features a GitHub Cop
 
 ## Tech Stack
 - **Language**: PHP 8.4+
-- **Database**: MySQL 8.0+ (using `mysqli` extension, NOT PDO)
+- **Database**: MySQL 8.0+ (using `mysqli` extension, NOT PDO).
 - **Frontend**: Custom CSS (`css/styles.css`), Vanilla JS, GitHub Copilot theme.
-- **Environment**: Apache 2.4+, No Composer.
+- **Environment**: Apache 2.4+, No Composer dependency management.
 
 ## Key Directories
 - `config/`: Configuration files (`config.php`).
 - `includes/`: Common UI components, headers, sidebars, and utility functions.
-- `modules/`: Feature-specific CRUD logic (e.g., equipment, printers, workstations).
+- `modules/`: Feature-specific CRUD logic.
 - `scripts/`: Maintenance and security audit scripts.
 - `js/`: Shared JavaScript tools.
 - `images/`: Equipment photo uploads (must exist).
@@ -22,6 +22,18 @@ An IT Asset Management System built with PHP and MySQL. It features a GitHub Cop
 - `backups/`: Database backup storage (must exist).
 
 ## Coding Standards
+
+### Structure & Organization
+- **Modules**: Every module should have the files: `index.php`, `create.php`, `edit.php`, `view.php`, and `view_all.php`.
+- **Master Templates**: The files in `modules/manufacturers/` serve as master CRUD templates. Many other modules are 'flattened' copies of this code. Updates to templates should be manually propagated to other modules when relevant.
+- **Database Schema**:
+    - `database.sql` must be modified if there is a request to remove/delete a field or table.
+    - `database.sql` must be modified if there is a request to rename a table header.
+
+### Documentation & Commenting
+- **Style**: Follow the **"why-focused"** commenting style for all files.
+    - **What**: Explaining *what* the code does (e.g., "// Increment i"). Avoid this for obvious code.
+    - **Why**: Explaining the *rationale* behind a decision (e.g., "// We use a static cache here to avoid redundant database queries within a single request cycle"). **Prioritize "Why" comments.**
 
 ### Security
 - **SQL Injection**:
@@ -39,13 +51,13 @@ An IT Asset Management System built with PHP and MySQL. It features a GitHub Cop
 
 ### PHP Development Patterns
 - **Pathing**: Use `ROOT_PATH` (defined in `config/config.php`) with a trailing slash for filesystem operations.
-- **Variable Scoping**: When including shared files (like `includes/sidebar.php`), use unique, prefixed variable names (e.g., `$itm_item`) to avoid collisions with the calling script.
+- **Variable Scoping**: When including shared files (like `includes/sidebar.php`), use unique, prefixed variable names (e.g., `$itm_item`, `$itm_section`) to avoid collisions with the calling script's variables.
 - **Error Logging**: Application errors are standardized to be written to `ROOT_PATH . 'error_log.txt'`.
 - **Database Connection**: Use the global `$conn` object.
 - **UI Configuration**: UI preferences and defaults are managed via `itm_get_ui_configuration()` in `includes/ui_config.php`.
 
 ### UI/UX Standards
-- **CSS**: Only use `css/styles.css`. The file `css/style.css` is deprecated/deleted.
+- **CSS**: Only use `css/styles.css`. The file `css/style.css` is deprecated and should not be referenced.
 - **Layout**: The standard page wrapper structure is: `<div class="container">` > `<div class="main-content">` > `<div class="content">`.
 - **Buttons**:
     - Use `btn-primary` for main actions/add-buttons.
@@ -55,7 +67,9 @@ An IT Asset Management System built with PHP and MySQL. It features a GitHub Cop
     - Tables within `.content .card` automatically receive Export (Excel/PDF) and Import functionality via `js/table-tools.js`.
 - **Forms**:
     - Use `data-addable-select="1"` on `<select>` elements to enable the "+" quick-add option via `js/select-add-option.js`.
+    - In `view.php`, boolean-like values map as follows: result `1` shows ✅, and result `0` shows ❌ (icon-only).
 
 ### Maintenance & Setup
+- **Database Credentials**: Default development credentials are Host: `localhost`, User: `root`, Password: `usbw`, Database: `itmanagement`.
 - **Directory Requirements**: Ensure `images/`, `tickets_photos/`, and `backups/` directories exist and have proper write permissions.
 - **Audit Logging**: The application sets MySQL session variables (`@app_user_id`, etc.) in `config/config.php` to support database-level audit triggers.
