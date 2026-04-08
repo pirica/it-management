@@ -80,6 +80,7 @@ $items = mysqli_query(
      LIMIT " . (int)$perPage . " OFFSET " . (int)$offset
 );
 
+$showBulkActions = $totalRows >= $perPage;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 ?>
 <!DOCTYPE html>
@@ -117,11 +118,24 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                 </form>
             </div>
 
+
+            <?php if ($showBulkActions): ?>
+                <!-- Guard bulk actions behind per-page threshold to align with global UX settings. -->
+                <div class="card" style="margin-bottom:16px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all tickets? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
+            <?php endif; ?>
+
             <!-- DATA TABLE -->
             <div class="card">
                 <table>
                     <thead>
                     <tr>
+                        <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
                         <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'created_at' => 'Created'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -136,6 +150,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                         $rowColor = (isset($t['ui_color']) && ticket_is_valid_hex_color((string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; 
                         ?>
                         <tr<?php echo $rowColor !== '' ? ' style="border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
+                            <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$t['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo (int)$t['id']; ?></td>
                             <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>
@@ -146,12 +161,17 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$t['id']; ?>">✏️</a>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$t['id']; ?>" onclick="return confirm('Delete ticket?');">🗑️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete ticket?');">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                        <input type="hidden" name="id" value="<?php echo (int)$t['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="7" style="text-align:center;">No tickets found.</td></tr>
+                        <tr><td colspan="8" style="text-align:center;">No tickets found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

@@ -72,6 +72,8 @@ if ($page > $totalPages) {
 }
 
 // Fetch items joined with categories.
+$showBulkActions = $totalRows >= $perPage;
+
 $items = mysqli_query(
     $conn,
     "SELECT i.*, c.name AS category_name
@@ -130,11 +132,24 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </form>
             </div>
 
+
+            <?php if ($showBulkActions): ?>
+                <!-- Bulk controls appear only when enough records exist to justify batch operations. -->
+                <div class="card" style="margin-bottom:16px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all inventory records? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
+            <?php endif; ?>
+
             <!-- DATA TABLE -->
             <div class="card">
                 <table>
                     <thead>
                     <tr>
+                        <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
                         <?php foreach ([
                             'name' => 'Name',
                             'item_code' => 'Code',
@@ -159,6 +174,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($i = mysqli_fetch_assoc($items)): ?>
                         <tr>
+                            <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$i['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo sanitize((string)$i['name']); ?></td>
                             <td><?php echo sanitize((string)($i['item_code'] ?? '-')); ?></td>
                             <td><?php echo sanitize((string)($i['serial'] ?? '-')); ?></td>
@@ -180,12 +196,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
-                                    <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">🗑️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete item?');">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                        <input type="hidden" name="id" value="<?php echo (int)$i['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="10" style="text-align:center;">No inventory items found.</td></tr>
+                        <tr><td colspan="11" style="text-align:center;">No inventory items found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

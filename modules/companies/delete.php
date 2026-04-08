@@ -19,7 +19,41 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Validate CSRF to prevent accidental or malicious deletion
 itm_require_post_csrf();
 
+$bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 $id = (int)($_POST['id'] ?? 0);
+
+if ($bulkAction === 'clear_table') {
+    $stmtClear = mysqli_prepare($conn, 'DELETE FROM companies WHERE id > 0');
+    if ($stmtClear) {
+        if (!mysqli_stmt_execute($stmtClear)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+        }
+        mysqli_stmt_close($stmtClear);
+    }
+    header('Location: index.php');
+    exit;
+}
+
+if ($bulkAction === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if (is_array($ids) && $ids) {
+        $stmtBulk = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? AND id > 0 LIMIT 1');
+        if ($stmtBulk) {
+            foreach ($ids as $rawId) {
+                $bulkId = (int)$rawId;
+                if ($bulkId <= 0) {
+                    continue;
+                }
+                mysqli_stmt_bind_param($stmtBulk, 'i', $bulkId);
+                mysqli_stmt_execute($stmtBulk);
+            }
+            mysqli_stmt_close($stmtBulk);
+        }
+    }
+    header('Location: index.php');
+    exit;
+}
+
 if ($id > 0) {
     // Check if other records (users, equipment, etc.) depend on this company
     $usageError = '';
@@ -31,7 +65,7 @@ if ($id > 0) {
         
         $stmt = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? AND id > 0 LIMIT 1');
         if ($stmt) {
-            mysqli_stmt_bind_param('i', $id);
+            mysqli_stmt_bind_param($stmt, 'i', $id);
             if (!mysqli_stmt_execute($stmt)) {
                 // Return formatted database error if deletion fails (e.g. FK constraint)
                 $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));

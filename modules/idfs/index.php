@@ -97,6 +97,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
     exit;
 }
 
+
+// --- ACTION: BULK DELETE / CLEAR TABLE ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_action'])) {
+    itm_require_post_csrf();
+
+    $bulkAction = (string)($_POST['bulk_action'] ?? '');
+    if ($company_id <= 0) {
+        $_SESSION['crud_error'] = 'Invalid company context.';
+        header('Location: index.php');
+        exit;
+    }
+
+    if ($bulkAction === 'clear_table') {
+        $stmtClear = mysqli_prepare($conn, 'DELETE FROM idfs WHERE company_id = ?');
+        if ($stmtClear) {
+            mysqli_stmt_bind_param($stmtClear, 'i', $company_id);
+            if (!mysqli_stmt_execute($stmtClear)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+            }
+            mysqli_stmt_close($stmtClear);
+        }
+        header('Location: index.php');
+        exit;
+    }
+
+    if ($bulkAction === 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!is_array($ids) || !$ids) {
+            $_SESSION['crud_error'] = 'Please select at least one IDF.';
+            header('Location: index.php');
+            exit;
+        }
+
+        $deleteStmt = mysqli_prepare($conn, 'DELETE FROM idfs WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($deleteStmt) {
+            foreach ($ids as $rawId) {
+                $idfId = (int)$rawId;
+                if ($idfId <= 0) {
+                    continue;
+                }
+                mysqli_stmt_bind_param($deleteStmt, 'ii', $idfId, $company_id);
+                mysqli_stmt_execute($deleteStmt);
+            }
+            mysqli_stmt_close($deleteStmt);
+        }
+        header('Location: index.php');
+        exit;
+    }
+}
+
 // FETCH DATA FOR DISPLAY
 $locations = [];
 if ($company_id > 0) {
@@ -130,6 +180,9 @@ if ($company_id > 0) {
 }
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalRows = count($idfs);
+$showBulkActions = $totalRows >= $perPage;
 ?>
 <!doctype html>
 <html lang="en">
@@ -184,12 +237,21 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <!-- LISTING PANEL -->
                     <section class="idf-panel">
                         <h3>📋 Existing IDFs</h3>
+                        <?php if ($showBulkActions): ?>
+                            <!-- Batch controls are intentionally hidden on short lists to reduce accidental destructive use. -->
+                            <form id="bulk-delete-form" method="post" style="display:flex;gap:8px;margin-bottom:10px;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
+                                <button type="submit" class="btn btn-sm btn-danger" name="bulk_action" value="bulk_delete">Select to Delete</button>
+                                <button type="submit" class="btn btn-sm btn-danger" name="bulk_action" value="clear_table" onclick="return confirm('Clear all IDFs? This cannot be undone.');">Clear Table</button>
+                            </form>
+                        <?php endif; ?>
                         <table class="table idf-list-table">
-                            <thead><tr><th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Actions</th></tr></thead>
+                            <thead><tr><?php if ($showBulkActions): ?><th>Select</th><?php endif; ?><th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Actions</th></tr></thead>
                             <tbody>
-                                <?php if (!$idfs): ?><tr><td colspan="5">No IDFs yet.</td></tr><?php endif; ?>
+                                <?php if (!$idfs): ?><tr><td colspan="6">No IDFs yet.</td></tr><?php endif; ?>
                                 <?php foreach ($idfs as $idf): ?>
                                     <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
+                                        <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$idf['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                         <td><?php echo (int)$idf['id']; ?></td>
                                         <td><?php echo sanitize($idf['name']); ?></td>
                                         <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
