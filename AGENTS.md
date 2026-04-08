@@ -30,6 +30,7 @@ An IT Asset Management System built with PHP and MySQL. It features a GitHub Cop
     - `database.sql` must be modified if there is a request to remove/delete a field or table.
     - `database.sql` must be modified if there is a request to rename a table header.
     - hide field `company_id` from files modules/%%/index.php modules/%%/create.php modules/%%/edit.php modules/%%/view.php modules/%%/view_all.php modules/%%/list_all.php
+    - Add safe inline FK creation logic that creates referenced rows when users add new values and scopes FK queries/inserts by company_id when appropriate, plus client-side scripts for select-add and bulk-delete workflows.
 
 ### Documentation & Commenting
 - **Style**: Follow the **"why-focused"** commenting style for all files.
