@@ -103,3 +103,5 @@ Every module (excluding the Protection Zone) must implement:
 ## 🛠 Setup & Debugging
 - **Dev Credentials:** `localhost` | `root` | `usbw` | `itmanagement`.
 - **Logs:** Errors are standardized to `ROOT_PATH . 'error_log.txt'`.
+- **Testing:** On testing don't capture Screenshot:
+⚠️ Screenshot not captured: browser_container tool is not available in this environment.
