@@ -54,8 +54,8 @@ Modules must read and validate settings via `itm_get_ui_configuration()`:
 - **Button Positions:** Render the top refresh/add controls on the left, right, or both based on `new_button_position`.
 - **Table Actions:** Add `data-itm-actions-origin="1"` to the "Actions" header and row cells to allow the global layout engine to map `table_actions_position`.
 - **Global Behaviors:** Respect system toggles for:
-    * `enable_all_error_reporting`
-    * `enable_audit_logs`
+    * `enable_all_error_reporting` setting.
+    * `enable_audit_logs` setting.
     * `records_per_page` (Used as the threshold for pagination and bulk action visibility).
 
 ### 5. Standard Feature Set
