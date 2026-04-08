@@ -62,7 +62,7 @@ Modules must read and validate settings via `itm_get_ui_configuration()`:
 Every module (excluding the Protection Zone) must implement:
 * **Bulk Actions:** "Select to Delete" and "Clear Table". These must only be visible if the total record count is greater than or equal to the `records_per_page` setting.
 * **Search:** Comprehensive search across all visible fields.
-* **Order: Standardized sort fields ASC DESC - '▲' : '▼' 
+* **Order:** Standardized sort fields ASC DESC - '▲' : '▼' 
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
 * **Navigation:** Standardized server-side pagination based on the `records_per_page` value from Settings.
 * ** Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
