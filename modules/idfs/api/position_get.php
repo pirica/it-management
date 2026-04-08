@@ -1,4 +1,12 @@
 <?php
+/**
+ * IDF API - Get Position
+ * 
+ * Retrieves the full metadata for a single IDF position (device).
+ * Includes device type, name, port count, linked equipment ID, 
+ * and slot number.
+ */
+
 require_once __DIR__ . '/_bootstrap.php';
 
 $data = idf_read_json();
@@ -9,6 +17,7 @@ if ($position_id <= 0) {
     idf_fail('Invalid position_id');
 }
 
+// Fetch device data and ensure it belongs to the active company.
 $stmt = mysqli_prepare(
     $conn,
     "SELECT p.*, i.company_id
@@ -30,5 +39,6 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
 
+// Strip internal security keys before returning to the frontend.
 unset($row['company_id']);
 idf_ok(['position' => $row]);

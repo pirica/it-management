@@ -1,4 +1,17 @@
 <?php
+/**
+ * IDF API - Copy Position
+ * 
+ * Duplicates a device (position) and all its child ports to a new slot in the IDF.
+ * Features:
+ * - Deep Copy: Clones the device metadata AND every individual port's attributes 
+ *   (type, status, labels, VLAN, etc.).
+ * - Conflict Handling: Provides an 'overwrite' flag to replace an existing 
+ *   device at the target slot.
+ * - Transactional Safety: Ensures the new device and all its ports are created 
+ *   atomically, rolling back if any part of the deep copy fails.
+ */
+
 require_once __DIR__ . '/_bootstrap.php';
 
 $data = idf_read_json();
@@ -11,10 +24,12 @@ $overwrite = (int)($data['overwrite'] ?? 0);
 if ($position_id <= 0) {
     idf_fail('Invalid position_id');
 }
+// Validate that the target slot is within the allowed vertical range (1-10).
 if ($target_position < 1 || $target_position > 10) {
     idf_fail('Invalid target_position');
 }
 
+// Fetch the source device data and verify ownership.
 $stmtSrc = mysqli_prepare(
     $conn,
     "SELECT p.*, i.company_id
@@ -38,6 +53,7 @@ if (!$src || (int)$src['company_id'] !== $company_id) {
 
 $idf_id = (int)$src['idf_id'];
 
+// Check if the target slot is already occupied by another device.
 $existing = null;
 $stmtEx = mysqli_prepare($conn, "SELECT id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");
 if ($stmtEx) {
@@ -56,6 +72,7 @@ if ($existing && !$overwrite) {
 
 mysqli_begin_transaction($conn);
 try {
+    // If overwriting, remove the old device first.
     if ($existing && $overwrite) {
         $stmtDel = mysqli_prepare($conn, 'DELETE FROM idf_positions WHERE id=? LIMIT 1');
         if ($stmtDel) {
@@ -66,6 +83,7 @@ try {
         }
     }
 
+    // Step 1: Create the new device record (the position container).
     $notes_val = !empty($src['notes']) ? (string)$src['notes'] : null;
     $equip_val = !empty($src['equipment_id']) ? (int)$src['equipment_id'] : null;
     $device_type = (string)$src['device_type'];
@@ -85,6 +103,7 @@ try {
 
     $newPosId = (int)mysqli_insert_id($conn);
 
+    // Step 2: Fetch all ports belonging to the source device.
     $ports = [];
     $stmtPorts = mysqli_prepare($conn, 'SELECT * FROM idf_ports WHERE position_id=? ORDER BY port_no');
     if ($stmtPorts) {
@@ -98,6 +117,7 @@ try {
         mysqli_stmt_close($stmtPorts);
     }
 
+    // Step 3: Deep copy each port's technical data to the new device.
     if ($ports) {
         $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status, connected_to, vlan, speed, poe, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
         $stmtInsPort = mysqli_prepare($conn, $sqlInsPort);
@@ -124,6 +144,7 @@ try {
 
     mysqli_commit($conn);
 } catch (Throwable $e) {
+    // Revert all changes if any insertion fails.
     mysqli_rollback($conn);
     idf_fail('Copy failed: ' . $e->getMessage(), 500);
 }
