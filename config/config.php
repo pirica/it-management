@@ -21,9 +21,38 @@ define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
 define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
 
 // --- Path Calculation Logic ---
-// Automatically determines the base URL and filesystem paths regardless of the deployment subdirectory
+// Why: Host headers can be attacker-controlled in some deployments, so we prefer a canonical URL.
+// Set ITM_APP_URL in the environment (for example: https://itm.example.com/app/) to avoid Host-header poisoning.
+$itm_envBaseUrl = trim((string)getenv('ITM_APP_URL'));
+$itm_allowedHostsRaw = trim((string)getenv('ITM_ALLOWED_HOSTS'));
+$itm_allowedHosts = [];
+if ($itm_allowedHostsRaw !== '') {
+    $itm_allowedHosts = array_values(array_filter(array_map('trim', explode(',', $itm_allowedHostsRaw)), 'strlen'));
+}
+
+// Automatically determines the base URL and filesystem paths regardless of deployment subdirectory.
 $itm_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$itm_host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$itm_hostHeader = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+$itm_hostParts = explode(':', $itm_hostHeader, 2);
+$itm_host = strtolower(trim($itm_hostParts[0]));
+if ($itm_host === '' || preg_match('/^[a-z0-9.-]+$/', $itm_host) !== 1) {
+    $itm_host = 'localhost';
+}
+
+if (!empty($itm_allowedHosts)) {
+    $itm_allowedHosts = array_map(static function ($host) {
+        $hostValue = strtolower((string)$host);
+        if (strpos($hostValue, ':') !== false) {
+            $hostSegments = explode(':', $hostValue, 2);
+            $hostValue = $hostSegments[0];
+        }
+        return trim($hostValue);
+    }, $itm_allowedHosts);
+    if (!in_array($itm_host, $itm_allowedHosts, true)) {
+        $itm_host = $itm_allowedHosts[0];
+    }
+}
+
 $itm_documentRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
 $itm_projectRoot = realpath(dirname(__DIR__));
 $itm_basePath = '';
@@ -45,7 +74,22 @@ if ($itm_basePath === '/') {
     $itm_basePath = '';
 }
 
-define('BASE_URL', $itm_scheme . '://' . $itm_host . ($itm_basePath !== '' ? $itm_basePath . '/' : '/'));
+if ($itm_envBaseUrl !== '') {
+    $itm_envParts = @parse_url($itm_envBaseUrl);
+    $itm_envScheme = strtolower((string)($itm_envParts['scheme'] ?? ''));
+    $itm_envHost = strtolower((string)($itm_envParts['host'] ?? ''));
+    if (($itm_envScheme === 'http' || $itm_envScheme === 'https') && $itm_envHost !== '') {
+        $itm_envPath = trim((string)($itm_envParts['path'] ?? ''), '/');
+        $itm_envPort = isset($itm_envParts['port']) ? ':' . (int)$itm_envParts['port'] : '';
+        $itm_baseUrl = $itm_envScheme . '://' . $itm_envHost . $itm_envPort . ($itm_envPath !== '' ? '/' . $itm_envPath . '/' : '/');
+    } else {
+        $itm_baseUrl = $itm_scheme . '://' . $itm_host . ($itm_basePath !== '' ? $itm_basePath . '/' : '/');
+    }
+} else {
+    $itm_baseUrl = $itm_scheme . '://' . $itm_host . ($itm_basePath !== '' ? $itm_basePath . '/' : '/');
+}
+
+define('BASE_URL', $itm_baseUrl);
 define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
 define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'images'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('UPLOAD_URL', BASE_URL . 'images/');
