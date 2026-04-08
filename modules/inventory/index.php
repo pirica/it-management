@@ -161,7 +161,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             </td>
                             <td class="itm-actions-cell">
                                 <div class="itm-actions-wrap">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👁️</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">👀</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>
                                     <a class="btn btn-sm btn-danger" href="delete.php?id=<?php echo (int)$i['id']; ?>" onclick="return confirm('Delete item?');">🗑️</a>
                                 </div>

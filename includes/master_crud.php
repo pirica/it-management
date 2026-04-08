@@ -199,7 +199,7 @@ $csrfToken = itm_get_csrf_token();
                                     <td><?php echo sanitize($item['name']); ?></td>
                                     <td class="itm-actions-cell">
                                         <div class="itm-actions-wrap">
-                                            <a href="?action=view&id=<?php echo $item['id']; ?>" class="btn btn-sm">👁️</a>
+                                            <a href="?action=view&id=<?php echo $item['id']; ?>" class="btn btn-sm">👀</a>
                                             <a href="?action=edit&id=<?php echo $item['id']; ?>" class="btn btn-sm">✏️</a>
                                             <form method="POST" action="?action=delete&id=<?php echo $item['id']; ?>" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
@@ -232,7 +232,7 @@ $csrfToken = itm_get_csrf_token();
 
             <?php elseif ($action === 'view'): ?>
                 <!-- Detailed Record View Container -->
-                <h1>👁️ View <?php echo $crud_title; ?></h1>
+                <h1>👀 View <?php echo $crud_title; ?></h1>
                 <div class="card">
                     <table class="detail-table">
                         <tr><th>Name:</th><td><?php echo sanitize($data['name']); ?></td></tr>
