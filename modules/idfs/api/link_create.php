@@ -1,18 +1,4 @@
 <?php
-/**
- * IDF API - Create Link
- * 
- * Establishes a patch connection between two physical ports (port A and port B).
- * Logic includes:
- * - Validation: Ensures ports exist, belong to the company, and aren't on the same device (loop prevention).
- * - Switch Port Integration: If the link is associated with a specific switch/equipment port, 
- *   it updates the switch_ports table metadata (label, comments, color) and potentially 
- *   renumbers the switch port if requested.
- * - Bidirectional Persistence: Creates mirror entries in idf_links for both directions.
- * - Auto-documentation: Updates the 'connected_to' field in the idf_ports table for both ends 
- *   with a descriptive string (e.g., "Pos 5 • Switch-A • Port 12").
- */
-
 require_once __DIR__ . '/_bootstrap.php';
 
 $data = idf_read_json();
@@ -28,7 +14,6 @@ $notes = trim((string)($data['notes'] ?? ''));
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 
-// Basic input validation
 if ($portA <= 0 || $portB <= 0) {
     idf_fail('Invalid port ids');
 }
@@ -42,7 +27,6 @@ if ($switchPortId > 0 && $equipmentId <= 0) {
     idf_fail('Equipment is required when selecting an equipment port');
 }
 
-// Fetch details for both ports to verify ownership and collect metadata for the documentation string.
 $stmt = mysqli_prepare(
     $conn,
     "SELECT
@@ -80,20 +64,17 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
-// Ensure both IDs were valid and belong to the current company context
 if (count($seen) !== 2) {
     idf_fail('Port not found', 404);
 }
 if (($seen[$portA] ?? null) !== $company_id || ($seen[$portB] ?? null) !== $company_id) {
     idf_fail('Forbidden', 403);
 }
-// Block linking two ports on the same physical patch panel/device to prevent logical loops.
 if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
     $deviceName = trim((string)($deviceSeen[$portA] ?? 'this device'));
     idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
 }
 
-// Collect serial numbers for equipment linked to these IDF positions (if any)
 $positionEquipmentSerialSeen = [];
 $positionEquipmentIds = array_values(array_unique(array_filter(array_map('intval', $positionEquipmentSeen), static function ($id) {
     return $id > 0;
@@ -119,7 +100,6 @@ if ($positionEquipmentIds) {
     }
 }
 
-// Verify that neither port is already consumed by an existing link.
 $stmtUsed = mysqli_prepare(
     $conn,
     "SELECT id FROM idf_links
@@ -137,7 +117,6 @@ if ($stmtUsed) {
     }
 }
 
-// Initialize link attribute defaults
 $label_val = $label !== '' ? $label : null;
 $notes_val = $notes !== '' ? $notes : null;
 $equipmentId_val = $equipmentId > 0 ? (string)$equipmentId : null;
@@ -151,7 +130,6 @@ $equipmentStatusId_val = null;
 $equipmentColorId_val = null;
 $equipmentConnectedToLabel = null;
 
-// CASE 1: LINKING TO A SPECIFIC SWITCH PORT
 if ($switchPortId > 0) {
     $stmtSwitchPort = mysqli_prepare(
         $conn,
@@ -184,7 +162,6 @@ if ($switchPortId > 0) {
             idf_fail('Selected equipment port not found');
         }
 
-        // Snapshot current switch port data to store in the link record (denormalized for faster UI rendering).
         $equipmentId_val = (string)$switchPort['equipment_id'];
         $equipmentHostname_val = (string)$switchPort['equipment_hostname'];
         $equipmentPortType_val = (string)$switchPort['equipment_port_type'];
@@ -207,9 +184,7 @@ if ($switchPortId > 0) {
             ? (int)$switchPort['equipment_color_id']
             : null;
     }
-} 
-// CASE 2: LINKING TO AN EQUIPMENT RECORD GENERALLY (NO SPECIFIC PORT)
-elseif ($equipmentId > 0) {
+} elseif ($equipmentId > 0) {
     $stmtEquipment = mysqli_prepare(
         $conn,
         "SELECT e.id, e.name, e.serial_number
@@ -239,9 +214,6 @@ elseif ($equipmentId > 0) {
     }
 }
 
-// SYNC SWITCH PORT METADATA
-// When a link is created from the IDF view, we propagate relevant cable labels/colors
-// back to the switch port record to keep both views in sync.
 if ($switchPortId > 0) {
     $newPortNumber = null;
     if ($linkedDestinationPort !== '' && ctype_digit($linkedDestinationPort)) {
@@ -271,7 +243,10 @@ if ($switchPortId > 0) {
         mysqli_stmt_close($stmtColor);
     }
 
-    $updates = ["label = ?", "comments = ?"];
+    $updates = [
+        "label = ?",
+        "comments = ?",
+    ];
     $types = 'ss';
     $params = [$switchLabel, $switchComments];
 
@@ -280,15 +255,12 @@ if ($switchPortId > 0) {
         $types .= 'i';
         $params[] = $switchColorId;
     }
-
-    // Attempt to renumber the port if requested by the user during link creation.
     $canUpdatePortNumber = false;
     if ($newPortNumber !== null && $newPortNumber > 0) {
         $currentPortNumber = isset($switchPort['equipment_port']) ? (int)$switchPort['equipment_port'] : 0;
         if ($newPortNumber === $currentPortNumber) {
             $canUpdatePortNumber = true;
         } else {
-            // Ensure the target port number isn't already used by another port on the same equipment.
             $stmtPortConflict = mysqli_prepare(
                 $conn,
                 "SELECT id
@@ -340,8 +312,6 @@ if ($switchPortId > 0) {
     }
 }
 
-// PERSIST THE LINK (BIDIRECTIONAL)
-// We insert two rows so that looking up either port ID in `port_id_a` finds the connection.
 $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
@@ -354,21 +324,21 @@ $stmtFinal = mysqli_prepare(
 
 $insertedLinkIds = [];
 if ($stmtFinal) {
-    $pairs = [[$portA, $portB], [$portB, $portA]];
+    $pairs = [
+        [$portA, $portB],
+        [$portB, $portA],
+    ];
 
     foreach ($pairs as $pair) {
         $portIdA = (int)$pair[0];
         $portIdB = (int)$pair[1];
         $equipmentIdInsert = $equipmentId_val;
-        
-        // If no equipment is linked, use a fallback ID from the position or generate a unique tag.
         if ($equipmentIdInsert === null || $equipmentIdInsert === '') {
             $equipmentIdInsert = (string)($positionEquipmentSeen[$portIdB] ?? '');
         }
         if ($equipmentIdInsert === '') {
             $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
         }
-        
         mysqli_stmt_bind_param(
             $stmtFinal, 'iiissssissiisss',
             $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
@@ -384,8 +354,6 @@ if ($stmtFinal) {
     mysqli_stmt_close($stmtFinal);
 }
 
-// UPDATE PORT DESCRIPTIONS
-// Updates the `connected_to` text field on the `idf_ports` table to show human-readable context in the UI.
 if (
     isset($positionNoSeen[$portA], $positionNoSeen[$portB], $portNoSeen[$portA], $portNoSeen[$portB], $deviceSeen[$portA], $deviceSeen[$portB])
 ) {
@@ -393,15 +361,12 @@ if (
     $connectedDeviceA = trim((string)$deviceSeen[$portA]);
     $positionEquipmentB = (int)($positionEquipmentSeen[$portB] ?? 0);
     $positionEquipmentA = (int)($positionEquipmentSeen[$portA] ?? 0);
-    
-    // Prioritize serial numbers over generic device names for the description string.
     if ($positionEquipmentB > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentB])) {
         $connectedDeviceB = $positionEquipmentSerialSeen[$positionEquipmentB];
     }
     if ($positionEquipmentA > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentA])) {
         $connectedDeviceA = $positionEquipmentSerialSeen[$positionEquipmentA];
     }
-    
     if (is_string($equipmentConnectedToLabel)) {
         $equipmentConnectedToLabel = trim($equipmentConnectedToLabel);
         if ($equipmentConnectedToLabel !== '') {
@@ -409,7 +374,6 @@ if (
             $connectedDeviceA = $equipmentConnectedToLabel;
         }
     }
-    
     $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
     $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 

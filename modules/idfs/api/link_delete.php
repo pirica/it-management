@@ -1,15 +1,4 @@
 <?php
-/**
- * IDF API - Delete Link
- * 
- * Removes a patch connection between two ports.
- * Logic:
- * - Ownership Validation: Verifies that the link exists and belongs to the company.
- * - Bidirectional Cleanup: Deletes both the A->B and B->A records in the idf_links table.
- * - Port Reset: Clears the 'connected_to' descriptive field in the idf_ports table 
- *   for both physical ports, returning them to an 'Available' state in the UI.
- */
-
 require_once __DIR__ . '/_bootstrap.php';
 
 $data = idf_read_json();
@@ -20,7 +9,6 @@ if ($link_id <= 0) {
     idf_fail('Invalid link_id');
 }
 
-// Locate the link and verify company ownership through the IDF hierarchy.
 $stmt = mysqli_prepare(
     $conn,
     "SELECT l.id, l.port_id_a, l.port_id_b, i.company_id
@@ -47,7 +35,6 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
 $portA = (int)($row['port_id_a'] ?? 0);
 $portB = (int)($row['port_id_b'] ?? 0);
 
-// Delete the mirror entries in the links table to completely sever the connection.
 $stmtDel = mysqli_prepare(
     $conn,
     "DELETE FROM idf_links
@@ -64,8 +51,6 @@ if ($stmtDel) {
     }
     mysqli_stmt_close($stmtDel);
 }
-
-// Clear the documentation string on the actual physical port records.
 if ($portA > 0 && $portB > 0) {
     $clearConnected = '';
     $stmtPortClear = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");
