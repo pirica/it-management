@@ -24,13 +24,13 @@ An IT Asset Management System built with PHP and MySQL. It features a GitHub Cop
 ## Coding Standards
 
 ### Structure & Organization
-- **Modules**: Every module should have the files: `index.php`, `create.php`, `edit.php`, `view.php`, and `view_all.php`.
+- **Modules**: Every module should have the files: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
 - **Master Templates**: The files in `modules/manufacturers/` serve as master CRUD templates. Many other modules are 'flattened' copies of this code. Updates to templates should be manually propagated to other modules when relevant.
 - **Database Schema**:
     - `database.sql` must be modified if there is a request to remove/delete a field or table.
     - `database.sql` must be modified if there is a request to rename a table header.
     - hide field `company_id` from files modules/%%/index.php modules/%%/create.php modules/%%/edit.php modules/%%/view.php modules/%%/view_all.php modules/%%/list_all.php
-    - Add safe inline FK creation logic that creates referenced rows when users add new values and scopes FK queries/inserts by company_id when appropriate, plus client-side scripts for select-add and bulk-delete workflows.
+    - `company_id` Add safe inline FK creation logic that creates referenced rows when users add new values and scopes FK queries/inserts by company_id when appropriate, plus client-side scripts for select-add and bulk-delete workflows.
 
 ### Documentation & Commenting
 - **Style**: Follow the **"why-focused"** commenting style for all files.
