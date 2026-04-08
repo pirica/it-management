@@ -199,7 +199,7 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
 
                     <div style="display:flex;gap:10px;">
                         <button class="btn btn-primary" type="submit">💾</button>
-                        <a class="btn" href="index.php">✖️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
             </div>

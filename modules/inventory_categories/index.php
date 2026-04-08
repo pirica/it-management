@@ -589,7 +589,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn btn-sm">Clear</a>
+                            <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -718,7 +718,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <?php endforeach; ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
-                        <a class="btn" href="index.php">✖️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
 
@@ -737,7 +737,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </tbody>
                     </table>
                     <p style="margin-top:16px;">
-                        <a class="btn" href="index.php">🔙</a> 
+                        <a href="index.php" class="btn">🔙</a> 
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
                     </p>
                 </div>

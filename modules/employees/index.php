@@ -540,13 +540,13 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
             <!-- HEADER ACTIONS -->
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                    <a href="create.php" class="btn btn-primary">➕ New Employee</a>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕ New Employee</a><?php endif; ?>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
                     <?php if ($showDuplicatesOnly): ?>
                         <a href="index.php?<?php echo sanitize(emp_build_query(['search' => $searchRaw])); ?>" class="btn btn-sm">Show All</a>
                     <?php else: ?>
@@ -570,7 +570,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php" class="btn btn-sm">Clear</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
             </div>

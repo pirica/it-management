@@ -113,7 +113,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <input type="text" id="companySearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Use SQL wildcards, e.g. %%abc%%">
                     </div>
                     <button type="submit" class="btn btn-primary">Search</button>
-                    <a href="index.php" class="btn">Clear</a>
+                    <a href="index.php" class="btn">🔙</a>
                 </form>
             </div>
 

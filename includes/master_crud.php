@@ -171,7 +171,7 @@ $csrfToken = itm_get_csrf_token();
                 <!-- List View Container -->
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo $crud_title; ?></h1>
-                    <a href="?action=create" class="btn btn-primary">➕ Add New</a>
+                    <a href="?action=create" class="btn btn-primary">➕</a>
                 </div>
                 
                 <div class="card" style="margin-bottom:16px;">
@@ -181,7 +181,7 @@ $csrfToken = itm_get_csrf_token();
                             <input type="text" name="search" value="<?php echo sanitize($search); ?>" placeholder="Search by name...">
                         </div>
                         <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php" class="btn">Clear</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </form>
                 </div>
 
@@ -225,7 +225,7 @@ $csrfToken = itm_get_csrf_token();
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">💾</button>
-                            <a href="index.php" class="btn">✖️ Cancel</a>
+                            <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
                 </div>

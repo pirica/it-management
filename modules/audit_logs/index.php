@@ -177,7 +177,7 @@ $moduleListHeading = '🧾 Audit Logs';
                         <input type="date" name="date_to" value="<?php echo sanitize($dateTo); ?>">
                     </div>
                     <button type="submit" class="btn btn-primary">Search</button>
-                    <a href="index.php" class="btn">Clear</a>
+                    <a href="index.php" class="btn">🔙</a>
                 </form>
             </div>
 

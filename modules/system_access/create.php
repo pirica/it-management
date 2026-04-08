@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div style="display:flex;gap:10px;">
                         <button class="btn btn-primary" type="submit">💾</button>
-                        <a class="btn" href="index.php">✖️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
             </div>
