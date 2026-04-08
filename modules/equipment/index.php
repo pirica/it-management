@@ -45,6 +45,9 @@ if ($equipmentFlagField !== '' && array_key_exists($equipmentFlagField, $flagTyp
         OR {$flagTypeMatchers[$equipmentFlagField]}
     )";
 }
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
 
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
                c.company AS company_name,
@@ -81,7 +84,26 @@ $orderByMap = [
     'ip_address' => 'e.ip_address',
     'serial_number' => 'e.serial_number',
 ];
-$sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir;
+$countSql = "SELECT COUNT(*) AS total
+             FROM equipment e
+             LEFT JOIN companies c ON c.id = e.company_id
+             LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+             LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
+             LEFT JOIN it_locations l ON l.id = e.location_id
+             LEFT JOIN equipment_statuses es ON es.id = e.status_id
+             WHERE e.company_id = $company_id
+             {$moduleFilterSql}
+             {$searchSql}";
+$countResult = mysqli_query($conn, $countSql);
+$countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
+$totalRows = (int)($countRow['total'] ?? 0);
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
+
+$sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 $result = mysqli_query($conn, $sql);
 $equipmentRows = [];
 if ($result) {
@@ -292,6 +314,18 @@ if (!empty($_SESSION['crud_success'])) {
                     <?php endif; ?>
                     </tbody>
                 </table>
+
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?><?php echo $showSwitchPortManager ? '&spm=1' : ''; ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?><?php echo $showSwitchPortManager ? '&spm=1' : ''; ?>">Next »</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <?php if ($showSwitchPortManager): ?>

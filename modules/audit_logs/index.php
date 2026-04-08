@@ -133,6 +133,29 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
 
 // Resolve pagination limit
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
+$countSql = 'SELECT COUNT(*) AS total '
+          . 'FROM audit_logs al '
+          . 'LEFT JOIN users u ON u.id = al.user_id '
+          . 'WHERE ' . implode(' AND ', $where);
+$countStmt = mysqli_prepare($conn, $countSql);
+$totalRows = 0;
+if ($countStmt) {
+    mysqli_stmt_bind_param($countStmt, $types, ...$params);
+    mysqli_stmt_execute($countStmt);
+    $countResult = mysqli_stmt_get_result($countStmt);
+    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+        $totalRows = (int)($countRow['total'] ?? 0);
+    }
+    mysqli_stmt_close($countStmt);
+}
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
 
 // Final query construction. 
 // Uses JOINs to resolve user details and Prepared Statements for security.
@@ -140,7 +163,7 @@ $sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
      . 'LEFT JOIN users u ON u.id = al.user_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
-     . 'ORDER BY al.changed_at DESC LIMIT ' . (int)$perPage;
+     . 'ORDER BY al.changed_at DESC LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
@@ -398,6 +421,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(http_build_query(['search' => $search, 'action_filter' => $action, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])); ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(http_build_query(['search' => $search, 'action_filter' => $action, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])); ?>">Next »</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

@@ -470,6 +470,23 @@ if ($searchRaw !== '') {
 
 $sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
+$countSql = 'SELECT COUNT(*) AS total
+             FROM employees e
+             LEFT JOIN departments d ON d.id = e.department_id
+             LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
+             LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
+             . $where;
+$countResult = mysqli_query($conn, $countSql);
+$countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
+$totalRows = (int)($countRow['total'] ?? 0);
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
 
 // Final Fetch including lookups and system access data
 $rows = mysqli_query(
@@ -483,7 +500,7 @@ $rows = mysqli_query(
      LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
      LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
     . $where .
-    ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage
+    ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset
 );
 
 /**
@@ -635,6 +652,17 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(emp_build_query(['sort' => $sort, 'dir' => $dir, 'show' => $showDuplicatesOnly ? 'duplicates' : null, 'search' => $searchRaw, 'page' => $page - 1])); ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(emp_build_query(['sort' => $sort, 'dir' => $dir, 'show' => $showDuplicatesOnly ? 'duplicates' : null, 'search' => $searchRaw, 'page' => $page + 1])); ?>">Next »</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
