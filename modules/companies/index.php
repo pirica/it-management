@@ -49,9 +49,32 @@ if ($searchRaw !== '') {
 // Build the final sort SQL
 $sortSql = '`' . str_replace('`', '``', $sort) . '` ' . $dir;
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
+$countSql = 'SELECT COUNT(*) AS total FROM companies' . $whereSql;
+$countStmt = mysqli_prepare($conn, $countSql);
+$totalRows = 0;
+if ($countStmt) {
+    if ($types !== '') {
+        mysqli_stmt_bind_param($countStmt, $types, ...$params);
+    }
+    mysqli_stmt_execute($countStmt);
+    $countResult = mysqli_stmt_get_result($countStmt);
+    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+        $totalRows = (int)($countRow['total'] ?? 0);
+    }
+    mysqli_stmt_close($countStmt);
+}
+
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
 
 // Execute the secure prepared query
-$sql = 'SELECT * FROM companies' . $whereSql . ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage;
+$sql = 'SELECT * FROM companies' . $whereSql . ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 $stmt = mysqli_prepare($conn, $sql);
 $rows = null;
 if ($stmt) {
@@ -162,6 +185,18 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php endif; ?>
                     </tbody>
                 </table>
+
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(companies_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1])); ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(companies_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1])); ?>">Next »</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

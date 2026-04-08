@@ -53,6 +53,23 @@ $orderByMap = [
 
 // Determine pagination limit based on global UI config.
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
+$countResult = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM inventory_items i
+     LEFT JOIN inventory_categories c ON c.id = i.category_id
+     WHERE i.company_id = $company_id{$searchSql}"
+);
+$countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
+$totalRows = (int)($countRow['total'] ?? 0);
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
 
 // Fetch items joined with categories.
 $items = mysqli_query(
@@ -62,7 +79,7 @@ $items = mysqli_query(
      LEFT JOIN inventory_categories c ON c.id = i.category_id
      WHERE i.company_id = $company_id{$searchSql}
      ORDER BY {$orderByMap[$sort]} {$dir}
-     LIMIT " . (int)$perPage
+     LIMIT " . (int)$perPage . " OFFSET " . (int)$offset
 );
 
 // Determine position of the "Add New" button based on UI preferences.
@@ -172,6 +189,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>">Next »</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

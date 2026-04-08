@@ -49,6 +49,24 @@ $orderByMap = [
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
+$countQuery = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM tickets t
+     LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+     LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
+     WHERE t.company_id = $company_id{$searchSql}"
+);
+$countRow = $countQuery ? mysqli_fetch_assoc($countQuery) : null;
+$totalRows = (int)($countRow['total'] ?? 0);
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
 
 // Primary data fetch with joins for status and priority labels
 $items = mysqli_query(
@@ -59,7 +77,7 @@ $items = mysqli_query(
      LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
      WHERE t.company_id = $company_id{$searchSql}
      ORDER BY {$orderByMap[$sort]} {$dir}
-     LIMIT " . (int)$perPage
+     LIMIT " . (int)$perPage . " OFFSET " . (int)$offset
 );
 
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
@@ -137,6 +155,17 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>">Next »</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
