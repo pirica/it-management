@@ -612,7 +612,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
                                         <?php else: ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✅ 1' : '❌ 0'; ?>
+                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '=✅' : '=❌'; ?>
                                         <?php endif; ?>
                                     <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <?php else: ?><?php echo sanitize((string)$row[$col]); ?>
