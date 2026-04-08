@@ -377,7 +377,7 @@ $moduleListHeading = '🧾 Audit Logs';
                                 </td>
                                 <td class="itm-actions-cell">
                                     <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm btn-primary" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View audit log">🔎 View</a>
+                                        <a class="btn btn-sm btn-primary" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View audit log">🔎</a>
                                     </div>
                                 </td>
                             </tr>
