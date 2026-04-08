@@ -318,14 +318,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <th style="width:36px;">Select <input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <th>Date &amp; Time</th>
                             <th>User</th>
-                            <th>Table</th>
+                            <th>Table Name</th>
                             <th>Record ID</th>
                             <th>Action</th>
-                            <th>Changes</th>
-                            <th>Actions</th>
+                            <th>Change Summary</th>
+                            <th>View</th>
                         </tr>
                     </thead>
                     <tbody>
