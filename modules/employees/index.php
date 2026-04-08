@@ -6,7 +6,7 @@
  * Features:
  * - Secure CRUD operations
  * - Excel/CSV import with header mapping and validation
- * - Automatic duplicate detection across Email, Employee Code, and Hilton ID
+ * - Automatic duplicate detection across Email, Employee Code, and External ID
  * - Integrated system access management (permissions matrix)
  * - Department and status lookups
  */
@@ -51,7 +51,7 @@ function emp_canonical_header($header) {
     $normalized = str_replace(['_', '-'], ' ', $normalized);
 
     $map = [
-        'hilton id' => 'hilton_id',
+        'external id' => 'external_id',
         'employee code' => 'employee_code',
         'user name' => 'username',
         'username' => 'username',
@@ -149,19 +149,19 @@ function emp_import_identity_label($mapped) {
     if (!empty($mapped['display_name'])) { $parts[] = 'Name: ' . (string)$mapped['display_name']; }
     if (!empty($mapped['email'])) { $parts[] = 'Email: ' . (string)$mapped['email']; }
     if (!empty($mapped['employee_code'])) { $parts[] = 'Employee Code: ' . (string)$mapped['employee_code']; }
-    if (!empty($mapped['hilton_id'])) { $parts[] = 'Hilton ID: ' . (string)$mapped['hilton_id']; }
+    if (!empty($mapped['external_id'])) { $parts[] = 'External ID: ' . (string)$mapped['external_id']; }
     if (!$parts) { return 'No identifying data'; }
     return implode(' | ', $parts);
 }
 
 /**
- * Generates tokens for identity matching (Email, Code, Hilton ID)
+ * Generates tokens for identity matching (Email, Code, External ID)
  */
 function emp_identifier_tokens($mapped) {
     $tokens = [];
     if (!empty($mapped['email'])) { $tokens[] = 'email:' . strtolower(trim((string)$mapped['email'])); }
     if (!empty($mapped['employee_code'])) { $tokens[] = 'employee_code:' . strtolower(trim((string)$mapped['employee_code'])); }
-    if (!empty($mapped['hilton_id'])) { $tokens[] = 'hilton_id:' . strtolower(trim((string)$mapped['hilton_id'])); }
+    if (!empty($mapped['external_id'])) { $tokens[] = 'external_id:' . strtolower(trim((string)$mapped['external_id'])); }
     sort($tokens);
     return $tokens;
 }
@@ -175,7 +175,7 @@ function emp_recalculate_duplicates($conn, $company_id) {
     mysqli_query($conn, 'UPDATE employees SET duplicate=0 WHERE company_id=' . $cid);
 
     $duplicateConditions = [];
-    foreach (['email', 'employee_code', 'hilton_id'] as $field) {
+    foreach (['email', 'employee_code', 'external_id'] as $field) {
         $fieldEsc = emp_escape_identifier($field);
         $duplicateConditions[] = "(LOWER(TRIM(COALESCE(" . $fieldEsc . ", ''))) IN (SELECT ident FROM (SELECT LOWER(TRIM(" . $fieldEsc . ")) AS ident FROM employees WHERE company_id=" . $cid . " AND " . $fieldEsc . " IS NOT NULL AND TRIM(" . $fieldEsc . ") <> '' GROUP BY LOWER(TRIM(" . $fieldEsc . ")) HAVING COUNT(*) > 1) dups) AND " . $fieldEsc . " IS NOT NULL AND TRIM(" . $fieldEsc . ") <> '')";
     }
@@ -194,7 +194,7 @@ function emp_recalculate_duplicates($conn, $company_id) {
  */
 function emp_collect_duplicate_values($conn, $company_id) {
     $cid = (int)$company_id;
-    $maps = ['email' => [], 'employee_code' => [], 'hilton_id' => []];
+    $maps = ['email' => [], 'employee_code' => [], 'external_id' => []];
 
     foreach (array_keys($maps) as $field) {
         $fieldEsc = emp_escape_identifier($field);
@@ -213,7 +213,7 @@ function emp_collect_duplicate_values($conn, $company_id) {
  */
 function emp_duplicate_reasons_for_row($row, $duplicateValueMaps) {
     $reasons = [];
-    foreach (['email' => 'Email', 'employee_code' => 'Employee Code', 'hilton_id' => 'Hilton ID'] as $field => $label) {
+    foreach (['email' => 'Email', 'employee_code' => 'Employee Code', 'external_id' => 'External ID'] as $field => $label) {
         $value = strtolower(trim((string)($row[$field] ?? '')));
         if ($value !== '' && !empty($duplicateValueMaps[$field][$value])) {
             $reasons[] = $label;
@@ -272,8 +272,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
         }
 
         // Validate that we have at least one identifier
-        if (!in_array('email', $headers, true) && !in_array('employee_code', $headers, true) && !in_array('hilton_id', $headers, true)) {
-            $errors[] = 'Include at least one unique identifier column: Email, Employee Code, or Hilton ID.';
+        if (!in_array('email', $headers, true) && !in_array('employee_code', $headers, true) && !in_array('external_id', $headers, true)) {
+            $errors[] = 'Include at least one unique identifier column: Email, Employee Code, or External ID.';
         }
 
         if (empty($errors)) {
@@ -285,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
             // Build an in-memory index of existing employees for fast lookup during import
             $existingRowMap = [];
-            $existingSql = 'SELECT id,email,employee_code,hilton_id,duplicate,first_name,last_name,username,display_name,job_code,job_title,comments,raw_status_code,termination_date,request_date,requested_by,termination_requested_by,department_id,employment_status_id FROM employees WHERE company_id=' . (int)$company_id;
+            $existingSql = 'SELECT id,email,employee_code,external_id,duplicate,first_name,last_name,username,display_name,job_code,job_title,comments,raw_status_code,termination_date,request_date,requested_by,termination_requested_by,department_id,employment_status_id FROM employees WHERE company_id=' . (int)$company_id;
             $existingRes = mysqli_query($conn, $existingSql);
             while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
                 $existingId = (int)($existingRow['id'] ?? 0);
@@ -302,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 $sourceRowNumber = $rowOffset + 2;
                 $mapped = [
                     'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'email' => '', 'employee_code' => '',
-                    'hilton_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '', 'job_title' => '',
+                    'external_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '', 'job_title' => '',
                     'comments' => '', 'raw_status_code' => '', 'termination_date' => '', 'request_date' => '', 'requested_by' => '',
                     'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0
                 ];
@@ -322,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Skip completely empty rows
-                if ($mapped['first_name'] === '' && $mapped['last_name'] === '' && $mapped['email'] === '' && $mapped['employee_code'] === '' && $mapped['hilton_id'] === '') {
+                if ($mapped['first_name'] === '' && $mapped['last_name'] === '' && $mapped['email'] === '' && $mapped['employee_code'] === '' && $mapped['external_id'] === '') {
                     $skipped += 1; $skippedDetails[] = ['row' => $sourceRowNumber, 'reason' => 'Missing data.', 'identity' => 'No identifying data'];
                     continue;
                 }
@@ -371,7 +371,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','email','employee_code','hilton_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','email','employee_code','external_id','username','display_name','job_code','job_title','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
@@ -443,7 +443,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','hilton_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','comments'];
+$preferredOrder = ['id','duplicate','external_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','comments'];
 $hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
@@ -492,7 +492,7 @@ $rows = mysqli_query(
 function emp_label($field) {
     if ($field === 'department_id') return 'Department Name';
     if ($field === 'employment_status_id') return 'Employment Status';
-    if ($field === 'hilton_id') return 'Id';
+    if ($field === 'external_id') return 'External ID';
     return ucwords(str_replace('_', ' ', trim((string)$field)));
 }
 
