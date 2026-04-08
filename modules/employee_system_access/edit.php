@@ -13,7 +13,9 @@ require '../../includes/employee_system_access.php';
 esa_ensure_table($conn);
 
 // Resolve and validate employee ID
-$employeeId = (int)($_GET['employee_id'] ?? $_POST['employee_id'] ?? 0);
+// Allow both `id` and `employee_id` to keep this module compatible with
+// generic record links and existing bookmarks.
+$employeeId = (int)($_GET['id'] ?? $_GET['employee_id'] ?? $_POST['id'] ?? $_POST['employee_id'] ?? 0);
 if ($employeeId <= 0) {
     header('Location: index.php');
     exit;
@@ -82,7 +84,7 @@ function esa_module_checked($ids, $id) {
                 
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <input type="hidden" name="employee_id" value="<?php echo (int)$employeeId; ?>">
+                    <input type="hidden" name="id" value="<?php echo (int)$employeeId; ?>">
                     
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>

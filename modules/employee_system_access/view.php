@@ -11,7 +11,9 @@ require '../../includes/employee_system_access.php';
 // Keep relation/catalog tables available so this view can run on fresh installs.
 esa_ensure_table($conn);
 
-$employeeId = (int)($_GET['employee_id'] ?? 0);
+// Accept both `id` and legacy `employee_id` so shared links like
+// `modules/<name>/view.php?id=<id>` open this module consistently.
+$employeeId = (int)($_GET['id'] ?? $_GET['employee_id'] ?? 0);
 $employee = null;
 $systemAccessCatalog = [];
 $grantedAccessMap = [];
@@ -114,7 +116,7 @@ if ($employee) {
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <a href="index.php" class="btn">🔙</a>
                     <?php if ($employee): ?>
-                        <a href="edit.php?employee_id=<?php echo (int)$employee['id']; ?>" class="btn btn-primary">✏️</a>
+                        <a href="edit.php?id=<?php echo (int)$employee['id']; ?>" class="btn btn-primary">✏️</a>
                     <?php endif; ?>
                 </div>
             </div>
