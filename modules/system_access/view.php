@@ -68,9 +68,9 @@ if ($id > 0) {
                     </table>
                 <?php endif; ?>
                 <div style="display:flex;gap:10px;margin-top:20px;">
-                    <a href="index.php" class="btn">Back</a>
+                    <a href="index.php" class="btn">🔙</a>
                     <?php if ($item): ?>
-                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️ Edit</a>
+                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a>
                     <?php endif; ?>
                 </div>
             </div>
