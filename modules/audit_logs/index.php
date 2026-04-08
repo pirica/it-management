@@ -325,7 +325,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <th>Record ID</th>
                             <th>Action</th>
                             <th>Change Summary</th>
-                            <th>View</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
