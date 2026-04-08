@@ -178,7 +178,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php" class="btn btn-sm">Clear</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
             </div>

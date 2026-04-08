@@ -80,9 +80,9 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
         <div class="content">
             <!-- HEADER SECTION -->
             <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a class="btn btn-primary" href="create.php">➕</a><?php else: ?><span></span><?php endif; ?>
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php else: ?><span></span><?php endif; ?>
                 <h1>🎟️ Tickets</h1>
-                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a class="btn btn-primary" href="create.php">➕</a><?php endif; ?>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
             </div>
 
             <!-- SEARCH BAR -->
@@ -94,7 +94,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php" class="btn btn-sm">Clear</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
             </div>

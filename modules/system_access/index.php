@@ -196,13 +196,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
         <div class="content">
             <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                    <a class="btn btn-primary" href="create.php">➕</a>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
                 <h1>🛡️ System Access</h1>
                 <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                    <a class="btn btn-primary" href="create.php">➕</a>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>

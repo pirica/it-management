@@ -636,7 +636,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn btn-sm">Clear</a>
+                            <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -761,7 +761,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                     <?php endforeach; ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
-                        <a class="btn" href="index.php">✖️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
 
@@ -779,7 +779,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a class="btn" href="index.php">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>

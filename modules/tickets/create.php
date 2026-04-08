@@ -257,7 +257,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
                         <input type="color" name="ui_color" value="<?php echo sanitize($data['ui_color'] ?? '#0969da'); ?>">
                     </div>
 
-                    <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a class="btn" href="index.php">✖️</a></div>
+                    <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">🔙</a></div>
                 </form>
             </div>
         </div>
