@@ -188,6 +188,28 @@ function itm_audit_normalize_value($text) {
     return $text;
 }
 
+/**
+ * Provide action-aware empty-state messaging for old/new payload sections.
+ *
+ * Why: INSERT events legitimately have no previous values (and DELETE events have
+ * no new values), so plain dashes can look like missing data defects.
+ */
+function itm_audit_describe_payload($action, $normalizedValue, $isOldValue) {
+    if ($normalizedValue !== '—') {
+        return $normalizedValue;
+    }
+
+    $action = strtoupper(trim((string)$action));
+    if ($isOldValue && $action === 'INSERT') {
+        return '— Not applicable for INSERT events.';
+    }
+    if (!$isOldValue && $action === 'DELETE') {
+        return '— Not applicable for DELETE events.';
+    }
+
+    return '—';
+}
+
 $moduleListHeading = '🧾 Audit Logs';
 ?>
 <!DOCTYPE html>
@@ -327,7 +349,9 @@ $moduleListHeading = '🧾 Audit Logs';
 
                             $oldValues = itm_audit_normalize_value($row['old_values'] ?? '');
                             $newValues = itm_audit_normalize_value($row['new_values'] ?? '');
-                            $previewText = 'Old: ' . itm_audit_preview($oldValues, 80) . ' | New: ' . itm_audit_preview($newValues, 80);
+                            $oldValuesDisplay = itm_audit_describe_payload($row['action'] ?? '', $oldValues, true);
+                            $newValuesDisplay = itm_audit_describe_payload($row['action'] ?? '', $newValues, false);
+                            $previewText = 'Old: ' . itm_audit_preview($oldValuesDisplay, 80) . ' | New: ' . itm_audit_preview($newValuesDisplay, 80);
                             ?>
                             <tr>
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)($row['id'] ?? 0); ?>" form="bulk-delete-form"></td>
@@ -346,8 +370,8 @@ $moduleListHeading = '🧾 Audit Logs';
                                         <span><?php echo sanitize($previewText); ?></span>
                                         <details>
                                             <summary class="btn btn-sm btn-primary" style="cursor:pointer;">Click to see more</summary>
-                                            <div class="audit-json"><strong>Old Values</strong><br><?php echo sanitize($oldValues); ?></div>
-                                            <div class="audit-json"><strong>New Values</strong><br><?php echo sanitize($newValues); ?></div>
+                                            <div class="audit-json"><strong>Old Values</strong><br><?php echo sanitize($oldValuesDisplay); ?></div>
+                                            <div class="audit-json"><strong>New Values</strong><br><?php echo sanitize($newValuesDisplay); ?></div>
                                         </details>
                                     </div>
                                 </td>

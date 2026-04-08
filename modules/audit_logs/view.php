@@ -64,6 +64,45 @@ if ($logRow) {
     }
 }
 
+/**
+ * Normalize audit payload text so detail view mirrors index semantics.
+ */
+function itm_audit_normalize_value($text) {
+    $text = trim((string)$text);
+    if ($text === '' || strcasecmp($text, 'null') === 0) {
+        return '—';
+    }
+
+    return $text;
+}
+
+/**
+ * Provide action-aware empty-state messaging for old/new payload sections.
+ */
+function itm_audit_describe_payload($action, $normalizedValue, $isOldValue) {
+    if ($normalizedValue !== '—') {
+        return $normalizedValue;
+    }
+
+    $action = strtoupper(trim((string)$action));
+    if ($isOldValue && $action === 'INSERT') {
+        return '— Not applicable for INSERT events.';
+    }
+    if (!$isOldValue && $action === 'DELETE') {
+        return '— Not applicable for DELETE events.';
+    }
+
+    return '—';
+}
+
+$oldValuesDisplay = '—';
+$newValuesDisplay = '—';
+if ($logRow) {
+    $actionValue = (string)($logRow['action'] ?? '');
+    $oldValuesDisplay = itm_audit_describe_payload($actionValue, itm_audit_normalize_value($logRow['old_values'] ?? ''), true);
+    $newValuesDisplay = itm_audit_describe_payload($actionValue, itm_audit_normalize_value($logRow['new_values'] ?? ''), false);
+}
+
 $moduleListHeading = '🧾 View Audit Log';
 ?>
 <!DOCTYPE html>
@@ -110,11 +149,11 @@ $moduleListHeading = '🧾 View Audit Log';
                         <tr><th>User Agent</th><td><?php echo sanitize((string)($logRow['user_agent'] ?? '—')); ?></td></tr>
                         <tr>
                             <th>Old Values</th>
-                            <td><pre class="audit-json"><?php echo sanitize((string)($logRow['old_values'] ?? '')); ?></pre></td>
+                            <td><pre class="audit-json"><?php echo sanitize($oldValuesDisplay); ?></pre></td>
                         </tr>
                         <tr>
                             <th>New Values</th>
-                            <td><pre class="audit-json"><?php echo sanitize((string)($logRow['new_values'] ?? '')); ?></pre></td>
+                            <td><pre class="audit-json"><?php echo sanitize($newValuesDisplay); ?></pre></td>
                         </tr>
                         </tbody>
                     </table>
