@@ -108,6 +108,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
+$company_id = isset($company_id) ? (int)$company_id : (int)($_SESSION['company_id'] ?? 0);
 
 // Handle deletion action
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -163,7 +164,7 @@ if ($bulkAction === 'bulk_delete') {
 }
 
 // Handle Single Record Delete
-$id = isset($_POST['id']) ? (int)$POST['id'] : 0;
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 if ($id > 0) {
     // SECURITY CHECK: Ensure record is not in use elsewhere before deleting
     $usageError = '';
