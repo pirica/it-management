@@ -24,6 +24,60 @@ if ($companyId <= 0) {
     exit('Company context is required.');
 }
 
+$messages = [];
+$errors = [];
+$csrfToken = itm_get_csrf_token();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+
+    $bulkAction = (string)($_POST['bulk_action'] ?? '');
+    if ($bulkAction === 'clear_table') {
+        $clearStmt = mysqli_prepare($conn, 'DELETE FROM audit_logs WHERE company_id = ?');
+        if ($clearStmt) {
+            mysqli_stmt_bind_param($clearStmt, 'i', $companyId);
+            if (mysqli_stmt_execute($clearStmt)) {
+                $messages[] = 'All audit logs for this company were cleared.';
+            } else {
+                $errors[] = 'Unable to clear audit logs.';
+            }
+            mysqli_stmt_close($clearStmt);
+        } else {
+            $errors[] = 'Unable to prepare clear-table operation.';
+        }
+    } elseif ($bulkAction === 'bulk_delete') {
+        $selectedIds = $_POST['ids'] ?? [];
+        if (!is_array($selectedIds) || $selectedIds === []) {
+            $errors[] = 'Select at least one row to delete.';
+        } else {
+            $selectedIds = array_values(array_filter(array_map('intval', $selectedIds), static fn($id) => $id > 0));
+            if ($selectedIds === []) {
+                $errors[] = 'Invalid row selection.';
+            } else {
+                $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
+                $deleteSql = 'DELETE FROM audit_logs WHERE company_id = ? AND id IN (' . $placeholders . ')';
+                $deleteStmt = mysqli_prepare($conn, $deleteSql);
+                if ($deleteStmt) {
+                    $bindTypes = 'i' . str_repeat('i', count($selectedIds));
+                    $bindValues = array_merge([$companyId], $selectedIds);
+                    mysqli_stmt_bind_param($deleteStmt, $bindTypes, ...$bindValues);
+                    if (mysqli_stmt_execute($deleteStmt)) {
+                        $deletedCount = mysqli_stmt_affected_rows($deleteStmt);
+                        $messages[] = $deletedCount > 0
+                            ? ('Deleted ' . (int)$deletedCount . ' selected audit log row(s).')
+                            : 'No matching rows were deleted.';
+                    } else {
+                        $errors[] = 'Unable to delete selected rows.';
+                    }
+                    mysqli_stmt_close($deleteStmt);
+                } else {
+                    $errors[] = 'Unable to prepare bulk delete operation.';
+                }
+            }
+        }
+    }
+}
+
 // Extract filter parameters from the URL for persistent search/filtering
 $search = trim((string)($_GET['search'] ?? ''));
 $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
@@ -167,6 +221,21 @@ $moduleListHeading = '🧾 Audit Logs';
                 <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
             </div>
 
+            <?php foreach ($messages as $message): ?>
+                <div class="alert alert-success" style="margin-bottom:10px;"><?php echo sanitize($message); ?></div>
+            <?php endforeach; ?>
+            <?php foreach ($errors as $error): ?>
+                <div class="alert alert-danger" style="margin-bottom:10px;"><?php echo sanitize($error); ?></div>
+            <?php endforeach; ?>
+
+            <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="index.php" style="display:flex;gap:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                </form>
+            </div>
+
             <!-- SEARCH AND FILTER FORM -->
             <div class="card audit-filters" style="margin-bottom:16px;">
                 <form method="GET">
@@ -208,6 +277,7 @@ $moduleListHeading = '🧾 Audit Logs';
                 <table>
                     <thead>
                         <tr>
+                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <th>Date &amp; Time</th>
                             <th>User</th>
                             <th>Table</th>
@@ -219,7 +289,7 @@ $moduleListHeading = '🧾 Audit Logs';
                     <tbody>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="6">No audit logs found for the selected filters.</td>
+                            <td colspan="7">No audit logs found for the selected filters.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
@@ -253,6 +323,7 @@ $moduleListHeading = '🧾 Audit Logs';
                             $previewText = 'Old: ' . itm_audit_preview($oldValues, 80) . ' | New: ' . itm_audit_preview($newValues, 80);
                             ?>
                             <tr>
+                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)($row['id'] ?? 0); ?>" form="bulk-delete-form"></td>
                                 <td><?php echo sanitize((string)$row['changed_at']); ?></td>
                                 <td class="audit-user" title="<?php echo sanitize($userEmail !== '' ? ($userName . ' <' . $userEmail . '>') : $userName); ?>">
                                     <?php echo sanitize($userName); ?>
@@ -282,5 +353,20 @@ $moduleListHeading = '🧾 Audit Logs';
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAllRows = document.getElementById('select-all-rows');
+    if (!selectAllRows) {
+        return;
+    }
+
+    selectAllRows.addEventListener('change', function () {
+        const checkboxes = document.querySelectorAll('input[name="ids[]"]');
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = selectAllRows.checked;
+        });
+    });
+});
+</script>
 </body>
 </html>
