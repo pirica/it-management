@@ -19,12 +19,12 @@ if ($employeeId <= 0) {
     exit;
 }
 
-$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name\n'
-    . 'FROM employees e\n'
-    . 'LEFT JOIN departments d ON d.id = e.department_id\n'
-    . 'LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id\n'
-    . 'LEFT JOIN employee_statuses es ON es.id = e.employment_status_id\n'
-    . 'WHERE e.id = ? AND e.company_id = ?\n'
+$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name '
+    . 'FROM employees e '
+    . 'LEFT JOIN departments d ON d.id = e.department_id '
+    . 'LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id '
+    . 'LEFT JOIN employee_statuses es ON es.id = e.employment_status_id '
+    . 'WHERE e.id = ? AND e.company_id = ? '
     . 'LIMIT 1';
 
 $stmt = mysqli_prepare($conn, $sql);
