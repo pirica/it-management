@@ -141,7 +141,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
                 <h1 style="margin:0;">Edit Employee #<?php echo (int)$id; ?></h1>
-                <a href="index.php" class="btn">← Back</a>
+                <a href="index.php" class="btn">🔙</a>
             </div>
 
             <?php foreach ($errors as $error): ?><div class="alert alert-error"><?php echo sanitize($error); ?></div><?php endforeach; ?>

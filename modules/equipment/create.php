@@ -826,7 +826,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                     <?php endif; ?>
                     <div class="form-hint" id="currentPhotoHint">
                         <span id="currentPhotoHintText"><?php echo !empty($currentPhotoFilenames) ? 'Current photos: ' . count($currentPhotoFilenames) : 'Selected photos: 0'; ?></span>
-                        <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">View Photos</button>
+                        <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">👀</button>
                         <?php if (!empty($currentPhotoFilenames)): ?>
                             <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
                         <?php endif; ?>

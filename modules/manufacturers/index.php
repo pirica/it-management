@@ -861,8 +861,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </tbody>
                     </table>
                     <p style="margin-top:16px;">
-                        <a class="btn" href="index.php">Back</a> 
-                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️ Edit</a>
+                        <a class="btn" href="index.php">🔙</a> 
+                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
                     </p>
                 </div>
             <?php endif; ?>

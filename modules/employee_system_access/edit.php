@@ -70,7 +70,7 @@ function esa_module_checked($ids, $id) {
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
                 <h1 style="margin:0;">Edit Access: <?php echo sanitize((string)($employee['display_name'] ?: trim((string)$employee['first_name'] . ' ' . (string)$employee['last_name']))); ?></h1>
-                <a href="index.php" class="btn">← Back</a>
+                <a href="index.php" class="btn">🔙</a>
             </div>
             
             <!-- PERMISSION MANAGEMENT FORM -->

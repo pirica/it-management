@@ -224,7 +224,7 @@ $csrfToken = itm_get_csrf_token();
                             <input type="text" name="name" value="<?php echo sanitize($data['name']); ?>" required>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">💾 Save</button>
+                            <button type="submit" class="btn btn-primary">💾</button>
                             <a href="index.php" class="btn">✖️ Cancel</a>
                         </div>
                     </form>
@@ -238,8 +238,8 @@ $csrfToken = itm_get_csrf_token();
                         <tr><th>Name:</th><td><?php echo sanitize($data['name']); ?></td></tr>
                     </table>
                     <div class="form-actions" style="margin-top:20px;">
-                        <a href="?action=edit&id=<?php echo $id; ?>" class="btn btn-primary">✏️ Edit</a>
-                        <a href="index.php" class="btn">⬅️ Back</a>
+                        <a href="?action=edit&id=<?php echo $id; ?>" class="btn btn-primary">✏️</a>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </div>
             <?php endif; ?>

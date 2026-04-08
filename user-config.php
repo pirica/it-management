@@ -252,14 +252,14 @@ if ($message_type === 'success') {
                                     <label for="current_password_verify"><strong>Current Password (Required to save any changes):</strong></label><br>
                                     <input id="current_password_verify" type="password" name="current_password_verify" required style="width:100%; max-width:460px;">
                                 </p>
-                                <button class="btn btn-primary" type="submit">Save All Changes</button>
+                                <button class="btn btn-primary" type="submit">💾</button>
                             </fieldset>
                         </form>
                     </div>
                 </div>
 
                 <p style="margin-top: 20px;">
-                    <a class="btn" href="dashboard.php">Back to Dashboard</a>
+                    <a class="btn" href="dashboard.php">🔙 Dashboard</a>
                     <form method="POST" action="logout.php" style="display:inline; margin:0;">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                         <button type="submit" class="btn">Logout</button>

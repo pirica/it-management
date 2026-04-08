@@ -104,7 +104,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <!-- TOOLBAR -->
             <div class="idf-toolbar">
                 <div class="left">
-                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
+                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">🔙</a>
                     <div>
                         <div class="idf-rack-title">🔧 <?php echo sanitize($pos['device_name']); ?></div>
                         <div style="opacity:.85; font-size:12px;">IDF: <?php echo sanitize($pos['idf_name']); ?></div>
@@ -130,7 +130,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td><?php echo sanitize($p['status']); ?></td>
                                 <td><!-- Link display logic --></td>
                                 <td>
-                                    <button class="btn btn-sm" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
+                                    <button class="btn btn-sm" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">✏️</button>
                                     <button class="btn btn-sm" onclick="openLinkModal(<?php echo (int)$p['id']; ?>)">Link</button>
                                 </td>
                             </tr>
