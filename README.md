@@ -49,3 +49,47 @@ Run these scripts to audit baseline security coverage:
   - `php scripts/check_csrf_coverage.php`
 - SQL injection static audit:
   - `php scripts/check_sql_injection_coverage.php`
+
+## Production Deployment Note
+
+- Keep `debug.php` for development/troubleshooting only.
+- Before any production release, remove or block access to `debug.php` to avoid exposing sensitive system and database information.
+
+## Secrets Management (Required)
+
+Move secrets out of source control immediately. `config/config.php` currently defines DB credentials and API key constants inline, which is risky for leaks and difficult rotation. Use environment variables (or a server-local config file excluded from git) and fail fast when missing.
+
+```php
+define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
+```
+
+### Example: environment variables (recommended)
+
+Set environment variables in Apache vhost (or systemd/container runtime):
+
+```apache
+SetEnv ITM_DB_HOST localhost
+SetEnv ITM_DB_NAME itmanagement
+SetEnv ITM_DB_USER root
+SetEnv ITM_DB_PASS change_me
+SetEnv ITM_API_KEY change_me
+```
+
+Then load and validate them in `config/config.php`:
+
+```php
+$itmDbHost = getenv('ITM_DB_HOST') ?: '';
+$itmDbName = getenv('ITM_DB_NAME') ?: '';
+$itmDbUser = getenv('ITM_DB_USER') ?: '';
+$itmDbPass = getenv('ITM_DB_PASS') ?: '';
+$itmApiKey = getenv('ITM_API_KEY') ?: '';
+
+if ($itmDbHost === '' || $itmDbName === '' || $itmDbUser === '' || $itmApiKey === '') {
+    http_response_code(500);
+    exit('Configuration error: required environment variables are missing.');
+}
+```
+
+### Alternative: server-local config file
+
+If environment variables are not available, load a separate PHP config file from outside the repo (or ignored by git), and terminate the app startup if the file or required values are missing.
