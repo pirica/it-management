@@ -3,7 +3,7 @@
  * User Login Page
  * 
  * Handles user authentication via email/username and password.
- * Supports both hashed (secure) and plain text (legacy/temporary) password matching.
+ * Uses secure password verification only and migrates legacy hash formats on login.
  * Implements CSRF protection and role-based redirection.
  */
 
@@ -32,13 +32,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($stmt);
 
         $storedPassword = (string)($user['password'] ?? '');
-        
-        // Verify password against either hashed or plaintext stored values
-        // Note: Legacy support for plaintext passwords should be migrated to hashes
-        $passwordMatches = $user && (
-            password_verify($password, $storedPassword)
-            || hash_equals($storedPassword, $password)
-        );
+        $userId = (int)($user['id'] ?? 0);
+        $passwordMatches = false;
+
+        if ($user) {
+            // Why: Accept modern password_hash() values and transparently upgrade cost/algorithm when needed.
+            if (password_verify($password, $storedPassword)) {
+                $passwordMatches = true;
+
+                if (password_needs_rehash($storedPassword, PASSWORD_DEFAULT)) {
+                    $rehash = password_hash($password, PASSWORD_DEFAULT);
+                    $rehashStmt = mysqli_prepare($conn, 'UPDATE users SET password = ? WHERE id = ? LIMIT 1');
+                    if ($rehashStmt) {
+                        mysqli_stmt_bind_param($rehashStmt, 'si', $rehash, $userId);
+                        mysqli_stmt_execute($rehashStmt);
+                        mysqli_stmt_close($rehashStmt);
+                    }
+                }
+            } else {
+                // Why: Development/staged databases may still contain one-way legacy hashes.
+                //      We allow one-time login via known legacy hashes, then immediately migrate
+                //      to password_hash() without keeping plaintext comparison fallback.
+                $legacyMd5 = md5($password);
+                $legacySha1 = sha1($password);
+
+                if (
+                    hash_equals(strtolower($storedPassword), strtolower($legacyMd5))
+                    || hash_equals(strtolower($storedPassword), strtolower($legacySha1))
+                ) {
+                    $passwordMatches = true;
+                    $newHash = password_hash($password, PASSWORD_DEFAULT);
+                    $migrateStmt = mysqli_prepare($conn, 'UPDATE users SET password = ? WHERE id = ? LIMIT 1');
+                    if ($migrateStmt) {
+                        mysqli_stmt_bind_param($migrateStmt, 'si', $newHash, $userId);
+                        mysqli_stmt_execute($migrateStmt);
+                        mysqli_stmt_close($migrateStmt);
+                    }
+                }
+            }
+        }
 
         if ($passwordMatches) {
             $userId = (int)$user['id'];
