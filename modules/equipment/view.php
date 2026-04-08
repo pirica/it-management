@@ -215,7 +215,7 @@ function equipment_field_matches_context($key, $item) {
     </td>
 </tr>
 </tbody></table>
-<p style="margin-top:16px;"><a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>">Back</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
+<p style="margin-top:16px;"><a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
 <?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script></body></html>

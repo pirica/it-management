@@ -94,8 +94,8 @@ $profileFields = [
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
                 <h1 style="margin:0;">Employee #<?php echo (int)$employeeId; ?></h1>
                 <div style="display:flex;gap:8px;">
-                    <a href="index.php" class="btn">← Back</a>
-                    <a href="edit.php?id=<?php echo (int)$employeeId; ?>" class="btn btn-primary">Edit</a>
+                    <a href="index.php" class="btn">🔙</a>
+                    <a href="edit.php?id=<?php echo (int)$employeeId; ?>" class="btn btn-primary">✏️</a>
                 </div>
             </div>
 

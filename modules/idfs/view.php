@@ -135,7 +135,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <section class="idf-command-bar">
                     <div class="idf-command-title">
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <a class="btn btn-sm" href="index.php">← Back</a>
+                            <a class="btn btn-sm" href="index.php">🔙</a>
                             <div class="idf-rack-title">
                                 🗄️ <?php echo sanitize($idf['name']); ?>
                             </div>

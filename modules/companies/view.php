@@ -110,7 +110,7 @@ if ($item === null && $error === '') {
                     </table>
                 <?php endif; ?>
                 <div style="display:flex;gap:10px;margin-top:20px;">
-                    <a href="index.php" class="btn">Back</a>
+                    <a href="index.php" class="btn">🔙</a>
                     <?php if ($item !== null): ?>
                         <a href="edit.php?id=<?php echo (int)itm_company_view_value($itemNormalized, ['id']); ?>" class="btn btn-primary">✏️</a>
                     <?php endif; ?>

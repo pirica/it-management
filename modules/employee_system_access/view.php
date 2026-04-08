@@ -112,9 +112,9 @@ if ($employee) {
                 <?php endif; ?>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <a href="index.php" class="btn">Back</a>
+                    <a href="index.php" class="btn">🔙</a>
                     <?php if ($employee): ?>
-                        <a href="edit.php?employee_id=<?php echo (int)$employee['id']; ?>" class="btn btn-primary">✏️ Edit Access</a>
+                        <a href="edit.php?employee_id=<?php echo (int)$employee['id']; ?>" class="btn btn-primary">✏️</a>
                     <?php endif; ?>
                 </div>
             </div>

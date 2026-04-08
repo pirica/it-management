@@ -125,8 +125,8 @@ if ($id > 0) {
                 <?php endif; ?>
                 
                 <div style="display:flex;gap:10px;margin-top:20px;">
-                    <a href="index.php" class="btn">Back</a>
-                    <?php if ($item): ?><a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️ Edit</a><?php endif; ?>
+                    <a href="index.php" class="btn">🔙</a>
+                    <?php if ($item): ?><a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a><?php endif; ?>
                 </div>
             </div>
         </div>
