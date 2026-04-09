@@ -110,6 +110,28 @@ if (isset($_SESSION['settings_flash_message'])) {
 
 $csrfToken = itm_get_csrf_token();
 
+// Why: Backup import/export can alter or exfiltrate the full database, so we enforce
+// an explicit per-request admin check here instead of relying only on menu visibility.
+$canManageBackups = false;
+$settingsUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+if ($settingsUserId > 0) {
+    $settingsAdminStmt = mysqli_prepare(
+        $conn,
+        'SELECT 1
+         FROM users u
+         LEFT JOIN user_roles ur ON ur.id = u.role_id
+         WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
+         LIMIT 1'
+    );
+    if ($settingsAdminStmt) {
+        mysqli_stmt_bind_param($settingsAdminStmt, 'i', $settingsUserId);
+        mysqli_stmt_execute($settingsAdminStmt);
+        $settingsAdminRes = mysqli_stmt_get_result($settingsAdminStmt);
+        $canManageBackups = $settingsAdminRes && mysqli_num_rows($settingsAdminRes) > 0;
+        mysqli_stmt_close($settingsAdminStmt);
+    }
+}
+
 /**
  * Generates a timestamped filename for SQL backups.
  */
@@ -228,47 +250,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Generate a new SQL dump file in the backups/ directory.
     if ($action === 'create_backup') {
-        $filename = backup_filename();
-        $fullPath = BACKUP_PATH . $filename;
-        $dump = build_sql_backup($conn);
-
-        if ($dump === false) {
-            $error = 'Unable to generate SQL backup.';
-        } elseif (file_put_contents($fullPath, $dump) === false) {
-            $error = 'Unable to write backup file.';
+        if (!$canManageBackups) {
+            $error = 'Only admin users can export backups.';
         } else {
-            $message = 'Backup created: ' . $filename;
+            $filename = backup_filename();
+            $fullPath = BACKUP_PATH . $filename;
+            $dump = build_sql_backup($conn);
+
+            if ($dump === false) {
+                $error = 'Unable to generate SQL backup.';
+            } elseif (file_put_contents($fullPath, $dump) === false) {
+                $error = 'Unable to write backup file.';
+            } else {
+                $message = 'Backup created: ' . $filename;
+            }
         }
     }
 
     // Action: Remove an existing backup file.
     if ($action === 'delete_backup') {
-        $file = basename((string)($_POST['file'] ?? ''));
-        $target = BACKUP_PATH . $file;
-        if ($file === '' || !is_file($target)) {
-            $error = 'Backup file not found.';
-        } elseif (!unlink($target)) {
-            $error = 'Unable to delete backup.';
+        if (!$canManageBackups) {
+            $error = 'Only admin users can export backups.';
         } else {
-            $message = 'Deleted backup: ' . $file;
+            $file = basename((string)($_POST['file'] ?? ''));
+            $target = BACKUP_PATH . $file;
+            if ($file === '' || !is_file($target)) {
+                $error = 'Backup file not found.';
+            } elseif (!unlink($target)) {
+                $error = 'Unable to delete backup.';
+            } else {
+                $message = 'Deleted backup: ' . $file;
+            }
         }
     }
 
     // Action: Restore database state from an uploaded .sql file.
     if ($action === 'import_backup') {
-        if (!isset($_FILES['sql_file']) || (int)($_FILES['sql_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['sql_file']['tmp_name'] ?? '')) {
-            $error = 'Please upload a valid SQL file to import.';
+        if (!$canManageBackups) {
+            $error = 'Only admin users can import backups.';
         } else {
-            $name = $_FILES['sql_file']['name'] ?? '';
-            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-            if ($ext !== 'sql') {
-                $error = 'Only .sql files are supported.';
+            if (!isset($_FILES['sql_file']) || (int)($_FILES['sql_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['sql_file']['tmp_name'] ?? '')) {
+                $error = 'Please upload a valid SQL file to import.';
             } else {
-                $content = file_get_contents($_FILES['sql_file']['tmp_name']);
-                if ($content === false || !apply_sql_file($conn, $content)) {
-                    $error = 'Import failed. Please verify SQL file syntax.';
+                $name = $_FILES['sql_file']['name'] ?? '';
+                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                if ($ext !== 'sql') {
+                    $error = 'Only .sql files are supported.';
                 } else {
-                    $message = 'Import completed successfully.';
+                    $content = file_get_contents($_FILES['sql_file']['tmp_name']);
+                    if ($content === false || !apply_sql_file($conn, $content)) {
+                        $error = 'Import failed. Please verify SQL file syntax.';
+                    } else {
+                        $message = 'Import completed successfully.';
+                    }
                 }
             }
         }
@@ -344,14 +378,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // HANDLE FILE EXPORT REQUESTS
 if (isset($_GET['download'])) {
-    $downloadFile = basename((string)$_GET['download']);
-    $downloadPath = BACKUP_PATH . $downloadFile;
-    if ($downloadFile !== '' && is_file($downloadPath)) {
-        header('Content-Type: application/sql');
-        header('Content-Disposition: attachment; filename="' . $downloadFile . '"');
-        header('Content-Length: ' . filesize($downloadPath));
-        readfile($downloadPath);
-        exit;
+    if (!$canManageBackups) {
+        http_response_code(403);
+        exit('Forbidden');
+    } else {
+        $downloadFile = basename((string)$_GET['download']);
+        $downloadPath = BACKUP_PATH . $downloadFile;
+        if ($downloadFile !== '' && is_file($downloadPath)) {
+            header('Content-Type: application/sql');
+            header('Content-Disposition: attachment; filename="' . $downloadFile . '"');
+            header('Content-Length: ' . filesize($downloadPath));
+            readfile($downloadPath);
+            exit;
+        }
     }
 }
 
@@ -581,26 +620,34 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header"><h2>Create Full SQL Backup</h2></div>
                 <div class="card-body">
-                    <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="create_backup">
-                        <button class="btn btn-primary" type="submit">Create Backup Now</button>
-                    </form>
+                    <?php if ($canManageBackups): ?>
+                        <form method="post">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="action" value="create_backup">
+                            <button class="btn btn-primary" type="submit">Create Backup Now</button>
+                        </form>
+                    <?php else: ?>
+                        <p class="form-hint">Backup export is restricted to admin users.</p>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header"><h2>Import Backup</h2></div>
                 <div class="card-body">
-                    <form method="post" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="import_backup">
-                        <div class="form-group" style="margin:0;min-width:260px;">
-                            <label for="sql_file">SQL File</label>
-                            <input type="file" id="sql_file" name="sql_file" accept=".sql" required>
-                        </div>
-                        <button class="btn" type="submit">Import SQL</button>
-                    </form>
+                    <?php if ($canManageBackups): ?>
+                        <form method="post" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="action" value="import_backup">
+                            <div class="form-group" style="margin:0;min-width:260px;">
+                                <label for="sql_file">SQL File</label>
+                                <input type="file" id="sql_file" name="sql_file" accept=".sql" required>
+                            </div>
+                            <button class="btn" type="submit">Import SQL</button>
+                        </form>
+                    <?php else: ?>
+                        <p class="form-hint">Backup import is restricted to admin users.</p>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -626,13 +673,17 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                     <td><?php echo number_format($backup['size'] / 1024, 2); ?></td>
                                     <td><?php echo gmdate('Y-m-d H:i:s', (int)$backup['modified']); ?></td>
                                     <td style="display:flex;gap:8px;flex-wrap:wrap;">
-                                        <a class="btn btn-sm" href="index.php?download=<?php echo urlencode($backup['name']); ?>">Export</a>
-                                        <form method="post" onsubmit="return confirm('Delete this backup file?');" style="display:inline;">
-                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                            <input type="hidden" name="action" value="delete_backup">
-                                            <input type="hidden" name="file" value="<?php echo sanitize($backup['name']); ?>">
-                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                        </form>
+                                        <?php if ($canManageBackups): ?>
+                                            <a class="btn btn-sm" href="index.php?download=<?php echo urlencode($backup['name']); ?>">Export</a>
+                                            <form method="post" onsubmit="return confirm('Delete this backup file?');" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <input type="hidden" name="action" value="delete_backup">
+                                                <input type="hidden" name="file" value="<?php echo sanitize($backup['name']); ?>">
+                                                <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="form-hint">Admin only</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
