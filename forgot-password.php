@@ -13,14 +13,46 @@ $csrfToken = itm_get_csrf_token();
  * Why: Reset endpoints are public and are attractive for scripted abuse.
  * Keeping a compact audit trail enables cheap per-IP and per-account throttling.
  */
-function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $email = null): void
+function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $email = null, ?int $userId = null): void
 {
-    $stmt = mysqli_prepare($conn, 'INSERT INTO password_reset_attempts (attempt_type, ip_address, email) VALUES (?, ?, ?)');
+    $stmt = mysqli_prepare($conn, 'INSERT INTO password_reset_attempts (attempt_type, ip_address, email, user_id) VALUES (?, ?, ?, ?)');
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sss', $attemptType, $ipAddress, $email);
+        mysqli_stmt_bind_param($stmt, 'sssi', $attemptType, $ipAddress, $email, $userId);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
+}
+
+/**
+ * Why: Password reset tracking should link attempts to a concrete user record
+ * whenever an email matches, so security analytics can pivot by user_id.
+ */
+function itm_find_password_reset_user(mysqli $conn, string $email): array
+{
+    $user = [
+        'id' => null,
+        'username' => null,
+        'company_id' => null,
+    ];
+
+    if ($email === '') {
+        return $user;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT id, username, company_id FROM users WHERE email = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $email);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $foundUserId, $foundUsername, $foundCompanyId);
+        if (mysqli_stmt_fetch($stmt)) {
+            $user['id'] = (int)$foundUserId;
+            $user['username'] = (string)$foundUsername;
+            $user['company_id'] = (int)$foundCompanyId;
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return $user;
 }
 
 /**
@@ -75,24 +107,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // runs behind a local reverse proxy and REMOTE_ADDR is only loopback (::1).
     $requestIp = substr((string)(itm_get_client_ip_address() ?: ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0')), 0, 45);
     $isRateLimited = itm_is_password_reset_rate_limited($conn, 'request', $requestIp, $email);
+    $requestUser = itm_find_password_reset_user($conn, $email);
 
-    itm_record_password_reset_attempt($conn, 'request', $requestIp, $email === '' ? null : $email);
+    itm_record_password_reset_attempt(
+        $conn,
+        'request',
+        $requestIp,
+        $email === '' ? null : $email,
+        $requestUser['id']
+    );
 
     if (!$isRateLimited) {
         // Resolve and set audit company scope before mutating users.
         // Why: Audit triggers rely on @app_company_id. On public pages there is no session company,
         // so we derive it from the target account to avoid FK violations in audit_logs.
-        $auditCompanyId = null;
-        $companyStmt = mysqli_prepare($conn, 'SELECT company_id FROM users WHERE email = ? LIMIT 1');
-        if ($companyStmt) {
-            mysqli_stmt_bind_param($companyStmt, 's', $email);
-            mysqli_stmt_execute($companyStmt);
-            mysqli_stmt_bind_result($companyStmt, $foundCompanyId);
-            if (mysqli_stmt_fetch($companyStmt)) {
-                $auditCompanyId = (int)$foundCompanyId;
-            }
-            mysqli_stmt_close($companyStmt);
-        }
+        $auditCompanyId = $requestUser['company_id'];
         mysqli_query($conn, 'SET @app_company_id = ' . ($auditCompanyId === null ? 'NULL' : (string)$auditCompanyId));
 
         // Generate a secure random reset token and keep a hash for validation.
