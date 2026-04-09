@@ -77,6 +77,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_record_password_reset_attempt($conn, 'request', $requestIp, $email === '' ? null : $email);
 
     if (!$isRateLimited) {
+        // Resolve and set audit company scope before mutating users.
+        // Why: Audit triggers rely on @app_company_id. On public pages there is no session company,
+        // so we derive it from the target account to avoid FK violations in audit_logs.
+        $auditCompanyId = null;
+        $companyStmt = mysqli_prepare($conn, 'SELECT company_id FROM users WHERE email = ? LIMIT 1');
+        if ($companyStmt) {
+            mysqli_stmt_bind_param($companyStmt, 's', $email);
+            mysqli_stmt_execute($companyStmt);
+            mysqli_stmt_bind_result($companyStmt, $foundCompanyId);
+            if (mysqli_stmt_fetch($companyStmt)) {
+                $auditCompanyId = (int)$foundCompanyId;
+            }
+            mysqli_stmt_close($companyStmt);
+        }
+        mysqli_query($conn, 'SET @app_company_id = ' . ($auditCompanyId === null ? 'NULL' : (string)$auditCompanyId));
+
         // Generate a secure random reset token and keep a hash for validation.
         // Why: Keeping the hash enables constant-size lookup while the raw token
         // can still support legacy admin diagnostics that expect reset_token.
