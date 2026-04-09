@@ -73,7 +73,9 @@ function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipA
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     itm_require_post_csrf();
 
-    $requestIp = substr((string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'), 0, 45);
+    // Why: Forwarded headers can carry the real client address when Apache/PHP
+    // runs behind a local reverse proxy and REMOTE_ADDR is only loopback (::1).
+    $requestIp = substr((string)(itm_get_client_ip_address() ?: ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0')), 0, 45);
     $matchedUserId = null;
 
     // Look up a valid, unexpired token hash before attempting an update.
