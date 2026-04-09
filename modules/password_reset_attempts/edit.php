@@ -758,26 +758,51 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
-                                <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
-                                    $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
-                                ?>
-                                <select
-                                    name="<?php echo sanitize($name); ?>"
-                                    data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
-                                    data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
-                                    data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
-                                    data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
-                                >
-                                    <option value="">-- Select --</option>
-                                    <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
-                                    <?php endforeach; ?>
-                                    <option value="__add_new__">➕</option>
-                                </select>
+                                <?php if ($crud_table === 'password_reset_attempts' && $crud_action === 'edit'): ?>
+                                    <?php if ($name === 'user_id'): ?>
+                                        <?php
+                                            $userIdValue = (int)$displayVal;
+                                            $userLabel = $userIdValue > 0 ? cr_username_for_user_id($userIdValue) : '';
+                                            if ($userLabel === '' && $userIdValue > 0) {
+                                                $userLabel = 'User #' . $userIdValue;
+                                            }
+                                        ?>
+                                        <input type="hidden" name="user_id" value="<?php echo $userIdValue; ?>">
+                                        <input
+                                            type="text"
+                                            value="<?php echo sanitize($userLabel); ?>"
+                                            readonly
+                                        >
+                                    <?php else: ?>
+                                        <input
+                                            type="text"
+                                            name="<?php echo sanitize($name); ?>"
+                                            value="<?php echo sanitize($displayVal); ?>"
+                                            readonly
+                                        >
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <?php
+                                        $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                        $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                        $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    ?>
+                                    <select
+                                        name="<?php echo sanitize($name); ?>"
+                                        data-addable-select="1"
+                                        data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
+                                        data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                        data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
+                                        data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
+                                        data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+                                    >
+                                        <option value="">-- Select --</option>
+                                        <?php foreach ($opts as $opt): ?>
+                                            <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php endforeach; ?>
+                                        <option value="__add_new__">➕</option>
+                                    </select>
+                                <?php endif; ?>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
