@@ -49,15 +49,58 @@ if ($alertMessage !== '') {
     $messages[] = $alertMessage;
 }
 
+/**
+ * Why: Deletion operations remove row data from the source table, so we must
+ * capture pre-delete state first if we want meaningful DELETE audit payloads.
+ */
+function itm_audit_logs_collect_rows_by_ids($conn, $companyId, array $ids) {
+    $rows = [];
+    foreach ($ids as $id) {
+        $rowId = (int)$id;
+        if ($rowId <= 0) {
+            continue;
+        }
+        $rows[$rowId] = itm_fetch_audit_record($conn, 'audit_logs', $rowId, $companyId);
+    }
+
+    return $rows;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? '');
     if ($bulkAction === 'clear_table') {
+        $existingCount = 0;
+        $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_rows FROM audit_logs WHERE company_id = ?');
+        if ($countStmt) {
+            mysqli_stmt_bind_param($countStmt, 'i', $companyId);
+            mysqli_stmt_execute($countStmt);
+            $countResult = mysqli_stmt_get_result($countStmt);
+            if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+                $existingCount = (int)($countRow['total_rows'] ?? 0);
+            }
+            mysqli_stmt_close($countStmt);
+        }
+
         $clearStmt = mysqli_prepare($conn, 'DELETE FROM audit_logs WHERE company_id = ?');
         if ($clearStmt) {
             mysqli_stmt_bind_param($clearStmt, 'i', $companyId);
             if (mysqli_stmt_execute($clearStmt)) {
+                if ($existingCount > 0) {
+                    itm_log_audit(
+                        $conn,
+                        'audit_logs',
+                        0,
+                        'DELETE',
+                        [
+                            'operation' => 'clear_table',
+                            'deleted_count' => $existingCount,
+                            'company_id' => $companyId,
+                        ],
+                        null
+                    );
+                }
                 $messages[] = 'All audit logs for this company were cleared.';
             } else {
                 $errors[] = 'Unable to clear audit logs.';
@@ -75,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($selectedIds === []) {
                 $errors[] = 'Invalid row selection.';
             } else {
+                $oldRowsById = itm_audit_logs_collect_rows_by_ids($conn, $companyId, $selectedIds);
                 $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
                 $deleteSql = 'DELETE FROM audit_logs WHERE company_id = ? AND id IN (' . $placeholders . ')';
                 $deleteStmt = mysqli_prepare($conn, $deleteSql);
@@ -84,6 +128,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mysqli_stmt_bind_param($deleteStmt, $bindTypes, ...$bindValues);
                     if (mysqli_stmt_execute($deleteStmt)) {
                         $deletedCount = mysqli_stmt_affected_rows($deleteStmt);
+                        if ($deletedCount > 0) {
+                            foreach ($selectedIds as $selectedId) {
+                                $selectedId = (int)$selectedId;
+                                if ($selectedId <= 0) {
+                                    continue;
+                                }
+                                if (!array_key_exists($selectedId, $oldRowsById) || !is_array($oldRowsById[$selectedId])) {
+                                    continue;
+                                }
+                                itm_log_audit($conn, 'audit_logs', $selectedId, 'DELETE', $oldRowsById[$selectedId], null);
+                            }
+                        }
                         $messages[] = $deletedCount > 0
                             ? ('Deleted ' . (int)$deletedCount . ' selected audit log row(s).')
                             : 'No matching rows were deleted.';
