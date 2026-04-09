@@ -29,8 +29,8 @@ function itm_audit_encode_values($values) {
  * Resolves the most reliable client IP address from proxy-aware headers.
  *
  * Why: Deployments behind load balancers/reverse proxies often expose the proxy IP
- * in REMOTE_ADDR. We prefer the left-most valid public IP from standard forwarding
- * headers, then safely fall back to REMOTE_ADDR for direct connections.
+ * in REMOTE_ADDR. We prefer forwarded public IPv4, then forwarded public IPv6,
+ * then safely fall back while still prioritizing IPv4 when both are available.
  *
  * @return string Sanitized IP address (IPv4/IPv6) or an empty string when unavailable
  */
@@ -42,8 +42,10 @@ function itm_get_client_ip_address() {
         'HTTP_X_REAL_IP',
         'HTTP_CLIENT_IP',
     ];
-    $firstForwardedIp = '';
-    $firstForwardedPublicIp = '';
+    $firstForwardedIpV4 = '';
+    $firstForwardedIpV6 = '';
+    $firstForwardedPublicIpV4 = '';
+    $firstForwardedPublicIpV6 = '';
 
     // Why: Keep the earliest valid forwarding value so we can still identify
     // the real client when trusted proxies run on loopback/private addresses.
@@ -72,32 +74,72 @@ function itm_get_client_ip_address() {
                 continue;
             }
 
-            if ($firstForwardedIp === '') {
-                $firstForwardedIp = $part;
+            if (strpos($part, '.') !== false) {
+                if ($firstForwardedIpV4 === '') {
+                    $firstForwardedIpV4 = $part;
+                }
+            } elseif ($firstForwardedIpV6 === '') {
+                $firstForwardedIpV6 = $part;
             }
 
             $isPublic = filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
             if ($isPublic) {
-                $firstForwardedPublicIp = $part;
-                break 2;
+                if (strpos($part, '.') !== false) {
+                    $firstForwardedPublicIpV4 = $part;
+                    break 2;
+                }
+                if ($firstForwardedPublicIpV6 === '') {
+                    $firstForwardedPublicIpV6 = $part;
+                }
             }
         }
     }
 
-    if ($firstForwardedPublicIp !== '') {
-        return $firstForwardedPublicIp;
+    if ($firstForwardedPublicIpV4 !== '') {
+        return $firstForwardedPublicIpV4;
+    }
+    if ($firstForwardedPublicIpV6 !== '') {
+        return $firstForwardedPublicIpV6;
     }
 
     $remoteAddr = trim((string)($server['REMOTE_ADDR'] ?? ''));
     if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false) {
-        $remoteIsPublic = filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
-        if (!$remoteIsPublic && $firstForwardedIp !== '') {
-            return $firstForwardedIp;
+        if (str_starts_with(strtolower($remoteAddr), '::ffff:')) {
+            $mappedIpv4 = substr($remoteAddr, 7);
+            if ($mappedIpv4 !== '' && filter_var($mappedIpv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                $remoteAddr = $mappedIpv4;
+            }
         }
-        return $remoteAddr;
+
+        $remoteIsPublic = filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        if ($remoteIsPublic && strpos($remoteAddr, '.') !== false) {
+            return $remoteAddr;
+        }
+        if (!$remoteIsPublic && $firstForwardedIpV4 !== '') {
+            return $firstForwardedIpV4;
+        }
+        if (!$remoteIsPublic && $firstForwardedIpV6 !== '') {
+            return $firstForwardedIpV6;
+        }
+        if ($remoteIsPublic) {
+            return $remoteAddr;
+        }
+
+        if ($firstForwardedIpV4 !== '') {
+            return $firstForwardedIpV4;
+        }
+        if ($firstForwardedIpV6 !== '') {
+            return $firstForwardedIpV6;
+        }
+
+        // Why: Keep direct socket source as final fallback even if it is private,
+        // because local/dev deployments may not pass forwarding headers at all.
+        if ($remoteAddr !== '') {
+            return $remoteAddr;
+        }
     }
 
-    return $firstForwardedIp;
+    return $firstForwardedIpV4 !== '' ? $firstForwardedIpV4 : $firstForwardedIpV6;
 }
 
 /**
