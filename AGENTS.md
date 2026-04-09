@@ -67,7 +67,7 @@ Every module (excluding the Protection Zone) must implement:
 * **Navigation:** Standardized server-side pagination based on the `records_per_page` value from Settings.
 * ** Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * ** Enable Audit Log:** `enable_audit_logs` value from Settings.
-* **Audit Trail Coverage (Required for New Modules):** Any new module must write INSERT/UPDATE/DELETE events to `audit_logs` (respecting the `enable_audit_logs` toggle) so changes are traceable in the audit center. Example: `modules/password_reset_attempts/` must be fully audit-enabled.
+* **Audit Trail Coverage (Required for New Modules):** Any new module must write INSERT/UPDATE/DELETE events to `audit_logs` (respecting the `enable_audit_logs` toggle) so changes are traceable in the audit center.
 ---
 
 ## 🔒 Security Protocol
