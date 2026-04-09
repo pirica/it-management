@@ -31,7 +31,27 @@ if ($itm_allowedHostsRaw !== '') {
 }
 
 // Automatically determines the base URL and filesystem paths regardless of deployment subdirectory.
-$itm_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+// Why: Some Apache/Nginx deployments terminate TLS at a reverse proxy and forward requests over HTTP,
+// which can leave HTTPS unset in PHP and generate insecure form actions if we do not trust validated proxy hints.
+$itm_forwardedProtoRaw = (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+$itm_forwardedProtoParts = array_map('trim', explode(',', strtolower($itm_forwardedProtoRaw)));
+$itm_forwardedProto = $itm_forwardedProtoParts[0] ?? '';
+$itm_httpsFlag = strtolower((string)($_SERVER['HTTPS'] ?? ''));
+$itm_requestScheme = strtolower((string)($_SERVER['REQUEST_SCHEME'] ?? ''));
+$itm_forwardedSsl = strtolower((string)($_SERVER['HTTP_X_FORWARDED_SSL'] ?? ''));
+$itm_serverPort = (string)($_SERVER['SERVER_PORT'] ?? '');
+
+$itm_scheme = 'http';
+if (
+    $itm_httpsFlag === 'on'
+    || $itm_httpsFlag === '1'
+    || $itm_requestScheme === 'https'
+    || $itm_forwardedProto === 'https'
+    || $itm_forwardedSsl === 'on'
+    || $itm_serverPort === '443'
+) {
+    $itm_scheme = 'https';
+}
 $itm_hostHeader = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
 $itm_hostParts = explode(':', $itm_hostHeader, 2);
 $itm_host = strtolower(trim($itm_hostParts[0]));
