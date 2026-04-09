@@ -145,6 +145,28 @@ function cr_render_cell_value($table, $field, $value) {
 }
 
 
+
+function cr_username_for_user_id($userId) {
+    $uid = (int)$userId;
+    if ($uid <= 0) {
+        return '';
+    }
+
+    $username = '';
+    $stmt = mysqli_prepare($GLOBALS['conn'], 'SELECT username FROM users WHERE id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $uid);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            $username = (string)($row['username'] ?? '');
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return $username;
+}
+
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -537,7 +559,15 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($crud_table === 'password_reset_attempts'): ?>
+                                <?php if ($name === 'user_id'): ?>
+                                    <?php $resolvedUser = cr_username_for_user_id((int)$displayVal); ?>
+                                    <input type="text" value="<?php echo sanitize($resolvedUser !== '' ? $resolvedUser : ('User #' . (int)$displayVal)); ?>" readonly>
+                                    <input type="hidden" name="user_id" value="<?php echo (int)$displayVal; ?>">
+                                <?php else: ?>
+                                    <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" readonly>
+                                <?php endif; ?>
+                            <?php elseif ($isTinyInt || $name === 'active'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
