@@ -759,12 +759,28 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php if ($crud_table === 'password_reset_attempts' && $crud_action === 'edit'): ?>
-                                    <input
-                                        type="text"
-                                        name="<?php echo sanitize($name); ?>"
-                                        value="<?php echo sanitize($displayVal); ?>"
-                                        readonly
-                                    >
+                                    <?php if ($name === 'user_id'): ?>
+                                        <?php
+                                            $userIdValue = (int)$displayVal;
+                                            $userLabel = $userIdValue > 0 ? cr_username_for_user_id($userIdValue) : '';
+                                            if ($userLabel === '' && $userIdValue > 0) {
+                                                $userLabel = 'User #' . $userIdValue;
+                                            }
+                                        ?>
+                                        <input type="hidden" name="user_id" value="<?php echo $userIdValue; ?>">
+                                        <input
+                                            type="text"
+                                            value="<?php echo sanitize($userLabel); ?>"
+                                            readonly
+                                        >
+                                    <?php else: ?>
+                                        <input
+                                            type="text"
+                                            name="<?php echo sanitize($name); ?>"
+                                            value="<?php echo sanitize($displayVal); ?>"
+                                            readonly
+                                        >
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <?php
                                         $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
