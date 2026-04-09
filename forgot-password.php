@@ -77,15 +77,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_record_password_reset_attempt($conn, 'request', $requestIp, $email === '' ? null : $email);
 
     if (!$isRateLimited) {
-        // Generate a secure random reset token and persist only its hash at rest.
+        // Generate a secure random reset token and keep a hash for validation.
+        // Why: Keeping the hash enables constant-size lookup while the raw token
+        // can still support legacy admin diagnostics that expect reset_token.
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
         $tokenExpiresAt = date('Y-m-d H:i:s', time() + (60 * 60));
 
-        // Store the token hash and expiry if the email exists.
-        $stmt = mysqli_prepare($conn, 'UPDATE users SET reset_token_hash = ?, reset_token_expires_at = ? WHERE email = ?');
+        // Store both token forms and expiry if the email exists.
+        $stmt = mysqli_prepare($conn, 'UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE email = ?');
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sss', $tokenHash, $tokenExpiresAt, $email);
+            mysqli_stmt_bind_param($stmt, 'ssss', $token, $tokenHash, $tokenExpiresAt, $email);
             mysqli_stmt_execute($stmt);
 
             // Only attempt to send email if an account was actually found and updated.
