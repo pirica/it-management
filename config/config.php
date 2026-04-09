@@ -135,7 +135,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // --- Audit Logging Setup ---
 // Capture user context for database-level audit triggers
 $itmAuditUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
-$itmAuditCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+$itmAuditCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : null;
 $itmAuditUsername = isset($_SESSION['username']) ? (string)$_SESSION['username'] : '';
 $itmAuditEmail = isset($_SESSION['email']) ? (string)$_SESSION['email'] : '';
 $itmAuditIp = function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : (string)($_SERVER['REMOTE_ADDR'] ?? '');
@@ -143,7 +143,7 @@ $itmAuditUserAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255)
 
 // Set MySQL session variables for auditing
 mysqli_query($conn, 'SET @app_user_id = ' . ($itmAuditUserId === null ? 'NULL' : (string)$itmAuditUserId));
-mysqli_query($conn, 'SET @app_company_id = ' . (string)$itmAuditCompanyId);
+mysqli_query($conn, 'SET @app_company_id = ' . ($itmAuditCompanyId === null ? 'NULL' : (string)$itmAuditCompanyId));
 mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $itmAuditUsername) . "'");
 mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $itmAuditEmail) . "'");
 mysqli_query($conn, "SET @app_ip_address = '" . mysqli_real_escape_string($conn, $itmAuditIp) . "'");
