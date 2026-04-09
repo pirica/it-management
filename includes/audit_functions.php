@@ -36,15 +36,18 @@ function itm_audit_encode_values($values) {
  */
 function itm_get_client_ip_address() {
     $server = $_SERVER ?? [];
-    $candidateHeaders = [
+    $forwardingHeaders = [
         'HTTP_CF_CONNECTING_IP',
         'HTTP_X_FORWARDED_FOR',
         'HTTP_X_REAL_IP',
         'HTTP_CLIENT_IP',
-        'REMOTE_ADDR',
     ];
+    $firstForwardedIp = '';
+    $firstForwardedPublicIp = '';
 
-    foreach ($candidateHeaders as $headerName) {
+    // Why: Keep the earliest valid forwarding value so we can still identify
+    // the real client when trusted proxies run on loopback/private addresses.
+    foreach ($forwardingHeaders as $headerName) {
         if (!isset($server[$headerName])) {
             continue;
         }
@@ -69,14 +72,32 @@ function itm_get_client_ip_address() {
                 continue;
             }
 
+            if ($firstForwardedIp === '') {
+                $firstForwardedIp = $part;
+            }
+
             $isPublic = filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
-            if ($headerName === 'REMOTE_ADDR' || $isPublic) {
-                return $part;
+            if ($isPublic) {
+                $firstForwardedPublicIp = $part;
+                break 2;
             }
         }
     }
 
-    return '';
+    if ($firstForwardedPublicIp !== '') {
+        return $firstForwardedPublicIp;
+    }
+
+    $remoteAddr = trim((string)($server['REMOTE_ADDR'] ?? ''));
+    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false) {
+        $remoteIsPublic = filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        if (!$remoteIsPublic && $firstForwardedIp !== '') {
+            return $firstForwardedIp;
+        }
+        return $remoteAddr;
+    }
+
+    return $firstForwardedIp;
 }
 
 /**
