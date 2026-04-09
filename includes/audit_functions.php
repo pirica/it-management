@@ -26,6 +26,60 @@ function itm_audit_encode_values($values) {
 }
 
 /**
+ * Resolves the most reliable client IP address from proxy-aware headers.
+ *
+ * Why: Deployments behind load balancers/reverse proxies often expose the proxy IP
+ * in REMOTE_ADDR. We prefer the left-most valid public IP from standard forwarding
+ * headers, then safely fall back to REMOTE_ADDR for direct connections.
+ *
+ * @return string Sanitized IP address (IPv4/IPv6) or an empty string when unavailable
+ */
+function itm_get_client_ip_address() {
+    $server = $_SERVER ?? [];
+    $candidateHeaders = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_REAL_IP',
+        'HTTP_CLIENT_IP',
+        'REMOTE_ADDR',
+    ];
+
+    foreach ($candidateHeaders as $headerName) {
+        if (!isset($server[$headerName])) {
+            continue;
+        }
+
+        $headerValue = trim((string)$server[$headerName]);
+        if ($headerValue === '') {
+            continue;
+        }
+
+        $parts = array_map('trim', explode(',', $headerValue));
+        foreach ($parts as $part) {
+            if ($part === '') {
+                continue;
+            }
+
+            if (strpos($part, ':') !== false && substr_count($part, ':') === 1 && strpos($part, '.') !== false) {
+                $ipv4PortCandidate = explode(':', $part);
+                $part = trim((string)($ipv4PortCandidate[0] ?? $part));
+            }
+
+            if (filter_var($part, FILTER_VALIDATE_IP) === false) {
+                continue;
+            }
+
+            $isPublic = filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+            if ($headerName === 'REMOTE_ADDR' || $isPublic) {
+                return $part;
+            }
+        }
+    }
+
+    return '';
+}
+
+/**
  * Logs a single audit event to the audit_logs table
  * 
  * @param mysqli $conn Database connection
@@ -63,7 +117,7 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
     $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
     $old_json = itm_audit_encode_values($old_values);
     $new_json = itm_audit_encode_values($new_values);
-    $ipAddress = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $ipAddress = itm_get_client_ip_address();
     $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
 
     $sql = 'INSERT INTO audit_logs (company_id, user_id, table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
