@@ -138,7 +138,7 @@ $itmAuditUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null
 $itmAuditCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
 $itmAuditUsername = isset($_SESSION['username']) ? (string)$_SESSION['username'] : '';
 $itmAuditEmail = isset($_SESSION['email']) ? (string)$_SESSION['email'] : '';
-$itmAuditIp = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
+$itmAuditIp = function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : (string)($_SERVER['REMOTE_ADDR'] ?? '');
 $itmAuditUserAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
 
 // Set MySQL session variables for auditing
