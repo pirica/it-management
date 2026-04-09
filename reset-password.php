@@ -9,23 +9,104 @@
 include('config/config.php');
 // Get the token from the URL query parameter
 $token = $_GET['token'] ?? '';
+$tokenHash = $token !== '' ? hash('sha256', $token) : '';
 $csrfToken = itm_get_csrf_token();
+
+/**
+ * Why: Password reset completion is public, so we record attempts to enforce
+ * per-IP/per-account throttles and reduce brute-force pressure.
+ */
+function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAddress, ?int $userId = null): void
+{
+    $stmt = mysqli_prepare($conn, 'INSERT INTO password_reset_attempts (attempt_type, ip_address, user_id) VALUES (\'reset\', ?, ?)');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'si', $ipAddress, $userId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+}
+
+/**
+ * Why: Checking limits before password updates reduces token-guess attempts
+ * and protects real user accounts from repeated automated resets.
+ */
+function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipAddress, ?int $userId = null): bool
+{
+    $maxIpAttempts = 20;
+    $maxUserAttempts = 6;
+
+    $stmtIp = mysqli_prepare(
+        $conn,
+        'SELECT COUNT(*) FROM password_reset_attempts WHERE attempt_type = \'reset\' AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+    );
+    if ($stmtIp) {
+        mysqli_stmt_bind_param($stmtIp, 's', $ipAddress);
+        mysqli_stmt_execute($stmtIp);
+        mysqli_stmt_bind_result($stmtIp, $ipAttempts);
+        mysqli_stmt_fetch($stmtIp);
+        mysqli_stmt_close($stmtIp);
+        if ((int)$ipAttempts >= $maxIpAttempts) {
+            return true;
+        }
+    }
+
+    if ($userId !== null) {
+        $stmtUser = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) FROM password_reset_attempts WHERE attempt_type = \'reset\' AND user_id = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+        );
+        if ($stmtUser) {
+            mysqli_stmt_bind_param($stmtUser, 'i', $userId);
+            mysqli_stmt_execute($stmtUser);
+            mysqli_stmt_bind_result($stmtUser, $userAttempts);
+            mysqli_stmt_fetch($stmtUser);
+            mysqli_stmt_close($stmtUser);
+            if ((int)$userAttempts >= $maxUserAttempts) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     itm_require_post_csrf();
-    
-    // Hash the new password before storing it
-    $new_password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
 
-    // Update the password only if the token matches an existing user
-    // We clear the reset_token after use to prevent reuse
-    $stmt = mysqli_prepare($conn, 'UPDATE users SET password = ?, reset_token = NULL WHERE reset_token = ?');
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ss', $new_password, $token);
-        if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
-            $success = true;
+    $requestIp = substr((string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'), 0, 45);
+    $matchedUserId = null;
+
+    // Look up a valid, unexpired token hash before attempting an update.
+    $findUserStmt = mysqli_prepare($conn, 'SELECT id FROM users WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1');
+    if ($findUserStmt) {
+        mysqli_stmt_bind_param($findUserStmt, 's', $tokenHash);
+        mysqli_stmt_execute($findUserStmt);
+        mysqli_stmt_bind_result($findUserStmt, $matchedUserId);
+        mysqli_stmt_fetch($findUserStmt);
+        mysqli_stmt_close($findUserStmt);
+    }
+
+    $isRateLimited = itm_is_password_reset_completion_rate_limited($conn, $requestIp, $matchedUserId);
+    itm_record_password_reset_completion_attempt($conn, $requestIp, $matchedUserId);
+
+    if (!$isRateLimited && $matchedUserId !== null) {
+        // Hash the new password before storing it.
+        $new_password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
+
+        // Update password only for valid unexpired token hash and clear reset state after one use.
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE users
+             SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
+             WHERE id = ? AND reset_token_hash = ? AND reset_token_expires_at >= NOW()'
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'sis', $new_password, $matchedUserId, $tokenHash);
+            if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+                $success = true;
+            }
+            mysqli_stmt_close($stmt);
         }
-        mysqli_stmt_close($stmt);
     }
 }
 ?>
