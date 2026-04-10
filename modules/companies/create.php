@@ -33,7 +33,8 @@ $data = [
 if ($is_edit) {
     $stmt = mysqli_prepare($conn, 'SELECT * FROM companies WHERE id = ? AND id > 0 LIMIT 1');
     if ($stmt) {
-        mysqli_stmt_bind_param('i', $id);
+        // Why: bind the prepared statement handle first so edit mode can load the target row safely.
+        mysqli_stmt_bind_param($stmt, 'i', $id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         if ($res && mysqli_num_rows($res) === 1) {
