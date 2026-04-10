@@ -17,7 +17,7 @@ $csrfToken = itm_get_csrf_token();
  */
 function itm_record_login_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $identifier = null, ?int $userId = null): void
 {
-    $stmt = mysqli_prepare($conn, 'INSERT INTO login_attempts (attempt_type, ip_address, email, user_id) VALUES (?, ?, ?, ?)');
+    $stmt = mysqli_prepare($conn, "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id) VALUES ('login', ?, ?, ?, ?)");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'sssi', $attemptType, $ipAddress, $identifier, $userId);
         mysqli_stmt_execute($stmt);
@@ -36,7 +36,7 @@ function itm_is_login_rate_limited(mysqli $conn, string $ipAddress, ?string $ide
 
     $stmtIp = mysqli_prepare(
         $conn,
-        'SELECT COUNT(*) FROM login_attempts WHERE attempt_type = \'failure\' AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+        "SELECT COUNT(*) FROM attempts WHERE attempt_source = 'login' AND attempt_type = 'failure' AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)"
     );
     if ($stmtIp) {
         mysqli_stmt_bind_param($stmtIp, 's', $ipAddress);
@@ -52,7 +52,7 @@ function itm_is_login_rate_limited(mysqli $conn, string $ipAddress, ?string $ide
     if ($identifier !== null && $identifier !== '') {
         $stmtIdentifier = mysqli_prepare(
             $conn,
-            'SELECT COUNT(*) FROM login_attempts WHERE attempt_type = \'failure\' AND email = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+            "SELECT COUNT(*) FROM attempts WHERE attempt_source = 'login' AND attempt_type = 'failure' AND email = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)"
         );
         if ($stmtIdentifier) {
             mysqli_stmt_bind_param($stmtIdentifier, 's', $identifier);

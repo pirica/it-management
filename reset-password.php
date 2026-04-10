@@ -18,7 +18,7 @@ $csrfToken = itm_get_csrf_token();
  */
 function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAddress, ?int $userId = null): void
 {
-    $stmt = mysqli_prepare($conn, 'INSERT INTO password_reset_attempts (attempt_type, ip_address, user_id) VALUES (\'reset\', ?, ?)');
+    $stmt = mysqli_prepare($conn, "INSERT INTO attempts (attempt_source, attempt_type, ip_address, user_id) VALUES ('password_reset', 'reset', ?, ?)");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'si', $ipAddress, $userId);
         mysqli_stmt_execute($stmt);
@@ -37,7 +37,7 @@ function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipA
 
     $stmtIp = mysqli_prepare(
         $conn,
-        'SELECT COUNT(*) FROM password_reset_attempts WHERE attempt_type = \'reset\' AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+        "SELECT COUNT(*) FROM attempts WHERE attempt_source = 'password_reset' AND attempt_type = 'reset' AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)"
     );
     if ($stmtIp) {
         mysqli_stmt_bind_param($stmtIp, 's', $ipAddress);
@@ -53,7 +53,7 @@ function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipA
     if ($userId !== null) {
         $stmtUser = mysqli_prepare(
             $conn,
-            'SELECT COUNT(*) FROM password_reset_attempts WHERE attempt_type = \'reset\' AND user_id = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+            "SELECT COUNT(*) FROM attempts WHERE attempt_source = 'password_reset' AND attempt_type = 'reset' AND user_id = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)"
         );
         if ($stmtUser) {
             mysqli_stmt_bind_param($stmtUser, 'i', $userId);
