@@ -233,6 +233,7 @@ try {
 }
 
 $app_name = itm_ui_config_app_name($ui_config);
+$favicon_url = itm_ui_config_favicon_url($ui_config);
 
 // Set runtime error reporting from configuration.
 if (($ui_config['enable_all_error_reporting'] ?? 1) === 1) {

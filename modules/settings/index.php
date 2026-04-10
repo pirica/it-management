@@ -95,6 +95,7 @@ if ($hasEquipmentTypesCompanyId && $company_id > 0) {
         }
     }
 }
+$faviconMaxBytes = 512 * 1024; // Why: Browsers only need tiny ICO files; hard cap avoids oversized uploads.
 $recordsPerPageOptions = [
     '25' => '25',
     '50' => '50',
@@ -109,6 +110,7 @@ if (isset($_SESSION['settings_flash_message'])) {
 }
 
 $csrfToken = itm_get_csrf_token();
+$currentUiConfig = itm_get_ui_configuration($conn, $company_id);
 
 // Why: Backup import/export can alter or exfiltrate the full database, so we enforce
 // an explicit per-request admin check here instead of relying only on menu visibility.
@@ -333,6 +335,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
         $newConfig['app_name'] = trim((string)($_POST['app_name'] ?? ''));
+        $newConfig['favicon_path'] = itm_normalize_ui_config_favicon_path($currentUiConfig['favicon_path'] ?? '');
+
+        $faviconUpload = $_FILES['favicon_file'] ?? null;
+        $faviconUploadError = (int)($faviconUpload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($faviconUploadError !== UPLOAD_ERR_NO_FILE) {
+            if ($faviconUploadError !== UPLOAD_ERR_OK || !is_uploaded_file($faviconUpload['tmp_name'] ?? '')) {
+                $error = 'Favicon upload failed. Please try again.';
+            } else {
+                $faviconName = (string)($faviconUpload['name'] ?? '');
+                $faviconExt = strtolower(pathinfo($faviconName, PATHINFO_EXTENSION));
+                $faviconSize = (int)($faviconUpload['size'] ?? 0);
+                $faviconMime = strtolower((string)($faviconUpload['type'] ?? ''));
+
+                $allowedMimeTypes = ['image/x-icon', 'image/vnd.microsoft.icon', 'application/octet-stream'];
+                if ($faviconExt !== 'ico') {
+                    $error = 'Only .ico favicon files are supported.';
+                } elseif ($faviconSize <= 0 || $faviconSize > $faviconMaxBytes) {
+                    $error = 'Favicon must be between 1 byte and 512 KB.';
+                } elseif ($faviconMime !== '' && !in_array($faviconMime, $allowedMimeTypes, true)) {
+                    $error = 'Unsupported favicon file type.';
+                } else {
+                    $faviconsDirFs = ROOT_PATH . 'images/favicons/';
+                    if (!is_dir($faviconsDirFs) && !mkdir($faviconsDirFs, 0775, true) && !is_dir($faviconsDirFs)) {
+                        $error = 'Unable to prepare favicon storage directory.';
+                    } else {
+                        $faviconFileName = 'company_' . (int)$company_id . '.ico';
+                        $faviconTargetFs = $faviconsDirFs . $faviconFileName;
+                        if (!move_uploaded_file($faviconUpload['tmp_name'], $faviconTargetFs)) {
+                            $error = 'Unable to save favicon file.';
+                        } else {
+                            $newConfig['favicon_path'] = 'images/favicons/' . $faviconFileName;
+                        }
+                    }
+                }
+            }
+        }
 
         // Sidebar config is received as JSON strings from the hidden inputs populated by JS.
         $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
@@ -343,7 +381,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['sidebar_main_order'] = is_array($sidebarMainOrderInput) ? $sidebarMainOrderInput : [];
         $newConfig['sidebar_submenu_order'] = is_array($sidebarSubmenuOrderInput) ? $sidebarSubmenuOrderInput : [];
 
-        if (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
+        if ($error !== '') {
+            // Why: Preserve the existing config when upload validation fails in a mixed form submit.
+        } elseif (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
             $error = 'Unable to save UI configuration.';
         } else {
             if ($hasEquipmentTypeEditEmoji) {
@@ -417,7 +457,7 @@ usort($backupFiles, static function ($a, $b) {
 });
 
 // Initialize configuration for form pre-filling.
-$currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+$currentFaviconUrl = itm_ui_config_favicon_url($currentUiConfig);
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
 // If the database has a custom pagination value not in our default array, add it to the dropdown.
 if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
@@ -431,6 +471,9 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <?php if ($currentFaviconUrl !== ""): ?>
+        <link rel="icon" type="image/x-icon" href="<?php echo sanitize($currentFaviconUrl); ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="container">
@@ -454,7 +497,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header"><h2>UI Configuration</h2></div>
                 <div class="card-body">
-                    <form method="post" id="ui-config-form">
+                    <form method="post" id="ui-config-form" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="save_ui_config">
                         <input type="hidden" id="sidebar_visibility" name="sidebar_visibility">
@@ -480,6 +523,21 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                         <div class="form-group" style="max-width:360px;margin-top:8px;">
                             <label for="app_name">App Name</label>
                             <input id="app_name" name="app_name" type="text" maxlength="191" value="<?php echo sanitize($currentUiConfig['app_name'] ?? itm_ui_config_app_name()); ?>" placeholder="⚙️ IT Controls">
+                        </div>
+
+                        <div class="form-group" style="max-width:520px;margin-top:8px;">
+                            <label for="favicon_file">Favicon (.ico)</label>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid #d0d7de;border-radius:6px;background:#fff;">
+                                    <?php if ($currentFaviconUrl !== ''): ?>
+                                        <img src="<?php echo sanitize($currentFaviconUrl); ?>" alt="Current favicon" style="max-width:20px;max-height:20px;">
+                                    <?php else: ?>
+                                        <span title="No favicon configured">🧩</span>
+                                    <?php endif; ?>
+                                </span>
+                                <input id="favicon_file" name="favicon_file" type="file" accept=".ico,image/x-icon">
+                            </div>
+                            <p class="form-hint" style="margin-top:6px;">Upload a new ICO file to replace the current browser tab icon (max 512 KB).</p>
                         </div>
 
                         <div class="form-group" style="max-width:220px;margin-top:8px;">
