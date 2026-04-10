@@ -409,7 +409,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt) {
+        if ($isTinyInt || $name === 'has_keyboard_mouse') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -720,7 +720,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
-                            <?php elseif ($isTinyInt): ?>
+                            <?php elseif ($isTinyInt || $name === 'has_keyboard_mouse'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
