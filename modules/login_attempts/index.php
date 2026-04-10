@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'password_reset_attempts';
-$crud_title = 'Password Reset Attempts';
-$crud_action = 'create';
+$crud_table = 'login_attempts';
+$crud_title = 'Login Attempts';
+$crud_action = 'index';
 ?>
 <?php
 require '../../config/config.php';
@@ -84,8 +84,14 @@ function cr_fk_metadata($conn, $table) {
 }
 
 function cr_manageable_columns($columns) {
-    return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+    // Why: Security attempt modules need the timestamp visible in UI for incident forensics.
+    $exclude = ['id', 'updated_at'];
+    if (!in_array((string)($GLOBALS['crud_table'] ?? ''), ['password_reset_attempts', 'login_attempts'], true)) {
+        $exclude[] = 'created_at';
+    }
+
+    return array_values(array_filter($columns, function ($c) use ($exclude) {
+        return !in_array($c['Field'], $exclude, true);
     }));
 }
 
@@ -171,7 +177,7 @@ function cr_render_cell_value($table, $field, $value) {
 
     $text = (string)($value ?? '');
 
-    if ($table === 'password_reset_attempts' && $field === 'user_id') {
+    if ($table === 'login_attempts' && $field === 'user_id') {
         if ((int)$text <= 0) {
             return '—';
         }
@@ -637,13 +643,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <span></span>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <span></span>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
@@ -697,17 +703,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
-                                        <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
-                                        <?php endif; ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                     </td>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -743,7 +744,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
-                        $isDateTime = str_starts_with($col['Type'], 'datetime');
+                        $isDateTime = str_starts_with($col['Type'], 'datetime') || str_starts_with($col['Type'], 'timestamp');
                         $isText = str_contains($col['Type'], 'text');
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
@@ -808,7 +809,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a></p>
                 </div>
             <?php endif; ?>
         </div>
