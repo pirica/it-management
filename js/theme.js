@@ -22,8 +22,11 @@ function updateThemeButton() {
 }
 
 function initSidebar() {
-    const savedSidebar = localStorage.getItem('sidebar') || 'open';
-    applySidebarState(savedSidebar === 'collapsed');
+    const savedSidebar = localStorage.getItem('sidebar');
+    // Default phones/tablets to collapsed so content remains usable on small screens.
+    const fallbackState = window.matchMedia('(max-width: 768px)').matches ? 'collapsed' : 'open';
+    const sidebarState = savedSidebar || fallbackState;
+    applySidebarState(sidebarState === 'collapsed');
 }
 
 function toggleSidebar() {
@@ -45,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
     const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
     if (sidebarToggleBtn && sidebarToggleBtn.dataset.sidebarBound !== 'true') {
+        // Use a click handler once and mark it as bound to avoid duplicate toggles.
         sidebarToggleBtn.addEventListener('click', toggleSidebar);
         sidebarToggleBtn.dataset.sidebarBound = 'true';
     }

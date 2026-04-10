@@ -485,8 +485,16 @@ tr.ticket-row-colorized:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
+    /* Keep mobile navigation off-canvas until explicitly opened by the toggle button. */
     .sidebar {
         transform: translateX(-250px);
+        transition: transform 0.25s ease;
+        box-shadow: var(--shadow-lg);
+    }
+
+    body:not(.sidebar-collapsed) .sidebar,
+    .container:not(.sidebar-collapsed) .sidebar {
+        transform: translateX(0);
     }
 
     .main-content {
