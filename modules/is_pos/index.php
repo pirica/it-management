@@ -1,6 +1,7 @@
 <?php
 $equipmentModuleTitle = '🏧 Is POS';
-$equipmentFlagField = 'is_pos';
+$equipmentFlagField = '';
+$equipmentTypeNameFilter = 'POS';
 $equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%pos%%';
 $equipmentModuleBasePath = '../equipment/';
 $equipmentViewPath = '';

@@ -140,19 +140,7 @@ function itm_equipment_type_default_emoji($typeName) {
  * Maps known equipment type names to equipment flag fields.
  */
 function itm_equipment_type_flag_field($typeName) {
-    $normalized = strtolower(trim((string)$typeName));
-    $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized);
-    $normalized = trim((string)$normalized, '_');
-
-    $map = [
-        'workstation' => 'is_workstation',
-        'server' => 'is_server',
-        'switch' => 'is_switch',
-        'printer' => 'is_printer',
-        'pos' => 'is_pos',
-    ];
-
-    return $map[$normalized] ?? '';
+    return '';
 }
 
 /**
@@ -186,7 +174,7 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
     }
 
     $moduleTitle = $moduleTitleMap[$moduleName] ?? ('🖥️ Is ' . $displayTypeName);
-    $searchPlaceholder = $searchPlaceholderMap[$flagField] ?? 'Use SQL wildcards, e.g. %%asset%%';
+    $searchPlaceholder = $searchPlaceholderMap[$moduleName] ?? 'Use SQL wildcards, e.g. %%asset%%';
 
     $modulesRoot = dirname(__DIR__) . '/modules';
     $moduleDir = $modulesRoot . '/' . $moduleName;
@@ -197,10 +185,8 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
 
     $indexContent = "<?php\n";
     $indexContent .= '$equipmentModuleTitle = ' . var_export($moduleTitle, true) . ";\n";
-    $indexContent .= '$equipmentFlagField = ' . var_export($flagField, true) . ";\n";
-    if ($flagField === '') {
-        $indexContent .= '$equipmentTypeNameFilter = ' . var_export($displayTypeName, true) . ";\n";
-    }
+    $indexContent .= '$equipmentFlagField = \'\';' . "\n";
+    $indexContent .= '$equipmentTypeNameFilter = ' . var_export($displayTypeName, true) . ";\n";
     $indexContent .= '$equipmentSearchPlaceholder = ' . var_export($searchPlaceholder, true) . ";\n";
     $indexContent .= '$equipmentModuleBasePath = ' . var_export('../equipment/', true) . ";\n";
     $indexContent .= '$equipmentViewPath = ' . var_export('', true) . ";\n";
@@ -212,7 +198,8 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
     $fileContents['index.php'] = $indexContent;
 
     $viewContent = "<?php\n";
-    $viewContent .= '$equipmentRequiredFlagField = ' . var_export($flagField, true) . ";\n";
+    $viewContent .= '$equipmentRequiredFlagField = \'\';' . "\n";
+    $viewContent .= '$equipmentTypeNameFilter = ' . var_export($displayTypeName, true) . ";\n";
     $viewContent .= '$equipmentViewBackPath = ' . var_export('index.php', true) . ";\n";
     $viewContent .= '$equipmentViewEditPath = ' . var_export('edit.php', true) . ";\n";
     $viewContent .= "require '../equipment/view.php';\n";

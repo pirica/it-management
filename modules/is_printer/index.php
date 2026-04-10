@@ -1,6 +1,7 @@
 <?php
 $equipmentModuleTitle = '🖨️ Is Printer';
-$equipmentFlagField = 'is_printer';
+$equipmentFlagField = '';
+$equipmentTypeNameFilter = 'Printer';
 $equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%print%%';
 $equipmentModuleBasePath = '../equipment/';
 $equipmentViewPath = '';
