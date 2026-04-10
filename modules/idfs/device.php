@@ -150,6 +150,8 @@ $stmtDestinationPorts = mysqli_prepare(
         pr.id,
         pr.port_no,
         pr.label,
+        i.id AS idf_id,
+        i.name AS idf_name,
         p.id AS position_id,
         p.position_no,
         p.device_name,
@@ -167,13 +169,12 @@ $stmtDestinationPorts = mysqli_prepare(
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
      JOIN idfs i ON i.id = p.idf_id
-     WHERE p.idf_id = ?
-       AND i.company_id = ?
+     WHERE i.company_id = ?
        AND p.id <> ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
 if ($stmtDestinationPorts) {
-    mysqli_stmt_bind_param($stmtDestinationPorts, 'iii', $pos['idf_id'], $company_id, $position_id);
+    mysqli_stmt_bind_param($stmtDestinationPorts, 'ii', $company_id, $position_id);
     mysqli_stmt_execute($stmtDestinationPorts);
     $resDestinationPorts = mysqli_stmt_get_result($stmtDestinationPorts);
     while ($resDestinationPorts && ($row = mysqli_fetch_assoc($resDestinationPorts))) {
@@ -181,6 +182,8 @@ if ($stmtDestinationPorts) {
             'id' => (int)($row['id'] ?? 0),
             'port_no' => (int)($row['port_no'] ?? 0),
             'label' => (string)($row['label'] ?? ''),
+            'idf_id' => (int)($row['idf_id'] ?? 0),
+            'idf_name' => (string)($row['idf_name'] ?? ''),
             'position_id' => (int)($row['position_id'] ?? 0),
             'position_no' => (int)($row['position_no'] ?? 0),
             'device_name' => (string)($row['device_name'] ?? ''),
@@ -784,7 +787,8 @@ function openLinkModal(portId) {
     destinations.forEach((port) => {
         const option = document.createElement('option');
         option.value = String(port.id);
-        option.textContent = `Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
+        const idfName = port.idf_name ? `IDF ${port.idf_name}` : (port.idf_id ? `IDF #${port.idf_id}` : 'IDF');
+        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
