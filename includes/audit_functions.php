@@ -289,28 +289,34 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
     $sql = 'INSERT INTO audit_logs (company_id, user_id, table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
          . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
+    try {
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param(
+            $stmt,
+            'iisisssss',
+            $company_id,
+            $user_id,
+            $table,
+            $record_id,
+            $action,
+            $old_json,
+            $new_json,
+            $ipAddress,
+            $userAgent
+        );
+
+        $result = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $result;
+    } catch (Throwable $t) {
+        // Why: audit writes must never break the originating CRUD action; callers
+        // rely on best-effort logging and should not surface unrelated FK failures.
         return false;
     }
-
-    mysqli_stmt_bind_param(
-        $stmt,
-        'iisisssss',
-        $company_id,
-        $user_id,
-        $table,
-        $record_id,
-        $action,
-        $old_json,
-        $new_json,
-        $ipAddress,
-        $userAgent
-    );
-
-    $result = mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
-    return $result;
 }
 
 /**
