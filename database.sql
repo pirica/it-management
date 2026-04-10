@@ -1593,7 +1593,7 @@ CREATE TABLE `workstation_modes` (
   `mode_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `monitor_count` int DEFAULT '0',
-  `has_keyboard_mouse` int DEFAULT '1',
+  `has_keyboard_mouse` tinyint(1) DEFAULT '1',
   `pos` int DEFAULT '0',
   `active` tinyint DEFAULT '1',
   PRIMARY KEY (`id`),
