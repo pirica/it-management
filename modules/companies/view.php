@@ -103,7 +103,7 @@ if ($item === null && $error === '') {
                         <tr><th>VAT</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['vat'])); ?></td></tr>
                         <tr><th>Comments</th><td><?php echo nl2br(sanitize(itm_company_view_value($itemNormalized, ['comments']))); ?></td></tr>
                         <?php $activeValue = (int)itm_company_view_value($itemNormalized, ['active', 'status'], '0'); ?>
-                        <tr><th>Status</th><td><?php echo $activeValue === 1 ? 'Active' : 'Inactive'; ?></td></tr>
+                        <tr><th>Status</th><td><?php echo $activeValue === 1 ? '✅' : '❌'; ?></td></tr>
                         <tr><th>Created</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['created_at', 'created'])); ?></td></tr>
                         <tr><th>Updated</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['updated_at', 'updated'])); ?></td></tr>
                         </tbody>
