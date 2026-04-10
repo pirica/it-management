@@ -1,6 +1,40 @@
 <?php
 require '../../config/config.php';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    if ((int)$company_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $countSql = 'SELECT COUNT(*) AS total_rows FROM `equipment` WHERE company_id=' . (int)$company_id;
+    $countResult = mysqli_query($conn, $countSql);
+    $existingRows = 0;
+    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+        $existingRows = (int)($countRow['total_rows'] ?? 0);
+    }
+
+    if ($existingRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'equipment', (int)$company_id, $seedError);
+    if ($insertedRows > 0) {
+        $_SESSION['crud_success'] = 'Sample data added successfully.';
+    } else {
+        $_SESSION['crud_error'] = $seedError !== '' ? $seedError : 'No sample data was inserted.';
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 $hasSwitchFiberPortLabelColumn = false;
 $hasSwitchFiberPortLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_fiber_port_label'");
 if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabelColumnRes) > 0) {
@@ -306,6 +340,14 @@ if (!empty($_SESSION['crud_success'])) {
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <?php if ((int)$company_id > 0 && $totalRows === 0): ?>
+                    <div class="card" style="margin-top:12px;">
+                        <form method="POST" style="display:flex;justify-content:center;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($totalPages > 1): ?>
                     <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
