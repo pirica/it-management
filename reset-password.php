@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password - IT Management</title>
+    <title>Reset Password - ⚙️ IT Controls</title>
     <style>
         :root { --accent: #0969da; --bg: #ffffff; --text: #24292f; --muted: #666; }
         [data-theme="dark"] { --accent: #58a6ff; --bg: #0d1117; --text: #c9d1d9; --muted: #8b949e; }
@@ -138,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     <button class="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="container">
         <div class="logo">
-            <h1>⚙️ IT Management</h1>
+            <h1>⚙️ IT Controls</h1>
             <p>Create a new password</p>
         </div>
 
