@@ -398,6 +398,72 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 // Handle record submission (Create or Edit)
+
+// Handle sample data seeding for empty companies in list view
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
+    cr_require_valid_csrf_token();
+
+    $where = '';
+    if ($hasCompany && $company_id > 0) {
+        $where = ' WHERE company_id=' . (int)$company_id;
+    }
+
+    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
+    $countResult = mysqli_query($conn, $countSql);
+    $existingRows = 0;
+    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+        $existingRows = (int)($countRow['total_rows'] ?? 0);
+    }
+
+    if ($existingRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    $sampleRows = [
+        ['Switch', 'SWITCH', '🔀', 1],
+        ['Server', 'SRV', '🖥️', 1],
+        ['Router', 'RTR', '🛜', 1],
+        ['Firewall', 'FW', '🔥', 1],
+        ['Port Patch Panel', 'PORT', '➰', 1],
+        ['Access Point', 'AP', '📶', 1],
+        ['Workstation', 'WS', '💻', 1],
+        ['POS', 'POS', '🏧', 1],
+        ['Printer', 'PRN', '🖨️', 1],
+        ['Phone', 'PHONE', '📞', 1],
+        ['CCTV', 'CCCTV', '🎥', 1],
+        ['Other', 'OTHER', null, 1],
+    ];
+
+    $insertSql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (`company_id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES (?, ?, ?, ?, ?)';
+    $stmt = mysqli_prepare($conn, $insertSql);
+    if (!$stmt) {
+        $_SESSION['crud_error'] = 'Unable to prepare sample data insert statement.';
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    foreach ($sampleRows as $sampleRow) {
+        $sampleCompanyId = (int)$company_id;
+        $sampleName = (string)$sampleRow[0];
+        $sampleCode = (string)$sampleRow[1];
+        $sampleEmoji = $sampleRow[2];
+        $sampleActive = (int)$sampleRow[3];
+        mysqli_stmt_bind_param($stmt, 'isssi', $sampleCompanyId, $sampleName, $sampleCode, $sampleEmoji, $sampleActive);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            $_SESSION['crud_error'] = 'Failed to insert sample data.';
+            header('Location: ' . $listUrl);
+            exit;
+        }
+    }
+
+    mysqli_stmt_close($stmt);
+    header('Location: ' . $listUrl);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
@@ -694,6 +760,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </tbody>
                     </table>
                 </div>
+                <?php if ($totalRows === 0): ?>
+                    <div class="card" style="margin-top:12px;">
+                        <form method="POST" style="display:flex;justify-content:center;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
                 <?php if ($totalRows > $perPage): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
