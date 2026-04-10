@@ -60,7 +60,11 @@ $resPorts = mysqli_query(
        l.cable_color,
        l.cable_label,
        l.notes AS link_notes,
-       l.port_id_b AS other_port_id,
+       CASE
+         WHEN l.port_id_a = pr.id THEN l.port_id_b
+         WHEN l.port_id_b = pr.id THEN l.port_id_a
+         ELSE NULL
+       END AS other_port_id,
        l.equipment_id AS linked_equipment_id,
        CASE
          WHEN UPPER(COALESCE(let.code, '')) = 'SWITCH' THEN 1
@@ -68,7 +72,13 @@ $resPorts = mysqli_query(
          ELSE 0
        END AS linked_equipment_is_switch
      FROM idf_ports pr
-     LEFT JOIN idf_links l ON l.port_id_a = pr.id
+     LEFT JOIN idf_links l ON l.id = (
+         SELECT l2.id
+         FROM idf_links l2
+         WHERE l2.port_id_a = pr.id OR l2.port_id_b = pr.id
+         ORDER BY l2.id ASC
+         LIMIT 1
+     )
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
      WHERE pr.position_id=$position_id
