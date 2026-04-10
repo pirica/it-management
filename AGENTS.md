@@ -69,6 +69,20 @@ Every module (excluding the Protection Zone) must implement:
 * ** Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * ** Enable Audit Log:** `enable_audit_logs` value from Settings.
 * **Audit Trail Coverage (Required for New Modules):** Any new module must write INSERT/UPDATE/DELETE events to `audit_logs` (respecting the `enable_audit_logs` toggle) so changes are traceable in the audit center.
+
+### 6. Empty-State Sample Data Process
+When a company opens a module and sees **"No records found."**, modules should support quick seeding from `database.sql`:
+* Add an **"Add sample data"** button at the bottom of `index.php` list pages, visible only when the module result set is empty for the active company.
+* Implement a `POST` handler for `add_sample_data` in `index.php` that:
+  * validates CSRF (`itm_require_post_csrf()` or module-equivalent CSRF validator),
+  * confirms there is an active `company_id`,
+  * re-checks the table is empty for that `company_id` before inserting.
+* Seed rows must come from actual `INSERT INTO` entries in `database.sql` for that module table.
+* Enforce tenant safety:
+  * always write seeded rows with the active `company_id`,
+  * never expose/edit `company_id` in UI,
+  * skip protected modules unless explicitly requested.
+* Keep seeding idempotent from the UI perspective by allowing it only when the module has zero rows for the company.
 ---
 
 ## 🔒 Security Protocol

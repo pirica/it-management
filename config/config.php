@@ -443,6 +443,136 @@ if (!function_exists('itm_get_csrf_token')) {
 }
 
 /**
+ * Splits a SQL value list while preserving quoted segments.
+ */
+if (!function_exists('itm_split_sql_csv')) {
+    function itm_split_sql_csv($rawValues) {
+        $values = [];
+        $buffer = '';
+        $inQuote = false;
+        $length = strlen((string)$rawValues);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $rawValues[$i];
+            $prev = $i > 0 ? $rawValues[$i - 1] : '';
+            if ($char === "'" && $prev !== '\\') {
+                $inQuote = !$inQuote;
+                $buffer .= $char;
+                continue;
+            }
+
+            if ($char === ',' && !$inQuote) {
+                $values[] = trim($buffer);
+                $buffer = '';
+                continue;
+            }
+
+            $buffer .= $char;
+        }
+
+        if (trim($buffer) !== '') {
+            $values[] = trim($buffer);
+        }
+
+        return $values;
+    }
+}
+
+/**
+ * Inserts sample rows for a module table from database.sql when empty.
+ */
+if (!function_exists('itm_seed_table_from_database_sql')) {
+    function itm_seed_table_from_database_sql($conn, $tableName, $companyId, &$error = '') {
+        $error = '';
+        $tableName = (string)$tableName;
+        $companyId = (int)$companyId;
+
+        if (!itm_is_safe_identifier($tableName)) {
+            $error = 'Invalid table selected for sample data.';
+            return 0;
+        }
+
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        $sqlPath = ROOT_PATH . 'database.sql';
+        if (!is_file($sqlPath)) {
+            $error = 'Sample source file database.sql was not found.';
+            return 0;
+        }
+
+        $lines = @file($sqlPath, FILE_IGNORE_NEW_LINES);
+        if (!is_array($lines)) {
+            $error = 'Unable to read sample source file.';
+            return 0;
+        }
+
+        $quotedTable = '`' . $tableName . '`';
+        $insertCount = 0;
+        foreach ($lines as $line) {
+            $line = trim((string)$line);
+            if ($line === '' || stripos($line, 'INSERT INTO ') !== 0 || stripos($line, $quotedTable) === false) {
+                continue;
+            }
+
+            $matches = [];
+            if (!preg_match('/^INSERT INTO\\s+`[^`]+`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
+                continue;
+            }
+
+            $rawColumns = array_map('trim', explode(',', (string)$matches[1]));
+            $rawValues = itm_split_sql_csv((string)$matches[2]);
+            if (count($rawColumns) !== count($rawValues)) {
+                continue;
+            }
+
+            $targetColumns = [];
+            $targetValues = [];
+            foreach ($rawColumns as $index => $columnToken) {
+                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+                    continue;
+                }
+
+                if ($columnName === 'id') {
+                    continue;
+                }
+
+                if ($columnName === 'company_id') {
+                    $targetColumns[] = '`company_id`';
+                    $targetValues[] = (string)$companyId;
+                    continue;
+                }
+
+                $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                $targetValues[] = (string)$rawValues[$index];
+            }
+
+            if (empty($targetColumns)) {
+                continue;
+            }
+
+            $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                return $insertCount;
+            }
+            $insertCount++;
+        }
+
+        if ($insertCount === 0) {
+            $error = 'No sample rows found in database.sql for this module.';
+        }
+
+        return $insertCount;
+    }
+}
+
+/**
  * Retrieves a company name by its ID
  */
 if (!function_exists('get_company_name')) {
