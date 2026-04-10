@@ -835,15 +835,27 @@ function createLink() {
             Number(port.id) !== Number(f.port_id_a.value)
             && !port.is_linked
         );
-        const selectedEquipmentPorts = allAvailableDestinationPorts.filter((port) => Number(port.equipment_id) === selectedEquipmentId);
-        const candidateDestinationPorts = selectedEquipmentPorts.length ? selectedEquipmentPorts : allAvailableDestinationPorts;
+        const allDestinationPorts = DESTINATION_PORTS.filter((port) =>
+            Number(port.id) !== Number(f.port_id_a.value)
+        );
+        const normalizedAvailableDestinationPorts = allAvailableDestinationPorts.length
+            ? allAvailableDestinationPorts
+            : allDestinationPorts;
+        const selectedEquipmentPorts = normalizedAvailableDestinationPorts.filter((port) => Number(port.equipment_id) === selectedEquipmentId);
+        const candidateDestinationPorts = selectedEquipmentPorts.length ? selectedEquipmentPorts : normalizedAvailableDestinationPorts;
         const matchingPort = candidateDestinationPorts.find((port) => Number(port.port_no) === normalizedLinkedPortNo);
 
-        if (!candidateDestinationPorts.length) {
+        if (!candidateDestinationPorts.length && !hasExplicitDestinationSelection) {
             alert('No available destination ports were found.');
             return;
         }
-        const preselectedDestination = candidateDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        let preselectedDestination = candidateDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        if (!preselectedDestination && hasExplicitDestinationSelection) {
+            preselectedDestination = allAvailableDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        }
+        if (!preselectedDestination && hasExplicitDestinationSelection) {
+            preselectedDestination = allDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        }
         if (hasExplicitDestinationSelection) {
             if (!preselectedDestination) {
                 alert('The selected destination port is no longer available. Please choose another destination port.');
