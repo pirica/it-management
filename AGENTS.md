@@ -35,6 +35,7 @@ Each module must maintain a flat structure with these specific files:
 
 ### 2. Database & Schema Rules
 - **Schema Updates:** If a field/table is deleted or a header renamed, you **must** update `database.sql`.
+    *Database: `database.sql` Use only INSERT/UPDATE/DELETE. Don't use DB triggers.
 - **Company Scoping:** - **Hide** `company_id` from all UI views.
     - Add safe inline FK creation logic to create referenced rows automatically.
     - Scope all queries and inserts by `company_id`.
