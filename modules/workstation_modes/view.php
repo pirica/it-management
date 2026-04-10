@@ -111,6 +111,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'pos' => 'POS',
     ];
 
     if (isset($map[$label])) {
