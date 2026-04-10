@@ -307,7 +307,7 @@ if (!function_exists('itm_format_db_constraint_error')) {
             case 1451:
                 return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
             case 1452:
-                return 'The selected related record does not exist anymore. Refresh the page and choose a valid value.';
+                return 'The selected related record is no longer available for your company. It may have been deleted or moved. Please refresh the page and select a different value.';
             case 1062:
                 return 'A record with the same unique value already exists. Use a different value.';
             default:
@@ -576,8 +576,12 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
  * Seeds all table samples from database.sql while keeping inserts idempotent.
  */
 if (!function_exists('itm_seed_all_tables_from_database_sql')) {
-    function itm_seed_all_tables_from_database_sql($conn, $companyId, &$error = '') {
+    function itm_seed_all_tables_from_database_sql($conn, $companyId, &$error = '', &$seedReport = []) {
         $error = '';
+        $seedReport = [
+            'inserted_tables' => [],
+            'skipped_tables' => [],
+        ];
         $companyId = (int)$companyId;
         if ($companyId <= 0) {
             $error = 'A company must be selected before adding sample data.';
@@ -631,6 +635,7 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
                 "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $tableName) . "'"
             );
             if (!$tableExistsRes || mysqli_num_rows($tableExistsRes) === 0) {
+                $seedReport['skipped_tables'][] = $tableName . ' (table does not exist)';
                 continue;
             }
 
@@ -655,9 +660,11 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
 
             // Why: Keep the bulk seeding safe to run repeatedly by only touching empty targets.
             if ($rowCount > 0) {
+                $seedReport['skipped_tables'][] = $tableName . ' (already has data)';
                 continue;
             }
 
+            $tableInsertCount = 0;
             foreach ($insertLines as $line) {
                 $matches = [];
                 if (!preg_match('/^INSERT INTO\\s+`[^`]+`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
@@ -701,11 +708,18 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
                     return $insertCount;
                 }
                 $insertCount++;
+                $tableInsertCount++;
+            }
+
+            if ($tableInsertCount > 0) {
+                $seedReport['inserted_tables'][] = $tableName . ' (' . $tableInsertCount . ' rows)';
+            } else {
+                $seedReport['skipped_tables'][] = $tableName . ' (no valid sample rows)';
             }
         }
 
         if ($insertCount === 0) {
-            $error = 'No sample rows were inserted. Tables may already contain data.';
+            $error = 'No sample rows were inserted. Not imported tables: ' . implode(', ', $seedReport['skipped_tables']) . '.';
         }
 
         return $insertCount;
