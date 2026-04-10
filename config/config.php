@@ -20,6 +20,37 @@ define('APP_ENV', 'production'); // development or production
 define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
 define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
 
+// PHP compatibility polyfills for older hosting environments.
+// Why: Some shared hosts still run PHP < 8.0 where native str_* helpers do not exist.
+if (!function_exists('str_contains')) {
+    function str_contains($haystack, $needle) {
+        return strpos((string)$haystack, (string)$needle) !== false;
+    }
+}
+if (!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        $needle = (string)$needle;
+        if ($needle === '') {
+            return true;
+        }
+        return strncmp((string)$haystack, $needle, strlen($needle)) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with($haystack, $needle) {
+        $haystack = (string)$haystack;
+        $needle = (string)$needle;
+        if ($needle === '') {
+            return true;
+        }
+        $needleLength = strlen($needle);
+        if ($needleLength > strlen($haystack)) {
+            return false;
+        }
+        return substr($haystack, -$needleLength) === $needle;
+    }
+}
+
 // --- Path Calculation Logic ---
 // Why: Host headers can be attacker-controlled in some deployments, so we prefer a canonical URL.
 // Set ITM_APP_URL in the environment (for example: https://itm.example.com/app/) to avoid Host-header poisoning.
