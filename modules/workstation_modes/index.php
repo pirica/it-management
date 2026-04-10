@@ -163,15 +163,12 @@ function cr_is_hidden_employee_field($field) {
  */
 function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'workstation_modes') {
-        $workstationModeBoolFields = ['has_keyboard_mouse', 'active'];
-        if (in_array($field, $workstationModeBoolFields, true)) {
-            return ((int)$value === 1) ? '✅' : '❌';
+        if ($field === 'active') {
+            $isActive = ((int)$value === 1);
+            return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
         }
-    }
 
-    if (($GLOBALS['crud_table'] ?? '') === 'workstation_modes') {
-        $workstationModeBoolFields = ['has_keyboard_mouse'];
-        if (in_array($field, $workstationModeBoolFields, true)) {
+        if ($field === 'has_keyboard_mouse') {
             return ((int)$value === 1) ? '✅' : '❌';
         }
     }
