@@ -36,7 +36,7 @@ A complete IT Asset Management System built with PHP and MySQL, featuring a GitH
 
 ## System Requirements
 
-- PHP 8.3.19+
+- PHP 7.4+
 - MySQL 8.0+
 - Apache 2.4+
 - No Composer required
