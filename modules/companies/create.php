@@ -15,6 +15,31 @@ $is_edit = $id > 0;
 $error = '';
 $csrfToken = itm_get_csrf_token();
 
+/**
+ * Why: Companies has a human-facing unique InCode; surfacing a specific message
+ * prevents raw SQL errors and gives users a clear corrective action.
+ */
+function itm_companies_create_error_message($conn, Throwable $throwable = null) {
+    $errorCode = (int)mysqli_errno($conn);
+    $errorMessage = (string)mysqli_error($conn);
+
+    if ($throwable !== null) {
+        $throwableCode = (int)$throwable->getCode();
+        if ($throwableCode > 0) {
+            $errorCode = $throwableCode;
+        }
+        if ($errorMessage === '') {
+            $errorMessage = (string)$throwable->getMessage();
+        }
+    }
+
+    if ($errorCode === 1062 && stripos($errorMessage, 'companies.incode') !== false) {
+        return 'InCode already in use. Please choose a different InCode.';
+    }
+
+    return itm_format_db_constraint_error($errorCode, $errorMessage);
+}
+
 // Default form data structure
 $data = [
     'company' => '',
@@ -89,13 +114,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'sssssssssii', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active, $id);
-                if (mysqli_stmt_execute($stmt)) {
-                    itm_log_audit($conn, 'companies', $id, 'UPDATE', $old, $data);
-                    mysqli_stmt_close($stmt);
-                    header('Location: index.php');
-                    exit;
+                try {
+                    if (mysqli_stmt_execute($stmt)) {
+                        itm_log_audit($conn, 'companies', $id, 'UPDATE', $old, $data);
+                        mysqli_stmt_close($stmt);
+                        header('Location: index.php');
+                        exit;
+                    }
+                    $error = itm_companies_create_error_message($conn);
+                } catch (Throwable $t) {
+                    $error = itm_companies_create_error_message($conn, $t);
                 }
-                $error = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
                 mysqli_stmt_close($stmt);
             } else {
                 $error = 'Failed to update company.';
@@ -106,14 +135,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'sssssssssi', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active);
-                if (mysqli_stmt_execute($stmt)) {
-                    $newId = (int)mysqli_insert_id($conn);
-                    itm_log_audit($conn, 'companies', $newId, 'INSERT', null, $data);
-                    mysqli_stmt_close($stmt);
-                    header('Location: index.php');
-                    exit;
+                try {
+                    if (mysqli_stmt_execute($stmt)) {
+                        $newId = (int)mysqli_insert_id($conn);
+                        itm_log_audit($conn, 'companies', $newId, 'INSERT', null, $data);
+                        mysqli_stmt_close($stmt);
+                        header('Location: index.php');
+                        exit;
+                    }
+                    $error = itm_companies_create_error_message($conn);
+                } catch (Throwable $t) {
+                    $error = itm_companies_create_error_message($conn, $t);
                 }
-                $error = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
                 mysqli_stmt_close($stmt);
             } else {
                 $error = 'Failed to create company.';
