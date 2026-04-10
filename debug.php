@@ -30,7 +30,8 @@ echo "\n📦 MySQL Extension: " . (extension_loaded('mysqli') ? '✅ Loaded' : '
 // The application needs write access to several directories for uploads and configuration
 echo "\n📁 File Permissions:\n";
 echo "  config/: " . (is_writable(__DIR__ . '/config') ? '✅ Writable' : '❌ Not Writable') . "\n";
-echo "  equipment/: " . (is_writable(__DIR__ . '/equipment') ? '✅ Writable' : '❌ Not Writable') . "\n";
-
+echo "  tickets_photos/: " . (is_writable(__DIR__ . '/equipment') ? '✅ Writable' : '❌ Not Writable') . "\n";
+echo "  images/: " . (is_writable(__DIR__ . '/equipment') ? '✅ Writable' : '❌ Not Writable') . "\n";
+echo "  backups/: " . (is_writable(__DIR__ . '/equipment') ? '✅ Writable' : '❌ Not Writable') . "\n";
 echo "</pre>";
 ?>
