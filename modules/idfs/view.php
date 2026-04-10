@@ -17,13 +17,18 @@ function idf_csrf_token(): string {
 }
 
 function idf_type_badge(string $t): string {
-    return match ($t) {
-        'switch' => '🔀 Switch',
-        'patch_panel' => '➰ Patch Panel',
-        'ups' => '🔋 UPS',
-        'server' => '🖥️ Server',
-        default => '📦 Other',
-    };
+    switch ($t) {
+        case 'switch':
+            return '🔀 Switch';
+        case 'patch_panel':
+            return '➰ Patch Panel';
+        case 'ups':
+            return '🔋 UPS';
+        case 'server':
+            return '🖥️ Server';
+        default:
+            return '📦 Other';
+    }
 }
 
 $csrf = idf_csrf_token();
