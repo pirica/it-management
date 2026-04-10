@@ -163,6 +163,13 @@ function cr_username_for_user_id($userId) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    if (in_array($table, ['login_attempts', 'password_reset_attempts', 'attempts'], true) && $field === 'ip_address') {
+        $displayIp = function_exists('itm_pick_preferred_ip_for_display')
+            ? itm_pick_preferred_ip_for_display($value)
+            : trim((string)($value ?? ''));
+        return sanitize($displayIp);
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';

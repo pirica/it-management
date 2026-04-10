@@ -145,7 +145,20 @@ $moduleListHeading = '🧾 View Audit Log';
                                 <?php endif; ?>
                             </td>
                         </tr>
-                        <tr><th>IP Address</th><td><?php echo sanitize((string)($logRow['ip_address'] ?? '—')); ?></td></tr>
+                        <?php
+                        // Why: Audit rows can contain IPv6 loopback/proxy-chain formats;
+                        // normalize for operator readability with IPv4-first display.
+                        $ipDisplayValue = (string)($logRow['ip_address'] ?? '—');
+                        if (function_exists('itm_pick_preferred_ip_for_display')) {
+                            $ipDisplayValue = itm_pick_preferred_ip_for_display($ipDisplayValue);
+                        } else {
+                            $ipDisplayValue = trim($ipDisplayValue);
+                        }
+                        if ($ipDisplayValue === '') {
+                            $ipDisplayValue = '—';
+                        }
+                        ?>
+                        <tr><th>IP Address</th><td><?php echo sanitize($ipDisplayValue); ?></td></tr>
                         <tr><th>User Agent</th><td><?php echo sanitize((string)($logRow['user_agent'] ?? '—')); ?></td></tr>
                         <tr>
                             <th>Old Values</th>
