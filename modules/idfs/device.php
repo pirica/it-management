@@ -23,10 +23,15 @@ if ($position_id > 0 && $company_id > 0) {
     $stmt = mysqli_prepare(
         $conn,
         'SELECT p.*, i.name AS idf_name, i.id AS idf_id,
-                COALESCE(e.is_switch, 0) AS equipment_is_switch
+                CASE
+                    WHEN UPPER(COALESCE(et.code, "")) = "SWITCH" THEN 1
+                    WHEN UPPER(COALESCE(et.name, "")) = "SWITCH" THEN 1
+                    ELSE 0
+                END AS equipment_is_switch
          FROM idf_positions p
          JOIN idfs i ON i.id = p.idf_id
          LEFT JOIN equipment e ON e.id = p.equipment_id
+         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
          WHERE p.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -57,10 +62,15 @@ $resPorts = mysqli_query(
        l.notes AS link_notes,
        l.port_id_b AS other_port_id,
        l.equipment_id AS linked_equipment_id,
-       COALESCE(le.is_switch, 0) AS linked_equipment_is_switch
+       CASE
+         WHEN UPPER(COALESCE(let.code, '')) = 'SWITCH' THEN 1
+         WHEN UPPER(COALESCE(let.name, '')) = 'SWITCH' THEN 1
+         ELSE 0
+       END AS linked_equipment_is_switch
      FROM idf_ports pr
      LEFT JOIN idf_links l ON l.port_id_a = pr.id
      LEFT JOIN equipment le ON le.id = l.equipment_id
+     LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
      WHERE pr.position_id=$position_id
      ORDER BY pr.port_no ASC"
 );
