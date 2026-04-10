@@ -521,11 +521,27 @@ function itm_ui_config_defaults() {
         'enable_all_error_reporting' => 1,
         'enable_audit_logs' => 1,
         'records_per_page' => '25',
+        'app_name' => '⚙️ IT Controls',
         'equipment_type_sidebar_visibility' => [],
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
     ];
+}
+
+/**
+ * Resolves the user-configured application name with a safe fallback.
+ */
+function itm_ui_config_app_name($uiConfig = null) {
+    $defaults = itm_ui_config_defaults();
+    $fallback = (string)($defaults['app_name'] ?? '⚙️ IT Controls');
+
+    if (!is_array($uiConfig)) {
+        return $fallback;
+    }
+
+    $appName = trim((string)($uiConfig['app_name'] ?? ''));
+    return $appName !== '' ? $appName : $fallback;
 }
 
 /**
@@ -583,6 +599,7 @@ function itm_ensure_ui_configuration_table($conn) {
         `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1,
         `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25',
+        `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
         `sidebar_visibility` LONGTEXT NULL,
         `sidebar_main_order` LONGTEXT NULL,
@@ -602,7 +619,8 @@ function itm_ensure_ui_configuration_table($conn) {
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_audit_logs`",
-        'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `records_per_page`",
+        'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
+        'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `app_name`",
         'sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_visibility` LONGTEXT NULL AFTER `back_save_position`",
         'sidebar_main_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_main_order` LONGTEXT NULL AFTER `sidebar_visibility`",
         'sidebar_submenu_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_submenu_order` LONGTEXT NULL AFTER `sidebar_main_order`",
@@ -655,7 +673,7 @@ function itm_get_ui_configuration($conn, $company_id) {
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -713,6 +731,17 @@ function itm_normalize_ui_configuration($values) {
 
     // Validate records per page
     $recordsPerPage = strtolower((string)($values['records_per_page'] ?? $defaults['records_per_page']));
+    $appName = trim((string)($values['app_name'] ?? $defaults['app_name']));
+    if ($appName === '') {
+        $appName = (string)$defaults['app_name'];
+    }
+    if (function_exists('mb_substr')) {
+        $appName = mb_substr($appName, 0, 191);
+    } else {
+        $appName = substr($appName, 0, 191);
+    }
+    $values['app_name'] = $appName;
+
     if ($recordsPerPage === 'all') {
         $values['records_per_page'] = 'all';
     } elseif (ctype_digit($recordsPerPage) && (int)$recordsPerPage > 0 && (int)$recordsPerPage <= 1000000) {
@@ -868,8 +897,8 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -878,6 +907,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
                 enable_all_error_reporting = VALUES(enable_all_error_reporting),
                 enable_audit_logs = VALUES(enable_audit_logs),
                 records_per_page = VALUES(records_per_page),
+                app_name = VALUES(app_name),
                 equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility),
                 sidebar_visibility = VALUES(sidebar_visibility),
                 sidebar_main_order = VALUES(sidebar_main_order),
@@ -895,7 +925,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     mysqli_stmt_bind_param(
         $stmt,
-        'issssiisssss',
+        'issssiissssss',
         $company_id,
         $config['table_actions_position'],
         $config['new_button_position'],
@@ -904,6 +934,7 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
         $config['enable_all_error_reporting'],
         $config['enable_audit_logs'],
         $config['records_per_page'],
+        $config['app_name'],
         $equipmentTypeSidebarVisibility,
         $sidebarVisibility,
         $sidebarMainOrder,

@@ -145,7 +145,7 @@ if ($message_type === 'success') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Settings - IT Management</title>
+    <title>User Settings - <?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></title>
     <link rel="stylesheet" href="css/styles.css">
     <?php if ($isReadOnlyMode): ?>
     <style>

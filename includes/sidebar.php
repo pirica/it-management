@@ -41,7 +41,7 @@ foreach ($sectionsById as $section) {
 ?>
 <div class="sidebar">
     <div class="sidebar-header">
-        <h3>⚙️ IT Controls</h3>
+        <h3><?php echo sanitize($app_name ?? itm_ui_config_app_name($sidebarConfig)); ?></h3>
         <p><?php echo sanitize($_SESSION['company_name'] ?? 'Company'); ?></p>
     </div>
 

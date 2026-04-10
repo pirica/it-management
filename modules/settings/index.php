@@ -332,6 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
+        $newConfig['app_name'] = trim((string)($_POST['app_name'] ?? ''));
 
         // Sidebar config is received as JSON strings from the hidden inputs populated by JS.
         $sidebarVisibilityInput = json_decode((string)($_POST['sidebar_visibility'] ?? ''), true);
@@ -428,7 +429,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
+    <title>Settings - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -475,6 +476,11 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             <?php endforeach; ?>
                         </div>
 
+
+                        <div class="form-group" style="max-width:360px;margin-top:8px;">
+                            <label for="app_name">App Name</label>
+                            <input id="app_name" name="app_name" type="text" maxlength="191" value="<?php echo sanitize($currentUiConfig['app_name'] ?? itm_ui_config_app_name()); ?>" placeholder="⚙️ IT Controls">
+                        </div>
 
                         <div class="form-group" style="max-width:220px;margin-top:8px;">
                             <label for="records_per_page">Records per page</label>

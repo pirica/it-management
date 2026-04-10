@@ -109,7 +109,7 @@ if ($isAdmin) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚙️ IT Controls - Company Selector</title>
+    <title><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?> - Company Selector</title>
     <style>
         :root {
             --accent: #0969da;
@@ -181,7 +181,7 @@ if ($isAdmin) {
 
     <div class="container">
         <div class="logo">
-            <h1>⚙️ IT Controls</h1>
+            <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Select Your Company</p>
         </div>
 
