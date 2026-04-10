@@ -169,6 +169,13 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
+    if (($GLOBALS['crud_table'] ?? '') === 'workstation_modes') {
+        $workstationModeBoolFields = ['has_keyboard_mouse'];
+        if (in_array($field, $workstationModeBoolFields, true)) {
+            return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card', 'active'];
         if (in_array($field, $employeeBoolFields, true)) {
