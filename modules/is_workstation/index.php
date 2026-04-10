@@ -1,6 +1,7 @@
 <?php
 $equipmentModuleTitle = '💻 Is Workstation';
-$equipmentFlagField = 'is_workstation';
+$equipmentFlagField = '';
+$equipmentTypeNameFilter = 'Workstation';
 $equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%desk%%';
 $equipmentModuleBasePath = '../equipment/';
 $equipmentViewPath = '';

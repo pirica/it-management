@@ -48,30 +48,12 @@ $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 $equipmentViewBackPath = (string)($equipmentViewBackPath ?? 'index.php');
 $equipmentViewEditPath = (string)($equipmentViewEditPath ?? 'edit.php');
-$equipmentRequiredFlagField = (string)($equipmentRequiredFlagField ?? '');
+$equipmentTypeNameFilter = trim((string)($equipmentTypeNameFilter ?? ''));
 
-if ($item && $equipmentRequiredFlagField !== '') {
-    $allowedFlags = [
-        'is_workstation' => "workstation",
-        'is_server' => "server",
-        'is_switch' => "switch",
-        'is_printer' => "printer",
-        'is_pos' => "pos",
-    ];
-    if (array_key_exists($equipmentRequiredFlagField, $allowedFlags)) {
-        $hasFlag = (int)($item[$equipmentRequiredFlagField] ?? 0) === 1;
-        $typeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
-        $typeMatch = false;
-        if ($equipmentRequiredFlagField === 'is_switch') {
-            $typeMatch = str_contains($typeName, 'switch');
-        } elseif ($equipmentRequiredFlagField === 'is_pos') {
-            $typeMatch = in_array($typeName, ['pos', 'point of sale', 'point-of-sale'], true);
-        } else {
-            $typeMatch = $typeName === $allowedFlags[$equipmentRequiredFlagField];
-        }
-        if (!$hasFlag && !$typeMatch) {
-            $item = null;
-        }
+if ($item && $equipmentTypeNameFilter !== '') {
+    $typeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
+    if ($typeName !== strtolower($equipmentTypeNameFilter)) {
+        $item = null;
     }
 }
 
@@ -108,14 +90,9 @@ function equipment_parse_photo_filenames($rawValue): array
 
 function equipment_field_label($key) {
     $labels = [
-        'is_printer' => 'Is Printer',
         'printer_device_type_name' => 'Printer Type',
         'printer_color_capable' => 'Printer Color Capable',
         'printer_scan' => 'Printer Scan',
-        'is_workstation' => 'Is Workstation',
-        'is_server' => 'Is Server',
-        'is_pos' => 'Is POS',
-        'is_switch' => 'Is Switch',
         'workstation_office_name' => 'Workstation Office',
         'workstation_os_version_name' => 'Workstation OS Version',
         'workstation_ram_name' => 'RAM',
@@ -129,7 +106,7 @@ function equipment_field_label($key) {
 }
 
 function equipment_field_value($key, $value) {
-    if (in_array($key, ['is_printer', 'printer_scan', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
+    if (in_array($key, ['printer_scan', 'active'], true)) {
         return (int)$value === 1 ? 'Yes' : 'No';
     }
 
@@ -141,7 +118,7 @@ function equipment_field_is_populated($key, $value) {
         return false;
     }
 
-    if (in_array($key, ['is_printer', 'printer_scan', 'is_workstation', 'is_server', 'is_pos', 'is_switch', 'active'], true)) {
+    if (in_array($key, ['printer_scan', 'active'], true)) {
         return (int)$value === 1;
     }
 
@@ -159,6 +136,9 @@ function equipment_field_should_display($key) {
     if ($key === 'photo_filename') {
         return false;
     }
+    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
+        return false;
+    }
 
     return !preg_match('/_id$/', (string)$key);
 }
@@ -169,9 +149,7 @@ function equipment_field_matches_context($key, $item) {
     }
 
     $equipmentTypeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
-    $isPrinter = (int)($item['is_printer'] ?? 0) === 1;
-
-    return $equipmentTypeName === 'printer' || $isPrinter;
+    return $equipmentTypeName === 'printer';
 }
 ?>
 <!DOCTYPE html>

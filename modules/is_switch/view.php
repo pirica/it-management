@@ -1,5 +1,6 @@
 <?php
-$equipmentRequiredFlagField = 'is_switch';
+$equipmentRequiredFlagField = '';
+$equipmentTypeNameFilter = 'Switch';
 $equipmentViewBackPath = 'index.php';
 $equipmentViewEditPath = 'edit.php';
 require '../equipment/view.php';

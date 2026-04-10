@@ -1,6 +1,7 @@
 <?php
 $equipmentModuleTitle = '🔀 Is Switch';
-$equipmentFlagField = 'is_switch';
+$equipmentFlagField = '';
+$equipmentTypeNameFilter = 'Switch';
 $equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%sw%%';
 $equipmentModuleBasePath = '../equipment/';
 $equipmentViewPath = '';

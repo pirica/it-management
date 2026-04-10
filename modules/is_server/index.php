@@ -1,6 +1,7 @@
 <?php
 $equipmentModuleTitle = '🖥️ Is Server';
-$equipmentFlagField = 'is_server';
+$equipmentFlagField = '';
+$equipmentTypeNameFilter = 'Server';
 $equipmentSearchPlaceholder = 'Use SQL wildcards, e.g. %%srv%%';
 $equipmentModuleBasePath = '../equipment/';
 $equipmentViewPath = '';

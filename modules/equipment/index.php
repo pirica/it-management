@@ -30,20 +30,11 @@ if ($searchRaw !== '') {
     )";
 }
 
-$equipmentFlagField = isset($equipmentFlagField) ? (string)$equipmentFlagField : '';
-$flagTypeMatchers = [
-    'is_workstation' => "LOWER(TRIM(et.name)) = 'workstation'",
-    'is_server' => "LOWER(TRIM(et.name)) = 'server'",
-    'is_switch' => "LOWER(TRIM(et.name)) LIKE '%switch%'",
-    'is_printer' => "LOWER(TRIM(et.name)) = 'printer'",
-    'is_pos' => "LOWER(TRIM(et.name)) IN ('pos', 'point of sale', 'point-of-sale')",
-];
+$equipmentTypeNameFilter = isset($equipmentTypeNameFilter) ? trim((string)$equipmentTypeNameFilter) : '';
 $moduleFilterSql = '';
-if ($equipmentFlagField !== '' && array_key_exists($equipmentFlagField, $flagTypeMatchers)) {
-    $moduleFilterSql = " AND (
-        COALESCE(e.{$equipmentFlagField}, 0) = 1
-        OR {$flagTypeMatchers[$equipmentFlagField]}
-    )";
+if ($equipmentTypeNameFilter !== '') {
+    $equipmentTypeNameFilterEsc = mysqli_real_escape_string($conn, strtolower($equipmentTypeNameFilter));
+    $moduleFilterSql = " AND (LOWER(TRIM(et.name)) = '{$equipmentTypeNameFilterEsc}')";
 }
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -112,8 +103,9 @@ if ($result) {
     }
 }
 
-$isGeneralEquipmentModule = $equipmentFlagField === '';
-$enableSwitchPortManager = $isGeneralEquipmentModule || $equipmentFlagField === 'is_switch';
+$isGeneralEquipmentModule = $equipmentTypeNameFilter === '';
+$isSwitchTypeFilter = strtolower($equipmentTypeNameFilter) === 'switch';
+$enableSwitchPortManager = $isGeneralEquipmentModule || $isSwitchTypeFilter;
 $switches = [];
 if ($enableSwitchPortManager) {
     $switchResult = mysqli_query(
