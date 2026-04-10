@@ -415,6 +415,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'System tables verified/created successfully.';
         }
     }
+
+    // Action: Seed every empty table with sample INSERT rows from database.sql.
+    if ($action === 'add_sample_data_all_tables') {
+        $seedError = '';
+        $seededRows = itm_seed_all_tables_from_database_sql($conn, (int)$company_id, $seedError);
+        if ($seededRows > 0) {
+            $message = 'Sample data inserted successfully across all tables (' . $seededRows . ' rows).';
+        } else {
+            $error = $seedError !== '' ? $seedError : 'No sample rows were inserted.';
+        }
+    }
 }
 
 // HANDLE FILE EXPORT REQUESTS
@@ -677,6 +688,11 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="create_system_tables">
                         <button class="btn" type="submit">Create Missing Tables</button>
+                    </form>
+                    <form method="post" style="margin-top:10px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="action" value="add_sample_data_all_tables">
+                        <button class="btn btn-primary" type="submit">Add sample data ALL TABLES</button>
                     </form>
                 </div>
             </div>
