@@ -143,6 +143,103 @@ function itm_get_client_ip_address() {
 }
 
 /**
+ * Resolves a deterministic request IP for auth attempt storage.
+ *
+ * Why: Login/reset rate limiting should consistently store IPv4 when available
+ * to keep analytics and operator triage predictable; otherwise store IPv6.
+ *
+ * @return string Valid IPv4/IPv6 address, or 0.0.0.0 when none is available
+ */
+function itm_get_login_request_ip(): string
+{
+    $resolved = trim((string)(function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : ''));
+    if (strtolower($resolved) === '::1') {
+        return '127.0.0.1';
+    }
+    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        return $resolved;
+    }
+    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        return $resolved;
+    }
+
+    $remoteAddr = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    if (strtolower($remoteAddr) === '::1') {
+        return '127.0.0.1';
+    }
+    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        return $remoteAddr;
+    }
+    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        return $remoteAddr;
+    }
+
+    return '0.0.0.0';
+}
+
+/**
+ * Chooses a single human-friendly IP for UI display from a potentially noisy input.
+ *
+ * Why: Security tables can include proxy chains (`ip1, ip2`) or values with ports.
+ * Operators asked to always see IPv4 first for faster triage, then IPv6 as fallback.
+ *
+ * @param mixed $value Raw IP value captured by the app
+ * @return string Preferred IPv4, or IPv6 fallback, or raw trimmed value when unparsable
+ */
+function itm_pick_preferred_ip_for_display($value) {
+    $raw = trim((string)($value ?? ''));
+    if ($raw === '') {
+        return '';
+    }
+
+    $parts = array_map('trim', explode(',', $raw));
+    $firstIpv6 = '';
+
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        if (strtolower($part) === '::1') {
+            return '127.0.0.1';
+        }
+
+        if (str_starts_with($part, '[') && str_contains($part, ']')) {
+            $closingBracketPos = strpos($part, ']');
+            if ($closingBracketPos !== false) {
+                $part = substr($part, 1, $closingBracketPos - 1);
+            }
+        }
+
+        if (strpos($part, ':') !== false && substr_count($part, ':') === 1 && strpos($part, '.') !== false) {
+            $ipv4PortCandidate = explode(':', $part);
+            $part = trim((string)($ipv4PortCandidate[0] ?? $part));
+        }
+
+        if (str_starts_with(strtolower($part), '::ffff:')) {
+            $mappedIpv4 = substr($part, 7);
+            if ($mappedIpv4 !== '' && filter_var($mappedIpv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                return $mappedIpv4;
+            }
+        }
+
+        if (filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+            return $part;
+        }
+
+        if ($firstIpv6 === '' && filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+            $firstIpv6 = $part;
+        }
+    }
+
+    if ($firstIpv6 !== '') {
+        return $firstIpv6;
+    }
+
+    return $raw;
+}
+
+/**
  * Logs a single audit event to the audit_logs table
  * 
  * @param mysqli $conn Database connection
