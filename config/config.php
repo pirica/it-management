@@ -248,35 +248,12 @@ if (!function_exists('itm_run_query')) {
     function itm_run_query($conn, $sql, &$errorCode = null, &$errorMessage = null) {
         $errorCode = null;
         $errorMessage = null;
-        $auditMeta = function_exists('itm_parse_audit_sql') ? itm_parse_audit_sql($sql) : null;
-        $auditOldValues = null;
-
-        // Why: Capture the current row before UPDATE/DELETE so PHP-level audit logs
-        // can still preserve before/after states without relying on DB triggers.
-        if (
-            is_array($auditMeta)
-            && in_array(strtoupper((string)($auditMeta['action'] ?? '')), ['UPDATE', 'DELETE'], true)
-            && (int)($auditMeta['pk_value'] ?? $auditMeta['record_id'] ?? 0) > 0
-            && function_exists('itm_fetch_audit_record_by_key')
-        ) {
-            $auditOldValues = itm_fetch_audit_record_by_key(
-                $conn,
-                (string)$auditMeta['table'],
-                (string)($auditMeta['pk_column'] ?? 'id'),
-                (int)($auditMeta['pk_value'] ?? $auditMeta['record_id'] ?? 0)
-            );
-        }
 
         try {
             $result = mysqli_query($conn, $sql);
             if ($result === false) {
                 $errorCode = (int)mysqli_errno($conn);
                 $errorMessage = (string)mysqli_error($conn);
-            } elseif (
-                is_array($auditMeta)
-                && function_exists('itm_log_audit_from_sql_change')
-            ) {
-                itm_log_audit_from_sql_change($conn, $sql, $auditMeta, $auditOldValues);
             }
             return $result;
         } catch (Throwable $t) {
