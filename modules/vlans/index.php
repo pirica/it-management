@@ -637,11 +637,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <tr>
                                 <?php foreach ($displayFieldColumns as $col): $f = $col['Field']; ?>
                                     <td>
-                                        <?php if ($f === 'comments'): ?>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
-                                        <?php endif; ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                     </td>
                                 <?php endforeach; ?>
                                 <td>
