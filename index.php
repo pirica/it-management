@@ -197,7 +197,7 @@ if ($isAdmin) {
                                 <?php echo htmlspecialchars($c['company']); ?>
                             </option>
                         <?php endwhile; ?>
-                        <option value="__add_new__">➕</option>
+                   <!--     <option value="__add_new__">➕</option> -->
                     </select>
                     <input type="hidden" name="company_name" id="company_name">
                 </div>
