@@ -151,6 +151,9 @@ if ($message_type === 'success') {
 } elseif ($message_type === 'error') {
     $messageClass = 'crud_error';
 }
+$messageStyle = $message_type === 'info'
+    ? 'background: #e8f1ff; border:1px solid #b6d4fe; color:#084298; padding:10px; border-radius:8px;'
+    : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -232,46 +235,58 @@ if ($message_type === 'success') {
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Manage your email and password.</p>
 
                 <?php if ($message !== ''): ?>
-                    <div class="<?php echo $messageClass !== '' ? $messageClass : ''; ?>" style="<?php echo $message_type === 'info' ? 'background: #e8f1ff; border:1px solid #b6d4fe; color:#084298; padding:10px; border-radius:8px;' : ''; ?>">
+                    <div class="<?php echo $messageClass !== '' ? $messageClass : ''; ?>" style="<?php echo $messageStyle; ?>">
                         <?php echo htmlspecialchars($message); ?>
                     </div>
                 <?php endif; ?>
 
-                <div class="card" style="max-width: 720px;">
+                <div class="card" style="max-width: 760px;">
                     <div class="card-header">
                         <h2>Account Configuration (ID: <?php echo (int)$user_id; ?>)</h2>
                     </div>
                     <div class="card-body">
                         <form method="POST">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-                            <fieldset>
-                                <legend>Account Information</legend>
-                                <p>
-                                    <label for="email">Email Address:</label><br>
-                                    <input id="email" type="email" name="email" value="<?php echo htmlspecialchars((string)$current_user['email']); ?>" required style="width:100%; max-width:460px;">
-                                </p>
-                            </fieldset>
+                            <!-- Keep this grouped in cards so user-config visually matches module CRUD edit screens. -->
+                            <div class="card" style="margin-top: 0;">
+                                <div class="card-header">
+                                    <strong>Account Information</strong>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input id="email" type="email" name="email" value="<?php echo htmlspecialchars((string)$current_user['email']); ?>" required>
+                                </div>
+                            </div>
 
-                            <fieldset>
-                                <legend>Security (Leave blank to keep current password)</legend>
-                                <p>
-                                    <label for="new_password">New Password:</label><br>
-                                    <input id="new_password" type="password" name="new_password" style="width:100%; max-width:460px;">
-                                </p>
-                                <p>
-                                    <label for="confirm_password">Confirm New Password:</label><br>
-                                    <input id="confirm_password" type="password" name="confirm_password" style="width:100%; max-width:460px;">
-                                </p>
-                            </fieldset>
+                            <!-- Password inputs stay optional so users can update only their email when needed. -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <strong>Security</strong>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="new_password">New Password</label>
+                                        <input id="new_password" type="password" name="new_password">
+                                        <div class="form-hint">Leave blank to keep your current password.</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="confirm_password">Confirm New Password</label>
+                                        <input id="confirm_password" type="password" name="confirm_password">
+                                    </div>
+                                </div>
+                            </div>
 
-                            <fieldset style="background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
-                                <legend>Confirm Changes</legend>
-                                <p>
-                                    <label for="current_password_verify"><strong>Current Password (Required to save any changes):</strong></label><br>
-                                    <input id="current_password_verify" type="password" name="current_password_verify" required style="width:100%; max-width:460px;">
-                                </p>
+                            <!-- Isolating current-password verification reduces accidental submits without identity confirmation. -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <strong>Confirm Changes</strong>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 14px;">
+                                    <label for="current_password_verify">Current Password (required to save changes)</label>
+                                    <input id="current_password_verify" type="password" name="current_password_verify" required>
+                                </div>
                                 <button class="btn btn-primary" type="submit">💾 Save Changes</button>
-                            </fieldset>
+                            </div>
                         </form>
                     </div>
                 </div>
