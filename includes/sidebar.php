@@ -41,7 +41,7 @@ foreach ($sectionsById as $section) {
 ?>
 <div class="sidebar">
     <div class="sidebar-header">
-        <h3>⚙️ IT Manager</h3>
+        <h3>⚙️ IT Controls</h3>
         <p><?php echo sanitize($_SESSION['company_name'] ?? 'Company'); ?></p>
     </div>
 
