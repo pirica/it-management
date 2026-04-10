@@ -7,8 +7,6 @@
  * This should only be used during development or troubleshooting.
  */
 
-require_once 'config/config.php';
-
 // Force enable all error reporting for maximum visibility
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -20,20 +18,7 @@ echo "<h2>Debug Mode Enabled</h2>";
 echo "<pre>";
 
 // 1. Verify Database Connection
-echo "Testing database connection...\n";
-if (!$conn) {
-    echo "❌ Connection Failed: " . mysqli_connect_error() . "\n";
-    die();
-} else {
-    echo "✅ Database connected successfully\n";
-}
 
-// 2. List Available Database Tables
-echo "\n📋 Database Tables:\n";
-$tables = mysqli_query($conn, "SHOW TABLES");
-while ($table = mysqli_fetch_array($tables)) {
-    echo "  ✅ " . $table[0] . "\n";
-}
 
 // 3. Display Environment Information
 echo "\n🐘 PHP Version: " . phpversion() . "\n";
