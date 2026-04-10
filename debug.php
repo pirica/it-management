@@ -7,7 +7,7 @@
  * This should only be used during development or troubleshooting.
  */
 
-require 'config/config.php';
+require_once 'config/config.php';
 
 // Force enable all error reporting for maximum visibility
 error_reporting(E_ALL);
