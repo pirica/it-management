@@ -4,7 +4,7 @@
  * 
  * Handles deletion of company records.
  * Requires a POST request with CSRF token.
- * Verifies that the company is not in use before allowing deletion.
+ * Deletes company-scoped data by company_id before removing the company row.
  */
 
 require '../../config/config.php';
@@ -63,13 +63,100 @@ function companies_prepare_delete_audit_context($conn, $deleteCompanyId) {
     return $ok;
 }
 
-if ($bulkAction === 'clear_table') {
-    $stmtClear = mysqli_prepare($conn, 'DELETE FROM companies WHERE id > 0');
-    if ($stmtClear) {
-        if (!mysqli_stmt_execute($stmtClear)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+/**
+ * Deletes all tenant-scoped rows for a company before deleting the company row.
+ *
+ * Why: Some deployments may have FK relationships that are not configured with
+ * ON DELETE CASCADE. Purging company-scoped rows first guarantees the company
+ * can be removed safely by company_id without leaving tenant data behind.
+ */
+function companies_delete_company_with_related_data($conn, $companyId, &$error = '') {
+    $error = '';
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        $error = 'Invalid company selected for deletion.';
+        return false;
+    }
+
+    if (!companies_prepare_delete_audit_context($conn, $companyId)) {
+        $error = 'Cannot delete company because no valid audit context company is available.';
+        return false;
+    }
+
+    $tables = [];
+    $sqlTables = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'company_id'";
+    $resultTables = mysqli_query($conn, $sqlTables);
+    if ($resultTables) {
+        while ($row = mysqli_fetch_assoc($resultTables)) {
+            $tableName = (string)($row['TABLE_NAME'] ?? '');
+            if ($tableName === '' || $tableName === 'companies' || !itm_is_safe_identifier($tableName)) {
+                continue;
+            }
+            $tables[] = $tableName;
         }
-        mysqli_stmt_close($stmtClear);
+        mysqli_free_result($resultTables);
+    }
+
+    mysqli_begin_transaction($conn);
+    try {
+        // Session-level only: allows robust cleanup even when some FKs are not cascading.
+        if (!mysqli_query($conn, 'SET FOREIGN_KEY_CHECKS = 0')) {
+            throw new RuntimeException('Unable to disable foreign key checks for cleanup.');
+        }
+
+        foreach ($tables as $tableName) {
+            $sqlDeleteByCompany = 'DELETE FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ?';
+            $stmtDeleteByCompany = mysqli_prepare($conn, $sqlDeleteByCompany);
+            if (!$stmtDeleteByCompany) {
+                throw new RuntimeException('Unable to prepare cleanup for table: ' . $tableName);
+            }
+            mysqli_stmt_bind_param($stmtDeleteByCompany, 'i', $companyId);
+            if (!mysqli_stmt_execute($stmtDeleteByCompany)) {
+                $dbError = mysqli_error($conn);
+                mysqli_stmt_close($stmtDeleteByCompany);
+                throw new RuntimeException('Cleanup failed for table ' . $tableName . ': ' . $dbError);
+            }
+            mysqli_stmt_close($stmtDeleteByCompany);
+        }
+
+        $stmtDeleteCompany = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? AND id > 0 LIMIT 1');
+        if (!$stmtDeleteCompany) {
+            throw new RuntimeException('Failed to prepare company deletion.');
+        }
+        mysqli_stmt_bind_param($stmtDeleteCompany, 'i', $companyId);
+        if (!mysqli_stmt_execute($stmtDeleteCompany)) {
+            $dbError = mysqli_error($conn);
+            mysqli_stmt_close($stmtDeleteCompany);
+            throw new RuntimeException(itm_format_db_constraint_error(mysqli_errno($conn), $dbError));
+        }
+        mysqli_stmt_close($stmtDeleteCompany);
+
+        mysqli_query($conn, 'SET FOREIGN_KEY_CHECKS = 1');
+        mysqli_commit($conn);
+        return true;
+    } catch (Throwable $ex) {
+        mysqli_query($conn, 'SET FOREIGN_KEY_CHECKS = 1');
+        mysqli_rollback($conn);
+        $error = $ex->getMessage();
+        return false;
+    }
+}
+
+if ($bulkAction === 'clear_table') {
+    $listResult = mysqli_query($conn, 'SELECT id FROM companies WHERE id > 0');
+    if ($listResult) {
+        while ($listRow = mysqli_fetch_assoc($listResult)) {
+            $deleteCompanyId = (int)($listRow['id'] ?? 0);
+            if ($deleteCompanyId <= 0) {
+                continue;
+            }
+            $deleteError = '';
+            if (!companies_delete_company_with_related_data($conn, $deleteCompanyId, $deleteError)) {
+                $_SESSION['crud_error'] = $deleteError;
+                break;
+            }
+        }
+        mysqli_free_result($listResult);
     }
     header('Location: index.php');
     exit;
@@ -78,17 +165,16 @@ if ($bulkAction === 'clear_table') {
 if ($bulkAction === 'bulk_delete') {
     $ids = $_POST['ids'] ?? [];
     if (is_array($ids) && $ids) {
-        $stmtBulk = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? AND id > 0 LIMIT 1');
-        if ($stmtBulk) {
-            foreach ($ids as $rawId) {
-                $bulkId = (int)$rawId;
-                if ($bulkId <= 0) {
-                    continue;
-                }
-                mysqli_stmt_bind_param($stmtBulk, 'i', $bulkId);
-                mysqli_stmt_execute($stmtBulk);
+        foreach ($ids as $rawId) {
+            $bulkId = (int)$rawId;
+            if ($bulkId <= 0) {
+                continue;
             }
-            mysqli_stmt_close($stmtBulk);
+            $bulkError = '';
+            if (!companies_delete_company_with_related_data($conn, $bulkId, $bulkError)) {
+                $_SESSION['crud_error'] = $bulkError;
+                break;
+            }
         }
     }
     header('Location: index.php');
@@ -96,28 +182,9 @@ if ($bulkAction === 'bulk_delete') {
 }
 
 if ($id > 0) {
-    // Check if other records (users, equipment, etc.) depend on this company
-    $usageError = '';
-    if (!itm_can_delete_record($conn, 'companies', 'id', $id, 0, $usageError)) {
-        $_SESSION['crud_error'] = $usageError;
-    } else {
-        if (!companies_prepare_delete_audit_context($conn, $id)) {
-            $_SESSION['crud_error'] = 'Cannot delete company because no valid audit context company is available.';
-            header('Location: index.php');
-            exit;
-        }
-
-        $stmt = mysqli_prepare($conn, 'DELETE FROM companies WHERE id = ? AND id > 0 LIMIT 1');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'i', $id);
-            if (!mysqli_stmt_execute($stmt)) {
-                // Return formatted database error if deletion fails (e.g. FK constraint)
-                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
-            }
-            mysqli_stmt_close($stmt);
-        } else {
-            $_SESSION['crud_error'] = 'Failed to delete company.';
-        }
+    $deleteError = '';
+    if (!companies_delete_company_with_related_data($conn, $id, $deleteError)) {
+        $_SESSION['crud_error'] = $deleteError;
     }
 }
 
