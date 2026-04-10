@@ -60,7 +60,11 @@ $resPorts = mysqli_query(
        l.cable_color,
        l.cable_label,
        l.notes AS link_notes,
-       l.port_id_b AS other_port_id,
+       CASE
+         WHEN l.port_id_a = pr.id THEN l.port_id_b
+         WHEN l.port_id_b = pr.id THEN l.port_id_a
+         ELSE NULL
+       END AS other_port_id,
        l.equipment_id AS linked_equipment_id,
        CASE
          WHEN UPPER(COALESCE(let.code, '')) = 'SWITCH' THEN 1
@@ -68,7 +72,13 @@ $resPorts = mysqli_query(
          ELSE 0
        END AS linked_equipment_is_switch
      FROM idf_ports pr
-     LEFT JOIN idf_links l ON l.port_id_a = pr.id
+     LEFT JOIN idf_links l ON l.id = (
+         SELECT l2.id
+         FROM idf_links l2
+         WHERE l2.port_id_a = pr.id OR l2.port_id_b = pr.id
+         ORDER BY l2.id ASC
+         LIMIT 1
+     )
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
      WHERE pr.position_id=$position_id
@@ -150,6 +160,8 @@ $stmtDestinationPorts = mysqli_prepare(
         pr.id,
         pr.port_no,
         pr.label,
+        i.id AS idf_id,
+        i.name AS idf_name,
         p.id AS position_id,
         p.position_no,
         p.device_name,
@@ -167,13 +179,12 @@ $stmtDestinationPorts = mysqli_prepare(
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
      JOIN idfs i ON i.id = p.idf_id
-     WHERE p.idf_id = ?
-       AND i.company_id = ?
+     WHERE i.company_id = ?
        AND p.id <> ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
 if ($stmtDestinationPorts) {
-    mysqli_stmt_bind_param($stmtDestinationPorts, 'iii', $pos['idf_id'], $company_id, $position_id);
+    mysqli_stmt_bind_param($stmtDestinationPorts, 'ii', $company_id, $position_id);
     mysqli_stmt_execute($stmtDestinationPorts);
     $resDestinationPorts = mysqli_stmt_get_result($stmtDestinationPorts);
     while ($resDestinationPorts && ($row = mysqli_fetch_assoc($resDestinationPorts))) {
@@ -181,6 +192,8 @@ if ($stmtDestinationPorts) {
             'id' => (int)($row['id'] ?? 0),
             'port_no' => (int)($row['port_no'] ?? 0),
             'label' => (string)($row['label'] ?? ''),
+            'idf_id' => (int)($row['idf_id'] ?? 0),
+            'idf_name' => (string)($row['idf_name'] ?? ''),
             'position_id' => (int)($row['position_id'] ?? 0),
             'position_no' => (int)($row['position_no'] ?? 0),
             'device_name' => (string)($row['device_name'] ?? ''),
@@ -784,7 +797,8 @@ function openLinkModal(portId) {
     destinations.forEach((port) => {
         const option = document.createElement('option');
         option.value = String(port.id);
-        option.textContent = `Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
+        const idfName = port.idf_name ? `IDF ${port.idf_name}` : (port.idf_id ? `IDF #${port.idf_id}` : 'IDF');
+        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
@@ -835,15 +849,27 @@ function createLink() {
             Number(port.id) !== Number(f.port_id_a.value)
             && !port.is_linked
         );
-        const selectedEquipmentPorts = allAvailableDestinationPorts.filter((port) => Number(port.equipment_id) === selectedEquipmentId);
-        const candidateDestinationPorts = selectedEquipmentPorts.length ? selectedEquipmentPorts : allAvailableDestinationPorts;
+        const allDestinationPorts = DESTINATION_PORTS.filter((port) =>
+            Number(port.id) !== Number(f.port_id_a.value)
+        );
+        const normalizedAvailableDestinationPorts = allAvailableDestinationPorts.length
+            ? allAvailableDestinationPorts
+            : allDestinationPorts;
+        const selectedEquipmentPorts = normalizedAvailableDestinationPorts.filter((port) => Number(port.equipment_id) === selectedEquipmentId);
+        const candidateDestinationPorts = selectedEquipmentPorts.length ? selectedEquipmentPorts : normalizedAvailableDestinationPorts;
         const matchingPort = candidateDestinationPorts.find((port) => Number(port.port_no) === normalizedLinkedPortNo);
 
-        if (!candidateDestinationPorts.length) {
+        if (!candidateDestinationPorts.length && !hasExplicitDestinationSelection) {
             alert('No available destination ports were found.');
             return;
         }
-        const preselectedDestination = candidateDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        let preselectedDestination = candidateDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        if (!preselectedDestination && hasExplicitDestinationSelection) {
+            preselectedDestination = allAvailableDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        }
+        if (!preselectedDestination && hasExplicitDestinationSelection) {
+            preselectedDestination = allDestinationPorts.find((port) => Number(port.id) === destinationPortId);
+        }
         if (hasExplicitDestinationSelection) {
             if (!preselectedDestination) {
                 alert('The selected destination port is no longer available. Please choose another destination port.');
