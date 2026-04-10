@@ -152,26 +152,32 @@ function itm_get_client_ip_address() {
  */
 function itm_get_login_request_ip(): string
 {
-    $resolved = trim((string)(function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : ''));
-    if (strtolower($resolved) === '::1') {
-        return '127.0.0.1';
-    }
-    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-        return $resolved;
-    }
-    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-        return $resolved;
+    $server = $_SERVER ?? [];
+    $candidates = [];
+    $headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'HTTP_CLIENT_IP'];
+
+    // Why: Auth throttling should prefer IPv4 whenever any trusted/request header
+    // provides one, even if another resolver path selected an IPv6 address first.
+    foreach ($headers as $header) {
+        $headerValue = trim((string)($server[$header] ?? ''));
+        if ($headerValue !== '') {
+            $candidates[] = $headerValue;
+        }
     }
 
-    $remoteAddr = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
-    if (strtolower($remoteAddr) === '::1') {
-        return '127.0.0.1';
+    $resolved = trim((string)(function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : ''));
+    if ($resolved !== '') {
+        $candidates[] = $resolved;
     }
-    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-        return $remoteAddr;
+
+    $remoteAddr = trim((string)($server['REMOTE_ADDR'] ?? ''));
+    if ($remoteAddr !== '') {
+        $candidates[] = $remoteAddr;
     }
-    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-        return $remoteAddr;
+
+    $preferred = itm_pick_preferred_ip_for_display(implode(',', $candidates));
+    if ($preferred !== '' && filter_var($preferred, FILTER_VALIDATE_IP) !== false) {
+        return $preferred;
     }
 
     return '0.0.0.0';
