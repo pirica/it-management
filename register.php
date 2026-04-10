@@ -169,7 +169,7 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
     <button class="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="container">
         <div class="logo">
-            <h1>⚙️ IT Management</h1>
+            <h1>⚙️ IT Controls</h1>
             <p>Create your account</p>
         </div>
 
