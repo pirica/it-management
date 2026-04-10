@@ -24,14 +24,26 @@ $message = '';
 $message_type = ''; // success, error, info
 
 // 1. Fetch current user data to populate the form
-$stmt_init = mysqli_prepare($conn, 'SELECT email FROM users WHERE id = ? LIMIT 1');
-$current_user = ['email' => ''];
+$stmt_init = mysqli_prepare($conn, 'SELECT username, email FROM users WHERE id = ? LIMIT 1');
+$current_user = ['username' => '', 'email' => ''];
 if ($stmt_init) {
     mysqli_stmt_bind_param($stmt_init, 'i', $user_id);
     mysqli_stmt_execute($stmt_init);
     $res_init = mysqli_stmt_get_result($stmt_init);
-    $current_user = mysqli_fetch_assoc($res_init) ?: ['email' => ''];
+    $current_user = mysqli_fetch_assoc($res_init) ?: ['username' => '', 'email' => ''];
     mysqli_stmt_close($stmt_init);
+}
+
+// Build a personalized quick link with no text decoration, matching dashboard language.
+$userConfigDisplayName = trim((string)($current_user['username'] ?? ''));
+$userConfigEmail = trim((string)($current_user['email'] ?? ''));
+$userConfigWelcomeMessage = 'Welcome to DataCenter Plus';
+if ($userConfigDisplayName !== '' && $userConfigEmail !== '') {
+    $userConfigWelcomeMessage .= ', ' . $userConfigDisplayName . ' (' . $userConfigEmail . ')';
+} elseif ($userConfigDisplayName !== '') {
+    $userConfigWelcomeMessage .= ', ' . $userConfigDisplayName;
+} elseif ($userConfigEmail !== '') {
+    $userConfigWelcomeMessage .= ' - (' . $userConfigEmail . ')';
 }
 
 // 2. Handle Form Submission
@@ -183,6 +195,9 @@ if ($message_type === 'success') {
     <div class="readonly-wrap">
         <div class="readonly-card">
             <h1>👤 User Configuration</h1>
+            <p style="margin-top:10px;">
+                <a href="dashboard.php" style="text-decoration:none; color:inherit;"><?php echo sanitize($userConfigWelcomeMessage); ?></a>
+            </p>
             <p style="margin-top:10px; color: var(--text-secondary);">
                 Read-Only mode: your login email does not match any active employee with <strong>Active</strong> employment status.
             </p>
@@ -211,6 +226,9 @@ if ($message_type === 'success') {
 
             <div class="content">
                 <h1>👤 User Settings</h1>
+                <p style="margin: 0 0 10px 0;">
+                    <a href="dashboard.php" style="text-decoration:none; color:inherit;"><?php echo sanitize($userConfigWelcomeMessage); ?></a>
+                </p>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Manage your email and password.</p>
 
                 <?php if ($message !== ''): ?>
