@@ -52,6 +52,7 @@ window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 window.ITM_UI_CONFIG = <?php echo json_encode($ui_config ?? itm_ui_config_defaults()); ?>;
 window.ITM_APP_NAME = <?php echo json_encode($app_name ?? itm_ui_config_app_name($ui_config ?? null)); ?>;
+window.ITM_FAVICON_URL = <?php echo json_encode($favicon_url ?? itm_ui_config_favicon_url($ui_config ?? null)); ?>;
 </script>
 
 <!-- Global JS Library Dependencies -->
@@ -111,6 +112,20 @@ document.addEventListener('click', function (event) {
  * module-by-module markup edits across the legacy codebase.
  */
 document.addEventListener('DOMContentLoaded', function () {
+    if (window.ITM_FAVICON_URL) {
+        const faviconHref = String(window.ITM_FAVICON_URL).trim();
+        if (faviconHref !== '') {
+            let faviconNode = document.querySelector('link[rel="icon"]');
+            if (!faviconNode) {
+                faviconNode = document.createElement('link');
+                faviconNode.setAttribute('rel', 'icon');
+                document.head.appendChild(faviconNode);
+            }
+            faviconNode.setAttribute('href', faviconHref);
+            faviconNode.setAttribute('type', 'image/x-icon');
+        }
+    }
+
     if (window.ITM_APP_NAME && typeof document.title === 'string') {
         const appName = String(window.ITM_APP_NAME).trim();
         if (appName !== '' && !document.title.includes(appName)) {
