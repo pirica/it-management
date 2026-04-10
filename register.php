@@ -147,7 +147,7 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - IT Management</title>
+    <title>Register - IT Controls</title>
     <style>
         :root { --accent: #0969da; --bg: #ffffff; --text: #24292f; --muted: #666; }
         [data-theme="dark"] { --accent: #58a6ff; --bg: #0d1117; --text: #c9d1d9; --muted: #8b949e; }
