@@ -162,7 +162,47 @@ function cr_username_for_user_id($userId) {
     return $username;
 }
 
+function cr_pick_display_ip($value) {
+    $raw = trim((string)($value ?? ''));
+    if ($raw === '') {
+        return '';
+    }
+
+    // Why: Attempt telemetry may include a comma-separated proxy chain;
+    // always surface IPv4 first for fast operator triage and fall back to IPv6.
+    $parts = array_map('trim', explode(',', $raw));
+    $firstIpv6 = '';
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        if (strpos($part, ':') !== false && substr_count($part, ':') === 1 && strpos($part, '.') !== false) {
+            $ipv4PortCandidate = explode(':', $part);
+            $part = trim((string)($ipv4PortCandidate[0] ?? $part));
+        }
+
+        if (filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+            return $part;
+        }
+
+        if ($firstIpv6 === '' && filter_var($part, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+            $firstIpv6 = $part;
+        }
+    }
+
+    if ($firstIpv6 !== '') {
+        return $firstIpv6;
+    }
+
+    return $raw;
+}
+
 function cr_render_cell_value($table, $field, $value) {
+    if (in_array($table, ['login_attempts', 'password_reset_attempts', 'attempts'], true) && $field === 'ip_address') {
+        return sanitize(cr_pick_display_ip($value));
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
