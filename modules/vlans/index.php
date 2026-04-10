@@ -141,6 +141,15 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     $text = (string)($value ?? '');
+    if ($field === 'vlan_color' && preg_match('/^#[0-9a-fA-F]{6}$/', $text)) {
+        $safeColor = strtolower($text);
+        $safeText = sanitize($text);
+        return '<span style="display:inline-flex;align-items:center;gap:6px;">'
+            . '<span aria-hidden="true" style="display:inline-block;width:12px;height:12px;border:1px solid #b8b8b8;border-radius:2px;background-color:' . $safeColor . ';"></span>'
+            . '<span>' . $safeText . '</span>'
+            . '</span>';
+    }
+
     if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
