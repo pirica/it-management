@@ -421,12 +421,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $seedError = '';
         $seedReport = [];
         $seededRows = itm_seed_all_tables_from_database_sql($conn, (int)$company_id, $seedError, $seedReport);
+        $insertedSummary = empty($seedReport['inserted_tables']) ? 'none' : implode(', ', $seedReport['inserted_tables']);
+        $notImportedTables = array_merge($seedReport['skipped_tables'] ?? [], $seedReport['failed_tables'] ?? []);
+        $notImportedSummary = empty($notImportedTables) ? 'none' : implode(', ', $notImportedTables);
+
         if ($seededRows > 0) {
-            $insertedSummary = empty($seedReport['inserted_tables']) ? 'none' : implode(', ', $seedReport['inserted_tables']);
-            $notImportedSummary = empty($seedReport['skipped_tables']) ? 'none' : implode(', ', $seedReport['skipped_tables']);
             $message = 'Sample data inserted successfully across all tables (' . $seededRows . ' rows). '
                 . 'Inserted: ' . $insertedSummary . '. '
                 . 'Not imported: ' . $notImportedSummary . '.';
+            if ($seedError !== '') {
+                $error = $seedError;
+            }
         } else {
             $error = $seedError !== '' ? $seedError : 'No sample rows were inserted.';
         }

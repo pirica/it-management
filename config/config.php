@@ -581,6 +581,7 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
         $seedReport = [
             'inserted_tables' => [],
             'skipped_tables' => [],
+            'failed_tables' => [],
         ];
         $companyId = (int)$companyId;
         if ($companyId <= 0) {
@@ -665,6 +666,7 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
             }
 
             $tableInsertCount = 0;
+            $tableFailed = false;
             foreach ($insertLines as $line) {
                 $matches = [];
                 if (!preg_match('/^INSERT INTO\\s+`[^`]+`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
@@ -704,11 +706,19 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
                 $dbErrorCode = 0;
                 $dbErrorMessage = '';
                 if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                    $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-                    return $insertCount;
+                    $seedReport['failed_tables'][] = $tableName . ' (' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage) . ')';
+                    $tableFailed = true;
+                    break;
                 }
                 $insertCount++;
                 $tableInsertCount++;
+            }
+
+            if ($tableFailed) {
+                if ($tableInsertCount > 0) {
+                    $seedReport['inserted_tables'][] = $tableName . ' (' . $tableInsertCount . ' rows)';
+                }
+                continue;
             }
 
             if ($tableInsertCount > 0) {
@@ -719,7 +729,10 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
         }
 
         if ($insertCount === 0) {
-            $error = 'No sample rows were inserted. Not imported tables: ' . implode(', ', $seedReport['skipped_tables']) . '.';
+            $notImportedTables = array_merge($seedReport['skipped_tables'], $seedReport['failed_tables']);
+            $error = 'No sample rows were inserted. Not imported tables: ' . implode(', ', $notImportedTables) . '.';
+        } elseif (!empty($seedReport['failed_tables'])) {
+            $error = 'Some sample data could not be imported: ' . implode(', ', $seedReport['failed_tables']) . '.';
         }
 
         return $insertCount;
