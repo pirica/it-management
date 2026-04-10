@@ -350,6 +350,55 @@ function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
 }
 
 /**
+ * Fetches an audit row by a dynamic primary key column.
+ *
+ * Why: Some modules still use legacy/non-id key names, so triggerless auditing
+ * must be able to read before/after values using whichever PK column is present.
+ */
+function itm_fetch_audit_record_by_key($conn, $table, $pkColumn, $pkValue, $company_id = null) {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
+        return null;
+    }
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$pkColumn)) {
+        return null;
+    }
+
+    $pkValue = (int)$pkValue;
+    if ($pkValue <= 0) {
+        return null;
+    }
+
+    if ($pkColumn === 'id') {
+        return itm_fetch_audit_record($conn, $table, $pkValue, $company_id);
+    }
+
+    $company_id = $company_id === null ? (int)($_SESSION['company_id'] ?? 0) : (int)$company_id;
+    $hasCompanyColumn = itm_audit_table_has_column($conn, $table, 'company_id');
+    $sql = 'SELECT * FROM `' . $table . '` WHERE `' . $pkColumn . '` = ?';
+    if ($hasCompanyColumn && $company_id > 0) {
+        $sql .= ' AND company_id = ?';
+    }
+    $sql .= ' LIMIT 1';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    if ($hasCompanyColumn && $company_id > 0) {
+        mysqli_stmt_bind_param($stmt, 'ii', $pkValue, $company_id);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $pkValue);
+    }
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ?: null;
+}
+
+/**
  * Checks if a specific table has a given column (used for dynamic audit logic)
  */
 function itm_audit_table_has_column($conn, $table, $column) {
@@ -414,11 +463,11 @@ function itm_parse_audit_sql($sql) {
 
     $meta = null;
     if (preg_match('/^INSERT\s+INTO\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $m)) {
-        $meta = ['action' => 'INSERT', 'table' => $m[1], 'record_id' => 0];
+        $meta = ['action' => 'INSERT', 'table' => $m[1], 'record_id' => 0, 'pk_column' => 'id', 'pk_value' => 0];
     } elseif (preg_match('/^UPDATE\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $m)) {
-        $meta = ['action' => 'UPDATE', 'table' => $m[1], 'record_id' => 0];
+        $meta = ['action' => 'UPDATE', 'table' => $m[1], 'record_id' => 0, 'pk_column' => 'id', 'pk_value' => 0];
     } elseif (preg_match('/^DELETE\s+FROM\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $m)) {
-        $meta = ['action' => 'DELETE', 'table' => $m[1], 'record_id' => 0];
+        $meta = ['action' => 'DELETE', 'table' => $m[1], 'record_id' => 0, 'pk_column' => 'id', 'pk_value' => 0];
     } else {
         return null;
     }
@@ -428,10 +477,79 @@ function itm_parse_audit_sql($sql) {
         return null;
     }
 
-    // Try to extract the ID from a simple WHERE clause
+    // Try to extract a simple PK predicate (`... WHERE pk = 123 ...`) so
+    // module updates/deletes that use non-id PK names can still be audited.
+    if (preg_match('/\bWHERE\b[\s\S]*?`?([a-zA-Z0-9_]+)`?\s*=\s*(\d+)/i', $sql, $pkMatch)) {
+        $meta['pk_column'] = (string)$pkMatch[1];
+        $meta['pk_value'] = (int)$pkMatch[2];
+    }
+
+    // Keep legacy `record_id` field for existing callers and audit table schema.
     if (preg_match('/\bWHERE\b[\s\S]*?\bid\s*=\s*(\d+)/i', $sql, $idMatch)) {
         $meta['record_id'] = (int)$idMatch[1];
+    } elseif ((string)($meta['pk_column'] ?? '') === 'id') {
+        $meta['record_id'] = (int)($meta['pk_value'] ?? 0);
     }
 
     return $meta;
+}
+
+/**
+ * Logs audit entries for raw SQL write queries executed through global helpers.
+ *
+ * Why: Shared-hosting MySQL users often cannot create triggers, so this helper
+ * keeps INSERT/UPDATE/DELETE audit coverage in PHP for centrally executed SQL.
+ *
+ * @param mysqli $conn
+ * @param string $sql
+ * @param array<string,mixed>|null $meta
+ * @param array<string,mixed>|null $old_values
+ * @return bool
+ */
+function itm_log_audit_from_sql_change($conn, $sql, $meta = null, $old_values = null) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    if ($meta === null) {
+        $meta = itm_parse_audit_sql($sql);
+    }
+    if (!is_array($meta)) {
+        return false;
+    }
+
+    $table = (string)($meta['table'] ?? '');
+    $action = strtoupper((string)($meta['action'] ?? ''));
+    $recordId = (int)($meta['record_id'] ?? 0);
+    $pkColumn = (string)($meta['pk_column'] ?? 'id');
+    $pkValue = (int)($meta['pk_value'] ?? $recordId);
+    if ($table === '' || !in_array($action, ['INSERT', 'UPDATE', 'DELETE'], true)) {
+        return false;
+    }
+
+    if ($pkValue <= 0 && $action === 'INSERT') {
+        $pkValue = (int)mysqli_insert_id($conn);
+    }
+    if ($recordId <= 0 && $action === 'INSERT') {
+        $recordId = (int)mysqli_insert_id($conn);
+    }
+    if ($recordId <= 0) {
+        $recordId = $pkValue;
+    }
+    if ($pkValue <= 0) {
+        return false;
+    }
+
+    $newValues = null;
+    if ($action === 'INSERT' || $action === 'UPDATE') {
+        $newValues = itm_fetch_audit_record_by_key($conn, $table, $pkColumn, $pkValue);
+    }
+
+    if ($action === 'INSERT') {
+        return itm_log_audit($conn, $table, $recordId, $action, null, $newValues);
+    }
+    if ($action === 'UPDATE') {
+        return itm_log_audit($conn, $table, $recordId, $action, $old_values, $newValues);
+    }
+    return itm_log_audit($conn, $table, $recordId, $action, $old_values, null);
 }
