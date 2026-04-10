@@ -69,31 +69,6 @@ function itm_is_login_rate_limited(mysqli $conn, string $ipAddress, ?string $ide
     return false;
 }
 
-/**
- * Why: We want deterministic IP storage for security analytics: prefer IPv4,
- * then use IPv6 only when IPv4 is unavailable.
- */
-function itm_get_login_request_ip(): string
-{
-    $resolved = trim((string)(function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : ''));
-    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-        return $resolved;
-    }
-    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-        return $resolved;
-    }
-
-    $remoteAddr = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
-    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-        return $remoteAddr;
-    }
-    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-        return $remoteAddr;
-    }
-
-    return '0.0.0.0';
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate CSRF token for all POST requests
     itm_require_post_csrf();

@@ -200,7 +200,10 @@ function cr_pick_display_ip($value) {
 
 function cr_render_cell_value($table, $field, $value) {
     if (in_array($table, ['login_attempts', 'password_reset_attempts', 'attempts'], true) && $field === 'ip_address') {
-        return sanitize(cr_pick_display_ip($value));
+        $displayIp = function_exists('itm_pick_preferred_ip_for_display')
+            ? itm_pick_preferred_ip_for_display($value)
+            : trim((string)($value ?? ''));
+        return sanitize($displayIp);
     }
 
     if ($field === 'active') {
