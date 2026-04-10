@@ -266,10 +266,14 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                         <h2>Information</h2>
                     </div>
                     <div class="card-body">
-                        <p><strong>Company:</strong> <?php echo sanitize($company_data['company']); ?></p>
-                        <p><strong>InCode:</strong> <?php echo sanitize($company_data['incode']); ?></p>
-                        <p><strong>Location:</strong> <?php echo sanitize(trim(($company_data['city'] ?? '') . ', ' . ($company_data['country'] ?? ''), ', ')); ?></p>
-                        <p><strong>Phone:</strong> <?php echo sanitize((string)($company_data['phone'] ?? '')); ?></p>
+                        <?php if (is_array($company_data)): ?>
+                            <p><strong>Company:</strong> <?php echo sanitize((string)($company_data['company'] ?? '')); ?></p>
+                            <p><strong>InCode:</strong> <?php echo sanitize((string)($company_data['incode'] ?? '')); ?></p>
+                            <p><strong>Location:</strong> <?php echo sanitize(trim(((string)($company_data['city'] ?? '')) . ', ' . ((string)($company_data['country'] ?? '')), ', ')); ?></p>
+                            <p><strong>Phone:</strong> <?php echo sanitize((string)($company_data['phone'] ?? '')); ?></p>
+                        <?php else: ?>
+                            <p style="color: #999; margin-top: 12px;">Please switch company to view company information.</p>
+                        <?php endif; ?>
 
                         <?php if ($companies && mysqli_num_rows($companies) > 0): ?>
                             <form method="POST" style="margin-top:20px;">
