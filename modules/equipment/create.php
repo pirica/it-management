@@ -703,6 +703,27 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     .switch-details-grid .form-group {
         margin: 0;
     }
+    .role-flags-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        margin-top: 8px;
+    }
+    .role-flag-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 38px;
+        padding: 8px 12px;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
+        background: var(--bg-secondary, #f6f8fa);
+        color: var(--text-primary, #24292f);
+        white-space: nowrap;
+    }
+    .role-flag-option input[type="checkbox"] {
+        margin: 0;
+    }
     .status-field-wrap {
         margin-top: 12px;
     }
@@ -753,6 +774,83 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             <div id="printer-fields" style="display:none;">
                 <div class="form-row">
                     <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="role-flags-grid">
+                        <label class="role-flag-option"><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label>
+                        <label class="role-flag-option"><input type="checkbox" name="printer_scan" <?php echo (int)$data['printer_scan'] === 1 ? 'checked' : ''; ?>> Printer & Scan</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
+                <div class="form-group"><label>Model</label><input name="model" value="<?php echo sanitize($data['model']); ?>"></div>
+                <div class="form-group"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
+                <div class="form-group"></div>
+            </div>
+            <div id="server-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group"><label>Certificate Expiry</label><input type="date" name="certificate_expiry" value="<?php echo sanitize($data['certificate_expiry']); ?>"></div>
+                    <div class="form-group"></div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
+                <div class="form-group"><label>Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" value="<?php echo sanitize($data['purchase_cost']); ?>"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Photo Upload</label>
+                    <input type="file" name="photo[]" accept="image/*" multiple>
+                    <div class="form-hint">You can upload one or many photos at once.<?php if ($isEdit): ?> Files upload automatically after selection when editing.<?php endif; ?></div>
+                    <?php if (!empty($currentPhotoFilenames)): ?>
+                        <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
+                        <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
+                    <?php endif; ?>
+                    <div class="form-hint" id="currentPhotoHint">
+                        <span id="currentPhotoHintText"><?php echo !empty($currentPhotoFilenames) ? 'Current photos: ' . count($currentPhotoFilenames) : 'Selected photos: 0'; ?></span>
+                        <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">🔎</button>
+                        <?php if (!empty($currentPhotoFilenames)): ?>
+                            <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>RAM</label><select name="workstation_ram_id" data-addable-select="1" data-add-table="workstation_ram" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="ram"><option value="">-- None --</option><?php render_options($workstationRamOptions, $data['workstation_ram_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Storage (GB/TB)</label><input name="workstation_storage" value="<?php echo sanitize($data['workstation_storage']); ?>" placeholder="e.g. 512 GB / 1 TB"></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Workstation Processor</label><input name="workstation_processor" value="<?php echo sanitize($data['workstation_processor']); ?>"></div>
+                <div class="form-group"><label>Workstation Device Type</label><select name="workstation_device_type_id" data-addable-select="1" data-add-table="workstation_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation device type"><option value="">-- None --</option><?php render_options($workstationDeviceTypes, $data['workstation_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Workstation OS Type</label><select name="workstation_os_type_id" data-addable-select="1" data-add-table="workstation_os_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os type"><option value="">-- None --</option><?php render_options($workstationOsTypes, $data['workstation_os_type_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Workstation OS Installed On</label><input type="date" name="workstation_os_installed_on" value="<?php echo sanitize($data['workstation_os_installed_on']); ?>"></div>
+                <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-group"><label>Comments</label><textarea name="notes" rows="5"><?php echo sanitize($data['notes']); ?></textarea></div>
+            <div id="switch-fields" style="display:none;">
+                <h3 style="margin-top:20px;">Switch Details</h3>
+                <div class="switch-details-grid">
+                    <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Port Numbering Layout</label><select name="switch_port_numbering_layout_id" data-addable-select="1" data-add-table="switch_port_numbering_layout" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="port numbering layout"><option value="">-- Select --</option><?php render_options($switchPortNumberingLayoutOptions, $data['switch_port_numbering_layout_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id" data-addable-select="1" data-add-table="equipment_fiber" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber port option"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Patch</label><select name="switch_fiber_patch_id" data-addable-select="1" data-add-table="equipment_fiber_patch" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber patch option"><option value="">-- None --</option><?php render_options($switchFiberPatchOptions, $data['switch_fiber_patch_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Rack</label><select name="switch_fiber_rack_id" data-addable-select="1" data-add-table="equipment_fiber_rack" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber rack option"><option value="">-- None --</option><?php render_options($switchFiberRackOptions, $data['switch_fiber_rack_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Count</label><select name="switch_fiber_count_id" data-addable-select="1" data-add-table="equipment_fiber_count" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber count option"><option value="">-- None --</option><?php render_options($switchFiberCountOptions, $data['switch_fiber_count_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Ports Number</label><input type="text" maxlength="50" name="switch_fiber_ports_number" value="<?php echo sanitize($data['switch_fiber_ports_number']); ?>" placeholder="e.g. 4"></div>
+                    <div class="form-group"><label>Fiber Port Label</label><input type="text" maxlength="100" name="switch_fiber_port_label" value="<?php echo sanitize($data['switch_fiber_port_label']); ?>" placeholder="e.g. Uplink / SFP+"></div>
+                    <div class="form-group"><label>PoE Type</label><select name="switch_poe_id" data-addable-select="1" data-add-table="equipment_poe" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="poe type"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Management</label><select name="switch_environment_id" data-addable-select="1" data-add-table="equipment_environment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="management type"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?><option value="__add_new__">➕</option></select></div>
+                </div>
+            </div>
             <div class="form-group status-field-wrap">
                 <label>Status</label>
                 <select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status">
