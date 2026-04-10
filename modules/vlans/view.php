@@ -128,6 +128,10 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    if ($field === 'active') {
+        return ((int)$value === 1) ? '✅' : '❌';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -138,11 +142,7 @@ function cr_render_cell_value($table, $field, $value) {
     $text = (string)($value ?? '');
     if ($field === 'vlan_color' && preg_match('/^#[0-9a-fA-F]{6}$/', $text)) {
         $safeColor = strtolower($text);
-        $safeText = sanitize($text);
-        return '<span style="display:inline-flex;align-items:center;gap:6px;">'
-            . '<span aria-hidden="true" style="display:inline-block;width:12px;height:12px;border:1px solid #b8b8b8;border-radius:2px;background-color:' . $safeColor . ';"></span>'
-            . '<span>' . $safeText . '</span>'
-            . '</span>';
+        return '<span aria-label="' . sanitize($text) . '" title="' . sanitize($text) . '" style="display:inline-block;width:12px;height:12px;border:1px solid #b8b8b8;border-radius:2px;background-color:' . $safeColor . ';"></span>';
     }
 
     if ($table === 'employees' && $field === 'email' && $text !== '') {
