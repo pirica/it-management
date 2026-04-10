@@ -86,7 +86,7 @@ function cr_fk_metadata($conn, $table) {
 function cr_manageable_columns($columns) {
     // Why: Security attempt modules need the timestamp visible in UI for incident forensics.
     $exclude = ['id', 'updated_at'];
-    if (!in_array((string)($GLOBALS['crud_table'] ?? ''), ['password_reset_attempts', 'login_attempts', 'attempts'], true)) {
+    if (!in_array((string)($GLOBALS['crud_table'] ?? ''), ['attempts'], true)) {
         $exclude[] = 'created_at';
     }
 
@@ -199,7 +199,7 @@ function cr_pick_display_ip($value) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if (in_array($table, ['login_attempts', 'password_reset_attempts', 'attempts'], true) && $field === 'ip_address') {
+    if (in_array($table, ['attempts'], true) && $field === 'ip_address') {
         $displayIp = function_exists('itm_pick_preferred_ip_for_display')
             ? itm_pick_preferred_ip_for_display($value)
             : trim((string)($value ?? ''));
@@ -220,7 +220,7 @@ function cr_render_cell_value($table, $field, $value) {
 
     $text = (string)($value ?? '');
 
-    if (in_array($table, ['login_attempts', 'password_reset_attempts', 'attempts'], true) && $field === 'user_id') {
+    if (in_array($table, ['attempts'], true) && $field === 'user_id') {
         if ((int)$text <= 0) {
             return '—';
         }

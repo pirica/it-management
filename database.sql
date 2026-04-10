@@ -1382,6 +1382,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
 
 -- Table structure for `attempts`
+-- Why: Unified security telemetry table for login and password reset events (legacy module folders were merged into modules/attempts).
 DROP TABLE IF EXISTS `attempts`;
 CREATE TABLE `attempts` (
   `id` int NOT NULL AUTO_INCREMENT,
