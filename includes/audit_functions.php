@@ -153,6 +153,9 @@ function itm_get_client_ip_address() {
 function itm_get_login_request_ip(): string
 {
     $resolved = trim((string)(function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : ''));
+    if (strtolower($resolved) === '::1') {
+        return '127.0.0.1';
+    }
     if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
         return $resolved;
     }
@@ -161,6 +164,9 @@ function itm_get_login_request_ip(): string
     }
 
     $remoteAddr = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    if (strtolower($remoteAddr) === '::1') {
+        return '127.0.0.1';
+    }
     if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
         return $remoteAddr;
     }
@@ -192,6 +198,10 @@ function itm_pick_preferred_ip_for_display($value) {
     foreach ($parts as $part) {
         if ($part === '') {
             continue;
+        }
+
+        if (strtolower($part) === '::1') {
+            return '127.0.0.1';
         }
 
         if (str_starts_with($part, '[') && str_contains($part, ']')) {
