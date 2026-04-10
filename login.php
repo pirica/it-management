@@ -11,29 +11,119 @@ session_start();
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
 
+/**
+ * Why: Login endpoint is public and attractive for credential stuffing, so we
+ * keep a lightweight audit trail for throttling and incident response.
+ */
+function itm_record_login_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $identifier = null, ?int $userId = null): void
+{
+    $stmt = mysqli_prepare($conn, 'INSERT INTO login_attempts (attempt_type, ip_address, email, user_id) VALUES (?, ?, ?, ?)');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'sssi', $attemptType, $ipAddress, $identifier, $userId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+}
+
+/**
+ * Why: Public authentication should be cheaply rate-limited per-IP and
+ * per-account identifier so brute-force attempts burn out quickly.
+ */
+function itm_is_login_rate_limited(mysqli $conn, string $ipAddress, ?string $identifier = null): bool
+{
+    $maxIpFailures = 12;
+    $maxIdentifierFailures = 6;
+
+    $stmtIp = mysqli_prepare(
+        $conn,
+        'SELECT COUNT(*) FROM login_attempts WHERE attempt_type = \'failure\' AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+    );
+    if ($stmtIp) {
+        mysqli_stmt_bind_param($stmtIp, 's', $ipAddress);
+        mysqli_stmt_execute($stmtIp);
+        mysqli_stmt_bind_result($stmtIp, $ipAttempts);
+        mysqli_stmt_fetch($stmtIp);
+        mysqli_stmt_close($stmtIp);
+        if ((int)$ipAttempts >= $maxIpFailures) {
+            return true;
+        }
+    }
+
+    if ($identifier !== null && $identifier !== '') {
+        $stmtIdentifier = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) FROM login_attempts WHERE attempt_type = \'failure\' AND email = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)'
+        );
+        if ($stmtIdentifier) {
+            mysqli_stmt_bind_param($stmtIdentifier, 's', $identifier);
+            mysqli_stmt_execute($stmtIdentifier);
+            mysqli_stmt_bind_result($stmtIdentifier, $identifierAttempts);
+            mysqli_stmt_fetch($stmtIdentifier);
+            mysqli_stmt_close($stmtIdentifier);
+            if ((int)$identifierAttempts >= $maxIdentifierFailures) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Why: We want deterministic IP storage for security analytics: prefer IPv4,
+ * then use IPv6 only when IPv4 is unavailable.
+ */
+function itm_get_login_request_ip(): string
+{
+    $resolved = trim((string)(function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : ''));
+    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        return $resolved;
+    }
+    if ($resolved !== '' && filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        return $resolved;
+    }
+
+    $remoteAddr = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        return $remoteAddr;
+    }
+    if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        return $remoteAddr;
+    }
+
+    return '0.0.0.0';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate CSRF token for all POST requests
     itm_require_post_csrf();
     
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $requestIp = substr(itm_get_login_request_ip(), 0, 45);
+    $isRateLimited = itm_is_login_rate_limited($conn, $requestIp, $loginIdentifier);
 
-    // Search for an active user by email or username
-    $stmt = mysqli_prepare(
-        $conn,
-        'SELECT id, password FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
-    );
+    if ($isRateLimited) {
+        itm_record_login_attempt($conn, 'failure', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, null);
+        $error = 'Too many login attempts. Please wait a few minutes and try again.';
+    } else {
 
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ss', $loginIdentifier, $loginIdentifier);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $user = mysqli_fetch_assoc($result);
-        mysqli_stmt_close($stmt);
+        // Search for an active user by email or username
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, password FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
+        );
 
-        $storedPassword = (string)($user['password'] ?? '');
-        $userId = (int)($user['id'] ?? 0);
-        $passwordMatches = false;
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ss', $loginIdentifier, $loginIdentifier);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+
+            $storedPassword = (string)($user['password'] ?? '');
+            $userId = (int)($user['id'] ?? 0);
+            $passwordMatches = false;
 
         if ($user) {
             // Why: Accept modern password_hash() values and transparently upgrade cost/algorithm when needed.
@@ -72,7 +162,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        if ($passwordMatches) {
+            if ($passwordMatches) {
+                itm_record_login_attempt($conn, 'success', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, $userId);
+
             $userId = (int)$user['id'];
             $_SESSION['user_id'] = $userId;
             
@@ -146,12 +238,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Successfully authenticated regular user proceeds to company selection
-            header('Location: index.php');
-            exit();
-        }
-    }
+                header('Location: index.php');
+                exit();
+            }
 
-    $error = 'Invalid credentials.';
+            itm_record_login_attempt($conn, 'failure', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, $userId > 0 ? $userId : null);
+        }
+
+        $error = 'Invalid credentials.';
+    }
 }
 ?>
 <!DOCTYPE html>

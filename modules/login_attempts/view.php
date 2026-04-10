@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'password_reset_attempts';
-$crud_title = 'Password Reset Attempts';
-$crud_action = 'index';
+$crud_table = 'login_attempts';
+$crud_title = 'Login Attempts';
+$crud_action = 'view';
 ?>
 <?php
 require '../../config/config.php';
@@ -177,7 +177,7 @@ function cr_render_cell_value($table, $field, $value) {
 
     $text = (string)($value ?? '');
 
-    if ($table === 'password_reset_attempts' && $field === 'user_id') {
+    if ($table === 'login_attempts' && $field === 'user_id') {
         if ((int)$text <= 0) {
             return '—';
         }
