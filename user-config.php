@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = (int)$user_id;
+$user_id = (int)($_SESSION['user_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 // Read-only mode is active if the user doesn't have a corresponding 'Active' employee record
 $isReadOnlyMode = !empty($_SESSION['read_only_user_config']);
@@ -196,7 +196,7 @@ if ($message_type === 'success') {
         <div class="readonly-card">
             <h1>👤 User Configuration</h1>
             <p style="margin-top:10px;">
-                <a href="dashboard.php" style="text-decoration:none; color:inherit;"><?php echo sanitize($userConfigWelcomeMessage); ?></a>
+                <a href="<?php echo BASE_URL; ?>dashboard.php" style="text-decoration:none; color:inherit;"><?php echo sanitize($userConfigWelcomeMessage); ?></a>
             </p>
             <p style="margin-top:10px; color: var(--text-secondary);">
                 Read-Only mode: your login email does not match any active employee with <strong>Active</strong> employment status.
@@ -227,7 +227,7 @@ if ($message_type === 'success') {
             <div class="content">
                 <h1>👤 User Settings</h1>
                 <p style="margin: 0 0 10px 0;">
-                    <a href="dashboard.php" style="text-decoration:none; color:inherit;"><?php echo sanitize($userConfigWelcomeMessage); ?></a>
+                    <a href="<?php echo BASE_URL; ?>dashboard.php" style="text-decoration:none; color:inherit;"><?php echo sanitize($userConfigWelcomeMessage); ?></a>
                 </p>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Manage your email and password.</p>
 
@@ -270,19 +270,19 @@ if ($message_type === 'success') {
                                     <label for="current_password_verify"><strong>Current Password (Required to save any changes):</strong></label><br>
                                     <input id="current_password_verify" type="password" name="current_password_verify" required style="width:100%; max-width:460px;">
                                 </p>
-                                <button class="btn btn-primary" type="submit">💾</button>
+                                <button class="btn btn-primary" type="submit">💾 Save Changes</button>
                             </fieldset>
                         </form>
                     </div>
                 </div>
 
-                <p style="margin-top: 20px;">
-                    <a class="btn" href="dashboard.php">🔙 Dashboard</a>
+                <div style="margin-top: 20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <a class="btn" href="<?php echo BASE_URL; ?>dashboard.php">🔙 Dashboard</a>
                     <form method="POST" action="logout.php" style="display:inline; margin:0;">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                         <button type="submit" class="btn">Logout</button>
                     </form>
-                </p>
+                </div>
             </div>
         </div>
     </div>
