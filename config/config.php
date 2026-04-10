@@ -573,6 +573,146 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 }
 
 /**
+ * Seeds all table samples from database.sql while keeping inserts idempotent.
+ */
+if (!function_exists('itm_seed_all_tables_from_database_sql')) {
+    function itm_seed_all_tables_from_database_sql($conn, $companyId, &$error = '') {
+        $error = '';
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        $sqlPath = ROOT_PATH . 'database.sql';
+        if (!is_file($sqlPath)) {
+            $error = 'Sample source file database.sql was not found.';
+            return 0;
+        }
+
+        $lines = @file($sqlPath, FILE_IGNORE_NEW_LINES);
+        if (!is_array($lines)) {
+            $error = 'Unable to read sample source file.';
+            return 0;
+        }
+
+        $insertLinesByTable = [];
+        foreach ($lines as $line) {
+            $line = trim((string)$line);
+            if ($line === '' || stripos($line, 'INSERT INTO ') !== 0) {
+                continue;
+            }
+
+            $matches = [];
+            if (!preg_match('/^INSERT INTO\\s+`([^`]+)`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
+                continue;
+            }
+
+            $tableName = (string)$matches[1];
+            if (!itm_is_safe_identifier($tableName)) {
+                continue;
+            }
+
+            if (!isset($insertLinesByTable[$tableName])) {
+                $insertLinesByTable[$tableName] = [];
+            }
+            $insertLinesByTable[$tableName][] = $line;
+        }
+
+        if (empty($insertLinesByTable)) {
+            $error = 'No INSERT sample data found in database.sql.';
+            return 0;
+        }
+
+        $insertCount = 0;
+        foreach ($insertLinesByTable as $tableName => $insertLines) {
+            $tableExistsRes = mysqli_query(
+                $conn,
+                "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $tableName) . "'"
+            );
+            if (!$tableExistsRes || mysqli_num_rows($tableExistsRes) === 0) {
+                continue;
+            }
+
+            $hasCompanyId = itm_table_has_column($conn, $tableName, 'company_id');
+            $rowCount = 0;
+            if ($hasCompanyId) {
+                $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_count FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ?');
+                if (!$countStmt) {
+                    continue;
+                }
+                mysqli_stmt_bind_param($countStmt, 'i', $companyId);
+                mysqli_stmt_execute($countStmt);
+                $countResult = mysqli_stmt_get_result($countStmt);
+                $countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
+                $rowCount = isset($countRow['total_count']) ? (int)$countRow['total_count'] : 0;
+                mysqli_stmt_close($countStmt);
+            } else {
+                $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS total_count FROM `' . str_replace('`', '``', $tableName) . '`');
+                $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+                $rowCount = isset($countRow['total_count']) ? (int)$countRow['total_count'] : 0;
+            }
+
+            // Why: Keep the bulk seeding safe to run repeatedly by only touching empty targets.
+            if ($rowCount > 0) {
+                continue;
+            }
+
+            foreach ($insertLines as $line) {
+                $matches = [];
+                if (!preg_match('/^INSERT INTO\\s+`[^`]+`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
+                    continue;
+                }
+
+                $rawColumns = array_map('trim', explode(',', (string)$matches[1]));
+                $rawValues = itm_split_sql_csv((string)$matches[2]);
+                if (count($rawColumns) !== count($rawValues)) {
+                    continue;
+                }
+
+                $targetColumns = [];
+                $targetValues = [];
+                foreach ($rawColumns as $index => $columnToken) {
+                    $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                    if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+                        continue;
+                    }
+                    if ($columnName === 'id') {
+                        continue;
+                    }
+                    if ($columnName === 'company_id') {
+                        $targetColumns[] = '`company_id`';
+                        $targetValues[] = (string)$companyId;
+                        continue;
+                    }
+                    $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                    $targetValues[] = (string)$rawValues[$index];
+                }
+
+                if (empty($targetColumns)) {
+                    continue;
+                }
+
+                $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
+                $dbErrorCode = 0;
+                $dbErrorMessage = '';
+                if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                    $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                    return $insertCount;
+                }
+                $insertCount++;
+            }
+        }
+
+        if ($insertCount === 0) {
+            $error = 'No sample rows were inserted. Tables may already contain data.';
+        }
+
+        return $insertCount;
+    }
+}
+
+/**
  * Retrieves a company name by its ID
  */
 if (!function_exists('get_company_name')) {
