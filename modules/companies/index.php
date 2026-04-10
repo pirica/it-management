@@ -186,7 +186,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this company?');">
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirmCompanyDelete();">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
@@ -218,6 +218,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script>
+// Why: a second explicit confirmation reduces accidental cascade deletions across company-scoped data.
+function confirmCompanyDelete() {
+    if (!confirm('Delete this company?')) {
+        return false;
+    }
+
+    return confirm('All data related to this company will be deleted. This is not reversible.');
+}
+</script>
 </body>
 </html>
 <?php if ($stmt) { mysqli_stmt_close($stmt); } ?>
