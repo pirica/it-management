@@ -14,6 +14,11 @@ require '../../config/config.php';
 
 $message = '';
 $error = '';
+$systemTableReport = [
+    'created_tables' => [],
+    'verified_tables' => [],
+    'added_columns' => [],
+];
 
 // Human-friendly labels for UI positioning settings stored in the database.
 $uiFieldLabels = [
@@ -409,10 +414,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Ensure required settings tables exist (useful for fresh installs).
     if ($action === 'create_system_tables') {
-        if (!itm_ensure_ui_configuration_table($conn) || !itm_ensure_sidebar_layout_table($conn)) {
+        if (!itm_ensure_ui_configuration_table($conn, $systemTableReport)) {
             $error = 'Unable to create required system tables.';
         } else {
-            $message = 'System tables verified/created successfully.';
+            $verifiedCount = count($systemTableReport['verified_tables']);
+            $createdCount = count($systemTableReport['created_tables']);
+            $totalProcessed = $verifiedCount + $createdCount;
+            $message = 'System tables verified (' . $totalProcessed . ').';
         }
     }
 
@@ -509,6 +517,36 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 
             <?php if ($message): ?>
                 <div class="alert alert-success"><?php echo sanitize($message); ?></div>
+                <?php if (!empty($systemTableReport['created_tables']) || !empty($systemTableReport['verified_tables']) || !empty($systemTableReport['added_columns'])): ?>
+                    <div class="card" style="margin:-8px 0 20px 0;">
+                        <div class="card-body">
+                            <?php if (!empty($systemTableReport['created_tables'])): ?>
+                                <p style="margin:0 0 6px 0;"><strong>Created successfully:</strong></p>
+                                <ul style="margin:0 0 10px 20px;">
+                                    <?php foreach ($systemTableReport['created_tables'] as $createdTable): ?>
+                                        <li><?php echo sanitize($createdTable); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                            <?php if (!empty($systemTableReport['verified_tables'])): ?>
+                                <p style="margin:0 0 6px 0;"><strong>Verified:</strong></p>
+                                <ul style="margin:0 0 10px 20px;">
+                                    <?php foreach ($systemTableReport['verified_tables'] as $verifiedTable): ?>
+                                        <li><?php echo sanitize($verifiedTable); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                            <?php if (!empty($systemTableReport['added_columns'])): ?>
+                                <p style="margin:0 0 6px 0;"><strong>Columns added:</strong></p>
+                                <ul style="margin:0 0 0 20px;">
+                                    <?php foreach ($systemTableReport['added_columns'] as $addedColumn): ?>
+                                        <li><?php echo sanitize($addedColumn); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if ($error): ?>
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>

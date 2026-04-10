@@ -576,7 +576,13 @@ function itm_normalize_flag($value) {
 /**
  * Ensures the ui_configuration table exists and has the current schema
  */
-function itm_ensure_ui_configuration_table($conn) {
+function itm_ensure_ui_configuration_table($conn, &$report = null) {
+    $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'ui_configuration'");
+    if (!$tableExistsRes) {
+        return false;
+    }
+    $tableExistedBefore = mysqli_num_rows($tableExistsRes) > 0;
+
     $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         `company_id` INT NOT NULL,
@@ -603,6 +609,17 @@ function itm_ensure_ui_configuration_table($conn) {
         return false;
     }
 
+    $localReport = [
+        'created_tables' => [],
+        'verified_tables' => [],
+        'added_columns' => [],
+    ];
+    if ($tableExistedBefore) {
+        $localReport['verified_tables'][] = 'ui_configuration';
+    } else {
+        $localReport['created_tables'][] = 'ui_configuration';
+    }
+
     // Add missing columns if they don't exist
     $columns = [
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
@@ -624,15 +641,41 @@ function itm_ensure_ui_configuration_table($conn) {
         if (mysqli_num_rows($check) === 0 && mysqli_query($conn, $alterSql) !== true) {
             return false;
         }
+        if (mysqli_num_rows($check) === 0) {
+            $localReport['added_columns'][] = 'ui_configuration.' . $column;
+        }
     }
 
-    return itm_ensure_sidebar_layout_table($conn);
+    if (!itm_ensure_sidebar_layout_table($conn, $localReport)) {
+        return false;
+    }
+
+    if (is_array($report)) {
+        foreach (['created_tables', 'verified_tables', 'added_columns'] as $reportKey) {
+            if (!isset($report[$reportKey]) || !is_array($report[$reportKey])) {
+                $report[$reportKey] = [];
+            }
+            foreach ($localReport[$reportKey] as $reportItem) {
+                if (!in_array($reportItem, $report[$reportKey], true)) {
+                    $report[$reportKey][] = $reportItem;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 /**
  * Ensures the sidebar_layout junction table exists
  */
-function itm_ensure_sidebar_layout_table($conn) {
+function itm_ensure_sidebar_layout_table($conn, &$report = null) {
+    $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'sidebar_layout'");
+    if (!$tableExistsRes) {
+        return false;
+    }
+    $tableExistedBefore = mysqli_num_rows($tableExistsRes) > 0;
+
     $sql = "CREATE TABLE IF NOT EXISTS `sidebar_layout` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         `company_id` INT NOT NULL,
@@ -648,7 +691,24 @@ function itm_ensure_sidebar_layout_table($conn) {
         CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-    return mysqli_query($conn, $sql) === true;
+    if (mysqli_query($conn, $sql) !== true) {
+        return false;
+    }
+
+    if (is_array($report)) {
+        if (!isset($report['created_tables']) || !is_array($report['created_tables'])) {
+            $report['created_tables'] = [];
+        }
+        if (!isset($report['verified_tables']) || !is_array($report['verified_tables'])) {
+            $report['verified_tables'] = [];
+        }
+        $bucketKey = $tableExistedBefore ? 'verified_tables' : 'created_tables';
+        if (!in_array('sidebar_layout', $report[$bucketKey], true)) {
+            $report[$bucketKey][] = 'sidebar_layout';
+        }
+    }
+
+    return true;
 }
 
 /**
