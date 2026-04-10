@@ -19,7 +19,7 @@ $csrfToken = itm_get_csrf_token();
  * Why: Companies has a human-facing unique InCode; surfacing a specific message
  * prevents raw SQL errors and gives users a clear corrective action.
  */
-function itm_companies_create_error_message($conn, Throwable $throwable = null) {
+function itm_companies_create_error_message($conn, ?Throwable $throwable = null) {
     $errorCode = (int)mysqli_errno($conn);
     $errorMessage = (string)mysqli_error($conn);
 
