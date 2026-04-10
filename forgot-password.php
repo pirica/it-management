@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password - ⚙️ IT Controls</title>
+    <title>Forgot Password - <?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></title>
     <style>
         :root { --accent: #0969da; --bg: #ffffff; --text: #24292f; --muted: #666; }
         [data-theme="dark"] { --accent: #58a6ff; --bg: #0d1117; --text: #c9d1d9; --muted: #8b949e; }
@@ -195,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button class="theme-btn" onclick="toggleTheme()">🌙</button>
     <div class="container">
         <div class="logo">
-            <h1>⚙️ IT Controls</h1>
+            <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Reset your password</p>
         </div>
         <?php if (isset($message)): ?><p style="color:#2f855a; margin-bottom:14px;"><?php echo htmlspecialchars($message); ?></p><?php endif; ?>
