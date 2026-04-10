@@ -542,13 +542,13 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php continue; ?>
                         <?php endif; ?>
                         <div class="form-group">
-                            <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($isTinyInt || $name === 'active' || $name === 'has_keyboard_mouse'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
+                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
@@ -570,12 +570,16 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <option value="__add_new__">➕</option>
                                 </select>
                             <?php elseif ($isDateTime): ?>
+                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
+                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
+                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>
+                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
                         </div>
