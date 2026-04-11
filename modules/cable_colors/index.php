@@ -819,6 +819,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                            <?php elseif ($crud_table === 'cable_colors' && $name === 'hex_color'): ?>
+                                <input type="color" name="<?php echo sanitize($name); ?>" id="cable-hex-color-picker" value="<?php echo sanitize(cr_is_safe_color_value($displayVal) ? $displayVal : '#008000'); ?>">
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -829,6 +831,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
                         </div>
+                        <?php if ($crud_table === 'cable_colors' && $name === 'hex_color'): ?>
+                            <div class="form-group">
+                                <label>Color</label>
+                                <div id="cable-hex-color-preview" style="display:inline-flex;align-items:center;">
+                                    <?php echo cr_render_color_swatch($displayVal); ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
@@ -846,6 +856,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
                             </tr>
+                            <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
+                                <tr>
+                                    <th style="width:240px;">Color</th>
+                                    <td><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($data)); ?></td>
+                                </tr>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -911,6 +927,20 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             if (!confirm('Delete selected records?')) {
                 event.preventDefault();
             }
+        });
+    }
+
+    // Keeping a synchronized swatch in the form gives users immediate visual
+    // confirmation that the selected hex value is the one they intend to save.
+    const cableColorPicker = document.getElementById('cable-hex-color-picker');
+    const cableColorPreview = document.getElementById('cable-hex-color-preview');
+    if (cableColorPicker && cableColorPreview) {
+        cableColorPicker.addEventListener('input', function () {
+            const hex = cableColorPicker.value || '';
+            const safeHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : '';
+            cableColorPreview.innerHTML = safeHex
+                ? '<span title="' + safeHex + '" aria-label="Color swatch ' + safeHex + '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + safeHex + ';vertical-align:middle;border-radius:2px;"></span>'
+                : '<span style="color:#666;">—</span>';
         });
     }
 })();
