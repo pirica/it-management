@@ -251,8 +251,18 @@ while ($resSwitchStatuses && ($row = mysqli_fetch_assoc($resSwitchStatuses))) {
         $switchStatusOptions[] = $statusOption;
     }
 }
-if (!$switchStatusOptions) {
-    $switchStatusOptions = ['free', 'used', 'reserved', 'down', 'unknown'];
+$hasUnknownStatus = false;
+foreach ($switchStatusOptions as $existingStatusOption) {
+    if (strcasecmp($existingStatusOption, 'Unknown') === 0) {
+        $hasUnknownStatus = true;
+        break;
+    }
+}
+if (!$hasUnknownStatus) {
+    array_unshift($switchStatusOptions, 'Unknown');
+}
+if (count($switchStatusOptions) === 1) {
+    $switchStatusOptions = ['Unknown', 'free', 'used', 'reserved', 'down'];
 }
 
 $equipmentTypeOptions = [];
@@ -577,7 +587,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Status</label>
                 <select class="input" name="status">
                     <?php foreach ($switchStatusOptions as $statusOption): ?>
-                        <option value="<?php echo sanitize($statusOption); ?>"><?php echo sanitize(ucfirst($statusOption)); ?></option>
+                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -671,7 +681,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Status</label>
                 <select class="input" name="status">
                     <?php foreach ($switchStatusOptions as $statusOption): ?>
-                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo strtolower($statusOption) === 'used' ? 'selected' : ''; ?>><?php echo sanitize(ucfirst($statusOption)); ?></option>
+                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -760,7 +770,7 @@ function openPortModal(portId) {
     form.port_id.value = portId;
     form.port_type.value = cols[1]?.textContent?.trim() || 'RJ45';
     form.label.value = cols[2]?.textContent?.trim() || '';
-    form.status.value = cols[3]?.textContent?.trim() || 'unknown';
+    form.status.value = cols[3]?.textContent?.trim() || 'Unknown';
     form.connected_to.value = cols[4]?.textContent?.trim() || '';
     form.vlan.value = cols[5]?.textContent?.trim() || '';
     form.speed.value = cols[6]?.textContent?.trim() || '';
@@ -841,7 +851,7 @@ function openLinkModal(portId) {
     f.cable_color.value = 'yellow';
     f.cable_label.value = '';
     f.notes.value = '';
-    f.status.value = 'used';
+    f.status.value = 'Unknown';
     f.equipment_id.value = '';
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
