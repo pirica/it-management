@@ -623,28 +623,6 @@ INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype`, `active`, `c
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '1', CURRENT_TIMESTAMP, NULL);
 
--- Table structure for `idf_device_type`
-DROP TABLE IF EXISTS `idf_device_type`;
-CREATE TABLE `idf_device_type` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `company_id` int NOT NULL,
-  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `active` tinyint NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idf_device_type_unique` (`company_id`,`name`),
-  KEY `company_id` (`company_id`),
-  CONSTRAINT `idf_device_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Data for `idf_device_type`
-INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '1', CURRENT_TIMESTAMP, NULL);
-
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
@@ -668,10 +646,8 @@ CREATE TABLE `idf_positions` (
   CONSTRAINT `idf_positions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idf_positions_ibfk_device_type` FOREIGN KEY (`device_type`) REFERENCES `idf_device_type` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data for `idf_positions`
-INSERT INTO `idf_positions` (`id`, `company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', '1', 'cxcz', '6384-2719', '24', NULL, '2026-03-31 00:35:24', '2026-03-31 00:35:39');
 
 -- Table structure for `idfs`
 DROP TABLE IF EXISTS `idfs`;
