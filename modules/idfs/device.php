@@ -589,7 +589,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusOption): ?>
                         <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕ Add</option>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
             <div>
