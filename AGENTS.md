@@ -40,7 +40,7 @@ Each module must maintain a flat structure with these specific files:
     - Add safe inline FK creation logic to create referenced rows automatically.
     - Scope all queries and inserts by `company_id`.
 - **Audit Logging:** The system sets MySQL session variables (`@app_user_id`) in `config.php`. Do not overwrite these.
-- **Standard Fields: Every new table in database.sql must include:
+- **Standard Fields:** Every new table in database.sql must include:
 - company_id INT NOT NULL
 - active TINYINT DEFAULT '1'
 - created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
