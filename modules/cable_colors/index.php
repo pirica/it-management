@@ -169,6 +169,82 @@ function cr_is_safe_color_value($value) {
 }
 
 /**
+ * Converts a valid hex color into a human-friendly name using HSL bands.
+ */
+function cr_hex_to_color_name($hex) {
+    $safeHex = trim((string)$hex);
+    if (!preg_match('/^#([0-9a-fA-F]{6})$/', $safeHex, $matches)) {
+        return '';
+    }
+
+    $raw = $matches[1];
+    $r = hexdec(substr($raw, 0, 2)) / 255;
+    $g = hexdec(substr($raw, 2, 2)) / 255;
+    $b = hexdec(substr($raw, 4, 2)) / 255;
+
+    $max = max($r, $g, $b);
+    $min = min($r, $g, $b);
+    $delta = $max - $min;
+    $lightness = ($max + $min) / 2;
+    $saturation = 0.0;
+    if ($delta > 0.0) {
+        $saturation = $delta / (1 - abs(2 * $lightness - 1));
+    }
+
+    if ($saturation < 0.12) {
+        if ($lightness < 0.12) {
+            return 'Black';
+        }
+        if ($lightness > 0.9) {
+            return 'White';
+        }
+        return 'Gray';
+    }
+
+    $hue = 0.0;
+    if ($delta > 0.0) {
+        if ($max === $r) {
+            $hue = fmod((($g - $b) / $delta), 6.0);
+        } elseif ($max === $g) {
+            $hue = (($b - $r) / $delta) + 2.0;
+        } else {
+            $hue = (($r - $g) / $delta) + 4.0;
+        }
+        $hue *= 60.0;
+        if ($hue < 0) {
+            $hue += 360.0;
+        }
+    }
+
+    if ($hue < 15 || $hue >= 345) {
+        return 'Red';
+    }
+    if ($hue < 45) {
+        return 'Orange';
+    }
+    if ($hue < 70) {
+        return 'Yellow';
+    }
+    if ($hue < 165) {
+        return 'Green';
+    }
+    if ($hue < 200) {
+        return 'Cyan';
+    }
+    if ($hue < 255) {
+        return 'Blue';
+    }
+    if ($hue < 290) {
+        return 'Purple';
+    }
+    if ($hue < 345) {
+        return 'Pink';
+    }
+
+    return 'Color';
+}
+
+/**
  * Renders a small color preview box
  */
 function cr_render_color_swatch($value) {
@@ -855,11 +931,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <?php
                                 $viewValue = $data[$f] ?? '';
                                 if ($crud_table === 'cable_colors' && $f === 'color_name') {
-                                    // Why: older rows may still have named values from the previous
-                                    // mapping workflow, but the current behavior treats hex as source of truth.
-                                    $hexForName = trim((string)($data['hex_color'] ?? ''));
-                                    if (cr_is_safe_color_value($hexForName)) {
-                                        $viewValue = strtoupper($hexForName);
+                                    // Why: we keep color_name human-readable by deriving it directly
+                                    // from the selected hex at render time, with no fixed lookup map.
+                                    $hexForName = strtoupper(trim((string)($data['hex_color'] ?? '')));
+                                    $derivedName = cr_hex_to_color_name($hexForName);
+                                    if ($derivedName !== '') {
+                                        $viewValue = $derivedName;
                                     }
                                 }
                             ?>
@@ -947,8 +1024,54 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     const cableColorPreview = document.getElementById('cable-hex-color-preview');
     const cableColorNameInput = document.querySelector('input[name="color_name"]');
     if (cableColorPicker && cableColorPreview) {
-        // Why: this supports any valid hex code and avoids maintaining a fixed
-        // lookup table that only covers a subset of possible colors.
+        const inferColorNameFromHex = function (hexValue) {
+            const safeHex = /^#([0-9a-f]{6})$/i.test(hexValue) ? hexValue.toUpperCase() : '';
+            if (!safeHex) {
+                return '';
+            }
+
+            const r = parseInt(safeHex.slice(1, 3), 16) / 255;
+            const g = parseInt(safeHex.slice(3, 5), 16) / 255;
+            const b = parseInt(safeHex.slice(5, 7), 16) / 255;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const delta = max - min;
+            const lightness = (max + min) / 2;
+            const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+
+            if (saturation < 0.12) {
+                if (lightness < 0.12) return 'Black';
+                if (lightness > 0.9) return 'White';
+                return 'Gray';
+            }
+
+            let hue = 0;
+            if (delta !== 0) {
+                if (max === r) {
+                    hue = ((g - b) / delta) % 6;
+                } else if (max === g) {
+                    hue = ((b - r) / delta) + 2;
+                } else {
+                    hue = ((r - g) / delta) + 4;
+                }
+            }
+            hue *= 60;
+            if (hue < 0) {
+                hue += 360;
+            }
+
+            if (hue < 15 || hue >= 345) return 'Red';
+            if (hue < 45) return 'Orange';
+            if (hue < 70) return 'Yellow';
+            if (hue < 165) return 'Green';
+            if (hue < 200) return 'Cyan';
+            if (hue < 255) return 'Blue';
+            if (hue < 290) return 'Purple';
+            return 'Pink';
+        };
+
+        // Why: this supports any valid hex code without requiring a manual
+        // per-hex lookup mapping table that grows over time.
         const syncCableColorFields = function () {
             const hex = cableColorPicker.value || '';
             const safeHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : '';
@@ -957,7 +1080,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 : '<span style="color:#666;">—</span>';
 
             if (cableColorNameInput && safeHex !== '') {
-                cableColorNameInput.value = safeHex.toUpperCase();
+                const inferredName = inferColorNameFromHex(safeHex);
+                if (inferredName) {
+                    cableColorNameInput.value = inferredName;
+                }
             }
         };
 
