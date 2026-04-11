@@ -8,4 +8,4 @@
 $crud_table = 'cable_colors';
 $crud_title = 'Cable Colors';
 $crud_action = 'delete';
-require 'index.php';
+require __DIR__ . '/index.php';

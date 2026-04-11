@@ -6,9 +6,9 @@
  * Includes specialized rendering for color swatches based on hex values.
  */
 
-$crud_table = 'cable_colors';
-$crud_title = 'Cable Colors';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'cable_colors';
+$crud_title = $crud_title ?? 'Cable Colors';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

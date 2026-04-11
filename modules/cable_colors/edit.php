@@ -10,4 +10,4 @@ $crud_table = 'cable_colors';
 $crud_title = 'Cable Colors';
 $crud_action = 'edit';
 
-require __DIR__ . '/create.php';
+require __DIR__ . '/index.php';
