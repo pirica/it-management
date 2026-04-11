@@ -1038,7 +1038,7 @@ INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comm
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '7', 'White', '#ffffff', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '8', 'Orange', '#ffa500', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '9', 'Dark Pink', '#800080', NULL);
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '10', 'Light Green', '#9bee9b', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '10', 'Other', NULL, NULL);
 
 -- Table structure for `switch_port_numbering_layout`
 DROP TABLE IF EXISTS `switch_port_numbering_layout`;
