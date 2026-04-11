@@ -66,6 +66,10 @@ $vlan = trim((string)($data['vlan'] ?? ''));
 $speed = trim((string)($data['speed'] ?? ''));
 $poe = trim((string)($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
+$cable_color = trim((string)($data['cable_color'] ?? ''));
+if ($cable_color === '') {
+    $cable_color = 'yellow';
+}
 
 $label_val = $label !== '' ? $label : null;
 $conn_val = $connected_to !== '' ? $connected_to : null;
@@ -93,6 +97,20 @@ if ($stmtUpd) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }
     mysqli_stmt_close($stmtUpd);
+}
+
+$stmtLinkUpdate = mysqli_prepare(
+    $conn,
+    "UPDATE idf_links
+     SET cable_color = ?
+     WHERE port_id_a = ? OR port_id_b = ?"
+);
+if ($stmtLinkUpdate) {
+    mysqli_stmt_bind_param($stmtLinkUpdate, 'sii', $cable_color, $port_id, $port_id);
+    if (!mysqli_stmt_execute($stmtLinkUpdate)) {
+        idf_fail('DB error updating link cable color: ' . mysqli_stmt_error($stmtLinkUpdate), 500);
+    }
+    mysqli_stmt_close($stmtLinkUpdate);
 }
 
 idf_ok();

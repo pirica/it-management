@@ -620,6 +620,21 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">PoE</label>
                 <input class="input" name="poe" placeholder="e.g. af/at/bt">
             </div>
+            <div>
+                <label class="label">Cable color</label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="portCableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:yellow; flex:0 0 auto;"></span>
+                    <select class="input" name="cable_color" data-add-table="cable_colors" data-swatch-id="portCableColorSwatch" style="flex:1 1 auto;">
+                        <?php foreach ($cableColorOptions as $cableColor): ?>
+                            <?php $cableColorHex = $cableColorHexByName[strtolower($cableColor)] ?? ''; ?>
+                            <option value="<?php echo sanitize($cableColor); ?>" data-hex="<?php echo sanitize($cableColorHex); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
+                                <?php echo sanitize($cableColor); ?>
+                            </option>
+                        <?php endforeach; ?>
+                        <option value="__add_new__">➕</option>
+                    </select>
+                </div>
+            </div>
             <div style="grid-column: 1 / -1;">
                 <label class="label">Notes</label>
                 <input class="input" name="notes">
@@ -672,7 +687,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Cable color</label>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span id="cableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:yellow; flex:0 0 auto;"></span>
-                    <select class="input" name="cable_color" data-add-table="cable_colors" style="flex:1 1 auto;">
+                    <select class="input" name="cable_color" data-add-table="cable_colors" data-swatch-id="cableColorSwatch" style="flex:1 1 auto;">
                         <?php foreach ($cableColorOptions as $cableColor): ?>
                             <?php $cableColorHex = $cableColorHexByName[strtolower($cableColor)] ?? ''; ?>
                             <option value="<?php echo sanitize($cableColor); ?>" data-hex="<?php echo sanitize($cableColorHex); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
@@ -779,6 +794,7 @@ $portsMeta = array_map(static function (array $port): array {
         'id' => (int)($port['id'] ?? 0),
         'port_no' => (int)($port['port_no'] ?? 0),
         'label' => (string)($port['label'] ?? ''),
+        'cable_color' => (string)($port['cable_color'] ?? 'yellow'),
         'is_linked' => !empty($port['link_id']),
     ];
 }, $ports);
@@ -819,6 +835,7 @@ async function apiPost(path, body) {
 function openPortModal(portId) {
     const row = document.querySelector(`tr[data-port-id="${portId}"]`);
     const cols = row ? row.querySelectorAll('td') : [];
+    const portMeta = PORTS.find((port) => Number(port.id) === Number(portId)) || null;
     const form = document.getElementById('portForm');
 
     form.port_id.value = portId;
@@ -830,6 +847,11 @@ function openPortModal(portId) {
     form.speed.value = cols[6]?.textContent?.trim() || '';
     form.poe.value = cols[7]?.textContent?.trim() || '';
     form.notes.value = cols[8]?.textContent?.trim() || '';
+    form.cable_color.value = (portMeta?.cable_color || 'yellow');
+    if (!form.cable_color.value || form.cable_color.value === '__add_new__') {
+        form.cable_color.value = 'yellow';
+    }
+    updateCableColorSwatch(form.cable_color.value || 'yellow', form.cable_color);
 
     document.getElementById('portBackdrop').style.display = 'flex';
 }
@@ -856,6 +878,9 @@ function savePort() {
         speed: f.speed.value.trim(),
         poe: f.poe.value.trim(),
         notes: f.notes.value.trim(),
+        cable_color: (f.cable_color.value && f.cable_color.value !== '__add_new__')
+            ? f.cable_color.value.trim()
+            : 'yellow',
     };
     apiPost('port_update.php', payload)
         .then(() => location.reload())
@@ -1154,11 +1179,11 @@ function syncCableColorNameFromHex() {
     }
 }
 
-function updateCableColorSwatch(colorValue) {
-    const swatch = document.getElementById('cableColorSwatch');
+function updateCableColorSwatch(colorValue, cableColorSelect = null) {
+    const swatchId = cableColorSelect?.dataset?.swatchId || 'cableColorSwatch';
+    const swatch = document.getElementById(swatchId);
     if (!swatch) return;
-    const linkForm = document.getElementById('linkForm');
-    const selectedOption = linkForm?.cable_color?.selectedOptions?.[0];
+    const selectedOption = cableColorSelect?.selectedOptions?.[0];
     const swatchColor = (selectedOption?.dataset?.hex || colorValue || 'yellow').trim();
     swatch.style.backgroundColor = swatchColor || 'yellow';
 }
@@ -1251,24 +1276,28 @@ document.addEventListener('DOMContentLoaded', () => {
     f.linked_cable_color.addEventListener('input', (event) => {
         f.linked_cable_color_picker.value = normalizeColorToHex(event.target.value || 'yellow');
     });
-    if (f.cable_color) {
-        updateCableColorSwatch(f.cable_color.value || 'yellow');
-        f.cable_color.dataset.previousValue = f.cable_color.value || 'yellow';
-        f.cable_color.addEventListener('focus', () => {
-            if (f.cable_color.value !== '__add_new__') {
-                f.cable_color.dataset.previousValue = f.cable_color.value || 'yellow';
+    const initializeCableColorSelect = (cableColorSelect) => {
+        if (!cableColorSelect) return;
+        updateCableColorSwatch(cableColorSelect.value || 'yellow', cableColorSelect);
+        cableColorSelect.dataset.previousValue = cableColorSelect.value || 'yellow';
+        cableColorSelect.addEventListener('focus', () => {
+            if (cableColorSelect.value !== '__add_new__') {
+                cableColorSelect.dataset.previousValue = cableColorSelect.value || 'yellow';
             }
         });
-        f.cable_color.addEventListener('change', (event) => {
+        cableColorSelect.addEventListener('change', (event) => {
             const selected = event.target.value || '';
             if (selected === '__add_new__') {
                 openCableColorModal(event.target);
                 return;
             }
-            updateCableColorSwatch(selected || 'yellow');
-            f.cable_color.dataset.previousValue = selected || 'yellow';
+            updateCableColorSwatch(selected || 'yellow', cableColorSelect);
+            cableColorSelect.dataset.previousValue = selected || 'yellow';
         });
-    }
+    };
+    document.querySelectorAll('select[name="cable_color"]').forEach((cableColorSelect) => {
+        initializeCableColorSelect(cableColorSelect);
+    });
 });
 
 function getNormalizedStatusValue(form) {
@@ -1328,7 +1357,7 @@ function closeCableColorModal(keepSelection) {
     if (!activeCableColorSelect) return;
     if (!keepSelection) {
         activeCableColorSelect.value = activeCableColorSelect.dataset.previousValue || 'yellow';
-        updateCableColorSwatch(activeCableColorSelect.value || 'yellow');
+        updateCableColorSwatch(activeCableColorSelect.value || 'yellow', activeCableColorSelect);
     }
     activeCableColorSelect = null;
 }
@@ -1376,7 +1405,7 @@ function saveCableColorFromModal() {
         });
         activeCableColorSelect.value = cableColorValue;
         activeCableColorSelect.dataset.previousValue = cableColorValue;
-        updateCableColorSwatch(cableColorValue);
+        updateCableColorSwatch(cableColorValue, activeCableColorSelect);
         closeCableColorModal(true);
     }).catch((error) => {
         alert(error.message);
