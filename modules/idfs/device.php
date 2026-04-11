@@ -788,12 +788,13 @@ function closePortModal() {
 
 function savePort() {
     const f = document.getElementById('portForm');
+    const normalizedStatus = f.status.value === '__add_new__' ? 'Unknown' : f.status.value;
     const payload = {
         csrf_token: CSRF,
         port_id: Number(f.port_id.value),
         port_type: f.port_type.value,
         label: f.label.value.trim(),
-        status: f.status.value,
+        status: normalizedStatus,
         connected_to: f.connected_to.value.trim(),
         vlan: f.vlan.value.trim(),
         speed: f.speed.value.trim(),
@@ -948,7 +949,7 @@ function createLink() {
         cable_color: cableColor,
         cable_label: cableLabel,
         notes,
-        status: f.status.value,
+        status: f.status.value === '__add_new__' ? 'Unknown' : f.status.value,
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
     };
@@ -1058,6 +1059,20 @@ function populateLinkedEquipmentFields() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const bindStatusAddNew = (formId) => {
+        const form = document.getElementById(formId);
+        const statusSelect = form?.querySelector('select[name="status"]');
+        if (!statusSelect) return;
+        statusSelect.addEventListener('change', (event) => {
+            if (event.target.value !== '__add_new__') return;
+            window.open(`${IDF_BASE.replace('/idfs', '/switch_status')}/create.php`, '_blank');
+            event.target.value = 'Unknown';
+        });
+    };
+
+    bindStatusAddNew('portForm');
+    bindStatusAddNew('linkForm');
+
     const f = document.getElementById('linkForm');
     if (!f || !f.equipment_id) return;
     f.equipment_id.addEventListener('change', (event) => {
