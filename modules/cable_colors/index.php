@@ -216,32 +216,34 @@ function cr_hex_to_color_name($hex) {
         }
     }
 
+    $baseColor = 'Color';
     if ($hue < 15 || $hue >= 345) {
-        return 'Red';
-    }
-    if ($hue < 45) {
-        return 'Orange';
-    }
-    if ($hue < 70) {
-        return 'Yellow';
-    }
-    if ($hue < 165) {
-        return 'Green';
-    }
-    if ($hue < 200) {
-        return 'Cyan';
-    }
-    if ($hue < 255) {
-        return 'Blue';
-    }
-    if ($hue < 290) {
-        return 'Purple';
-    }
-    if ($hue < 345) {
-        return 'Pink';
+        $baseColor = 'Red';
+    } elseif ($hue < 45) {
+        $baseColor = 'Orange';
+    } elseif ($hue < 70) {
+        $baseColor = 'Yellow';
+    } elseif ($hue < 165) {
+        $baseColor = 'Green';
+    } elseif ($hue < 200) {
+        $baseColor = 'Cyan';
+    } elseif ($hue < 255) {
+        $baseColor = 'Blue';
+    } elseif ($hue < 290) {
+        $baseColor = 'Purple';
+    } else {
+        $baseColor = 'Pink';
     }
 
-    return 'Color';
+    // Why: users need a more descriptive name than only base hue so similar
+    // shades can be distinguished in tables and dropdowns.
+    if ($lightness >= 0.72) {
+        return 'Light ' . $baseColor;
+    }
+    if ($lightness <= 0.32) {
+        return 'Dark ' . $baseColor;
+    }
+    return $baseColor;
 }
 
 /**
@@ -622,6 +624,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         } else {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+        }
+    }
+
+    if ($crud_table === 'cable_colors' && isset($data['hex_color']) && isset($data['color_name'])) {
+        $rawHex = trim((string)($_POST['hex_color'] ?? ''));
+        $derivedName = cr_hex_to_color_name($rawHex);
+        if ($derivedName !== '') {
+            $data['color_name'] = "'" . mysqli_real_escape_string($conn, $derivedName) . "'";
         }
     }
 
@@ -1060,14 +1070,18 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 hue += 360;
             }
 
-            if (hue < 15 || hue >= 345) return 'Red';
-            if (hue < 45) return 'Orange';
-            if (hue < 70) return 'Yellow';
-            if (hue < 165) return 'Green';
-            if (hue < 200) return 'Cyan';
-            if (hue < 255) return 'Blue';
-            if (hue < 290) return 'Purple';
-            return 'Pink';
+            let baseColor = 'Pink';
+            if (hue < 15 || hue >= 345) baseColor = 'Red';
+            else if (hue < 45) baseColor = 'Orange';
+            else if (hue < 70) baseColor = 'Yellow';
+            else if (hue < 165) baseColor = 'Green';
+            else if (hue < 200) baseColor = 'Cyan';
+            else if (hue < 255) baseColor = 'Blue';
+            else if (hue < 290) baseColor = 'Purple';
+
+            if (lightness >= 0.72) return 'Light ' + baseColor;
+            if (lightness <= 0.32) return 'Dark ' + baseColor;
+            return baseColor;
         };
 
         // Why: this supports any valid hex code without requiring a manual
