@@ -92,12 +92,12 @@ function cr_fk_metadata($conn, $table) {
     $tableLabelCandidates = [
         'equipment' => ['name'],
         'switch_status' => ['name', 'status'],
-        'cable_colors' => ['color', 'name'],
+        'cable_colors' => ['color_name', 'name'],
         'vlans' => ['vlan_name', 'name'],
         'switch_port_types' => ['name', 'type'],
     ];
 
-    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color', 'vlan_name'];
+    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color_name', 'vlan_name'];
     foreach ($candidates as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
