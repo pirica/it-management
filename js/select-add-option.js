@@ -29,9 +29,9 @@
         if (has) return;
 
         const option = document.createElement('option');
-     //   option.value = ADD_VALUE;
-      //  option.textContent = '➕';
-      //  selectEl.appendChild(option);
+          option.value = ADD_VALUE;
+          option.textContent = '➕';
+          selectEl.appendChild(option);
     }
 
     function parseExtraFieldConfig(selectEl) {
