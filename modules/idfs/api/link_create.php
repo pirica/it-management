@@ -25,7 +25,7 @@ if ($color === '') {
     $color = 'Gray';
 }
 
-$validStatus = ['free', 'used', 'reserved', 'down', 'unknown'];
+$validStatus = ['up','free', 'used', 'reserved', 'down', 'unknown'];
 $stmtStatuses = mysqli_prepare(
     $conn,
     'SELECT status FROM switch_status WHERE company_id = ?'
