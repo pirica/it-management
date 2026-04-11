@@ -114,6 +114,7 @@ When a company opens a module and sees **"No records found."**, modules should s
 - **Layout:** `.container` > `.main-content` > `.content`.
 - **Buttons:** `btn-primary` for main actions; `btn-sm` for table actions.
 - **Tables:** Use `.itm-actions-cell` and `.itm-actions-wrap` for action columns.
+- **Boolean Display:** in `index.php`, if field name is `active` <span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>
 - **Boolean Display:** In `view.php`, result `1` = ✅, `0` = ❌ (icon-only).
 - **Dynamic Selects:** Use `data-addable-select="1"` to enable the quick-add "+" functionality.
 
