@@ -193,7 +193,7 @@ function cr_cable_color_swatch_source($row) {
         return $hex;
     }
 
-    return (string)($row['color'] ?? '');
+    return (string)($row['color_name'] ?? '');
 }
 
 /**
@@ -934,7 +934,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     // confirmation that the selected hex value is the one they intend to save.
     const cableColorPicker = document.getElementById('cable-hex-color-picker');
     const cableColorPreview = document.getElementById('cable-hex-color-preview');
-    const cableColorNameInput = document.querySelector('input[name="color"]');
+    const cableColorNameInput = document.querySelector('input[name="color_name"]');
     if (cableColorPicker && cableColorPreview) {
         // Why: operators pick a visual hex swatch first, so we infer the color
         // name immediately to keep "color" and "hex_color" synchronized.

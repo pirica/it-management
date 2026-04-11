@@ -136,7 +136,7 @@ if (!$hasStatusId || !$hasColorId) {
 
 // Pre-fetch reference data
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
-$colors = fetch_lookup_map($conn, 'cable_colors', 'color');
+$colors = fetch_lookup_map($conn, 'cable_colors', 'color_name');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 
 // Parameter validation

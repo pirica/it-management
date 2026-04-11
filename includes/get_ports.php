@@ -192,7 +192,7 @@ if (!$hasStatusId || !$hasColorId) {
 
 // Pre-fetch lookups
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
-$colors = fetch_lookup_map($conn, 'cable_colors', 'color');
+$colors = fetch_lookup_map($conn, 'cable_colors', 'color_name');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 if (empty($statuses) || empty($colors)) {
     http_response_code(500);
@@ -383,7 +383,7 @@ remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $has
 // Fetch all port details including status, color, and VLAN
 if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
@@ -403,7 +403,7 @@ if ($hasEquipmentId && $hasPortType) {
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
