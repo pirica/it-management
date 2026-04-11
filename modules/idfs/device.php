@@ -727,7 +727,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
         </div>
         <div>
             <label class="label" for="cableColorModalInput">Cable color</label>
-            <input class="input" id="cableColorModalInput" type="text" placeholder="Type new cable color">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <input class="input" id="cableColorModalColorPicker" type="color" value="#ffff00" style="width:56px; min-width:56px; height:40px; padding:4px;">
+                <input class="input" id="cableColorModalInput" type="text" placeholder="Type new cable color (e.g. yellow or #ffff00)">
+            </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
             <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">Cancel</button>
@@ -1122,6 +1125,19 @@ document.addEventListener('DOMContentLoaded', () => {
     bindStatusAddNew('portForm');
     bindStatusAddNew('linkForm');
 
+    const cableColorModalInput = document.getElementById('cableColorModalInput');
+    const cableColorModalPicker = document.getElementById('cableColorModalColorPicker');
+    if (cableColorModalInput && cableColorModalPicker) {
+        cableColorModalPicker.addEventListener('input', (event) => {
+            cableColorModalInput.value = event.target.value;
+        });
+        cableColorModalInput.addEventListener('input', (event) => {
+            const nextValue = (event.target.value || '').trim();
+            if (!nextValue) return;
+            cableColorModalPicker.value = normalizeColorToHex(nextValue);
+        });
+    }
+
     const f = document.getElementById('linkForm');
     if (!f || !f.equipment_id) return;
     f.equipment_id.addEventListener('change', (event) => {
@@ -1186,8 +1202,12 @@ function closeStatusModal(keepSelection) {
 function openCableColorModal(cableColorSelect) {
     activeCableColorSelect = cableColorSelect || null;
     const cableColorInput = document.getElementById('cableColorModalInput');
+    const cableColorPicker = document.getElementById('cableColorModalColorPicker');
     if (cableColorInput) {
         cableColorInput.value = '';
+    }
+    if (cableColorPicker) {
+        cableColorPicker.value = '#ffff00';
     }
     document.getElementById('cableColorBackdrop').style.display = 'flex';
     if (cableColorInput) {
