@@ -670,7 +670,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <?php echo sanitize($cableColor); ?>
                             </option>
                         <?php endforeach; ?>
-                        <option value="__add_new__">➕ Add</option>
+                        <option value="__add_new__">➕</option>
                     </select>
                 </div>
             </div>
@@ -719,6 +719,23 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </div>
 </div>
 
+<div class="idf-modal-backdrop" id="cableColorBackdrop" onclick="if(event.target.id==='cableColorBackdrop') closeCableColorModal(false)">
+    <div class="idf-modal" onclick="event.stopPropagation()">
+        <div class="idf-modal-header">
+            <div class="idf-modal-title">Add Cable Color</div>
+            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">✖</button>
+        </div>
+        <div>
+            <label class="label" for="cableColorModalInput">Cable color</label>
+            <input class="input" id="cableColorModalInput" type="text" placeholder="Type new cable color">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">Cancel</button>
+            <button class="btn btn-sm" type="button" onclick="saveCableColorFromModal()">Save</button>
+        </div>
+    </div>
+</div>
+
 <div class="idf-modal-backdrop" id="statusBackdrop" onclick="if(event.target.id==='statusBackdrop') closeStatusModal(false)">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
@@ -753,6 +770,7 @@ echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>;
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 let activeStatusSelect = null;
+let activeCableColorSelect = null;
 
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
@@ -1120,15 +1138,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (f.cable_color) {
         updateCableColorSwatch(f.cable_color.value || 'yellow');
+        f.cable_color.dataset.previousValue = f.cable_color.value || 'yellow';
+        f.cable_color.addEventListener('focus', () => {
+            if (f.cable_color.value !== '__add_new__') {
+                f.cable_color.dataset.previousValue = f.cable_color.value || 'yellow';
+            }
+        });
         f.cable_color.addEventListener('change', (event) => {
             const selected = event.target.value || '';
             if (selected === '__add_new__') {
-                window.open(`${IDF_BASE.replace('/idfs', '/cable_colors')}/create.php`, '_blank');
-                event.target.value = 'yellow';
-                updateCableColorSwatch('yellow');
+                openCableColorModal(event.target);
                 return;
             }
             updateCableColorSwatch(selected || 'yellow');
+            f.cable_color.dataset.previousValue = selected || 'yellow';
         });
     }
 });
@@ -1158,6 +1181,71 @@ function closeStatusModal(keepSelection) {
         activeStatusSelect.value = activeStatusSelect.dataset.previousValue || 'Unknown';
     }
     activeStatusSelect = null;
+}
+
+function openCableColorModal(cableColorSelect) {
+    activeCableColorSelect = cableColorSelect || null;
+    const cableColorInput = document.getElementById('cableColorModalInput');
+    if (cableColorInput) {
+        cableColorInput.value = '';
+    }
+    document.getElementById('cableColorBackdrop').style.display = 'flex';
+    if (cableColorInput) {
+        setTimeout(() => cableColorInput.focus(), 0);
+    }
+}
+
+function closeCableColorModal(keepSelection) {
+    document.getElementById('cableColorBackdrop').style.display = 'none';
+    if (!activeCableColorSelect) return;
+    if (!keepSelection) {
+        activeCableColorSelect.value = activeCableColorSelect.dataset.previousValue || 'yellow';
+        updateCableColorSwatch(activeCableColorSelect.value || 'yellow');
+    }
+    activeCableColorSelect = null;
+}
+
+function saveCableColorFromModal() {
+    if (!activeCableColorSelect) {
+        closeCableColorModal(false);
+        return;
+    }
+
+    const cableColorInput = document.getElementById('cableColorModalInput');
+    const nextCableColor = (cableColorInput?.value || '').trim();
+    if (!nextCableColor) {
+        alert('Please enter a cable color value.');
+        cableColorInput?.focus();
+        return;
+    }
+
+    apiPost('cable_color_add.php', {
+        csrf_token: CSRF,
+        color: nextCableColor,
+    }).then((response) => {
+        const cableColorValue = String(response.color || nextCableColor).trim();
+        if (!cableColorValue) {
+            throw new Error('Invalid cable color returned from server.');
+        }
+        document.querySelectorAll('select[name="cable_color"]').forEach((selectEl) => {
+            const existingOption = Array.from(selectEl.options).find((option) =>
+                option.value !== '__add_new__' && option.value.toLowerCase() === cableColorValue.toLowerCase()
+            );
+            if (!existingOption) {
+                const addOption = selectEl.querySelector('option[value="__add_new__"]');
+                const option = document.createElement('option');
+                option.value = cableColorValue;
+                option.textContent = cableColorValue;
+                selectEl.insertBefore(option, addOption || null);
+            }
+        });
+        activeCableColorSelect.value = cableColorValue;
+        activeCableColorSelect.dataset.previousValue = cableColorValue;
+        updateCableColorSwatch(cableColorValue);
+        closeCableColorModal(true);
+    }).catch((error) => {
+        alert(error.message);
+    });
 }
 
 function saveStatusFromModal() {
