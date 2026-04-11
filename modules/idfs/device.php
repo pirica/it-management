@@ -238,7 +238,6 @@ if (!in_array('yellow', $cableColorOptions, true)) {
 sort($cableColorOptions, SORT_NATURAL | SORT_FLAG_CASE);
 
 $switchStatusOptions = [];
-$validPortStatuses = ['free', 'used', 'reserved', 'down', 'unknown'];
 $resSwitchStatuses = mysqli_query(
     $conn,
     "SELECT status
@@ -247,13 +246,13 @@ $resSwitchStatuses = mysqli_query(
      ORDER BY status ASC"
 );
 while ($resSwitchStatuses && ($row = mysqli_fetch_assoc($resSwitchStatuses))) {
-    $statusOption = strtolower(trim((string)($row['status'] ?? '')));
-    if ($statusOption !== '' && in_array($statusOption, $validPortStatuses, true) && !in_array($statusOption, $switchStatusOptions, true)) {
+    $statusOption = trim((string)($row['status'] ?? ''));
+    if ($statusOption !== '' && !in_array($statusOption, $switchStatusOptions, true)) {
         $switchStatusOptions[] = $statusOption;
     }
 }
 if (!$switchStatusOptions) {
-    $switchStatusOptions = $validPortStatuses;
+    $switchStatusOptions = ['free', 'used', 'reserved', 'down', 'unknown'];
 }
 
 $equipmentTypeOptions = [];
@@ -672,7 +671,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Status</label>
                 <select class="input" name="status">
                     <?php foreach ($switchStatusOptions as $statusOption): ?>
-                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'used' ? 'selected' : ''; ?>><?php echo sanitize(ucfirst($statusOption)); ?></option>
+                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo strtolower($statusOption) === 'used' ? 'selected' : ''; ?>><?php echo sanitize(ucfirst($statusOption)); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
