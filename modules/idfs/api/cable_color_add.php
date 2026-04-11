@@ -13,10 +13,10 @@ $color = substr($colorRaw, 0, 100);
 
 $stmtFind = mysqli_prepare(
     $conn,
-    'SELECT color
+    'SELECT color_name
      FROM cable_colors
      WHERE company_id = ?
-       AND LOWER(color) = LOWER(?)
+       AND LOWER(color_name) = LOWER(?)
      LIMIT 1'
 );
 if (!$stmtFind) {
@@ -29,13 +29,13 @@ $resFind = mysqli_stmt_get_result($stmtFind);
 $existing = $resFind ? mysqli_fetch_assoc($resFind) : null;
 mysqli_stmt_close($stmtFind);
 
-if ($existing && isset($existing['color'])) {
-    idf_ok(['color' => (string)$existing['color']]);
+if ($existing && isset($existing['color_name'])) {
+    idf_ok(['color' => (string)$existing['color_name']]);
 }
 
 $stmtInsert = mysqli_prepare(
     $conn,
-    'INSERT INTO cable_colors (company_id, color) VALUES (?, ?)'
+    'INSERT INTO cable_colors (company_id, color_name) VALUES (?, ?)'
 );
 if (!$stmtInsert) {
     idf_fail('Unable to prepare cable color insert', 500);
