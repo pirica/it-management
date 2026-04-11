@@ -147,7 +147,7 @@ foreach ($ports as $p) {
         'remote_position_no' => (int)($remote['position_no'] ?? 0),
         'remote_device_name' => $linkedRemoteDeviceName,
         'remote_port_no' => $linkedRemotePortNo,
-        'cable_color' => (string)($p['cable_color'] ?? 'yellow'),
+        'cable_color' => (string)($p['cable_color'] ?? 'Gray'),
         'cable_label' => (string)($p['cable_label'] ?? ''),
         'link_notes' => (string)($p['link_notes'] ?? ''),
     ];
