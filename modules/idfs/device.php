@@ -219,6 +219,7 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
 }
 
 $cableColorOptions = [];
+$cableColorHexByName = [];
 $resCableColors = mysqli_query(
     $conn,
     "SELECT color_name, hex_color
@@ -228,11 +229,15 @@ $resCableColors = mysqli_query(
 );
 while ($resCableColors && ($row = mysqli_fetch_assoc($resCableColors))) {
     $color = trim((string)($row['color_name'] ?? ''));
+    $hexColor = trim((string)($row['hex_color'] ?? ''));
     if ($color === '') {
-        $color = trim((string)($row['hex_color'] ?? ''));
+        $color = $hexColor;
     }
     if ($color !== '') {
         $cableColorOptions[] = $color;
+        if ($hexColor !== '' && !isset($cableColorHexByName[strtolower($color)])) {
+            $cableColorHexByName[strtolower($color)] = $hexColor;
+        }
     }
 }
 if (!in_array('yellow', $cableColorOptions, true)) {
@@ -669,7 +674,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <span id="cableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:yellow; flex:0 0 auto;"></span>
                     <select class="input" name="cable_color" data-add-table="cable_colors" style="flex:1 1 auto;">
                         <?php foreach ($cableColorOptions as $cableColor): ?>
-                            <option value="<?php echo sanitize($cableColor); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
+                            <?php $cableColorHex = $cableColorHexByName[strtolower($cableColor)] ?? ''; ?>
+                            <option value="<?php echo sanitize($cableColor); ?>" data-hex="<?php echo sanitize($cableColorHex); ?>" <?php echo $cableColor === 'yellow' ? 'selected' : ''; ?>>
                                 <?php echo sanitize($cableColor); ?>
                             </option>
                         <?php endforeach; ?>
@@ -1151,7 +1157,10 @@ function syncCableColorNameFromHex() {
 function updateCableColorSwatch(colorValue) {
     const swatch = document.getElementById('cableColorSwatch');
     if (!swatch) return;
-    swatch.style.background = colorValue || 'yellow';
+    const linkForm = document.getElementById('linkForm');
+    const selectedOption = linkForm?.cable_color?.selectedOptions?.[0];
+    const swatchColor = (selectedOption?.dataset?.hex || colorValue || 'yellow').trim();
+    swatch.style.backgroundColor = swatchColor || 'yellow';
 }
 
 function toggleLinkedEquipmentFields(isLinked) {
@@ -1346,6 +1355,7 @@ function saveCableColorFromModal() {
         hex_color: nextHexColor,
     }).then((response) => {
         const cableColorValue = String(response.color_name || nextCableColorName || response.hex_color || nextHexColor).trim();
+        const cableColorHex = String(response.hex_color || nextHexColor || '').trim();
         if (!cableColorValue) {
             throw new Error('Invalid cable color returned from server.');
         }
@@ -1358,7 +1368,10 @@ function saveCableColorFromModal() {
                 const option = document.createElement('option');
                 option.value = cableColorValue;
                 option.textContent = cableColorValue;
+                option.dataset.hex = cableColorHex;
                 selectEl.insertBefore(option, addOption || null);
+            } else if (cableColorHex) {
+                existingOption.dataset.hex = cableColorHex;
             }
         });
         activeCableColorSelect.value = cableColorValue;
