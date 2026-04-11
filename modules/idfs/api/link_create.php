@@ -11,6 +11,7 @@ $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== nu
 $color = trim((string)($data['cable_color'] ?? 'yellow'));
 $label = trim((string)($data['cable_label'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
+$status = strtolower(trim((string)($data['status'] ?? 'used')));
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 
@@ -22,6 +23,11 @@ if ($portA === $portB) {
 }
 if ($color === '') {
     $color = 'yellow';
+}
+
+$validStatus = ['free', 'used', 'reserved', 'down', 'unknown'];
+if ($status === '' || !in_array($status, $validStatus, true)) {
+    $status = 'used';
 }
 if ($switchPortId > 0 && $equipmentId <= 0) {
     idf_fail('Equipment is required when selecting an equipment port');
@@ -377,11 +383,11 @@ if (
     $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
     $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 
-    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");
+    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status = ? WHERE id = ? LIMIT 1");
     if ($stmtUpdatePort) {
-        mysqli_stmt_bind_param($stmtUpdatePort, 'si', $connectedToA, $portA);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'ssi', $connectedToA, $status, $portA);
         mysqli_stmt_execute($stmtUpdatePort);
-        mysqli_stmt_bind_param($stmtUpdatePort, 'si', $connectedToB, $portB);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'ssi', $connectedToB, $status, $portB);
         mysqli_stmt_execute($stmtUpdatePort);
         mysqli_stmt_close($stmtUpdatePort);
     }
