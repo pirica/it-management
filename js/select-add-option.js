@@ -346,7 +346,7 @@
             const optionHtml = (result.options || []).map((opt) => {
                 return `<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.label)}</option>`;
             }).join('');
-        //    selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
+            selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
             selectEl.value = String(result.selected_id);
             selectEl.dataset.previousValue = String(result.selected_id);
         } catch (error) {
