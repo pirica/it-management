@@ -618,11 +618,11 @@ CREATE TABLE `idf_device_type` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `idf_device_type`
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '➰', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '➰', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
 
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
