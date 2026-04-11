@@ -623,6 +623,28 @@ INSERT INTO `idf_ports` (`id`, `company_id`, `position_id`, `port_no`, `port_typ
 INSERT INTO `idf_ports` (`id`, `company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('23', '1', '1', '23', '1', NULL, '5', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `idf_ports` (`id`, `company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) VALUES ('24', '1', '1', '24', '1', NULL, '5', NULL, NULL, NULL, NULL, NULL, NULL);
 
+-- Table structure for `idf_device_type`
+DROP TABLE IF EXISTS `idf_device_type`;
+CREATE TABLE `idf_device_type` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idf_device_type_unique` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `idf_device_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `idf_device_type`
+INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `name`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '1', CURRENT_TIMESTAMP, NULL);
+
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
@@ -630,7 +652,7 @@ CREATE TABLE `idf_positions` (
   `company_id` int NOT NULL,
   `idf_id` int NOT NULL,
   `position_no` tinyint NOT NULL,
-  `device_type` enum('switch','patch_panel','ups','server','other') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
+  `device_type` int NOT NULL,
   `device_name` varchar(140) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `equipment_id` varchar(9) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `port_count` smallint NOT NULL DEFAULT '0',
@@ -641,13 +663,15 @@ CREATE TABLE `idf_positions` (
   UNIQUE KEY `idf_pos_unique` (`company_id`,`idf_id`,`position_no`),
   KEY `company_id` (`company_id`),
   KEY `idf_id` (`idf_id`),
+  KEY `device_type` (`device_type`),
   KEY `equipment_id` (`equipment_id`),
   CONSTRAINT `idf_positions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `idf_positions_ibfk_device_type` FOREIGN KEY (`device_type`) REFERENCES `idf_device_type` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `idf_positions`
-INSERT INTO `idf_positions` (`id`, `company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', 'switch', 'cxcz', '6384-2719', '24', NULL, '2026-03-31 00:35:24', '2026-03-31 00:35:39');
+INSERT INTO `idf_positions` (`id`, `company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', '1', 'cxcz', '6384-2719', '24', NULL, '2026-03-31 00:35:24', '2026-03-31 00:35:39');
 
 -- Table structure for `idfs`
 DROP TABLE IF EXISTS `idfs`;
@@ -1825,7 +1849,15 @@ WHERE t.`company_id` = 1
   AND COALESCE(et_target.`id`, et_fallback.`id`) IS NOT NULL
   AND COALESCE(es_target.`id`, es_fallback.`id`) IS NOT NULL;
 INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status`, t.`connected_to`, t.`vlan`, t.`speed`, t.`poe`, t.`notes`, t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
-INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`idf_id`, t.`position_no`, t.`device_type`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at` FROM `idf_positions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_device_type` (`company_id`, `name`, `active`, `created_at`, `updated_at`) SELECT c.`id`, t.`name`, t.`active`, t.`created_at`, t.`updated_at` FROM `idf_device_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`)
+SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at`
+FROM `idf_positions` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `idf_device_type` dt_source ON dt_source.`id` = t.`device_type`
+LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_target.`name` = dt_source.`name`
+WHERE t.`company_id` = 1
+  AND dt_target.`id` IS NOT NULL;
 INSERT INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`)
 SELECT
