@@ -237,6 +237,25 @@ if (!in_array('yellow', $cableColorOptions, true)) {
 }
 sort($cableColorOptions, SORT_NATURAL | SORT_FLAG_CASE);
 
+$switchStatusOptions = [];
+$validPortStatuses = ['free', 'used', 'reserved', 'down', 'unknown'];
+$resSwitchStatuses = mysqli_query(
+    $conn,
+    "SELECT status
+     FROM switch_status
+     WHERE company_id = $company_id
+     ORDER BY status ASC"
+);
+while ($resSwitchStatuses && ($row = mysqli_fetch_assoc($resSwitchStatuses))) {
+    $statusOption = strtolower(trim((string)($row['status'] ?? '')));
+    if ($statusOption !== '' && in_array($statusOption, $validPortStatuses, true) && !in_array($statusOption, $switchStatusOptions, true)) {
+        $switchStatusOptions[] = $statusOption;
+    }
+}
+if (!$switchStatusOptions) {
+    $switchStatusOptions = $validPortStatuses;
+}
+
 $equipmentTypeOptions = [];
 $resEqTypes = mysqli_query(
     $conn,
@@ -558,7 +577,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <div>
                 <label class="label">Status</label>
                 <select class="input" name="status">
-                    <option>unknown</option><option>free</option><option>used</option><option>reserved</option><option>down</option>
+                    <?php foreach ($switchStatusOptions as $statusOption): ?>
+                        <option value="<?php echo sanitize($statusOption); ?>"><?php echo sanitize(ucfirst($statusOption)); ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div>
@@ -646,6 +667,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <div data-link-default-field="cable_label">
                 <label class="label">Cable label (optional)</label>
                 <input class="input" name="cable_label" placeholder="e.g. FIB-12 / CAT6-34">
+            </div>
+            <div data-link-default-field="status">
+                <label class="label">Status</label>
+                <select class="input" name="status">
+                    <?php foreach ($switchStatusOptions as $statusOption): ?>
+                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'used' ? 'selected' : ''; ?>><?php echo sanitize(ucfirst($statusOption)); ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
                 <label class="label">Notes (optional)</label>
@@ -813,6 +842,7 @@ function openLinkModal(portId) {
     f.cable_color.value = 'yellow';
     f.cable_label.value = '';
     f.notes.value = '';
+    f.status.value = 'used';
     f.equipment_id.value = '';
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
@@ -907,6 +937,7 @@ function createLink() {
         cable_color: cableColor,
         cable_label: cableLabel,
         notes,
+        status: f.status.value,
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
     };
