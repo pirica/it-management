@@ -1075,6 +1075,79 @@ function normalizeColorToHex(colorValue) {
     return `#${[match[1], match[2], match[3]].map((part) => Number(part).toString(16).padStart(2, '0')).join('')}`;
 }
 
+function deriveColorNameFromHex(hexValue) {
+    const normalized = (hexValue || '').trim().toUpperCase();
+    const hexMatch = normalized.match(/^#([0-9A-F]{6})$/);
+    if (!hexMatch) return '';
+
+    const raw = hexMatch[1];
+    const r = parseInt(raw.slice(0, 2), 16) / 255;
+    const g = parseInt(raw.slice(2, 4), 16) / 255;
+    const b = parseInt(raw.slice(4, 6), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    const lightness = (max + min) / 2;
+    let saturation = 0;
+    if (delta > 0) {
+        saturation = delta / (1 - Math.abs((2 * lightness) - 1));
+    }
+
+    if (saturation < 0.12) {
+        if (lightness < 0.12) return 'Black';
+        if (lightness > 0.9) return 'White';
+        return 'Gray';
+    }
+
+    let hue = 0;
+    if (delta > 0) {
+        if (max === r) {
+            hue = (((g - b) / delta) % 6);
+        } else if (max === g) {
+            hue = ((b - r) / delta) + 2;
+        } else {
+            hue = ((r - g) / delta) + 4;
+        }
+        hue *= 60;
+        if (hue < 0) hue += 360;
+    }
+
+    let baseColor = 'Color';
+    if (hue < 15 || hue >= 345) {
+        baseColor = 'Red';
+    } else if (hue < 45) {
+        baseColor = 'Orange';
+    } else if (hue < 70) {
+        baseColor = 'Yellow';
+    } else if (hue < 165) {
+        baseColor = 'Green';
+    } else if (hue < 200) {
+        baseColor = 'Cyan';
+    } else if (hue < 255) {
+        baseColor = 'Blue';
+    } else if (hue < 290) {
+        baseColor = 'Purple';
+    } else {
+        baseColor = 'Pink';
+    }
+
+    if (lightness >= 0.72) return `Light ${baseColor}`;
+    if (lightness <= 0.32) return `Dark ${baseColor}`;
+    return baseColor;
+}
+
+function syncCableColorNameFromHex() {
+    const nameInput = document.getElementById('cableColorModalName');
+    const hexInput = document.getElementById('cableColorModalInput');
+    if (!nameInput || !hexInput) return;
+    const hasManualName = nameInput.dataset.manualName === '1';
+    if (hasManualName && nameInput.value.trim() !== '') return;
+    const derivedName = deriveColorNameFromHex(normalizeColorToHex(hexInput.value || '#ffff00'));
+    if (derivedName) {
+        nameInput.value = derivedName;
+    }
+}
+
 function updateCableColorSwatch(colorValue) {
     const swatch = document.getElementById('cableColorSwatch');
     if (!swatch) return;
@@ -1134,14 +1207,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cableColorModalInput = document.getElementById('cableColorModalInput');
     const cableColorModalPicker = document.getElementById('cableColorModalColorPicker');
+    const cableColorModalName = document.getElementById('cableColorModalName');
     if (cableColorModalInput && cableColorModalPicker) {
         cableColorModalPicker.addEventListener('input', (event) => {
             cableColorModalInput.value = event.target.value;
+            syncCableColorNameFromHex();
         });
         cableColorModalInput.addEventListener('input', (event) => {
             const nextValue = (event.target.value || '').trim();
             if (!nextValue) return;
             cableColorModalPicker.value = normalizeColorToHex(nextValue);
+            syncCableColorNameFromHex();
+        });
+    }
+    if (cableColorModalName) {
+        cableColorModalName.dataset.manualName = '0';
+        cableColorModalName.addEventListener('input', () => {
+            const hasName = cableColorModalName.value.trim() !== '';
+            cableColorModalName.dataset.manualName = hasName ? '1' : '0';
         });
     }
 
@@ -1213,6 +1296,7 @@ function openCableColorModal(cableColorSelect) {
     const cableColorPicker = document.getElementById('cableColorModalColorPicker');
     if (cableColorNameInput) {
         cableColorNameInput.value = '';
+        cableColorNameInput.dataset.manualName = '0';
     }
     if (cableColorInput) {
         cableColorInput.value = '';
@@ -1220,6 +1304,10 @@ function openCableColorModal(cableColorSelect) {
     if (cableColorPicker) {
         cableColorPicker.value = '#ffff00';
     }
+    if (cableColorInput) {
+        cableColorInput.value = '#ffff00';
+    }
+    syncCableColorNameFromHex();
     document.getElementById('cableColorBackdrop').style.display = 'flex';
     if (cableColorNameInput) {
         setTimeout(() => cableColorNameInput.focus(), 0);
