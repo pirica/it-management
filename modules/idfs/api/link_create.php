@@ -8,7 +8,7 @@ $portA = (int)($data['port_id_a'] ?? 0);
 $portB = (int)($data['port_id_b'] ?? 0);
 $equipmentId = isset($data['equipment_id']) && $data['equipment_id'] !== null ? (int)$data['equipment_id'] : 0;
 $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== null ? (int)$data['switch_port_id'] : 0;
-$color = trim((string)($data['cable_color'] ?? 'yellow'));
+$color = trim((string)($data['cable_color'] ?? 'Gray'));
 $label = trim((string)($data['cable_label'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 $status = strtolower(trim((string)($data['status'] ?? 'used')));
@@ -22,7 +22,7 @@ if ($portA === $portB) {
     idf_fail('Cannot link a port to itself');
 }
 if ($color === '') {
-    $color = 'yellow';
+    $color = 'Gray';
 }
 
 $validStatus = ['free', 'used', 'reserved', 'down', 'unknown'];
