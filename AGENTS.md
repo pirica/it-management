@@ -34,12 +34,17 @@ Each module must maintain a flat structure with these specific files:
 > **No Master Templates:** Do not attempt to abstract CRUD into a single master template. Each module must remain independent.
 
 ### 2. Database & Schema Rules
-- **Schema Updates:** If a field/table is deleted or a header renamed, you **must** update `database.sql`.
-    - Database: `database.sql` Use only INSERT/UPDATE/DELETE. Don't use DB triggers.
+- **Schema Updates:** If a field/table is deleted or a header renamed, **update** `database.sql`.
+  
 - **Company Scoping:** - **Hide** `company_id` from all UI views.
     - Add safe inline FK creation logic to create referenced rows automatically.
     - Scope all queries and inserts by `company_id`.
 - **Audit Logging:** The system sets MySQL session variables (`@app_user_id`) in `config.php`. Do not overwrite these.
+- **Standard Fields: Every new table in database.sql must include:
+- company_id INT NOT NULL
+- active TINYINT DEFAULT '1'
+- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updated_at TIMESTAMP DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 
 ### 3. Protection Zone (STRICT: No Auto-Changes)
 Do **not** modify the logic or structure of these modules unless explicitly requested:
@@ -108,20 +113,26 @@ When a company opens a module and sees **"No records found."**, modules should s
 - **Variable Collisions:** Use unique, prefixed variables in `includes/` (e.g., `$itm_sidebar_user`).
 - **Commenting:** Follow the **"Why-Focused"** style. Every file must be commented.
     * *What:* "Looping through array" (Avoid).
-    * *Why:* "Using a generator here to handle large datasets without hitting memory limits" (Prioritize).
+    * *Why:* "Human-friendly labels for UI positioning settings stored in the database." (Prioritize).
 
 ### UI/UX Requirements
 - **Layout:** `.container` > `.main-content` > `.content`.
 - **Buttons:** `btn-primary` for main actions; `btn-sm` for table actions.
 - **Tables:** Use `.itm-actions-cell` and `.itm-actions-wrap` for action columns.
-- **Boolean Display:** in `index.php`, if field name is `active` <span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>
-- **Boolean Display:** In `view.php`, result `1` = ✅, `0` = ❌ (icon-only).
-- **Dynamic Selects:** Use `data-addable-select="1"` to enable the quick-add "+" functionality.
+* **Booleans (List View):** Use badges for status: 
+    * `<span class="badge badge-success">Active</span>`
+    * `<span class="badge badge-danger">Inactive</span>`
+* **Booleans (View Mode):** Use icons: `1` = ✅, `0` = ❌.
+- **Dynamic Selects:** Enable the quick-add functionality:
+    * `*  <option value="__add_new__">➕</option>.`
+* **Color fields `color` or similar us color picker UI:
+* `<input type="color" name="hex_color" id="cable-hex-color-picker" value="#008000">`
+* **Date inputs: Show date picker UI 
 
 ---
 
 ## 🛠 Setup & Debugging
-- **Dev Credentials:** `localhost` | `root` | `usbw` | `itmanagement`.
-- **Logs:** Errors are standardized to `ROOT_PATH . 'error_log.txt'`.
-- **Testing:** On testing don't capture Screenshot:
-⚠️ Screenshot not captured: browser_container tool is not available in this environment.
+* **Dev Credentials:** `localhost` | `root` | `` | `itmanagement`.
+* **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
+* **Testing:** Browser screenshots are not supported in this environment; rely on verbose error logging for UI debugging.
+
