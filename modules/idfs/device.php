@@ -487,7 +487,17 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                         }
                         ?>
-                        <tr data-port-id="<?php echo (int)$p['id']; ?>">
+                        <tr
+                            data-port-id="<?php echo (int)$p['id']; ?>"
+                            data-port-type="<?php echo sanitize((string)($p['port_type'] ?? 'RJ45')); ?>"
+                            data-label="<?php echo sanitize((string)($p['label'] ?? '')); ?>"
+                            data-status="<?php echo sanitize((string)($p['status'] ?? 'Unknown')); ?>"
+                            data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
+                            data-vlan="<?php echo sanitize((string)($p['vlan'] ?? '')); ?>"
+                            data-speed="<?php echo sanitize((string)($p['speed'] ?? '')); ?>"
+                            data-poe="<?php echo sanitize((string)($p['poe'] ?? '')); ?>"
+                            data-notes="<?php echo sanitize((string)($p['notes'] ?? '')); ?>"
+                        >
                             <td><?php echo (int)$p['port_no']; ?></td>
                             <td><?php echo sanitize($p['port_type']); ?></td>
                             <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
@@ -841,19 +851,19 @@ async function apiPost(path, body) {
 
 function openPortModal(portId) {
     const row = document.querySelector(`tr[data-port-id="${portId}"]`);
-    const cols = row ? row.querySelectorAll('td') : [];
     const portMeta = PORTS.find((port) => Number(port.id) === Number(portId)) || null;
     const form = document.getElementById('portForm');
+    const rowData = row?.dataset || {};
 
     form.port_id.value = portId;
-    form.port_type.value = cols[1]?.textContent?.trim() || 'RJ45';
-    form.label.value = cols[2]?.textContent?.trim() || '';
-    form.status.value = cols[3]?.textContent?.trim() || 'Unknown';
-    form.connected_to.value = cols[4]?.textContent?.trim() || '';
-    form.vlan.value = cols[5]?.textContent?.trim() || '';
-    form.speed.value = cols[6]?.textContent?.trim() || '';
-    form.poe.value = cols[7]?.textContent?.trim() || '';
-    form.notes.value = cols[8]?.textContent?.trim() || '';
+    form.port_type.value = rowData.portType || 'RJ45';
+    form.label.value = rowData.label || '';
+    form.status.value = rowData.status || 'Unknown';
+    form.connected_to.value = rowData.connectedTo || '';
+    form.vlan.value = rowData.vlan || '';
+    form.speed.value = rowData.speed || '';
+    form.poe.value = rowData.poe || '';
+    form.notes.value = rowData.notes || '';
     form.cable_color.value = (portMeta?.cable_color || 'Gray');
     if (!form.cable_color.value || form.cable_color.value === '__add_new__') {
         form.cable_color.value = 'Gray';
@@ -887,7 +897,7 @@ function savePort() {
         notes: f.notes.value.trim(),
         cable_color: (f.cable_color.value && f.cable_color.value !== '__add_new__')
             ? f.cable_color.value.trim()
-            : 'yellow',
+            : 'Gray',
     };
     apiPost('port_update.php', payload)
         .then(() => location.reload())
