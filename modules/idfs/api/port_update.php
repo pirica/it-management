@@ -32,10 +32,26 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
 }
 
 $port_type = (string)($data['port_type'] ?? 'RJ45');
-$status = (string)($data['status'] ?? 'unknown');
+$status = strtolower(trim((string)($data['status'] ?? 'unknown')));
 
 $validType = ['RJ45', 'SFP', 'SFP+', 'LC', 'SC', 'OTHER'];
 $validStatus = ['free', 'used', 'reserved', 'down', 'unknown'];
+$stmtStatuses = mysqli_prepare(
+    $conn,
+    'SELECT status FROM switch_status WHERE company_id = ?'
+);
+if ($stmtStatuses) {
+    mysqli_stmt_bind_param($stmtStatuses, 'i', $company_id);
+    mysqli_stmt_execute($stmtStatuses);
+    $resStatuses = mysqli_stmt_get_result($stmtStatuses);
+    while ($resStatuses && ($statusRow = mysqli_fetch_assoc($resStatuses))) {
+        $candidateStatus = strtolower(trim((string)($statusRow['status'] ?? '')));
+        if ($candidateStatus !== '' && !in_array($candidateStatus, $validStatus, true)) {
+            $validStatus[] = $candidateStatus;
+        }
+    }
+    mysqli_stmt_close($stmtStatuses);
+}
 
 if (!in_array($port_type, $validType, true)) {
     idf_fail('Invalid port_type');
