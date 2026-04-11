@@ -11,7 +11,7 @@ $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== nu
 $color = trim((string)($data['cable_color'] ?? 'Gray'));
 $label = trim((string)($data['cable_label'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
-$status = strtolower(trim((string)($data['status'] ?? 'used')));
+$status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Used');
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 
@@ -25,26 +25,6 @@ if ($color === '') {
     $color = 'Gray';
 }
 
-$validStatus = ['up','free', 'used', 'reserved', 'down', 'unknown'];
-$stmtStatuses = mysqli_prepare(
-    $conn,
-    'SELECT status FROM switch_status WHERE company_id = ?'
-);
-if ($stmtStatuses) {
-    mysqli_stmt_bind_param($stmtStatuses, 'i', $company_id);
-    mysqli_stmt_execute($stmtStatuses);
-    $resStatuses = mysqli_stmt_get_result($stmtStatuses);
-    while ($resStatuses && ($statusRow = mysqli_fetch_assoc($resStatuses))) {
-        $candidateStatus = strtolower(trim((string)($statusRow['status'] ?? '')));
-        if ($candidateStatus !== '' && !in_array($candidateStatus, $validStatus, true)) {
-            $validStatus[] = $candidateStatus;
-        }
-    }
-    mysqli_stmt_close($stmtStatuses);
-}
-if ($status === '' || !in_array($status, $validStatus, true)) {
-    $status = 'used';
-}
 if ($switchPortId > 0 && $equipmentId <= 0) {
     idf_fail('Equipment is required when selecting an equipment port');
 }
@@ -401,9 +381,9 @@ if (
 
     $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status = ? WHERE id = ? LIMIT 1");
     if ($stmtUpdatePort) {
-        mysqli_stmt_bind_param($stmtUpdatePort, 'ssi', $connectedToA, $status, $portA);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'sii', $connectedToA, $status_id, $portA);
         mysqli_stmt_execute($stmtUpdatePort);
-        mysqli_stmt_bind_param($stmtUpdatePort, 'ssi', $connectedToB, $status, $portB);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'sii', $connectedToB, $status_id, $portB);
         mysqli_stmt_execute($stmtUpdatePort);
         mysqli_stmt_close($stmtUpdatePort);
     }

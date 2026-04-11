@@ -288,11 +288,19 @@ if ($pid > 0) {
     }
 
     if ($port_count > 0 && $existing === 0) {
-        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, 'RJ45', 'unknown')";
+        $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
+        if ($rj45PortTypeId <= 0) {
+            idf_fail('Unable to resolve default port type for company', 500);
+        }
+        $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
+        if ($unknownStatusId <= 0) {
+            idf_fail('Unable to resolve default status for company', 500);
+        }
+        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, ?, ?)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
             for ($n = 1; $n <= $port_count; $n++) {
-                mysqli_stmt_bind_param($stmtInsertPort, 'iii', $company_id, $pid, $n);
+                mysqli_stmt_bind_param($stmtInsertPort, 'iiiii', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId);
                 mysqli_stmt_execute($stmtInsertPort);
             }
             mysqli_stmt_close($stmtInsertPort);

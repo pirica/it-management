@@ -56,6 +56,15 @@ $resPorts = mysqli_query(
     $conn,
     "SELECT
        pr.*,
+       COALESCE(spt.type, 'RJ45') AS port_type_label,
+       COALESCE(ss.status, 'Unknown') AS status_label,
+       CASE
+         WHEN v.id IS NULL THEN ''
+         WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
+         ELSE CONCAT(COALESCE(v.vlan_number, ''), ' - ', v.vlan_name)
+       END AS vlan_label,
+       COALESCE(ef.name, '') AS speed_label,
+       COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color,
        l.cable_label,
@@ -72,6 +81,21 @@ $resPorts = mysqli_query(
          ELSE 0
        END AS linked_equipment_is_switch
      FROM idf_ports pr
+     LEFT JOIN switch_port_types spt
+       ON spt.id = pr.port_type
+      AND spt.company_id = pr.company_id
+     LEFT JOIN switch_status ss
+       ON ss.id = pr.status
+      AND ss.company_id = pr.company_id
+     LEFT JOIN vlans v
+       ON v.id = pr.vlan
+      AND v.company_id = pr.company_id
+     LEFT JOIN equipment_fiber ef
+       ON ef.id = pr.speed
+      AND ef.company_id = pr.company_id
+     LEFT JOIN equipment_poe ep
+       ON ep.id = pr.poe
+      AND ep.company_id = pr.company_id
      LEFT JOIN idf_links l ON l.id = (
          SELECT l2.id
          FROM idf_links l2
@@ -255,29 +279,96 @@ sort($cableColorOptions, SORT_NATURAL | SORT_FLAG_CASE);
 $switchStatusOptions = [];
 $resSwitchStatuses = mysqli_query(
     $conn,
-    "SELECT status
+    "SELECT id, status
      FROM switch_status
      WHERE company_id = $company_id
      ORDER BY status ASC"
 );
 while ($resSwitchStatuses && ($row = mysqli_fetch_assoc($resSwitchStatuses))) {
+    $statusId = (int)($row['id'] ?? 0);
     $statusOption = trim((string)($row['status'] ?? ''));
-    if ($statusOption !== '' && !in_array($statusOption, $switchStatusOptions, true)) {
-        $switchStatusOptions[] = $statusOption;
+    if ($statusId > 0 && $statusOption !== '' && !isset($switchStatusOptions[$statusId])) {
+        $switchStatusOptions[$statusId] = $statusOption;
     }
 }
-$hasUnknownStatus = false;
-foreach ($switchStatusOptions as $existingStatusOption) {
-    if (strcasecmp($existingStatusOption, 'Unknown') === 0) {
-        $hasUnknownStatus = true;
-        break;
+if (!$switchStatusOptions) {
+    $switchStatusOptions = [0 => 'Unknown'];
+}
+
+$switchPortTypeOptions = [];
+$resSwitchPortTypes = mysqli_query(
+    $conn,
+    "SELECT id, type
+     FROM switch_port_types
+     WHERE company_id = $company_id
+     ORDER BY type ASC"
+);
+while ($resSwitchPortTypes && ($row = mysqli_fetch_assoc($resSwitchPortTypes))) {
+    $typeId = (int)($row['id'] ?? 0);
+    $typeLabel = trim((string)($row['type'] ?? ''));
+    if ($typeId > 0 && $typeLabel !== '' && !isset($switchPortTypeOptions[$typeId])) {
+        $switchPortTypeOptions[$typeId] = $typeLabel;
     }
 }
-if (!$hasUnknownStatus) {
-    array_unshift($switchStatusOptions, 'Unknown');
+if (!$switchPortTypeOptions) {
+    $switchPortTypeOptions = [0 => 'RJ45'];
 }
-if (count($switchStatusOptions) === 1) {
-    $switchStatusOptions = ['Unknown', 'free', 'used', 'reserved', 'down'];
+
+$vlanOptions = [];
+$resVlans = mysqli_query(
+    $conn,
+    "SELECT id, vlan_number, vlan_name
+     FROM vlans
+     WHERE company_id = $company_id
+     ORDER BY vlan_number ASC, vlan_name ASC"
+);
+while ($resVlans && ($row = mysqli_fetch_assoc($resVlans))) {
+    $vlanId = (int)($row['id'] ?? 0);
+    $vlanNumber = trim((string)($row['vlan_number'] ?? ''));
+    $vlanName = trim((string)($row['vlan_name'] ?? ''));
+    if ($vlanId <= 0) {
+        continue;
+    }
+    $label = $vlanNumber;
+    if ($vlanName !== '') {
+        $label = $label !== '' ? ($label . ' - ' . $vlanName) : $vlanName;
+    }
+    if ($label === '') {
+        $label = 'VLAN #' . $vlanId;
+    }
+    $vlanOptions[$vlanId] = $label;
+}
+
+$fiberSpeedOptions = [];
+$resFiberSpeeds = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_fiber
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resFiberSpeeds && ($row = mysqli_fetch_assoc($resFiberSpeeds))) {
+    $fiberId = (int)($row['id'] ?? 0);
+    $fiberName = trim((string)($row['name'] ?? ''));
+    if ($fiberId > 0 && $fiberName !== '') {
+        $fiberSpeedOptions[$fiberId] = $fiberName;
+    }
+}
+
+$poeOptions = [];
+$resPoeOptions = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_poe
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resPoeOptions && ($row = mysqli_fetch_assoc($resPoeOptions))) {
+    $poeId = (int)($row['id'] ?? 0);
+    $poeName = trim((string)($row['name'] ?? ''));
+    if ($poeId > 0 && $poeName !== '') {
+        $poeOptions[$poeId] = $poeName;
+    }
 }
 
 $equipmentTypeOptions = [];
@@ -489,23 +580,28 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         ?>
                         <tr
                             data-port-id="<?php echo (int)$p['id']; ?>"
-                            data-port-type="<?php echo sanitize((string)($p['port_type'] ?? 'RJ45')); ?>"
+                            data-port-type-id="<?php echo (int)($p['port_type'] ?? 0); ?>"
+                            data-port-type="<?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?>"
                             data-label="<?php echo sanitize((string)($p['label'] ?? '')); ?>"
-                            data-status="<?php echo sanitize((string)($p['status'] ?? 'Unknown')); ?>"
+                            data-status-id="<?php echo (int)($p['status'] ?? 0); ?>"
+                            data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
                             data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
-                            data-vlan="<?php echo sanitize((string)($p['vlan'] ?? '')); ?>"
-                            data-speed="<?php echo sanitize((string)($p['speed'] ?? '')); ?>"
-                            data-poe="<?php echo sanitize((string)($p['poe'] ?? '')); ?>"
+                            data-vlan-id="<?php echo (int)($p['vlan'] ?? 0); ?>"
+                            data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
+                            data-speed-id="<?php echo (int)($p['speed'] ?? 0); ?>"
+                            data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
+                            data-poe-id="<?php echo (int)($p['poe'] ?? 0); ?>"
+                            data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
                             data-notes="<?php echo sanitize((string)($p['notes'] ?? '')); ?>"
                         >
                             <td><?php echo (int)$p['port_no']; ?></td>
-                            <td><?php echo sanitize($p['port_type']); ?></td>
+                            <td><?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?></td>
                             <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
-                            <td><?php echo sanitize($p['status']); ?></td>
+                            <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
                             <td><?php echo sanitize($connectedToText); ?></td>
-                            <td><?php echo sanitize((string)($p['vlan'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['speed'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['poe'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
                             <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -576,13 +672,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <?php foreach ($ports as $p): ?>
                     <tr>
                         <td><?php echo (int)$p['port_no']; ?></td>
-                        <td><?php echo sanitize($p['port_type']); ?></td>
+                        <td><?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?></td>
                         <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
-                        <td><?php echo sanitize($p['status']); ?></td>
+                        <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
                         <td><?php echo sanitize((string)($p['connected_to'] ?? '')); ?></td>
-                        <td><?php echo sanitize((string)($p['vlan'] ?? '')); ?></td>
-                        <td><?php echo sanitize((string)($p['speed'] ?? '')); ?></td>
-                        <td><?php echo sanitize((string)($p['poe'] ?? '')); ?></td>
+                        <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
+                        <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
+                        <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -605,14 +701,16 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <div>
                 <label class="label">Type</label>
                 <select class="input" name="port_type">
-                    <option>RJ45</option><option>SFP</option><option>SFP+</option><option>LC</option><option>SC</option><option>OTHER</option>
+                    <?php foreach ($switchPortTypeOptions as $typeId => $typeLabel): ?>
+                        <option value="<?php echo (int)$typeId; ?>" <?php echo strcasecmp($typeLabel, 'RJ45') === 0 ? 'selected' : ''; ?>><?php echo sanitize($typeLabel); ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div>
                 <label class="label">Status</label>
                 <select class="input" name="status">
-                    <?php foreach ($switchStatusOptions as $statusOption): ?>
-                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
+                    <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
+                        <option value="<?php echo (int)$statusId; ?>" <?php echo strcasecmp($statusOption, 'Unknown') === 0 ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
                     <option value="__add_new__">➕</option>
                 </select>
@@ -627,15 +725,30 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div>
                 <label class="label">VLAN</label>
-                <input class="input" name="vlan" placeholder="e.g. 10 / Voice / 20">
+                <select class="input" name="vlan">
+                    <option value="">-- None --</option>
+                    <?php foreach ($vlanOptions as $vlanId => $vlanLabel): ?>
+                        <option value="<?php echo (int)$vlanId; ?>"><?php echo sanitize($vlanLabel); ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
                 <label class="label">Speed</label>
-                <input class="input" name="speed" placeholder="e.g. 1G / 10G">
+                <select class="input" name="speed">
+                    <option value="">-- None --</option>
+                    <?php foreach ($fiberSpeedOptions as $fiberId => $fiberLabel): ?>
+                        <option value="<?php echo (int)$fiberId; ?>"><?php echo sanitize($fiberLabel); ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
                 <label class="label">PoE</label>
-                <input class="input" name="poe" placeholder="e.g. af/at/bt">
+                <select class="input" name="poe">
+                    <option value="">-- None --</option>
+                    <?php foreach ($poeOptions as $poeId => $poeLabel): ?>
+                        <option value="<?php echo (int)$poeId; ?>"><?php echo sanitize($poeLabel); ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
                 <label class="label">Cable color</label>
@@ -722,8 +835,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <div data-link-default-field="status">
                 <label class="label">Status</label>
                 <select class="input" name="status">
-                    <?php foreach ($switchStatusOptions as $statusOption): ?>
-                        <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
+                    <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
+                        <option value="<?php echo (int)$statusId; ?>" <?php echo strcasecmp($statusOption, 'Unknown') === 0 ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
                     <option value="__add_new__">➕</option>
                 </select>
@@ -856,13 +969,31 @@ function openPortModal(portId) {
     const rowData = row?.dataset || {};
 
     form.port_id.value = portId;
-    form.port_type.value = rowData.portType || 'RJ45';
+    const requestedPortTypeId = rowData.portTypeId || '';
+    if (requestedPortTypeId && Array.from(form.port_type.options).some((option) => option.value === requestedPortTypeId)) {
+        form.port_type.value = requestedPortTypeId;
+    } else {
+        const requestedPortType = (rowData.portType || 'RJ45').trim();
+        const portTypeOption = Array.from(form.port_type.options).find((option) =>
+            option.textContent.trim().toLowerCase() === requestedPortType.toLowerCase()
+        );
+        form.port_type.value = portTypeOption ? portTypeOption.value : (form.port_type.value || '');
+    }
     form.label.value = rowData.label || '';
-    form.status.value = rowData.status || 'Unknown';
+    const requestedStatusId = rowData.statusId || '';
+    if (requestedStatusId && Array.from(form.status.options).some((option) => option.value === requestedStatusId)) {
+        form.status.value = requestedStatusId;
+    } else {
+        const requestedStatus = (rowData.status || 'Unknown').trim();
+        const statusOption = Array.from(form.status.options).find((option) =>
+            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === requestedStatus.toLowerCase()
+        );
+        form.status.value = statusOption ? statusOption.value : (form.status.value || '');
+    }
     form.connected_to.value = rowData.connectedTo || '';
-    form.vlan.value = rowData.vlan || '';
-    form.speed.value = rowData.speed || '';
-    form.poe.value = rowData.poe || '';
+    form.vlan.value = rowData.vlanId || '';
+    form.speed.value = rowData.speedId || '';
+    form.poe.value = rowData.poeId || '';
     form.notes.value = rowData.notes || '';
     form.cable_color.value = (portMeta?.cable_color || 'Gray');
     if (!form.cable_color.value || form.cable_color.value === '__add_new__') {
@@ -887,13 +1018,13 @@ function savePort() {
     const payload = {
         csrf_token: CSRF,
         port_id: Number(f.port_id.value),
-        port_type: f.port_type.value,
+        port_type_id: Number(f.port_type.value),
         label: f.label.value.trim(),
-        status: normalizedStatus,
+        status_id: Number(normalizedStatus),
         connected_to: f.connected_to.value.trim(),
-        vlan: f.vlan.value.trim(),
-        speed: f.speed.value.trim(),
-        poe: f.poe.value.trim(),
+        vlan_id: f.vlan.value ? Number(f.vlan.value) : null,
+        speed_id: f.speed.value ? Number(f.speed.value) : null,
+        poe_id: f.poe.value ? Number(f.poe.value) : null,
         notes: f.notes.value.trim(),
         cable_color: (f.cable_color.value && f.cable_color.value !== '__add_new__')
             ? f.cable_color.value.trim()
@@ -952,7 +1083,10 @@ function openLinkModal(portId) {
     f.cable_color.value = 'Gray';
     f.cable_label.value = '';
     f.notes.value = '';
-    f.status.value = 'Unknown';
+    const unknownStatusOption = Array.from(f.status.options).find((option) =>
+        option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'unknown'
+    );
+    f.status.value = unknownStatusOption ? unknownStatusOption.value : (f.status.value || '');
     f.equipment_id.value = '';
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
@@ -1047,7 +1181,7 @@ function createLink() {
         cable_color: cableColor,
         cable_label: cableLabel,
         notes,
-        status: getNormalizedStatusValue(f) || 'Unknown',
+        status_id: Number(getNormalizedStatusValue(f) || 0),
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
     };
@@ -1237,16 +1371,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById(formId);
         const statusSelect = form?.querySelector('select[name="status"]');
         if (!statusSelect) return;
-        statusSelect.dataset.previousValue = statusSelect.value || 'Unknown';
+        statusSelect.dataset.previousValue = statusSelect.value || '';
         statusSelect.addEventListener('focus', () => {
             if (statusSelect.value !== '__add_new__') {
-                statusSelect.dataset.previousValue = statusSelect.value || 'Unknown';
+                statusSelect.dataset.previousValue = statusSelect.value || '';
             }
         });
         statusSelect.addEventListener('change', (event) => {
             const wantsAdd = event.target.value === '__add_new__';
             if (!wantsAdd) {
-                statusSelect.dataset.previousValue = statusSelect.value || 'Unknown';
+                statusSelect.dataset.previousValue = statusSelect.value || '';
                 return;
             }
             openStatusModal(statusSelect);
@@ -1318,9 +1452,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function getNormalizedStatusValue(form) {
-    if (!form || !form.status) return 'Unknown';
+    if (!form || !form.status) return '';
     if (form.status.value === '__add_new__') return '';
-    return (form.status.value || 'Unknown').trim();
+    return (form.status.value || '').trim();
 }
 
 function openStatusModal(statusSelect) {
@@ -1339,7 +1473,7 @@ function closeStatusModal(keepSelection) {
     document.getElementById('statusBackdrop').style.display = 'none';
     if (!activeStatusSelect) return;
     if (!keepSelection) {
-        activeStatusSelect.value = activeStatusSelect.dataset.previousValue || 'Unknown';
+        activeStatusSelect.value = activeStatusSelect.dataset.previousValue || '';
     }
     activeStatusSelect = null;
 }
@@ -1447,24 +1581,25 @@ function saveStatusFromModal() {
         csrf_token: CSRF,
         status: nextStatus,
     }).then((response) => {
+        const statusId = Number(response.status_id || 0);
         const statusValue = String(response.status || nextStatus).trim();
-        if (!statusValue) {
+        if (!statusValue || statusId <= 0) {
             throw new Error('Invalid status returned from server.');
         }
         document.querySelectorAll('select[name="status"]').forEach((selectEl) => {
             const existingOption = Array.from(selectEl.options).find((option) =>
-                option.value !== '__add_new__' && option.value.toLowerCase() === statusValue.toLowerCase()
+                option.value !== '__add_new__' && Number(option.value) === statusId
             );
             if (!existingOption) {
                 const addOption = selectEl.querySelector('option[value="__add_new__"]');
                 const option = document.createElement('option');
-                option.value = statusValue;
+                option.value = String(statusId);
                 option.textContent = statusValue;
                 selectEl.insertBefore(option, addOption || null);
             }
         });
-        activeStatusSelect.value = statusValue;
-        activeStatusSelect.dataset.previousValue = statusValue;
+        activeStatusSelect.value = String(statusId);
+        activeStatusSelect.dataset.previousValue = String(statusId);
         closeStatusModal(true);
     }).catch((error) => {
         alert(error.message);

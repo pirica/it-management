@@ -34,6 +34,14 @@ $count = (int)$row['port_count'];
 if ($count <= 0) {
     idf_fail('This device has port_count=0');
 }
+$unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
+if ($unknownStatusId <= 0) {
+    idf_fail('Unable to resolve default status for company', 500);
+}
+$rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
+if ($rj45PortTypeId <= 0) {
+    idf_fail('Unable to resolve default port type for company', 500);
+}
 
 mysqli_begin_transaction($conn);
 try {
@@ -44,10 +52,10 @@ try {
         mysqli_stmt_close($stmtDel);
     }
 
-    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, 'RJ45', 'unknown')");
+    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, ?, ?)");
     if ($stmtIns) {
         for ($n = 1; $n <= $count; $n++) {
-            mysqli_stmt_bind_param($stmtIns, 'iii', $company_id, $position_id, $n);
+            mysqli_stmt_bind_param($stmtIns, 'iiiii', $company_id, $position_id, $n, $rj45PortTypeId, $unknownStatusId);
             mysqli_stmt_execute($stmtIns);
         }
         mysqli_stmt_close($stmtIns);
