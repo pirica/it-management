@@ -852,9 +852,20 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <table>
                         <tbody>
                         <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
+                            <?php
+                                $viewValue = $data[$f] ?? '';
+                                if ($crud_table === 'cable_colors' && $f === 'color_name') {
+                                    // Why: older rows may still have named values from the previous
+                                    // mapping workflow, but the current behavior treats hex as source of truth.
+                                    $hexForName = trim((string)($data['hex_color'] ?? ''));
+                                    if (cr_is_safe_color_value($hexForName)) {
+                                        $viewValue = strtoupper($hexForName);
+                                    }
+                                }
+                            ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $viewValue); ?></td>
                             </tr>
                             <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
                                 <tr>
@@ -936,21 +947,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     const cableColorPreview = document.getElementById('cable-hex-color-preview');
     const cableColorNameInput = document.querySelector('input[name="color_name"]');
     if (cableColorPicker && cableColorPreview) {
-        // Why: operators pick a visual hex swatch first, so we infer the color
-        // name immediately to keep "color" and "hex_color" synchronized.
-        const cableHexToNameMap = {
-            '#000000': 'black',
-            '#0000ff': 'blue',
-            '#008000': 'green',
-            '#808080': 'grey',
-            '#ffa500': 'orange',
-            '#800080': 'purple',
-            '#ff0000': 'red',
-            '#ffffff': 'white',
-            '#ffff00': 'yellow'
-        };
-
-        cableColorPicker.addEventListener('input', function () {
+        // Why: this supports any valid hex code and avoids maintaining a fixed
+        // lookup table that only covers a subset of possible colors.
+        const syncCableColorFields = function () {
             const hex = cableColorPicker.value || '';
             const safeHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : '';
             cableColorPreview.innerHTML = safeHex
@@ -958,12 +957,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 : '<span style="color:#666;">—</span>';
 
             if (cableColorNameInput && safeHex !== '') {
-                const normalizedHex = safeHex.toLowerCase();
-                if (Object.prototype.hasOwnProperty.call(cableHexToNameMap, normalizedHex)) {
-                    cableColorNameInput.value = cableHexToNameMap[normalizedHex];
-                }
+                cableColorNameInput.value = safeHex.toUpperCase();
             }
-        });
+        };
+
+        cableColorPicker.addEventListener('input', syncCableColorFields);
+        // Why: edit.php reuses this form and needs existing records to open in
+        // a synchronized state before the user touches the color picker.
+        syncCableColorFields();
     }
 })();
 </script>
