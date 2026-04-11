@@ -589,7 +589,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusOption): ?>
                         <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">➕ Add</option>
                 </select>
             </div>
             <div>
@@ -684,7 +684,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusOption): ?>
                         <option value="<?php echo sanitize($statusOption); ?>" <?php echo $statusOption === 'Unknown' ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">➕ Add</option>
                 </select>
             </div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
@@ -719,6 +719,23 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </div>
 </div>
 
+<div class="idf-modal-backdrop" id="statusBackdrop" onclick="if(event.target.id==='statusBackdrop') closeStatusModal(false)">
+    <div class="idf-modal" onclick="event.stopPropagation()">
+        <div class="idf-modal-header">
+            <div class="idf-modal-title">Add Status</div>
+            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)">✖</button>
+        </div>
+        <div>
+            <label class="label" for="statusModalInput">Status</label>
+            <input class="input" id="statusModalInput" type="text" placeholder="Type new status">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)">Cancel</button>
+            <button class="btn btn-sm" type="button" onclick="saveStatusFromModal()">Save</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
@@ -735,6 +752,7 @@ $portsMeta = array_map(static function (array $port): array {
 echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>;
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+let activeStatusSelect = null;
 
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
@@ -1067,22 +1085,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById(formId);
         const statusSelect = form?.querySelector('select[name="status"]');
         if (!statusSelect) return;
-        const statusInputWrap = document.createElement('div');
-        statusInputWrap.style.marginTop = '8px';
-        statusInputWrap.style.display = 'none';
-        const statusInput = document.createElement('input');
-        statusInput.type = 'text';
-        statusInput.className = 'input';
-        statusInput.placeholder = 'Type new status and Save/Create';
-        statusInput.name = 'status_custom';
-        statusInputWrap.appendChild(statusInput);
-        statusSelect.insertAdjacentElement('afterend', statusInputWrap);
+        statusSelect.dataset.previousValue = statusSelect.value || 'Unknown';
+        statusSelect.addEventListener('focus', () => {
+            if (statusSelect.value !== '__add_new__') {
+                statusSelect.dataset.previousValue = statusSelect.value || 'Unknown';
+            }
+        });
         statusSelect.addEventListener('change', (event) => {
             const wantsAdd = event.target.value === '__add_new__';
-            statusInputWrap.style.display = wantsAdd ? 'block' : 'none';
-            if (!wantsAdd) return;
-            alert('Enter the new status below, then save to apply it.');
-            statusInput.focus();
+            if (!wantsAdd) {
+                statusSelect.dataset.previousValue = statusSelect.value || 'Unknown';
+                return;
+            }
+            openStatusModal(statusSelect);
         });
     };
 
@@ -1120,26 +1135,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function getNormalizedStatusValue(form) {
     if (!form || !form.status) return 'Unknown';
-    if (form.status.value !== '__add_new__') {
-        return (form.status.value || 'Unknown').trim();
+    if (form.status.value === '__add_new__') return '';
+    return (form.status.value || 'Unknown').trim();
+}
+
+function openStatusModal(statusSelect) {
+    activeStatusSelect = statusSelect || null;
+    const statusInput = document.getElementById('statusModalInput');
+    if (statusInput) {
+        statusInput.value = '';
     }
-    const customStatus = (form.status_custom?.value || '').trim();
-    if (customStatus === '') return '';
-    const statusSelect = form.status;
-    const existingOption = Array.from(statusSelect.options).find((option) =>
-        option.value !== '__add_new__' && option.value.toLowerCase() === customStatus.toLowerCase()
-    );
-    if (existingOption) {
-        statusSelect.value = existingOption.value;
-        return existingOption.value;
+    document.getElementById('statusBackdrop').style.display = 'flex';
+    if (statusInput) {
+        setTimeout(() => statusInput.focus(), 0);
     }
-    const addOption = statusSelect.querySelector('option[value="__add_new__"]');
-    const option = document.createElement('option');
-    option.value = customStatus;
-    option.textContent = customStatus;
-    statusSelect.insertBefore(option, addOption || null);
-    statusSelect.value = customStatus;
-    return customStatus;
+}
+
+function closeStatusModal(keepSelection) {
+    document.getElementById('statusBackdrop').style.display = 'none';
+    if (!activeStatusSelect) return;
+    if (!keepSelection) {
+        activeStatusSelect.value = activeStatusSelect.dataset.previousValue || 'Unknown';
+    }
+    activeStatusSelect = null;
+}
+
+function saveStatusFromModal() {
+    if (!activeStatusSelect) {
+        closeStatusModal(false);
+        return;
+    }
+
+    const statusInput = document.getElementById('statusModalInput');
+    const nextStatus = (statusInput?.value || '').trim();
+    if (!nextStatus) {
+        alert('Please enter a status value.');
+        statusInput?.focus();
+        return;
+    }
+
+    apiPost('switch_status_add.php', {
+        csrf_token: CSRF,
+        status: nextStatus,
+    }).then((response) => {
+        const statusValue = String(response.status || nextStatus).trim();
+        if (!statusValue) {
+            throw new Error('Invalid status returned from server.');
+        }
+        document.querySelectorAll('select[name="status"]').forEach((selectEl) => {
+            const existingOption = Array.from(selectEl.options).find((option) =>
+                option.value !== '__add_new__' && option.value.toLowerCase() === statusValue.toLowerCase()
+            );
+            if (!existingOption) {
+                const addOption = selectEl.querySelector('option[value="__add_new__"]');
+                const option = document.createElement('option');
+                option.value = statusValue;
+                option.textContent = statusValue;
+                selectEl.insertBefore(option, addOption || null);
+            }
+        });
+        activeStatusSelect.value = statusValue;
+        activeStatusSelect.dataset.previousValue = statusValue;
+        closeStatusModal(true);
+    }).catch((error) => {
+        alert(error.message);
+    });
 }
 
 function unlinkPort(linkId) {
