@@ -1,9 +1,7 @@
 <?php
 /**
- * Manufacturers Module - Index
  * 
  * Central implementation of the module CRUD flow.
- * This file handles logic for the `manufacturers` table by default but is scoped to this module's table and actions.
  * 
  * Features:
  * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms 
