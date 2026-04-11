@@ -26,6 +26,22 @@ if ($color === '') {
 }
 
 $validStatus = ['free', 'used', 'reserved', 'down', 'unknown'];
+$stmtStatuses = mysqli_prepare(
+    $conn,
+    'SELECT status FROM switch_status WHERE company_id = ?'
+);
+if ($stmtStatuses) {
+    mysqli_stmt_bind_param($stmtStatuses, 'i', $company_id);
+    mysqli_stmt_execute($stmtStatuses);
+    $resStatuses = mysqli_stmt_get_result($stmtStatuses);
+    while ($resStatuses && ($statusRow = mysqli_fetch_assoc($resStatuses))) {
+        $candidateStatus = strtolower(trim((string)($statusRow['status'] ?? '')));
+        if ($candidateStatus !== '' && !in_array($candidateStatus, $validStatus, true)) {
+            $validStatus[] = $candidateStatus;
+        }
+    }
+    mysqli_stmt_close($stmtStatuses);
+}
 if ($status === '' || !in_array($status, $validStatus, true)) {
     $status = 'used';
 }

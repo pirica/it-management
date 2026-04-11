@@ -788,7 +788,11 @@ function closePortModal() {
 
 function savePort() {
     const f = document.getElementById('portForm');
-    const normalizedStatus = f.status.value === '__add_new__' ? 'Unknown' : f.status.value;
+    const normalizedStatus = getNormalizedStatusValue(f);
+    if (!normalizedStatus) {
+        alert('Please enter a status value.');
+        return;
+    }
     const payload = {
         csrf_token: CSRF,
         port_id: Number(f.port_id.value),
@@ -949,7 +953,7 @@ function createLink() {
         cable_color: cableColor,
         cable_label: cableLabel,
         notes,
-        status: f.status.value === '__add_new__' ? 'Unknown' : f.status.value,
+        status: getNormalizedStatusValue(f) || 'Unknown',
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
     };
@@ -1063,10 +1067,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById(formId);
         const statusSelect = form?.querySelector('select[name="status"]');
         if (!statusSelect) return;
+        const statusInputWrap = document.createElement('div');
+        statusInputWrap.style.marginTop = '8px';
+        statusInputWrap.style.display = 'none';
+        const statusInput = document.createElement('input');
+        statusInput.type = 'text';
+        statusInput.className = 'input';
+        statusInput.placeholder = 'Type new status and Save/Create';
+        statusInput.name = 'status_custom';
+        statusInputWrap.appendChild(statusInput);
+        statusSelect.insertAdjacentElement('afterend', statusInputWrap);
         statusSelect.addEventListener('change', (event) => {
-            if (event.target.value !== '__add_new__') return;
-            window.open(`${IDF_BASE.replace('/idfs', '/switch_status')}/create.php`, '_blank');
-            event.target.value = 'Unknown';
+            const wantsAdd = event.target.value === '__add_new__';
+            statusInputWrap.style.display = wantsAdd ? 'block' : 'none';
+            if (!wantsAdd) return;
+            alert('Enter the new status below, then save to apply it.');
+            statusInput.focus();
         });
     };
 
@@ -1101,6 +1117,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+function getNormalizedStatusValue(form) {
+    if (!form || !form.status) return 'Unknown';
+    if (form.status.value !== '__add_new__') {
+        return (form.status.value || 'Unknown').trim();
+    }
+    const customStatus = (form.status_custom?.value || '').trim();
+    if (customStatus === '') return '';
+    const statusSelect = form.status;
+    const existingOption = Array.from(statusSelect.options).find((option) =>
+        option.value !== '__add_new__' && option.value.toLowerCase() === customStatus.toLowerCase()
+    );
+    if (existingOption) {
+        statusSelect.value = existingOption.value;
+        return existingOption.value;
+    }
+    const addOption = statusSelect.querySelector('option[value="__add_new__"]');
+    const option = document.createElement('option');
+    option.value = customStatus;
+    option.textContent = customStatus;
+    statusSelect.insertBefore(option, addOption || null);
+    statusSelect.value = customStatus;
+    return customStatus;
+}
 
 function unlinkPort(linkId) {
     if (!confirm('Remove this cable link?')) return;
