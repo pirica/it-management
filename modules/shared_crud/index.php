@@ -1,8 +1,9 @@
 <?php
 /**
- * Manufacturers Module - Index
+ * Shared CRUD Module - Index
  *
- * Standalone manufacturers CRUD implementation.
+ * Central implementation of the system's reusable procedural CRUD pattern.
+ * Wrapper modules provide $crud_table, $crud_title, and $crud_action.
  *
  * Features:
  * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms 
@@ -16,12 +17,26 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'manufacturers';
-$crud_title = 'Manufacturers';
+$crud_table = $crud_table ?? 'manufacturers';
+$crud_title = $crud_title ?? 'Manufacturers';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+
+// Special logic for the system access module to ensure auxiliary tables exist.
+if (($crud_table ?? '') === 'system_access') {
+    require '../../includes/employee_system_access.php';
+    esa_ensure_table($conn);
+}
+
+// Security: Prevent injection of arbitrary table names through wrapper variables.
+if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
+    die('Invalid table configuration');
+}
+
+$crud_title = $crud_title ?? ucwords(str_replace('_', ' ', $crud_table));
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
 /**
