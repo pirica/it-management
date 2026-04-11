@@ -31,40 +31,17 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
 
-$port_type = (string)($data['port_type'] ?? 'RJ45');
-$status = strtolower(trim((string)($data['status'] ?? 'unknown')));
-
-$validType = ['RJ45', 'SFP', 'SFP+', 'LC', 'SC', 'OTHER'];
-$validStatus = ['free', 'used', 'reserved', 'down', 'unknown'];
-$stmtStatuses = mysqli_prepare(
-    $conn,
-    'SELECT status FROM switch_status WHERE company_id = ?'
-);
-if ($stmtStatuses) {
-    mysqli_stmt_bind_param($stmtStatuses, 'i', $company_id);
-    mysqli_stmt_execute($stmtStatuses);
-    $resStatuses = mysqli_stmt_get_result($stmtStatuses);
-    while ($resStatuses && ($statusRow = mysqli_fetch_assoc($resStatuses))) {
-        $candidateStatus = strtolower(trim((string)($statusRow['status'] ?? '')));
-        if ($candidateStatus !== '' && !in_array($candidateStatus, $validStatus, true)) {
-            $validStatus[] = $candidateStatus;
-        }
-    }
-    mysqli_stmt_close($stmtStatuses);
-}
-
-if (!in_array($port_type, $validType, true)) {
+$port_type_id = idf_resolve_port_type_id($conn, $company_id, $data['port_type_id'] ?? ($data['port_type'] ?? ''), 'RJ45');
+$status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Unknown');
+if ($port_type_id <= 0) {
     idf_fail('Invalid port_type');
-}
-if (!in_array($status, $validStatus, true)) {
-    idf_fail('Invalid status');
 }
 
 $label = trim((string)($data['label'] ?? ''));
 $connected_to = trim((string)($data['connected_to'] ?? ''));
-$vlan = trim((string)($data['vlan'] ?? ''));
-$speed = trim((string)($data['speed'] ?? ''));
-$poe = trim((string)($data['poe'] ?? ''));
+$vlan_id = idf_resolve_vlan_id($conn, $company_id, $data['vlan_id'] ?? ($data['vlan'] ?? ''));
+$speed_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_fiber', 'name', $data['speed_id'] ?? ($data['speed'] ?? ''));
+$poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $data['poe_id'] ?? ($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color = trim((string)($data['cable_color'] ?? ''));
 if ($cable_color === '') {
@@ -73,9 +50,9 @@ if ($cable_color === '') {
 
 $label_val = $label !== '' ? $label : null;
 $conn_val = $connected_to !== '' ? $connected_to : null;
-$vlan_val = $vlan !== '' ? $vlan : null;
-$speed_val = $speed !== '' ? $speed : null;
-$poe_val = $poe !== '' ? $poe : null;
+$vlan_val = $vlan_id !== null ? (int)$vlan_id : 0;
+$speed_val = $speed_id !== null ? (int)$speed_id : 0;
+$poe_val = $poe_id !== null ? (int)$poe_id : 0;
 $notes_val = $notes !== '' ? $notes : null;
 
 $sql = "UPDATE idf_ports
@@ -83,16 +60,16 @@ $sql = "UPDATE idf_ports
             label=?,
             status=?,
             connected_to=?,
-            vlan=?,
-            speed=?,
-            poe=?,
+            vlan=NULLIF(?, 0),
+            speed=NULLIF(?, 0),
+            poe=NULLIF(?, 0),
             notes=?
         WHERE id=?
         LIMIT 1";
 
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
-    mysqli_stmt_bind_param($stmtUpd, 'ssssssssi', $port_type, $label_val, $status, $conn_val, $vlan_val, $speed_val, $poe_val, $notes_val, $port_id);
+    mysqli_stmt_bind_param($stmtUpd, 'siisiiisi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $notes_val, $port_id);
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }

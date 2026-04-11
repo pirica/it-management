@@ -9,7 +9,7 @@ if ($statusRaw === '') {
     idf_fail('Status is required');
 }
 
-$status = substr($statusRaw, 0, 100);
+$status = substr($statusRaw, 0, 50);
 
 $stmtFind = mysqli_prepare(
     $conn,
@@ -30,7 +30,20 @@ $existing = $resFind ? mysqli_fetch_assoc($resFind) : null;
 mysqli_stmt_close($stmtFind);
 
 if ($existing && isset($existing['status'])) {
-    idf_ok(['status' => (string)$existing['status']]);
+    $stmtExistingId = mysqli_prepare(
+        $conn,
+        'SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = LOWER(?) LIMIT 1'
+    );
+    $existingId = 0;
+    if ($stmtExistingId) {
+        mysqli_stmt_bind_param($stmtExistingId, 'is', $company_id, $status);
+        mysqli_stmt_execute($stmtExistingId);
+        $resExistingId = mysqli_stmt_get_result($stmtExistingId);
+        $rowExistingId = $resExistingId ? mysqli_fetch_assoc($resExistingId) : null;
+        mysqli_stmt_close($stmtExistingId);
+        $existingId = isset($rowExistingId['id']) ? (int)$rowExistingId['id'] : 0;
+    }
+    idf_ok(['status_id' => $existingId, 'status' => (string)$existing['status']]);
 }
 
 $stmtInsert = mysqli_prepare(
@@ -42,11 +55,17 @@ if (!$stmtInsert) {
 }
 
 mysqli_stmt_bind_param($stmtInsert, 'is', $company_id, $status);
-if (!mysqli_stmt_execute($stmtInsert)) {
-    $insertError = mysqli_stmt_error($stmtInsert);
+try {
+    if (!mysqli_stmt_execute($stmtInsert)) {
+        $insertError = mysqli_stmt_error($stmtInsert);
+        mysqli_stmt_close($stmtInsert);
+        idf_fail('Unable to save status: ' . $insertError, 500);
+    }
+} catch (Throwable $exception) {
     mysqli_stmt_close($stmtInsert);
-    idf_fail('Unable to save status: ' . $insertError, 500);
+    idf_fail('Unable to save status: ' . $exception->getMessage(), 500);
 }
 mysqli_stmt_close($stmtInsert);
 
-idf_ok(['status' => $status]);
+$newStatusId = (int)mysqli_insert_id($conn);
+idf_ok(['status_id' => $newStatusId, 'status' => $status]);
