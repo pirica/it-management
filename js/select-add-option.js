@@ -30,7 +30,7 @@
 
         const option = document.createElement('option');
         option.value = ADD_VALUE;
-        option.textContent = '➕ Add';
+      //  option.textContent = '➕';
         selectEl.appendChild(option);
     }
 
