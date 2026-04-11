@@ -3,7 +3,7 @@
  * Cable Colors Module - Edit
  *
  * Interface for modifying existing cable colors. Reuses the creation logic
- * which includes the color picker and name sync.
+ * which includes the color picker and automatic color_name inference from hex.
  */
 
 $crud_table = 'cable_colors';
