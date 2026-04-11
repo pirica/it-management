@@ -221,13 +221,13 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
 $cableColorOptions = [];
 $resCableColors = mysqli_query(
     $conn,
-    "SELECT color
+    "SELECT color_name
      FROM cable_colors
      WHERE company_id = $company_id
-     ORDER BY color ASC"
+     ORDER BY color_name ASC"
 );
 while ($resCableColors && ($row = mysqli_fetch_assoc($resCableColors))) {
-    $color = trim((string)($row['color'] ?? ''));
+    $color = trim((string)($row['color_name'] ?? ''));
     if ($color !== '') {
         $cableColorOptions[] = $color;
     }

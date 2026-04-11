@@ -253,7 +253,7 @@ if ($switchPortId > 0) {
         "SELECT id
          FROM cable_colors
          WHERE company_id = ?
-           AND LOWER(color) = LOWER(?)
+           AND LOWER(color_name) = LOWER(?)
          LIMIT 1"
     );
     if ($stmtColor) {
