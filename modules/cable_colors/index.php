@@ -934,13 +934,35 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     // confirmation that the selected hex value is the one they intend to save.
     const cableColorPicker = document.getElementById('cable-hex-color-picker');
     const cableColorPreview = document.getElementById('cable-hex-color-preview');
+    const cableColorNameInput = document.querySelector('input[name="color"]');
     if (cableColorPicker && cableColorPreview) {
+        // Why: operators pick a visual hex swatch first, so we infer the color
+        // name immediately to keep "color" and "hex_color" synchronized.
+        const cableHexToNameMap = {
+            '#000000': 'black',
+            '#0000ff': 'blue',
+            '#008000': 'green',
+            '#808080': 'grey',
+            '#ffa500': 'orange',
+            '#800080': 'purple',
+            '#ff0000': 'red',
+            '#ffffff': 'white',
+            '#ffff00': 'yellow'
+        };
+
         cableColorPicker.addEventListener('input', function () {
             const hex = cableColorPicker.value || '';
             const safeHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : '';
             cableColorPreview.innerHTML = safeHex
                 ? '<span title="' + safeHex + '" aria-label="Color swatch ' + safeHex + '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + safeHex + ';vertical-align:middle;border-radius:2px;"></span>'
                 : '<span style="color:#666;">—</span>';
+
+            if (cableColorNameInput && safeHex !== '') {
+                const normalizedHex = safeHex.toLowerCase();
+                if (Object.prototype.hasOwnProperty.call(cableHexToNameMap, normalizedHex)) {
+                    cableColorNameInput.value = cableHexToNameMap[normalizedHex];
+                }
+            }
         });
     }
 })();
