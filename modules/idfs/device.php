@@ -221,13 +221,16 @@ while ($resEq && ($row = mysqli_fetch_assoc($resEq))) {
 $cableColorOptions = [];
 $resCableColors = mysqli_query(
     $conn,
-    "SELECT color_name
+    "SELECT color_name, hex_color
      FROM cable_colors
      WHERE company_id = $company_id
-     ORDER BY color_name ASC"
+     ORDER BY color_name ASC, hex_color ASC"
 );
 while ($resCableColors && ($row = mysqli_fetch_assoc($resCableColors))) {
     $color = trim((string)($row['color_name'] ?? ''));
+    if ($color === '') {
+        $color = trim((string)($row['hex_color'] ?? ''));
+    }
     if ($color !== '') {
         $cableColorOptions[] = $color;
     }
@@ -726,10 +729,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">✖</button>
         </div>
         <div>
-            <label class="label" for="cableColorModalInput">Cable color</label>
+            <label class="label" for="cableColorModalName">Color name</label>
+            <input class="input" id="cableColorModalName" type="text" placeholder="Type color name (e.g. Yellow)">
+        </div>
+        <div style="margin-top:10px;">
+            <label class="label" for="cableColorModalInput">Hex color</label>
             <div style="display:flex; align-items:center; gap:8px;">
                 <input class="input" id="cableColorModalColorPicker" type="color" value="#ffff00" style="width:56px; min-width:56px; height:40px; padding:4px;">
-                <input class="input" id="cableColorModalInput" type="text" placeholder="Type new cable color (e.g. yellow or #ffff00)">
+                <input class="input" id="cableColorModalInput" type="text" placeholder="Type hex color (e.g. #ffff00)">
             </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
@@ -1201,8 +1208,12 @@ function closeStatusModal(keepSelection) {
 
 function openCableColorModal(cableColorSelect) {
     activeCableColorSelect = cableColorSelect || null;
+    const cableColorNameInput = document.getElementById('cableColorModalName');
     const cableColorInput = document.getElementById('cableColorModalInput');
     const cableColorPicker = document.getElementById('cableColorModalColorPicker');
+    if (cableColorNameInput) {
+        cableColorNameInput.value = '';
+    }
     if (cableColorInput) {
         cableColorInput.value = '';
     }
@@ -1210,8 +1221,8 @@ function openCableColorModal(cableColorSelect) {
         cableColorPicker.value = '#ffff00';
     }
     document.getElementById('cableColorBackdrop').style.display = 'flex';
-    if (cableColorInput) {
-        setTimeout(() => cableColorInput.focus(), 0);
+    if (cableColorNameInput) {
+        setTimeout(() => cableColorNameInput.focus(), 0);
     }
 }
 
@@ -1231,19 +1242,22 @@ function saveCableColorFromModal() {
         return;
     }
 
+    const cableColorNameInput = document.getElementById('cableColorModalName');
     const cableColorInput = document.getElementById('cableColorModalInput');
-    const nextCableColor = (cableColorInput?.value || '').trim();
-    if (!nextCableColor) {
-        alert('Please enter a cable color value.');
-        cableColorInput?.focus();
+    const nextCableColorName = (cableColorNameInput?.value || '').trim();
+    const nextHexColor = (cableColorInput?.value || '').trim();
+    if (!nextCableColorName && !nextHexColor) {
+        alert('Please enter a color name or hex color.');
+        cableColorNameInput?.focus();
         return;
     }
 
     apiPost('cable_color_add.php', {
         csrf_token: CSRF,
-        color: nextCableColor,
+        color_name: nextCableColorName,
+        hex_color: nextHexColor,
     }).then((response) => {
-        const cableColorValue = String(response.color || nextCableColor).trim();
+        const cableColorValue = String(response.color_name || nextCableColorName || response.hex_color || nextHexColor).trim();
         if (!cableColorValue) {
             throw new Error('Invalid cable color returned from server.');
         }
