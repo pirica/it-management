@@ -68,7 +68,7 @@ $poe = trim((string)($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color = trim((string)($data['cable_color'] ?? ''));
 if ($cable_color === '') {
-    $cable_color = 'yellow';
+    $cable_color = 'Gray';
 }
 
 $label_val = $label !== '' ? $label : null;
