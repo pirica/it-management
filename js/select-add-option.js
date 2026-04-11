@@ -29,9 +29,9 @@
         if (has) return;
 
         const option = document.createElement('option');
-        option.value = ADD_VALUE;
-        option.textContent = '➕ Add';
-        selectEl.appendChild(option);
+          option.value = ADD_VALUE;
+          option.textContent = '➕';
+          selectEl.appendChild(option);
     }
 
     function parseExtraFieldConfig(selectEl) {
@@ -346,8 +346,7 @@
             const optionHtml = (result.options || []).map((opt) => {
                 return `<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.label)}</option>`;
             }).join('');
-
-            selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕ Add</option>`;
+            selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
             selectEl.value = String(result.selected_id);
             selectEl.dataset.previousValue = String(result.selected_id);
         } catch (error) {
