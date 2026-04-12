@@ -17,13 +17,15 @@ function idf_csrf_token(): string {
 }
 
 function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
-    $key = strtolower(trim($t));
-    if ($key !== '' && isset($idfDeviceTypeMap[$key])) {
-        $item = $idfDeviceTypeMap[$key];
+    $raw = trim($t);
+    $lookupKey = ctype_digit($raw) ? (int)$raw : strtolower($raw);
+    if ($raw !== '' && isset($idfDeviceTypeMap[$lookupKey])) {
+        $item = $idfDeviceTypeMap[$lookupKey];
         $emoji = trim((string)($item['emoji'] ?? ''));
         $label = trim((string)($item['label'] ?? ''));
         if ($label === '') {
-            $label = ucfirst(str_replace('_', ' ', $key));
+            $fallbackKey = (string)($item['key'] ?? $raw);
+            $label = ucfirst(str_replace('_', ' ', strtolower($fallbackKey)));
         }
         return trim($emoji . ' ' . $label);
     }
@@ -35,9 +37,10 @@ $csrf = idf_csrf_token();
 
 $idfDeviceTypeOptions = [];
 $idfDeviceTypeMap = [];
+$switchDeviceTypeId = 0;
 $stmtDeviceTypes = mysqli_prepare(
     $conn,
-    "SELECT idfdevicetype_name, field_edit_emoji
+    "SELECT id, idfdevicetype_name, field_edit_emoji
      FROM idf_device_type
      WHERE company_id=? AND active=1
      ORDER BY id ASC"
@@ -47,42 +50,48 @@ if ($stmtDeviceTypes) {
     mysqli_stmt_execute($stmtDeviceTypes);
     $resDeviceTypes = mysqli_stmt_get_result($stmtDeviceTypes);
     while ($resDeviceTypes && ($row = mysqli_fetch_assoc($resDeviceTypes))) {
+        $typeId = (int)($row['id'] ?? 0);
         $typeNameRaw = (string)($row['idfdevicetype_name'] ?? '');
         $typeName = strtolower(trim($typeNameRaw));
-        if ($typeName === '') {
+        if ($typeId <= 0 || $typeName === '') {
             continue;
         }
         $emoji = trim((string)($row['field_edit_emoji'] ?? ''));
         $label = ucwords(str_replace('_', ' ', $typeName));
-        if (!isset($idfDeviceTypeMap[$typeName])) {
-            $idfDeviceTypeMap[$typeName] = [
+        if (!isset($idfDeviceTypeMap[$typeId])) {
+            $idfDeviceTypeMap[$typeId] = [
                 'emoji' => $emoji,
                 'label' => $label,
+                'key' => $typeName,
             ];
         }
         $idfDeviceTypeOptions[] = [
-            'value' => $typeName,
+            'value' => $typeId,
             'label' => trim($emoji . ' ' . $label),
         ];
+        if ($switchDeviceTypeId === 0 && $typeName === 'switch') {
+            $switchDeviceTypeId = $typeId;
+        }
     }
     mysqli_stmt_close($stmtDeviceTypes);
 }
 
 if (!$idfDeviceTypeOptions) {
     $idfDeviceTypeOptions = [
-        ['value' => 'switch', 'label' => '🔀 Switch'],
-        ['value' => 'patch_panel', 'label' => '➰ Patch Panel'],
-        ['value' => 'ups', 'label' => '🔋 UPS'],
-        ['value' => 'server', 'label' => '🖥️ Server'],
-        ['value' => 'other', 'label' => '📦 Other'],
+        ['value' => 1, 'label' => '🔀 Switch'],
+        ['value' => 2, 'label' => '➰ Patch Panel'],
+        ['value' => 3, 'label' => '🔋 UPS'],
+        ['value' => 4, 'label' => '🖥️ Server'],
+        ['value' => 5, 'label' => '📦 Other'],
     ];
     $idfDeviceTypeMap = [
-        'switch' => ['emoji' => '🔀', 'label' => 'Switch'],
-        'patch_panel' => ['emoji' => '➰', 'label' => 'Patch Panel'],
-        'ups' => ['emoji' => '🔋', 'label' => 'UPS'],
-        'server' => ['emoji' => '🖥️', 'label' => 'Server'],
-        'other' => ['emoji' => '📦', 'label' => 'Other'],
+        1 => ['emoji' => '🔀', 'label' => 'Switch', 'key' => 'switch'],
+        2 => ['emoji' => '➰', 'label' => 'Patch Panel', 'key' => 'patch_panel'],
+        3 => ['emoji' => '🔋', 'label' => 'UPS', 'key' => 'ups'],
+        4 => ['emoji' => '🖥️', 'label' => 'Server', 'key' => 'server'],
+        5 => ['emoji' => '📦', 'label' => 'Other', 'key' => 'other'],
     ];
+    $switchDeviceTypeId = 1;
 }
 
 $idf = null;
@@ -112,7 +121,14 @@ if (!$idf) {
 }
 
 $positions = array_fill(1, 10, null);
-$stmtPos = mysqli_prepare($conn, "SELECT * FROM idf_positions WHERE idf_id=? ORDER BY position_no ASC");
+$stmtPos = mysqli_prepare(
+    $conn,
+    "SELECT p.*, dt.idfdevicetype_name AS device_type_name
+     FROM idf_positions p
+     LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
+     WHERE p.idf_id=?
+     ORDER BY p.position_no ASC"
+);
 if ($stmtPos) {
     mysqli_stmt_bind_param($stmtPos, 'i', $idf_id);
     mysqli_stmt_execute($stmtPos);
@@ -407,7 +423,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                             <?php else: ?>
                                                 <div class="idf-slot-name"><?php echo sanitize($pos['device_name']); ?></div>
                                                 <div class="idf-slot-sub">
-                                                    <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)$pos['device_type'], $idfDeviceTypeMap)); ?></span>
+                                                    <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)($pos['device_type'] ?? ''), $idfDeviceTypeMap)); ?></span>
                                                     <?php if ((int)$pos['port_count'] > 0): ?>
                                                         <span class="idf-badge">🔌 <?php echo (int)$pos['port_count']; ?> ports</span>
                                                     <?php endif; ?>
@@ -449,7 +465,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                 <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
                     <tr>
                         <td><?php echo $i; ?></td>
-                        <td><?php echo $pos ? sanitize((string)$pos['device_type']) : ''; ?></td>
+                        <td><?php echo $pos ? sanitize((string)($pos['device_type_name'] ?? '')) : ''; ?></td>
                         <td><?php echo $pos ? sanitize((string)$pos['device_name']) : ''; ?></td>
                         <td><?php echo $pos ? (int)$pos['port_count'] : 0; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['equipment_id'] ?? '')) : ''; ?></td>
@@ -569,6 +585,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 <script>
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
+const SWITCH_DEVICE_TYPE_ID = <?php echo (int)$switchDeviceTypeId; ?>;
 const equipmentMetaById = <?php
 $equipmentMeta = [];
 foreach ($equipmentOptions as $equipmentOption) {
@@ -693,7 +710,7 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 }
 
 function refreshPortCountInputs(form) {
-    const isSwitch = form.device_type.value === 'switch';
+    const isSwitch = Number(form.device_type.value || 0) === SWITCH_DEVICE_TYPE_ID;
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
     if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
