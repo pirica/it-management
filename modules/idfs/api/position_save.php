@@ -8,7 +8,7 @@ $idf_id = (int)($data['idf_id'] ?? 0);
 $position_no = (int)($data['position_no'] ?? 0);
 $position_id = isset($data['position_id']) ? (int)$data['position_id'] : 0;
 
-$device_type = (string)($data['device_type'] ?? 'other');
+$device_type_raw = trim((string)($data['device_type'] ?? ''));
 $device_name = trim((string)($data['device_name'] ?? ''));
 $equipment_id = isset($data['equipment_id']) ? (int)$data['equipment_id'] : 0;
 $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] : 0;
@@ -56,10 +56,11 @@ if ($port_count < 0 || $port_count > 9999) {
     idf_fail('Invalid port_count');
 }
 
-$validTypes = [];
+$validTypeIdsByName = [];
+$validTypeNamesById = [];
 $stmtValidTypes = mysqli_prepare(
     $conn,
-    "SELECT idfdevicetype_name
+    "SELECT id, idfdevicetype_name
      FROM idf_device_type
      WHERE company_id=? AND active=1"
 );
@@ -68,20 +69,44 @@ if ($stmtValidTypes) {
     mysqli_stmt_execute($stmtValidTypes);
     $resValidTypes = mysqli_stmt_get_result($stmtValidTypes);
     while ($resValidTypes && ($row = mysqli_fetch_assoc($resValidTypes))) {
+        $typeId = (int)($row['id'] ?? 0);
         $typeName = strtolower(trim((string)($row['idfdevicetype_name'] ?? '')));
-        if ($typeName !== '') {
-            $validTypes[] = $typeName;
+        if ($typeId > 0 && $typeName !== '') {
+            $validTypeIdsByName[$typeName] = $typeId;
+            $validTypeNamesById[$typeId] = $typeName;
         }
     }
     mysqli_stmt_close($stmtValidTypes);
 }
 
-if (!$validTypes) {
-    $validTypes = ['switch', 'patch_panel', 'ups', 'server', 'other'];
+if (!$validTypeIdsByName) {
+    $validTypeIdsByName = [
+        'switch' => 1,
+        'patch_panel' => 2,
+        'ups' => 3,
+        'server' => 4,
+        'other' => 5,
+    ];
+    $validTypeNamesById = array_flip($validTypeIdsByName);
 }
 
-$device_type = strtolower(trim($device_type));
-if (!in_array($device_type, $validTypes, true)) {
+$device_type_id = 0;
+$device_type_name = '';
+if ($device_type_raw !== '' && ctype_digit($device_type_raw)) {
+    $candidateId = (int)$device_type_raw;
+    if (isset($validTypeNamesById[$candidateId])) {
+        $device_type_id = $candidateId;
+        $device_type_name = (string)$validTypeNamesById[$candidateId];
+    }
+} else {
+    $candidateName = strtolower($device_type_raw);
+    if (isset($validTypeIdsByName[$candidateName])) {
+        $device_type_id = (int)$validTypeIdsByName[$candidateName];
+        $device_type_name = $candidateName;
+    }
+}
+
+if ($device_type_id <= 0) {
     idf_fail('Invalid device_type');
 }
 
@@ -130,7 +155,7 @@ if ($equipment_id > 0) {
     }
 }
 
-if ($device_type === 'switch' && $switch_rj45_id <= 0) {
+if ($device_type_name === 'switch' && $switch_rj45_id <= 0) {
     idf_fail('RJ45 Ports are required for switch devices');
 }
 
@@ -260,7 +285,7 @@ if ($position_id > 0) {
          LIMIT 1"
     );
     if ($stmtUpdatePos) {
-        mysqli_stmt_bind_param($stmtUpdatePos, 'sssisi', $device_type, $device_name, $equipmentId_val, $port_count, $notes_val, $position_id);
+        mysqli_stmt_bind_param($stmtUpdatePos, 'issisi', $device_type_id, $device_name, $equipmentId_val, $port_count, $notes_val, $position_id);
         if (!mysqli_stmt_execute($stmtUpdatePos)) {
             idf_fail('DB error updating position: ' . mysqli_stmt_error($stmtUpdatePos), 500);
         }
@@ -280,7 +305,7 @@ if ($position_id > 0) {
            notes=VALUES(notes)"
     );
     if ($stmtInsertPos) {
-        mysqli_stmt_bind_param($stmtInsertPos, 'iiisssis', $company_id, $idf_id, $position_no, $device_type, $device_name, $equipmentId_val, $port_count, $notes_val);
+        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissis', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $port_count, $notes_val);
         if (!mysqli_stmt_execute($stmtInsertPos)) {
             idf_fail('DB error saving position: ' . mysqli_stmt_error($stmtInsertPos), 500);
         }
