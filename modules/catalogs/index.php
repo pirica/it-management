@@ -449,18 +449,13 @@ function cr_catalog_extract_google_result_links($searchHtml) {
  */
 function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity) {
     $results = [];
-    $queryParts = [];
-    foreach ([$manufacturerName, $modelQuery, $supplierFilter, $equipmentTypeFilter, 'buy'] as $part) {
-        $cleanPart = trim((string)$part);
-        if ($cleanPart !== '') {
-            $queryParts[] = $cleanPart;
-        }
-    }
-    if (empty($queryParts)) {
+    // Why: keep search_query identical to the "Search Online" input so operators can
+    // trust/reuse the exact phrase they entered without implicit keyword mutations.
+    $searchQuery = trim((string)$modelQuery);
+    if ($searchQuery === '') {
         return $results;
     }
 
-    $searchQuery = implode(' ', $queryParts);
     $searchUrl = 'https://www.google.com/search?hl=en&num=30&q=' . rawurlencode($searchQuery);
     $html = cr_catalog_fetch_remote_body($searchUrl, 10);
     if ($html === '') {
@@ -498,6 +493,9 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
         if ($unitPrice === null || $unitPrice <= 0) {
             $unitPrice = cr_catalog_detect_price_from_page($targetUrl);
+        }
+        if ($unitPrice === null || $unitPrice <= 0) {
+            continue;
         }
         $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
 
@@ -574,6 +572,9 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
         $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
         if ($unitPrice === null || $unitPrice <= 0) {
             $unitPrice = cr_catalog_detect_price_from_page($link);
+        }
+        if ($unitPrice === null || $unitPrice <= 0) {
+            continue;
         }
         $imageUrl = cr_catalog_detect_image_url_from_page($link);
 
@@ -1081,6 +1082,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             if ($priceNormalized !== null && $priceNormalized !== '' && is_numeric($priceNormalized)) {
                 $priceNumeric = (float)$priceNormalized;
             }
+        }
+        if ($priceNumeric === null || $priceNumeric <= 0) {
+            $skippedCount++;
+            continue;
         }
 
         $insertSql = 'INSERT INTO `catalogs` (`company_id`,`model`,`equipment_type`,`image`,`price`,`supplier`,`weblink`,`active`) VALUES (?,?,?,?,?,?,?,1)';
