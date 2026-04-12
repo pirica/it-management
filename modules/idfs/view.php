@@ -442,6 +442,9 @@ foreach ($equipmentOptions as $equipmentOption) {
                                         <?php if ($pos): ?>
                                             <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">View</a>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Edit</button>
+                                            <?php if (!empty($pos['equipment_id'])): ?>
+                                                <a class="btn btn-sm idf-mini" href="../equipment/index.php?switch_id=<?php echo (int)$pos['equipment_id']; ?>&spm=1#switch-port-manager">Edit Linked</a>
+                                            <?php endif; ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>)">Delete</button>
                                         <?php else: ?>
