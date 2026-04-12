@@ -40,12 +40,11 @@ CREATE TABLE `assignment_types` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `assignment_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `assignment_types`
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Department');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Individual');
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Pool');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Shared');
 
 -- Table structure for `companies`
