@@ -19,6 +19,8 @@
 $crud_table = $crud_table ?? 'catalogs';
 $crud_title = $crud_title ?? 'Catalogs';
 $crud_action = $crud_action ?? 'index';
+$catalogDefaultImageUrl = 'https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg';
+$catalogDefaultWeblinkUrl = 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe';
 ?>
 <?php
 require '../../config/config.php';
@@ -577,6 +579,16 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
             continue;
         }
         $data[$columnName] = $prefillValue;
+    }
+
+    if (array_key_exists('image', $data) && trim((string)$data['image']) === '') {
+        $data['image'] = $catalogDefaultImageUrl;
+    }
+    if (array_key_exists('weblink', $data) && trim((string)$data['weblink']) === '') {
+        $data['weblink'] = $catalogDefaultWeblinkUrl;
+    }
+    if (array_key_exists('source_url', $data) && trim((string)$data['source_url']) === '') {
+        $data['source_url'] = $catalogDefaultWeblinkUrl;
     }
 }
 
