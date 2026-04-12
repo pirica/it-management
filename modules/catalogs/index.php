@@ -334,6 +334,33 @@ function cr_catalog_extract_unit_price($text) {
 }
 
 /**
+ * Attempts to detect a product price directly from the product page HTML.
+ */
+function cr_catalog_detect_price_from_page($url) {
+    $pageHtml = cr_catalog_fetch_remote_body($url, 10);
+    if ($pageHtml === '') {
+        return null;
+    }
+
+    $metaPricePatterns = [
+        '/property=["\']product:price:amount["\'][^>]*content=["\']([^"\']+)["\']/i',
+        '/property=["\']og:price:amount["\'][^>]*content=["\']([^"\']+)["\']/i',
+        '/itemprop=["\']price["\'][^>]*content=["\']([^"\']+)["\']/i',
+    ];
+    foreach ($metaPricePatterns as $pattern) {
+        if (preg_match($pattern, $pageHtml, $priceMatch)) {
+            $candidate = trim((string)($priceMatch[1] ?? ''));
+            $normalized = preg_replace('/[^0-9.]/', '', $candidate);
+            if ($normalized !== null && $normalized !== '' && is_numeric($normalized)) {
+                return (float)$normalized;
+            }
+        }
+    }
+
+    return cr_catalog_extract_unit_price(strip_tags($pageHtml));
+}
+
+/**
  * Uses lightweight keyword matching to classify equipment type.
  */
 function cr_catalog_guess_equipment_type($title, $snippet, $fallbackType) {
@@ -434,7 +461,7 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
         $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
         if ($unitPrice === null || $unitPrice <= 0) {
-            continue;
+            $unitPrice = cr_catalog_detect_price_from_page($targetUrl);
         }
         $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
 
@@ -510,7 +537,7 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
         $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
         $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
         if ($unitPrice === null || $unitPrice <= 0) {
-            continue;
+            $unitPrice = cr_catalog_detect_price_from_page($link);
         }
         $imageUrl = cr_catalog_detect_image_url_from_page($link);
 
