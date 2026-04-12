@@ -126,6 +126,7 @@ function cr_humanize_field($field) {
     }
 
     $map = [
+        'idfdevicetype_name' => 'IDF Device Type Name',
         'Idfdevicetype' => 'IDF Device Type',
         'field_edit_emoji' => 'Emoji',
         'department_id' => 'Department Name',
