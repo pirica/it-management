@@ -108,6 +108,31 @@ function cr_fk_options($conn, $fk, $company_id) {
 }
 
 /**
+ * Preloads foreign-key display labels so list views show human names instead of numeric IDs.
+ */
+function cr_fk_display_maps($conn, $fkMap, $uiColumns, $company_id) {
+    $maps = [];
+    foreach ($uiColumns as $col) {
+        $field = (string)($col['Field'] ?? '');
+        if ($field === '' || !isset($fkMap[$field])) {
+            continue;
+        }
+
+        $maps[$field] = [];
+        $options = cr_fk_options($conn, $fkMap[$field], (int)$company_id);
+        foreach ($options as $option) {
+            $optionId = (string)($option['id'] ?? '');
+            if ($optionId === '') {
+                continue;
+            }
+            $maps[$field][$optionId] = (string)($option['label'] ?? '');
+        }
+    }
+
+    return $maps;
+}
+
+/**
  * Heuristically finds the best column to use as a display label for a reference table.
  */
 function cr_fk_metadata($conn, $table) {
@@ -199,6 +224,21 @@ function cr_manageable_columns($columns) {
 }
 
 /**
+ * Builds a fast lookup for tinyint(1) fields used as boolean UI controls.
+ */
+function cr_tinyint_field_map($columns) {
+    $map = [];
+    foreach ($columns as $col) {
+        $field = (string)($col['Field'] ?? '');
+        $type = strtolower((string)($col['Type'] ?? ''));
+        if ($field !== '' && str_starts_with($type, 'tinyint(1)')) {
+            $map[$field] = true;
+        }
+    }
+    return $map;
+}
+
+/**
  * Converts DB column names to user-friendly titles.
  */
 function cr_humanize_field($field) {
@@ -236,11 +276,14 @@ function cr_is_hidden_employee_field($field) {
 function cr_render_cell_value($table, $field, $value) {
     $currentAction = (string)($GLOBALS['crud_action'] ?? 'index');
 
-    // View mode uses icon-style booleans (1=✅, 0=❌).
+    // View mode uses icon-style booleans (1=✅, 0=❌) only for known tinyint(1) fields.
     if ($currentAction === 'view') {
-        $normalized = strtolower(trim((string)($value ?? '')));
-        if (in_array($normalized, ['1', '0', 'true', 'false'], true)) {
-            return (in_array($normalized, ['1', 'true'], true) ? '✅' : '❌');
+        $tinyIntFields = $GLOBALS['cr_tinyint_fields'] ?? [];
+        if (isset($tinyIntFields[$field])) {
+            $normalized = strtolower(trim((string)($value ?? '')));
+            if (in_array($normalized, ['1', '0', 'true', 'false'], true)) {
+                return (in_array($normalized, ['1', 'true'], true) ? '✅' : '❌');
+            }
         }
     }
 
@@ -1211,6 +1254,11 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+$formColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return (string)($col['Field'] ?? '') !== 'company_id';
+}));
+$GLOBALS['cr_tinyint_fields'] = cr_tinyint_field_map($fieldColumns);
+$fkDisplayMaps = cr_fk_display_maps($conn, $fkMap, $uiColumns, (int)$company_id);
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -1914,7 +1962,7 @@ if ($crud_table === 'catalogs') {
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1923,14 +1971,21 @@ if ($crud_table === 'catalogs') {
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
-                                        <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
+                                        <?php
+                                            $displayValue = $row[$f] ?? '';
+                                            $fkDisplayKey = trim((string)$displayValue);
+                                            if ($fkDisplayKey !== '' && isset($fkDisplayMaps[$f][$fkDisplayKey])) {
+                                                $displayValue = $fkDisplayMaps[$f][$fkDisplayKey];
+                                            }
+                                        ?>
+                                        <?php if ($f === 'comments' && trim((string)$displayValue) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
                                         <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
+                                            <?php echo cr_render_cell_value($crud_table, $f, $displayValue); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="itm-actions-cell">
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
@@ -1980,7 +2035,7 @@ if ($crud_table === 'catalogs') {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php foreach ($formColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
@@ -1990,9 +2045,7 @@ if ($crud_table === 'catalogs') {
                     ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
-                            <?php elseif ($isTinyInt): ?>
+                            <?php if ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -2058,12 +2111,19 @@ if ($crud_table === 'catalogs') {
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td>
+                                    <?php
+                                        $detailDisplayValue = $data[$f] ?? '';
+                                        $detailFkKey = trim((string)$detailDisplayValue);
+                                        if ($detailFkKey !== '' && isset($fkDisplayMaps[$f][$detailFkKey])) {
+                                            $detailDisplayValue = $fkDisplayMaps[$f][$detailFkKey];
+                                        }
+                                    ?>
                                     <?php if ($crud_table === 'catalogs' && in_array($f, ['image', 'image_url'], true) && trim((string)($data[$f] ?? '')) !== ''): ?>
                                         <div style="max-width:100%;overflow:auto;">
                                             <?php echo cr_catalog_image_preview_html((string)$data[$f], $detailPreviewMaxWidth, $detailPreviewMaxHeight); ?>
                                         </div>
                                     <?php else: ?>
-                                        <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $detailDisplayValue); ?>
                                     <?php endif; ?>
                                 </td>
                             </tr>
