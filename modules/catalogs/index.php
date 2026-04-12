@@ -839,6 +839,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 // FETCH LIST DATA (Pagination, Search, and Sort)
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
+$catalogNewProductsDays = 30;
+$showCatalogNewProducts = ($crud_table === 'catalogs' && (string)($_GET['new_products'] ?? '') === '1');
+if ($showCatalogNewProducts) {
+    $newProductsCondition = '(created_at >= DATE_SUB(NOW(), INTERVAL ' . (int)$catalogNewProductsDays . ' DAY) OR (updated_at IS NOT NULL AND updated_at >= DATE_SUB(NOW(), INTERVAL ' . (int)$catalogNewProductsDays . ' DAY)))';
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . $newProductsCondition;
+}
 
 // SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));
@@ -863,6 +869,7 @@ $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
 if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
+$catalogNewProductsQuery = $showCatalogNewProducts ? '&new_products=1' : '';
 
 // PAGINATION
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -906,7 +913,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <a href="create.php" class="btn btn-primary">➕</a>
                             <?php if ($crud_table === 'catalogs'): ?>
                                 <a href="index.php" class="btn btn-sm">Refresh products</a>
-                                <a href="index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
+                                <a href="index.php?new_products=1&sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -917,7 +924,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <div style="display:flex;gap:8px;">
                             <?php if ($crud_table === 'catalogs'): ?>
                                 <a href="index.php" class="btn btn-sm">Refresh products</a>
-                                <a href="index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
+                                <a href="index.php?new_products=1&sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
                             <?php endif; ?>
                             <a href="create.php" class="btn btn-primary">➕</a>
                         </div>
@@ -925,6 +932,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <span></span>
                     <?php endif; ?>
                 </div>
+                <?php if ($showCatalogNewProducts): ?>
+                    <div class="card" style="margin-bottom:16px;">
+                        <strong>Showing products added or updated in the last <?php echo (int)$catalogNewProductsDays; ?> days.</strong>
+                    </div>
+                <?php endif; ?>
 
                 <!-- TABLE MAINTENANCE -->
                 <div class="card" style="margin-bottom:16px;">
@@ -940,6 +952,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
                         <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <?php if ($showCatalogNewProducts): ?>
+                            <input type="hidden" name="new_products" value="1">
+                        <?php endif; ?>
                         <input type="hidden" name="page" value="1">
                         <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                             <label for="moduleSearch">Search (all fields)</label>
@@ -1001,7 +1016,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?><?php echo $catalogNewProductsQuery; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
@@ -1058,11 +1073,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>">Previous</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?><?php echo $catalogNewProductsQuery; ?>">Previous</a>
                             <?php endif; ?>
                             <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>">Next</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?><?php echo $catalogNewProductsQuery; ?>">Next</a>
                             <?php endif; ?>
                         </div>
                     </div>
