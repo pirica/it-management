@@ -131,6 +131,65 @@ function cr_fk_metadata($conn, $table) {
 }
 
 /**
+ * Resolves a company-scoped reference ID by label and optionally inserts when missing.
+ */
+function cr_catalog_resolve_fk_id_by_name($conn, $table, $name, $companyId, $allowInsert = true) {
+    $label = trim((string)$name);
+    $companyId = (int)$companyId;
+    if ($label === '' || $companyId <= 0 || !itm_is_safe_identifier($table)) {
+        return null;
+    }
+
+    $meta = cr_fk_metadata($conn, $table);
+    $labelCol = $meta['label_col'];
+    $available = $meta['available'];
+    if (!in_array('company_id', $available, true)) {
+        return null;
+    }
+
+    $selectSql = 'SELECT `id` FROM ' . cr_escape_identifier($table) . ' WHERE ' . cr_escape_identifier($labelCol) . '=? AND `company_id`=? LIMIT 1';
+    $selectStmt = mysqli_prepare($conn, $selectSql);
+    if ($selectStmt) {
+        mysqli_stmt_bind_param($selectStmt, 'si', $label, $companyId);
+        mysqli_stmt_execute($selectStmt);
+        $result = mysqli_stmt_get_result($selectStmt);
+        if ($result && ($row = mysqli_fetch_assoc($result))) {
+            mysqli_stmt_close($selectStmt);
+            return (int)$row['id'];
+        }
+        mysqli_stmt_close($selectStmt);
+    }
+
+    if (!$allowInsert) {
+        return null;
+    }
+
+    $fields = ['`company_id`', cr_escape_identifier($labelCol)];
+    $placeholders = ['?', '?'];
+    $types = 'is';
+    $params = [$companyId, $label];
+    if (in_array('active', $available, true)) {
+        $fields[] = '`active`';
+        $placeholders[] = '?';
+        $types .= 'i';
+        $params[] = 1;
+    }
+
+    $insertSql = 'INSERT INTO ' . cr_escape_identifier($table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
+    $insertStmt = mysqli_prepare($conn, $insertSql);
+    if (!$insertStmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($insertStmt, $types, ...$params);
+    $ok = mysqli_stmt_execute($insertStmt);
+    mysqli_stmt_close($insertStmt);
+    if (!$ok) {
+        return null;
+    }
+    return (int)mysqli_insert_id($conn);
+}
+
+/**
  * Removes internal/automatic columns from the manageable field set.
  */
 function cr_manageable_columns($columns) {
@@ -175,6 +234,16 @@ function cr_is_hidden_employee_field($field) {
  * Formats database values for UI display (badges, icons, clickable links).
  */
 function cr_render_cell_value($table, $field, $value) {
+    $currentAction = (string)($GLOBALS['crud_action'] ?? 'index');
+
+    // View mode uses icon-style booleans (1=✅, 0=❌).
+    if ($currentAction === 'view') {
+        $normalized = strtolower(trim((string)($value ?? '')));
+        if (in_array($normalized, ['1', '0', 'true', 'false'], true)) {
+            return (in_array($normalized, ['1', 'true'], true) ? '✅' : '❌');
+        }
+    }
+
     // Status badges for the 'active' flag.
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -190,14 +259,14 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     $text = (string)($value ?? '');
-    if ($table === 'catalogs' && $field === 'image' && $text !== '') {
+    if ($table === 'catalogs' && in_array($field, ['image', 'image_url'], true) && $text !== '') {
         $safeUrl = cr_normalize_external_url($text);
         if ($safeUrl === '') {
             return sanitize($text);
         }
         return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🖼️ Open image</a>';
     }
-    if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url'], true) && $text !== '') {
+    if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url', 'product_url'], true) && $text !== '') {
         $safeUrl = cr_normalize_external_url($text);
         if ($safeUrl === '') {
             return sanitize($text);
@@ -803,32 +872,36 @@ function cr_catalog_search_local_products($conn, $companyId, $searchQuery, $manu
         return $results;
     }
 
-    $sql = 'SELECT `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink` FROM `catalogs` WHERE `model` LIKE ?';
+    $sql = 'SELECT c.`model`, et.`name` AS equipment_type, c.`image_url` AS image, c.`price`, s.`name` AS supplier, c.`product_url` AS weblink'
+        . ' FROM `catalogs` c'
+        . ' LEFT JOIN `equipment_types` et ON et.`id`=c.`equipment_type_id`'
+        . ' LEFT JOIN `suppliers` s ON s.`id`=c.`supplier_id`'
+        . ' WHERE c.`model` LIKE ?';
     $types = 's';
     $params = ['%' . $query . '%'];
 
     if ((int)$companyId > 0) {
-        $sql .= ' AND `company_id`=?';
+        $sql .= ' AND c.`company_id`=?';
         $types .= 'i';
         $params[] = (int)$companyId;
     }
 
     $supplier = trim((string)$supplierFilter);
     if ($supplier !== '') {
-        $sql .= ' AND `supplier`=?';
+        $sql .= ' AND s.`name`=?';
         $types .= 's';
         $params[] = $supplier;
     }
 
     $equipmentType = trim((string)$equipmentTypeFilter);
     if ($equipmentType !== '') {
-        $sql .= ' AND `equipment_type`=?';
+        $sql .= ' AND et.`name`=?';
         $types .= 's';
         $params[] = $equipmentType;
     }
 
     $safeMaxRows = max(1, min(50, (int)$maxRows));
-    $sql .= ' ORDER BY `updated_at` DESC, `id` DESC LIMIT ' . $safeMaxRows;
+    $sql .= ' ORDER BY c.`updated_at` DESC, c.`id` DESC LIMIT ' . $safeMaxRows;
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -1243,10 +1316,7 @@ foreach ($fieldColumns as $col) { $data[$col['Field']] = ''; }
 if ($crud_table === 'catalogs' && $crud_action === 'create') {
     $catalogPrefillMap = [
         'model' => 'online_query',
-        'supplier' => 'online_supplier',
-        'equipment_type' => 'online_type',
-        'weblink' => 'online_weblink',
-        'source_url' => 'online_weblink',
+        'product_url' => 'online_weblink',
     ];
     foreach ($catalogPrefillMap as $columnName => $queryKey) {
         if (!array_key_exists($columnName, $data)) {
@@ -1259,14 +1329,11 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
         $data[$columnName] = $prefillValue;
     }
 
-    if (array_key_exists('image', $data) && trim((string)$data['image']) === '') {
-        $data['image'] = $catalogDefaultImageUrl;
+    if (array_key_exists('image_url', $data) && trim((string)$data['image_url']) === '') {
+        $data['image_url'] = $catalogDefaultImageUrl;
     }
-    if (array_key_exists('weblink', $data) && trim((string)$data['weblink']) === '') {
-        $data['weblink'] = $catalogDefaultWeblinkUrl;
-    }
-    if (array_key_exists('source_url', $data) && trim((string)$data['source_url']) === '') {
-        $data['source_url'] = $catalogDefaultWeblinkUrl;
+    if (array_key_exists('product_url', $data) && trim((string)$data['product_url']) === '') {
+        $data['product_url'] = $catalogDefaultWeblinkUrl;
     }
 }
 
@@ -1363,8 +1430,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         $priceRaw = trim((string)($rowItem['unit_price'] ?? ($rowItem['price'] ?? '')));
         $supplier = trim((string)($rowItem['supplier'] ?? ''));
         $weblink = cr_normalize_external_url((string)($rowItem['weblink'] ?? ''));
+        $manufacturer = trim((string)($rowItem['manufacturer'] ?? ''));
 
-        if ($model === '' || $supplier === '') {
+        if ($model === '') {
             $skippedCount++;
             continue;
         }
@@ -1384,13 +1452,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             continue;
         }
 
-        $insertSql = 'INSERT INTO `catalogs` (`company_id`,`model`,`equipment_type`,`image`,`price`,`supplier`,`weblink`,`active`) VALUES (?,?,?,?,?,?,?,1)';
+        $equipmentTypeId = cr_catalog_resolve_fk_id_by_name($conn, 'equipment_types', $equipmentType !== '' ? $equipmentType : 'Other', $company_id, true);
+        $supplierId = cr_catalog_resolve_fk_id_by_name($conn, 'suppliers', $supplier, $company_id, false);
+        $manufacturerId = cr_catalog_resolve_fk_id_by_name($conn, 'manufacturers', $manufacturer, $company_id, true);
+
+        $insertSql = 'INSERT INTO `catalogs` (`company_id`,`model`,`equipment_type_id`,`image_url`,`price`,`supplier_id`,`manufacturer_id`,`product_url`,`active`) VALUES (?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), ?, 1)';
         $insertStmt = mysqli_prepare($conn, $insertSql);
         if (!$insertStmt) {
             $skippedCount++;
             continue;
         }
-        mysqli_stmt_bind_param($insertStmt, 'isssdss', $company_id, $model, $equipmentType, $image, $priceNumeric, $supplier, $weblink);
+        mysqli_stmt_bind_param($insertStmt, 'isisdiis', $company_id, $model, $equipmentTypeId, $image, $priceNumeric, $supplierId, $manufacturerId, $weblink);
         if (mysqli_stmt_execute($insertStmt)) {
             $savedCount++;
         } else {
@@ -1520,19 +1592,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     // Why: reduce manual catalog work by auto-filling the image URL from the product page when possible.
-    if ($crud_table === 'catalogs' && array_key_exists('image', $data)) {
-        $rawImage = trim((string)($data['image'] ?? ''));
-        $sourceUrl = trim((string)($data['weblink'] ?? ($data['source_url'] ?? '')));
+    if ($crud_table === 'catalogs' && array_key_exists('image_url', $data)) {
+        $rawImage = trim((string)($data['image_url'] ?? ''));
+        $sourceUrl = trim((string)($data['product_url'] ?? ''));
 
         if ($rawImage === '' && $sourceUrl !== '') {
             $detectedImage = cr_catalog_detect_image_url_from_page($sourceUrl);
             if ($detectedImage !== '') {
-                $data['image'] = $detectedImage;
+                $data['image_url'] = $detectedImage;
             }
         } elseif ($rawImage !== '') {
             $normalizedImage = cr_normalize_external_url($rawImage);
             if ($normalizedImage !== '') {
-                $data['image'] = $normalizedImage;
+                $data['image_url'] = $normalizedImage;
             }
         }
     }
@@ -1952,14 +2024,14 @@ if ($crud_table === 'catalogs') {
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
-                            <?php elseif ($crud_table === 'catalogs' && $name === 'image'): ?>
+                            <?php elseif ($crud_table === 'catalogs' && in_array($name, ['image', 'image_url'], true)): ?>
                                 <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg" inputmode="url">
                                 <?php if ($displayVal !== ''): ?>
                                     <div style="margin-top:8px;max-width:100%;overflow:auto;">
                                         <?php echo cr_catalog_image_preview_html($displayVal, 220, 140); ?>
                                     </div>
                                 <?php endif; ?>
-                            <?php elseif ($crud_table === 'catalogs' && in_array($name, ['weblink', 'source_url'], true)): ?>
+                            <?php elseif ($crud_table === 'catalogs' && in_array($name, ['weblink', 'source_url', 'product_url'], true)): ?>
                                 <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe" inputmode="url">
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
@@ -1986,7 +2058,7 @@ if ($crud_table === 'catalogs') {
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td>
-                                    <?php if ($crud_table === 'catalogs' && $f === 'image' && trim((string)($data[$f] ?? '')) !== ''): ?>
+                                    <?php if ($crud_table === 'catalogs' && in_array($f, ['image', 'image_url'], true) && trim((string)($data[$f] ?? '')) !== ''): ?>
                                         <div style="max-width:100%;overflow:auto;">
                                             <?php echo cr_catalog_image_preview_html((string)$data[$f], $detailPreviewMaxWidth, $detailPreviewMaxHeight); ?>
                                         </div>
