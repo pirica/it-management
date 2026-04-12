@@ -737,10 +737,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <div style="display:flex;gap:8px;">
                             <a href="create.php" class="btn btn-primary">➕</a>
-                            <?php if ($crud_table === 'manufacturers'): ?>
-                                <a href="../catalogs/index.php" class="btn btn-sm">Refresh products</a>
-                                <a href="../catalogs/index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
-                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <span></span>
@@ -748,10 +744,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                         <div style="display:flex;gap:8px;">
-                            <?php if ($crud_table === 'manufacturers'): ?>
-                                <a href="../catalogs/index.php" class="btn btn-sm">Refresh products</a>
-                                <a href="../catalogs/index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
-                            <?php endif; ?>
                             <a href="create.php" class="btn btn-primary">➕</a>
                         </div>
                     <?php else: ?>
