@@ -499,7 +499,9 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         return $results;
     }
 
-    $maxRows = max(1, min(30, (int)$quantity));
+    // Why: keep online discovery predictable for operators by always returning
+    // up to a fixed 20-result batch regardless of form input variations.
+    $maxRows = 20;
     $seenLinks = [];
 
     // Why: keep payload `search_query` unchanged, but widen actual engine queries
@@ -627,7 +629,9 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
         return $results;
     }
 
-    $maxRows = max(1, min(30, (int)$quantity));
+    // Why: mirror primary search behavior so fallback results keep the same
+    // operator-visible batch size.
+    $maxRows = 20;
     $seenLinks = [];
     foreach ($rss->channel->item as $item) {
         if (count($results) >= $maxRows) {
@@ -1440,40 +1444,16 @@ if (!empty($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 
-$catalogOnlineManufacturer = '';
 $catalogOnlineQuery = '';
-$catalogOnlineSupplier = '';
-$catalogOnlineType = '';
-$catalogOnlineQuantity = 10;
 $catalogOnlineResults = [];
 $catalogOnlineResultsPayload = '';
-$catalogManufacturerOptions = [];
 
 if ($crud_table === 'catalogs') {
-    $catalogOnlineManufacturer = trim((string)($_GET['online_manufacturer'] ?? ''));
     $catalogOnlineQuery = trim((string)($_GET['online_query'] ?? ''));
-    $catalogOnlineSupplier = trim((string)($_GET['online_supplier'] ?? ''));
-    $catalogOnlineType = trim((string)($_GET['online_type'] ?? ''));
-    $catalogOnlineQuantity = (int)($_GET['online_quantity'] ?? 10);
-    if ($catalogOnlineQuantity < 1) { $catalogOnlineQuantity = 1; }
-    if ($catalogOnlineQuantity > 30) { $catalogOnlineQuantity = 30; }
-
-    $manufacturerSql = 'SELECT name FROM `manufacturers` WHERE `active`=1';
-    if ($company_id > 0) {
-        $manufacturerSql .= ' AND `company_id`=' . (int)$company_id;
-    }
-    $manufacturerSql .= ' ORDER BY `name` ASC';
-    $manufacturerRes = mysqli_query($conn, $manufacturerSql);
-    while ($manufacturerRes && ($manufacturerRow = mysqli_fetch_assoc($manufacturerRes))) {
-        $mName = trim((string)($manufacturerRow['name'] ?? ''));
-        if ($mName !== '') {
-            $catalogManufacturerOptions[] = $mName;
-        }
-    }
 
     $runOnlineSearch = ((string)($_GET['online_run'] ?? '') === '1');
     if ($runOnlineSearch) {
-        $catalogOnlineResults = cr_catalog_search_online_products($catalogOnlineQuery, $catalogOnlineManufacturer, $catalogOnlineSupplier, $catalogOnlineType, $catalogOnlineQuantity);
+        $catalogOnlineResults = cr_catalog_search_online_products($catalogOnlineQuery, '', '', '', 20);
         $catalogOnlineResultsPayload = base64_encode(json_encode($catalogOnlineResults));
     }
 }
@@ -1568,27 +1548,6 @@ if ($crud_table === 'catalogs') {
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="catalogOnlineQuery">Search Online</label>
                                 <input type="text" id="catalogOnlineQuery" name="online_query" value="<?php echo sanitize($catalogOnlineQuery); ?>" placeholder="Type a product model to search online...">
-                            </div>
-                            <div class="form-group" style="margin:0;min-width:220px;">
-                                <label for="catalogOnlineManufacturer">Manufacturer</label>
-                                <select id="catalogOnlineManufacturer" name="online_manufacturer">
-                                    <option value="">Select manufacturer</option>
-                                    <?php foreach ($catalogManufacturerOptions as $manufacturerOption): ?>
-                                        <option value="<?php echo sanitize($manufacturerOption); ?>" <?php echo ($catalogOnlineManufacturer === $manufacturerOption) ? 'selected' : ''; ?>><?php echo sanitize($manufacturerOption); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin:0;min-width:180px;">
-                                <label for="catalogOnlineSupplier">Supplier</label>
-                                <input type="text" id="catalogOnlineSupplier" name="online_supplier" value="<?php echo sanitize($catalogOnlineSupplier); ?>" placeholder="Optional supplier">
-                            </div>
-                            <div class="form-group" style="margin:0;min-width:180px;">
-                                <label for="catalogOnlineType">Equipment Type</label>
-                                <input type="text" id="catalogOnlineType" name="online_type" value="<?php echo sanitize($catalogOnlineType); ?>" placeholder="Optional type">
-                            </div>
-                            <div class="form-group" style="margin:0;min-width:120px;">
-                                <label for="catalogOnlineQuantity">Quantity</label>
-                                <input type="number" id="catalogOnlineQuantity" name="online_quantity" min="1" max="30" value="<?php echo (int)$catalogOnlineQuantity; ?>">
                             </div>
                             <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
                                 <button type="submit" class="btn btn-primary">Prepare Search</button>
