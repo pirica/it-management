@@ -1883,13 +1883,23 @@ WHERE t.`company_id` = 1
   AND COALESCE(et_target.`id`, et_fallback.`id`) IS NOT NULL
   AND COALESCE(es_target.`id`, es_fallback.`id`) IS NOT NULL;
 INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status`, `connected_to`, `vlan`, `speed`, `poe`, `notes`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status`, t.`connected_to`, t.`vlan`, t.`speed`, t.`poe`, t.`notes`, t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
-INSERT INTO `idf_device_type` (`company_id`, `name`, `active`, `created_at`, `updated_at`) SELECT c.`id`, t.`name`, t.`active`, t.`created_at`, t.`updated_at` FROM `idf_device_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_device_type` (`company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`)
+SELECT c.`id`, t.`idfdevicetype_name`, t.`field_edit_emoji`, t.`active`, t.`created_at`, t.`updated_at`
+FROM `idf_device_type` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+WHERE t.`company_id` = 1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM `idf_device_type` t_existing
+    WHERE t_existing.`company_id` = c.`id`
+      AND t_existing.`idfdevicetype_name` = t.`idfdevicetype_name`
+  );
 INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`)
 SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at`
 FROM `idf_positions` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `idf_device_type` dt_source ON dt_source.`id` = t.`device_type`
-LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_target.`name` = dt_source.`name`
+LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_target.`idfdevicetype_name` = dt_source.`idfdevicetype_name`
 WHERE t.`company_id` = 1
   AND dt_target.`id` IS NOT NULL;
 INSERT INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
