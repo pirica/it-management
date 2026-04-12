@@ -188,8 +188,14 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     $text = (string)($value ?? '');
+    if ($table === 'catalogs' && $field === 'image' && $text !== '') {
+        return cr_catalog_image_preview_html($text, 96, 72);
+    }
     if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url'], true) && $text !== '') {
-        $safeUrl = filter_var($text, FILTER_VALIDATE_URL) ? $text : ('https://' . ltrim($text, '/'));
+        $safeUrl = cr_normalize_external_url($text);
+        if ($safeUrl === '') {
+            return sanitize($text);
+        }
         return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🔗 Open</a>';
     }
 
@@ -213,6 +219,133 @@ function cr_catalog_search_url($query) {
         return '';
     }
     return 'https://www.google.com/search?q=' . rawurlencode($trimmed);
+}
+
+/**
+ * Normalizes user-provided URLs into safe absolute HTTP(S) links.
+ */
+function cr_normalize_external_url($rawUrl) {
+    $url = trim((string)$rawUrl);
+    if ($url === '') {
+        return '';
+    }
+
+    if (!preg_match('#^https?://#i', $url)) {
+        $url = 'https://' . ltrim($url, '/');
+    }
+
+    $valid = filter_var($url, FILTER_VALIDATE_URL);
+    if ($valid === false) {
+        return '';
+    }
+
+    $parts = parse_url((string)$valid);
+    $scheme = strtolower((string)($parts['scheme'] ?? ''));
+    if (!in_array($scheme, ['http', 'https'], true)) {
+        return '';
+    }
+
+    return (string)$valid;
+}
+
+/**
+ * Resolves relative image URLs against a base page URL.
+ */
+function cr_resolve_relative_url($baseUrl, $relativeUrl) {
+    $relative = trim((string)$relativeUrl);
+    if ($relative === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $relative)) {
+        return cr_normalize_external_url($relative);
+    }
+    if (str_starts_with($relative, '//')) {
+        $baseParts = parse_url((string)$baseUrl);
+        $scheme = (string)($baseParts['scheme'] ?? 'https');
+        return cr_normalize_external_url($scheme . ':' . $relative);
+    }
+
+    $baseParts = parse_url((string)$baseUrl);
+    $scheme = (string)($baseParts['scheme'] ?? 'https');
+    $host = (string)($baseParts['host'] ?? '');
+    if ($host === '') {
+        return '';
+    }
+    $port = isset($baseParts['port']) ? ':' . (int)$baseParts['port'] : '';
+    $path = (string)($baseParts['path'] ?? '/');
+    $baseDir = preg_replace('#/[^/]*$#', '/', $path);
+    if ($baseDir === null || $baseDir === '') {
+        $baseDir = '/';
+    }
+
+    if (str_starts_with($relative, '/')) {
+        return cr_normalize_external_url($scheme . '://' . $host . $port . $relative);
+    }
+    return cr_normalize_external_url($scheme . '://' . $host . $port . $baseDir . $relative);
+}
+
+/**
+ * Fetches an image URL candidate from a catalog product page.
+ */
+function cr_catalog_detect_image_url_from_page($pageUrl) {
+    $normalizedPageUrl = cr_normalize_external_url($pageUrl);
+    if ($normalizedPageUrl === '') {
+        return '';
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 8,
+            'ignore_errors' => true,
+            'header' => "User-Agent: ITManagementCatalogBot/1.0\r\n",
+        ],
+        'ssl' => [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+        ],
+    ]);
+
+    $html = @file_get_contents($normalizedPageUrl, false, $context);
+    if ($html === false || trim((string)$html) === '') {
+        return '';
+    }
+
+    $patterns = [
+        '/<meta[^>]+property=["\']og:image(?:secure_url)?["\'][^>]+content=["\']([^"\']+)["\']/i',
+        '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image(?:secure_url)?["\']/i',
+        '/<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']/i',
+        '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image(?::src)?["\']/i',
+        '/<img[^>]+src=["\']([^"\']+)["\']/i',
+    ];
+
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, (string)$html, $matches)) {
+            $candidate = cr_resolve_relative_url($normalizedPageUrl, (string)($matches[1] ?? ''));
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Renders a constrained image preview to keep table/detail layouts stable.
+ */
+function cr_catalog_image_preview_html($value, $maxWidth = 120, $maxHeight = 80) {
+    $normalizedUrl = cr_normalize_external_url((string)$value);
+    if ($normalizedUrl === '') {
+        return sanitize((string)$value);
+    }
+
+    $width = max(40, (int)$maxWidth);
+    $height = max(40, (int)$maxHeight);
+    return '<a href="' . sanitize($normalizedUrl) . '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;">'
+        . '<img src="' . sanitize($normalizedUrl) . '" alt="Catalog image" loading="lazy" style="max-width:' . $width . 'px;max-height:' . $height . 'px;width:auto;height:auto;object-fit:contain;border:1px solid #d5d9e2;border-radius:6px;background:#fff;">'
+        . '<span>🖼️</span>'
+        . '</a>';
 }
 
 
@@ -609,6 +742,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
+    // Why: reduce manual catalog work by auto-filling the image URL from the product page when possible.
+    if ($crud_table === 'catalogs' && array_key_exists('image', $data)) {
+        $rawImage = trim((string)($data['image'] ?? ''));
+        $sourceUrl = trim((string)($data['weblink'] ?? ($data['source_url'] ?? '')));
+
+        if ($rawImage === '' && $sourceUrl !== '') {
+            $detectedImage = cr_catalog_detect_image_url_from_page($sourceUrl);
+            if ($detectedImage !== '') {
+                $data['image'] = $detectedImage;
+            }
+        } elseif ($rawImage !== '') {
+            $normalizedImage = cr_normalize_external_url($rawImage);
+            if ($normalizedImage !== '') {
+                $data['image'] = $normalizedImage;
+            }
+        }
+    }
+
     // PERSISTENCE (Prepared Statements)
     if (empty($errors)) {
         $fields = []; $placeholders = []; $params = []; $types = '';
@@ -950,6 +1101,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
+                            <?php elseif ($crud_table === 'catalogs' && $name === 'image'): ?>
+                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="Auto-filled from weblink if left empty" inputmode="url">
+                                <?php if ($displayVal !== ''): ?>
+                                    <div style="margin-top:8px;max-width:100%;overflow:auto;">
+                                        <?php echo cr_catalog_image_preview_html($displayVal, 220, 140); ?>
+                                    </div>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -963,6 +1121,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- VIEW (DETAILS) -->
+                <?php
+                    $detailPreviewMaxWidth = isset($crud_catalog_image_preview_max_width) ? max(200, (int)$crud_catalog_image_preview_max_width) : 560;
+                    $detailPreviewMaxHeight = isset($crud_catalog_image_preview_max_height) ? max(160, (int)$crud_catalog_image_preview_max_height) : 360;
+                ?>
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
                 <div class="card">
                     <table>
@@ -970,7 +1132,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php if ($crud_table === 'catalogs' && $f === 'image' && trim((string)($data[$f] ?? '')) !== ''): ?>
+                                        <div style="max-width:100%;overflow:auto;">
+                                            <?php echo cr_catalog_image_preview_html((string)$data[$f], $detailPreviewMaxWidth, $detailPreviewMaxHeight); ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
