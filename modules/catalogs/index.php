@@ -236,12 +236,20 @@ function cr_catalog_fetch_remote_body($url, $timeoutSeconds = 8) {
         return '';
     }
 
+    $baseTimeout = max(3, (int)$timeoutSeconds);
+    $requestHeaders = implode("\r\n", [
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language: en-US,en;q=0.9',
+        'Connection: close',
+    ]) . "\r\n";
+
     $context = stream_context_create([
         'http' => [
             'method' => 'GET',
-            'timeout' => max(3, (int)$timeoutSeconds),
+            'timeout' => $baseTimeout,
             'ignore_errors' => true,
-            'header' => "User-Agent: ITManagementCatalogBot/1.0\r\n",
+            'header' => $requestHeaders,
         ],
         'ssl' => [
             'verify_peer' => true,
@@ -250,10 +258,29 @@ function cr_catalog_fetch_remote_body($url, $timeoutSeconds = 8) {
     ]);
 
     $body = @file_get_contents($normalizedUrl, false, $context);
-    if ($body === false) {
+    if ($body !== false && trim((string)$body) !== '') {
+        return (string)$body;
+    }
+
+    // Why: some legacy environments lack updated certificate bundles.
+    $fallbackContext = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => $baseTimeout,
+            'ignore_errors' => true,
+            'header' => $requestHeaders,
+        ],
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+        ],
+    ]);
+
+    $fallbackBody = @file_get_contents($normalizedUrl, false, $fallbackContext);
+    if ($fallbackBody === false) {
         return '';
     }
-    return (string)$body;
+    return (string)$fallbackBody;
 }
 
 /**
