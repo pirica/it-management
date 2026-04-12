@@ -830,30 +830,37 @@ CREATE TABLE `catalogs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `model` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `equipment_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `equipment_type_id` int DEFAULT NULL,
+  `image_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
-  `supplier` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `weblink` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `supplier_id` int DEFAULT NULL,
+  `manufacturer_id` int DEFAULT NULL,
+  `product_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_catalogs_company_model_supplier` (`company_id`,`model`,`supplier`),
+  UNIQUE KEY `uq_catalogs_company_model_supplier` (`company_id`,`model`,`supplier_id`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `catalogs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `equipment_type_id` (`equipment_type_id`),
+  KEY `supplier_id` (`supplier_id`),
+  KEY `manufacturer_id` (`manufacturer_id`),
+  CONSTRAINT `catalogs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `catalogs_ibfk_equipment_type` FOREIGN KEY (`equipment_type_id`) REFERENCES `equipment_types` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `catalogs_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `catalogs_ibfk_manufacturer` FOREIGN KEY (`manufacturer_id`) REFERENCES `manufacturers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `catalogs`
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('1', '1', 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 'Switch', NULL, '500.00', 'Amazon', 'https://www.amazon.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('2', '1', 'Cisco Catalyst C9200L-24P-4G-A', 'Switch', NULL, '3899.00', 'CDW', 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('3', '1', 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 'Switch', NULL, '699.00', 'Newegg', 'https://www.newegg.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('4', '1', 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 'Switch', NULL, '329.99', 'B&H', 'https://www.bhphotovideo.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('5', '1', 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 'Switch', NULL, '39.99', 'Best Buy', 'https://www.bestbuy.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('6', '1', 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 'Switch', NULL, '29.99', 'Walmart', 'https://www.walmart.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('7', '1', 'Ubiquiti UniFi Switch USW Pro 24 PoE', 'Switch', NULL, '698.99', 'Office Depot', 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('8', '1', 'Ubiquiti Networks UniFi Switch 24 PoE', 'Switch', NULL, '379.00', 'Sweetwater', 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('9', '1', 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 'Switch', NULL, '459.99', 'Adorama', 'https://www.adorama.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('10', '1', 'Cisco Meraki MS120-24P Cloud Managed Switch', 'Switch', NULL, '1599.00', 'Insight', 'https://www.insight.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('1', '1', 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', '1', NULL, '500.00', NULL, '3', 'https://www.amazon.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('2', '1', 'Cisco Catalyst C9200L-24P-4G-A', '1', NULL, '3899.00', NULL, '1', 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('3', '1', 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', '1', NULL, '699.00', NULL, '5', 'https://www.newegg.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('4', '1', 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', '1', NULL, '329.99', NULL, NULL, 'https://www.bhphotovideo.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('5', '1', 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', '1', NULL, '39.99', NULL, NULL, 'https://www.bestbuy.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('6', '1', 'D-Link DGS-108 8-Port Gigabit Desktop Switch', '1', NULL, '29.99', NULL, NULL, 'https://www.walmart.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('7', '1', 'Ubiquiti UniFi Switch USW Pro 24 PoE', '1', NULL, '698.99', NULL, '5', 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('8', '1', 'Ubiquiti Networks UniFi Switch 24 PoE', '1', NULL, '379.00', NULL, '5', 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('9', '1', 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', '1', NULL, '459.99', NULL, NULL, 'https://www.adorama.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('10', '1', 'Cisco Meraki MS120-24P Cloud Managed Switch', '1', NULL, '1599.00', NULL, '1', 'https://www.insight.com/', '1');
 
 
 -- Table structure for `patches_updates_status`
