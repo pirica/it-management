@@ -22,7 +22,7 @@ $sql = "SELECT
             sp.status_id AS equipment_status_id,
             COALESCE(ss.status, '') AS equipment_status,
             sp.color_id AS equipment_color_id,
-            COALESCE(sc.color, '') AS equipment_color
+            COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color
         FROM switch_ports sp
         JOIN equipment e ON e.id = sp.equipment_id
         LEFT JOIN vlans v ON v.id = sp.vlan_id
