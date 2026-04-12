@@ -228,6 +228,192 @@ function cr_catalog_search_url($query) {
 }
 
 /**
+ * Fetches a remote URL with a small timeout for catalog discovery workflows.
+ */
+function cr_catalog_fetch_remote_body($url, $timeoutSeconds = 8) {
+    $normalizedUrl = cr_normalize_external_url($url);
+    if ($normalizedUrl === '') {
+        return '';
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => max(3, (int)$timeoutSeconds),
+            'ignore_errors' => true,
+            'header' => "User-Agent: ITManagementCatalogBot/1.0\r\n",
+        ],
+        'ssl' => [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+        ],
+    ]);
+
+    $body = @file_get_contents($normalizedUrl, false, $context);
+    if ($body === false) {
+        return '';
+    }
+    return (string)$body;
+}
+
+/**
+ * Guesses a supplier name from a URL host.
+ */
+function cr_catalog_guess_supplier_from_url($url) {
+    $parts = parse_url((string)$url);
+    $host = strtolower((string)($parts['host'] ?? ''));
+    if ($host === '') {
+        return '';
+    }
+    $host = preg_replace('/^www\./i', '', $host);
+    if ($host === null || $host === '') {
+        return '';
+    }
+    $segments = explode('.', $host);
+    $label = $segments[0] ?? '';
+    $label = str_replace(['-', '_'], ' ', $label);
+    return ucwords(trim((string)$label));
+}
+
+/**
+ * Extracts a visible price token from text snippets.
+ */
+function cr_catalog_extract_price($text) {
+    $rawText = (string)$text;
+    if ($rawText === '') {
+        return '';
+    }
+    if (preg_match('/([$€£])\s?([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)/', $rawText, $m)) {
+        return trim((string)($m[1] . $m[2]));
+    }
+    return '';
+}
+
+/**
+ * Uses lightweight keyword matching to classify equipment type.
+ */
+function cr_catalog_guess_equipment_type($title, $snippet, $fallbackType) {
+    $defaultType = trim((string)$fallbackType);
+    if ($defaultType !== '') {
+        return $defaultType;
+    }
+
+    $haystack = strtolower(trim((string)$title . ' ' . (string)$snippet));
+    $typeMap = [
+        'switch' => ['switch', 'poe switch', 'ethernet switch'],
+        'router' => ['router', 'gateway'],
+        'access point' => ['access point', 'wifi', 'wireless ap', 'wi-fi'],
+        'server' => ['server', 'rack server'],
+        'firewall' => ['firewall', 'utm appliance'],
+        'laptop' => ['laptop', 'notebook'],
+        'desktop' => ['desktop', 'tower pc', 'workstation'],
+        'printer' => ['printer', 'multifunction'],
+        'monitor' => ['monitor', 'display'],
+    ];
+
+    foreach ($typeMap as $typeLabel => $keywords) {
+        foreach ($keywords as $keyword) {
+            if ($keyword !== '' && str_contains($haystack, $keyword)) {
+                return ucwords($typeLabel);
+            }
+        }
+    }
+
+    return 'Other';
+}
+
+/**
+ * Runs online catalog discovery using DuckDuckGo HTML results.
+ */
+function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity) {
+    $results = [];
+    $queryParts = [];
+    foreach ([$manufacturerName, $modelQuery, $supplierFilter, $equipmentTypeFilter, 'buy'] as $part) {
+        $cleanPart = trim((string)$part);
+        if ($cleanPart !== '') {
+            $queryParts[] = $cleanPart;
+        }
+    }
+    if (empty($queryParts)) {
+        return $results;
+    }
+
+    $searchUrl = 'https://duckduckgo.com/html/?q=' . rawurlencode(implode(' ', $queryParts));
+    $html = cr_catalog_fetch_remote_body($searchUrl, 10);
+    if ($html === '') {
+        return $results;
+    }
+
+    preg_match_all('/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+    $seenLinks = [];
+    $maxRows = max(1, min(30, (int)$quantity));
+
+    foreach ($matches as $match) {
+        if (count($results) >= $maxRows) {
+            break;
+        }
+
+        $rawHref = html_entity_decode((string)($match[1] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $titleHtml = (string)($match[2] ?? '');
+        $title = trim(strip_tags(html_entity_decode($titleHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+        if ($rawHref === '' || $title === '') {
+            continue;
+        }
+
+        $targetUrl = $rawHref;
+        $hrefParts = parse_url($rawHref);
+        if (($hrefParts['path'] ?? '') === '/l/' && !empty($hrefParts['query'])) {
+            parse_str((string)$hrefParts['query'], $q);
+            if (!empty($q['uddg'])) {
+                $targetUrl = (string)$q['uddg'];
+            }
+        }
+        $targetUrl = cr_normalize_external_url($targetUrl);
+        if ($targetUrl === '' || isset($seenLinks[$targetUrl])) {
+            continue;
+        }
+        $seenLinks[$targetUrl] = 1;
+
+        $supplier = trim((string)$supplierFilter);
+        if ($supplier === '') {
+            $supplier = cr_catalog_guess_supplier_from_url($targetUrl);
+        }
+
+        $snippet = '';
+        $snippetRegex = '/href="' . preg_quote((string)($match[1] ?? ''), '/') . '".*?<a[^>]*>(.*?)<\/a>(.*?)<\/div>/is';
+        if (preg_match($snippetRegex, $html, $snippetMatch)) {
+            $snippet = trim(strip_tags(html_entity_decode((string)($snippetMatch[2] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        }
+
+        $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
+        $priceToken = cr_catalog_extract_price($title . ' ' . $snippet);
+        $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
+
+        $results[] = [
+            'model' => $title,
+            'equipment_type' => $equipmentType,
+            'product_image_url' => $imageUrl,
+            'price' => $priceToken,
+            'supplier' => $supplier,
+            'weblink' => $targetUrl,
+            'json' => [
+                'model' => $title,
+                'equipment_type' => $equipmentType,
+                'product_image_url' => $imageUrl,
+                'price' => $priceToken,
+                'supplier' => $supplier,
+                'weblink' => $targetUrl,
+                'manufacturer' => trim((string)$manufacturerName),
+                'search_query' => implode(' ', $queryParts),
+            ],
+        ];
+    }
+
+    return $results;
+}
+
+/**
  * Normalizes user-provided URLs into safe absolute HTTP(S) links.
  */
 function cr_normalize_external_url($rawUrl) {
@@ -649,6 +835,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     exit;
 }
 
+// Persist selected online search results into catalogs.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['save_online_products'])) {
+    cr_require_valid_csrf_token();
+
+    if (!$hasCompany || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Saving online products requires an active company.';
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    $payloadRaw = (string)($_POST['online_results_payload'] ?? '');
+    $selectedRows = $_POST['selected_online_rows'] ?? [];
+    if (!is_array($selectedRows)) {
+        $selectedRows = [];
+    }
+
+    $decodedRows = json_decode(base64_decode($payloadRaw, true) ?: '', true);
+    if (!is_array($decodedRows)) {
+        $decodedRows = [];
+    }
+
+    $savedCount = 0;
+    $skippedCount = 0;
+    foreach ($selectedRows as $rowIndexRaw) {
+        $rowIndex = (int)$rowIndexRaw;
+        if (!isset($decodedRows[$rowIndex]) || !is_array($decodedRows[$rowIndex])) {
+            continue;
+        }
+
+        $rowItem = $decodedRows[$rowIndex];
+        $model = trim((string)($rowItem['model'] ?? ''));
+        $equipmentType = trim((string)($rowItem['equipment_type'] ?? 'Other'));
+        $image = cr_normalize_external_url((string)($rowItem['product_image_url'] ?? ''));
+        $priceRaw = trim((string)($rowItem['price'] ?? ''));
+        $supplier = trim((string)($rowItem['supplier'] ?? ''));
+        $weblink = cr_normalize_external_url((string)($rowItem['weblink'] ?? ''));
+
+        if ($model === '' || $supplier === '') {
+            $skippedCount++;
+            continue;
+        }
+
+        $priceNumeric = null;
+        if ($priceRaw !== '') {
+            $priceNormalized = preg_replace('/[^0-9.]/', '', $priceRaw);
+            if ($priceNormalized !== null && $priceNormalized !== '' && is_numeric($priceNormalized)) {
+                $priceNumeric = (float)$priceNormalized;
+            }
+        }
+
+        $insertSql = 'INSERT INTO `catalogs` (`company_id`,`model`,`equipment_type`,`image`,`price`,`supplier`,`weblink`,`active`) VALUES (?,?,?,?,?,?,?,1)';
+        $insertStmt = mysqli_prepare($conn, $insertSql);
+        if (!$insertStmt) {
+            $skippedCount++;
+            continue;
+        }
+        mysqli_stmt_bind_param($insertStmt, 'isssdss', $company_id, $model, $equipmentType, $image, $priceNumeric, $supplier, $weblink);
+        if (mysqli_stmt_execute($insertStmt)) {
+            $savedCount++;
+        } else {
+            $skippedCount++;
+        }
+        mysqli_stmt_close($insertStmt);
+    }
+
+    if ($savedCount > 0) {
+        $_SESSION['crud_success'] = $savedCount . ' online product(s) saved.';
+    }
+    if ($savedCount === 0 && $skippedCount > 0) {
+        $_SESSION['crud_error'] = 'No online products were saved. Please review selected rows.';
+    }
+
+    header('Location: ' . $listUrl);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
@@ -886,6 +1148,50 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
+
+$successMessage = '';
+if (!empty($_SESSION['crud_success'])) {
+    $successMessage = (string)$_SESSION['crud_success'];
+    unset($_SESSION['crud_success']);
+}
+
+$catalogOnlineManufacturer = '';
+$catalogOnlineQuery = '';
+$catalogOnlineSupplier = '';
+$catalogOnlineType = '';
+$catalogOnlineQuantity = 10;
+$catalogOnlineResults = [];
+$catalogOnlineResultsPayload = '';
+$catalogManufacturerOptions = [];
+
+if ($crud_table === 'catalogs') {
+    $catalogOnlineManufacturer = trim((string)($_GET['online_manufacturer'] ?? ''));
+    $catalogOnlineQuery = trim((string)($_GET['online_query'] ?? ''));
+    $catalogOnlineSupplier = trim((string)($_GET['online_supplier'] ?? ''));
+    $catalogOnlineType = trim((string)($_GET['online_type'] ?? ''));
+    $catalogOnlineQuantity = (int)($_GET['online_quantity'] ?? 10);
+    if ($catalogOnlineQuantity < 1) { $catalogOnlineQuantity = 1; }
+    if ($catalogOnlineQuantity > 30) { $catalogOnlineQuantity = 30; }
+
+    $manufacturerSql = 'SELECT name FROM `manufacturers` WHERE `active`=1';
+    if ($company_id > 0) {
+        $manufacturerSql .= ' AND `company_id`=' . (int)$company_id;
+    }
+    $manufacturerSql .= ' ORDER BY `name` ASC';
+    $manufacturerRes = mysqli_query($conn, $manufacturerSql);
+    while ($manufacturerRes && ($manufacturerRow = mysqli_fetch_assoc($manufacturerRes))) {
+        $mName = trim((string)($manufacturerRow['name'] ?? ''));
+        if ($mName !== '') {
+            $catalogManufacturerOptions[] = $mName;
+        }
+    }
+
+    $runOnlineSearch = ((string)($_GET['online_run'] ?? '') === '1');
+    if ($runOnlineSearch) {
+        $catalogOnlineResults = cr_catalog_search_online_products($catalogOnlineQuery, $catalogOnlineManufacturer, $catalogOnlineSupplier, $catalogOnlineType, $catalogOnlineQuantity);
+        $catalogOnlineResultsPayload = base64_encode(json_encode($catalogOnlineResults));
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -901,6 +1207,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <?php if ($successMessage !== ''): ?>
+                <div class="alert alert-success"><?php echo sanitize($successMessage); ?></div>
+            <?php endif; ?>
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
             <?php endif; ?>
@@ -968,23 +1277,21 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 </div>
 
                 <?php if ($crud_table === 'catalogs'): ?>
-                    <?php
-                        $catalogOnlineQuery = trim((string)($_GET['online_query'] ?? ''));
-                        $catalogOnlineSupplier = trim((string)($_GET['online_supplier'] ?? ''));
-                        $catalogOnlineType = trim((string)($_GET['online_type'] ?? ''));
-                        $catalogOnlineSearchUrl = cr_catalog_search_url($catalogOnlineQuery);
-                        $catalogAddParams = [
-                            'online_query' => $catalogOnlineQuery,
-                            'online_supplier' => $catalogOnlineSupplier,
-                            'online_type' => $catalogOnlineType,
-                            'online_weblink' => $catalogOnlineSearchUrl,
-                        ];
-                    ?>
                     <div class="card" style="margin-bottom:16px;">
                         <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <input type="hidden" name="online_run" value="1">
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="catalogOnlineQuery">Search Online</label>
                                 <input type="text" id="catalogOnlineQuery" name="online_query" value="<?php echo sanitize($catalogOnlineQuery); ?>" placeholder="Type a product model to search online...">
+                            </div>
+                            <div class="form-group" style="margin:0;min-width:220px;">
+                                <label for="catalogOnlineManufacturer">Manufacturer</label>
+                                <select id="catalogOnlineManufacturer" name="online_manufacturer">
+                                    <option value="">Select manufacturer</option>
+                                    <?php foreach ($catalogManufacturerOptions as $manufacturerOption): ?>
+                                        <option value="<?php echo sanitize($manufacturerOption); ?>" <?php echo ($catalogOnlineManufacturer === $manufacturerOption) ? 'selected' : ''; ?>><?php echo sanitize($manufacturerOption); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="form-group" style="margin:0;min-width:180px;">
                                 <label for="catalogOnlineSupplier">Supplier</label>
@@ -994,16 +1301,75 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <label for="catalogOnlineType">Equipment Type</label>
                                 <input type="text" id="catalogOnlineType" name="online_type" value="<?php echo sanitize($catalogOnlineType); ?>" placeholder="Optional type">
                             </div>
+                            <div class="form-group" style="margin:0;min-width:120px;">
+                                <label for="catalogOnlineQuantity">Quantity</label>
+                                <input type="number" id="catalogOnlineQuantity" name="online_quantity" min="1" max="30" value="<?php echo (int)$catalogOnlineQuantity; ?>">
+                            </div>
                             <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
-                                <?php if ($catalogOnlineSearchUrl !== ''): ?>
-                                    <a href="<?php echo sanitize($catalogOnlineSearchUrl); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm">Search Online</a>
-                                    <a href="create.php?<?php echo sanitize(http_build_query($catalogAddParams)); ?>" class="btn btn-primary">Add Product to Catalogs</a>
-                                <?php else: ?>
-                                    <button type="submit" class="btn btn-primary">Prepare Search</button>
-                                <?php endif; ?>
+                                <button type="submit" class="btn btn-primary">Prepare Search</button>
                             </div>
                         </form>
                     </div>
+
+                    <?php if (!empty($catalogOnlineResults)): ?>
+                        <div class="card" style="margin-bottom:16px;overflow:auto;">
+                            <form method="POST">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="save_online_products" value="1">
+                                <input type="hidden" name="online_results_payload" value="<?php echo sanitize((string)$catalogOnlineResultsPayload); ?>">
+                                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                                    <strong>Search results (<?php echo count($catalogOnlineResults); ?>)</strong>
+                                    <button type="submit" class="btn btn-primary">Save Selected to DB</button>
+                                </div>
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th style="width:36px;"><input type="checkbox" id="select-all-online" aria-label="Select all online rows"></th>
+                                        <th>Model</th>
+                                        <th>Equipment Type</th>
+                                        <th>Product Image URL</th>
+                                        <th>Price</th>
+                                        <th>Supplier</th>
+                                        <th>Product Page</th>
+                                        <th>JSON</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($catalogOnlineResults as $onlineIndex => $onlineRow): ?>
+                                        <tr>
+                                            <td><input type="checkbox" class="online-row-checkbox" name="selected_online_rows[]" value="<?php echo (int)$onlineIndex; ?>"></td>
+                                            <td><?php echo sanitize((string)($onlineRow['model'] ?? '')); ?></td>
+                                            <td><?php echo sanitize((string)($onlineRow['equipment_type'] ?? '')); ?></td>
+                                            <td>
+                                                <?php if (trim((string)($onlineRow['product_image_url'] ?? '')) !== ''): ?>
+                                                    <a href="<?php echo sanitize((string)$onlineRow['product_image_url']); ?>" target="_blank" rel="noopener noreferrer">Open image</a>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo sanitize((string)($onlineRow['price'] ?? '')); ?></td>
+                                            <td><?php echo sanitize((string)($onlineRow['supplier'] ?? '')); ?></td>
+                                            <td>
+                                                <?php if (trim((string)($onlineRow['weblink'] ?? '')) !== ''): ?>
+                                                    <a href="<?php echo sanitize((string)$onlineRow['weblink']); ?>" target="_blank" rel="noopener noreferrer">Open page</a>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <textarea rows="4" style="min-width:260px;" readonly><?php echo sanitize(json_encode($onlineRow['json'] ?? [], JSON_UNESCAPED_SLASHES)); ?></textarea>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </form>
+                        </div>
+                    <?php elseif ((string)($_GET['online_run'] ?? '') === '1'): ?>
+                        <div class="card" style="margin-bottom:16px;">
+                            No online results found for the selected filters.
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <!-- DATA TABLE -->
@@ -1230,6 +1596,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 return;
             }
             if (!confirm('Delete selected records?')) { event.preventDefault(); }
+        });
+    }
+
+    const onlineSelectAll = document.getElementById('select-all-online');
+    const onlineRowCheckboxes = document.querySelectorAll('.online-row-checkbox');
+    if (onlineSelectAll) {
+        onlineSelectAll.addEventListener('change', function () {
+            onlineRowCheckboxes.forEach(function (checkbox) { checkbox.checked = onlineSelectAll.checked; });
         });
     }
 })();
