@@ -1,8 +1,8 @@
 <?php
 /**
- * Manufacturers Module - Index
+ * Catalogs Module - Index
  *
- * Standalone manufacturers CRUD implementation.
+ * Standalone catalogs CRUD implementation.
  *
  * Features:
  * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms 
@@ -16,8 +16,8 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'manufacturers';
-$crud_title = 'Manufacturers';
+$crud_table = $crud_table ?? 'catalogs';
+$crud_title = $crud_title ?? 'Catalogs';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
