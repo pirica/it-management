@@ -56,7 +56,31 @@ if ($port_count < 0 || $port_count > 9999) {
     idf_fail('Invalid port_count');
 }
 
-$validTypes = ['switch', 'patch_panel', 'ups', 'server', 'other'];
+$validTypes = [];
+$stmtValidTypes = mysqli_prepare(
+    $conn,
+    "SELECT idfdevicetype_name
+     FROM idf_device_type
+     WHERE company_id=? AND active=1"
+);
+if ($stmtValidTypes) {
+    mysqli_stmt_bind_param($stmtValidTypes, 'i', $company_id);
+    mysqli_stmt_execute($stmtValidTypes);
+    $resValidTypes = mysqli_stmt_get_result($stmtValidTypes);
+    while ($resValidTypes && ($row = mysqli_fetch_assoc($resValidTypes))) {
+        $typeName = strtolower(trim((string)($row['idfdevicetype_name'] ?? '')));
+        if ($typeName !== '') {
+            $validTypes[] = $typeName;
+        }
+    }
+    mysqli_stmt_close($stmtValidTypes);
+}
+
+if (!$validTypes) {
+    $validTypes = ['switch', 'patch_panel', 'ups', 'server', 'other'];
+}
+
+$device_type = strtolower(trim($device_type));
 if (!in_array($device_type, $validTypes, true)) {
     idf_fail('Invalid device_type');
 }
