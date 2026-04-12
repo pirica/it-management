@@ -19,6 +19,8 @@
 $crud_table = $crud_table ?? 'catalogs';
 $crud_title = $crud_title ?? 'Catalogs';
 $crud_action = $crud_action ?? 'index';
+$catalogDefaultImageUrl = 'https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg';
+$catalogDefaultWeblinkUrl = 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe';
 ?>
 <?php
 require '../../config/config.php';
@@ -189,7 +191,11 @@ function cr_render_cell_value($table, $field, $value) {
 
     $text = (string)($value ?? '');
     if ($table === 'catalogs' && $field === 'image' && $text !== '') {
-        return cr_catalog_image_preview_html($text, 96, 72);
+        $safeUrl = cr_normalize_external_url($text);
+        if ($safeUrl === '') {
+            return sanitize($text);
+        }
+        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🖼️ Open image</a>';
     }
     if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url'], true) && $text !== '') {
         $safeUrl = cr_normalize_external_url($text);
@@ -573,6 +579,16 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
             continue;
         }
         $data[$columnName] = $prefillValue;
+    }
+
+    if (array_key_exists('image', $data) && trim((string)$data['image']) === '') {
+        $data['image'] = $catalogDefaultImageUrl;
+    }
+    if (array_key_exists('weblink', $data) && trim((string)$data['weblink']) === '') {
+        $data['weblink'] = $catalogDefaultWeblinkUrl;
+    }
+    if (array_key_exists('source_url', $data) && trim((string)$data['source_url']) === '') {
+        $data['source_url'] = $catalogDefaultWeblinkUrl;
     }
 }
 
@@ -1102,12 +1118,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php elseif ($crud_table === 'catalogs' && $name === 'image'): ?>
-                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="Auto-filled from weblink if left empty" inputmode="url">
+                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="<?php echo sanitize($catalogDefaultImageUrl); ?>" inputmode="url">
                                 <?php if ($displayVal !== ''): ?>
                                     <div style="margin-top:8px;max-width:100%;overflow:auto;">
                                         <?php echo cr_catalog_image_preview_html($displayVal, 220, 140); ?>
                                     </div>
                                 <?php endif; ?>
+                            <?php elseif ($crud_table === 'catalogs' && in_array($name, ['weblink', 'source_url'], true)): ?>
+                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="<?php echo sanitize($catalogDefaultWeblinkUrl); ?>" inputmode="url">
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
