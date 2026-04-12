@@ -334,6 +334,33 @@ function cr_catalog_extract_unit_price($text) {
 }
 
 /**
+ * Attempts to detect a product price directly from the product page HTML.
+ */
+function cr_catalog_detect_price_from_page($url) {
+    $pageHtml = cr_catalog_fetch_remote_body($url, 10);
+    if ($pageHtml === '') {
+        return null;
+    }
+
+    $metaPricePatterns = [
+        '/property=["\']product:price:amount["\'][^>]*content=["\']([^"\']+)["\']/i',
+        '/property=["\']og:price:amount["\'][^>]*content=["\']([^"\']+)["\']/i',
+        '/itemprop=["\']price["\'][^>]*content=["\']([^"\']+)["\']/i',
+    ];
+    foreach ($metaPricePatterns as $pattern) {
+        if (preg_match($pattern, $pageHtml, $priceMatch)) {
+            $candidate = trim((string)($priceMatch[1] ?? ''));
+            $normalized = preg_replace('/[^0-9.]/', '', $candidate);
+            if ($normalized !== null && $normalized !== '' && is_numeric($normalized)) {
+                return (float)$normalized;
+            }
+        }
+    }
+
+    return cr_catalog_extract_unit_price(strip_tags($pageHtml));
+}
+
+/**
  * Uses lightweight keyword matching to classify equipment type.
  */
 function cr_catalog_guess_equipment_type($title, $snippet, $fallbackType) {
@@ -367,7 +394,58 @@ function cr_catalog_guess_equipment_type($title, $snippet, $fallbackType) {
 }
 
 /**
- * Runs online catalog discovery using DuckDuckGo HTML results.
+ * Parses Google search result links from HTML markup.
+ */
+function cr_catalog_extract_google_result_links($searchHtml) {
+    $rows = [];
+    $html = (string)$searchHtml;
+    if ($html === '') {
+        return $rows;
+    }
+
+    preg_match_all('/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+    foreach ($matches as $match) {
+        $rawHref = html_entity_decode((string)($match[1] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $anchorHtml = (string)($match[2] ?? '');
+        if ($rawHref === '') {
+            continue;
+        }
+
+        $candidateUrl = '';
+        if (str_starts_with($rawHref, '/url?')) {
+            $hrefParts = parse_url('https://www.google.com' . $rawHref);
+            parse_str((string)($hrefParts['query'] ?? ''), $queryParts);
+            $candidateUrl = (string)($queryParts['q'] ?? '');
+        } elseif (preg_match('#^https?://#i', $rawHref)) {
+            $candidateUrl = $rawHref;
+        }
+
+        $candidateUrl = cr_normalize_external_url($candidateUrl);
+        if ($candidateUrl === '') {
+            continue;
+        }
+
+        $host = strtolower((string)(parse_url($candidateUrl, PHP_URL_HOST) ?? ''));
+        if ($host === '' || str_contains($host, 'google.com') || str_contains($host, 'gstatic.com')) {
+            continue;
+        }
+
+        $title = trim(strip_tags(html_entity_decode($anchorHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        if ($title === '') {
+            continue;
+        }
+
+        $rows[] = [
+            'url' => $candidateUrl,
+            'title' => $title,
+        ];
+    }
+
+    return $rows;
+}
+
+/**
+ * Runs online catalog discovery using Google search HTML results.
  */
 function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity) {
     $results = [];
@@ -383,38 +461,25 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
     }
 
     $searchQuery = implode(' ', $queryParts);
-    $searchUrl = 'https://duckduckgo.com/html/?q=' . rawurlencode($searchQuery);
+    $searchUrl = 'https://www.google.com/search?hl=en&num=30&q=' . rawurlencode($searchQuery);
     $html = cr_catalog_fetch_remote_body($searchUrl, 10);
     if ($html === '') {
         return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
     }
-
-    preg_match_all('/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+    $googleRows = cr_catalog_extract_google_result_links($html);
+    if (empty($googleRows)) {
+        return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
+    }
     $seenLinks = [];
     $maxRows = max(1, min(30, (int)$quantity));
 
-    foreach ($matches as $match) {
+    foreach ($googleRows as $googleRow) {
         if (count($results) >= $maxRows) {
             break;
         }
 
-        $rawHref = html_entity_decode((string)($match[1] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $titleHtml = (string)($match[2] ?? '');
-        $title = trim(strip_tags(html_entity_decode($titleHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
-
-        if ($rawHref === '' || $title === '') {
-            continue;
-        }
-
-        $targetUrl = $rawHref;
-        $hrefParts = parse_url($rawHref);
-        if (($hrefParts['path'] ?? '') === '/l/' && !empty($hrefParts['query'])) {
-            parse_str((string)$hrefParts['query'], $q);
-            if (!empty($q['uddg'])) {
-                $targetUrl = (string)$q['uddg'];
-            }
-        }
-        $targetUrl = cr_normalize_external_url($targetUrl);
+        $targetUrl = cr_normalize_external_url((string)($googleRow['url'] ?? ''));
+        $title = trim((string)($googleRow['title'] ?? ''));
         if ($targetUrl === '' || isset($seenLinks[$targetUrl])) {
             continue;
         }
@@ -425,16 +490,14 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
             $supplier = cr_catalog_guess_supplier_from_url($targetUrl);
         }
 
+        // Why: Google snippet markup changes frequently; page metadata extraction
+        // gives more stable enrichment for price/image fields.
         $snippet = '';
-        $snippetRegex = '/href="' . preg_quote((string)($match[1] ?? ''), '/') . '".*?<a[^>]*>(.*?)<\/a>(.*?)<\/div>/is';
-        if (preg_match($snippetRegex, $html, $snippetMatch)) {
-            $snippet = trim(strip_tags(html_entity_decode((string)($snippetMatch[2] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
-        }
 
         $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
         $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
         if ($unitPrice === null || $unitPrice <= 0) {
-            continue;
+            $unitPrice = cr_catalog_detect_price_from_page($targetUrl);
         }
         $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
 
@@ -510,7 +573,7 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
         $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
         $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
         if ($unitPrice === null || $unitPrice <= 0) {
-            continue;
+            $unitPrice = cr_catalog_detect_price_from_page($link);
         }
         $imageUrl = cr_catalog_detect_image_url_from_page($link);
 
@@ -632,6 +695,10 @@ function cr_catalog_detect_image_url_from_page($pageUrl) {
         '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image(?:secure_url)?["\']/i',
         '/<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']/i',
         '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image(?::src)?["\']/i',
+        '/<meta[^>]+itemprop=["\']image["\'][^>]+content=["\']([^"\']+)["\']/i',
+        '/<meta[^>]+content=["\']([^"\']+)["\'][^>]+itemprop=["\']image["\']/i',
+        '/<link[^>]+rel=["\']image_src["\'][^>]+href=["\']([^"\']+)["\']/i',
+        '/<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']image_src["\']/i',
         '/<img[^>]+src=["\']([^"\']+)["\']/i',
     ];
 
@@ -641,6 +708,13 @@ function cr_catalog_detect_image_url_from_page($pageUrl) {
             if ($candidate !== '') {
                 return $candidate;
             }
+        }
+    }
+
+    if (preg_match('/"image"\s*:\s*"([^"]+)"/i', $html, $jsonLdImageMatch)) {
+        $candidate = cr_resolve_relative_url($normalizedPageUrl, (string)($jsonLdImageMatch[1] ?? ''));
+        if ($candidate !== '') {
+            return $candidate;
         }
     }
 
