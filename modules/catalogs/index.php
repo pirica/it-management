@@ -490,7 +490,7 @@ function cr_catalog_extract_google_result_links($searchHtml) {
 /**
  * Runs online catalog discovery using Google search HTML results.
  */
-function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity) {
+function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity, $conn = null, $companyId = 0) {
     $results = [];
     // Why: keep search_query identical to the "Search Online" input so operators can
     // trust/reuse the exact phrase they entered without implicit keyword mutations.
@@ -604,6 +604,10 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         }
     }
 
+    if (empty($results) && $conn instanceof mysqli) {
+        $results = cr_catalog_search_local_products($conn, (int)$companyId, $searchQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $maxRows);
+    }
+
     return $results;
 }
 
@@ -681,6 +685,107 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
         ];
     }
 
+    return $results;
+}
+
+/**
+ * Uses current tenant catalog rows as a fallback when external search returns zero priced products.
+ */
+function cr_catalog_search_local_products($conn, $companyId, $searchQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $maxRows = 20) {
+    $results = [];
+    $query = trim((string)$searchQuery);
+    if ($query === '') {
+        return $results;
+    }
+
+    $sql = 'SELECT `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink` FROM `catalogs` WHERE `model` LIKE ?';
+    $types = 's';
+    $params = ['%' . $query . '%'];
+
+    if ((int)$companyId > 0) {
+        $sql .= ' AND `company_id`=?';
+        $types .= 'i';
+        $params[] = (int)$companyId;
+    }
+
+    $supplier = trim((string)$supplierFilter);
+    if ($supplier !== '') {
+        $sql .= ' AND `supplier`=?';
+        $types .= 's';
+        $params[] = $supplier;
+    }
+
+    $equipmentType = trim((string)$equipmentTypeFilter);
+    if ($equipmentType !== '') {
+        $sql .= ' AND `equipment_type`=?';
+        $types .= 's';
+        $params[] = $equipmentType;
+    }
+
+    $safeMaxRows = max(1, min(50, (int)$maxRows));
+    $sql .= ' ORDER BY `updated_at` DESC, `id` DESC LIMIT ' . $safeMaxRows;
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $results;
+    }
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $model = trim((string)($row['model'] ?? ''));
+        if ($model === '') {
+            continue;
+        }
+
+        $priceRaw = (string)($row['price'] ?? '');
+        $unitPrice = cr_catalog_extract_unit_price($priceRaw);
+        if ($unitPrice === null && $priceRaw !== '' && is_numeric($priceRaw)) {
+            $unitPrice = (float)$priceRaw;
+        }
+        if ($unitPrice === null || $unitPrice <= 0) {
+            continue;
+        }
+
+        $rowSupplier = trim((string)($row['supplier'] ?? ''));
+        if ($rowSupplier === '') {
+            $rowSupplier = cr_catalog_guess_supplier_from_url((string)($row['weblink'] ?? ''));
+        }
+        if ($rowSupplier === '') {
+            $rowSupplier = 'Catalog';
+        }
+
+        $rowType = trim((string)($row['equipment_type'] ?? ''));
+        if ($rowType === '') {
+            $rowType = cr_catalog_guess_equipment_type($model, '', $equipmentTypeFilter);
+        }
+
+        $weblink = cr_normalize_external_url((string)($row['weblink'] ?? ''));
+        $imageUrl = cr_normalize_external_url((string)($row['image'] ?? ''));
+
+        $results[] = [
+            'model' => $model,
+            'equipment_type' => $rowType,
+            'product_image_url' => $imageUrl,
+            'unit_price' => $unitPrice,
+            'supplier' => $rowSupplier,
+            'weblink' => $weblink,
+            'json' => [
+                'model' => $model,
+                'equipment_type' => $rowType,
+                'product_image_url' => $imageUrl,
+                'unit_price' => $unitPrice,
+                'supplier' => $rowSupplier,
+                'weblink' => $weblink,
+                'manufacturer' => trim((string)$manufacturerName),
+                'search_query' => $query,
+                'source' => 'catalogs_fallback',
+            ],
+        ];
+    }
+
+    mysqli_stmt_close($stmt);
     return $results;
 }
 
@@ -1453,7 +1558,7 @@ if ($crud_table === 'catalogs') {
 
     $runOnlineSearch = ((string)($_GET['online_run'] ?? '') === '1');
     if ($runOnlineSearch) {
-        $catalogOnlineResults = cr_catalog_search_online_products($catalogOnlineQuery, '', '', '', 20);
+        $catalogOnlineResults = cr_catalog_search_online_products($catalogOnlineQuery, '', '', '', 20, $conn, (int)$company_id);
         $catalogOnlineResultsPayload = base64_encode(json_encode($catalogOnlineResults));
     }
 }
