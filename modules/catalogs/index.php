@@ -646,7 +646,7 @@ function cr_catalog_extract_duckduckgo_result_links($searchHtml) {
  */
 function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity, $conn = null, $companyId = 0) {
     $results = [];
-    // Why: keep search_query identical to the "Search Online" input so operators can
+    // Why: keep search_query identical to the operator-supplied input so operators can
     // trust/reuse the exact phrase they entered without implicit keyword mutations.
     $searchQuery = trim((string)$modelQuery);
     if ($searchQuery === '') {
@@ -1362,21 +1362,6 @@ $data = [];
 foreach ($fieldColumns as $col) { $data[$col['Field']] = ''; }
 
 if ($crud_table === 'catalogs' && $crud_action === 'create') {
-    $catalogPrefillMap = [
-        'model' => 'online_query',
-        'product_url' => 'online_weblink',
-    ];
-    foreach ($catalogPrefillMap as $columnName => $queryKey) {
-        if (!array_key_exists($columnName, $data)) {
-            continue;
-        }
-        $prefillValue = trim((string)($_GET[$queryKey] ?? ''));
-        if ($prefillValue === '') {
-            continue;
-        }
-        $data[$columnName] = $prefillValue;
-    }
-
     if (array_key_exists('image_url', $data) && trim((string)$data['image_url']) === '') {
         $data['image_url'] = $catalogDefaultImageUrl;
     }
@@ -1436,94 +1421,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
     if ($insertedRows <= 0 && $seedError !== '') {
         $_SESSION['crud_error'] = $seedError;
-    }
-
-    header('Location: ' . $listUrl);
-    exit;
-}
-
-// Persist selected online search results into catalogs.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['save_online_products'])) {
-    cr_require_valid_csrf_token();
-
-    if (!$hasCompany || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Saving online products requires an active company.';
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    $payloadRaw = (string)($_POST['online_results_payload'] ?? '');
-    $selectedRows = $_POST['selected_online_rows'] ?? [];
-    if (!is_array($selectedRows)) {
-        $selectedRows = [];
-    }
-
-    $decodedRows = json_decode(base64_decode($payloadRaw, true) ?: '', true);
-    if (!is_array($decodedRows)) {
-        $decodedRows = [];
-    }
-
-    $savedCount = 0;
-    $skippedCount = 0;
-    foreach ($selectedRows as $rowIndexRaw) {
-        $rowIndex = (int)$rowIndexRaw;
-        if (!isset($decodedRows[$rowIndex]) || !is_array($decodedRows[$rowIndex])) {
-            continue;
-        }
-
-        $rowItem = $decodedRows[$rowIndex];
-        $model = trim((string)($rowItem['model'] ?? ''));
-        $equipmentType = trim((string)($rowItem['equipment_type'] ?? 'Other'));
-        $image = cr_normalize_external_url((string)($rowItem['product_image_url'] ?? ''));
-        $priceRaw = trim((string)($rowItem['unit_price'] ?? ($rowItem['price'] ?? '')));
-        $supplier = trim((string)($rowItem['supplier'] ?? ''));
-        $weblink = cr_normalize_external_url((string)($rowItem['weblink'] ?? ''));
-        $manufacturer = trim((string)($rowItem['manufacturer'] ?? ''));
-
-        if ($model === '') {
-            $skippedCount++;
-            continue;
-        }
-
-        $priceNumeric = null;
-        if ($priceRaw !== '') {
-            $priceNumeric = cr_catalog_extract_unit_price($priceRaw);
-            if ($priceNumeric === null) {
-                $priceNormalized = preg_replace('/[^0-9.]/', '', $priceRaw);
-                if ($priceNormalized !== null && $priceNormalized !== '' && is_numeric($priceNormalized)) {
-                    $priceNumeric = (float)$priceNormalized;
-                }
-            }
-        }
-        if ($priceNumeric === null || $priceNumeric <= 0) {
-            $skippedCount++;
-            continue;
-        }
-
-        $equipmentTypeId = cr_catalog_resolve_fk_id_by_name($conn, 'equipment_types', $equipmentType !== '' ? $equipmentType : 'Other', $company_id, true);
-        $supplierId = cr_catalog_resolve_fk_id_by_name($conn, 'suppliers', $supplier, $company_id, false);
-        $manufacturerId = cr_catalog_resolve_fk_id_by_name($conn, 'manufacturers', $manufacturer, $company_id, true);
-
-        $insertSql = 'INSERT INTO `catalogs` (`company_id`,`model`,`equipment_type_id`,`image_url`,`price`,`supplier_id`,`manufacturer_id`,`product_url`,`active`) VALUES (?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), ?, 1)';
-        $insertStmt = mysqli_prepare($conn, $insertSql);
-        if (!$insertStmt) {
-            $skippedCount++;
-            continue;
-        }
-        mysqli_stmt_bind_param($insertStmt, 'isisdiis', $company_id, $model, $equipmentTypeId, $image, $priceNumeric, $supplierId, $manufacturerId, $weblink);
-        if (mysqli_stmt_execute($insertStmt)) {
-            $savedCount++;
-        } else {
-            $skippedCount++;
-        }
-        mysqli_stmt_close($insertStmt);
-    }
-
-    if ($savedCount > 0) {
-        $_SESSION['crud_success'] = $savedCount . ' online product(s) saved.';
-    }
-    if ($savedCount === 0 && $skippedCount > 0) {
-        $_SESSION['crud_error'] = 'No online products were saved. Please review selected rows.';
     }
 
     header('Location: ' . $listUrl);
@@ -1774,19 +1671,6 @@ if (!empty($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 
-$catalogOnlineQuery = '';
-$catalogOnlineResults = [];
-$catalogOnlineResultsPayload = '';
-
-if ($crud_table === 'catalogs') {
-    $catalogOnlineQuery = trim((string)($_GET['online_query'] ?? ''));
-
-    $runOnlineSearch = ((string)($_GET['online_run'] ?? '') === '1');
-    if ($runOnlineSearch) {
-        $catalogOnlineResults = cr_catalog_search_online_products($catalogOnlineQuery, '', '', '', 20, $conn, (int)$company_id);
-        $catalogOnlineResultsPayload = base64_encode(json_encode($catalogOnlineResults));
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1870,81 +1754,6 @@ if ($crud_table === 'catalogs') {
                         </div>
                     </form>
                 </div>
-
-                <?php if ($crud_table === 'catalogs'): ?>
-                    <div class="card" style="margin-bottom:16px;">
-                        <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                            <input type="hidden" name="online_run" value="1">
-                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                                <label for="catalogOnlineQuery">Search Online</label>
-                                <input type="text" id="catalogOnlineQuery" name="online_query" value="<?php echo sanitize($catalogOnlineQuery); ?>" placeholder="Type a product model to search online...">
-                            </div>
-                            <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
-                                <button type="submit" class="btn btn-primary">Prepare Search</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <?php if (!empty($catalogOnlineResults)): ?>
-                        <div class="card" style="margin-bottom:16px;overflow:auto;">
-                            <form method="POST">
-                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                <input type="hidden" name="save_online_products" value="1">
-                                <input type="hidden" name="online_results_payload" value="<?php echo sanitize((string)$catalogOnlineResultsPayload); ?>">
-                                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-                                    <strong>Search results (<?php echo count($catalogOnlineResults); ?>)</strong>
-                                    <button type="submit" class="btn btn-primary">Save Selected to DB</button>
-                                </div>
-                                <table>
-                                    <thead>
-                                    <tr>
-                                        <th style="width:36px;"><input type="checkbox" id="select-all-online" aria-label="Select all online rows"></th>
-                                        <th>Model</th>
-                                        <th>Equipment Type</th>
-                                        <th>Product Image URL</th>
-                                        <th>Unit Price</th>
-                                        <th>Supplier</th>
-                                        <th>Product Page</th>
-                                        <th>JSON</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($catalogOnlineResults as $onlineIndex => $onlineRow): ?>
-                                        <tr>
-                                            <td><input type="checkbox" class="online-row-checkbox" name="selected_online_rows[]" value="<?php echo (int)$onlineIndex; ?>"></td>
-                                            <td><?php echo sanitize((string)($onlineRow['model'] ?? '')); ?></td>
-                                            <td><?php echo sanitize((string)($onlineRow['equipment_type'] ?? '')); ?></td>
-                                            <td>
-                                                <?php if (trim((string)($onlineRow['product_image_url'] ?? '')) !== ''): ?>
-                                                    <a href="<?php echo sanitize((string)$onlineRow['product_image_url']); ?>" target="_blank" rel="noopener noreferrer">Open image</a>
-                                                <?php else: ?>
-                                                    -
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><?php echo sanitize((string)($onlineRow['unit_price'] ?? ($onlineRow['price'] ?? ''))); ?></td>
-                                            <td><?php echo sanitize((string)($onlineRow['supplier'] ?? '')); ?></td>
-                                            <td>
-                                                <?php if (trim((string)($onlineRow['weblink'] ?? '')) !== ''): ?>
-                                                    <a href="<?php echo sanitize((string)$onlineRow['weblink']); ?>" target="_blank" rel="noopener noreferrer">Open page</a>
-                                                <?php else: ?>
-                                                    -
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <textarea rows="4" style="min-width:260px;" readonly><?php echo sanitize(json_encode($onlineRow['json'] ?? [], JSON_UNESCAPED_SLASHES)); ?></textarea>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </form>
-                        </div>
-                    <?php elseif ((string)($_GET['online_run'] ?? '') === '1'): ?>
-                        <div class="card" style="margin-bottom:16px;">
-                            No online results found for the selected filters.
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
 
                 <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
@@ -2185,13 +1994,6 @@ if ($crud_table === 'catalogs') {
         });
     }
 
-    const onlineSelectAll = document.getElementById('select-all-online');
-    const onlineRowCheckboxes = document.querySelectorAll('.online-row-checkbox');
-    if (onlineSelectAll) {
-        onlineSelectAll.addEventListener('change', function () {
-            onlineRowCheckboxes.forEach(function (checkbox) { checkbox.checked = onlineSelectAll.checked; });
-        });
-    }
 })();
 </script>
 <script src="../../js/theme.js"></script>
