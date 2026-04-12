@@ -188,6 +188,11 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     $text = (string)($value ?? '');
+    if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url'], true) && $text !== '') {
+        $safeUrl = filter_var($text, FILTER_VALIDATE_URL) ? $text : ('https://' . ltrim($text, '/'));
+        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🔗 Open</a>';
+    }
+
     // Interactive email links with Outlook deep-link support.
     if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
@@ -197,6 +202,17 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     return sanitize($text);
+}
+
+/**
+ * Builds a safe external search link for catalog product lookups.
+ */
+function cr_catalog_search_url($query) {
+    $trimmed = trim((string)$query);
+    if ($trimmed === '') {
+        return '';
+    }
+    return 'https://www.google.com/search?q=' . rawurlencode($trimmed);
 }
 
 
@@ -298,7 +314,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -406,6 +422,26 @@ if (!empty($_SESSION['crud_error'])) {
 }
 $data = [];
 foreach ($fieldColumns as $col) { $data[$col['Field']] = ''; }
+
+if ($crud_table === 'catalogs' && $crud_action === 'create') {
+    $catalogPrefillMap = [
+        'model' => 'online_query',
+        'supplier' => 'online_supplier',
+        'equipment_type' => 'online_type',
+        'weblink' => 'online_weblink',
+        'source_url' => 'online_weblink',
+    ];
+    foreach ($catalogPrefillMap as $columnName => $queryKey) {
+        if (!array_key_exists($columnName, $data)) {
+            continue;
+        }
+        $prefillValue = trim((string)($_GET[$queryKey] ?? ''));
+        if ($prefillValue === '') {
+            continue;
+        }
+        $data[$columnName] = $prefillValue;
+    }
+}
 
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -699,13 +735,25 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <!-- LIST VIEW -->
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary">➕</a>
+                            <?php if ($crud_table === 'manufacturers'): ?>
+                                <a href="../catalogs/index.php" class="btn btn-sm">Refresh products</a>
+                                <a href="../catalogs/index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
+                            <?php endif; ?>
+                        </div>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <div style="display:flex;gap:8px;">
+                            <?php if ($crud_table === 'manufacturers'): ?>
+                                <a href="../catalogs/index.php" class="btn btn-sm">Refresh products</a>
+                                <a href="../catalogs/index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
+                            <?php endif; ?>
+                            <a href="create.php" class="btn btn-primary">➕</a>
+                        </div>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
@@ -736,6 +784,45 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </div>
                     </form>
                 </div>
+
+                <?php if ($crud_table === 'catalogs'): ?>
+                    <?php
+                        $catalogOnlineQuery = trim((string)($_GET['online_query'] ?? ''));
+                        $catalogOnlineSupplier = trim((string)($_GET['online_supplier'] ?? ''));
+                        $catalogOnlineType = trim((string)($_GET['online_type'] ?? ''));
+                        $catalogOnlineSearchUrl = cr_catalog_search_url($catalogOnlineQuery);
+                        $catalogAddParams = [
+                            'online_query' => $catalogOnlineQuery,
+                            'online_supplier' => $catalogOnlineSupplier,
+                            'online_type' => $catalogOnlineType,
+                            'online_weblink' => $catalogOnlineSearchUrl,
+                        ];
+                    ?>
+                    <div class="card" style="margin-bottom:16px;">
+                        <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                <label for="catalogOnlineQuery">Search Online</label>
+                                <input type="text" id="catalogOnlineQuery" name="online_query" value="<?php echo sanitize($catalogOnlineQuery); ?>" placeholder="Type a product model to search online...">
+                            </div>
+                            <div class="form-group" style="margin:0;min-width:180px;">
+                                <label for="catalogOnlineSupplier">Supplier</label>
+                                <input type="text" id="catalogOnlineSupplier" name="online_supplier" value="<?php echo sanitize($catalogOnlineSupplier); ?>" placeholder="Optional supplier">
+                            </div>
+                            <div class="form-group" style="margin:0;min-width:180px;">
+                                <label for="catalogOnlineType">Equipment Type</label>
+                                <input type="text" id="catalogOnlineType" name="online_type" value="<?php echo sanitize($catalogOnlineType); ?>" placeholder="Optional type">
+                            </div>
+                            <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
+                                <?php if ($catalogOnlineSearchUrl !== ''): ?>
+                                    <a href="<?php echo sanitize($catalogOnlineSearchUrl); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm">Search Online</a>
+                                    <a href="create.php?<?php echo sanitize(http_build_query($catalogAddParams)); ?>" class="btn btn-primary">Add Product to Catalogs</a>
+                                <?php else: ?>
+                                    <button type="submit" class="btn btn-primary">Prepare Search</button>
+                                <?php endif; ?>
+                            </div>
+                        </form>
+                    </div>
+                <?php endif; ?>
 
                 <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
