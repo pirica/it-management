@@ -310,7 +310,11 @@ function cr_catalog_extract_price($text) {
     if ($rawText === '') {
         return '';
     }
-    if (preg_match('/([$€£])\s?([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)/', $rawText, $m)) {
+    $compactText = str_replace(["\xc2\xa0", '&nbsp;'], ' ', $rawText);
+    if (preg_match('/([$€£])\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)/u', $compactText, $m)) {
+        return trim((string)($m[1] . $m[2]));
+    }
+    if (preg_match('/([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)\s*([$€£])/u', $compactText, $m)) {
         return trim((string)($m[1] . $m[2]));
     }
     return '';
@@ -325,12 +329,45 @@ function cr_catalog_extract_unit_price($text) {
         return null;
     }
 
-    $normalized = preg_replace('/[^0-9.]/', '', $priceToken);
-    if ($normalized === null || $normalized === '' || !is_numeric($normalized)) {
+    $normalized = preg_replace('/[^0-9,.\-]/', '', $priceToken);
+    if ($normalized === null || $normalized === '') {
         return null;
     }
 
-    return (float)$normalized;
+    $lastDot = strrpos($normalized, '.');
+    $lastComma = strrpos($normalized, ',');
+
+    if ($lastDot !== false && $lastComma !== false) {
+        if ($lastDot > $lastComma) {
+            $normalized = str_replace(',', '', $normalized);
+        } else {
+            $normalized = str_replace('.', '', $normalized);
+            $normalized = str_replace(',', '.', $normalized);
+        }
+    } elseif ($lastComma !== false) {
+        $commaDecimals = strlen($normalized) - $lastComma - 1;
+        if ($commaDecimals === 2) {
+            $normalized = str_replace('.', '', $normalized);
+            $normalized = str_replace(',', '.', $normalized);
+        } else {
+            $normalized = str_replace(',', '', $normalized);
+        }
+    } elseif ($lastDot !== false) {
+        $dotDecimals = strlen($normalized) - $lastDot - 1;
+        if ($dotDecimals !== 2) {
+            $normalized = str_replace('.', '', $normalized);
+        }
+    }
+
+    if ($normalized === '' || !is_numeric($normalized)) {
+        return null;
+    }
+
+    $unitPrice = (float)$normalized;
+    if ($unitPrice <= 0) {
+        return null;
+    }
+    return $unitPrice;
 }
 
 /**
@@ -350,9 +387,9 @@ function cr_catalog_detect_price_from_page($url) {
     foreach ($metaPricePatterns as $pattern) {
         if (preg_match($pattern, $pageHtml, $priceMatch)) {
             $candidate = trim((string)($priceMatch[1] ?? ''));
-            $normalized = preg_replace('/[^0-9.]/', '', $candidate);
-            if ($normalized !== null && $normalized !== '' && is_numeric($normalized)) {
-                return (float)$normalized;
+            $metaUnitPrice = cr_catalog_extract_unit_price($candidate);
+            if ($metaUnitPrice !== null && $metaUnitPrice > 0) {
+                return $metaUnitPrice;
             }
         }
     }
@@ -403,10 +440,11 @@ function cr_catalog_extract_google_result_links($searchHtml) {
         return $rows;
     }
 
-    preg_match_all('/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+    preg_match_all('/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
     foreach ($matches as $match) {
-        $rawHref = html_entity_decode((string)($match[1] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $anchorHtml = (string)($match[2] ?? '');
+        $rawHref = html_entity_decode((string)($match[1][0] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $anchorHtml = (string)($match[2][0] ?? '');
+        $anchorOffset = (int)($match[0][1] ?? 0);
         if ($rawHref === '') {
             continue;
         }
@@ -438,6 +476,11 @@ function cr_catalog_extract_google_result_links($searchHtml) {
         $rows[] = [
             'url' => $candidateUrl,
             'title' => $title,
+            'snippet' => trim((string)preg_replace(
+                '/\s+/',
+                ' ',
+                strip_tags(html_entity_decode((string)substr($html, $anchorOffset, 1000), ENT_QUOTES | ENT_HTML5, 'UTF-8'))
+            )),
         ];
     }
 
@@ -456,71 +499,107 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         return $results;
     }
 
-    $searchUrl = 'https://www.google.com/search?hl=en&num=30&q=' . rawurlencode($searchQuery);
-    $html = cr_catalog_fetch_remote_body($searchUrl, 10);
-    if ($html === '') {
-        return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
-    }
-    $googleRows = cr_catalog_extract_google_result_links($html);
-    if (empty($googleRows)) {
-        return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
-    }
-    $seenLinks = [];
     $maxRows = max(1, min(30, (int)$quantity));
+    $seenLinks = [];
 
-    foreach ($googleRows as $googleRow) {
+    // Why: keep payload `search_query` unchanged, but widen actual engine queries
+    // when pricing metadata is hard to locate from the exact phrase alone.
+    $engineQueries = [$searchQuery];
+    if (!str_contains(strtolower($searchQuery), 'buy')) {
+        $engineQueries[] = $searchQuery . ' buy';
+    }
+    $manufacturerName = trim((string)$manufacturerName);
+    if ($manufacturerName !== '' && stripos($searchQuery, $manufacturerName) === false) {
+        $engineQueries[] = $manufacturerName . ' ' . $searchQuery;
+    }
+    $engineQueries = array_values(array_unique(array_filter($engineQueries, function ($query) {
+        return trim((string)$query) !== '';
+    })));
+
+    foreach ($engineQueries as $engineQuery) {
         if (count($results) >= $maxRows) {
             break;
         }
 
-        $targetUrl = cr_normalize_external_url((string)($googleRow['url'] ?? ''));
-        $title = trim((string)($googleRow['title'] ?? ''));
-        if ($targetUrl === '' || isset($seenLinks[$targetUrl])) {
+        $searchUrl = 'https://www.google.com/search?hl=en&num=30&q=' . rawurlencode((string)$engineQuery);
+        $html = cr_catalog_fetch_remote_body($searchUrl, 10);
+        if ($html === '') {
             continue;
         }
-        $seenLinks[$targetUrl] = 1;
 
-        $supplier = trim((string)$supplierFilter);
-        if ($supplier === '') {
-            $supplier = cr_catalog_guess_supplier_from_url($targetUrl);
-        }
-
-        // Why: Google snippet markup changes frequently; page metadata extraction
-        // gives more stable enrichment for price/image fields.
-        $snippet = '';
-
-        $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
-        $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
-        if ($unitPrice === null || $unitPrice <= 0) {
-            $unitPrice = cr_catalog_detect_price_from_page($targetUrl);
-        }
-        if ($unitPrice === null || $unitPrice <= 0) {
+        $googleRows = cr_catalog_extract_google_result_links($html);
+        if (empty($googleRows)) {
             continue;
         }
-        $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
 
-        $results[] = [
-            'model' => $title,
-            'equipment_type' => $equipmentType,
-            'product_image_url' => $imageUrl,
-            'unit_price' => $unitPrice,
-            'supplier' => $supplier,
-            'weblink' => $targetUrl,
-            'json' => [
+        foreach ($googleRows as $googleRow) {
+            if (count($results) >= $maxRows) {
+                break;
+            }
+
+            $targetUrl = cr_normalize_external_url((string)($googleRow['url'] ?? ''));
+            $title = trim((string)($googleRow['title'] ?? ''));
+            if ($targetUrl === '' || isset($seenLinks[$targetUrl])) {
+                continue;
+            }
+            $seenLinks[$targetUrl] = 1;
+
+            $supplier = trim((string)$supplierFilter);
+            if ($supplier === '') {
+                $supplier = cr_catalog_guess_supplier_from_url($targetUrl);
+            }
+
+            $snippet = trim((string)($googleRow['snippet'] ?? ''));
+
+            $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
+            $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
+            if ($unitPrice === null || $unitPrice <= 0) {
+                $unitPrice = cr_catalog_detect_price_from_page($targetUrl);
+            }
+            if ($unitPrice === null || $unitPrice <= 0) {
+                continue;
+            }
+            $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
+
+            $results[] = [
                 'model' => $title,
                 'equipment_type' => $equipmentType,
                 'product_image_url' => $imageUrl,
                 'unit_price' => $unitPrice,
                 'supplier' => $supplier,
                 'weblink' => $targetUrl,
-                'manufacturer' => trim((string)$manufacturerName),
-                'search_query' => $searchQuery,
-            ],
-        ];
+                'json' => [
+                    'model' => $title,
+                    'equipment_type' => $equipmentType,
+                    'product_image_url' => $imageUrl,
+                    'unit_price' => $unitPrice,
+                    'supplier' => $supplier,
+                    'weblink' => $targetUrl,
+                    'manufacturer' => $manufacturerName,
+                    'search_query' => $searchQuery,
+                ],
+            ];
+        }
     }
 
     if (empty($results)) {
-        return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
+        foreach ($engineQueries as $engineQuery) {
+            if (count($results) >= $maxRows) {
+                break;
+            }
+            $bingRows = cr_catalog_search_online_products_bing_rss((string)$engineQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity, $searchQuery);
+            foreach ($bingRows as $bingRow) {
+                if (count($results) >= $maxRows) {
+                    break;
+                }
+                $targetUrl = cr_normalize_external_url((string)($bingRow['weblink'] ?? ''));
+                if ($targetUrl === '' || isset($seenLinks[$targetUrl])) {
+                    continue;
+                }
+                $seenLinks[$targetUrl] = 1;
+                $results[] = $bingRow;
+            }
+        }
     }
 
     return $results;
@@ -529,7 +608,7 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
 /**
  * Uses Bing RSS as a resilient fallback when HTML scraping returns no rows.
  */
-function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity) {
+function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity, $reportedSearchQuery = '') {
     $results = [];
     $query = trim((string)$searchQuery);
     if ($query === '') {
@@ -593,7 +672,7 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
                 'supplier' => $supplier,
                 'weblink' => $link,
                 'manufacturer' => trim((string)$manufacturerName),
-                'search_query' => $query,
+                'search_query' => ($reportedSearchQuery !== '' ? (string)$reportedSearchQuery : $query),
             ],
         ];
     }
@@ -1078,9 +1157,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
         $priceNumeric = null;
         if ($priceRaw !== '') {
-            $priceNormalized = preg_replace('/[^0-9.]/', '', $priceRaw);
-            if ($priceNormalized !== null && $priceNormalized !== '' && is_numeric($priceNormalized)) {
-                $priceNumeric = (float)$priceNormalized;
+            $priceNumeric = cr_catalog_extract_unit_price($priceRaw);
+            if ($priceNumeric === null) {
+                $priceNormalized = preg_replace('/[^0-9.]/', '', $priceRaw);
+                if ($priceNormalized !== null && $priceNormalized !== '' && is_numeric($priceNormalized)) {
+                    $priceNumeric = (float)$priceNormalized;
+                }
             }
         }
         if ($priceNumeric === null || $priceNumeric <= 0) {
