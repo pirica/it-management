@@ -488,6 +488,48 @@ function cr_catalog_extract_google_result_links($searchHtml) {
 }
 
 /**
+ * Parses DuckDuckGo HTML result links from lightweight markup.
+ */
+function cr_catalog_extract_duckduckgo_result_links($searchHtml) {
+    $rows = [];
+    $html = (string)$searchHtml;
+    if ($html === '') {
+        return $rows;
+    }
+
+    preg_match_all('/<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
+    foreach ($matches as $match) {
+        $rawHref = html_entity_decode((string)($match[1] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $title = trim(strip_tags(html_entity_decode((string)($match[2] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        if (str_starts_with($rawHref, '//')) {
+            $rawHref = 'https:' . $rawHref;
+        }
+
+        $redirectParts = parse_url((string)$rawHref);
+        $redirectHost = strtolower((string)($redirectParts['host'] ?? ''));
+        if ($redirectHost === 'duckduckgo.com' && isset($redirectParts['query'])) {
+            parse_str((string)$redirectParts['query'], $redirectQuery);
+            $decodedTarget = trim((string)($redirectQuery['uddg'] ?? ''));
+            if ($decodedTarget !== '') {
+                $rawHref = $decodedTarget;
+            }
+        }
+
+        $targetUrl = cr_normalize_external_url($rawHref);
+        if ($targetUrl === '' || $title === '') {
+            continue;
+        }
+        $rows[] = [
+            'url' => $targetUrl,
+            'title' => $title,
+            'snippet' => '',
+        ];
+    }
+
+    return $rows;
+}
+
+/**
  * Runs online catalog discovery using Google search HTML results.
  */
 function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supplierFilter, $equipmentTypeFilter, $quantity, $conn = null, $companyId = 0) {
@@ -581,6 +623,69 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
                     'search_query' => $searchQuery,
                 ],
             ];
+        }
+    }
+
+    if (empty($results)) {
+        foreach ($engineQueries as $engineQuery) {
+            if (count($results) >= $maxRows) {
+                break;
+            }
+
+            $duckSearchUrl = 'https://html.duckduckgo.com/html/?q=' . rawurlencode((string)$engineQuery);
+            $duckHtml = cr_catalog_fetch_remote_body($duckSearchUrl, 10);
+            if ($duckHtml === '') {
+                continue;
+            }
+
+            $duckRows = cr_catalog_extract_duckduckgo_result_links($duckHtml);
+            foreach ($duckRows as $duckRow) {
+                if (count($results) >= $maxRows) {
+                    break;
+                }
+
+                $targetUrl = cr_normalize_external_url((string)($duckRow['url'] ?? ''));
+                $title = trim((string)($duckRow['title'] ?? ''));
+                if ($targetUrl === '' || $title === '' || isset($seenLinks[$targetUrl])) {
+                    continue;
+                }
+                $seenLinks[$targetUrl] = 1;
+
+                $supplier = trim((string)$supplierFilter);
+                if ($supplier === '') {
+                    $supplier = cr_catalog_guess_supplier_from_url($targetUrl);
+                }
+
+                $snippet = trim((string)($duckRow['snippet'] ?? ''));
+                $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
+                $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
+                if ($unitPrice === null || $unitPrice <= 0) {
+                    $unitPrice = cr_catalog_detect_price_from_page($targetUrl);
+                }
+                if ($unitPrice === null || $unitPrice <= 0) {
+                    continue;
+                }
+                $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
+
+                $results[] = [
+                    'model' => $title,
+                    'equipment_type' => $equipmentType,
+                    'product_image_url' => $imageUrl,
+                    'unit_price' => $unitPrice,
+                    'supplier' => $supplier,
+                    'weblink' => $targetUrl,
+                    'json' => [
+                        'model' => $title,
+                        'equipment_type' => $equipmentType,
+                        'product_image_url' => $imageUrl,
+                        'unit_price' => $unitPrice,
+                        'supplier' => $supplier,
+                        'weblink' => $targetUrl,
+                        'manufacturer' => $manufacturerName,
+                        'search_query' => $searchQuery,
+                    ],
+                ];
+            }
         }
     }
 
