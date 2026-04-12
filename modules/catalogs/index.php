@@ -365,10 +365,11 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         return $results;
     }
 
-    $searchUrl = 'https://duckduckgo.com/html/?q=' . rawurlencode(implode(' ', $queryParts));
+    $searchQuery = implode(' ', $queryParts);
+    $searchUrl = 'https://duckduckgo.com/html/?q=' . rawurlencode($searchQuery);
     $html = cr_catalog_fetch_remote_body($searchUrl, 10);
     if ($html === '') {
-        return $results;
+        return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
     }
 
     preg_match_all('/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/is', $html, $matches, PREG_SET_ORDER);
@@ -432,7 +433,80 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
                 'supplier' => $supplier,
                 'weblink' => $targetUrl,
                 'manufacturer' => trim((string)$manufacturerName),
-                'search_query' => implode(' ', $queryParts),
+                'search_query' => $searchQuery,
+            ],
+        ];
+    }
+
+    if (empty($results)) {
+        return cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity);
+    }
+
+    return $results;
+}
+
+/**
+ * Uses Bing RSS as a resilient fallback when HTML scraping returns no rows.
+ */
+function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilter, $equipmentTypeFilter, $manufacturerName, $quantity) {
+    $results = [];
+    $query = trim((string)$searchQuery);
+    if ($query === '') {
+        return $results;
+    }
+
+    $searchUrl = 'https://www.bing.com/search?format=rss&q=' . rawurlencode($query);
+    $xmlBody = cr_catalog_fetch_remote_body($searchUrl, 10);
+    if ($xmlBody === '') {
+        return $results;
+    }
+
+    libxml_use_internal_errors(true);
+    $rss = simplexml_load_string($xmlBody);
+    if ($rss === false || !isset($rss->channel->item)) {
+        return $results;
+    }
+
+    $maxRows = max(1, min(30, (int)$quantity));
+    $seenLinks = [];
+    foreach ($rss->channel->item as $item) {
+        if (count($results) >= $maxRows) {
+            break;
+        }
+
+        $title = trim((string)($item->title ?? ''));
+        $link = cr_normalize_external_url((string)($item->link ?? ''));
+        $snippet = trim((string)($item->description ?? ''));
+
+        if ($title === '' || $link === '' || isset($seenLinks[$link])) {
+            continue;
+        }
+        $seenLinks[$link] = 1;
+
+        $supplier = trim((string)$supplierFilter);
+        if ($supplier === '') {
+            $supplier = cr_catalog_guess_supplier_from_url($link);
+        }
+        $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
+        $priceToken = cr_catalog_extract_price($title . ' ' . $snippet);
+        $imageUrl = cr_catalog_detect_image_url_from_page($link);
+
+        $results[] = [
+            'model' => $title,
+            'equipment_type' => $equipmentType,
+            'product_image_url' => $imageUrl,
+            'price' => $priceToken,
+            'supplier' => $supplier,
+            'weblink' => $link,
+            'json' => [
+                'model' => $title,
+                'equipment_type' => $equipmentType,
+                'product_image_url' => $imageUrl,
+                'price' => $priceToken,
+                'supplier' => $supplier,
+                'weblink' => $link,
+                'manufacturer' => trim((string)$manufacturerName),
+                'search_query' => $query,
             ],
         ];
     }
