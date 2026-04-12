@@ -623,8 +623,13 @@ if (!empty($_SESSION['crud_success'])) {
             switchExportImageBtn.addEventListener('click', exportSwitchImage);
         }
 
+        function normalizeColorToken(color) {
+            return String(color || '').trim().toLowerCase();
+        }
+
         function getColorCss(color) {
-            switch (color) {
+            const normalized = normalizeColorToken(color);
+            switch (normalized) {
                 case 'green': return 'green';
                 case 'red': return 'red';
                 case 'yellow': return 'gold';
@@ -633,6 +638,7 @@ if (!empty($_SESSION['crud_success'])) {
                 case 'white': return '#fff';
                 case 'orange': return 'orange';
                 case 'purple': return 'purple';
+                case 'dark pink': return '#ff1493';
                 case 'grey':
                 case 'gray': return '#9ca3af';
                 case 'other': return 'lightgray';
@@ -641,12 +647,14 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
         function getPortNumberColor(color) {
-            switch (color) {
+            const normalized = normalizeColorToken(color);
+            switch (normalized) {
                 case 'black':
                 case 'blue':
                 case 'purple':
                 case 'red':
                 case 'green':
+                case 'dark pink':
                     return '#fff';
                 case 'grey':
                 case 'gray':
