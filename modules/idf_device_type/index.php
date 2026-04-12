@@ -126,6 +126,8 @@ function cr_humanize_field($field) {
     }
 
     $map = [
+        'name' => 'IDF Device Name',
+        'field_edit_emoji' => 'Emoji',
         'department_id' => 'Department Name',
         'office_key_card_department_id' => 'Office Key Card Department',
         'opera_username' => 'OPERA Username',
@@ -286,6 +288,7 @@ foreach ($fieldColumns as $c) {
 
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables[] = 'idf_device_type';
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -469,7 +472,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = str_starts_with((string)$col['Type'], 'tinyint');
         // Normalize boolean flags from checkboxes
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
@@ -788,8 +791,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
+                        $isTinyInt = str_starts_with((string)$col['Type'], 'tinyint');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
@@ -852,7 +855,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php if (str_starts_with((string)$col['Type'], 'tinyint')): ?>
+                                        <label class="itm-checkbox-control">
+                                            <input type="checkbox" disabled <?php echo ((int)($data[$f] ?? 0) === 1) ? 'checked' : ''; ?>>
+                                            <span><?php echo sanitize(cr_humanize_field($f)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data[$f] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                                        </label>
+                                    <?php else: ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
