@@ -16,22 +16,74 @@ function idf_csrf_token(): string {
     return (string)$_SESSION['csrf_token'];
 }
 
-function idf_type_badge(string $t): string {
-    switch ($t) {
-        case 'switch':
-            return '🔀 Switch';
-        case 'patch_panel':
-            return '➰ Patch Panel';
-        case 'ups':
-            return '🔋 UPS';
-        case 'server':
-            return '🖥️ Server';
-        default:
-            return '📦 Other';
+function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
+    $key = strtolower(trim($t));
+    if ($key !== '' && isset($idfDeviceTypeMap[$key])) {
+        $item = $idfDeviceTypeMap[$key];
+        $emoji = trim((string)($item['emoji'] ?? ''));
+        $label = trim((string)($item['label'] ?? ''));
+        if ($label === '') {
+            $label = ucfirst(str_replace('_', ' ', $key));
+        }
+        return trim($emoji . ' ' . $label);
     }
+
+    return '📦 Other';
 }
 
 $csrf = idf_csrf_token();
+
+$idfDeviceTypeOptions = [];
+$idfDeviceTypeMap = [];
+$stmtDeviceTypes = mysqli_prepare(
+    $conn,
+    "SELECT idfdevicetype_name, field_edit_emoji
+     FROM idf_device_type
+     WHERE company_id=? AND active=1
+     ORDER BY id ASC"
+);
+if ($stmtDeviceTypes) {
+    mysqli_stmt_bind_param($stmtDeviceTypes, 'i', $company_id);
+    mysqli_stmt_execute($stmtDeviceTypes);
+    $resDeviceTypes = mysqli_stmt_get_result($stmtDeviceTypes);
+    while ($resDeviceTypes && ($row = mysqli_fetch_assoc($resDeviceTypes))) {
+        $typeNameRaw = (string)($row['idfdevicetype_name'] ?? '');
+        $typeName = strtolower(trim($typeNameRaw));
+        if ($typeName === '') {
+            continue;
+        }
+        $emoji = trim((string)($row['field_edit_emoji'] ?? ''));
+        $label = ucwords(str_replace('_', ' ', $typeName));
+        if (!isset($idfDeviceTypeMap[$typeName])) {
+            $idfDeviceTypeMap[$typeName] = [
+                'emoji' => $emoji,
+                'label' => $label,
+            ];
+        }
+        $idfDeviceTypeOptions[] = [
+            'value' => $typeName,
+            'label' => trim($emoji . ' ' . $label),
+        ];
+    }
+    mysqli_stmt_close($stmtDeviceTypes);
+}
+
+if (!$idfDeviceTypeOptions) {
+    $idfDeviceTypeOptions = [
+        ['value' => 'switch', 'label' => '🔀 Switch'],
+        ['value' => 'patch_panel', 'label' => '➰ Patch Panel'],
+        ['value' => 'ups', 'label' => '🔋 UPS'],
+        ['value' => 'server', 'label' => '🖥️ Server'],
+        ['value' => 'other', 'label' => '📦 Other'],
+    ];
+    $idfDeviceTypeMap = [
+        'switch' => ['emoji' => '🔀', 'label' => 'Switch'],
+        'patch_panel' => ['emoji' => '➰', 'label' => 'Patch Panel'],
+        'ups' => ['emoji' => '🔋', 'label' => 'UPS'],
+        'server' => ['emoji' => '🖥️', 'label' => 'Server'],
+        'other' => ['emoji' => '📦', 'label' => 'Other'],
+    ];
+}
 
 $idf = null;
 if ($idf_id > 0 && $company_id > 0) {
@@ -355,7 +407,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                             <?php else: ?>
                                                 <div class="idf-slot-name"><?php echo sanitize($pos['device_name']); ?></div>
                                                 <div class="idf-slot-sub">
-                                                    <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)$pos['device_type'])); ?></span>
+                                                    <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)$pos['device_type'], $idfDeviceTypeMap)); ?></span>
                                                     <?php if ((int)$pos['port_count'] > 0): ?>
                                                         <span class="idf-badge">🔌 <?php echo (int)$pos['port_count']; ?> ports</span>
                                                     <?php endif; ?>
@@ -426,11 +478,9 @@ foreach ($equipmentOptions as $equipmentOption) {
             <div>
                 <label class="label">Device Type</label>
                 <select class="input" name="device_type" required>
-                    <option value="switch">Switch</option>
-                    <option value="patch_panel">Patch Panel</option>
-                    <option value="ups">UPS</option>
-                    <option value="server">Server</option>
-                    <option value="other">Other</option>
+                    <?php foreach ($idfDeviceTypeOptions as $idfDeviceTypeOption): ?>
+                        <option value="<?php echo sanitize((string)$idfDeviceTypeOption['value']); ?>"><?php echo sanitize((string)$idfDeviceTypeOption['label']); ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
