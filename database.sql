@@ -823,6 +823,39 @@ INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUE
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '8', 'Microsoft', 'MSFT', '1');
 
 
+
+-- Table structure for `catalogs`
+DROP TABLE IF EXISTS `catalogs`;
+CREATE TABLE `catalogs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `model` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `equipment_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
+  `supplier` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `weblink` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_catalogs_company_model_supplier` (`company_id`,`model`,`supplier`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `catalogs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `catalogs`
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('1', '1', 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 'Switch', NULL, '500.00', 'Amazon', 'https://www.amazon.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('2', '1', 'Cisco Catalyst C9200L-24P-4G-A', 'Switch', NULL, '3899.00', 'CDW', 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('3', '1', 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 'Switch', NULL, '699.00', 'Newegg', 'https://www.newegg.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('4', '1', 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 'Switch', NULL, '329.99', 'B&H', 'https://www.bhphotovideo.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('5', '1', 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 'Switch', NULL, '39.99', 'Best Buy', 'https://www.bestbuy.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('6', '1', 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 'Switch', NULL, '29.99', 'Walmart', 'https://www.walmart.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('7', '1', 'Ubiquiti UniFi Switch USW Pro 24 PoE', 'Switch', NULL, '698.99', 'Office Depot', 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('8', '1', 'Ubiquiti Networks UniFi Switch 24 PoE', 'Switch', NULL, '379.00', 'Sweetwater', 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('9', '1', 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 'Switch', NULL, '459.99', 'Adorama', 'https://www.adorama.com/', '1');
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) VALUES ('10', '1', 'Cisco Meraki MS120-24P Cloud Managed Switch', 'Switch', NULL, '1599.00', 'Insight', 'https://www.insight.com/', '1');
+
+
 -- Table structure for `patches_updates_status`
 DROP TABLE IF EXISTS `patches_updates_status`;
 CREATE TABLE `patches_updates_status` (
@@ -1779,6 +1812,7 @@ INSERT INTO `equipment_types` (`company_id`, `name`, `code`, `field_edit_emoji`,
 INSERT INTO `inventory_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `inventory_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `location_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `location_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `manufacturers` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `manufacturers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `catalogs` (`company_id`, `model`, `equipment_type`, `image`, `price`, `supplier`, `weblink`, `active`) SELECT c.`id`, t.`model`, t.`equipment_type`, t.`image`, t.`price`, t.`supplier`, t.`weblink`, t.`active` FROM `catalogs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `printer_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `printer_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `rack_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `rack_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 INSERT INTO `supplier_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `supplier_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
@@ -2525,6 +2559,25 @@ END$$
 CREATE TRIGGER `trg_location_types_audit_delete` AFTER DELETE ON `location_types` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'location_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS `trg_catalogs_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_catalogs_audit_update`;
+DROP TRIGGER IF EXISTS `trg_catalogs_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_catalogs_audit_insert` AFTER INSERT ON `catalogs` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'catalogs', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'model', NEW.`model`, 'equipment_type', NEW.`equipment_type`, 'image', NEW.`image`, 'price', NEW.`price`, 'supplier', NEW.`supplier`, 'weblink', NEW.`weblink`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_catalogs_audit_update` AFTER UPDATE ON `catalogs` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'catalogs', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'model', OLD.`model`, 'equipment_type', OLD.`equipment_type`, 'image', OLD.`image`, 'price', OLD.`price`, 'supplier', OLD.`supplier`, 'weblink', OLD.`weblink`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'model', NEW.`model`, 'equipment_type', NEW.`equipment_type`, 'image', NEW.`image`, 'price', NEW.`price`, 'supplier', NEW.`supplier`, 'weblink', NEW.`weblink`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_catalogs_audit_delete` AFTER DELETE ON `catalogs` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'catalogs', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'model', OLD.`model`, 'equipment_type', OLD.`equipment_type`, 'image', OLD.`image`, 'price', OLD.`price`, 'supplier', OLD.`supplier`, 'weblink', OLD.`weblink`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 

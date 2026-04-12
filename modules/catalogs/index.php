@@ -1,8 +1,8 @@
 <?php
 /**
- * Manufacturers Module - Index
+ * Catalogs Module - Index
  *
- * Standalone manufacturers CRUD implementation.
+ * Standalone catalogs CRUD implementation.
  *
  * Features:
  * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms 
@@ -16,8 +16,8 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'manufacturers';
-$crud_title = 'Manufacturers';
+$crud_table = $crud_table ?? 'catalogs';
+$crud_title = $crud_title ?? 'Catalogs';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
@@ -737,6 +737,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <div style="display:flex;gap:8px;">
                             <a href="create.php" class="btn btn-primary">➕</a>
+                            <?php if ($crud_table === 'catalogs'): ?>
+                                <a href="index.php" class="btn btn-sm">Refresh products</a>
+                                <a href="index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <span></span>
@@ -744,6 +748,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                         <div style="display:flex;gap:8px;">
+                            <?php if ($crud_table === 'catalogs'): ?>
+                                <a href="index.php" class="btn btn-sm">Refresh products</a>
+                                <a href="index.php?sort=updated_at&dir=DESC" class="btn btn-sm">Check for new products</a>
+                            <?php endif; ?>
                             <a href="create.php" class="btn btn-primary">➕</a>
                         </div>
                     <?php else: ?>
