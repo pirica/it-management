@@ -317,6 +317,23 @@ function cr_catalog_extract_price($text) {
 }
 
 /**
+ * Converts extracted display price tokens into decimal unit prices.
+ */
+function cr_catalog_extract_unit_price($text) {
+    $priceToken = cr_catalog_extract_price($text);
+    if ($priceToken === '') {
+        return null;
+    }
+
+    $normalized = preg_replace('/[^0-9.]/', '', $priceToken);
+    if ($normalized === null || $normalized === '' || !is_numeric($normalized)) {
+        return null;
+    }
+
+    return (float)$normalized;
+}
+
+/**
  * Uses lightweight keyword matching to classify equipment type.
  */
 function cr_catalog_guess_equipment_type($title, $snippet, $fallbackType) {
@@ -415,21 +432,24 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
         }
 
         $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
-        $priceToken = cr_catalog_extract_price($title . ' ' . $snippet);
+        $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
+        if ($unitPrice === null || $unitPrice <= 0) {
+            continue;
+        }
         $imageUrl = cr_catalog_detect_image_url_from_page($targetUrl);
 
         $results[] = [
             'model' => $title,
             'equipment_type' => $equipmentType,
             'product_image_url' => $imageUrl,
-            'price' => $priceToken,
+            'unit_price' => $unitPrice,
             'supplier' => $supplier,
             'weblink' => $targetUrl,
             'json' => [
                 'model' => $title,
                 'equipment_type' => $equipmentType,
                 'product_image_url' => $imageUrl,
-                'price' => $priceToken,
+                'unit_price' => $unitPrice,
                 'supplier' => $supplier,
                 'weblink' => $targetUrl,
                 'manufacturer' => trim((string)$manufacturerName),
@@ -488,21 +508,24 @@ function cr_catalog_search_online_products_bing_rss($searchQuery, $supplierFilte
             $supplier = cr_catalog_guess_supplier_from_url($link);
         }
         $equipmentType = cr_catalog_guess_equipment_type($title, $snippet, $equipmentTypeFilter);
-        $priceToken = cr_catalog_extract_price($title . ' ' . $snippet);
+        $unitPrice = cr_catalog_extract_unit_price($title . ' ' . $snippet);
+        if ($unitPrice === null || $unitPrice <= 0) {
+            continue;
+        }
         $imageUrl = cr_catalog_detect_image_url_from_page($link);
 
         $results[] = [
             'model' => $title,
             'equipment_type' => $equipmentType,
             'product_image_url' => $imageUrl,
-            'price' => $priceToken,
+            'unit_price' => $unitPrice,
             'supplier' => $supplier,
             'weblink' => $link,
             'json' => [
                 'model' => $title,
                 'equipment_type' => $equipmentType,
                 'product_image_url' => $imageUrl,
-                'price' => $priceToken,
+                'unit_price' => $unitPrice,
                 'supplier' => $supplier,
                 'weblink' => $link,
                 'manufacturer' => trim((string)$manufacturerName),
@@ -969,7 +992,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         $model = trim((string)($rowItem['model'] ?? ''));
         $equipmentType = trim((string)($rowItem['equipment_type'] ?? 'Other'));
         $image = cr_normalize_external_url((string)($rowItem['product_image_url'] ?? ''));
-        $priceRaw = trim((string)($rowItem['price'] ?? ''));
+        $priceRaw = trim((string)($rowItem['unit_price'] ?? ($rowItem['price'] ?? '')));
         $supplier = trim((string)($rowItem['supplier'] ?? ''));
         $weblink = cr_normalize_external_url((string)($rowItem['weblink'] ?? ''));
 
@@ -1429,7 +1452,7 @@ if ($crud_table === 'catalogs') {
                                         <th>Model</th>
                                         <th>Equipment Type</th>
                                         <th>Product Image URL</th>
-                                        <th>Price</th>
+                                        <th>Unit Price</th>
                                         <th>Supplier</th>
                                         <th>Product Page</th>
                                         <th>JSON</th>
@@ -1448,7 +1471,7 @@ if ($crud_table === 'catalogs') {
                                                     -
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?php echo sanitize((string)($onlineRow['price'] ?? '')); ?></td>
+                                            <td><?php echo sanitize((string)($onlineRow['unit_price'] ?? ($onlineRow['price'] ?? ''))); ?></td>
                                             <td><?php echo sanitize((string)($onlineRow['supplier'] ?? '')); ?></td>
                                             <td>
                                                 <?php if (trim((string)($onlineRow['weblink'] ?? '')) !== ''): ?>
