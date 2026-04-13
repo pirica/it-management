@@ -850,17 +850,60 @@ CREATE TABLE `catalogs` (
   CONSTRAINT `catalogs_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL,
   CONSTRAINT `catalogs_ibfk_manufacturer` FOREIGN KEY (`manufacturer_id`) REFERENCES `manufacturers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Data for `catalogs`
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('1', '1', 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', '1', NULL, '500.00', NULL, '3', 'https://www.amazon.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('2', '1', 'Cisco Catalyst C9200L-24P-4G-A', '1', NULL, '3899.00', NULL, '1', 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('3', '1', 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', '1', NULL, '699.00', NULL, '5', 'https://www.newegg.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('4', '1', 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', '1', NULL, '329.99', NULL, NULL, 'https://www.bhphotovideo.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('5', '1', 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', '1', NULL, '39.99', NULL, NULL, 'https://www.bestbuy.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('6', '1', 'D-Link DGS-108 8-Port Gigabit Desktop Switch', '1', NULL, '29.99', NULL, NULL, 'https://www.walmart.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('7', '1', 'Ubiquiti UniFi Switch USW Pro 24 PoE', '1', NULL, '698.99', NULL, '5', 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('8', '1', 'Ubiquiti Networks UniFi Switch 24 PoE', '1', NULL, '379.00', NULL, '5', 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('9', '1', 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', '1', NULL, '459.99', NULL, NULL, 'https://www.adorama.com/', '1');
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) VALUES ('10', '1', 'Cisco Meraki MS120-24P Cloud Managed Switch', '1', NULL, '1599.00', NULL, '1', 'https://www.insight.com/', '1');
+--
+-- Dumping data for table `catalogs`
+--
+
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`, `created_at`, `updated_at`) VALUES
+(1, 1, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, 'https://fls-na.amaz', 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:57'),
+(2, 1, 'Cisco Catalyst C9200L-24P-4G-A', 1, 'https://webobjects2.cdw.com/is/image/CDW/5404745?$product_minithumb$', 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:38'),
+(3, 1, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, 'https://c1.neweggimages.com/WebResource/Themes/logo_newegg_400400.png', 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:33'),
+(4, 1, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, 'https://www.bhphotovideo.com/', 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:20'),
+(5, 1, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, 'https://www.bestbuy.com/', 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:29'),
+(7, 1, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, 'https://media.officedepot.com/image/upload/w_130,h_63,c_fill/assets/OfficeDepot_OfficeMax.png', 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:33', '2026-04-13 01:20:28'),
+(8, 1, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, 'https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg?quality=82&width=1080&height=1080&fit=bounds&canvas=1080%2C1080&ha=3c5509fab31c1f6d', 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:33', '2026-04-13 01:20:22'),
+(9, 1, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, 'https://www.adorama.com/images/cms/36471Adorama-OG-Preview_30309.jpg', 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:20:12'),
+(10, 1, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, 'https://www.insight.com/content/dam/insight-web/en_US/thumbnail/insight-thumbnail.png', 1599.00, 1, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:33', '2026-04-12 16:51:50'),
+(11, 5, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:34', NULL),
+(13, 3, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:34', NULL),
+(14, 2, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:34', NULL),
+(15, 5, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:34', NULL),
+(17, 3, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:34', NULL),
+(18, 2, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:34', NULL),
+(19, 5, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:34', NULL),
+(21, 3, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:34', NULL),
+(22, 2, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:34', NULL),
+(23, 5, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:34', NULL),
+(25, 3, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:34', NULL),
+(26, 2, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:34', NULL),
+(27, 5, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:34', NULL),
+(29, 3, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:34', NULL),
+(30, 2, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:34', NULL),
+(31, 5, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 16:49:34', NULL),
+(33, 3, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 16:49:34', NULL),
+(34, 2, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 16:49:34', NULL),
+(35, 5, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:34', NULL),
+(37, 3, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:34', NULL),
+(38, 2, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:34', NULL),
+(39, 5, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:34', NULL),
+(41, 3, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:34', NULL),
+(42, 2, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:34', NULL),
+(43, 5, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:34', NULL),
+(45, 3, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:34', NULL),
+(46, 2, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:34', NULL),
+(47, 5, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:34', NULL),
+(49, 3, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:34', NULL),
+(50, 2, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:34', NULL),
+(84, 4, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 17:29:32', NULL),
+(85, 4, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 17:29:32', NULL),
+(86, 4, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 17:29:32', NULL),
+(87, 4, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 17:29:32', NULL),
+(88, 4, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 17:29:32', NULL),
+(89, 4, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 17:29:32', NULL),
+(90, 4, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 17:29:32', NULL),
+(91, 4, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 17:29:32', NULL),
+(92, 4, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 17:29:32', NULL),
+(93, 4, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 17:29:32', NULL);
 
 
 -- Table structure for `patches_updates_status`
