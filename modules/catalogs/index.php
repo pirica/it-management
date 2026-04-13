@@ -33,6 +33,26 @@ function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
+
+/**
+ * PHP 7.4-safe string contains helper.
+ */
+function cr_contains($haystack, $needle) {
+    return $needle === '' || strpos((string)$haystack, (string)$needle) !== false;
+}
+
+/**
+ * PHP 7.4-safe string starts-with helper.
+ */
+function cr_starts_with($haystack, $needle) {
+    $haystack = (string)$haystack;
+    $needle = (string)$needle;
+    if ($needle === '') {
+        return true;
+    }
+    return substr($haystack, 0, strlen($needle)) === $needle;
+}
+
 /**
  * Fetches column definitions for the target table.
  */
@@ -67,6 +87,47 @@ function cr_fk_map($conn, $table) {
         }
         mysqli_stmt_close($stmt);
     }
+
+    // Why: some legacy databases were created without FK constraints, which leaves
+    // list views showing raw numeric IDs instead of readable labels.
+    if ($table === 'catalogs') {
+        $catalogFallbacks = [
+            'equipment_type_id' => 'equipment_types',
+            'manufacturer_id' => 'manufacturers',
+            'supplier_id' => 'suppliers',
+        ];
+
+        foreach ($catalogFallbacks as $columnName => $referencedTable) {
+            if (isset($map[$columnName])) {
+                continue;
+            }
+            if (!itm_is_safe_identifier($columnName) || !itm_is_safe_identifier($referencedTable)) {
+                continue;
+            }
+
+            $existsSql = "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1";
+            $existsStmt = mysqli_prepare($conn, $existsSql);
+            if (!$existsStmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($existsStmt, 's', $referencedTable);
+            mysqli_stmt_execute($existsStmt);
+            $existsRes = mysqli_stmt_get_result($existsStmt);
+            $exists = ($existsRes && mysqli_num_rows($existsRes) > 0);
+            mysqli_stmt_close($existsStmt);
+
+            if (!$exists) {
+                continue;
+            }
+
+            $map[$columnName] = [
+                'COLUMN_NAME' => $columnName,
+                'REFERENCED_TABLE_NAME' => $referencedTable,
+                'REFERENCED_COLUMN_NAME' => 'id',
+            ];
+        }
+    }
+
     return $map;
 }
 
@@ -236,7 +297,7 @@ function cr_fk_metadata($conn, $table) {
                 continue;
             }
             $fieldType = $typeMap[$fieldName] ?? '';
-            if (str_contains($fieldType, 'char') || str_contains($fieldType, 'text') || str_contains($fieldType, 'enum')) {
+            if (cr_contains($fieldType, 'char') || cr_contains($fieldType, 'text') || cr_contains($fieldType, 'enum')) {
                 $labelCol = $fieldName;
                 break;
             }
@@ -327,7 +388,7 @@ function cr_tinyint_field_map($columns) {
     foreach ($columns as $col) {
         $field = (string)($col['Field'] ?? '');
         $type = strtolower((string)($col['Type'] ?? ''));
-        if ($field !== '' && (str_starts_with($type, 'tinyint(1)') || $field === 'active')) {
+        if ($field !== '' && (cr_starts_with($type, 'tinyint(1)') || $field === 'active')) {
             $map[$field] = true;
         }
     }
@@ -629,7 +690,7 @@ function cr_catalog_guess_equipment_type($title, $snippet, $fallbackType) {
 
     foreach ($typeMap as $typeLabel => $keywords) {
         foreach ($keywords as $keyword) {
-            if ($keyword !== '' && str_contains($haystack, $keyword)) {
+            if ($keyword !== '' && cr_contains($haystack, $keyword)) {
                 return ucwords($typeLabel);
             }
         }
@@ -658,7 +719,7 @@ function cr_catalog_extract_google_result_links($searchHtml) {
         }
 
         $candidateUrl = '';
-        if (str_starts_with($rawHref, '/url?')) {
+        if (cr_starts_with($rawHref, '/url?')) {
             $hrefParts = parse_url('https://www.google.com' . $rawHref);
             parse_str((string)($hrefParts['query'] ?? ''), $queryParts);
             $candidateUrl = (string)($queryParts['q'] ?? '');
@@ -672,7 +733,7 @@ function cr_catalog_extract_google_result_links($searchHtml) {
         }
 
         $host = strtolower((string)(parse_url($candidateUrl, PHP_URL_HOST) ?? ''));
-        if ($host === '' || str_contains($host, 'google.com') || str_contains($host, 'gstatic.com')) {
+        if ($host === '' || cr_contains($host, 'google.com') || cr_contains($host, 'gstatic.com')) {
             continue;
         }
 
@@ -709,7 +770,7 @@ function cr_catalog_extract_duckduckgo_result_links($searchHtml) {
     foreach ($matches as $match) {
         $rawHref = html_entity_decode((string)($match[1] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $title = trim(strip_tags(html_entity_decode((string)($match[2] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
-        if (str_starts_with($rawHref, '//')) {
+        if (cr_starts_with($rawHref, '//')) {
             $rawHref = 'https:' . $rawHref;
         }
 
@@ -757,7 +818,7 @@ function cr_catalog_search_online_products($modelQuery, $manufacturerName, $supp
     // Why: keep payload `search_query` unchanged, but widen actual engine queries
     // when pricing metadata is hard to locate from the exact phrase alone.
     $engineQueries = [$searchQuery];
-    if (!str_contains(strtolower($searchQuery), 'buy')) {
+    if (!cr_contains(strtolower($searchQuery), 'buy')) {
         $engineQueries[] = $searchQuery . ' buy';
     }
     $manufacturerName = trim((string)$manufacturerName);
@@ -1144,7 +1205,7 @@ function cr_resolve_relative_url($baseUrl, $relativeUrl) {
     if (preg_match('#^https?://#i', $relative)) {
         return cr_normalize_external_url($relative);
     }
-    if (str_starts_with($relative, '//')) {
+    if (cr_starts_with($relative, '//')) {
         $baseParts = parse_url((string)$baseUrl);
         $scheme = (string)($baseParts['scheme'] ?? 'https');
         return cr_normalize_external_url($scheme . ':' . $relative);
@@ -1163,7 +1224,7 @@ function cr_resolve_relative_url($baseUrl, $relativeUrl) {
         $baseDir = '/';
     }
 
-    if (str_starts_with($relative, '/')) {
+    if (cr_starts_with($relative, '/')) {
         return cr_normalize_external_url($scheme . '://' . $host . $port . $relative);
     }
     return cr_normalize_external_url($scheme . '://' . $host . $port . $baseDir . $relative);
@@ -1270,7 +1331,7 @@ function cr_numeric_validation_error($field, $message) {
  */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
-    $isUnsigned = str_contains($type, 'unsigned');
+    $isUnsigned = cr_contains($type, 'unsigned');
     $raw = trim((string)$rawValue);
 
     if (preg_match('/^(tinyint|smallint|mediumint|int|bigint)\b/', $type, $match)) {
@@ -1528,7 +1589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = cr_starts_with($col['Type'], 'tinyint(1)');
         
         // Logical Booleans
         if ($isTinyInt) {
@@ -1661,8 +1722,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $params[] = $data[$name];
             
             $colType = strtolower($col['Type']);
-            if (str_contains($colType, 'int') || str_contains($colType, 'decimal') || str_contains($colType, 'float') || str_contains($colType, 'double')) {
-                $types .= ($data[$name] === null) ? 's' : (str_contains($colType, 'int') ? 'i' : 'd');
+            if (cr_contains($colType, 'int') || cr_contains($colType, 'decimal') || cr_contains($colType, 'float') || cr_contains($colType, 'double')) {
+                $types .= ($data[$name] === null) ? 's' : (cr_contains($colType, 'int') ? 'i' : 'd');
             } else {
                 $types .= 's';
             }
@@ -1723,7 +1784,7 @@ if ($showCatalogNewProducts) {
 // SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchPattern = (cr_contains($searchRaw, '%') || cr_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
     foreach ($fieldColumns as $col) {
@@ -1933,10 +1994,10 @@ if (!empty($_SESSION['crud_success'])) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($formColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)') || $name === 'active';
-                        $isDate = str_starts_with($col['Type'], 'date');
-                        $isDateTime = str_starts_with($col['Type'], 'datetime');
-                        $isText = str_contains($col['Type'], 'text');
+                        $isTinyInt = cr_starts_with($col['Type'], 'tinyint(1)') || $name === 'active';
+                        $isDate = cr_starts_with($col['Type'], 'date');
+                        $isDateTime = cr_starts_with($col['Type'], 'datetime');
+                        $isText = cr_contains($col['Type'], 'text');
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === null) ? '' : (string)$val;
                     ?>
