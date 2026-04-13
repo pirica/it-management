@@ -482,6 +482,108 @@ if (!function_exists('itm_split_sql_csv')) {
 }
 
 /**
+ * Splits a SQL VALUES block into row tuples while preserving quoted segments.
+ */
+if (!function_exists('itm_split_sql_value_tuples')) {
+    function itm_split_sql_value_tuples($rawValuesBlock) {
+        $tuples = [];
+        $buffer = '';
+        $inQuote = false;
+        $depth = 0;
+        $length = strlen((string)$rawValuesBlock);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $rawValuesBlock[$i];
+            $prev = $i > 0 ? $rawValuesBlock[$i - 1] : '';
+            if ($char === "'" && $prev !== '\\') {
+                $inQuote = !$inQuote;
+            }
+
+            if (!$inQuote && $char === '(') {
+                if ($depth === 0) {
+                    $buffer = '';
+                } else {
+                    $buffer .= $char;
+                }
+                $depth++;
+                continue;
+            }
+
+            if (!$inQuote && $char === ')') {
+                if ($depth > 0) {
+                    $depth--;
+                    if ($depth === 0) {
+                        $tuples[] = trim($buffer);
+                        $buffer = '';
+                        continue;
+                    }
+                }
+            }
+
+            if ($depth > 0) {
+                $buffer .= $char;
+            }
+        }
+
+        return $tuples;
+    }
+}
+
+/**
+ * Extracts INSERT statements from database.sql, including multiline VALUES blocks.
+ */
+if (!function_exists('itm_parse_database_sql_inserts')) {
+    function itm_parse_database_sql_inserts($sqlText, $tableFilter = null) {
+        $parsed = [];
+        $source = (string)$sqlText;
+        $tableFilter = $tableFilter !== null ? (string)$tableFilter : null;
+
+        if ($source === '') {
+            return $parsed;
+        }
+
+        $pattern = '/INSERT\\s+INTO\\s+`([^`]+)`\\s*\\((.*?)\\)\\s*VALUES\\s*(.+?);/is';
+        if (!preg_match_all($pattern, $source, $matches, PREG_SET_ORDER)) {
+            return $parsed;
+        }
+
+        foreach ($matches as $match) {
+            $tableName = (string)($match[1] ?? '');
+            if ($tableName === '' || !itm_is_safe_identifier($tableName)) {
+                continue;
+            }
+            if ($tableFilter !== null && $tableName !== $tableFilter) {
+                continue;
+            }
+
+            $rawColumns = array_map('trim', explode(',', (string)($match[2] ?? '')));
+            $tuples = itm_split_sql_value_tuples((string)($match[3] ?? ''));
+            if (empty($tuples)) {
+                continue;
+            }
+
+            if (!isset($parsed[$tableName])) {
+                $parsed[$tableName] = [];
+            }
+
+            foreach ($tuples as $tuple) {
+                $rawValues = itm_split_sql_csv($tuple);
+                if (count($rawColumns) !== count($rawValues)) {
+                    continue;
+                }
+
+                $parsed[$tableName][] = [
+                    'columns' => $rawColumns,
+                    'values' => $rawValues,
+                ];
+            }
+        }
+
+        return $parsed;
+    }
+}
+
+/**
  * Inserts sample rows for a module table from database.sql when empty.
  */
 if (!function_exists('itm_seed_table_from_database_sql')) {
@@ -506,30 +608,23 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             return 0;
         }
 
-        $lines = @file($sqlPath, FILE_IGNORE_NEW_LINES);
-        if (!is_array($lines)) {
+        $sqlBody = @file_get_contents($sqlPath);
+        if ($sqlBody === false) {
             $error = 'Unable to read sample source file.';
             return 0;
         }
 
-        $quotedTable = '`' . $tableName . '`';
+        $parsedInserts = itm_parse_database_sql_inserts($sqlBody, $tableName);
+        $tableRows = $parsedInserts[$tableName] ?? [];
+        if (empty($tableRows)) {
+            $error = 'No sample rows found in database.sql for this module.';
+            return 0;
+        }
+
         $insertCount = 0;
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '' || stripos($line, 'INSERT INTO ') !== 0 || stripos($line, $quotedTable) === false) {
-                continue;
-            }
-
-            $matches = [];
-            if (!preg_match('/^INSERT INTO\\s+`[^`]+`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
-                continue;
-            }
-
-            $rawColumns = array_map('trim', explode(',', (string)$matches[1]));
-            $rawValues = itm_split_sql_csv((string)$matches[2]);
-            if (count($rawColumns) !== count($rawValues)) {
-                continue;
-            }
+        foreach ($tableRows as $rowEntry) {
+            $rawColumns = $rowEntry['columns'] ?? [];
+            $rawValues = $rowEntry['values'] ?? [];
 
             $targetColumns = [];
             $targetValues = [];
@@ -598,42 +693,21 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
             return 0;
         }
 
-        $lines = @file($sqlPath, FILE_IGNORE_NEW_LINES);
-        if (!is_array($lines)) {
+        $sqlBody = @file_get_contents($sqlPath);
+        if ($sqlBody === false) {
             $error = 'Unable to read sample source file.';
             return 0;
         }
 
-        $insertLinesByTable = [];
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '' || stripos($line, 'INSERT INTO ') !== 0) {
-                continue;
-            }
+        $insertRowsByTable = itm_parse_database_sql_inserts($sqlBody);
 
-            $matches = [];
-            if (!preg_match('/^INSERT INTO\\s+`([^`]+)`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
-                continue;
-            }
-
-            $tableName = (string)$matches[1];
-            if (!itm_is_safe_identifier($tableName)) {
-                continue;
-            }
-
-            if (!isset($insertLinesByTable[$tableName])) {
-                $insertLinesByTable[$tableName] = [];
-            }
-            $insertLinesByTable[$tableName][] = $line;
-        }
-
-        if (empty($insertLinesByTable)) {
+        if (empty($insertRowsByTable)) {
             $error = 'No INSERT sample data found in database.sql.';
             return 0;
         }
 
         $insertCount = 0;
-        foreach ($insertLinesByTable as $tableName => $insertLines) {
+        foreach ($insertRowsByTable as $tableName => $insertRows) {
             $tableExistsRes = mysqli_query(
                 $conn,
                 "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $tableName) . "'"
@@ -670,17 +744,9 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
 
             $tableInsertCount = 0;
             $tableFailed = false;
-            foreach ($insertLines as $line) {
-                $matches = [];
-                if (!preg_match('/^INSERT INTO\\s+`[^`]+`\\s*\\((.+)\\)\\s*VALUES\\s*\\((.+)\\);$/u', $line, $matches)) {
-                    continue;
-                }
-
-                $rawColumns = array_map('trim', explode(',', (string)$matches[1]));
-                $rawValues = itm_split_sql_csv((string)$matches[2]);
-                if (count($rawColumns) !== count($rawValues)) {
-                    continue;
-                }
+            foreach ($insertRows as $rowEntry) {
+                $rawColumns = $rowEntry['columns'] ?? [];
+                $rawValues = $rowEntry['values'] ?? [];
 
                 $targetColumns = [];
                 $targetValues = [];
