@@ -459,7 +459,7 @@ function cr_render_cell_value($table, $field, $value) {
         if ($safeUrl === '') {
             return sanitize($text);
         }
-        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🖼️ Open image</a>';
+        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;" title="🔗 🖼️"><span>🖼️</span></a>';
     }
     if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url', 'product_url'], true) && $text !== '') {
         $safeUrl = cr_normalize_external_url($text);
@@ -1688,21 +1688,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
-    // Why: reduce manual catalog work by auto-filling the image URL from the product page when possible.
     if ($crud_table === 'catalogs' && array_key_exists('image_url', $data)) {
-        $rawImage = trim((string)($data['image_url'] ?? ''));
-        $sourceUrl = trim((string)($data['product_url'] ?? ''));
-
-        if ($rawImage === '' && $sourceUrl !== '') {
-            $detectedImage = cr_catalog_detect_image_url_from_page($sourceUrl);
-            if ($detectedImage !== '') {
-                $data['image_url'] = $detectedImage;
-            }
-        } elseif ($rawImage !== '') {
-            $normalizedImage = cr_normalize_external_url($rawImage);
-            if ($normalizedImage !== '') {
-                $data['image_url'] = $normalizedImage;
-            }
+        $normalizedImage = cr_normalize_external_url((string)($data['image_url'] ?? ''));
+        if ($normalizedImage !== '') {
+            $data['image_url'] = $normalizedImage;
         }
     }
 
@@ -2061,11 +2050,6 @@ if (!empty($_SESSION['crud_success'])) {
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php elseif ($crud_table === 'catalogs' && in_array($name, ['image', 'image_url'], true)): ?>
                                 <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg" inputmode="url">
-                                <?php if ($displayVal !== ''): ?>
-                                    <div style="margin-top:8px;max-width:100%;overflow:auto;">
-                                        <?php echo cr_catalog_image_preview_html($displayVal, 220, 140); ?>
-                                    </div>
-                                <?php endif; ?>
                             <?php elseif ($crud_table === 'catalogs' && in_array($name, ['weblink', 'source_url', 'product_url'], true)): ?>
                                 <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe" inputmode="url">
                             <?php else: ?>
@@ -2081,10 +2065,6 @@ if (!empty($_SESSION['crud_success'])) {
 
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- VIEW (DETAILS) -->
-                <?php
-                    $detailPreviewMaxWidth = isset($crud_catalog_image_preview_max_width) ? max(200, (int)$crud_catalog_image_preview_max_width) : 560;
-                    $detailPreviewMaxHeight = isset($crud_catalog_image_preview_max_height) ? max(160, (int)$crud_catalog_image_preview_max_height) : 360;
-                ?>
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
                 <div class="card">
                     <table>
@@ -2105,13 +2085,7 @@ if (!empty($_SESSION['crud_success'])) {
                                             }
                                         }
                                     ?>
-                                    <?php if ($crud_table === 'catalogs' && in_array($f, ['image', 'image_url'], true) && trim((string)($data[$f] ?? '')) !== ''): ?>
-                                        <div style="max-width:100%;overflow:auto;">
-                                            <?php echo cr_catalog_image_preview_html((string)$data[$f], $detailPreviewMaxWidth, $detailPreviewMaxHeight); ?>
-                                        </div>
-                                    <?php else: ?>
-                                        <?php echo cr_render_cell_value($crud_table, $f, $detailDisplayValue); ?>
-                                    <?php endif; ?>
+                                    <?php echo cr_render_cell_value($crud_table, $f, $detailDisplayValue); ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
