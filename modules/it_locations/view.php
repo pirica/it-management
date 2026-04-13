@@ -298,20 +298,6 @@ foreach ($fieldColumns as $col) {
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$locationIdfs = [];
-if ($crud_action === 'view' && $editId > 0 && $company_id > 0) {
-    $stmtIdfs = mysqli_prepare($conn, "SELECT id, name, idf_code FROM idfs WHERE location_id = ? AND company_id = ? ORDER BY name ASC");
-    if ($stmtIdfs) {
-        mysqli_stmt_bind_param($stmtIdfs, 'ii', $editId, $company_id);
-        mysqli_stmt_execute($stmtIdfs);
-        $resIdfs = mysqli_stmt_get_result($stmtIdfs);
-        while ($resIdfs && ($row = mysqli_fetch_assoc($resIdfs))) {
-            $locationIdfs[] = $row;
-        }
-        mysqli_stmt_close($stmtIdfs);
-    }
-}
-
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
     if ($hasCompany && $company_id > 0) {
@@ -601,22 +587,6 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     </table>
                     <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
-
-                <?php if ($crud_action === 'view' && !empty($locationIdfs)): ?>
-                    <div class="card" style="margin-top:20px; border-radius:18px;">
-                        <h3 style="margin-top:0;">🗄️ Assigned IDFs</h3>
-                        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
-                            <?php foreach ($locationIdfs as $idf): ?>
-                                <a href="../idfs/view.php?id=<?php echo (int)$idf['id']; ?>" class="btn" style="text-align:left; padding:12px; border-radius:12px; display:flex; flex-direction:column; gap:4px; height:auto;">
-                                    <span style="font-weight:600;"><?php echo sanitize($idf['name']); ?></span>
-                                    <?php if (!empty($idf['idf_code'])): ?>
-                                        <span class="badge" style="width:fit-content; font-size:10px;"><?php echo sanitize($idf['idf_code']); ?></span>
-                                    <?php endif; ?>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
