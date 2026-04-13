@@ -160,6 +160,12 @@ if ($stmtPos) {
             mysqli_stmt_execute($stmtPorts);
             $portRes = mysqli_stmt_get_result($stmtPorts);
             while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
+                // Why: Newly added devices should render ports with a neutral gray color when status/link colors are missing.
+                $statusColor = trim((string)($pRow['status_color'] ?? ''));
+                $cableColor = trim((string)($pRow['cable_hex_color'] ?? ''));
+                if ($statusColor === '') {
+                    $pRow['status_color'] = $cableColor !== '' ? $cableColor : '#808080';
+                }
                 $row['ports'][] = $pRow;
             }
             mysqli_stmt_close($stmtPorts);
