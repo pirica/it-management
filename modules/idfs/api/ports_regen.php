@@ -52,7 +52,7 @@ try {
         mysqli_stmt_close($stmtDel);
     }
 
-    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, ?, ?)");
+    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id) VALUES (?, ?, ?, ?, ?)");
     if ($stmtIns) {
         for ($n = 1; $n <= $count; $n++) {
             mysqli_stmt_bind_param($stmtIns, 'iiiii', $company_id, $position_id, $n, $rj45PortTypeId, $unknownStatusId);

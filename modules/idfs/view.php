@@ -144,16 +144,25 @@ if ($stmtPos) {
         }
         $row['ports'] = [];
 
-        $portSql = "SELECT pr.*, ss.status AS status_label, ss.color AS status_color, cc.hex_color AS cable_hex_color
-                    FROM idf_ports pr
-                    LEFT JOIN switch_status ss ON ss.id = pr.status
-                    LEFT JOIN idf_links l ON l.port_id_a = pr.id OR l.port_id_b = pr.id
-                    LEFT JOIN cable_colors cc ON cc.color_name = l.cable_color AND cc.company_id = pr.company_id
-                    WHERE pr.position_id = $posId
-                    ORDER BY pr.port_no ASC";
-        $portRes = mysqli_query($conn, $portSql);
-        while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
-            $row['ports'][] = $pRow;
+        $stmtPorts = mysqli_prepare(
+            $conn,
+            "SELECT pr.*, ss.status AS status_label, cc_ss.hex_color AS status_color, cc_l.hex_color AS cable_hex_color
+             FROM idf_ports pr
+             LEFT JOIN switch_status ss ON ss.id = pr.status_id
+             LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id
+             LEFT JOIN idf_links l ON l.port_id_a = pr.id OR l.port_id_b = pr.id
+             LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
+             WHERE pr.position_id = ?
+             ORDER BY pr.port_no ASC"
+        );
+        if ($stmtPorts) {
+            mysqli_stmt_bind_param($stmtPorts, 'i', $posId);
+            mysqli_stmt_execute($stmtPorts);
+            $portRes = mysqli_stmt_get_result($stmtPorts);
+            while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
+                $row['ports'][] = $pRow;
+            }
+            mysqli_stmt_close($stmtPorts);
         }
 
         $positions[$posNo] = $row;
@@ -421,12 +430,12 @@ foreach ($equipmentOptions as $equipmentOption) {
                         <div style="display:flex; gap:8px; align-items:center;">
                             <a class="btn btn-sm" href="index.php">← Back</a>
                             <div class="idf-rack-title">
-                                🗄️ <?php echo sanitize($idf['name']); ?>
+                                🗄️ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($idf['location_name']); ?>
                                 <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
                             </div>
                         </div>
                         <div style="opacity:.85; font-size:12px;">
-                            📍 <?php echo sanitize($idf['location_name']); ?> · <span class="idf-badge idf-drag-hint">Drag &amp; drop enabled</span>
+                             <span class="idf-badge idf-drag-hint">Drag &amp; drop enabled</span>
                         </div>
                     </div>
                     <div class="idf-command-actions">
@@ -440,7 +449,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <div class="idf-rack">
                         <div class="idf-rack-header">
                             <div>
-                                <div class="idf-rack-title">Rack Face (10 positions)</div>
+                                <div class="idf-rack-title">Rack Face (<?php echo $displayMaxPos; ?> positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
                                     · Location: <?php echo sanitize((string)($idf['location_name'] ?? 'Unknown Location')); ?>
@@ -896,7 +905,7 @@ function idfExportExcel() {
 
 async function idfExportImage() {
     const node = document.getElementById('idfCaptureRoot');
-    const canvas = await html2canvas(node, {scale: 2});
+    const canvas = await html2canvas(node, {scale: 2, useCORS: true});
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
     a.download = `idf-<?php echo (int)$idf_id; ?>.png`;
@@ -905,7 +914,7 @@ async function idfExportImage() {
 
 async function idfExportPdf() {
     const node = document.getElementById('idfCaptureRoot');
-    const canvas = await html2canvas(node, {scale: 2});
+    const canvas = await html2canvas(node, {scale: 2, useCORS: true});
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({orientation: 'portrait', unit: 'pt', format: 'a4'});

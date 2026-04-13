@@ -43,10 +43,7 @@ $vlan_id = idf_resolve_vlan_id($conn, $company_id, $data['vlan_id'] ?? ($data['v
 $speed_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_fiber', 'name', $data['speed_id'] ?? ($data['speed'] ?? ''));
 $poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $data['poe_id'] ?? ($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
-$cable_color = trim((string)($data['cable_color'] ?? ''));
-if ($cable_color === '') {
-    $cable_color = 'Gray';
-}
+$cable_color_id = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 
 $label_val = $label !== '' ? $label : null;
 $conn_val = $connected_to !== '' ? $connected_to : null;
@@ -58,18 +55,18 @@ $notes_val = $notes !== '' ? $notes : null;
 $sql = "UPDATE idf_ports
         SET port_type=?,
             label=?,
-            status=?,
+            status_id=?,
             connected_to=?,
-            vlan=NULLIF(?, 0),
-            speed=NULLIF(?, 0),
-            poe=NULLIF(?, 0),
+            vlan_id=NULLIF(?, 0),
+            speed_id=NULLIF(?, 0),
+            poe_id=NULLIF(?, 0),
             notes=?
         WHERE id=?
         LIMIT 1";
 
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
-    mysqli_stmt_bind_param($stmtUpd, 'siisiiisi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $notes_val, $port_id);
+    mysqli_stmt_bind_param($stmtUpd, 'isisiiisi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $notes_val, $port_id);
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }
@@ -79,11 +76,11 @@ if ($stmtUpd) {
 $stmtLinkUpdate = mysqli_prepare(
     $conn,
     "UPDATE idf_links
-     SET cable_color = ?
+     SET cable_color_id = NULLIF(?, 0)
      WHERE port_id_a = ? OR port_id_b = ?"
 );
 if ($stmtLinkUpdate) {
-    mysqli_stmt_bind_param($stmtLinkUpdate, 'sii', $cable_color, $port_id, $port_id);
+    mysqli_stmt_bind_param($stmtLinkUpdate, 'iii', $cable_color_id, $port_id, $port_id);
     if (!mysqli_stmt_execute($stmtLinkUpdate)) {
         idf_fail('DB error updating link cable color: ' . mysqli_stmt_error($stmtLinkUpdate), 500);
     }

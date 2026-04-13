@@ -90,7 +90,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                     continue;
                 }
 
-                $statusColor = (string)($p['status_color'] ?? $p['color'] ?? '#161b22');
+                $statusColor = (string)($p['status_color'] ?? '#161b22');
                 $isActive = false;
                 if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
                     $statusColor = '#58a6ff';

@@ -49,8 +49,7 @@ function idf_escape(mysqli $conn, ?string $s): string {
 }
 
 /**
- * Why: Some deployments still have old status column shapes that break dynamic
- * status additions from the IDF UI.
+ * Why: Refactor database schema to use ID-based relations for colors and statuses.
  */
 function idf_ensure_status_schema(mysqli $conn): void {
     static $alreadyChecked = false;
@@ -92,96 +91,121 @@ function idf_ensure_status_schema(mysqli $conn): void {
             );
         }
 
-        // Why: Support visual port status with color mapping.
-        $colorCheckRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_status` LIKE 'color'");
-        if ($colorCheckRes && mysqli_num_rows($colorCheckRes) === 0) {
-            mysqli_query($conn, "ALTER TABLE `switch_status` ADD COLUMN `color` varchar(7) DEFAULT NULL AFTER `status`");
+        // Why: Support visual port status with color mapping (relation to cable_colors).
+        $colorIdCheckRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_status` LIKE 'color_id'");
+        if ($colorIdCheckRes && mysqli_num_rows($colorIdCheckRes) === 0) {
+            mysqli_query($conn, "ALTER TABLE `switch_status` ADD COLUMN `color_id` int DEFAULT NULL AFTER `status` ");
+            mysqli_query($conn, "ALTER TABLE `switch_status` ADD KEY `color_id` (`color_id`) ");
 
-            // Seed default colors for standard statuses
-            $colors = [
-                'Up' => '#007bff',
-                'Down' => '#dc3545',
-                'Disabled' => '#6c757d',
-                'Err-Disabled' => '#e83e8c',
-                'Faulty' => '#fd7e14',
-                'Free' => '#28a745',
-                'Reserved' => '#ffc107',
-                'Testing' => '#17a2b8',
-                'Unknown' => '#adb5bd'
-            ];
-            foreach ($colors as $status => $hex) {
-                $statusEsc = mysqli_real_escape_string($conn, $status);
-                $hexEsc = mysqli_real_escape_string($conn, $hex);
-                mysqli_query($conn, "UPDATE `switch_status` SET `color` = '{$hexEsc}' WHERE LOWER(`status`) = LOWER('{$statusEsc}') AND `color` IS NULL");
+            $hasColorIdFk = false;
+            $resColorIdFk = mysqli_query(
+                $conn,
+                "SELECT CONSTRAINT_NAME
+                 FROM information_schema.REFERENTIAL_CONSTRAINTS
+                 WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+                   AND TABLE_NAME = 'switch_status'
+                   AND CONSTRAINT_NAME = 'switch_status_ibfk_color'
+                 LIMIT 1"
+            );
+            if ($resColorIdFk && mysqli_fetch_assoc($resColorIdFk)) {
+                $hasColorIdFk = true;
+            }
+            if (!$hasColorIdFk) {
+                mysqli_query(
+                    $conn,
+                    "ALTER TABLE `switch_status`
+                     ADD CONSTRAINT `switch_status_ibfk_color`
+                     FOREIGN KEY (`color_id`) REFERENCES `cable_colors` (`id`)
+                     ON DELETE SET NULL"
+                );
+            }
+
+            // Why: Migrate existing hex colors to relation.
+            $oldColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_status` LIKE 'color'");
+            if ($oldColorRes && mysqli_num_rows($oldColorRes) > 0) {
+                mysqli_query(
+                    $conn,
+                    "UPDATE switch_status ss
+                     JOIN cable_colors cc ON LOWER(cc.hex_color) = LOWER(ss.color) AND cc.company_id = ss.company_id
+                     SET ss.color_id = cc.id
+                     WHERE ss.color_id IS NULL"
+                );
+                mysqli_query($conn, "ALTER TABLE `switch_status` DROP COLUMN `color` ");
             }
         }
     }
 
     $idfPortsColumn = $readStatusColumn('idf_ports');
-    $idfType = strtolower((string)($idfPortsColumn['COLUMN_TYPE'] ?? ''));
-    if ($idfPortsColumn && !preg_match('/^(tinyint|smallint|mediumint|int|bigint)\b/', $idfType)) {
-        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `status_new` int DEFAULT NULL");
-        mysqli_query(
-            $conn,
-            "UPDATE idf_ports p
-             LEFT JOIN switch_status ss
-               ON ss.company_id = p.company_id
-              AND LOWER(ss.status) = LOWER(CAST(p.status AS CHAR))
-             SET p.status_new = ss.id"
-        );
-        mysqli_query(
-            $conn,
-            "UPDATE idf_ports p
-             LEFT JOIN switch_status ss
-               ON ss.company_id = p.company_id
-              AND LOWER(ss.status) = 'unknown'
-             SET p.status_new = ss.id
-             WHERE p.status_new IS NULL"
-        );
-        mysqli_query(
-            $conn,
-            "UPDATE idf_ports p
-             JOIN (
-               SELECT company_id, MIN(id) AS any_status_id
-               FROM switch_status
-               GROUP BY company_id
-             ) ss ON ss.company_id = p.company_id
-             SET p.status_new = ss.any_status_id
-             WHERE p.status_new IS NULL"
-        );
-        mysqli_query($conn, "ALTER TABLE `idf_ports` DROP COLUMN `status`");
-        mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `status_new` `status` int NOT NULL");
-    }
+    if ($idfPortsColumn) {
+        $idfType = strtolower((string)($idfPortsColumn['COLUMN_TYPE'] ?? ''));
+        if (!preg_match('/^(tinyint|smallint|mediumint|int|bigint)\b/', $idfType)) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `status_id` int DEFAULT NULL");
+            mysqli_query(
+                $conn,
+                "UPDATE idf_ports p
+                 LEFT JOIN switch_status ss
+                   ON ss.company_id = p.company_id
+                  AND LOWER(ss.status) = LOWER(CAST(p.status AS CHAR))
+                 SET p.status_id = ss.id"
+            );
+            mysqli_query(
+                $conn,
+                "UPDATE idf_ports p
+                 LEFT JOIN switch_status ss
+                   ON ss.company_id = p.company_id
+                  AND LOWER(ss.status) = 'unknown'
+                 SET p.status_id = ss.id
+                 WHERE p.status_id IS NULL"
+            );
+            mysqli_query(
+                $conn,
+                "UPDATE idf_ports p
+                 JOIN (
+                   SELECT company_id, MIN(id) AS any_status_id
+                   FROM switch_status
+                   GROUP BY company_id
+                 ) ss ON ss.company_id = p.company_id
+                 SET p.status_id = ss.any_status_id
+                 WHERE p.status_id IS NULL"
+            );
+            mysqli_query($conn, "ALTER TABLE `idf_ports` DROP COLUMN `status` ");
+        } else {
+            $statusNameCheck = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'status'");
+            if ($statusNameCheck && mysqli_num_rows($statusNameCheck) > 0) {
+                 mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `status` `status_id` int NOT NULL ");
+            }
+        }
 
-    $statusIndexExists = false;
-    $resStatusIndex = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_status_idx'");
-    if ($resStatusIndex && mysqli_fetch_assoc($resStatusIndex)) {
-        $statusIndexExists = true;
-    }
-    if (!$statusIndexExists) {
-        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_status_idx` (`status`)");
-    }
+        $statusIndexExists = false;
+        $resStatusIndex = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_status_idx'");
+        if ($resStatusIndex && mysqli_fetch_assoc($resStatusIndex)) {
+            $statusIndexExists = true;
+        }
+        if (!$statusIndexExists) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_status_idx` (`status_id`) ");
+        }
 
-    $statusFkExists = false;
-    $resStatusFk = mysqli_query(
-        $conn,
-        "SELECT CONSTRAINT_NAME
-         FROM information_schema.REFERENTIAL_CONSTRAINTS
-         WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
-           AND TABLE_NAME = 'idf_ports'
-           AND CONSTRAINT_NAME = 'idf_ports_ibfk_status'
-         LIMIT 1"
-    );
-    if ($resStatusFk && mysqli_fetch_assoc($resStatusFk)) {
-        $statusFkExists = true;
-    }
-    if (!$statusFkExists) {
-        mysqli_query(
+        $statusFkExists = false;
+        $resStatusFk = mysqli_query(
             $conn,
-            "ALTER TABLE `idf_ports`
-             ADD CONSTRAINT `idf_ports_ibfk_status`
-             FOREIGN KEY (`status`) REFERENCES `switch_status` (`id`)"
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_ports'
+               AND CONSTRAINT_NAME = 'idf_ports_ibfk_status'
+             LIMIT 1"
         );
+        if ($resStatusFk && mysqli_fetch_assoc($resStatusFk)) {
+            $statusFkExists = true;
+        }
+        if (!$statusFkExists) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `idf_ports`
+                 ADD CONSTRAINT `idf_ports_ibfk_status`
+                 FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`)"
+            );
+        }
     }
 
     $readPortTypeColumn = static function () use ($conn, $databaseNameEscaped): ?array {
@@ -227,8 +251,8 @@ function idf_ensure_status_schema(mysqli $conn): void {
              SET p.port_type_new = spt.any_port_type_id
              WHERE p.port_type_new IS NULL"
         );
-        mysqli_query($conn, "ALTER TABLE `idf_ports` DROP COLUMN `port_type`");
-        mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `port_type_new` `port_type` int NOT NULL");
+        mysqli_query($conn, "ALTER TABLE `idf_ports` DROP COLUMN `port_type` ");
+        mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `port_type_new` `port_type` int NOT NULL ");
     }
 
     $portTypeIndexExists = false;
@@ -237,7 +261,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
         $portTypeIndexExists = true;
     }
     if (!$portTypeIndexExists) {
-        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_port_type_idx` (`port_type`)");
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_port_type_idx` (`port_type`) ");
     }
 
     $portTypeFkExists = false;
@@ -262,63 +286,45 @@ function idf_ensure_status_schema(mysqli $conn): void {
         );
     }
 
-    // Why: Support for Vertical/Horizontal port numbering layouts in idf_positions.
-    $layoutColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_positions` LIKE 'switch_port_numbering_layout_id'");
-    if ($layoutColRes && mysqli_num_rows($layoutColRes) === 0) {
-        mysqli_query($conn, "ALTER TABLE `idf_positions` ADD COLUMN `switch_port_numbering_layout_id` int DEFAULT NULL AFTER `port_count` ");
-        mysqli_query($conn, "ALTER TABLE `idf_positions` ADD KEY `switch_port_numbering_layout_id` (`switch_port_numbering_layout_id`)");
+    // Support for ID-based cable colors in idf_links.
+    $linkCableColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_id'");
+    if ($linkCableColorColRes && mysqli_num_rows($linkCableColorColRes) === 0) {
+        mysqli_query($conn, "ALTER TABLE `idf_links` ADD COLUMN `cable_color_id` int DEFAULT NULL AFTER `equipment_color_id` ");
+        mysqli_query($conn, "ALTER TABLE `idf_links` ADD KEY `cable_color_id` (`cable_color_id`) ");
 
-        $hasLayoutFk = false;
-        $resLayoutFk = mysqli_query(
+        $hasLinkColorIdFk = false;
+        $resLinkColorIdFk = mysqli_query(
             $conn,
             "SELECT CONSTRAINT_NAME
              FROM information_schema.REFERENTIAL_CONSTRAINTS
              WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
-               AND TABLE_NAME = 'idf_positions'
-               AND CONSTRAINT_NAME = 'idf_positions_ibfk_layout'
+               AND TABLE_NAME = 'idf_links'
+               AND CONSTRAINT_NAME = 'idf_links_ibfk_cable_color'
              LIMIT 1"
         );
-        if ($resLayoutFk && mysqli_fetch_assoc($resLayoutFk)) {
-            $hasLayoutFk = true;
+        if ($resLinkColorIdFk && mysqli_fetch_assoc($resLinkColorIdFk)) {
+            $hasLinkColorIdFk = true;
         }
-        if (!$hasLayoutFk) {
+        if (!$hasLinkColorIdFk) {
             mysqli_query(
                 $conn,
-                "ALTER TABLE `idf_positions`
-                 ADD CONSTRAINT `idf_positions_ibfk_layout`
-                 FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`)
+                "ALTER TABLE `idf_links`
+                 ADD CONSTRAINT `idf_links_ibfk_cable_color`
+                 FOREIGN KEY (`cable_color_id`) REFERENCES `cable_colors` (`id`)
                  ON DELETE SET NULL"
             );
         }
-    }
 
-    // Why: Support for Vertical/Horizontal port numbering layouts in equipment.
-    $eqLayoutColRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_port_numbering_layout_id'");
-    if ($eqLayoutColRes && mysqli_num_rows($eqLayoutColRes) === 0) {
-        mysqli_query($conn, "ALTER TABLE `equipment` ADD COLUMN `switch_port_numbering_layout_id` int DEFAULT NULL AFTER `switch_rj45_id` ");
-        mysqli_query($conn, "ALTER TABLE `equipment` ADD KEY `switch_port_numbering_layout_id` (`switch_port_numbering_layout_id`)");
-
-        $hasEqLayoutFk = false;
-        $resEqLayoutFk = mysqli_query(
-            $conn,
-            "SELECT CONSTRAINT_NAME
-             FROM information_schema.REFERENTIAL_CONSTRAINTS
-             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
-               AND TABLE_NAME = 'equipment'
-               AND CONSTRAINT_NAME = 'equipment_ibfk_layout'
-             LIMIT 1"
-        );
-        if ($resEqLayoutFk && mysqli_fetch_assoc($resEqLayoutFk)) {
-            $hasEqLayoutFk = true;
-        }
-        if (!$hasEqLayoutFk) {
+        $oldLinkColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color'");
+        if ($oldLinkColorRes && mysqli_num_rows($oldLinkColorRes) > 0) {
             mysqli_query(
                 $conn,
-                "ALTER TABLE `equipment`
-                 ADD CONSTRAINT `equipment_ibfk_layout`
-                 FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`)
-                 ON DELETE SET NULL"
+                "UPDATE idf_links l
+                 JOIN cable_colors cc ON LOWER(cc.color_name) = LOWER(l.cable_color) AND cc.company_id = l.company_id
+                 SET l.cable_color_id = cc.id
+                 WHERE l.cable_color_id IS NULL"
             );
+            mysqli_query($conn, "ALTER TABLE `idf_links` DROP COLUMN `cable_color` ");
         }
     }
 
@@ -327,8 +333,10 @@ function idf_ensure_status_schema(mysqli $conn): void {
         string $refTable,
         string $refMatchSql,
         string $indexName,
-        string $fkName
+        string $fkName,
+        ?string $newColumnName = null
     ) use ($conn, $databaseNameEscaped): void {
+        $finalColumnName = $newColumnName ?? $columnName;
         $columnSql = "SELECT COLUMN_TYPE
                       FROM information_schema.COLUMNS
                       WHERE TABLE_SCHEMA = '{$databaseNameEscaped}'
@@ -354,7 +362,9 @@ function idf_ensure_status_schema(mysqli $conn): void {
                  SET p.`{$tmpColumn}` = ref.id"
             );
             mysqli_query($conn, "ALTER TABLE `idf_ports` DROP COLUMN `{$columnName}`");
-            mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `{$tmpColumn}` `{$columnName}` int DEFAULT NULL");
+            mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `{$tmpColumn}` `{$finalColumnName}` int DEFAULT NULL");
+        } else if ($columnName !== $finalColumnName) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` CHANGE COLUMN `{$columnName}` `{$finalColumnName}` int DEFAULT NULL ");
         }
 
         $hasIndex = false;
@@ -363,7 +373,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
             $hasIndex = true;
         }
         if (!$hasIndex) {
-            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `{$indexName}` (`{$columnName}`)");
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `{$indexName}` (`{$finalColumnName}`) ");
         }
 
         $hasFk = false;
@@ -384,7 +394,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
                 $conn,
                 "ALTER TABLE `idf_ports`
                  ADD CONSTRAINT `{$fkName}`
-                 FOREIGN KEY (`{$columnName}`) REFERENCES `{$refTable}` (`id`)
+                 FOREIGN KEY (`{$finalColumnName}`) REFERENCES `{$refTable}` (`id`)
                  ON DELETE SET NULL"
             );
         }
@@ -393,192 +403,80 @@ function idf_ensure_status_schema(mysqli $conn): void {
     $ensureMappedIntColumn(
         'vlan',
         'vlans',
-        "LOWER(ref.vlan_number) = LOWER(CAST(p.vlan AS CHAR))
-         OR LOWER(ref.vlan_name) = LOWER(CAST(p.vlan AS CHAR))",
+        "LOWER(ref.vlan_number) = LOWER(CAST(p.vlan AS CHAR)) OR LOWER(ref.vlan_name) = LOWER(CAST(p.vlan AS CHAR))",
         'idf_ports_vlan_idx',
-        'idf_ports_ibfk_vlan'
+        'idf_ports_ibfk_vlan',
+        'vlan_id'
     );
     $ensureMappedIntColumn(
         'speed',
         'equipment_fiber',
         "LOWER(ref.name) = LOWER(CAST(p.speed AS CHAR))",
         'idf_ports_speed_idx',
-        'idf_ports_ibfk_speed'
+        'idf_ports_ibfk_speed',
+        'speed_id'
     );
     $ensureMappedIntColumn(
         'poe',
         'equipment_poe',
         "LOWER(ref.name) = LOWER(CAST(p.poe AS CHAR))",
         'idf_ports_poe_idx',
-        'idf_ports_ibfk_poe'
+        'idf_ports_ibfk_poe',
+        'poe_id'
     );
 }
 
-/**
- * Why: Persist IDF port status as switch_status.id while still accepting either
- * a numeric id or a text status from callers.
- */
 function idf_resolve_status_id(mysqli $conn, int $company_id, $rawStatus, string $fallback = 'Unknown'): int {
-    $statusId = 0;
-    if (is_numeric($rawStatus)) {
-        $candidateId = (int)$rawStatus;
-        if ($candidateId > 0) {
-            $stmtById = mysqli_prepare(
-                $conn,
-                'SELECT id FROM switch_status WHERE company_id = ? AND id = ? LIMIT 1'
-            );
-            if ($stmtById) {
-                mysqli_stmt_bind_param($stmtById, 'ii', $company_id, $candidateId);
-                mysqli_stmt_execute($stmtById);
-                $resById = mysqli_stmt_get_result($stmtById);
-                $rowById = $resById ? mysqli_fetch_assoc($resById) : null;
-                mysqli_stmt_close($stmtById);
-                if ($rowById && isset($rowById['id'])) {
-                    return (int)$rowById['id'];
-                }
-            }
-        }
+    if (is_numeric($rawStatus) && (int)$rawStatus > 0) {
+        return (int)$rawStatus;
     }
-
     $statusName = trim((string)$rawStatus);
     if ($statusName !== '') {
-        $stmtByName = mysqli_prepare(
-            $conn,
-            'SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = LOWER(?) LIMIT 1'
-        );
+        $stmtByName = mysqli_prepare($conn, 'SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = LOWER(?) LIMIT 1');
         if ($stmtByName) {
             mysqli_stmt_bind_param($stmtByName, 'is', $company_id, $statusName);
             mysqli_stmt_execute($stmtByName);
             $resByName = mysqli_stmt_get_result($stmtByName);
             $rowByName = $resByName ? mysqli_fetch_assoc($resByName) : null;
             mysqli_stmt_close($stmtByName);
-            if ($rowByName && isset($rowByName['id'])) {
-                return (int)$rowByName['id'];
-            }
+            if ($rowByName) return (int)$rowByName['id'];
         }
     }
-
-    $fallbackName = trim($fallback) !== '' ? trim($fallback) : 'Unknown';
-    $stmtFallback = mysqli_prepare(
-        $conn,
-        'SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = LOWER(?) LIMIT 1'
-    );
+    $stmtFallback = mysqli_prepare($conn, 'SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = LOWER(?) LIMIT 1');
     if ($stmtFallback) {
-        mysqli_stmt_bind_param($stmtFallback, 'is', $company_id, $fallbackName);
+        mysqli_stmt_bind_param($stmtFallback, 'is', $company_id, $fallback);
         mysqli_stmt_execute($stmtFallback);
         $resFallback = mysqli_stmt_get_result($stmtFallback);
         $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
         mysqli_stmt_close($stmtFallback);
-        if ($rowFallback && isset($rowFallback['id'])) {
-            return (int)$rowFallback['id'];
-        }
+        if ($rowFallback) return (int)$rowFallback['id'];
     }
-
-    $stmtFirst = mysqli_prepare($conn, 'SELECT id FROM switch_status WHERE company_id = ? ORDER BY id ASC LIMIT 1');
-    if ($stmtFirst) {
-        mysqli_stmt_bind_param($stmtFirst, 'i', $company_id);
-        mysqli_stmt_execute($stmtFirst);
-        $resFirst = mysqli_stmt_get_result($stmtFirst);
-        $first = $resFirst ? mysqli_fetch_assoc($resFirst) : null;
-        mysqli_stmt_close($stmtFirst);
-        if ($first && isset($first['id'])) {
-            $statusId = (int)$first['id'];
-        }
-    }
-
-    return $statusId;
+    return 0;
 }
 
-/**
- * Why: Persist IDF port type as switch_port_types.id while still accepting
- * either numeric ids or textual type labels.
- */
 function idf_resolve_port_type_id(mysqli $conn, int $company_id, $rawPortType, string $fallback = 'RJ45'): int {
-    if (is_numeric($rawPortType)) {
-        $candidateId = (int)$rawPortType;
-        if ($candidateId > 0) {
-            $stmtById = mysqli_prepare(
-                $conn,
-                'SELECT id FROM switch_port_types WHERE company_id = ? AND id = ? LIMIT 1'
-            );
-            if ($stmtById) {
-                mysqli_stmt_bind_param($stmtById, 'ii', $company_id, $candidateId);
-                mysqli_stmt_execute($stmtById);
-                $resById = mysqli_stmt_get_result($stmtById);
-                $rowById = $resById ? mysqli_fetch_assoc($resById) : null;
-                mysqli_stmt_close($stmtById);
-                if ($rowById && isset($rowById['id'])) {
-                    return (int)$rowById['id'];
-                }
-            }
-        }
+    if (is_numeric($rawPortType) && (int)$rawPortType > 0) {
+        return (int)$rawPortType;
     }
-
     $portTypeName = trim((string)$rawPortType);
     if ($portTypeName !== '') {
-        $stmtByName = mysqli_prepare(
-            $conn,
-            'SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1'
-        );
+        $stmtByName = mysqli_prepare($conn, 'SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1');
         if ($stmtByName) {
             mysqli_stmt_bind_param($stmtByName, 'is', $company_id, $portTypeName);
             mysqli_stmt_execute($stmtByName);
             $resByName = mysqli_stmt_get_result($stmtByName);
             $rowByName = $resByName ? mysqli_fetch_assoc($resByName) : null;
             mysqli_stmt_close($stmtByName);
-            if ($rowByName && isset($rowByName['id'])) {
-                return (int)$rowByName['id'];
-            }
+            if ($rowByName) return (int)$rowByName['id'];
         }
     }
-
-    $fallbackName = trim($fallback) !== '' ? trim($fallback) : 'RJ45';
-    $stmtFallback = mysqli_prepare(
-        $conn,
-        'SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1'
-    );
-    if ($stmtFallback) {
-        mysqli_stmt_bind_param($stmtFallback, 'is', $company_id, $fallbackName);
-        mysqli_stmt_execute($stmtFallback);
-        $resFallback = mysqli_stmt_get_result($stmtFallback);
-        $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
-        mysqli_stmt_close($stmtFallback);
-        if ($rowFallback && isset($rowFallback['id'])) {
-            return (int)$rowFallback['id'];
-        }
-    }
-
-    $stmtFirst = mysqli_prepare($conn, 'SELECT id FROM switch_port_types WHERE company_id = ? ORDER BY id ASC LIMIT 1');
-    if ($stmtFirst) {
-        mysqli_stmt_bind_param($stmtFirst, 'i', $company_id);
-        mysqli_stmt_execute($stmtFirst);
-        $resFirst = mysqli_stmt_get_result($stmtFirst);
-        $first = $resFirst ? mysqli_fetch_assoc($resFirst) : null;
-        mysqli_stmt_close($stmtFirst);
-        if ($first && isset($first['id'])) {
-            return (int)$first['id'];
-        }
-    }
-
     return 0;
 }
 
 function idf_resolve_vlan_id(mysqli $conn, int $company_id, $rawVlan): ?int {
     if ($rawVlan === null || $rawVlan === '') return null;
-    if (is_numeric($rawVlan)) {
-        $candidate = (int)$rawVlan;
-        $stmt = mysqli_prepare($conn, 'SELECT id FROM vlans WHERE company_id = ? AND id = ? LIMIT 1');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ii', $company_id, $candidate);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            $row = $res ? mysqli_fetch_assoc($res) : null;
-            mysqli_stmt_close($stmt);
-            if ($row) return (int)$row['id'];
-        }
-    }
+    if (is_numeric($rawVlan)) return (int)$rawVlan;
     $value = trim((string)$rawVlan);
-    if ($value === '') return null;
     $stmt = mysqli_prepare($conn, 'SELECT id FROM vlans WHERE company_id = ? AND (LOWER(vlan_number)=LOWER(?) OR LOWER(vlan_name)=LOWER(?)) LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'iss', $company_id, $value, $value);
@@ -593,20 +491,8 @@ function idf_resolve_vlan_id(mysqli $conn, int $company_id, $rawVlan): ?int {
 
 function idf_resolve_named_lookup_id(mysqli $conn, int $company_id, string $table, string $column, $raw): ?int {
     if ($raw === null || $raw === '') return null;
-    if (is_numeric($raw)) {
-        $candidate = (int)$raw;
-        $stmtById = mysqli_prepare($conn, "SELECT id FROM {$table} WHERE company_id = ? AND id = ? LIMIT 1");
-        if ($stmtById) {
-            mysqli_stmt_bind_param($stmtById, 'ii', $company_id, $candidate);
-            mysqli_stmt_execute($stmtById);
-            $resById = mysqli_stmt_get_result($stmtById);
-            $rowById = $resById ? mysqli_fetch_assoc($resById) : null;
-            mysqli_stmt_close($stmtById);
-            if ($rowById) return (int)$rowById['id'];
-        }
-    }
+    if (is_numeric($raw)) return (int)$raw;
     $value = trim((string)$raw);
-    if ($value === '') return null;
     $stmtByName = mysqli_prepare($conn, "SELECT id FROM {$table} WHERE company_id = ? AND LOWER({$column}) = LOWER(?) LIMIT 1");
     if ($stmtByName) {
         mysqli_stmt_bind_param($stmtByName, 'is', $company_id, $value);

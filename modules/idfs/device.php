@@ -23,14 +23,14 @@ $pos = null;
 if ($position_id > 0 && $company_id > 0) {
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT p.*, i.name AS idf_name, i.id AS idf_id, spnl.name AS layout_name,
+        'SELECT p.*, i.name AS idf_name, l.name AS location_name, i.id AS idf_id, spnl.name AS layout_name,
                 CASE
                     WHEN UPPER(COALESCE(et.code, "")) = "SWITCH" THEN 1
                     WHEN UPPER(COALESCE(et.name, "")) = "SWITCH" THEN 1
                     ELSE 0
                 END AS equipment_is_switch
          FROM idf_positions p
-         JOIN idfs i ON i.id = p.idf_id
+         JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
          LEFT JOIN equipment e ON e.id = p.equipment_id
          LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
@@ -54,13 +54,13 @@ if (!$pos) {
 }
 
 $ports = [];
-$resPorts = mysqli_query(
+$stmtPorts = mysqli_prepare(
     $conn,
     "SELECT
        pr.*,
        COALESCE(spt.type, 'RJ45') AS port_type_label,
        COALESCE(ss.status, 'Unknown') AS status_label,
-       COALESCE(ss.color, '#adb5bd') AS status_color,
+       COALESCE(cc_ss.hex_color, '#adb5bd') AS status_color,
        CASE
          WHEN v.id IS NULL THEN ''
          WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
@@ -69,8 +69,8 @@ $resPorts = mysqli_query(
        COALESCE(ef.name, '') AS speed_label,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
-       l.cable_color,
-       cc.hex_color AS cable_hex_color,
+       l.cable_color_id,
+       cc_l.hex_color AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
        CASE
@@ -89,16 +89,18 @@ $resPorts = mysqli_query(
        ON spt.id = pr.port_type
       AND spt.company_id = pr.company_id
      LEFT JOIN switch_status ss
-       ON ss.id = pr.status
+       ON ss.id = pr.status_id
       AND ss.company_id = pr.company_id
+     LEFT JOIN cable_colors cc_ss
+       ON cc_ss.id = ss.color_id
      LEFT JOIN vlans v
-       ON v.id = pr.vlan
+       ON v.id = pr.vlan_id
       AND v.company_id = pr.company_id
      LEFT JOIN equipment_fiber ef
-       ON ef.id = pr.speed
+       ON ef.id = pr.speed_id
       AND ef.company_id = pr.company_id
      LEFT JOIN equipment_poe ep
-       ON ep.id = pr.poe
+       ON ep.id = pr.poe_id
       AND ep.company_id = pr.company_id
      LEFT JOIN idf_links l ON l.id = (
          SELECT l2.id
@@ -107,14 +109,20 @@ $resPorts = mysqli_query(
          ORDER BY l2.id ASC
          LIMIT 1
      )
-     LEFT JOIN cable_colors cc ON cc.color_name = l.cable_color AND cc.company_id = pr.company_id
+     LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
-     WHERE pr.position_id=$position_id
+     WHERE pr.position_id=?
      ORDER BY pr.port_no ASC"
 );
-while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
-    $ports[] = $row;
+if ($stmtPorts) {
+    mysqli_stmt_bind_param($stmtPorts, 'i', $position_id);
+    mysqli_stmt_execute($stmtPorts);
+    $resPorts = mysqli_stmt_get_result($stmtPorts);
+    while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
+        $ports[] = $row;
+    }
+    mysqli_stmt_close($stmtPorts);
 }
 
 $otherIds = [];
@@ -207,7 +215,7 @@ $stmtDestinationPorts = mysqli_prepare(
         END AS is_linked
      FROM idf_ports pr
      JOIN idf_positions p ON p.id = pr.position_id
-     JOIN idfs i ON i.id = p.idf_id
+     JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
      WHERE i.company_id = ?
        AND p.id <> ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
@@ -515,23 +523,26 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="main-content">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
 
-        <div class="content">
+        <div class="content" id="idfDeviceCaptureRoot">
             <div class="idf-toolbar">
                 <div class="left">
                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
                     <div style="display:flex; flex-direction:column;">
+                        <div style="opacity:.85; font-size:13px; font-weight:600; margin-bottom:2px;">
+                            🗄️ IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
+                        </div>
                         <div class="idf-rack-title">
                             🔧 <?php echo sanitize($pos['device_name']); ?>
                             <span class="idf-badge">Position <?php echo (int)$pos['position_no']; ?></span>
                             <span class="idf-badge"><?php echo sanitize((string)$pos['device_type']); ?></span>
-                        </div>
-                        <div style="opacity:.85; font-size:12px;">
-                            IDF: <?php echo sanitize((string)$pos['idf_name']); ?>
-                            <?php if (!empty($pos['equipment_id'])): ?> • Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?><?php endif; ?>
+                            <?php if (!empty($pos['equipment_id'])): ?>
+                                <span class="idf-badge">Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
-                <div class="right">
+                <div class="right" style="display:flex; gap:8px;">
+                    <button class="btn btn-sm" type="button" onclick="idfDeviceExportImage()">Export Image</button>
                     <button class="btn btn-sm" type="button" onclick="idfPortsExportExcel()">Export Ports Excel</button>
                 </div>
             </div>
@@ -582,7 +593,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         $unlinkBtn = '';
                         if (!empty($p['link_id']) && !empty($p['other_port_id']) && isset($otherMap[(int)$p['other_port_id']])) {
                             $o = $otherMap[(int)$p['other_port_id']];
-                            $color = (string)($p['cable_color'] ?? 'yellow');
+                            $color = (string)($p['cable_hex_color'] ?? '#ffff00');
                             $label = !empty($p['cable_label']) ? (' • ' . sanitize((string)$p['cable_label'])) : '';
                             $isLoopRisk = ((int)($o['position_id'] ?? 0) === (int)$position_id);
                             $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
@@ -599,14 +610,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             data-port-type-id="<?php echo (int)($p['port_type'] ?? 0); ?>"
                             data-port-type="<?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?>"
                             data-label="<?php echo sanitize((string)($p['label'] ?? '')); ?>"
-                            data-status-id="<?php echo (int)($p['status'] ?? 0); ?>"
+                            data-status-id="<?php echo (int)($p['status_id'] ?? 0); ?>"
                             data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
                             data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
-                            data-vlan-id="<?php echo (int)($p['vlan'] ?? 0); ?>"
+                            data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
                             data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
-                            data-speed-id="<?php echo (int)($p['speed'] ?? 0); ?>"
+                            data-speed-id="<?php echo (int)($p['speed_id'] ?? 0); ?>"
                             data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
-                            data-poe-id="<?php echo (int)($p['poe'] ?? 0); ?>"
+                            data-poe-id="<?php echo (int)($p['poe_id'] ?? 0); ?>"
                             data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
                             data-notes="<?php echo sanitize((string)($p['notes'] ?? '')); ?>"
                         >
@@ -664,8 +675,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td>Pos <?php echo (int)$row['remote_position_no']; ?> • <?php echo sanitize($row['remote_device_name']); ?></td>
                                 <td><?php echo (int)$row['remote_port_no']; ?></td>
                                 <td>
-                                    <span class="idf-swatch" style="background:<?php echo sanitize($row['cable_color']); ?>"></span>
-                                    <?php echo sanitize($row['cable_color']); ?>
+                                    <span class="idf-swatch" style="background:<?php echo sanitize($row['cable_hex_color']); ?>"></span>
+                                    <?php echo sanitize($row['cable_hex_color']); ?>
                                     <?php if ($row['cable_label'] !== ''): ?>
                                         <span style="opacity:.75;">• <?php echo sanitize($row['cable_label']); ?></span>
                                     <?php endif; ?>
@@ -770,13 +781,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Cable color</label>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span id="portCableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:Gray; flex:0 0 auto;"></span>
-                    <select class="input" name="cable_color" data-add-table="cable_colors" data-swatch-id="portCableColorSwatch" style="flex:1 1 auto;">
-                        <?php foreach ($cableColorOptions as $cableColor): ?>
-                            <?php $cableColorHex = $cableColorHexByName[strtolower($cableColor)] ?? ''; ?>
-                            <option value="<?php echo sanitize($cableColor); ?>" data-hex="<?php echo sanitize($cableColorHex); ?>" <?php echo $cableColor === 'Gray' ? 'selected' : ''; ?>>
-                                <?php echo sanitize($cableColor); ?>
+                    <select class="input" name="cable_color_id" data-add-table="cable_colors" data-swatch-id="portCableColorSwatch" style="flex:1 1 auto;">
+                        <?php
+                        $resColors = mysqli_query($conn, "SELECT id, color_name, hex_color FROM cable_colors WHERE company_id=$company_id ORDER BY color_name");
+                        while($c = mysqli_fetch_assoc($resColors)): ?>
+                            <option value="<?php echo (int)$c['id']; ?>" data-hex="<?php echo sanitize($c['hex_color']); ?>">
+                                <?php echo sanitize($c['color_name']); ?>
                             </option>
-                        <?php endforeach; ?>
+                        <?php endwhile; ?>
                         <option value="__add_new__">➕</option>
                     </select>
                 </div>
@@ -833,13 +845,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Cable color</label>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span id="cableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:Gray; flex:0 0 auto;"></span>
-                    <select class="input" name="cable_color" data-add-table="cable_colors" data-swatch-id="cableColorSwatch" style="flex:1 1 auto;">
-                        <?php foreach ($cableColorOptions as $cableColor): ?>
-                            <?php $cableColorHex = $cableColorHexByName[strtolower($cableColor)] ?? ''; ?>
-                            <option value="<?php echo sanitize($cableColor); ?>" data-hex="<?php echo sanitize($cableColorHex); ?>" <?php echo $cableColor === 'Gray' ? 'selected' : ''; ?>>
-                                <?php echo sanitize($cableColor); ?>
+                    <select class="input" name="cable_color_id" data-add-table="cable_colors" data-swatch-id="cableColorSwatch" style="flex:1 1 auto;">
+                        <?php
+                        $resColors = mysqli_query($conn, "SELECT id, color_name, hex_color FROM cable_colors WHERE company_id=$company_id ORDER BY color_name");
+                        while($c = mysqli_fetch_assoc($resColors)): ?>
+                            <option value="<?php echo (int)$c['id']; ?>" data-hex="<?php echo sanitize($c['hex_color']); ?>">
+                                <?php echo sanitize($c['color_name']); ?>
                             </option>
-                        <?php endforeach; ?>
+                        <?php endwhile; ?>
                         <option value="__add_new__">➕</option>
                     </select>
                 </div>
@@ -1011,7 +1024,7 @@ function openPortModal(portId) {
     form.speed.value = rowData.speedId || '';
     form.poe.value = rowData.poeId || '';
     form.notes.value = rowData.notes || '';
-    form.cable_color.value = (portMeta?.cable_color || 'Gray');
+    form.cable_color_id.value = (portMeta?.cable_color_id || '');
     if (!form.cable_color.value || form.cable_color.value === '__add_new__') {
         form.cable_color.value = 'Gray';
     }
@@ -1042,9 +1055,9 @@ function savePort() {
         speed_id: f.speed.value ? Number(f.speed.value) : null,
         poe_id: f.poe.value ? Number(f.poe.value) : null,
         notes: f.notes.value.trim(),
-        cable_color: (f.cable_color.value && f.cable_color.value !== '__add_new__')
-            ? f.cable_color.value.trim()
-            : 'Gray',
+        cable_color_id: (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
+            ? Number(f.cable_color_id.value)
+            : null,
     };
     apiPost('port_update.php', payload)
         .then(() => location.reload())
@@ -1100,7 +1113,7 @@ function openLinkModal(portId) {
 
     f.port_id_a.value = String(source.id);
     f.source_display.value = `Port ${source.port_no}${source.label ? ` • ${source.label}` : ''}`;
-    f.cable_color.value = 'Gray';
+    f.cable_color_id.value = '';
     f.cable_label.value = '';
     f.notes.value = '';
     const unknownStatusOption = Array.from(f.status.options).find((option) =>
@@ -1183,10 +1196,9 @@ function createLink() {
         return;
     }
 
-    const defaultCableColor = (f.cable_color.value && f.cable_color.value !== '__add_new__')
-        ? f.cable_color.value.trim()
-        : 'Gray';
-    const cableColor = linkedMode ? (f.linked_cable_color.value.trim() || 'Gray') : (defaultCableColor || 'Gray');
+    const cableColorId = (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
+        ? Number(f.cable_color_id.value)
+        : null;
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
     const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
@@ -1198,7 +1210,7 @@ function createLink() {
         port_id_b: destinationPortId,
         equipment_id: f.equipment_id.value ? Number(f.equipment_id.value) : null,
         switch_port_id: f.switch_port_id.value ? Number(f.switch_port_id.value) : null,
-        cable_color: cableColor,
+        cable_color_id: cableColorId,
         cable_label: cableLabel,
         notes,
         status_id: Number(getNormalizedStatusValue(f) || 0),
@@ -1449,11 +1461,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const initializeCableColorSelect = (cableColorSelect) => {
         if (!cableColorSelect) return;
-        updateCableColorSwatch(cableColorSelect.value || 'Gray', cableColorSelect);
-        cableColorSelect.dataset.previousValue = cableColorSelect.value || 'Gray';
+        updateCableColorSwatch('', cableColorSelect);
+        cableColorSelect.dataset.previousValue = cableColorSelect.value || '';
         cableColorSelect.addEventListener('focus', () => {
             if (cableColorSelect.value !== '__add_new__') {
-                cableColorSelect.dataset.previousValue = cableColorSelect.value || 'Gray';
+                cableColorSelect.dataset.previousValue = cableColorSelect.value || '';
             }
         });
         cableColorSelect.addEventListener('change', (event) => {
@@ -1462,11 +1474,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 openCableColorModal(event.target);
                 return;
             }
-            updateCableColorSwatch(selected || 'Gray', cableColorSelect);
-            cableColorSelect.dataset.previousValue = selected || 'Gray';
+            updateCableColorSwatch('', cableColorSelect);
+            cableColorSelect.dataset.previousValue = selected || '';
         });
     };
-    document.querySelectorAll('select[name="cable_color"]').forEach((cableColorSelect) => {
+    document.querySelectorAll('select[name="cable_color_id"]').forEach((cableColorSelect) => {
         initializeCableColorSelect(cableColorSelect);
     });
 });
@@ -1554,29 +1566,30 @@ function saveCableColorFromModal() {
         color_name: nextCableColorName,
         hex_color: nextHexColor,
     }).then((response) => {
-        const cableColorValue = String(response.color_name || nextCableColorName || response.hex_color || nextHexColor).trim();
+        const colorId = Number(response.id || 0);
+        const cableColorName = String(response.color_name || nextCableColorName).trim();
         const cableColorHex = String(response.hex_color || nextHexColor || '').trim();
-        if (!cableColorValue) {
+        if (!colorId || !cableColorName) {
             throw new Error('Invalid cable color returned from server.');
         }
-        document.querySelectorAll('select[name="cable_color"]').forEach((selectEl) => {
+        document.querySelectorAll('select[name="cable_color_id"]').forEach((selectEl) => {
             const existingOption = Array.from(selectEl.options).find((option) =>
-                option.value !== '__add_new__' && option.value.toLowerCase() === cableColorValue.toLowerCase()
+                option.value !== '__add_new__' && Number(option.value) === colorId
             );
             if (!existingOption) {
                 const addOption = selectEl.querySelector('option[value="__add_new__"]');
                 const option = document.createElement('option');
-                option.value = cableColorValue;
-                option.textContent = cableColorValue;
+                option.value = String(colorId);
+                option.textContent = cableColorName;
                 option.dataset.hex = cableColorHex;
                 selectEl.insertBefore(option, addOption || null);
             } else if (cableColorHex) {
                 existingOption.dataset.hex = cableColorHex;
             }
         });
-        activeCableColorSelect.value = cableColorValue;
-        activeCableColorSelect.dataset.previousValue = cableColorValue;
-        updateCableColorSwatch(cableColorValue, activeCableColorSelect);
+        activeCableColorSelect.value = String(colorId);
+        activeCableColorSelect.dataset.previousValue = String(colorId);
+        updateCableColorSwatch('', activeCableColorSelect);
         closeCableColorModal(true);
     }).catch((error) => {
         alert(error.message);
@@ -1632,6 +1645,16 @@ function unlinkPort(linkId) {
         .then(() => location.reload())
         .catch(err => alert(err.message));
 }
+
+async function idfDeviceExportImage() {
+    const node = document.getElementById('idfDeviceCaptureRoot');
+    const canvas = await html2canvas(node, {scale: 2, useCORS: true});
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `device-<?php echo (int)$position_id; ?>.png`;
+    a.click();
+}
 </script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>

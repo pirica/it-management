@@ -473,11 +473,11 @@ CREATE TABLE `idf_ports` (
   `port_no` smallint NOT NULL,
   `port_type` int NOT NULL,
   `label` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` int NOT NULL,
+  `status_id` int NOT NULL,
   `connected_to` varchar(180) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `vlan` int DEFAULT NULL,
-  `speed` int DEFAULT NULL,
-  `poe` int DEFAULT NULL,
+  `vlan_id` int DEFAULT NULL,
+  `speed_id` int DEFAULT NULL,
+  `poe_id` int DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -486,10 +486,10 @@ CREATE TABLE `idf_ports` (
   KEY `company_id` (`company_id`),
   KEY `position_id` (`position_id`),
   KEY `idf_ports_port_type_idx` (`port_type`),
-  KEY `idf_ports_status_idx` (`status`),
-  KEY `idf_ports_vlan_idx` (`vlan`),
-  KEY `idf_ports_speed_idx` (`speed`),
-  KEY `idf_ports_poe_idx` (`poe`),
+  KEY `idf_ports_status_idx` (`status_id`),
+  KEY `idf_ports_vlan_idx` (`vlan_id`),
+  KEY `idf_ports_speed_idx` (`speed_id`),
+  KEY `idf_ports_poe_idx` (`poe_id`),
   CONSTRAINT `idf_ports_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -513,8 +513,8 @@ INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '1', 'PoE 
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '2', 'PoE+ (802.3at) - up to 30W');
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '3', 'PoE++ (802.3bt) - up to 60-90W');
 ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed_id`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe_id`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL;
 
 -- Table structure for `equipment_rj45`
 DROP TABLE IF EXISTS `equipment_rj45`;
@@ -1268,26 +1268,28 @@ CREATE TABLE `switch_status` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
-  `color` varchar(7) DEFAULT NULL,
+  `color_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `status` (`company_id`,`status`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `switch_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `color_id` (`color_id`),
+  CONSTRAINT `switch_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `switch_status_ibfk_color` FOREIGN KEY (`color_id`) REFERENCES `cable_colors` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_status`
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '4', 'Disabled', '#6c757d');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '2', 'Down', '#dc3545');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '6', 'Err-Disabled', '#e83e8c');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '8', 'Faulty', '#fd7e14');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '3', 'Free', '#28a745');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '9', 'Reserved', '#ffc107');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '7', 'Testing', '#17a2b8');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '5', 'Unknown', '#adb5bd');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '1', 'Up', '#007bff');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '4', 'Disabled', '1');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '2', 'Down', '3');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '6', 'Err-Disabled', '9');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '8', 'Faulty', '8');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '3', 'Free', '2');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '9', 'Reserved', '4');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '7', 'Testing', '6');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '5', 'Unknown', '1');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '1', 'Up', '6');
 ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status`) REFERENCES `switch_status` (`id`);
+  ADD CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`);
 
 -- Table structure for `system_access`
 DROP TABLE IF EXISTS `system_access`;
@@ -1681,7 +1683,7 @@ CREATE TABLE `vlans` (
 -- Data for `vlans`
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
 ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan`) REFERENCES `vlans` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL;
 
 -- Table structure for `warranty_types`
 DROP TABLE IF EXISTS `warranty_types`;

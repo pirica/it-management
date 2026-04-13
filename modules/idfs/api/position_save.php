@@ -314,7 +314,7 @@ if ($position_id > 0) {
            notes=VALUES(notes)"
     );
     if ($stmtInsertPos) {
-        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissiis', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $port_count, $layout_val, $notes_val);
+        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissisi', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $port_count, $layout_val, $notes_val);
         if (!mysqli_stmt_execute($stmtInsertPos)) {
             idf_fail('DB error saving position: ' . mysqli_stmt_error($stmtInsertPos), 500);
         }
@@ -354,7 +354,7 @@ if ($pid > 0) {
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
         }
-        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status) VALUES (?, ?, ?, ?, ?)";
+        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status_id) VALUES (?, ?, ?, ?, ?)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
             for ($n = 1; $n <= $port_count; $n++) {

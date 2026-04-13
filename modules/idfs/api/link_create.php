@@ -8,7 +8,7 @@ $portA = (int)($data['port_id_a'] ?? 0);
 $portB = (int)($data['port_id_b'] ?? 0);
 $equipmentId = isset($data['equipment_id']) && $data['equipment_id'] !== null ? (int)$data['equipment_id'] : 0;
 $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== null ? (int)$data['switch_port_id'] : 0;
-$color = trim((string)($data['cable_color'] ?? 'Gray'));
+$cableColorId = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 $label = trim((string)($data['cable_label'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Used');
@@ -20,9 +20,6 @@ if ($portA <= 0 || $portB <= 0) {
 }
 if ($portA === $portB) {
     idf_fail('Cannot link a port to itself');
-}
-if ($color === '') {
-    $color = 'Gray';
 }
 
 if ($switchPortId > 0 && $equipmentId <= 0) {
@@ -319,7 +316,7 @@ $stmtFinal = mysqli_prepare(
     "INSERT INTO idf_links (
         company_id, port_id_a, port_id_b, equipment_id, equipment_hostname,
         equipment_port_type, equipment_port, equipment_vlan_id, equipment_label,
-        equipment_comments, equipment_status_id, equipment_color_id, cable_color,
+        equipment_comments, equipment_status_id, equipment_color_id, cable_color_id,
         cable_label, notes
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
@@ -342,10 +339,10 @@ if ($stmtFinal) {
             $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
         }
         mysqli_stmt_bind_param(
-            $stmtFinal, 'iiissssissiisss',
+            $stmtFinal, 'iiissssiissiiss',
             $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
             $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
-            $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $color,
+            $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $cableColorId,
             $label_val, $notes_val
         );
         if (!mysqli_stmt_execute($stmtFinal)) {
@@ -379,7 +376,7 @@ if (
     $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
     $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 
-    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status = ? WHERE id = ? LIMIT 1");
+    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status_id = ? WHERE id = ? LIMIT 1");
     if ($stmtUpdatePort) {
         mysqli_stmt_bind_param($stmtUpdatePort, 'sii', $connectedToA, $status_id, $portA);
         mysqli_stmt_execute($stmtUpdatePort);

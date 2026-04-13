@@ -11,7 +11,7 @@ $overwrite = (int)($data['overwrite'] ?? 0);
 if ($position_id <= 0) {
     idf_fail('Invalid position_id');
 }
-if ($target_position < 1 || $target_position > 10) {
+if ($target_position < 1 || $target_position > 250) {
     idf_fail('Invalid target_position');
 }
 
@@ -67,8 +67,8 @@ try {
     }
 
     $notes_val = !empty($src['notes']) ? (string)$src['notes'] : null;
-    $equip_val = !empty($src['equipment_id']) ? (int)$src['equipment_id'] : null;
-    $device_type = (string)$src['device_type'];
+    $equip_val = !empty($src['equipment_id']) ? (string)$src['equipment_id'] : null;
+    $device_type = (int)$src['device_type'];
     $device_name = (string)$src['device_name'];
     $port_count = (int)$src['port_count'];
 
@@ -78,7 +78,7 @@ try {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     );
     if ($stmtIns) {
-        mysqli_stmt_bind_param($stmtIns, 'iiisssis', $company_id, $idf_id, $target_position, $device_type, $device_name, $equip_val, $port_count, $notes_val);
+        mysqli_stmt_bind_param($stmtIns, 'iiiissis', $company_id, $idf_id, $target_position, $device_type, $device_name, $equip_val, $port_count, $notes_val);
         mysqli_stmt_execute($stmtIns);
         mysqli_stmt_close($stmtIns);
     }
@@ -99,21 +99,21 @@ try {
     }
 
     if ($ports) {
-        $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status, connected_to, vlan, speed, poe, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?)';
+        $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?)';
         $stmtInsPort = mysqli_prepare($conn, $sqlInsPort);
         if ($stmtInsPort) {
             foreach ($ports as $p) {
                 $p_no = (int)$p['port_no'];
                 $p_type = (int)($p['port_type'] ?? 0);
                 $p_label = (string)$p['label'];
-                $p_status = (int)($p['status'] ?? 0);
+                $p_status = (int)($p['status_id'] ?? 0);
                 $p_conn = (string)$p['connected_to'];
-                $p_vlan = (int)($p['vlan'] ?? 0);
-                $p_speed = (int)($p['speed'] ?? 0);
-                $p_poe = (int)($p['poe'] ?? 0);
+                $p_vlan = (int)($p['vlan_id'] ?? 0);
+                $p_speed = (int)($p['speed_id'] ?? 0);
+                $p_poe = (int)($p['poe_id'] ?? 0);
                 $p_notes = (string)$p['notes'];
 
-                mysqli_stmt_bind_param($stmtInsPort, 'iiiisiiiiis',
+                mysqli_stmt_bind_param($stmtInsPort, 'iiiisisiiis',
                     $company_id, $newPosId, $p_no, $p_type, $p_label, $p_status, $p_conn, $p_vlan, $p_speed, $p_poe, $p_notes
                 );
                 mysqli_stmt_execute($stmtInsPort);
