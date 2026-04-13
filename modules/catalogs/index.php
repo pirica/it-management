@@ -105,16 +105,11 @@ function cr_fk_map($conn, $table) {
                 continue;
             }
 
-            $existsSql = "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1";
-            $existsStmt = mysqli_prepare($conn, $existsSql);
-            if (!$existsStmt) {
-                continue;
+            $describeRes = @mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($referencedTable));
+            $exists = ($describeRes !== false);
+            if ($describeRes instanceof mysqli_result) {
+                mysqli_free_result($describeRes);
             }
-            mysqli_stmt_bind_param($existsStmt, 's', $referencedTable);
-            mysqli_stmt_execute($existsStmt);
-            $existsRes = mysqli_stmt_get_result($existsStmt);
-            $exists = ($existsRes && mysqli_num_rows($existsRes) > 0);
-            mysqli_stmt_close($existsStmt);
 
             if (!$exists) {
                 continue;
@@ -1924,6 +1919,9 @@ if (!empty($_SESSION['crud_success'])) {
                         </tr>
                         </thead>
                         <tbody>
+                        <?php
+                            $fkDisplayRowCache = [];
+                        ?>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
@@ -1934,6 +1932,18 @@ if (!empty($_SESSION['crud_success'])) {
                                             $fkDisplayKey = trim((string)$displayValue);
                                             if ($fkDisplayKey !== '' && isset($fkDisplayMaps[$f][$fkDisplayKey])) {
                                                 $displayValue = $fkDisplayMaps[$f][$fkDisplayKey];
+                                            } elseif ($fkDisplayKey !== '' && isset($fkMap[$f])) {
+                                                if (!isset($fkDisplayRowCache[$f])) {
+                                                    $fkDisplayRowCache[$f] = [];
+                                                }
+                                                if (!array_key_exists($fkDisplayKey, $fkDisplayRowCache[$f])) {
+                                                    $resolvedFk = cr_fk_option_by_id($conn, $fkMap[$f], (int)$company_id, (int)$fkDisplayKey);
+                                                    $fkDisplayRowCache[$f][$fkDisplayKey] = $resolvedFk ? (string)($resolvedFk['label'] ?? '') : '';
+                                                }
+                                                if ($fkDisplayRowCache[$f][$fkDisplayKey] !== '') {
+                                                    $displayValue = $fkDisplayRowCache[$f][$fkDisplayKey];
+                                                    $fkDisplayMaps[$f][$fkDisplayKey] = $displayValue;
+                                                }
                                             }
                                         ?>
                                         <?php if ($f === 'comments' && trim((string)$displayValue) !== ''): ?>
