@@ -884,6 +884,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif ($name === "color" || $name === "hex_color"): ?>
+                                <input type="color" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal ?: "#007bff"); ?>" style="height:40px;width:100%;padding:4px;">
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);

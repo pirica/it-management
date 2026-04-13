@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/port_visualizer_helper.php';
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');
@@ -120,12 +121,14 @@ if (!$idf) {
     exit;
 }
 
-$positions = array_fill(1, 10, null);
+$positions = [];
+$maxPosInDb = 0;
 $stmtPos = mysqli_prepare(
     $conn,
-    "SELECT p.*, dt.idfdevicetype_name AS device_type_name
+    "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name
      FROM idf_positions p
      LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
+     LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
      WHERE p.idf_id=?
      ORDER BY p.position_no ASC"
 );
@@ -134,15 +137,45 @@ if ($stmtPos) {
     mysqli_stmt_execute($stmtPos);
     $resPos = mysqli_stmt_get_result($stmtPos);
     while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
-        $positions[(int)$row['position_no']] = $row;
+        $posId = (int)$row['id'];
+        $posNo = (int)$row['position_no'];
+        if ($posNo > $maxPosInDb) {
+            $maxPosInDb = $posNo;
+        }
+        $row['ports'] = [];
+
+        $stmtPorts = mysqli_prepare(
+            $conn,
+            "SELECT pr.*, ss.status AS status_label, cc_ss.hex_color AS status_color, cc_l.hex_color AS cable_hex_color
+             FROM idf_ports pr
+             LEFT JOIN switch_status ss ON ss.id = pr.status_id
+             LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id
+             LEFT JOIN idf_links l ON l.port_id_a = pr.id OR l.port_id_b = pr.id
+             LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
+             WHERE pr.position_id = ?
+             ORDER BY pr.port_no ASC"
+        );
+        if ($stmtPorts) {
+            mysqli_stmt_bind_param($stmtPorts, 'i', $posId);
+            mysqli_stmt_execute($stmtPorts);
+            $portRes = mysqli_stmt_get_result($stmtPorts);
+            while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
+                $row['ports'][] = $pRow;
+            }
+            mysqli_stmt_close($stmtPorts);
+        }
+
+        $positions[$posNo] = $row;
     }
     mysqli_stmt_close($stmtPos);
 }
 
+$displayMaxPos = max(10, $maxPosInDb);
+
 $equipmentOptions = [];
 $stmtEq = mysqli_prepare(
     $conn,
-    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
      FROM equipment e
      LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
      WHERE e.company_id=?
@@ -233,6 +266,24 @@ foreach ($switchRj45Options as $switchRj45Option) {
     ];
 }
 
+$switchLayoutOptions = [];
+$stmtLayout = mysqli_prepare(
+    $conn,
+    "SELECT id, name
+     FROM switch_port_numbering_layout
+     WHERE company_id=?
+     ORDER BY name ASC"
+);
+if ($stmtLayout) {
+    mysqli_stmt_bind_param($stmtLayout, 'i', $company_id);
+    mysqli_stmt_execute($stmtLayout);
+    $resLayout = mysqli_stmt_get_result($stmtLayout);
+    while ($resLayout && ($row = mysqli_fetch_assoc($resLayout))) {
+        $switchLayoutOptions[] = $row;
+    }
+    mysqli_stmt_close($stmtLayout);
+}
+
 $equipmentAddExtraFields = json_encode([
     [
         'name' => 'equipment_type_id',
@@ -270,6 +321,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     $equipmentLookup[(int)$equipmentOption['id']] = [
         'name' => (string)($equipmentOption['name'] ?? ''),
         'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
+        'switch_port_numbering_layout_id' => (int)($equipmentOption['switch_port_numbering_layout_id'] ?? 0),
         'port_count' => $portCount,
         'notes' => (string)($equipmentOption['notes'] ?? ''),
     ];
@@ -378,12 +430,12 @@ foreach ($equipmentOptions as $equipmentOption) {
                         <div style="display:flex; gap:8px; align-items:center;">
                             <a class="btn btn-sm" href="index.php">← Back</a>
                             <div class="idf-rack-title">
-                                🗄️ <?php echo sanitize($idf['name']); ?>
+                                🗄️ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($idf['location_name']); ?>
                                 <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
                             </div>
                         </div>
                         <div style="opacity:.85; font-size:12px;">
-                            📍 <?php echo sanitize($idf['location_name']); ?> · <span class="idf-badge idf-drag-hint">Drag &amp; drop enabled</span>
+                             <span class="idf-badge idf-drag-hint">Drag &amp; drop enabled</span>
                         </div>
                     </div>
                     <div class="idf-command-actions">
@@ -397,7 +449,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <div class="idf-rack">
                         <div class="idf-rack-header">
                             <div>
-                                <div class="idf-rack-title">Rack Face (10 positions)</div>
+                                <div class="idf-rack-title">Rack Face (<?php echo $displayMaxPos; ?> positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
                                     · Location: <?php echo sanitize((string)($idf['location_name'] ?? 'Unknown Location')); ?>
@@ -409,7 +461,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                         </div>
 
                         <div class="idf-slots" id="idfSlots">
-                            <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
+                            <?php for ($i = 1; $i <= $displayMaxPos; $i++): $pos = $positions[$i] ?? null; ?>
                                 <div class="idf-slot" data-position="<?php echo $i; ?>">
                                     <div class="idf-slot-left">
                                         <div class="idf-slot-no"><?php echo $i; ?></div>
@@ -430,6 +482,14 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     <?php if (!empty($pos['equipment_id'])): ?>
                                                         <span class="idf-badge">🧾 Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
                                                     <?php endif; ?>
+                                                </div>
+                                                <div style="margin-top: 8px;">
+                                                    <?php
+                                                    echo itm_render_port_visualizer($pos['ports'] ?? [], [
+                                                        'rows' => (count($pos['ports'] ?? []) > 24 ? 2 : 1),
+                                                        'layout' => (string)($pos['layout_name'] ?? 'Vertical')
+                                                    ]);
+                                                    ?>
                                                 </div>
                                             <?php endif; ?>
                                         </div>
@@ -469,7 +529,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </tr>
                 </thead>
                 <tbody>
-                <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
+                <?php for ($i = 1; $i <= $displayMaxPos; $i++): $pos = $positions[$i] ?? null; ?>
                     <tr>
                         <td><?php echo $i; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['device_type_name'] ?? '')) : ''; ?></td>
@@ -525,6 +585,16 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </select>
             </div>
 
+            <div id="idfSwitchLayoutWrap" style="display:none;">
+                <label class="label">Numbering Layout</label>
+                <select class="input" name="switch_port_numbering_layout_id">
+                    <option value="">-- Select --</option>
+                    <?php foreach ($switchLayoutOptions as $layoutOption): ?>
+                        <option value="<?php echo (int)$layoutOption['id']; ?>"><?php echo sanitize((string)$layoutOption['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div id="idfPortCountWrap">
                 <label class="label">Port Count</label>
                 <input class="input" name="port_count" type="number" min="0" max="9999" step="1">
@@ -566,7 +636,7 @@ foreach ($equipmentOptions as $equipmentOption) {
             <div>
                 <label class="label">Target position</label>
                 <select class="input" name="target_position" id="idfCopyTarget">
-                    <?php for ($i = 1; $i <= 10; $i++): ?>
+                    <?php for ($i = 1; $i <= $displayMaxPos + 5; $i++): ?>
                         <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
                     <?php endfor; ?>
                 </select>
@@ -605,6 +675,7 @@ foreach ($equipmentOptions as $equipmentOption) {
         'name' => (string)($equipmentOption['name'] ?? ''),
         'notes' => (string)($equipmentOption['notes'] ?? ''),
         'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
+        'switch_port_numbering_layout_id' => (int)($equipmentOption['switch_port_numbering_layout_id'] ?? 0),
         'port_count' => $portCount,
     ];
 }
@@ -633,6 +704,7 @@ function applyEquipmentRelation(form) {
 
     form.device_name.value = equipment.name || '';
     form.switch_rj45_id.value = equipment.switch_rj45_id ? String(equipment.switch_rj45_id) : '';
+    form.switch_port_numbering_layout_id.value = equipment.switch_port_numbering_layout_id ? String(equipment.switch_port_numbering_layout_id) : '';
     form.port_count.value = equipment.port_count ? String(equipment.port_count) : '';
     form.notes.value = equipment.notes || '';
     refreshPortCountInputs(form);
@@ -686,6 +758,7 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.value = position.equipment_id || '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.switch_rj45_id.value = position.switch_rj45_id || '';
+                form.switch_port_numbering_layout_id.value = position.switch_port_numbering_layout_id || '';
                 form.port_count.value = position.port_count || '';
                 form.notes.value = position.notes || '';
                 refreshPortCountInputs(form);
@@ -707,6 +780,7 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 
     form.device_name.value = meta.name || '';
     form.switch_rj45_id.value = meta.switch_rj45_id ? String(meta.switch_rj45_id) : '';
+    form.switch_port_numbering_layout_id.value = meta.switch_port_numbering_layout_id ? String(meta.switch_port_numbering_layout_id) : '';
     form.port_count.value = meta.port_count ? String(meta.port_count) : '';
     form.notes.value = meta.notes || '';
     refreshPortCountInputs(form);
@@ -720,11 +794,14 @@ function refreshPortCountInputs(form) {
     const isSwitch = Number(form.device_type.value || 0) === SWITCH_DEVICE_TYPE_ID;
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
+    const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
+    if (layoutWrap) layoutWrap.style.display = isSwitch ? 'block' : 'none';
     form.switch_rj45_id.required = isSwitch;
     if (!isSwitch) {
         form.switch_rj45_id.value = '';
+        form.switch_port_numbering_layout_id.value = '';
     }
 }
 
@@ -739,6 +816,7 @@ function saveDevice() {
         device_name: form.device_name.value.trim(),
         equipment_id: form.equipment_id.value ? Number(form.equipment_id.value) : null,
         switch_rj45_id: form.switch_rj45_id.value ? Number(form.switch_rj45_id.value) : null,
+        switch_port_numbering_layout_id: form.switch_port_numbering_layout_id.value ? Number(form.switch_port_numbering_layout_id.value) : null,
         port_count: form.port_count.value === '' ? null : Number(form.port_count.value),
         notes: form.notes.value.trim(),
     };
@@ -767,7 +845,8 @@ function openCopyModal(positionNo, positionId) {
 function ensureCopyModalOptions() {
     const targetSelect = document.getElementById('idfCopyTarget');
     if (targetSelect && targetSelect.options.length === 0) {
-        for (let i = 1; i <= 10; i++) {
+        const currentMax = <?php echo (int)$displayMaxPos; ?>;
+        for (let i = 1; i <= currentMax + 10; i++) {
             const option = document.createElement('option');
             option.value = String(i);
             option.textContent = String(i);
@@ -826,7 +905,7 @@ function idfExportExcel() {
 
 async function idfExportImage() {
     const node = document.getElementById('idfCaptureRoot');
-    const canvas = await html2canvas(node, {scale: 2});
+    const canvas = await html2canvas(node, {scale: 2, useCORS: true});
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
     a.download = `idf-<?php echo (int)$idf_id; ?>.png`;
@@ -835,7 +914,7 @@ async function idfExportImage() {
 
 async function idfExportPdf() {
     const node = document.getElementById('idfCaptureRoot');
-    const canvas = await html2canvas(node, {scale: 2});
+    const canvas = await html2canvas(node, {scale: 2, useCORS: true});
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({orientation: 'portrait', unit: 'pt', format: 'a4'});
