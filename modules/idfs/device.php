@@ -794,7 +794,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         $resColors = mysqli_query($conn, "SELECT id, color_name, hex_color FROM cable_colors WHERE company_id=$company_id ORDER BY color_name");
                         while($c = mysqli_fetch_assoc($resColors)): ?>
                             <option value="<?php echo (int)$c['id']; ?>" data-hex="<?php echo sanitize($c['hex_color']); ?>">
-                                <?php echo sanitize($c['color_name']); ?>
+                                <?php
+                                $cableColorLabel = trim((string)($c['color_name'] ?? ''));
+                                if ($cableColorLabel === '') {
+                                    $cableColorLabel = trim((string)($c['hex_color'] ?? ''));
+                                }
+                                echo sanitize($cableColorLabel);
+                                ?>
                             </option>
                         <?php endwhile; ?>
                         <option value="__add_new__">➕</option>
@@ -858,7 +864,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         $resColors = mysqli_query($conn, "SELECT id, color_name, hex_color FROM cable_colors WHERE company_id=$company_id ORDER BY color_name");
                         while($c = mysqli_fetch_assoc($resColors)): ?>
                             <option value="<?php echo (int)$c['id']; ?>" data-hex="<?php echo sanitize($c['hex_color']); ?>">
-                                <?php echo sanitize($c['color_name']); ?>
+                                <?php
+                                $cableColorLabel = trim((string)($c['color_name'] ?? ''));
+                                if ($cableColorLabel === '') {
+                                    $cableColorLabel = trim((string)($c['hex_color'] ?? ''));
+                                }
+                                echo sanitize($cableColorLabel);
+                                ?>
                             </option>
                         <?php endwhile; ?>
                         <option value="__add_new__">➕</option>
