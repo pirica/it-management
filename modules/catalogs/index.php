@@ -212,15 +212,38 @@ function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
     $available = [];
+    $typeMap = [];
     while ($des && ($d = mysqli_fetch_assoc($des))) {
-        $available[] = $d['Field'];
+        $fieldName = (string)($d['Field'] ?? '');
+        if ($fieldName === '') {
+            continue;
+        }
+        $available[] = $fieldName;
+        $typeMap[$fieldName] = strtolower((string)($d['Type'] ?? ''));
     }
     // Preferred candidate labels in order of priority.
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'title', 'label', 'display_name', 'supplier_name', 'manufacturer_name', 'equipment_type', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
         }
+    }
+    // Why: some legacy lookup tables do not use conventional "name/title" columns.
+    // Selecting a readable text-like column prevents empty FK dropdowns in edit/create views.
+    if (!in_array($labelCol, $available, true)) {
+        foreach ($available as $fieldName) {
+            if (in_array($fieldName, ['id', 'company_id', 'active', 'created_at', 'updated_at'], true)) {
+                continue;
+            }
+            $fieldType = $typeMap[$fieldName] ?? '';
+            if (str_contains($fieldType, 'char') || str_contains($fieldType, 'text') || str_contains($fieldType, 'enum')) {
+                $labelCol = $fieldName;
+                break;
+            }
+        }
+    }
+    if (!in_array($labelCol, $available, true) && in_array('id', $available, true)) {
+        $labelCol = 'id';
     }
     return [
         'label_col' => $labelCol,
