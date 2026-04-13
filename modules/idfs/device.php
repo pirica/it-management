@@ -70,6 +70,7 @@ $stmtPorts = mysqli_prepare(
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
+       COALESCE(NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
        cc_l.hex_color AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
@@ -184,7 +185,8 @@ foreach ($ports as $p) {
         'remote_position_no' => (int)($remote['position_no'] ?? 0),
         'remote_device_name' => $linkedRemoteDeviceName,
         'remote_port_no' => $linkedRemotePortNo,
-        'cable_color' => (string)($p['cable_color'] ?? 'Gray'),
+        'cable_color_name' => (string)($p['cable_color_name'] ?? ''),
+        'cable_hex_color' => (string)($p['cable_hex_color'] ?? ''),
         'cable_label' => (string)($p['cable_label'] ?? ''),
         'link_notes' => (string)($p['link_notes'] ?? ''),
     ];
@@ -675,8 +677,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td>Pos <?php echo (int)$row['remote_position_no']; ?> • <?php echo sanitize($row['remote_device_name']); ?></td>
                                 <td><?php echo (int)$row['remote_port_no']; ?></td>
                                 <td>
-                                    <span class="idf-swatch" style="background:<?php echo sanitize($row['cable_hex_color']); ?>"></span>
-                                    <?php echo sanitize($row['cable_hex_color']); ?>
+                                    <?php
+                                    $linkCableHex = trim((string)($row['cable_hex_color'] ?? ''));
+                                    $linkCableName = trim((string)($row['cable_color_name'] ?? ''));
+                                    $linkCableDisplay = $linkCableName !== '' ? $linkCableName : ($linkCableHex !== '' ? $linkCableHex : 'Gray');
+                                    $linkCableSwatchColor = $linkCableHex !== '' ? $linkCableHex : $linkCableDisplay;
+                                    ?>
+                                    <span class="idf-swatch" style="background:<?php echo sanitize($linkCableSwatchColor); ?>"></span>
+                                    <?php echo sanitize($linkCableDisplay); ?>
                                     <?php if ($row['cable_label'] !== ''): ?>
                                         <span style="opacity:.75;">• <?php echo sanitize($row['cable_label']); ?></span>
                                     <?php endif; ?>
