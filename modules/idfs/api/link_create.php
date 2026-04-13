@@ -225,21 +225,23 @@ if ($switchPortId > 0) {
     $switchComments = $notes !== '' ? $notes : null;
 
     $switchColorId = null;
-    $stmtColor = mysqli_prepare(
-        $conn,
-        "SELECT id
-         FROM cable_colors
-         WHERE company_id = ?
-           AND LOWER(color_name) = LOWER(?)
-         LIMIT 1"
-    );
-    if ($stmtColor) {
-        mysqli_stmt_bind_param($stmtColor, 'is', $company_id, $color);
-        mysqli_stmt_execute($stmtColor);
-        $resColor = mysqli_stmt_get_result($stmtColor);
-        $colorRow = $resColor ? mysqli_fetch_assoc($resColor) : null;
-        $switchColorId = $colorRow ? (int)$colorRow['id'] : null;
-        mysqli_stmt_close($stmtColor);
+    if ($cableColorId > 0) {
+        $stmtColor = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM cable_colors
+             WHERE company_id = ?
+               AND id = ?
+             LIMIT 1"
+        );
+        if ($stmtColor) {
+            mysqli_stmt_bind_param($stmtColor, 'ii', $company_id, $cableColorId);
+            mysqli_stmt_execute($stmtColor);
+            $resColor = mysqli_stmt_get_result($stmtColor);
+            $colorRow = $resColor ? mysqli_fetch_assoc($resColor) : null;
+            $switchColorId = $colorRow ? (int)$colorRow['id'] : null;
+            mysqli_stmt_close($stmtColor);
+        }
     }
 
     $updates = [

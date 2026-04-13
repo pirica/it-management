@@ -328,6 +328,145 @@ function idf_ensure_status_schema(mysqli $conn): void {
         }
     }
 
+    // Why: Legacy audit triggers may still reference idf_links.cable_color after migration to cable_color_id.
+    $linkCableColorLegacyRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color'");
+    $linkHasLegacyCableColor = $linkCableColorLegacyRes && mysqli_num_rows($linkCableColorLegacyRes) > 0;
+    if (!$linkHasLegacyCableColor) {
+        mysqli_query($conn, "DROP TRIGGER IF EXISTS `trg_idf_links_audit_insert`");
+        mysqli_query($conn, "DROP TRIGGER IF EXISTS `trg_idf_links_audit_update`");
+        mysqli_query($conn, "DROP TRIGGER IF EXISTS `trg_idf_links_audit_delete`");
+
+        mysqli_query(
+            $conn,
+            "CREATE TRIGGER `trg_idf_links_audit_insert` AFTER INSERT ON `idf_links` FOR EACH ROW BEGIN
+               INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+               VALUES (
+                 COALESCE(@app_company_id, NEW.`company_id`, 0),
+                 @app_user_id,
+                 @app_username,
+                 @app_email,
+                 'idf_links',
+                 COALESCE(NEW.`id`, 0),
+                 'INSERT',
+                 NULL,
+                 JSON_OBJECT(
+                   'id', NEW.`id`,
+                   'company_id', NEW.`company_id`,
+                   'port_id_a', NEW.`port_id_a`,
+                   'port_id_b', NEW.`port_id_b`,
+                   'equipment_id', NEW.`equipment_id`,
+                   'equipment_hostname', NEW.`equipment_hostname`,
+                   'equipment_port_type', NEW.`equipment_port_type`,
+                   'equipment_port', NEW.`equipment_port`,
+                   'equipment_vlan_id', NEW.`equipment_vlan_id`,
+                   'equipment_label', NEW.`equipment_label`,
+                   'equipment_comments', NEW.`equipment_comments`,
+                   'equipment_status_id', NEW.`equipment_status_id`,
+                   'equipment_color_id', NEW.`equipment_color_id`,
+                   'cable_color_id', NEW.`cable_color_id`,
+                   'cable_label', NEW.`cable_label`,
+                   'notes', NEW.`notes`,
+                   'created_at', NEW.`created_at`
+                 ),
+                 @app_ip_address,
+                 @app_user_agent
+               );
+             END"
+        );
+        mysqli_query(
+            $conn,
+            "CREATE TRIGGER `trg_idf_links_audit_update` AFTER UPDATE ON `idf_links` FOR EACH ROW BEGIN
+               INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+               VALUES (
+                 COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0),
+                 @app_user_id,
+                 @app_username,
+                 @app_email,
+                 'idf_links',
+                 COALESCE(NEW.`id`, OLD.`id`, 0),
+                 'UPDATE',
+                 JSON_OBJECT(
+                   'id', OLD.`id`,
+                   'company_id', OLD.`company_id`,
+                   'port_id_a', OLD.`port_id_a`,
+                   'port_id_b', OLD.`port_id_b`,
+                   'equipment_id', OLD.`equipment_id`,
+                   'equipment_hostname', OLD.`equipment_hostname`,
+                   'equipment_port_type', OLD.`equipment_port_type`,
+                   'equipment_port', OLD.`equipment_port`,
+                   'equipment_vlan_id', OLD.`equipment_vlan_id`,
+                   'equipment_label', OLD.`equipment_label`,
+                   'equipment_comments', OLD.`equipment_comments`,
+                   'equipment_status_id', OLD.`equipment_status_id`,
+                   'equipment_color_id', OLD.`equipment_color_id`,
+                   'cable_color_id', OLD.`cable_color_id`,
+                   'cable_label', OLD.`cable_label`,
+                   'notes', OLD.`notes`,
+                   'created_at', OLD.`created_at`
+                 ),
+                 JSON_OBJECT(
+                   'id', NEW.`id`,
+                   'company_id', NEW.`company_id`,
+                   'port_id_a', NEW.`port_id_a`,
+                   'port_id_b', NEW.`port_id_b`,
+                   'equipment_id', NEW.`equipment_id`,
+                   'equipment_hostname', NEW.`equipment_hostname`,
+                   'equipment_port_type', NEW.`equipment_port_type`,
+                   'equipment_port', NEW.`equipment_port`,
+                   'equipment_vlan_id', NEW.`equipment_vlan_id`,
+                   'equipment_label', NEW.`equipment_label`,
+                   'equipment_comments', NEW.`equipment_comments`,
+                   'equipment_status_id', NEW.`equipment_status_id`,
+                   'equipment_color_id', NEW.`equipment_color_id`,
+                   'cable_color_id', NEW.`cable_color_id`,
+                   'cable_label', NEW.`cable_label`,
+                   'notes', NEW.`notes`,
+                   'created_at', NEW.`created_at`
+                 ),
+                 @app_ip_address,
+                 @app_user_agent
+               );
+             END"
+        );
+        mysqli_query(
+            $conn,
+            "CREATE TRIGGER `trg_idf_links_audit_delete` AFTER DELETE ON `idf_links` FOR EACH ROW BEGIN
+               INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+               VALUES (
+                 COALESCE(@app_company_id, OLD.`company_id`, 0),
+                 @app_user_id,
+                 @app_username,
+                 @app_email,
+                 'idf_links',
+                 COALESCE(OLD.`id`, 0),
+                 'DELETE',
+                 JSON_OBJECT(
+                   'id', OLD.`id`,
+                   'company_id', OLD.`company_id`,
+                   'port_id_a', OLD.`port_id_a`,
+                   'port_id_b', OLD.`port_id_b`,
+                   'equipment_id', OLD.`equipment_id`,
+                   'equipment_hostname', OLD.`equipment_hostname`,
+                   'equipment_port_type', OLD.`equipment_port_type`,
+                   'equipment_port', OLD.`equipment_port`,
+                   'equipment_vlan_id', OLD.`equipment_vlan_id`,
+                   'equipment_label', OLD.`equipment_label`,
+                   'equipment_comments', OLD.`equipment_comments`,
+                   'equipment_status_id', OLD.`equipment_status_id`,
+                   'equipment_color_id', OLD.`equipment_color_id`,
+                   'cable_color_id', OLD.`cable_color_id`,
+                   'cable_label', OLD.`cable_label`,
+                   'notes', OLD.`notes`,
+                   'created_at', OLD.`created_at`
+                 ),
+                 NULL,
+                 @app_ip_address,
+                 @app_user_agent
+               );
+             END"
+        );
+    }
+
     $ensureMappedIntColumn = static function (
         string $columnName,
         string $refTable,
