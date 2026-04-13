@@ -276,13 +276,7 @@ function cr_is_hidden_employee_field($field) {
 function cr_render_cell_value($table, $field, $value) {
     $currentAction = (string)($GLOBALS['crud_action'] ?? 'index');
 
-    // View mode uses a read-only checkbox for the active flag to match form semantics.
-    if ($field === 'active' && $currentAction === 'view') {
-        $isChecked = ((int)$value === 1) ? ' checked' : '';
-        return '<input type="checkbox" disabled' . $isChecked . ' aria-label="Active status">';
-    }
-
-    // List and other screens keep badge-style status rendering for the active flag.
+    // Status badges for the 'active' flag must stay consistent across list/view pages.
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
