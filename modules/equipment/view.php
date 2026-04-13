@@ -1,6 +1,5 @@
 <?php
 require '../../config/config.php';
-require_once ROOT_PATH . 'includes/port_visualizer.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 function equipment_view_table_has_column(mysqli $conn, string $table, string $column): bool
@@ -47,22 +46,6 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
-
-$itemPorts = [];
-if ($item && strcasecmp(trim((string)($item['equipment_type_name'] ?? '')), 'switch') === 0) {
-    $portSql = "SELECT sp.*, ss.status AS status_label, ss.color AS status_color, cc.hex_color AS cable_hex_color
-                FROM switch_ports sp
-                LEFT JOIN switch_status ss ON ss.id = sp.status_id
-                LEFT JOIN cable_colors cc ON cc.id = sp.color_id
-                WHERE sp.equipment_id = " . (int)$item['id'] . " AND sp.company_id = " . (int)$company_id . "
-                ORDER BY sp.port_number ASC";
-    $portRes = mysqli_query($conn, $portSql);
-    while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
-        $pRow['port_no'] = $pRow['port_number']; // map for visualizer
-        $itemPorts[] = $pRow;
-    }
-}
-
 $equipmentViewBackPath = (string)($equipmentViewBackPath ?? 'index.php');
 $equipmentViewEditPath = (string)($equipmentViewEditPath ?? 'edit.php');
 $equipmentTypeNameFilter = trim((string)($equipmentTypeNameFilter ?? ''));
@@ -176,19 +159,6 @@ function equipment_field_matches_context($key, $item) {
 <?php if (!$item): ?>
 <div class="alert alert-danger">Equipment not found.</div>
 <?php else: ?>
-
-<?php if (!empty($itemPorts)): ?>
-<div class="card" style="margin-bottom: 16px;">
-    <h3 style="margin-top:0;">👁️ Port Visualization</h3>
-    <?php
-    echo itm_render_port_visualizer($itemPorts, [
-        'rows' => (count($itemPorts) > 24 ? 2 : 1),
-        'layout' => 'vertical'
-    ]);
-    ?>
-</div>
-<?php endif; ?>
-
 <div class="card">
 <table><tbody>
 <?php foreach ($item as $k => $v): ?>

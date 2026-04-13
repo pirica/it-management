@@ -126,13 +126,6 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if (($field === 'color' || $field === 'hex_color') && !empty($value)) {
-        return '<div style="display:flex; align-items:center; gap:8px;">'
-             . '<span class="switch-color-swatch" style="background-color:' . sanitize($value) . ';"></span>'
-             . '<code>' . sanitize($value) . '</code>'
-             . '</div>';
-    }
-
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -557,21 +550,6 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
-                            <?php elseif ($name === 'color' || $name === 'hex_color'): ?>
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <input type="color" id="<?php echo sanitize($name); ?>_picker" value="<?php echo (!empty($displayVal) && preg_match('/^#[0-9A-F]{6}$/i', $displayVal)) ? sanitize($displayVal) : '#adb5bd'; ?>" style="width:50px; height:38px; padding:2px; border:1px solid var(--border); border-radius:6px;">
-                                    <input type="text" name="<?php echo sanitize($name); ?>" id="<?php echo sanitize($name); ?>_input" value="<?php echo sanitize($displayVal); ?>" style="flex:1;" placeholder="#RRGGBB">
-                                </div>
-                                <script>
-                                document.getElementById('<?php echo sanitize($name); ?>_picker').addEventListener('input', function(e) {
-                                    document.getElementById('<?php echo sanitize($name); ?>_input').value = e.target.value.toUpperCase();
-                                });
-                                document.getElementById('<?php echo sanitize($name); ?>_input').addEventListener('input', function(e) {
-                                    if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                                        document.getElementById('<?php echo sanitize($name); ?>_picker').value = e.target.value;
-                                    }
-                                });
-                                </script>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
