@@ -1151,7 +1151,10 @@ function openLinkModal(portId) {
 
     f.port_id_a.value = String(source.id);
     f.source_display.value = `Port ${source.port_no}${source.label ? ` • ${source.label}` : ''}`;
-    f.cable_color_id.value = '';
+    const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
+        option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
+    );
+    f.cable_color_id.value = grayCableColorOption ? grayCableColorOption.value : '';
     f.cable_label.value = '';
     f.notes.value = '';
     const unknownStatusOption = Array.from(f.status.options).find((option) =>
