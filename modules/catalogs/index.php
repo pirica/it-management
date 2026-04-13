@@ -88,23 +88,96 @@ function cr_fk_options($conn, $fk, $company_id) {
 
     // Multi-tenant check: filter options by company if the parent table is scoped.
     $hasCompany = (in_array('company_id', $available, true) && $company_id > 0);
-    $where = $hasCompany ? ' WHERE company_id=?' : '';
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
-    
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
+    $loadRows = static function () use ($conn, $table, $col, $labelCol, $hasCompany, $company_id) {
+        $loadedRows = [];
+        $where = $hasCompany ? ' WHERE company_id=?' : '';
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' ORDER BY label';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $loadedRows;
+        }
+
         if ($hasCompany) {
             mysqli_stmt_bind_param($stmt, 'i', $company_id);
         }
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rows[] = $row;
+            $loadedRows[] = $row;
         }
         mysqli_stmt_close($stmt);
+
+        return $loadedRows;
+    };
+
+    $rows = $loadRows();
+
+    // Why: catalog edit forms become unusable when company-scoped FK tables are empty.
+    // Seeding from database.sql keeps dropdowns populated without exposing company_id in the UI.
+    if ($hasCompany && empty($rows) && function_exists('itm_seed_table_from_database_sql')) {
+        $seedError = '';
+        itm_seed_table_from_database_sql($conn, $table, (int)$company_id, $seedError);
+        $rows = $loadRows();
     }
+
     return $rows;
+}
+
+/**
+ * Resolves a single FK label for a given id, preferring company-scoped rows.
+ */
+function cr_fk_option_by_id($conn, $fk, $company_id, $valueId) {
+    $table = $fk['REFERENCED_TABLE_NAME'] ?? '';
+    $col = $fk['REFERENCED_COLUMN_NAME'] ?? 'id';
+    $valueId = (int)$valueId;
+
+    if ($valueId <= 0 || !itm_is_safe_identifier($table) || !itm_is_safe_identifier($col)) {
+        return null;
+    }
+
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $labelCol = $fkMeta['label_col'];
+    $available = $fkMeta['available'];
+    $hasCompany = (in_array('company_id', $available, true) && (int)$company_id > 0);
+
+    $queryRow = static function ($withCompanyFilter) use ($conn, $table, $col, $labelCol, $company_id, $valueId) {
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($col) . '=?';
+        if ($withCompanyFilter) {
+            $sql .= ' AND company_id=?';
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        if ($withCompanyFilter) {
+            $companyBind = (int)$company_id;
+            mysqli_stmt_bind_param($stmt, 'ii', $valueId, $companyBind);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $valueId);
+        }
+
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+        mysqli_stmt_close($stmt);
+
+        return $row;
+    };
+
+    if ($hasCompany) {
+        $scoped = $queryRow(true);
+        if ($scoped) {
+            return $scoped;
+        }
+    }
+
+    return $queryRow(false);
 }
 
 /**
@@ -1856,6 +1929,20 @@ if (!empty($_SESSION['crud_success'])) {
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+
+                                    $hasSelectedOption = false;
+                                    foreach ($opts as $itmOpt) {
+                                        if ((string)($itmOpt['id'] ?? '') === (string)$displayVal) {
+                                            $hasSelectedOption = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!$hasSelectedOption && trim((string)$displayVal) !== '') {
+                                        $selectedFkOption = cr_fk_option_by_id($conn, $fkMap[$name], (int)$company_id, (int)$displayVal);
+                                        if ($selectedFkOption) {
+                                            $opts[] = $selectedFkOption;
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -1917,6 +2004,11 @@ if (!empty($_SESSION['crud_success'])) {
                                         $detailFkKey = trim((string)$detailDisplayValue);
                                         if ($detailFkKey !== '' && isset($fkDisplayMaps[$f][$detailFkKey])) {
                                             $detailDisplayValue = $fkDisplayMaps[$f][$detailFkKey];
+                                        } elseif ($detailFkKey !== '' && isset($fkMap[$f])) {
+                                            $fallbackFkOption = cr_fk_option_by_id($conn, $fkMap[$f], (int)$company_id, (int)$detailFkKey);
+                                            if ($fallbackFkOption && isset($fallbackFkOption['label'])) {
+                                                $detailDisplayValue = (string)$fallbackFkOption['label'];
+                                            }
                                         }
                                     ?>
                                     <?php if ($crud_table === 'catalogs' && in_array($f, ['image', 'image_url'], true) && trim((string)($data[$f] ?? '')) !== ''): ?>
