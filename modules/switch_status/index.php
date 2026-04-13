@@ -126,20 +126,29 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === "color_id" && $value !== "" && $value !== null) {
-        $cid = (int)$value;
-        $q = mysqli_query($GLOBALS["conn"], "SELECT color_name, hex_color FROM cable_colors WHERE id=$cid LIMIT 1");
-        $cdata = $q ? mysqli_fetch_assoc($q) : null;
-        if ($cdata) {
-            return '<div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid var(--border);background-color:' . sanitize($cdata["hex_color"]) . ';"></span>' . sanitize($cdata["color_name"]) . '</div>';
-        }
-    }
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
-    return sanitize((string)$value);
+
+    if (($GLOBALS['crud_table'] ?? '') === 'employees') {
+        $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        if (in_array($field, $employeeBoolFields, true)) {
+            return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
+    $text = (string)($value ?? '');
+    if ($table === 'employees' && $field === 'email' && $text !== '') {
+        $safeEmail = sanitize($text);
+        $mailto = 'mailto:' . $text;
+        $outlook = 'ms-outlook://compose?to=' . $text;
+        return '<a href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
+    }
+
+    return sanitize($text);
 }
+
 
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -234,6 +243,7 @@ $hasCompany = false;
 foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
+
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
@@ -341,6 +351,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
         $errors[] = 'Record not found.';
     }
 }
+
 
 // Handle sample data seeding for empty companies in list view
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
@@ -593,6 +604,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
+
 
                 <div class="card" style="margin-bottom:16px;">
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
