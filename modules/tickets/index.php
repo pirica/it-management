@@ -19,6 +19,37 @@ function ticket_is_valid_hex_color(string $value): bool
     return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    if ($company_id <= 0) {
+        $_SESSION['error_message'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $companyCountResult = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id);
+    $companyCountRow = $companyCountResult ? mysqli_fetch_assoc($companyCountResult) : null;
+    $companyTotalRows = (int)($companyCountRow['total'] ?? 0);
+
+    if ($companyTotalRows > 0) {
+        $_SESSION['error_message'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'tickets', (int)$company_id, $seedError);
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['error_message'] = $seedError;
+    } else {
+        $_SESSION['success_message'] = 'Sample data added successfully.';
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 // Extraction of search and sorting parameters
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $searchSql = '';
@@ -62,6 +93,9 @@ $countQuery = mysqli_query(
 );
 $countRow = $countQuery ? mysqli_fetch_assoc($countQuery) : null;
 $totalRows = (int)($countRow['total'] ?? 0);
+$companyCountQuery = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id);
+$companyCountRow = $companyCountQuery ? mysqli_fetch_assoc($companyCountQuery) : null;
+$companyTotalRows = (int)($companyCountRow['total'] ?? 0);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
 if ($page > $totalPages) {
     $page = $totalPages;
@@ -187,6 +221,14 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     </div>
                 <?php endif; ?>
             </div>
+            <?php if ($company_id > 0 && $companyTotalRows === 0): ?>
+                <div style="margin-top:16px;">
+                    <form method="POST" action="index.php">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                        <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                    </form>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
