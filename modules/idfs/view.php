@@ -123,12 +123,33 @@ if (!$idf) {
 
 $positions = [];
 $maxPosInDb = 0;
+$hasPositionLayoutColumn = false;
+$stmtPositionLayoutColumn = mysqli_prepare(
+    $conn,
+    "SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'idf_positions'
+       AND COLUMN_NAME = 'switch_port_numbering_layout_id'
+     LIMIT 1"
+);
+if ($stmtPositionLayoutColumn) {
+    mysqli_stmt_execute($stmtPositionLayoutColumn);
+    $resPositionLayoutColumn = mysqli_stmt_get_result($stmtPositionLayoutColumn);
+    $hasPositionLayoutColumn = (bool)($resPositionLayoutColumn && mysqli_fetch_row($resPositionLayoutColumn));
+    mysqli_stmt_close($stmtPositionLayoutColumn);
+}
+
+$positionLayoutSelect = $hasPositionLayoutColumn ? ', spnl.name AS layout_name' : ', NULL AS layout_name';
+$positionLayoutJoin = $hasPositionLayoutColumn
+    ? ' LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id'
+    : '';
+
 $stmtPos = mysqli_prepare(
     $conn,
-    "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name
+    "SELECT p.*, dt.idfdevicetype_name AS device_type_name" . $positionLayoutSelect . "
      FROM idf_positions p
-     LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
-     LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
+     LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id" . $positionLayoutJoin . "
      WHERE p.idf_id=?
      ORDER BY p.position_no ASC"
 );
