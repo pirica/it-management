@@ -23,7 +23,7 @@ $pos = null;
 if ($position_id > 0 && $company_id > 0) {
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT p.*, i.name AS idf_name, i.id AS idf_id,
+        'SELECT p.*, i.name AS idf_name, i.id AS idf_id, spnl.name AS layout_name,
                 CASE
                     WHEN UPPER(COALESCE(et.code, "")) = "SWITCH" THEN 1
                     WHEN UPPER(COALESCE(et.name, "")) = "SWITCH" THEN 1
@@ -33,6 +33,7 @@ if ($position_id > 0 && $company_id > 0) {
          JOIN idfs i ON i.id = p.idf_id
          LEFT JOIN equipment e ON e.id = p.equipment_id
          LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+         LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
          WHERE p.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -541,7 +542,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 echo itm_render_port_visualizer($ports, [
                     'clickable' => true,
                     'rows' => (count($ports) > 24 ? 2 : 1),
-                    'layout' => 'vertical'
+                    'layout' => (string)($pos['layout_name'] ?? 'Vertical')
                 ]);
                 ?>
             </div>

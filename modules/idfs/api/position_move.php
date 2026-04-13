@@ -8,7 +8,7 @@ $idf_id = (int)($data['idf_id'] ?? 0);
 $position_no = (int)($data['position_no'] ?? 0);
 $dir = (string)($data['dir'] ?? '');
 
-if ($idf_id <= 0 || $position_no < 1 || $position_no > 10) {
+if ($idf_id <= 0 || $position_no < 1 || $position_no > 100) {
     idf_fail('Invalid idf_id/position_no');
 }
 if (!in_array($dir, ['up', 'down'], true)) {

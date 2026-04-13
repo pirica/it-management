@@ -121,12 +121,14 @@ if (!$idf) {
     exit;
 }
 
-$positions = array_fill(1, 10, null);
+$positions = [];
+$maxPosInDb = 0;
 $stmtPos = mysqli_prepare(
     $conn,
-    "SELECT p.*, dt.idfdevicetype_name AS device_type_name
+    "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name
      FROM idf_positions p
      LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
+     LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
      WHERE p.idf_id=?
      ORDER BY p.position_no ASC"
 );
@@ -136,6 +138,10 @@ if ($stmtPos) {
     $resPos = mysqli_stmt_get_result($stmtPos);
     while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
         $posId = (int)$row['id'];
+        $posNo = (int)$row['position_no'];
+        if ($posNo > $maxPosInDb) {
+            $maxPosInDb = $posNo;
+        }
         $row['ports'] = [];
 
         $portSql = "SELECT pr.*, ss.status AS status_label, ss.color AS status_color, cc.hex_color AS cable_hex_color
@@ -150,15 +156,17 @@ if ($stmtPos) {
             $row['ports'][] = $pRow;
         }
 
-        $positions[(int)$row['position_no']] = $row;
+        $positions[$posNo] = $row;
     }
     mysqli_stmt_close($stmtPos);
 }
 
+$displayMaxPos = max(10, $maxPosInDb);
+
 $equipmentOptions = [];
 $stmtEq = mysqli_prepare(
     $conn,
-    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, er.name AS switch_rj45_name
+    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
      FROM equipment e
      LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
      WHERE e.company_id=?
@@ -249,6 +257,24 @@ foreach ($switchRj45Options as $switchRj45Option) {
     ];
 }
 
+$switchLayoutOptions = [];
+$stmtLayout = mysqli_prepare(
+    $conn,
+    "SELECT id, name
+     FROM switch_port_numbering_layout
+     WHERE company_id=?
+     ORDER BY name ASC"
+);
+if ($stmtLayout) {
+    mysqli_stmt_bind_param($stmtLayout, 'i', $company_id);
+    mysqli_stmt_execute($stmtLayout);
+    $resLayout = mysqli_stmt_get_result($stmtLayout);
+    while ($resLayout && ($row = mysqli_fetch_assoc($resLayout))) {
+        $switchLayoutOptions[] = $row;
+    }
+    mysqli_stmt_close($stmtLayout);
+}
+
 $equipmentAddExtraFields = json_encode([
     [
         'name' => 'equipment_type_id',
@@ -286,6 +312,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     $equipmentLookup[(int)$equipmentOption['id']] = [
         'name' => (string)($equipmentOption['name'] ?? ''),
         'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
+        'switch_port_numbering_layout_id' => (int)($equipmentOption['switch_port_numbering_layout_id'] ?? 0),
         'port_count' => $portCount,
         'notes' => (string)($equipmentOption['notes'] ?? ''),
     ];
@@ -425,7 +452,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                         </div>
 
                         <div class="idf-slots" id="idfSlots">
-                            <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
+                            <?php for ($i = 1; $i <= $displayMaxPos; $i++): $pos = $positions[$i] ?? null; ?>
                                 <div class="idf-slot" data-position="<?php echo $i; ?>">
                                     <div class="idf-slot-left">
                                         <div class="idf-slot-no"><?php echo $i; ?></div>
@@ -451,7 +478,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     <?php
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [
                                                         'rows' => (count($pos['ports'] ?? []) > 24 ? 2 : 1),
-                                                        'layout' => 'vertical'
+                                                        'layout' => (string)($pos['layout_name'] ?? 'Vertical')
                                                     ]);
                                                     ?>
                                                 </div>
@@ -493,7 +520,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </tr>
                 </thead>
                 <tbody>
-                <?php for ($i = 1; $i <= 10; $i++): $pos = $positions[$i]; ?>
+                <?php for ($i = 1; $i <= $displayMaxPos; $i++): $pos = $positions[$i] ?? null; ?>
                     <tr>
                         <td><?php echo $i; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['device_type_name'] ?? '')) : ''; ?></td>
@@ -549,6 +576,16 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </select>
             </div>
 
+            <div id="idfSwitchLayoutWrap" style="display:none;">
+                <label class="label">Numbering Layout</label>
+                <select class="input" name="switch_port_numbering_layout_id">
+                    <option value="">-- Select --</option>
+                    <?php foreach ($switchLayoutOptions as $layoutOption): ?>
+                        <option value="<?php echo (int)$layoutOption['id']; ?>"><?php echo sanitize((string)$layoutOption['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div id="idfPortCountWrap">
                 <label class="label">Port Count</label>
                 <input class="input" name="port_count" type="number" min="0" max="9999" step="1">
@@ -590,7 +627,7 @@ foreach ($equipmentOptions as $equipmentOption) {
             <div>
                 <label class="label">Target position</label>
                 <select class="input" name="target_position" id="idfCopyTarget">
-                    <?php for ($i = 1; $i <= 10; $i++): ?>
+                    <?php for ($i = 1; $i <= $displayMaxPos + 5; $i++): ?>
                         <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
                     <?php endfor; ?>
                 </select>
@@ -629,6 +666,7 @@ foreach ($equipmentOptions as $equipmentOption) {
         'name' => (string)($equipmentOption['name'] ?? ''),
         'notes' => (string)($equipmentOption['notes'] ?? ''),
         'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
+        'switch_port_numbering_layout_id' => (int)($equipmentOption['switch_port_numbering_layout_id'] ?? 0),
         'port_count' => $portCount,
     ];
 }
@@ -657,6 +695,7 @@ function applyEquipmentRelation(form) {
 
     form.device_name.value = equipment.name || '';
     form.switch_rj45_id.value = equipment.switch_rj45_id ? String(equipment.switch_rj45_id) : '';
+    form.switch_port_numbering_layout_id.value = equipment.switch_port_numbering_layout_id ? String(equipment.switch_port_numbering_layout_id) : '';
     form.port_count.value = equipment.port_count ? String(equipment.port_count) : '';
     form.notes.value = equipment.notes || '';
     refreshPortCountInputs(form);
@@ -710,6 +749,7 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.value = position.equipment_id || '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.switch_rj45_id.value = position.switch_rj45_id || '';
+                form.switch_port_numbering_layout_id.value = position.switch_port_numbering_layout_id || '';
                 form.port_count.value = position.port_count || '';
                 form.notes.value = position.notes || '';
                 refreshPortCountInputs(form);
@@ -731,6 +771,7 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 
     form.device_name.value = meta.name || '';
     form.switch_rj45_id.value = meta.switch_rj45_id ? String(meta.switch_rj45_id) : '';
+    form.switch_port_numbering_layout_id.value = meta.switch_port_numbering_layout_id ? String(meta.switch_port_numbering_layout_id) : '';
     form.port_count.value = meta.port_count ? String(meta.port_count) : '';
     form.notes.value = meta.notes || '';
     refreshPortCountInputs(form);
@@ -744,11 +785,14 @@ function refreshPortCountInputs(form) {
     const isSwitch = Number(form.device_type.value || 0) === SWITCH_DEVICE_TYPE_ID;
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
+    const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
+    if (layoutWrap) layoutWrap.style.display = isSwitch ? 'block' : 'none';
     form.switch_rj45_id.required = isSwitch;
     if (!isSwitch) {
         form.switch_rj45_id.value = '';
+        form.switch_port_numbering_layout_id.value = '';
     }
 }
 
@@ -763,6 +807,7 @@ function saveDevice() {
         device_name: form.device_name.value.trim(),
         equipment_id: form.equipment_id.value ? Number(form.equipment_id.value) : null,
         switch_rj45_id: form.switch_rj45_id.value ? Number(form.switch_rj45_id.value) : null,
+        switch_port_numbering_layout_id: form.switch_port_numbering_layout_id.value ? Number(form.switch_port_numbering_layout_id.value) : null,
         port_count: form.port_count.value === '' ? null : Number(form.port_count.value),
         notes: form.notes.value.trim(),
     };
@@ -791,7 +836,8 @@ function openCopyModal(positionNo, positionId) {
 function ensureCopyModalOptions() {
     const targetSelect = document.getElementById('idfCopyTarget');
     if (targetSelect && targetSelect.options.length === 0) {
-        for (let i = 1; i <= 10; i++) {
+        const currentMax = <?php echo (int)$displayMaxPos; ?>;
+        for (let i = 1; i <= currentMax + 10; i++) {
             const option = document.createElement('option');
             option.value = String(i);
             option.textContent = String(i);

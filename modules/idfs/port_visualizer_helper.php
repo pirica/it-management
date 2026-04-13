@@ -46,14 +46,29 @@ if (!function_exists('itm_render_port_visualizer')) {
         // Left side: Port Grid
         $html .= '<div class="itm-port-grid" style="display: grid; grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px); gap: 5px; flex-shrink: 0;">';
 
-        $layout = $options['layout'] ?? 'vertical';
+        $layout = strtolower($options['layout'] ?? 'vertical');
 
         $grid = [];
         if ($layout === 'vertical' && $rows === 2) {
+            // Vertical numbering: 1 above 2, 3 above 4, etc.
             foreach ($ports as $p) {
                 $num = (int)$p['port_no'];
                 $c = floor(($num - 1) / 2);
                 $r = ($num % 2 === 0) ? 1 : 0;
+                $grid[$r][$c] = $p;
+            }
+        } elseif ($layout === 'horizontal' && $rows === 2) {
+            // Horizontal numbering: Top row 1, 2, 3... Bottom row n/2+1, n/2+2...
+            $half = ceil($totalPorts / 2);
+            foreach ($ports as $p) {
+                $num = (int)$p['port_no'];
+                if ($num <= $half) {
+                    $r = 0;
+                    $c = $num - 1;
+                } else {
+                    $r = 1;
+                    $c = $num - $half - 1;
+                }
                 $grid[$r][$c] = $p;
             }
         } else {

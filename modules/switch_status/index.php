@@ -131,6 +131,11 @@ function cr_render_cell_value($table, $field, $value) {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if ($field === 'color' && $value !== '' && $value !== null) {
+        $safeColor = sanitize((string)$value);
+        return '<div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid var(--border);background-color:' . $safeColor . ';"></span>' . $safeColor . '</div>';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -146,7 +151,7 @@ function cr_render_cell_value($table, $field, $value) {
         return '<a href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
     }
 
-    return sanitize($text);
+    if ($field === "color" && $text !== "") { $safeColor = sanitize((string)$text); return "<div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid var(--border);background-color:" . $safeColor . ";"><
 }
 
 
@@ -716,6 +721,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif ($name === 'color' || $name === 'hex_color'): ?>
+                                <input type="color" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal ?: '#007bff'); ?>" style="height:40px;width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--bg-primary);">
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);

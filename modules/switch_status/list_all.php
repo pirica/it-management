@@ -141,7 +141,7 @@ function cr_render_cell_value($table, $field, $value) {
         return '<a href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
     }
 
-    return sanitize($text);
+    if ($field === "color" && $text !== "") { $safeColor = sanitize((string)$text); return "<div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid var(--border);background-color:" . $safeColor . ";"><
 }
 
 
@@ -529,6 +529,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif ($name === "color" || $name === "hex_color"): ?>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);

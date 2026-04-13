@@ -262,6 +262,66 @@ function idf_ensure_status_schema(mysqli $conn): void {
         );
     }
 
+    // Why: Support for Vertical/Horizontal port numbering layouts in idf_positions.
+    $layoutColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_positions` LIKE 'switch_port_numbering_layout_id'");
+    if ($layoutColRes && mysqli_num_rows($layoutColRes) === 0) {
+        mysqli_query($conn, "ALTER TABLE `idf_positions` ADD COLUMN `switch_port_numbering_layout_id` int DEFAULT NULL AFTER `port_count` ");
+        mysqli_query($conn, "ALTER TABLE `idf_positions` ADD KEY `switch_port_numbering_layout_id` (`switch_port_numbering_layout_id`)");
+
+        $hasLayoutFk = false;
+        $resLayoutFk = mysqli_query(
+            $conn,
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_positions'
+               AND CONSTRAINT_NAME = 'idf_positions_ibfk_layout'
+             LIMIT 1"
+        );
+        if ($resLayoutFk && mysqli_fetch_assoc($resLayoutFk)) {
+            $hasLayoutFk = true;
+        }
+        if (!$hasLayoutFk) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `idf_positions`
+                 ADD CONSTRAINT `idf_positions_ibfk_layout`
+                 FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`)
+                 ON DELETE SET NULL"
+            );
+        }
+    }
+
+    // Why: Support for Vertical/Horizontal port numbering layouts in equipment.
+    $eqLayoutColRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_port_numbering_layout_id'");
+    if ($eqLayoutColRes && mysqli_num_rows($eqLayoutColRes) === 0) {
+        mysqli_query($conn, "ALTER TABLE `equipment` ADD COLUMN `switch_port_numbering_layout_id` int DEFAULT NULL AFTER `switch_rj45_id` ");
+        mysqli_query($conn, "ALTER TABLE `equipment` ADD KEY `switch_port_numbering_layout_id` (`switch_port_numbering_layout_id`)");
+
+        $hasEqLayoutFk = false;
+        $resEqLayoutFk = mysqli_query(
+            $conn,
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'equipment'
+               AND CONSTRAINT_NAME = 'equipment_ibfk_layout'
+             LIMIT 1"
+        );
+        if ($resEqLayoutFk && mysqli_fetch_assoc($resEqLayoutFk)) {
+            $hasEqLayoutFk = true;
+        }
+        if (!$hasEqLayoutFk) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `equipment`
+                 ADD CONSTRAINT `equipment_ibfk_layout`
+                 FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`)
+                 ON DELETE SET NULL"
+            );
+        }
+    }
+
     $ensureMappedIntColumn = static function (
         string $columnName,
         string $refTable,
