@@ -1025,10 +1025,10 @@ function openPortModal(portId) {
     form.poe.value = rowData.poeId || '';
     form.notes.value = rowData.notes || '';
     form.cable_color_id.value = (portMeta?.cable_color_id || '');
-    if (!form.cable_color.value || form.cable_color.value === '__add_new__') {
-        form.cable_color.value = 'Gray';
+    if (!form.cable_color_id.value || form.cable_color_id.value === '__add_new__') {
+        form.cable_color_id.value = 'Gray';
     }
-    updateCableColorSwatch(form.cable_color.value || 'Gray', form.cable_color);
+    updateCableColorSwatch(form.cable_color_id.value || 'Gray', form.cable_color_id);
 
     document.getElementById('portBackdrop').style.display = 'flex';
 }
@@ -1124,7 +1124,7 @@ function openLinkModal(portId) {
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
     toggleLinkedEquipmentFields(false);
-    updateCableColorSwatch(f.cable_color.value || 'Gray');
+    updateCableColorSwatch(f.cable_color_id.value || 'Gray', f.cable_color_id);
     destinationSelect.value = '';
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
