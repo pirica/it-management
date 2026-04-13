@@ -973,6 +973,9 @@ $portsMeta = array_map(static function (array $port): array {
         'id' => (int)($port['id'] ?? 0),
         'port_no' => (int)($port['port_no'] ?? 0),
         'label' => (string)($port['label'] ?? ''),
+        'cable_color_id' => isset($port['cable_color_id']) ? (int)$port['cable_color_id'] : 0,
+        'cable_color_name' => (string)($port['cable_color_name'] ?? ''),
+        'cable_hex_color' => (string)($port['cable_hex_color'] ?? ''),
         'cable_color' => (string)($port['cable_color'] ?? 'Gray'),
         'is_linked' => !empty($port['link_id']),
     ];
@@ -1044,11 +1047,26 @@ function openPortModal(portId) {
     form.speed.value = rowData.speedId || '';
     form.poe.value = rowData.poeId || '';
     form.notes.value = rowData.notes || '';
-    form.cable_color_id.value = (portMeta?.cable_color_id || '');
-    if (!form.cable_color_id.value || form.cable_color_id.value === '__add_new__') {
-        form.cable_color_id.value = 'Gray';
+    const requestedCableColorId = (portMeta?.cable_color_id || 0);
+    const requestedCableColorName = (portMeta?.cable_color_name || portMeta?.cable_color || '').trim();
+    if (requestedCableColorId > 0 && Array.from(form.cable_color_id.options).some((option) => Number(option.value) === requestedCableColorId)) {
+        form.cable_color_id.value = String(requestedCableColorId);
+    } else {
+        const normalizedRequestedCableColor = requestedCableColorName.toLowerCase();
+        const matchedCableColorOption = Array.from(form.cable_color_id.options).find((option) =>
+            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === normalizedRequestedCableColor
+        );
+        const grayCableColorOption = Array.from(form.cable_color_id.options).find((option) =>
+            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
+        );
+        form.cable_color_id.value = matchedCableColorOption
+            ? matchedCableColorOption.value
+            : (grayCableColorOption ? grayCableColorOption.value : '');
     }
-    updateCableColorSwatch(form.cable_color_id.value || 'Gray', form.cable_color_id);
+    updateCableColorSwatch(
+        form.cable_color_id.value || requestedCableColorName || portMeta?.cable_hex_color || 'Gray',
+        form.cable_color_id
+    );
 
     document.getElementById('portBackdrop').style.display = 'flex';
 }
@@ -1133,7 +1151,10 @@ function openLinkModal(portId) {
 
     f.port_id_a.value = String(source.id);
     f.source_display.value = `Port ${source.port_no}${source.label ? ` • ${source.label}` : ''}`;
-    f.cable_color_id.value = '';
+    const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
+        option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
+    );
+    f.cable_color_id.value = grayCableColorOption ? grayCableColorOption.value : '';
     f.cable_label.value = '';
     f.notes.value = '';
     const unknownStatusOption = Array.from(f.status.options).find((option) =>
