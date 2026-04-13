@@ -27,24 +27,10 @@ if (!function_exists('itm_render_port_visualizer')) {
         $pixelImageB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAQAAAAnZu5uAAAADklEQVR42mNkgANGEpgAANwABiaeD7YAAAAASUVORK5CYII=';
         $pixelImageUrl = 'data:image/png;base64,' . $pixelImageB64;
 
-        $containerStyle = "
-            background: linear-gradient(90deg, #0d1117 0%, #162130 50%, #0d1117 100%);
-            border: 1.5px solid #1f6feb;
-            border-radius: 10px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            box-shadow: inset 0 0 20px rgba(31, 111, 235, 0.1), 0 10px 30px rgba(0,0,0,0.5);
-            margin: 15px 0;
-            position: relative;
-        ";
-
-        $html = '<div class="itm-port-visualizer-container" style="' . $containerStyle . '">';
+        $html = '<div class="itm-port-visualizer-container">';
 
         // Left side: Port Grid
-        $html .= '<div class="itm-port-grid" style="display: grid; grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px); gap: 5px; flex-shrink: 0;">';
+        $html .= '<div class="itm-port-grid" style="grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px);">';
 
         $layout = strtolower($options['layout'] ?? 'vertical');
 
@@ -86,7 +72,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             for ($c = 0; $c < $cols; $c++) {
                 $p = $grid[$r][$c] ?? null;
                 if (!$p) {
-                    $html .= '<div style="width: 14px; height: 14px; background: rgba(255,255,255,0.03); border-radius: 3px;"></div>';
+                    $html .= '<div class="itm-port-item-empty"></div>';
                     continue;
                 }
 
@@ -133,9 +119,9 @@ if (!function_exists('itm_render_port_visualizer')) {
         $html .= '</div>'; // end grid
 
         // Right side: Icon (The 4-square icon from reference)
-        $html .= '<div class="itm-device-icon" style="display: grid; grid-template-columns: repeat(2, 10px); gap: 4px; opacity: 0.4; margin-left: auto;">';
+        $html .= '<div class="itm-device-icon">';
         for($i=0; $i<4; $i++) {
-            $html .= '<div style="width: 10px; height: 10px; background: #58a6ff; border-radius: 2px;"></div>';
+            $html .= '<div class="itm-device-icon-dot"></div>';
         }
         $html .= '</div>';
 
