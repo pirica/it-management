@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once ROOT_PATH . 'includes/port_visualizer.php';
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');
@@ -58,6 +59,7 @@ $resPorts = mysqli_query(
        pr.*,
        COALESCE(spt.type, 'RJ45') AS port_type_label,
        COALESCE(ss.status, 'Unknown') AS status_label,
+       COALESCE(ss.color, '#adb5bd') AS status_color,
        CASE
          WHEN v.id IS NULL THEN ''
          WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
@@ -67,6 +69,7 @@ $resPorts = mysqli_query(
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color,
+       cc.hex_color AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
        CASE
@@ -103,6 +106,7 @@ $resPorts = mysqli_query(
          ORDER BY l2.id ASC
          LIMIT 1
      )
+     LEFT JOIN cable_colors cc ON cc.color_name = l.cable_color AND cc.company_id = pr.company_id
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
      WHERE pr.position_id=$position_id
@@ -529,6 +533,17 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <div class="right">
                     <button class="btn btn-sm" type="button" onclick="idfPortsExportExcel()">Export Ports Excel</button>
                 </div>
+            </div>
+
+            <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
+                <h3 style="margin-top:0;">👁️ Port Visualization</h3>
+                <?php
+                echo itm_render_port_visualizer($ports, [
+                    'clickable' => true,
+                    'rows' => (count($ports) > 24 ? 2 : 1),
+                    'layout' => 'vertical'
+                ]);
+                ?>
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px;">
@@ -1033,6 +1048,10 @@ function savePort() {
     apiPost('port_update.php', payload)
         .then(() => location.reload())
         .catch(err => alert(err.message));
+}
+
+function onPortClick(portId) {
+    openPortModal(portId);
 }
 
 function regeneratePorts() {

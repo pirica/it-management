@@ -200,6 +200,24 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
+    if (isset($GLOBALS['fkMap'][$field]) && (string)$value !== '') {
+        $fk = $GLOBALS['fkMap'][$field];
+        $fkTable = $fk['REFERENCED_TABLE_NAME'];
+        $fkCol = $fk['REFERENCED_COLUMN_NAME'];
+
+        if ($fkTable === 'switch_status') {
+            $colorSql = "SELECT color FROM switch_status WHERE id = " . (int)$value . " LIMIT 1";
+            $colorRes = mysqli_query($GLOBALS['conn'], $colorSql);
+            $colorRow = $colorRes ? mysqli_fetch_assoc($colorRes) : null;
+            $color = $colorRow['color'] ?? '#adb5bd';
+            $labelSql = "SELECT status FROM switch_status WHERE id = " . (int)$value . " LIMIT 1";
+            $labelRes = mysqli_query($GLOBALS['conn'], $labelSql);
+            $labelRow = $labelRes ? mysqli_fetch_assoc($labelRes) : null;
+            $label = sanitize($labelRow['status'] ?? 'Unknown');
+            return '<div style="display:flex; align-items:center; gap:8px;"><span class="switch-color-swatch" style="background-color:' . sanitize($color) . ';"></span>' . $label . '</div>';
+        }
+    }
+
     $text = (string)($value ?? '');
     // Interactive email links with Outlook deep-link support.
     if ($table === 'employees' && $field === 'email' && $text !== '') {

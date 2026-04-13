@@ -91,6 +91,30 @@ function idf_ensure_status_schema(mysqli $conn): void {
                  MODIFY `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown'"
             );
         }
+
+        // Why: Support visual port status with color mapping.
+        $colorCheckRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_status` LIKE 'color'");
+        if ($colorCheckRes && mysqli_num_rows($colorCheckRes) === 0) {
+            mysqli_query($conn, "ALTER TABLE `switch_status` ADD COLUMN `color` varchar(7) DEFAULT NULL AFTER `status`");
+
+            // Seed default colors for standard statuses
+            $colors = [
+                'Up' => '#007bff',
+                'Down' => '#dc3545',
+                'Disabled' => '#6c757d',
+                'Err-Disabled' => '#e83e8c',
+                'Faulty' => '#fd7e14',
+                'Free' => '#28a745',
+                'Reserved' => '#ffc107',
+                'Testing' => '#17a2b8',
+                'Unknown' => '#adb5bd'
+            ];
+            foreach ($colors as $status => $hex) {
+                $statusEsc = mysqli_real_escape_string($conn, $status);
+                $hexEsc = mysqli_real_escape_string($conn, $hex);
+                mysqli_query($conn, "UPDATE `switch_status` SET `color` = '{$hexEsc}' WHERE LOWER(`status`) = LOWER('{$statusEsc}') AND `color` IS NULL");
+            }
+        }
     }
 
     $idfPortsColumn = $readStatusColumn('idf_ports');

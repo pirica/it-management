@@ -181,6 +181,23 @@ function cr_render_cell_value($table, $field, $value) {
         $lookupRes = mysqli_query($GLOBALS['conn'], $lookupSql);
         if ($lookupRes && ($lookupRow = mysqli_fetch_assoc($lookupRes)) && isset($lookupRow['label'])) {
             $label = sanitize((string)$lookupRow['label']);
+
+            if ($fkTable === 'switch_status') {
+                $colorSql = "SELECT color FROM switch_status WHERE id = " . (int)$value . " LIMIT 1";
+                $colorRes = mysqli_query($GLOBALS['conn'], $colorSql);
+                $colorRow = $colorRes ? mysqli_fetch_assoc($colorRes) : null;
+                $color = $colorRow['color'] ?? '#adb5bd';
+                return '<div style="display:flex; align-items:center; gap:8px;"><span class="switch-color-swatch" style="background-color:' . sanitize($color) . ';"></span>' . $label . '</div>';
+            }
+
+            if ($fkTable === 'cable_colors') {
+                $colorSql = "SELECT hex_color FROM cable_colors WHERE id = " . (int)$value . " LIMIT 1";
+                $colorRes = mysqli_query($GLOBALS['conn'], $colorSql);
+                $colorRow = $colorRes ? mysqli_fetch_assoc($colorRes) : null;
+                $color = $colorRow['hex_color'] ?? '#adb5bd';
+                return '<div style="display:flex; align-items:center; gap:8px;"><span class="switch-color-swatch" style="background-color:' . sanitize($color) . ';"></span>' . $label . '</div>';
+            }
+
             if (($GLOBALS['crud_table'] ?? '') === 'switch_ports' && $field === 'equipment_id') {
                 $equipmentId = (int)$value;
                 return '<a href="../equipment/index.php?switch_id=' . $equipmentId . '&spm=1#switch-port-manager">' . $label . '</a>';

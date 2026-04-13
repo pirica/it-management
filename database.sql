@@ -1265,6 +1265,7 @@ CREATE TABLE `switch_status` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Unknown',
+  `color` varchar(7) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -1273,15 +1274,15 @@ CREATE TABLE `switch_status` (
   CONSTRAINT `switch_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_status`
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '4', 'Disabled');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '2', 'Down');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '6', 'Err-Disabled');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '8', 'Faulty');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '3', 'Free');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '9', 'Reserved');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '7', 'Testing');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '5', 'Unknown');
-INSERT INTO `switch_status` (`company_id`, `id`, `status`) VALUES ('1', '1', 'Up');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '4', 'Disabled', '#6c757d');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '2', 'Down', '#dc3545');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '6', 'Err-Disabled', '#e83e8c');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '8', 'Faulty', '#fd7e14');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '3', 'Free', '#28a745');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '9', 'Reserved', '#ffc107');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '7', 'Testing', '#17a2b8');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '5', 'Unknown', '#adb5bd');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color`) VALUES ('1', '1', 'Up', '#007bff');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status`) REFERENCES `switch_status` (`id`);
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+require_once ROOT_PATH . 'includes/port_visualizer.php';
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');
@@ -134,6 +135,21 @@ if ($stmtPos) {
     mysqli_stmt_execute($stmtPos);
     $resPos = mysqli_stmt_get_result($stmtPos);
     while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
+        $posId = (int)$row['id'];
+        $row['ports'] = [];
+
+        $portSql = "SELECT pr.*, ss.status AS status_label, ss.color AS status_color, cc.hex_color AS cable_hex_color
+                    FROM idf_ports pr
+                    LEFT JOIN switch_status ss ON ss.id = pr.status
+                    LEFT JOIN idf_links l ON l.port_id_a = pr.id OR l.port_id_b = pr.id
+                    LEFT JOIN cable_colors cc ON cc.color_name = l.cable_color AND cc.company_id = pr.company_id
+                    WHERE pr.position_id = $posId
+                    ORDER BY pr.port_no ASC";
+        $portRes = mysqli_query($conn, $portSql);
+        while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
+            $row['ports'][] = $pRow;
+        }
+
         $positions[(int)$row['position_no']] = $row;
     }
     mysqli_stmt_close($stmtPos);
@@ -430,6 +446,14 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     <?php if (!empty($pos['equipment_id'])): ?>
                                                         <span class="idf-badge">🧾 Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
                                                     <?php endif; ?>
+                                                </div>
+                                                <div style="margin-top: 8px;">
+                                                    <?php
+                                                    echo itm_render_port_visualizer($pos['ports'] ?? [], [
+                                                        'rows' => (count($pos['ports'] ?? []) > 24 ? 2 : 1),
+                                                        'layout' => 'vertical'
+                                                    ]);
+                                                    ?>
                                                 </div>
                                             <?php endif; ?>
                                         </div>
