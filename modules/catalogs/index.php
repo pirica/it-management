@@ -87,6 +87,47 @@ function cr_fk_map($conn, $table) {
         }
         mysqli_stmt_close($stmt);
     }
+
+    // Why: some legacy databases were created without FK constraints, which leaves
+    // list views showing raw numeric IDs instead of readable labels.
+    if ($table === 'catalogs') {
+        $catalogFallbacks = [
+            'equipment_type_id' => 'equipment_types',
+            'manufacturer_id' => 'manufacturers',
+            'supplier_id' => 'suppliers',
+        ];
+
+        foreach ($catalogFallbacks as $columnName => $referencedTable) {
+            if (isset($map[$columnName])) {
+                continue;
+            }
+            if (!itm_is_safe_identifier($columnName) || !itm_is_safe_identifier($referencedTable)) {
+                continue;
+            }
+
+            $existsSql = "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1";
+            $existsStmt = mysqli_prepare($conn, $existsSql);
+            if (!$existsStmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($existsStmt, 's', $referencedTable);
+            mysqli_stmt_execute($existsStmt);
+            $existsRes = mysqli_stmt_get_result($existsStmt);
+            $exists = ($existsRes && mysqli_num_rows($existsRes) > 0);
+            mysqli_stmt_close($existsStmt);
+
+            if (!$exists) {
+                continue;
+            }
+
+            $map[$columnName] = [
+                'COLUMN_NAME' => $columnName,
+                'REFERENCED_TABLE_NAME' => $referencedTable,
+                'REFERENCED_COLUMN_NAME' => 'id',
+            ];
+        }
+    }
+
     return $map;
 }
 
