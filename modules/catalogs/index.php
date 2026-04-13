@@ -231,7 +231,7 @@ function cr_tinyint_field_map($columns) {
     foreach ($columns as $col) {
         $field = (string)($col['Field'] ?? '');
         $type = strtolower((string)($col['Type'] ?? ''));
-        if ($field !== '' && str_starts_with($type, 'tinyint(1)')) {
+        if ($field !== '' && (str_starts_with($type, 'tinyint(1)') || $field === 'active')) {
             $map[$field] = true;
         }
     }
@@ -276,6 +276,12 @@ function cr_is_hidden_employee_field($field) {
 function cr_render_cell_value($table, $field, $value) {
     $currentAction = (string)($GLOBALS['crud_action'] ?? 'index');
 
+    // Status badges for the 'active' flag must stay consistent across list/view pages.
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
     // View mode uses icon-style booleans (1=✅, 0=❌) only for known tinyint(1) fields.
     if ($currentAction === 'view') {
         $tinyIntFields = $GLOBALS['cr_tinyint_fields'] ?? [];
@@ -285,12 +291,6 @@ function cr_render_cell_value($table, $field, $value) {
                 return (in_array($normalized, ['1', 'true'], true) ? '✅' : '❌');
             }
         }
-    }
-
-    // Status badges for the 'active' flag.
-    if ($field === 'active') {
-        $isActive = ((int)$value === 1);
-        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
     // Special boolean mapping for Employee Access module.
@@ -1837,7 +1837,7 @@ if (!empty($_SESSION['crud_success'])) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($formColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)') || $name === 'active';
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
