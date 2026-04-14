@@ -830,7 +830,7 @@ function refreshPortCountInputs(form) {
     if (isSwitch && !isEditMode && DEFAULT_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_SWITCH_LAYOUT_ID);
     }
-    if (!isSwitch && DEFAULT_NON_SWITCH_LAYOUT_ID > 0 && !form.switch_port_numbering_layout_id.value) {
+    if (!isSwitch && !isEditMode && DEFAULT_NON_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_NON_SWITCH_LAYOUT_ID);
     }
     if (!isSwitch) {
