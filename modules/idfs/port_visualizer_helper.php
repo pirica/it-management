@@ -86,8 +86,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $isActive = true;
                 }
 
-                // Darken inactive ports
-                if (!$isActive && ($statusColor === '#adb5bd' || $statusColor === '#6c757d' || $statusColor === '#161b22')) {
+                // Keep default gray statuses visible; only preserve explicit dark colors as dark.
+                if (!$isActive && ($statusColor === '#6c757d' || $statusColor === '#161b22')) {
                     $statusColor = '#161b22';
                 }
 
