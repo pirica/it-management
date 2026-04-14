@@ -127,16 +127,77 @@ function cr_fk_metadata($conn, $table) {
         $available[] = $d['Field'];
     }
     // Preferred candidate labels in order of priority.
-    foreach (['name', 'title', 'color_name', 'username', 'code', 'mode_name', 'hex_color'] as $candidate) {
+    foreach (['name', 'title', 'label', 'hostname', 'port_number', 'port_no', 'type', 'color_name', 'username', 'code', 'mode_name', 'hex_color'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
+        }
+    }
+    if (!in_array($labelCol, $available, true)) {
+        foreach ($available as $candidateField) {
+            if (!in_array($candidateField, ['id', 'company_id', 'active', 'created_at', 'updated_at'], true)) {
+                $labelCol = $candidateField;
+                break;
+            }
         }
     }
     return [
         'label_col' => $labelCol,
         'available' => $available,
     ];
+}
+
+/**
+ * Backfills optional denormalized fields so link rows keep meaningful details.
+ */
+function cr_idf_link_enrich_snapshot_fields($conn, &$data, $company_id) {
+    $companyId = (int)$company_id;
+
+    $equipmentIdRaw = trim((string)($data['equipment_id'] ?? ''));
+    $equipmentId = ctype_digit($equipmentIdRaw) ? (int)$equipmentIdRaw : 0;
+    if ($equipmentId > 0) {
+        $sql = 'SELECT hostname, status_id FROM `equipment` WHERE id=?';
+        if ($companyId > 0) {
+            $sql .= ' AND company_id=?';
+        }
+        $sql .= ' LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            if ($companyId > 0) { mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId); }
+            else { mysqli_stmt_bind_param($stmt, 'i', $equipmentId); }
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            if ($res && ($row = mysqli_fetch_assoc($res))) {
+                if (($data['equipment_hostname'] ?? null) === null || trim((string)$data['equipment_hostname']) === '') {
+                    $data['equipment_hostname'] = (string)($row['hostname'] ?? '');
+                }
+                if (($data['equipment_status_id'] ?? null) === null && isset($row['status_id'])) {
+                    $data['equipment_status_id'] = (int)$row['status_id'];
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    $cableColorId = (int)($data['cable_color_id'] ?? 0);
+    if ($cableColorId > 0 && (($data['cable_color_hex'] ?? null) === null || trim((string)$data['cable_color_hex']) === '')) {
+        $sql = 'SELECT hex_color FROM `cable_colors` WHERE id=?';
+        if ($companyId > 0) {
+            $sql .= ' AND company_id=?';
+        }
+        $sql .= ' LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            if ($companyId > 0) { mysqli_stmt_bind_param($stmt, 'ii', $cableColorId, $companyId); }
+            else { mysqli_stmt_bind_param($stmt, 'i', $cableColorId); }
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            if ($res && ($row = mysqli_fetch_assoc($res))) {
+                $data['cable_color_hex'] = (string)($row['hex_color'] ?? '');
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
 }
 
 /**
@@ -583,6 +644,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $data[$name] = (string)$value;
         }
     }
+
+    cr_idf_link_enrich_snapshot_fields($conn, $data, $company_id);
 
     // PERSISTENCE (Prepared Statements)
     if (empty($errors)) {
