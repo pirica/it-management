@@ -44,6 +44,35 @@ $speed_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_fiber', '
 $poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $data['poe_id'] ?? ($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color_id = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
+$cable_color_name = null;
+$cable_hex_color = null;
+if ($cable_color_id > 0) {
+    $stmtColor = mysqli_prepare(
+        $conn,
+        "SELECT color_name, hex_color
+         FROM cable_colors
+         WHERE company_id = ?
+           AND id = ?
+         LIMIT 1"
+    );
+    if ($stmtColor) {
+        mysqli_stmt_bind_param($stmtColor, 'ii', $company_id, $cable_color_id);
+        mysqli_stmt_execute($stmtColor);
+        $resColor = mysqli_stmt_get_result($stmtColor);
+        $colorRow = $resColor ? mysqli_fetch_assoc($resColor) : null;
+        mysqli_stmt_close($stmtColor);
+        if ($colorRow) {
+            $cable_color_name = trim((string)($colorRow['color_name'] ?? ''));
+            $cable_hex_color = trim((string)($colorRow['hex_color'] ?? ''));
+            if ($cable_color_name === '') {
+                $cable_color_name = null;
+            }
+            if ($cable_hex_color === '') {
+                $cable_hex_color = null;
+            }
+        }
+    }
+}
 
 $label_val = $label !== '' ? $label : null;
 $conn_val = $connected_to !== '' ? $connected_to : null;
@@ -60,13 +89,15 @@ $sql = "UPDATE idf_ports
             vlan_id=NULLIF(?, 0),
             speed_id=NULLIF(?, 0),
             poe_id=NULLIF(?, 0),
+            cable_color=?,
+            hex_color=?,
             notes=?
         WHERE id=?
         LIMIT 1";
 
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
-    mysqli_stmt_bind_param($stmtUpd, 'isisiiisi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $notes_val, $port_id);
+    mysqli_stmt_bind_param($stmtUpd, 'isisiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }
@@ -76,11 +107,12 @@ if ($stmtUpd) {
 $stmtLinkUpdate = mysqli_prepare(
     $conn,
     "UPDATE idf_links
-     SET cable_color_id = NULLIF(?, 0)
+     SET cable_color_id = NULLIF(?, 0),
+         cable_color_hex = ?
      WHERE port_id_a = ? OR port_id_b = ?"
 );
 if ($stmtLinkUpdate) {
-    mysqli_stmt_bind_param($stmtLinkUpdate, 'iii', $cable_color_id, $port_id, $port_id);
+    mysqli_stmt_bind_param($stmtLinkUpdate, 'isii', $cable_color_id, $cable_hex_color, $port_id, $port_id);
     if (!mysqli_stmt_execute($stmtLinkUpdate)) {
         idf_fail('DB error updating link cable color: ' . mysqli_stmt_error($stmtLinkUpdate), 500);
     }

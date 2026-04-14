@@ -146,7 +146,7 @@ if ($stmtPos) {
 
         $stmtPorts = mysqli_prepare(
             $conn,
-            "SELECT pr.*, ss.status AS status_label, cc_ss.hex_color AS status_color, cc_l.hex_color AS cable_hex_color
+            "SELECT pr.*, ss.status AS status_label, cc_ss.hex_color AS status_color, COALESCE(pr.hex_color, cc_l.hex_color) AS cable_hex_color
              FROM idf_ports pr
              LEFT JOIN switch_status ss ON ss.id = pr.status_id
              LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id

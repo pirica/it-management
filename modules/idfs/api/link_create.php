@@ -128,6 +128,8 @@ $equipmentComments_val = null;
 $equipmentStatusId_val = null;
 $equipmentColorId_val = null;
 $equipmentConnectedToLabel = null;
+$selectedColorName = null;
+$selectedColorHex = null;
 
 if ($switchPortId > 0) {
     $stmtSwitchPort = mysqli_prepare(
@@ -228,7 +230,7 @@ if ($switchPortId > 0) {
     if ($cableColorId > 0) {
         $stmtColor = mysqli_prepare(
             $conn,
-            "SELECT id
+            "SELECT id, color_name, hex_color
              FROM cable_colors
              WHERE company_id = ?
                AND id = ?
@@ -240,6 +242,12 @@ if ($switchPortId > 0) {
             $resColor = mysqli_stmt_get_result($stmtColor);
             $colorRow = $resColor ? mysqli_fetch_assoc($resColor) : null;
             $switchColorId = $colorRow ? (int)$colorRow['id'] : null;
+            if ($colorRow) {
+                $selectedColorName = trim((string)($colorRow['color_name'] ?? ''));
+                $selectedColorHex = trim((string)($colorRow['hex_color'] ?? ''));
+                if ($selectedColorName === '') { $selectedColorName = null; }
+                if ($selectedColorHex === '') { $selectedColorHex = null; }
+            }
             mysqli_stmt_close($stmtColor);
         }
     }
@@ -319,8 +327,8 @@ $stmtFinal = mysqli_prepare(
         company_id, port_id_a, port_id_b, equipment_id, equipment_hostname,
         equipment_port_type, equipment_port, equipment_vlan_id, equipment_label,
         equipment_comments, equipment_status_id, equipment_color_id, cable_color_id,
-        cable_label, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        cable_color_hex, cable_label, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
 
 $insertedLinkIds = [];
@@ -341,11 +349,11 @@ if ($stmtFinal) {
             $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
         }
         mysqli_stmt_bind_param(
-            $stmtFinal, 'iiissssiissiiss',
+            $stmtFinal, 'iiissssiissiisss',
             $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
             $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
             $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $cableColorId,
-            $label_val, $notes_val
+            $selectedColorHex, $label_val, $notes_val
         );
         if (!mysqli_stmt_execute($stmtFinal)) {
             idf_fail('DB error creating link: ' . mysqli_stmt_error($stmtFinal), 500);
@@ -378,11 +386,11 @@ if (
     $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
     $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 
-    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status_id = ? WHERE id = ? LIMIT 1");
+    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status_id = ?, cable_color = ?, hex_color = ? WHERE id = ? LIMIT 1");
     if ($stmtUpdatePort) {
-        mysqli_stmt_bind_param($stmtUpdatePort, 'sii', $connectedToA, $status_id, $portA);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToA, $status_id, $selectedColorName, $selectedColorHex, $portA);
         mysqli_stmt_execute($stmtUpdatePort);
-        mysqli_stmt_bind_param($stmtUpdatePort, 'sii', $connectedToB, $status_id, $portB);
+        mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToB, $status_id, $selectedColorName, $selectedColorHex, $portB);
         mysqli_stmt_execute($stmtUpdatePort);
         mysqli_stmt_close($stmtUpdatePort);
     }
