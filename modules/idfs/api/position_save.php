@@ -354,11 +354,49 @@ if ($pid > 0) {
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
         }
-        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status_id) VALUES (?, ?, ?, ?, ?)";
+        $defaultCableColorName = 'Gray';
+        $defaultCableHexColor = '#808080';
+        $portCableColorByNumber = [];
+        if ($equipment_id > 0) {
+            $stmtSwitchPortColors = mysqli_prepare(
+                $conn,
+                "SELECT sp.port_number, cc.color_name, cc.hex_color
+                 FROM switch_ports sp
+                 LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
+                 WHERE sp.company_id = ? AND sp.equipment_id = ?"
+            );
+            if ($stmtSwitchPortColors) {
+                mysqli_stmt_bind_param($stmtSwitchPortColors, 'ii', $company_id, $equipment_id);
+                mysqli_stmt_execute($stmtSwitchPortColors);
+                $resSwitchPortColors = mysqli_stmt_get_result($stmtSwitchPortColors);
+                while ($resSwitchPortColors && ($switchPortColorRow = mysqli_fetch_assoc($resSwitchPortColors))) {
+                    $portNumber = (int)($switchPortColorRow['port_number'] ?? 0);
+                    if ($portNumber <= 0) {
+                        continue;
+                    }
+                    $cableColorName = trim((string)($switchPortColorRow['color_name'] ?? ''));
+                    $cableHexColor = strtoupper(trim((string)($switchPortColorRow['hex_color'] ?? '')));
+                    if ($cableColorName === '') {
+                        $cableColorName = $defaultCableColorName;
+                    }
+                    if (!preg_match('/^#[0-9A-F]{6}$/', $cableHexColor)) {
+                        $cableHexColor = $defaultCableHexColor;
+                    }
+                    $portCableColorByNumber[$portNumber] = [
+                        'cable_color' => $cableColorName,
+                        'hex_color' => $cableHexColor,
+                    ];
+                }
+                mysqli_stmt_close($stmtSwitchPortColors);
+            }
+        }
+        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status_id, cable_color, hex_color) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
             for ($n = 1; $n <= $port_count; $n++) {
-                mysqli_stmt_bind_param($stmtInsertPort, 'iiiii', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId);
+                $portCableColor = $portCableColorByNumber[$n]['cable_color'] ?? $defaultCableColorName;
+                $portHexColor = $portCableColorByNumber[$n]['hex_color'] ?? $defaultCableHexColor;
+                mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId, $portCableColor, $portHexColor);
                 mysqli_stmt_execute($stmtInsertPort);
             }
             mysqli_stmt_close($stmtInsertPort);
