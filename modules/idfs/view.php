@@ -281,6 +281,7 @@ foreach ($switchRj45Options as $switchRj45Option) {
 }
 
 $switchLayoutOptions = [];
+$defaultHorizontalLayoutId = 0;
 $stmtLayout = mysqli_prepare(
     $conn,
     "SELECT id, name
@@ -294,6 +295,9 @@ if ($stmtLayout) {
     $resLayout = mysqli_stmt_get_result($stmtLayout);
     while ($resLayout && ($row = mysqli_fetch_assoc($resLayout))) {
         $switchLayoutOptions[] = $row;
+        if ($defaultHorizontalLayoutId === 0 && strcasecmp(trim((string)($row['name'] ?? '')), 'horizontal') === 0) {
+            $defaultHorizontalLayoutId = (int)($row['id'] ?? 0);
+        }
     }
     mysqli_stmt_close($stmtLayout);
 }
@@ -678,6 +682,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const SWITCH_DEVICE_TYPE_ID = <?php echo (int)$switchDeviceTypeId; ?>;
+const DEFAULT_NON_SWITCH_LAYOUT_ID = <?php echo (int)$defaultHorizontalLayoutId; ?>;
 const equipmentMetaById = <?php
 $equipmentMeta = [];
 foreach ($equipmentOptions as $equipmentOption) {
@@ -812,11 +817,13 @@ function refreshPortCountInputs(form) {
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
-    if (layoutWrap) layoutWrap.style.display = isSwitch ? 'block' : 'none';
+    if (layoutWrap) layoutWrap.style.display = 'block';
     form.switch_rj45_id.required = isSwitch;
+    if (!isSwitch && DEFAULT_NON_SWITCH_LAYOUT_ID > 0 && !form.switch_port_numbering_layout_id.value) {
+        form.switch_port_numbering_layout_id.value = String(DEFAULT_NON_SWITCH_LAYOUT_ID);
+    }
     if (!isSwitch) {
         form.switch_rj45_id.value = '';
-        form.switch_port_numbering_layout_id.value = '';
     }
 }
 
