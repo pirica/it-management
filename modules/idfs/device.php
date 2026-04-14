@@ -556,7 +556,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <?php
                 echo itm_render_port_visualizer($ports, [
                     'clickable' => true,
-                    'rows' => (count($ports) > 24 ? 2 : 1),
                     'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                     'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1)
                 ]);
