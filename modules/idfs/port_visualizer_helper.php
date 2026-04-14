@@ -24,14 +24,6 @@ if (!function_exists('itm_render_port_visualizer')) {
         if ($rows < 1) $rows = 1;
         $cols = (int)($options['columns'] ?? ceil($totalPorts / $rows));
 
-        $pixelImageB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAQAAAAnZu5uAAAADklEQVR42mNkgANGEpgAANwABiaeD7YAAAAASUVORK5CYII=';
-        $pixelImageUrl = 'data:image/png;base64,' . $pixelImageB64;
-
-        $html = '<div class="itm-port-visualizer-container">';
-
-        // Left side: Port Grid
-        $html .= '<div class="itm-port-grid" style="grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px);">';
-
         $layout = strtolower($options['layout'] ?? 'vertical');
 
         $grid = [];
@@ -86,6 +78,14 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
             }
         }
+
+        $pixelImageB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAQAAAAnZu5uAAAADklEQVR42mNkgANGEpgAANwABiaeD7YAAAAASUVORK5CYII=';
+        $pixelImageUrl = 'data:image/png;base64,' . $pixelImageB64;
+
+        $html = '<div class="itm-port-visualizer-container">';
+
+        // Left side: Port Grid
+        $html .= '<div class="itm-port-grid" style="grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px);">';
 
         for ($r = 0; $r < $rows; $r++) {
             for ($c = 0; $c < $cols; $c++) {
