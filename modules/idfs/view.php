@@ -282,6 +282,7 @@ foreach ($switchRj45Options as $switchRj45Option) {
 
 $switchLayoutOptions = [];
 $defaultHorizontalLayoutId = 0;
+$defaultVerticalLayoutId = 0;
 $stmtLayout = mysqli_prepare(
     $conn,
     "SELECT id, name
@@ -295,8 +296,12 @@ if ($stmtLayout) {
     $resLayout = mysqli_stmt_get_result($stmtLayout);
     while ($resLayout && ($row = mysqli_fetch_assoc($resLayout))) {
         $switchLayoutOptions[] = $row;
-        if ($defaultHorizontalLayoutId === 0 && strcasecmp(trim((string)($row['name'] ?? '')), 'horizontal') === 0) {
+        $layoutName = trim((string)($row['name'] ?? ''));
+        if ($defaultHorizontalLayoutId === 0 && strcasecmp($layoutName, 'horizontal') === 0) {
             $defaultHorizontalLayoutId = (int)($row['id'] ?? 0);
+        }
+        if ($defaultVerticalLayoutId === 0 && strcasecmp($layoutName, 'vertical') === 0) {
+            $defaultVerticalLayoutId = (int)($row['id'] ?? 0);
         }
     }
     mysqli_stmt_close($stmtLayout);
@@ -683,6 +688,7 @@ const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const SWITCH_DEVICE_TYPE_ID = <?php echo (int)$switchDeviceTypeId; ?>;
 const DEFAULT_NON_SWITCH_LAYOUT_ID = <?php echo (int)$defaultHorizontalLayoutId; ?>;
+const DEFAULT_SWITCH_LAYOUT_ID = <?php echo (int)$defaultVerticalLayoutId; ?>;
 const equipmentMetaById = <?php
 $equipmentMeta = [];
 foreach ($equipmentOptions as $equipmentOption) {
@@ -769,6 +775,7 @@ function openDeviceModal(positionNo, positionId) {
     form.querySelector('input[name="idf_id"]').value = '<?php echo (int)$idf_id; ?>';
     form.querySelector('input[name="position_no"]').value = positionNo;
     form.equipment_id.onchange = () => applyEquipmentRelation(form);
+    form.dataset.isEdit = positionId ? '1' : '0';
 
     if (positionId) {
         apiPost('position_get.php', {csrf_token: CSRF, position_id: positionId})
@@ -819,7 +826,11 @@ function refreshPortCountInputs(form) {
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
     if (layoutWrap) layoutWrap.style.display = 'block';
     form.switch_rj45_id.required = isSwitch;
-    if (!isSwitch && DEFAULT_NON_SWITCH_LAYOUT_ID > 0 && !form.switch_port_numbering_layout_id.value) {
+    const isEditMode = form.dataset.isEdit === '1';
+    if (isSwitch && !isEditMode && DEFAULT_SWITCH_LAYOUT_ID > 0) {
+        form.switch_port_numbering_layout_id.value = String(DEFAULT_SWITCH_LAYOUT_ID);
+    }
+    if (!isSwitch && !isEditMode && DEFAULT_NON_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_NON_SWITCH_LAYOUT_ID);
     }
     if (!isSwitch) {
