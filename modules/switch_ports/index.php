@@ -241,6 +241,48 @@ function cr_switch_port_rack_label($equipmentId) {
     return (string)$row['rack_name'];
 }
 
+/**
+ * Keeps hostname aligned with selected equipment for better port context.
+ */
+function cr_switch_port_fill_hostname_from_equipment($conn, &$data, $company_id) {
+    if (!array_key_exists('equipment_id', $data) || !array_key_exists('hostname', $data)) {
+        return;
+    }
+
+    $hostnameRaw = $data['hostname'];
+    $hostname = trim((string)$hostnameRaw, "'");
+    if ($hostname !== '' && strtoupper($hostname) !== 'NULL') {
+        return;
+    }
+
+    $equipmentId = (int)($data['equipment_id'] ?? 0);
+    if ($equipmentId <= 0) {
+        return;
+    }
+
+    $sql = 'SELECT hostname FROM `equipment` WHERE id=?';
+    $companyId = (int)$company_id;
+    if ($companyId > 0) {
+        $sql .= ' AND company_id=?';
+    }
+    $sql .= ' LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return;
+    }
+    if ($companyId > 0) { mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId); }
+    else { mysqli_stmt_bind_param($stmt, 'i', $equipmentId); }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $resolvedHostname = trim((string)($row['hostname'] ?? ''));
+        if ($resolvedHostname !== '') {
+            $data['hostname'] = "'" . mysqli_real_escape_string($conn, $resolvedHostname) . "'";
+        }
+    }
+    mysqli_stmt_close($stmt);
+}
+
 
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -566,6 +608,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        cr_switch_port_fill_hostname_from_equipment($conn, $data, $company_id);
         if ($crud_action === 'create') {
             $fields = [];
             $values = [];
