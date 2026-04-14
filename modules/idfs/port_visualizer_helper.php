@@ -72,11 +72,16 @@ if (!function_exists('itm_render_port_visualizer')) {
             for ($c = 0; $c < $cols; $c++) {
                 $p = $grid[$r][$c] ?? null;
                 if (!$p) {
-                    $html .= '<div class="itm-port-item-empty"></div>';
+                    // Why: Rendering placeholders for missing grid cells creates fake ports at the tail.
                     continue;
                 }
 
                 $statusColor = (string)($p['status_color'] ?? '#161b22');
+                $cableHexColor = trim((string)($p['cable_hex_color'] ?? ''));
+                if ($cableHexColor !== '') {
+                    // Why: Cable color provides the clearest physical patch-cord visualization for linked ports.
+                    $statusColor = $cableHexColor;
+                }
                 $isActive = false;
                 if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
                     $statusColor = '#58a6ff';
@@ -91,9 +96,38 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $statusColor = '#161b22';
                 }
 
-                $title = "Port " . (int)$p['port_no'];
-                if (!empty($p['label'])) $title .= " - " . $p['label'];
-                if (!empty($p['status_label'])) $title .= " (" . $p['status_label'] . ")";
+                $titleParts = [];
+                $titleParts[] = 'Port ' . (int)$p['port_no'] . ' (' . trim((string)($p['status_label'] ?? 'Unknown')) . ')';
+
+                $portTypeLabel = trim((string)($p['port_type_label'] ?? ''));
+                if ($portTypeLabel !== '') {
+                    $titleParts[] = 'Type: ' . $portTypeLabel;
+                }
+                if (!empty($p['status_label'])) {
+                    $titleParts[] = 'Status: ' . trim((string)$p['status_label']);
+                }
+                if (!empty($p['label'])) {
+                    $titleParts[] = 'Label: ' . trim((string)$p['label']);
+                }
+                if (!empty($p['connected_to'])) {
+                    $titleParts[] = 'Connected To: ' . trim((string)$p['connected_to']);
+                }
+                if (!empty($p['vlan_label'])) {
+                    $titleParts[] = 'VLAN: ' . trim((string)$p['vlan_label']);
+                }
+                $cableName = trim((string)($p['cable_color_name'] ?? ''));
+                if ($cableName === '' && $cableHexColor !== '') {
+                    $cableName = $cableHexColor;
+                }
+                if ($cableName !== '') {
+                    $titleParts[] = 'Cable color: ' . $cableName;
+                }
+                if (!empty($p['link_notes'])) {
+                    $titleParts[] = 'Notes: ' . trim((string)$p['link_notes']);
+                } elseif (!empty($p['notes'])) {
+                    $titleParts[] = 'Notes: ' . trim((string)$p['notes']);
+                }
+                $title = implode(' • ', $titleParts);
 
                 $clickable = !empty($options['clickable']);
                 $onClick = $clickable ? 'onclick="if(typeof onPortClick === \'function\') onPortClick(' . (int)$p['id'] . ')"' : '';

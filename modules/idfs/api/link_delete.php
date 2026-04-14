@@ -53,13 +53,34 @@ if ($stmtDel) {
 }
 if ($portA > 0 && $portB > 0) {
     $clearConnected = '';
-    $stmtPortClear = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ? WHERE id = ? LIMIT 1");
+    $clearCable = null;
+    $stmtPortClear = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, cable_color = ?, hex_color = ? WHERE id = ? LIMIT 1");
     if ($stmtPortClear) {
-        mysqli_stmt_bind_param($stmtPortClear, 'si', $clearConnected, $portA);
+        mysqli_stmt_bind_param($stmtPortClear, 'sssi', $clearConnected, $clearCable, $clearCable, $portA);
         mysqli_stmt_execute($stmtPortClear);
-        mysqli_stmt_bind_param($stmtPortClear, 'si', $clearConnected, $portB);
+        mysqli_stmt_bind_param($stmtPortClear, 'sssi', $clearConnected, $clearCable, $clearCable, $portB);
         mysqli_stmt_execute($stmtPortClear);
         mysqli_stmt_close($stmtPortClear);
+    }
+
+    $stmtSwitchClear = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports sp
+         JOIN idf_ports pr ON pr.id = ?
+         JOIN idf_positions p ON p.id = pr.position_id
+         SET sp.comments = NULL
+         WHERE sp.company_id = ?
+           AND p.company_id = sp.company_id
+           AND p.equipment_id = sp.equipment_id
+           AND sp.port_number = pr.port_no
+         LIMIT 1"
+    );
+    if ($stmtSwitchClear) {
+        mysqli_stmt_bind_param($stmtSwitchClear, 'ii', $portA, $company_id);
+        mysqli_stmt_execute($stmtSwitchClear);
+        mysqli_stmt_bind_param($stmtSwitchClear, 'ii', $portB, $company_id);
+        mysqli_stmt_execute($stmtSwitchClear);
+        mysqli_stmt_close($stmtSwitchClear);
     }
 }
 
