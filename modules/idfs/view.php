@@ -509,7 +509,6 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <div style="margin-top: 8px;">
                                                     <?php
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [
-                                                        'rows' => (count($pos['ports'] ?? []) > 24 ? 2 : 1),
                                                         'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                                                         'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1)
                                                     ]);

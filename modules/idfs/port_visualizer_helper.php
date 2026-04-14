@@ -35,26 +35,45 @@ if (!function_exists('itm_render_port_visualizer')) {
         $layout = strtolower($options['layout'] ?? 'vertical');
 
         $grid = [];
-        if ($layout === 'vertical' && $rows === 2) {
-            // Vertical numbering: 1 above 2, 3 above 4, etc.
+        $portsPerLine = 24;
+        if ($layout === 'vertical') {
+            // Why: Switches are physically read in odd/even pairs with a hard wrap after 24 paired positions.
+            $pairCount = (int)ceil($totalPorts / 2);
+            if (!isset($options['columns'])) {
+                $cols = (int)max(1, min($portsPerLine, $pairCount));
+            }
+            if (!isset($options['rows'])) {
+                $rows = (int)max(2, ceil($pairCount / max(1, $cols)) * 2);
+            }
+
             foreach ($ports as $p) {
                 $num = (int)$p['port_no'];
-                $c = floor(($num - 1) / 2);
-                $r = ($num % 2 === 0) ? 1 : 0;
+                if ($num <= 0) {
+                    continue;
+                }
+                $pairIndex = (int)floor(($num - 1) / 2);
+                $pairRowBlock = (int)floor($pairIndex / max(1, $cols));
+                $c = (int)($pairIndex % max(1, $cols));
+                $r = (int)($pairRowBlock * 2 + (($num % 2 === 0) ? 1 : 0));
                 $grid[$r][$c] = $p;
             }
-        } elseif ($layout === 'horizontal' && $rows === 2) {
-            // Horizontal numbering: Top row 1, 2, 3... Bottom row n/2+1, n/2+2...
-            $half = ceil($totalPorts / 2);
+        } elseif ($layout === 'horizontal') {
+            // Why: Patch panels are read left-to-right with a hard wrap every 24 ports.
+            if (!isset($options['columns'])) {
+                $cols = (int)max(1, min($portsPerLine, $totalPorts));
+            }
+            if (!isset($options['rows'])) {
+                $rows = (int)max(1, ceil($totalPorts / max(1, $cols)));
+            }
+
             foreach ($ports as $p) {
                 $num = (int)$p['port_no'];
-                if ($num <= $half) {
-                    $r = 0;
-                    $c = $num - 1;
-                } else {
-                    $r = 1;
-                    $c = $num - $half - 1;
+                if ($num <= 0) {
+                    continue;
                 }
+                $index = $num - 1;
+                $r = (int)floor($index / max(1, $cols));
+                $c = (int)($index % max(1, $cols));
                 $grid[$r][$c] = $p;
             }
         } else {
