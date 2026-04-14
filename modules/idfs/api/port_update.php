@@ -104,6 +104,41 @@ if ($stmtUpd) {
     mysqli_stmt_close($stmtUpd);
 }
 
+$stmtSwitchSync = mysqli_prepare(
+    $conn,
+    "UPDATE switch_ports sp
+     JOIN idf_ports pr ON pr.id = ?
+     JOIN idf_positions p ON p.id = pr.position_id
+     SET sp.label = ?,
+         sp.status_id = ?,
+         sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
+         sp.vlan_id = NULLIF(?, 0),
+         sp.comments = ?
+     WHERE sp.company_id = ?
+       AND p.company_id = sp.company_id
+       AND p.equipment_id = sp.equipment_id
+       AND sp.port_number = pr.port_no
+     LIMIT 1"
+);
+if ($stmtSwitchSync) {
+    $switchColorId = $cable_color_id > 0 ? $cable_color_id : 0;
+    mysqli_stmt_bind_param(
+        $stmtSwitchSync,
+        'isiiisi',
+        $port_id,
+        $label_val,
+        $status_id,
+        $switchColorId,
+        $vlan_val,
+        $notes_val,
+        $company_id
+    );
+    if (!mysqli_stmt_execute($stmtSwitchSync)) {
+        idf_fail('DB error syncing switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
+    }
+    mysqli_stmt_close($stmtSwitchSync);
+}
+
 $stmtLinkUpdate = mysqli_prepare(
     $conn,
     "UPDATE idf_links
@@ -117,6 +152,56 @@ if ($stmtLinkUpdate) {
         idf_fail('DB error updating link cable color: ' . mysqli_stmt_error($stmtLinkUpdate), 500);
     }
     mysqli_stmt_close($stmtLinkUpdate);
+}
+
+$stmtLinkMetaSync = mysqli_prepare(
+    $conn,
+    "UPDATE idf_links l
+     JOIN idf_ports pr ON pr.id = ?
+     JOIN idf_positions p ON p.id = pr.position_id
+     SET l.equipment_label = ?,
+         l.equipment_status_id = ?,
+         l.equipment_vlan_id = NULLIF(?, 0),
+         l.equipment_comments = ?,
+         l.equipment_color_id = NULLIF(?, 0)
+     WHERE l.company_id = ?
+       AND (
+            (l.port_id_a = pr.id AND l.port_id_b IN (
+                SELECT prx.id
+                FROM idf_ports prx
+                JOIN idf_positions px ON px.id = prx.position_id
+                WHERE px.company_id = p.company_id
+                  AND px.equipment_id = p.equipment_id
+                  AND prx.port_no = pr.port_no
+            ))
+            OR
+            (l.port_id_b = pr.id AND l.port_id_a IN (
+                SELECT prx.id
+                FROM idf_ports prx
+                JOIN idf_positions px ON px.id = prx.position_id
+                WHERE px.company_id = p.company_id
+                  AND px.equipment_id = p.equipment_id
+                  AND prx.port_no = pr.port_no
+            ))
+       )"
+);
+if ($stmtLinkMetaSync) {
+    $linkColorId = $cable_color_id > 0 ? $cable_color_id : 0;
+    mysqli_stmt_bind_param(
+        $stmtLinkMetaSync,
+        'isiisii',
+        $port_id,
+        $label_val,
+        $status_id,
+        $vlan_val,
+        $notes_val,
+        $linkColorId,
+        $company_id
+    );
+    if (!mysqli_stmt_execute($stmtLinkMetaSync)) {
+        idf_fail('DB error syncing link metadata: ' . mysqli_stmt_error($stmtLinkMetaSync), 500);
+    }
+    mysqli_stmt_close($stmtLinkMetaSync);
 }
 
 idf_ok();

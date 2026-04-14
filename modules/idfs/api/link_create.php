@@ -394,6 +394,31 @@ if (
         mysqli_stmt_execute($stmtUpdatePort);
         mysqli_stmt_close($stmtUpdatePort);
     }
+
+    $stmtSwitchSync = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports sp
+         JOIN idf_ports pr ON pr.id = ?
+         JOIN idf_positions p ON p.id = pr.position_id
+         SET sp.label = ?,
+             sp.status_id = ?,
+             sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
+             sp.comments = ?
+         WHERE sp.company_id = ?
+           AND p.company_id = sp.company_id
+           AND p.equipment_id = sp.equipment_id
+           AND sp.port_number = pr.port_no
+         LIMIT 1"
+    );
+    if ($stmtSwitchSync) {
+        $switchColorSyncId = $cableColorId > 0 ? $cableColorId : 0;
+        $linkNoteSync = $notes_val;
+        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $label_val, $status_id, $switchColorSyncId, $linkNoteSync, $company_id);
+        mysqli_stmt_execute($stmtSwitchSync);
+        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $label_val, $status_id, $switchColorSyncId, $linkNoteSync, $company_id);
+        mysqli_stmt_execute($stmtSwitchSync);
+        mysqli_stmt_close($stmtSwitchSync);
+    }
 }
 
 idf_ok([
