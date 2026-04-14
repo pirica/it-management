@@ -129,7 +129,7 @@ function cr_fk_metadata($conn, $table) {
         $available[] = $d['Field'];
     }
     // Preferred candidate labels in order of priority.
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'title', 'color_name', 'username', 'code', 'mode_name', 'hex_color'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;

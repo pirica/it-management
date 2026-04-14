@@ -286,6 +286,32 @@ function idf_ensure_status_schema(mysqli $conn): void {
         );
     }
 
+
+    // Persist selected cable color details on each IDF port row.
+    $portCableColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'cable_color'");
+    if ($portCableColorRes && mysqli_num_rows($portCableColorRes) === 0) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `cable_color` varchar(100) DEFAULT NULL AFTER `poe_id` ");
+    }
+
+    $portHexColorRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'hex_color'");
+    if ($portHexColorRes && mysqli_num_rows($portHexColorRes) === 0) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `hex_color` varchar(7) DEFAULT NULL AFTER `cable_color` ");
+    }
+
+    // Keep a denormalized cable hex color on links for historical snapshots and exports.
+    $linkHexColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_hex'");
+    if ($linkHexColorColRes && mysqli_num_rows($linkHexColorColRes) === 0) {
+        mysqli_query($conn, "ALTER TABLE `idf_links` ADD COLUMN `cable_color_hex` varchar(7) DEFAULT NULL AFTER `cable_color_id` ");
+        mysqli_query(
+            $conn,
+            "UPDATE idf_links l
+             LEFT JOIN cable_colors cc ON cc.id = l.cable_color_id AND cc.company_id = l.company_id
+             SET l.cable_color_hex = cc.hex_color
+             WHERE l.cable_color_id IS NOT NULL
+               AND (l.cable_color_hex IS NULL OR l.cable_color_hex = '')"
+        );
+    }
+
     // Support for ID-based cable colors in idf_links.
     $linkCableColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_id'");
     if ($linkCableColorColRes && mysqli_num_rows($linkCableColorColRes) === 0) {
@@ -364,6 +390,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
                    'equipment_status_id', NEW.`equipment_status_id`,
                    'equipment_color_id', NEW.`equipment_color_id`,
                    'cable_color_id', NEW.`cable_color_id`,
+                   'cable_color_hex', NEW.`cable_color_hex`,
                    'cable_label', NEW.`cable_label`,
                    'notes', NEW.`notes`,
                    'created_at', NEW.`created_at`
@@ -400,6 +427,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
                    'equipment_status_id', OLD.`equipment_status_id`,
                    'equipment_color_id', OLD.`equipment_color_id`,
                    'cable_color_id', OLD.`cable_color_id`,
+                   'cable_color_hex', OLD.`cable_color_hex`,
                    'cable_label', OLD.`cable_label`,
                    'notes', OLD.`notes`,
                    'created_at', OLD.`created_at`
@@ -419,6 +447,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
                    'equipment_status_id', NEW.`equipment_status_id`,
                    'equipment_color_id', NEW.`equipment_color_id`,
                    'cable_color_id', NEW.`cable_color_id`,
+                   'cable_color_hex', NEW.`cable_color_hex`,
                    'cable_label', NEW.`cable_label`,
                    'notes', NEW.`notes`,
                    'created_at', NEW.`created_at`
@@ -455,6 +484,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
                    'equipment_status_id', OLD.`equipment_status_id`,
                    'equipment_color_id', OLD.`equipment_color_id`,
                    'cable_color_id', OLD.`cable_color_id`,
+                   'cable_color_hex', OLD.`cable_color_hex`,
                    'cable_label', OLD.`cable_label`,
                    'notes', OLD.`notes`,
                    'created_at', OLD.`created_at`
