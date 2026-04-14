@@ -118,12 +118,15 @@ if (!function_exists('itm_render_port_visualizer')) {
         }
         $html .= '</div>'; // end grid
 
-        // Right side: Icon (The 4-square icon from reference)
-        $html .= '<div class="itm-device-icon">';
-        for($i=0; $i<4; $i++) {
-            $html .= '<div class="itm-device-icon-dot"></div>';
+        $showDeviceIcon = isset($options['show_device_icon']) ? !empty($options['show_device_icon']) : true;
+        if ($showDeviceIcon) {
+            // Right side: Icon (The 4-square icon from reference)
+            $html .= '<div class="itm-device-icon">';
+            for($i=0; $i<4; $i++) {
+                $html .= '<div class="itm-device-icon-dot"></div>';
+            }
+            $html .= '</div>';
         }
-        $html .= '</div>';
 
         $html .= '</div>'; // end container
 

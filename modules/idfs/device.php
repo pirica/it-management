@@ -27,12 +27,14 @@ if ($position_id > 0 && $company_id > 0) {
                 CASE
                     WHEN UPPER(COALESCE(et.code, "")) = "SWITCH" THEN 1
                     WHEN UPPER(COALESCE(et.name, "")) = "SWITCH" THEN 1
+                    WHEN LOWER(COALESCE(dt.idfdevicetype_name, "")) LIKE "switch" THEN 1
                     ELSE 0
                 END AS equipment_is_switch
          FROM idf_positions p
          JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
          LEFT JOIN equipment e ON e.id = p.equipment_id
          LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+         LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
          WHERE p.id = ? AND i.company_id = ?
          LIMIT 1'
@@ -555,7 +557,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 echo itm_render_port_visualizer($ports, [
                     'clickable' => true,
                     'rows' => (count($ports) > 24 ? 2 : 1),
-                    'layout' => (string)($pos['layout_name'] ?? 'Vertical')
+                    'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
+                    'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1)
                 ]);
                 ?>
             </div>
