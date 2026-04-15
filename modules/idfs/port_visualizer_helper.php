@@ -133,10 +133,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
 
                 $titleParts = [];
-                $statusId = isset($p['status_id']) ? (int)$p['status_id'] : 0;
                 $statusLabel = trim((string)($p['status_label'] ?? 'Unknown'));
-                $statusSummary = $statusId > 0 ? ('Status #' . $statusId . ' (' . $statusLabel . ')') : ('Status: ' . $statusLabel);
-                $titleParts[] = 'Port ' . (int)$p['port_no'] . ' (' . $statusLabel . ')';
+                $statusSummary = 'Status (' . $statusLabel . ')';
 
                 $portTypeLabel = trim((string)($p['port_type_label'] ?? ''));
                 if ($portTypeLabel !== '') {
@@ -150,7 +148,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $cableName = $cableHexColor;
                 }
 
-                $fromParts = ['From:', 'Port ' . (int)$p['port_no'], $statusSummary];
+                $fromParts = ['From:', 'Port ' . (int)$p['port_no'] . ' (' . $statusLabel . ')', $statusSummary];
                 if ($portTypeLabel !== '') {
                     $fromParts[] = $portTypeLabel;
                 }
@@ -179,14 +177,13 @@ if (!function_exists('itm_render_port_visualizer')) {
                 if (!empty($p['connected_to'])) {
                     $connectedParts[] = trim((string)$p['connected_to']);
                 }
-                if (!empty($p['remote_port_no'])) {
+                if (empty($p['connected_to']) && !empty($p['remote_port_no'])) {
                     $connectedParts[] = 'Port ' . (int)$p['remote_port_no'];
                 }
-                $remoteStatusId = isset($p['remote_status_id']) ? (int)$p['remote_status_id'] : 0;
                 $remoteStatusLabel = trim((string)($p['remote_status_label'] ?? ''));
-                if ($remoteStatusId > 0 || $remoteStatusLabel !== '') {
+                if ($remoteStatusLabel !== '') {
                     $remoteLabel = $remoteStatusLabel !== '' ? $remoteStatusLabel : 'Unknown';
-                    $connectedParts[] = $remoteStatusId > 0 ? ('Status #' . $remoteStatusId . ' (' . $remoteLabel . ')') : ('Status: ' . $remoteLabel);
+                    $connectedParts[] = 'Status (' . $remoteLabel . ')';
                 }
                 $remoteDeviceType = trim((string)($p['remote_device_type_label'] ?? ''));
                 if ($remoteDeviceType !== '') {
