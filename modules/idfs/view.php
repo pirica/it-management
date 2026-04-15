@@ -551,7 +551,8 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     <?php
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [
                                                         'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
-                                                        'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1)
+                                                        'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
+                                                        'clickable' => true,
                                                     ]);
                                                     ?>
                                                 </div>
@@ -967,6 +968,27 @@ function idfDeleteDevice(positionId) {
     apiPost('position_delete.php', {csrf_token: CSRF, position_id: positionId})
         .then(() => location.reload())
         .catch(err => alert(err.message));
+}
+
+function onPortClick(portId, portElement) {
+    const portNode = portElement && portElement.dataset ? portElement : null;
+    const statusLabelRaw = portNode ? String(portNode.dataset.portStatusLabel || '').trim().toLowerCase() : '';
+    const positionId = portNode ? Number(portNode.dataset.positionId || 0) : 0;
+    if (!positionId) {
+        alert('Position not found for this port.');
+        return;
+    }
+
+    const url = new URL('device.php', window.location.href);
+    url.searchParams.set('position_id', String(positionId));
+
+    if (statusLabelRaw === 'unknown') {
+        url.searchParams.set('open_link_port_id', String(portId));
+    } else {
+        url.searchParams.set('open_edit_port_id', String(portId));
+    }
+
+    window.location.href = url.toString();
 }
 
 function idfExportExcel() {
