@@ -5,6 +5,23 @@
  * Renders a visual representation of equipment ports matching the user's reference image style.
  */
 
+if (!function_exists('itm_format_visualizer_equipment_code')) {
+    function itm_format_visualizer_equipment_code($equipmentId) {
+        $raw = trim((string)$equipmentId);
+        if ($raw === '') {
+            return '';
+        }
+        if (strpos($raw, '-') !== false) {
+            return $raw;
+        }
+        if (ctype_digit($raw)) {
+            $normalized = str_pad($raw, 8, '0', STR_PAD_LEFT);
+            return substr($normalized, 0, 4) . '-' . substr($normalized, 4, 4);
+        }
+        return $raw;
+    }
+}
+
 if (!function_exists('itm_render_port_visualizer')) {
     /**
      * Renders the HTML for a port grid.
@@ -116,30 +133,88 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
 
                 $titleParts = [];
-                $titleParts[] = 'Port ' . (int)$p['port_no'] . ' (' . trim((string)($p['status_label'] ?? 'Unknown')) . ')';
+                $statusId = isset($p['status_id']) ? (int)$p['status_id'] : 0;
+                $statusLabel = trim((string)($p['status_label'] ?? 'Unknown'));
+                $statusSummary = $statusId > 0 ? ('Status #' . $statusId . ' (' . $statusLabel . ')') : ('Status: ' . $statusLabel);
+                $titleParts[] = 'Port ' . (int)$p['port_no'] . ' (' . $statusLabel . ')';
 
                 $portTypeLabel = trim((string)($p['port_type_label'] ?? ''));
                 if ($portTypeLabel !== '') {
                     $titleParts[] = 'Type: ' . $portTypeLabel;
                 }
-                if (!empty($p['status_label'])) {
-                    $titleParts[] = 'Status: ' . trim((string)$p['status_label']);
-                }
                 if (!empty($p['label'])) {
                     $titleParts[] = 'Label: ' . trim((string)$p['label']);
-                }
-                if (!empty($p['connected_to'])) {
-                    $titleParts[] = 'Connected To: ' . trim((string)$p['connected_to']);
-                }
-                if (!empty($p['vlan_label'])) {
-                    $titleParts[] = 'VLAN: ' . trim((string)$p['vlan_label']);
                 }
                 $cableName = trim((string)($p['cable_color_name'] ?? ''));
                 if ($cableName === '' && $cableHexColor !== '') {
                     $cableName = $cableHexColor;
                 }
+
+                $fromParts = ['From:', 'Port ' . (int)$p['port_no'], $statusSummary];
+                if ($portTypeLabel !== '') {
+                    $fromParts[] = $portTypeLabel;
+                }
+                $localDeviceType = trim((string)($p['local_device_type_label'] ?? ''));
+                if ($localDeviceType !== '') {
+                    $fromParts[] = $localDeviceType;
+                }
+                $localDeviceName = trim((string)($p['local_device_name'] ?? ''));
+                if ($localDeviceName !== '') {
+                    $fromParts[] = $localDeviceName;
+                }
+                $localEquipmentCode = itm_format_visualizer_equipment_code($p['local_equipment_id'] ?? '');
+                if ($localEquipmentCode !== '') {
+                    $fromParts[] = 'Asset ' . $localEquipmentCode;
+                }
+                if (!empty($p['local_position_no'])) {
+                    $fromParts[] = 'Pos ' . (int)$p['local_position_no'];
+                }
+                $localIdfName = trim((string)($p['local_idf_name'] ?? ''));
+                if ($localIdfName !== '') {
+                    $fromParts[] = 'IDF ' . $localIdfName;
+                }
+                $titleParts[] = implode(' • ', $fromParts);
+
+                $connectedParts = ['Connected To:'];
+                if (!empty($p['connected_to'])) {
+                    $connectedParts[] = trim((string)$p['connected_to']);
+                }
+                if (!empty($p['remote_port_no'])) {
+                    $connectedParts[] = 'Port ' . (int)$p['remote_port_no'];
+                }
+                $remoteStatusId = isset($p['remote_status_id']) ? (int)$p['remote_status_id'] : 0;
+                $remoteStatusLabel = trim((string)($p['remote_status_label'] ?? ''));
+                if ($remoteStatusId > 0 || $remoteStatusLabel !== '') {
+                    $remoteLabel = $remoteStatusLabel !== '' ? $remoteStatusLabel : 'Unknown';
+                    $connectedParts[] = $remoteStatusId > 0 ? ('Status #' . $remoteStatusId . ' (' . $remoteLabel . ')') : ('Status: ' . $remoteLabel);
+                }
+                $remoteDeviceType = trim((string)($p['remote_device_type_label'] ?? ''));
+                if ($remoteDeviceType !== '') {
+                    $connectedParts[] = $remoteDeviceType;
+                }
+                $remoteDeviceName = trim((string)($p['remote_device_name'] ?? ''));
+                if ($remoteDeviceName !== '') {
+                    $connectedParts[] = $remoteDeviceName;
+                }
+                $remoteEquipmentCode = itm_format_visualizer_equipment_code($p['remote_equipment_id'] ?? '');
+                if ($remoteEquipmentCode !== '') {
+                    $connectedParts[] = 'Asset ' . $remoteEquipmentCode;
+                }
+                if (!empty($p['remote_position_no'])) {
+                    $connectedParts[] = 'Pos ' . (int)$p['remote_position_no'];
+                }
                 if ($cableName !== '') {
-                    $titleParts[] = 'Cable color: ' . $cableName;
+                    $connectedParts[] = 'Cable color ' . $cableName;
+                }
+                if ($cableHexColor !== '') {
+                    $connectedParts[] = $cableHexColor;
+                }
+                if (count($connectedParts) > 1) {
+                    $titleParts[] = implode(' • ', $connectedParts);
+                }
+
+                if (!empty($p['vlan_label'])) {
+                    $titleParts[] = 'VLAN: ' . trim((string)$p['vlan_label']);
                 }
                 if (!empty($p['link_notes'])) {
                     $titleParts[] = 'Notes: ' . trim((string)$p['link_notes']);
