@@ -9,6 +9,8 @@ if (!isset($_SESSION['company_id'])) {
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $position_id = (int)($_GET['position_id'] ?? 0);
+$open_edit_port_id = (int)($_GET['open_edit_port_id'] ?? 0);
+$open_link_port_id = (int)($_GET['open_link_port_id'] ?? 0);
 
 function idf_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
@@ -1010,6 +1012,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
+const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
+const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
 const PORTS = <?php
 $portsMeta = array_map(static function (array $port): array {
     return [
@@ -1530,19 +1534,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const f = document.getElementById('linkForm');
-    if (!f || !f.equipment_id) return;
-    f.equipment_id.addEventListener('change', (event) => {
-        loadEquipmentPorts(event.target.value);
-    });
-    f.switch_port_id.addEventListener('change', () => {
-        populateLinkedEquipmentFields();
-    });
-    f.linked_cable_color_picker.addEventListener('input', (event) => {
-        f.linked_cable_color.value = event.target.value;
-    });
-    f.linked_cable_color.addEventListener('input', (event) => {
-        f.linked_cable_color_picker.value = normalizeColorToHex(event.target.value || 'Gray');
-    });
+    if (f && f.equipment_id) {
+        f.equipment_id.addEventListener('change', (event) => {
+            loadEquipmentPorts(event.target.value);
+        });
+        f.switch_port_id.addEventListener('change', () => {
+            populateLinkedEquipmentFields();
+        });
+        f.linked_cable_color_picker.addEventListener('input', (event) => {
+            f.linked_cable_color.value = event.target.value;
+        });
+        f.linked_cable_color.addEventListener('input', (event) => {
+            f.linked_cable_color_picker.value = normalizeColorToHex(event.target.value || 'Gray');
+        });
+    }
     const initializeCableColorSelect = (cableColorSelect) => {
         if (!cableColorSelect) return;
         updateCableColorSwatch('', cableColorSelect);
@@ -1565,6 +1570,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('select[name="cable_color_id"]').forEach((cableColorSelect) => {
         initializeCableColorSelect(cableColorSelect);
     });
+
+    // Why: IDF rack clicks route to this page with an explicit action so users land directly in the expected modal.
+    if (AUTO_OPEN_LINK_PORT_ID > 0) {
+        openLinkModal(AUTO_OPEN_LINK_PORT_ID);
+    } else if (AUTO_OPEN_EDIT_PORT_ID > 0) {
+        openPortModal(AUTO_OPEN_EDIT_PORT_ID);
+    }
 });
 
 function getNormalizedStatusValue(form) {

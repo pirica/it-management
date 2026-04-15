@@ -221,12 +221,14 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $title = implode(' • ', $titleParts);
 
                 $clickable = !empty($options['clickable']);
-                $onClick = $clickable ? 'onclick="if(typeof onPortClick === \'function\') onPortClick(' . (int)$p['id'] . ')"' : '';
+                $onClick = $clickable ? 'onclick="if(typeof onPortClick === \'function\') onPortClick(' . (int)$p['id'] . ', this)"' : '';
                 $cursor = $clickable ? 'pointer' : 'default';
 
                 $glow = $isActive ? "box-shadow: 0 0 8px $statusColor;" : "";
+                $portStatusLabelAttr = sanitize($statusLabel);
+                $portPositionIdAttr = (int)($p['position_id'] ?? 0);
 
-                $html .= '<div class="itm-port-item" title="' . sanitize($title) . '" ' . $onClick . ' style="
+                $html .= '<div class="itm-port-item" title="' . sanitize($title) . '" data-port-id="' . (int)$p['id'] . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" ' . $onClick . ' style="
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';
