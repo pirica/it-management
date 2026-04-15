@@ -169,7 +169,7 @@ if ($stmtLinkMetaSync) {
     $linkColorId = $cable_color_id > 0 ? $cable_color_id : 0;
     mysqli_stmt_bind_param(
         $stmtLinkMetaSync,
-        'siisiii',
+        'siisiiii',
         $label_val,
         $status_id,
         $vlan_val,

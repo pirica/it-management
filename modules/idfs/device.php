@@ -63,6 +63,11 @@ $stmtPorts = mysqli_prepare(
        COALESCE(spt.type, 'RJ45') AS port_type_label,
        COALESCE(ss.status, 'Unknown') AS status_label,
        COALESCE(cc_ss.hex_color, '#adb5bd') AS status_color,
+       p_local.position_no AS local_position_no,
+       p_local.device_name AS local_device_name,
+       p_local.equipment_id AS local_equipment_id,
+       i_local.name AS local_idf_name,
+       COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
        CASE
          WHEN v.id IS NULL THEN ''
          WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
@@ -81,6 +86,13 @@ $stmtPorts = mysqli_prepare(
          WHEN l.port_id_b = pr.id THEN l.port_id_a
          ELSE NULL
        END AS other_port_id,
+       pr_remote.port_no AS remote_port_no,
+       pr_remote.status_id AS remote_status_id,
+       COALESCE(ss_remote.status, 'Unknown') AS remote_status_label,
+       p_remote.position_no AS remote_position_no,
+       p_remote.device_name AS remote_device_name,
+       p_remote.equipment_id AS remote_equipment_id,
+       COALESCE(dt_remote.idfdevicetype_name, et_remote.name, '') AS remote_device_type_label,
        l.equipment_id AS linked_equipment_id,
        CASE
          WHEN UPPER(COALESCE(let.code, '')) = 'SWITCH' THEN 1
@@ -88,6 +100,17 @@ $stmtPorts = mysqli_prepare(
          ELSE 0
        END AS linked_equipment_is_switch
      FROM idf_ports pr
+     JOIN idf_positions p_local
+       ON p_local.id = pr.position_id
+     JOIN idfs i_local
+       ON i_local.id = p_local.idf_id
+     LEFT JOIN equipment e_local
+       ON e_local.id = p_local.equipment_id
+     LEFT JOIN equipment_types et_local
+       ON et_local.id = e_local.equipment_type_id
+     LEFT JOIN idf_device_type dt_local
+       ON dt_local.id = p_local.device_type
+      AND dt_local.company_id = p_local.company_id
      LEFT JOIN switch_port_types spt
        ON spt.id = pr.port_type
       AND spt.company_id = pr.company_id
@@ -112,6 +135,24 @@ $stmtPorts = mysqli_prepare(
          ORDER BY l2.id ASC
          LIMIT 1
      )
+     LEFT JOIN idf_ports pr_remote
+       ON pr_remote.id = CASE
+           WHEN l.port_id_a = pr.id THEN l.port_id_b
+           WHEN l.port_id_b = pr.id THEN l.port_id_a
+           ELSE NULL
+       END
+     LEFT JOIN switch_status ss_remote
+       ON ss_remote.id = pr_remote.status_id
+      AND ss_remote.company_id = pr_remote.company_id
+     LEFT JOIN idf_positions p_remote
+       ON p_remote.id = pr_remote.position_id
+     LEFT JOIN equipment e_remote
+       ON e_remote.id = p_remote.equipment_id
+     LEFT JOIN equipment_types et_remote
+       ON et_remote.id = e_remote.equipment_type_id
+     LEFT JOIN idf_device_type dt_remote
+       ON dt_remote.id = p_remote.device_type
+      AND dt_remote.company_id = p_remote.company_id
      LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
