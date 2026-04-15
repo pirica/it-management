@@ -36,16 +36,16 @@ A complete IT Asset Management System built with PHP and MySQL, featuring a GitH
 
 ## System Requirements
 
-- PHP 7.4+
+- PHP 7.4.33
 - MySQL 8.0+
 - Apache 2.4+
 - No Composer required
 
-## PHP 8.3.19 Compatibility
+## PHP 7.4.33 Compatibility
 
-- The codebase is maintained to run on PHP 8.3.19+.
+- The codebase is maintained to run on PHP 7.4.33.
 - Compatibility validation should include:
-  - syntax linting all PHP files with a PHP 8.3 runtime, and
+  - syntax linting all PHP files with a PHP 7.4.33 runtime, and
   - running baseline security audits:
     - `php scripts/check_csrf_coverage.php`
     - `php scripts/check_sql_injection_coverage.php`

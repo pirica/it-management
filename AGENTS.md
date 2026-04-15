@@ -13,7 +13,7 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 * **Multi-tenancy:** Data is strictly scoped by `company_id`.
 
 ## 🛠 Tech Stack & Environment
-* **Backend:** PHP 7.4+ (Strictly **MySQLi**, do NOT use PDO).
+* **Backend:** PHP 7.4.33 (Strictly **MySQLi**, do NOT use PDO).
 * **Database:** MySQL 8.0+.
 * **Frontend:** Vanilla JS, Custom CSS (`css/styles.css`), No Frameworks.
 * **Environment:** Apache 2.4+. **No Composer** dependency management.
