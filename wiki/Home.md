@@ -12,7 +12,7 @@ This project is a PHP + MySQL web application for managing IT operations includi
 
 ## Tech Stack
 
-- PHP 8.3.19+
+- PHP 7.4.33
 - MySQL 8.0+
 - Apache 2.4+
 - Vanilla JavaScript + CSS
