@@ -265,10 +265,12 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     </div>
                     <div>
                         <label class="label">Active</label>
-                        <label style="display:flex; align-items:center; gap:8px; min-height:40px;">
-                            <input type="checkbox" name="active" value="1" checked>
-                            <span>Active</span>
-                        </label>
+                        <div class="role-flags-grid">
+                            <label class="role-flag-option">
+                                <input type="checkbox" name="active" value="1" checked>
+                                Active
+                            </label>
+                        </div>
                     </div>
                     <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
                         <button class="btn btn-primary" type="submit">Create IDF</button>

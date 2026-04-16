@@ -831,6 +831,12 @@ input[type="color"] {
     margin-bottom: 0;
 }
 
+.role-flags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+
 .role-flag-option input[type="checkbox"] {
     width: auto;
     margin: 0;
