@@ -99,10 +99,11 @@ $idf = null;
 if ($idf_id > 0 && $company_id > 0) {
     $stmtIdf = mysqli_prepare(
         $conn,
-        "SELECT i.*, l.name AS location_name, c.company AS company_name
+        "SELECT i.*, l.name AS location_name, c.company AS company_name, r.name AS rack_name
          FROM idfs i
          JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN companies c ON c.id=i.company_id
+         LEFT JOIN racks r ON r.id=i.rack_id AND r.company_id=i.company_id
          WHERE i.id=? AND i.company_id=?
          LIMIT 1"
     );
@@ -519,6 +520,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                     · Location: <?php echo sanitize((string)($idf['location_name'] ?? 'Unknown Location')); ?>
                                     · Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
                                     · IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
+                                    · Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
                                 </div>
                             </div>
                             <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
@@ -553,6 +555,11 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                                                         'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
                                                         'clickable' => true,
+                                                        'company_name' => (string)($idf['company_name'] ?? ''),
+                                                        'location_name' => (string)($idf['location_name'] ?? ''),
+                                                        'idf_name' => (string)($idf['name'] ?? ''),
+                                                        'idf_code' => (string)($idf['idf_code'] ?? ''),
+                                                        'rack_name' => (string)($idf['rack_name'] ?? ''),
                                                     ]);
                                                     ?>
                                                 </div>
