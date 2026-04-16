@@ -335,7 +335,6 @@ CREATE TABLE `equipment` (
   KEY `manufacturer_id` (`manufacturer_id`),
   KEY `location_id` (`location_id`),
   KEY `rack_id` (`rack_id`),
-  KEY `rack_id` (`rack_id`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
   KEY `warranty_type_id` (`warranty_type_id`),
