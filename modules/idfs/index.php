@@ -169,20 +169,30 @@ if ($company_id > 0) {
 }
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
-$locationExtraFieldsJson = htmlspecialchars(
-    json_encode([
-        [
-            'name' => 'type_id',
-            'label' => 'Location Type',
-            'type' => 'select',
-            'options' => array_map(static function ($type) {
-                return [
-                    'value' => (string)((int)($type['id'] ?? 0)),
-                    'label' => (string)($type['name'] ?? ''),
-                ];
-            }, $locationTypes),
+$locationTypeOptions = array_map(static function ($type) {
+    return [
+        'value' => (string)((int)($type['id'] ?? 0)),
+        'label' => (string)($type['name'] ?? ''),
+    ];
+}, $locationTypes);
+
+$locationFieldConfig = [
+    [
+        'name' => 'type_id',
+        'label' => 'Location Type',
+        'type' => 'select',
+        'options' => $locationTypeOptions,
+        'addable' => [
+            'table' => 'location_types',
+            'id_col' => 'id',
+            'label_col' => 'name',
+            'company_scoped' => '1',
         ],
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ],
+];
+
+$locationExtraFieldsJson = htmlspecialchars(
+    json_encode($locationFieldConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
     ENT_QUOTES,
     'UTF-8'
 );
@@ -199,6 +209,13 @@ $rackExtraFieldsJson = htmlspecialchars(
                     'label' => (string)($location['name'] ?? ''),
                 ];
             }, $locations),
+            'addable' => [
+                'table' => 'it_locations',
+                'id_col' => 'id',
+                'label_col' => 'name',
+                'company_scoped' => '1',
+                'extra_fields' => $locationFieldConfig,
+            ],
         ],
         [
             'name' => 'status_id',
@@ -210,6 +227,12 @@ $rackExtraFieldsJson = htmlspecialchars(
                     'label' => (string)($status['name'] ?? ''),
                 ];
             }, $rackStatuses),
+            'addable' => [
+                'table' => 'rack_statuses',
+                'id_col' => 'id',
+                'label_col' => 'name',
+                'company_scoped' => '1',
+            ],
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
     ENT_QUOTES,
