@@ -268,7 +268,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <div class="role-flags-grid">
                             <label class="role-flag-option">
                                 <input type="checkbox" name="active" value="1" checked>
-                                Active
                             </label>
                         </div>
                     </div>
