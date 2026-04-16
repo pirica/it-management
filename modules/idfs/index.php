@@ -9,6 +9,58 @@ if (!isset($_SESSION['company_id'])) {
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $csrf = itm_get_csrf_token();
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['refresh_select_options'])) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    if ($company_id <= 0) {
+        echo json_encode(['ok' => false, 'message' => 'No active company selected.']);
+        exit;
+    }
+
+    $refreshTarget = trim((string)($_GET['refresh_select_options'] ?? ''));
+    $allowedTargets = [
+        'rack' => [
+            'sql' => "SELECT id, name FROM racks WHERE company_id=? ORDER BY name",
+            'placeholder' => '-- Select rack --',
+        ],
+        'location' => [
+            'sql' => "SELECT id, name FROM it_locations WHERE company_id=? ORDER BY name",
+            'placeholder' => '-- Select location --',
+        ],
+    ];
+
+    if (!isset($allowedTargets[$refreshTarget])) {
+        echo json_encode(['ok' => false, 'message' => 'Invalid refresh target.']);
+        exit;
+    }
+
+    $targetConfig = $allowedTargets[$refreshTarget];
+    $options = [];
+    $stmtOptions = mysqli_prepare($conn, $targetConfig['sql']);
+    if ($stmtOptions) {
+        mysqli_stmt_bind_param($stmtOptions, 'i', $company_id);
+        mysqli_stmt_execute($stmtOptions);
+        $resultOptions = mysqli_stmt_get_result($stmtOptions);
+        while ($resultOptions && ($optionRow = mysqli_fetch_assoc($resultOptions))) {
+            $options[] = [
+                'value' => (int)($optionRow['id'] ?? 0),
+                'label' => (string)($optionRow['name'] ?? ''),
+            ];
+        }
+        mysqli_stmt_close($stmtOptions);
+    } else {
+        echo json_encode(['ok' => false, 'message' => 'Unable to prepare select refresh query.']);
+        exit;
+    }
+
+    echo json_encode([
+        'ok' => true,
+        'placeholder' => $targetConfig['placeholder'],
+        'options' => $options,
+    ]);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     itm_require_post_csrf();
 
@@ -326,7 +378,7 @@ $rackExtraFieldsJson = htmlspecialchars(
                     </div>
                     <div>
                         <label class="label">Rack</label>
-                        <select class="input" name="rack_id" required
+                        <select class="input" id="idf-rack-select" name="rack_id" required
                                 data-addable-select="1"
                                 data-add-table="racks"
                                 data-add-id-col="id"
@@ -343,7 +395,7 @@ $rackExtraFieldsJson = htmlspecialchars(
                     </div>
                     <div>
                         <label class="label">Location</label>
-                        <select class="input" name="location_id" required
+                        <select class="input" id="idf-location-select" name="location_id" required
                                 data-addable-select="1"
                                 data-add-table="it_locations"
                                 data-add-id-col="id"
@@ -419,6 +471,68 @@ $rackExtraFieldsJson = htmlspecialchars(
 </div>
 <script src="../../js/select-add-option.js"></script>
 <script>
+function refreshIdfSelectOptions(selectElement, refreshTarget) {
+    if (!selectElement || !refreshTarget) {
+        return;
+    }
+
+    var currentValue = selectElement.value;
+    var endpoint = 'index.php?refresh_select_options=' + encodeURIComponent(refreshTarget) + '&_=' + Date.now();
+
+    fetch(endpoint, { credentials: 'same-origin' })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('Failed to load latest options.');
+            }
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload || payload.ok !== true || !Array.isArray(payload.options)) {
+                throw new Error('Invalid options response.');
+            }
+
+            var placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = payload.placeholder || '-- Select --';
+
+            selectElement.innerHTML = '';
+            selectElement.appendChild(placeholderOption);
+
+            payload.options.forEach(function (optionItem) {
+                var optionValue = String(optionItem.value || '');
+                var optionNode = document.createElement('option');
+                optionNode.value = optionValue;
+                optionNode.textContent = String(optionItem.label || '');
+                if (optionValue !== '' && optionValue === currentValue) {
+                    optionNode.selected = true;
+                }
+                selectElement.appendChild(optionNode);
+            });
+
+            var addNewOption = document.createElement('option');
+            addNewOption.value = '__add_new__';
+            addNewOption.textContent = '➕';
+            selectElement.appendChild(addNewOption);
+        })
+        .catch(function () {
+            // Why: keep user flow uninterrupted when a transient refresh call fails.
+        });
+}
+
+var rackSelect = document.getElementById('idf-rack-select');
+if (rackSelect) {
+    rackSelect.addEventListener('mousedown', function () {
+        refreshIdfSelectOptions(rackSelect, 'rack');
+    });
+}
+
+var locationSelect = document.getElementById('idf-location-select');
+if (locationSelect) {
+    locationSelect.addEventListener('mousedown', function () {
+        refreshIdfSelectOptions(locationSelect, 'location');
+    });
+}
+
 document.addEventListener('click', function (event) {
     var openControl = event.target.closest('a, button, input, select, textarea, form');
     if (openControl) {
