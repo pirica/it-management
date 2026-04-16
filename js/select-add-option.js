@@ -82,8 +82,22 @@
                 return { value: String(opt), label: String(opt) };
             }
             return {
-                value: String(opt.value || ''),
-                label: String(opt.label || opt.value || ''),
+                // Why: select_options_api returns {id,label} while some configs pass {value,label}.
+                // Supporting both prevents nested quick-add modals from losing the newly created selection.
+                value: String(
+                    Object.prototype.hasOwnProperty.call(opt, 'value')
+                        ? opt.value
+                        : (Object.prototype.hasOwnProperty.call(opt, 'id') ? opt.id : '')
+                ),
+                label: String(
+                    Object.prototype.hasOwnProperty.call(opt, 'label')
+                        ? opt.label
+                        : (
+                            Object.prototype.hasOwnProperty.call(opt, 'value')
+                                ? opt.value
+                                : (Object.prototype.hasOwnProperty.call(opt, 'id') ? opt.id : '')
+                        )
+                ),
             };
         });
         const optionHtml = normalized.map((opt) => (
