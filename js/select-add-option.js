@@ -51,6 +51,7 @@
             label: String(field.label || field.name || 'Field').trim(),
             type: String(field.type || 'text').trim().toLowerCase(),
             options: Array.isArray(field.options) ? field.options : [],
+            addable: (field && typeof field.addable === 'object' && field.addable !== null) ? field.addable : null,
             required: field.required !== false,
             required_when: (field && typeof field.required_when === 'object' && field.required_when !== null) ? field.required_when : null,
         };
@@ -75,7 +76,7 @@
         return field.required !== false;
     }
 
-    function buildSelectOptionsHtml(options) {
+    function buildSelectOptionsHtml(options, includeAddOption) {
         const normalized = options.map((opt) => {
             if (typeof opt === 'string' || typeof opt === 'number') {
                 return { value: String(opt), label: String(opt) };
@@ -88,7 +89,42 @@
         const optionHtml = normalized.map((opt) => (
             `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`
         )).join('');
-        return `<option value="">-- Select --</option>${optionHtml}`;
+        const addOptionHtml = includeAddOption ? `<option value="${ADD_VALUE}">➕</option>` : '';
+        return `<option value="">-- Select --</option>${optionHtml}${addOptionHtml}`;
+    }
+
+    async function requestAddOption(endpoint, config, userInput) {
+        const payload = new URLSearchParams({
+            table: config.table || '',
+            id_col: config.id_col || 'id',
+            label_col: config.label_col || 'name',
+            company_scoped: String(config.company_scoped || '0'),
+            new_value: userInput.new_value,
+            extra_fields: JSON.stringify(userInput.extra_fields || {}),
+        });
+
+        const csrfToken = window.ITM_CSRF_TOKEN || '';
+        if (!csrfToken) {
+            throw new Error('Missing CSRF token.');
+        }
+
+        payload.append('csrf_token', csrfToken);
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-CSRF-Token': csrfToken,
+            },
+            body: payload.toString(),
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+            throw new Error(result.error || 'Unable to add new option.');
+        }
+
+        return result;
     }
 
     function ensureModalStyles() {
@@ -200,7 +236,7 @@
                 let input;
                 if (field.type === 'select') {
                     input = document.createElement('select');
-                    input.innerHTML = buildSelectOptionsHtml(field.options);
+                    input.innerHTML = buildSelectOptionsHtml(field.options, !!field.addable);
                 } else {
                     input = document.createElement('input');
                     if (field.type === 'number') {
@@ -221,6 +257,58 @@
                 group.appendChild(input);
                 form.appendChild(group);
                 renderedFields.push({ field, group, label, input });
+            });
+
+            renderedFields.forEach(({ field, input }) => {
+                if (field.type !== 'select' || !field.addable) {
+                    return;
+                }
+
+                input.addEventListener('change', async function () {
+                    if (input.value !== ADD_VALUE) {
+                        return;
+                    }
+
+                    const addableConfig = {
+                        table: String(field.addable.table || ''),
+                        id_col: String(field.addable.id_col || 'id'),
+                        label_col: String(field.addable.label_col || 'name'),
+                        company_scoped: String(field.addable.company_scoped || '0'),
+                    };
+
+                    if (!addableConfig.table) {
+                        input.value = '';
+                        return;
+                    }
+
+                    const nestedFields = Array.isArray(field.addable.extra_fields) ? field.addable.extra_fields : [];
+                    const nestedInput = await openAddModal(selectEl, nestedFields);
+                    if (!nestedInput) {
+                        input.value = '';
+                        refreshConditionalFields();
+                        return;
+                    }
+
+                    try {
+                        const result = await requestAddOption(endpointFor(selectEl), addableConfig, {
+                            new_value: nestedInput.new_value,
+                            extra_fields: Object.keys(nestedInput)
+                                .filter((key) => key !== 'new_value')
+                                .reduce((acc, key) => {
+                                    acc[key] = nestedInput[key];
+                                    return acc;
+                                }, {}),
+                        });
+
+                        input.innerHTML = buildSelectOptionsHtml(result.options || [], true);
+                        input.value = String(result.selected_id);
+                    } catch (error) {
+                        window.alert(error.message || 'Could not add the value right now.');
+                        input.value = '';
+                    }
+
+                    refreshConditionalFields();
+                });
             });
 
             function refreshConditionalFields() {
@@ -310,36 +398,13 @@
 
         selectEl.disabled = true;
 
-        const payload = new URLSearchParams({
-            table: selectEl.getAttribute('data-add-table') || '',
-            id_col: selectEl.getAttribute('data-add-id-col') || 'id',
-            label_col: selectEl.getAttribute('data-add-label-col') || 'name',
-            company_scoped: selectEl.getAttribute('data-add-company-scoped') || '0',
-            new_value: userInput.new_value,
-            extra_fields: JSON.stringify(userInput.extra_fields || {}),
-        });
-
         try {
-            const csrfToken = window.ITM_CSRF_TOKEN || '';
-            if (!csrfToken) {
-                throw new Error('Missing CSRF token.');
-            }
-
-            payload.append('csrf_token', csrfToken);
-
-            const response = await fetch(endpointFor(selectEl), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'X-CSRF-Token': csrfToken,
-                },
-                body: payload.toString(),
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.ok) {
-                throw new Error(result.error || 'Unable to add new option.');
-            }
+            const result = await requestAddOption(endpointFor(selectEl), {
+                table: selectEl.getAttribute('data-add-table') || '',
+                id_col: selectEl.getAttribute('data-add-id-col') || 'id',
+                label_col: selectEl.getAttribute('data-add-label-col') || 'name',
+                company_scoped: selectEl.getAttribute('data-add-company-scoped') || '0',
+            }, userInput);
 
             const blankOption = Array.from(selectEl.options).find((opt) => opt.value === '');
             const blankHtml = blankOption ? `<option value="">${escapeHtml(blankOption.textContent)}</option>` : '';

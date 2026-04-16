@@ -118,6 +118,34 @@ if ($company_id > 0) {
     }
 }
 
+$locationTypes = [];
+if ($company_id > 0) {
+    $stmtLocationTypes = mysqli_prepare($conn, "SELECT id, name FROM location_types WHERE company_id=? ORDER BY name");
+    if ($stmtLocationTypes) {
+        mysqli_stmt_bind_param($stmtLocationTypes, 'i', $company_id);
+        mysqli_stmt_execute($stmtLocationTypes);
+        $resLocationTypes = mysqli_stmt_get_result($stmtLocationTypes);
+        while ($resLocationTypes && ($row = mysqli_fetch_assoc($resLocationTypes))) {
+            $locationTypes[] = $row;
+        }
+        mysqli_stmt_close($stmtLocationTypes);
+    }
+}
+
+$rackStatuses = [];
+if ($company_id > 0) {
+    $stmtRackStatuses = mysqli_prepare($conn, "SELECT id, name FROM rack_statuses WHERE company_id=? ORDER BY name");
+    if ($stmtRackStatuses) {
+        mysqli_stmt_bind_param($stmtRackStatuses, 'i', $company_id);
+        mysqli_stmt_execute($stmtRackStatuses);
+        $resRackStatuses = mysqli_stmt_get_result($stmtRackStatuses);
+        while ($resRackStatuses && ($row = mysqli_fetch_assoc($resRackStatuses))) {
+            $rackStatuses[] = $row;
+        }
+        mysqli_stmt_close($stmtRackStatuses);
+    }
+}
+
 $idfs = [];
 if ($company_id > 0) {
     $stmtIdfs = mysqli_prepare(
@@ -141,6 +169,75 @@ if ($company_id > 0) {
 }
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
+$locationTypeOptions = array_map(static function ($type) {
+    return [
+        'value' => (string)((int)($type['id'] ?? 0)),
+        'label' => (string)($type['name'] ?? ''),
+    ];
+}, $locationTypes);
+
+$locationFieldConfig = [
+    [
+        'name' => 'type_id',
+        'label' => 'Location Type',
+        'type' => 'select',
+        'options' => $locationTypeOptions,
+        'addable' => [
+            'table' => 'location_types',
+            'id_col' => 'id',
+            'label_col' => 'name',
+            'company_scoped' => '1',
+        ],
+    ],
+];
+
+$locationExtraFieldsJson = htmlspecialchars(
+    json_encode($locationFieldConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
+
+$rackExtraFieldsJson = htmlspecialchars(
+    json_encode([
+        [
+            'name' => 'location_id',
+            'label' => 'Location',
+            'type' => 'select',
+            'options' => array_map(static function ($location) {
+                return [
+                    'value' => (string)((int)($location['id'] ?? 0)),
+                    'label' => (string)($location['name'] ?? ''),
+                ];
+            }, $locations),
+            'addable' => [
+                'table' => 'it_locations',
+                'id_col' => 'id',
+                'label_col' => 'name',
+                'company_scoped' => '1',
+                'extra_fields' => $locationFieldConfig,
+            ],
+        ],
+        [
+            'name' => 'status_id',
+            'label' => 'Rack Status',
+            'type' => 'select',
+            'options' => array_map(static function ($status) {
+                return [
+                    'value' => (string)((int)($status['id'] ?? 0)),
+                    'label' => (string)($status['name'] ?? ''),
+                ];
+            }, $rackStatuses),
+            'addable' => [
+                'table' => 'rack_statuses',
+                'id_col' => 'id',
+                'label_col' => 'name',
+                'company_scoped' => '1',
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
 ?>
 <!doctype html>
 <html lang="en">
@@ -235,7 +332,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 data-add-id-col="id"
                                 data-add-label-col="name"
                                 data-add-company-scoped="1"
-                                data-add-friendly="rack">
+                                data-add-friendly="rack"
+                                data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>">
                             <option value="">-- Select rack --</option>
                             <?php foreach ($racks as $rack): ?>
                                 <option value="<?php echo (int)$rack['id']; ?>"><?php echo sanitize($rack['name']); ?></option>
@@ -251,7 +349,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 data-add-id-col="id"
                                 data-add-label-col="name"
                                 data-add-company-scoped="1"
-                                data-add-friendly="location">
+                                data-add-friendly="location"
+                                data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>">
                             <option value="">-- Select location --</option>
                             <?php foreach ($locations as $l): ?>
                                 <option value="<?php echo (int)$l['id']; ?>"><?php echo sanitize($l['name']); ?></option>
