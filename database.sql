@@ -778,6 +778,7 @@ CREATE TABLE `it_locations` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_it_locations_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   KEY `type_id` (`type_id`),
   CONSTRAINT `it_locations_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
