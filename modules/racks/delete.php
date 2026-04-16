@@ -126,6 +126,12 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    global $conn;
+
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -265,6 +271,20 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+function cr_collect_audit_rows_for_where($conn, $table, $whereSql) {
+    $rows = [];
+    $sql = 'SELECT id FROM ' . cr_escape_identifier($table) . $whereSql;
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rowId = (int)($row['id'] ?? 0);
+        if ($rowId <= 0) {
+            continue;
+        }
+        $rows[$rowId] = itm_fetch_audit_record($conn, $table, $rowId, (int)($GLOBALS['company_id'] ?? 0));
+    }
+    return $rows;
+}
+
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -308,11 +328,15 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
         }
+        $deleteAuditRows = cr_collect_audit_rows_for_where($conn, $crud_table, $where);
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);
             exit;
+        }
+        foreach ($deleteAuditRows as $deletedId => $oldValues) {
+            itm_log_audit($conn, $crud_table, (int)$deletedId, 'DELETE', $oldValues, null);
         }
         header('Location: ' . $listUrl);
         exit;
@@ -336,9 +360,14 @@ if ($crud_action === 'delete') {
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
+            $deleteAuditRows = cr_collect_audit_rows_for_where($conn, $crud_table, $where);
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            } else {
+                foreach ($deleteAuditRows as $deletedId => $oldValues) {
+                    itm_log_audit($conn, $crud_table, (int)$deletedId, 'DELETE', $oldValues, null);
+                }
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -360,12 +389,14 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
+        $deleteAuditOldValues = itm_fetch_audit_record($conn, $crud_table, $id, $company_id);
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);
             exit;
         }
+        itm_log_audit($conn, $crud_table, $id, 'DELETE', $deleteAuditOldValues, null);
     }
     header('Location: ' . $listUrl);
     exit;
