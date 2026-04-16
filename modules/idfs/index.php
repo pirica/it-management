@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $location_id = (int)($_POST['location_id'] ?? 0);
     $rack_id = (int)($_POST['rack_id'] ?? 0);
     $notes = trim((string)($_POST['notes'] ?? ''));
+    $active = isset($_POST['active']) ? 1 : 0;
 
     if ($name === '' || $location_id <= 0 || $rack_id <= 0 || $company_id <= 0) {
         $_SESSION['crud_error'] = 'Please provide IDF name, location, and rack.';
@@ -27,9 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $idf_code_val = $idf_code !== '' ? $idf_code : null;
     $notes_val = $notes !== '' ? $notes : null;
 
-    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes, active) VALUES (?, ?, ?, ?, ?, ?, ?)");
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'iiisss', $company_id, $location_id, $rack_id, $name, $idf_code_val, $notes_val);
+        mysqli_stmt_bind_param($stmt, 'iiisssi', $company_id, $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active);
         if (!mysqli_stmt_execute($stmt)) {
             $_SESSION['crud_error'] = 'DB error creating IDF: ' . mysqli_stmt_error($stmt);
             mysqli_stmt_close($stmt);
@@ -227,6 +228,22 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <input class="input" name="idf_code" placeholder="e.g. IDF-01">
                     </div>
                     <div>
+                        <label class="label">Rack</label>
+                        <select class="input" name="rack_id" required
+                                data-addable-select="1"
+                                data-add-table="racks"
+                                data-add-id-col="id"
+                                data-add-label-col="name"
+                                data-add-company-scoped="1"
+                                data-add-friendly="rack">
+                            <option value="">-- Select rack --</option>
+                            <?php foreach ($racks as $rack): ?>
+                                <option value="<?php echo (int)$rack['id']; ?>"><?php echo sanitize($rack['name']); ?></option>
+                            <?php endforeach; ?>
+                            <option value="__add_new__">➕</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="label">Location</label>
                         <select class="input" name="location_id" required
                                 data-addable-select="1"
@@ -247,20 +264,11 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <input class="input" name="notes" placeholder="Optional notes">
                     </div>
                     <div>
-                        <label class="label">Rack</label>
-                        <select class="input" name="rack_id" required
-                                data-addable-select="1"
-                                data-add-table="racks"
-                                data-add-id-col="id"
-                                data-add-label-col="name"
-                                data-add-company-scoped="1"
-                                data-add-friendly="rack">
-                            <option value="">-- Select rack --</option>
-                            <?php foreach ($racks as $rack): ?>
-                                <option value="<?php echo (int)$rack['id']; ?>"><?php echo sanitize($rack['name']); ?></option>
-                            <?php endforeach; ?>
-                            <option value="__add_new__">➕</option>
-                        </select>
+                        <label class="label">Active</label>
+                        <label style="display:flex; align-items:center; gap:8px; min-height:40px;">
+                            <input type="checkbox" name="active" value="1" checked>
+                            <span>Active</span>
+                        </label>
                     </div>
                     <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
                         <button class="btn btn-primary" type="submit">Create IDF</button>
@@ -273,12 +281,12 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <table class="table idf-list-table">
                     <thead>
                         <tr>
-                            <th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Rack</th><th>Actions</th>
+                            <th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Rack</th><th>Active</th><th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (!$idfs): ?>
-                            <tr><td colspan="6" style="opacity:.8;">No IDFs yet.</td></tr>
+                            <tr><td colspan="7" style="opacity:.8;">No IDFs yet.</td></tr>
                         <?php endif; ?>
                         <?php foreach ($idfs as $idf): ?>
                             <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
@@ -287,6 +295,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
                                 <td><?php echo sanitize($idf['location_name']); ?></td>
                                 <td><?php echo sanitize((string)($idf['rack_name'] ?? '')); ?></td>
+                                <td>
+                                    <input type="checkbox" <?php echo ((int)($idf['active'] ?? 1) === 1) ? 'checked' : ''; ?> disabled>
+                                </td>
                                 <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>">Open</a>
                                     <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
