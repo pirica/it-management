@@ -83,6 +83,42 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+function cr_fk_extra_fields_json($conn, $fk, $company_id) {
+    $refTable = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
+    if ($refTable !== 'it_locations') {
+        return '';
+    }
+
+    $options = [];
+    $sql = 'SELECT `id`, `name` FROM `location_types`';
+    if ((int)$company_id > 0) {
+        $sql .= ' WHERE company_id=' . (int)$company_id;
+    }
+    $sql .= ' ORDER BY `name`';
+
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $options[] = [
+            'value' => (string)(int)($row['id'] ?? 0),
+            'label' => (string)($row['name'] ?? ''),
+        ];
+    }
+
+    if (empty($options)) {
+        return '';
+    }
+
+    return json_encode([
+        [
+            'name' => 'type_id',
+            'label' => 'Type',
+            'type' => 'select',
+            'options' => $options,
+            'required' => true,
+        ],
+    ]);
+}
+
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
         return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
@@ -195,15 +231,6 @@ function cr_get_csrf_token() {
     return (string)$_SESSION['csrf_token'];
 }
 
-function cr_require_valid_csrf_token() {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
-}
 
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
@@ -317,7 +344,7 @@ if ($crud_action === 'delete') {
         exit;
     }
 
-    cr_require_valid_csrf_token();
+    itm_require_post_csrf();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
     $dbErrorCode = 0;
@@ -427,7 +454,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
-    cr_require_valid_csrf_token();
+    itm_require_post_csrf();
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
@@ -658,6 +685,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $fkExtraFieldsJson = cr_fk_extra_fields_json($conn, $fkMap[$name], (int)$company_id);
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -667,6 +695,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+                                    <?php if ($fkExtraFieldsJson !== ''): ?>data-add-extra-fields="<?php echo sanitize($fkExtraFieldsJson); ?>"<?php endif; ?>
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
