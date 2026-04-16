@@ -156,7 +156,33 @@ function cr_is_hidden_employee_field($field) {
 /**
  * Custom renderer for cell values in the UI.
  */
-function cr_render_cell_value($table, $field, $value) {
+function cr_it_location_type_name($conn, $companyId, $typeId) {
+    static $typeCache = [];
+
+    $companyKey = (int)$companyId;
+    if (!isset($typeCache[$companyKey])) {
+        $typeCache[$companyKey] = [];
+        $where = '';
+        if ($companyKey > 0) {
+            $where = ' WHERE company_id=' . $companyKey;
+        }
+
+        $sql = 'SELECT id, name FROM `location_types`' . $where . ' ORDER BY name';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $typeCache[$companyKey][(int)$row['id']] = (string)$row['name'];
+        }
+    }
+
+    $typeKey = (int)$typeId;
+    if (isset($typeCache[$companyKey][$typeKey])) {
+        return $typeCache[$companyKey][$typeKey];
+    }
+
+    return (string)$typeId;
+}
+
+function cr_render_cell_value($table, $field, $value, $conn = null, $companyId = 0) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -167,6 +193,10 @@ function cr_render_cell_value($table, $field, $value) {
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
+    }
+
+    if ($table === 'it_locations' && $field === 'type_id' && $conn) {
+        return sanitize(cr_it_location_type_name($conn, (int)$companyId, (int)$value));
     }
 
     $text = (string)($value ?? '');
@@ -691,7 +721,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
+                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? '', $conn, (int)$company_id); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
@@ -803,7 +833,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? '', $conn, (int)$company_id); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

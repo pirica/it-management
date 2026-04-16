@@ -130,12 +130,42 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
-function cr_render_cell_value($table, $field, $value) {
+function cr_it_location_type_name($conn, $companyId, $typeId) {
+    static $typeCache = [];
+
+    $companyKey = (int)$companyId;
+    if (!isset($typeCache[$companyKey])) {
+        $typeCache[$companyKey] = [];
+        $where = '';
+        if ($companyKey > 0) {
+            $where = ' WHERE company_id=' . $companyKey;
+        }
+
+        $sql = 'SELECT id, name FROM `location_types`' . $where . ' ORDER BY name';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $typeCache[$companyKey][(int)$row['id']] = (string)$row['name'];
+        }
+    }
+
+    $typeKey = (int)$typeId;
+    if (isset($typeCache[$companyKey][$typeKey])) {
+        return $typeCache[$companyKey][$typeKey];
+    }
+
+    return (string)$typeId;
+}
+
+function cr_render_cell_value($table, $field, $value, $conn = null, $companyId = 0) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
+    }
+
+    if ($table === 'it_locations' && $field === 'type_id' && $conn) {
+        return sanitize(cr_it_location_type_name($conn, (int)$companyId, (int)$value));
     }
 
     $text = (string)($value ?? '');
@@ -494,7 +524,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
-                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? '', $conn, (int)$company_id); ?></td>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
@@ -580,7 +610,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? '', $conn, (int)$company_id); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
