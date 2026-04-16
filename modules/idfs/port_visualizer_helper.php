@@ -133,6 +133,30 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
 
                 $titleParts = [];
+                $contextParts = [];
+                $contextCompany = trim((string)($options['company_name'] ?? ''));
+                if ($contextCompany !== '') {
+                    $contextParts[] = $contextCompany;
+                }
+                $contextLocation = trim((string)($options['location_name'] ?? ''));
+                if ($contextLocation !== '') {
+                    $contextParts[] = 'Location: ' . $contextLocation;
+                }
+                $contextIdfName = trim((string)($options['idf_name'] ?? ''));
+                if ($contextIdfName !== '') {
+                    $contextParts[] = 'Name: ' . $contextIdfName;
+                }
+                $contextIdfCode = trim((string)($options['idf_code'] ?? ''));
+                if ($contextIdfCode !== '') {
+                    $contextParts[] = 'IDF Code: ' . $contextIdfCode;
+                }
+                $contextRackName = trim((string)($options['rack_name'] ?? ''));
+                if ($contextRackName !== '') {
+                    $contextParts[] = 'Rack: ' . $contextRackName;
+                }
+                if (!empty($contextParts)) {
+                    $titleParts[] = implode(' • ', $contextParts);
+                }
                 $statusLabel = trim((string)($p['status_label'] ?? 'Unknown'));
                 $statusSummary = 'Status (' . $statusLabel . ')';
 
