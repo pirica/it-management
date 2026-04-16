@@ -580,10 +580,10 @@ CREATE TABLE `equipment_types` (
 -- Data for `equipment_types`
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', '🔀', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '2', 'Server', 'SRV', '🖥️', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '3', 'Router', 'RTR', '🛜', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '3', 'Router', 'RTR', '✳️', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '4', 'Firewall', 'FW', '🔥', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', '➰', '1');
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '6', 'Access Point', 'AP', '📶', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', '➿', '1');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '6', 'Access Point', 'AP', '🛜', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '7', 'Workstation', 'WS', '💻', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '8', 'POS', 'POS', '🏧', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '9', 'Printer', 'PRN', '🖨️', '1');
