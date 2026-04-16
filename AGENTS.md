@@ -112,10 +112,13 @@ Every module (excluding the Protection Zone) must implement:
 * **Hide** `company_id` from all UI views.
 * **Buttons:** `btn-primary` for main actions; `btn-sm` for table actions.
 * **Tables:** Use `.itm-actions-cell` and `.itm-actions-wrap` for action columns.
+* **Active field use badges for status (index.php/view.php).
 * **Booleans (List View):** Use badges for status: 
     * `<span class="badge badge-success">Active</span>`
     * `<span class="badge badge-danger">Inactive</span>`
-* **Booleans (View Mode):** Use icons: `1` = ✅, `0` = ❌.
+* **Booleans (Edit Mode):** Use icons: `1` = ✅, `0` = ❌.
+
+
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
 * **Color Fields:** Use color picker UI: `<input type="color" name="hex_color" id="cable-hex-color-picker" value="#008000">`.
 * **Date Fields:** Show date picker UI.
