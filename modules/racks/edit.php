@@ -126,6 +126,12 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    global $conn;
+
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -139,6 +145,43 @@ function cr_render_cell_value($table, $field, $value) {
         $mailto = 'mailto:' . $text;
         $outlook = 'ms-outlook://compose?to=' . $text;
         return '<a href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
+    }
+
+    if ($text !== '' && isset($GLOBALS['fkMap'][$field])) {
+        $fk = $GLOBALS['fkMap'][$field];
+        $companyScope = (int)($GLOBALS['company_id'] ?? 0);
+        $cacheKey = $fk['REFERENCED_TABLE_NAME'] . '|' . $fk['REFERENCED_COLUMN_NAME'] . '|' . $text . '|' . $companyScope;
+
+        if (!isset($GLOBALS['cr_fk_label_cache']) || !is_array($GLOBALS['cr_fk_label_cache'])) {
+            $GLOBALS['cr_fk_label_cache'] = [];
+        }
+
+        if (array_key_exists($cacheKey, $GLOBALS['cr_fk_label_cache'])) {
+            $cachedLabel = (string)$GLOBALS['cr_fk_label_cache'][$cacheKey];
+            if ($cachedLabel !== '') {
+                return sanitize($cachedLabel);
+            }
+        } else {
+            $fkMeta = cr_fk_metadata($conn, $fk['REFERENCED_TABLE_NAME']);
+            $labelCol = $fkMeta['label_col'];
+            $available = $fkMeta['available'];
+
+            $lookupSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($fk['REFERENCED_TABLE_NAME'])
+                . ' WHERE ' . cr_escape_identifier($fk['REFERENCED_COLUMN_NAME']) . '=' . (int)$text;
+            if (in_array('company_id', $available, true) && $companyScope > 0) {
+                $lookupSql .= ' AND company_id=' . $companyScope;
+            }
+            $lookupSql .= ' LIMIT 1';
+
+            $lookupRes = mysqli_query($conn, $lookupSql);
+            $lookupRow = ($lookupRes && ($tmpRow = mysqli_fetch_assoc($lookupRes))) ? $tmpRow : null;
+            $resolvedLabel = (string)($lookupRow['label'] ?? '');
+            $GLOBALS['cr_fk_label_cache'][$cacheKey] = $resolvedLabel;
+
+            if ($resolvedLabel !== '') {
+                return sanitize($resolvedLabel);
+            }
+        }
     }
 
     return sanitize($text);
@@ -391,6 +434,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        $auditRecordId = 0;
+        $auditAction = $crud_action === 'create' ? 'INSERT' : 'UPDATE';
+        $auditOldValues = null;
+        if ($crud_action === 'edit' && $editId > 0) {
+            $auditRecordId = $editId;
+            $auditOldValues = itm_fetch_audit_record($conn, $crud_table, $editId, $company_id);
+        }
+
         if ($crud_action === 'create') {
             $fields = [];
             $values = [];
@@ -416,6 +467,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            if ($crud_action === 'create') {
+                $auditRecordId = (int)mysqli_insert_id($conn);
+            }
+            if ($auditRecordId > 0) {
+                $auditNewValues = itm_fetch_audit_record($conn, $crud_table, $auditRecordId, $company_id);
+                itm_log_audit($conn, $crud_table, $auditRecordId, $auditAction, $auditOldValues, $auditNewValues);
+            }
             header('Location: ' . $listUrl);
             exit;
         }
@@ -482,7 +540,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -491,7 +549,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
-                                <td>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                    <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
@@ -499,6 +558,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
