@@ -1571,6 +1571,14 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeCableColorSelect(cableColorSelect);
     });
 
+    // Why: Once the deep-link modal is consumed, removing query flags prevents a stale auto-open after save/reload.
+    if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0) {
+        const deepLinkUrl = new URL(window.location.href);
+        deepLinkUrl.searchParams.delete('open_link_port_id');
+        deepLinkUrl.searchParams.delete('open_edit_port_id');
+        window.history.replaceState({}, document.title, deepLinkUrl.toString());
+    }
+
     // Why: IDF rack clicks route to this page with an explicit action so users land directly in the expected modal.
     if (AUTO_OPEN_LINK_PORT_ID > 0) {
         openLinkModal(AUTO_OPEN_LINK_PORT_ID);

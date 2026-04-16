@@ -6,7 +6,12 @@ idf_require_csrf($data);
 
 $portA = (int)($data['port_id_a'] ?? 0);
 $portB = (int)($data['port_id_b'] ?? 0);
-$equipmentId = isset($data['equipment_id']) && $data['equipment_id'] !== null ? (int)$data['equipment_id'] : 0;
+$equipmentIdRaw = trim((string)($data['equipment_id'] ?? ''));
+$equipmentId = ctype_digit($equipmentIdRaw) ? (int)$equipmentIdRaw : 0;
+$equipmentToken = null;
+if ($equipmentIdRaw !== '' && $equipmentId === 0 && preg_match('/^[0-9]{4}-[0-9]{4}$/', $equipmentIdRaw)) {
+    $equipmentToken = $equipmentIdRaw;
+}
 $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== null ? (int)$data['switch_port_id'] : 0;
 $cableColorId = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 $label = trim((string)($data['cable_label'] ?? ''));
@@ -58,7 +63,7 @@ if ($stmt) {
         $positionNoSeen[(int)$r['port_id']] = (int)$r['position_no'];
         $portNoSeen[(int)$r['port_id']] = (int)$r['port_no'];
         $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
-        $positionEquipmentSeen[(int)$r['port_id']] = isset($r['position_equipment_id']) ? (int)$r['position_equipment_id'] : 0;
+        $positionEquipmentSeen[(int)$r['port_id']] = trim((string)($r['position_equipment_id'] ?? ''));
     }
     mysqli_stmt_close($stmt);
 }
@@ -75,7 +80,10 @@ if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
 }
 
 $positionEquipmentSerialSeen = [];
-$positionEquipmentIds = array_values(array_unique(array_filter(array_map('intval', $positionEquipmentSeen), static function ($id) {
+$positionEquipmentIds = array_values(array_unique(array_filter(array_map(static function ($id): int {
+    $idString = trim((string)$id);
+    return ctype_digit($idString) ? (int)$idString : 0;
+}, $positionEquipmentSeen), static function ($id) {
     return $id > 0;
 })));
 if ($positionEquipmentIds) {
@@ -118,7 +126,7 @@ if ($stmtUsed) {
 
 $label_val = $label !== '' ? $label : null;
 $notes_val = $notes !== '' ? $notes : null;
-$equipmentId_val = $equipmentId > 0 ? (string)$equipmentId : null;
+$equipmentId_val = $equipmentId > 0 ? (string)$equipmentId : $equipmentToken;
 $equipmentHostname_val = null;
 $equipmentPortType_val = null;
 $equipmentPort_val = null;
@@ -326,7 +334,8 @@ if (
     && ($equipmentHostname_val === null || trim((string)$equipmentHostname_val) === '')
     && isset($positionEquipmentSeen[$portB])
 ) {
-    $destinationEquipmentId = (int)($positionEquipmentSeen[$portB] ?? 0);
+    $destinationEquipmentIdRaw = trim((string)($positionEquipmentSeen[$portB] ?? ''));
+    $destinationEquipmentId = ctype_digit($destinationEquipmentIdRaw) ? (int)$destinationEquipmentIdRaw : 0;
     $destinationPortNo = (int)($portNoSeen[$portB] ?? 0);
     if ($destinationEquipmentId > 0 && $destinationPortNo > 0) {
         $stmtDestinationSwitch = mysqli_prepare(
@@ -392,7 +401,7 @@ if ($stmtFinal) {
         $portIdB = (int)$pair[1];
         $equipmentIdInsert = $equipmentId_val;
         if ($equipmentIdInsert === null || $equipmentIdInsert === '') {
-            $equipmentIdInsert = (string)($positionEquipmentSeen[$portIdB] ?? '');
+            $equipmentIdInsert = trim((string)($positionEquipmentSeen[$portIdB] ?? ''));
         }
         if ($equipmentIdInsert === '') {
             $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
@@ -417,8 +426,12 @@ if (
 ) {
     $connectedDeviceB = trim((string)$deviceSeen[$portB]);
     $connectedDeviceA = trim((string)$deviceSeen[$portA]);
-    $positionEquipmentB = (int)($positionEquipmentSeen[$portB] ?? 0);
-    $positionEquipmentA = (int)($positionEquipmentSeen[$portA] ?? 0);
+    $positionEquipmentB = ctype_digit(trim((string)($positionEquipmentSeen[$portB] ?? '')))
+        ? (int)$positionEquipmentSeen[$portB]
+        : 0;
+    $positionEquipmentA = ctype_digit(trim((string)($positionEquipmentSeen[$portA] ?? '')))
+        ? (int)$positionEquipmentSeen[$portA]
+        : 0;
     if ($positionEquipmentB > 0 && isset($positionEquipmentSerialSeen[$positionEquipmentB])) {
         $connectedDeviceB = $positionEquipmentSerialSeen[$positionEquipmentB];
     }
