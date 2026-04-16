@@ -15,10 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $name = trim((string)($_POST['name'] ?? ''));
     $idf_code = trim((string)($_POST['idf_code'] ?? ''));
     $location_id = (int)($_POST['location_id'] ?? 0);
+    $rack_id = (int)($_POST['rack_id'] ?? 0);
     $notes = trim((string)($_POST['notes'] ?? ''));
 
-    if ($name === '' || $location_id <= 0 || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Please provide IDF name and location.';
+    if ($name === '' || $location_id <= 0 || $rack_id <= 0 || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Please provide IDF name, location, and rack.';
         header('Location: index.php');
         exit;
     }
@@ -26,9 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $idf_code_val = $idf_code !== '' ? $idf_code : null;
     $notes_val = $notes !== '' ? $notes : null;
 
-    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, name, idf_code, notes) VALUES (?, ?, ?, ?, ?)");
+    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes) VALUES (?, ?, ?, ?, ?, ?)");
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $location_id, $name, $idf_code_val, $notes_val);
+        mysqli_stmt_bind_param($stmt, 'iiisss', $company_id, $location_id, $rack_id, $name, $idf_code_val, $notes_val);
         if (!mysqli_stmt_execute($stmt)) {
             $_SESSION['crud_error'] = 'DB error creating IDF: ' . mysqli_stmt_error($stmt);
             mysqli_stmt_close($stmt);
@@ -102,13 +103,28 @@ if ($company_id > 0) {
     }
 }
 
+$racks = [];
+if ($company_id > 0) {
+    $stmtRack = mysqli_prepare($conn, "SELECT id, name FROM racks WHERE company_id=? ORDER BY name");
+    if ($stmtRack) {
+        mysqli_stmt_bind_param($stmtRack, 'i', $company_id);
+        mysqli_stmt_execute($stmtRack);
+        $resRack = mysqli_stmt_get_result($stmtRack);
+        while ($resRack && ($row = mysqli_fetch_assoc($resRack))) {
+            $racks[] = $row;
+        }
+        mysqli_stmt_close($stmtRack);
+    }
+}
+
 $idfs = [];
 if ($company_id > 0) {
     $stmtIdfs = mysqli_prepare(
         $conn,
-        "SELECT i.*, l.name AS location_name
+        "SELECT i.*, l.name AS location_name, r.name AS rack_name
          FROM idfs i
          JOIN it_locations l ON l.id=i.location_id
+         LEFT JOIN racks r ON r.id=i.rack_id
          WHERE i.company_id=?
          ORDER BY i.created_at DESC, i.id DESC"
     );
@@ -230,6 +246,22 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <label class="label">Notes</label>
                         <input class="input" name="notes" placeholder="Optional notes">
                     </div>
+                    <div>
+                        <label class="label">Rack</label>
+                        <select class="input" name="rack_id" required
+                                data-addable-select="1"
+                                data-add-table="racks"
+                                data-add-id-col="id"
+                                data-add-label-col="name"
+                                data-add-company-scoped="1"
+                                data-add-friendly="rack">
+                            <option value="">-- Select rack --</option>
+                            <?php foreach ($racks as $rack): ?>
+                                <option value="<?php echo (int)$rack['id']; ?>"><?php echo sanitize($rack['name']); ?></option>
+                            <?php endforeach; ?>
+                            <option value="__add_new__">➕</option>
+                        </select>
+                    </div>
                     <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
                         <button class="btn btn-primary" type="submit">Create IDF</button>
                     </div>
@@ -241,7 +273,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <table class="table idf-list-table">
                     <thead>
                         <tr>
-                            <th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Created</th><th>Actions</th>
+                            <th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Rack</th><th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -254,7 +286,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td><?php echo sanitize($idf['name']); ?></td>
                                 <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
                                 <td><?php echo sanitize($idf['location_name']); ?></td>
-                                <td><?php echo sanitize((string)$idf['created_at']); ?></td>
+                                <td><?php echo sanitize((string)($idf['rack_name'] ?? '')); ?></td>
                                 <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>">Open</a>
                                     <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">

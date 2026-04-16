@@ -270,6 +270,7 @@ CREATE TABLE `employees` (
   KEY `user_id` (`user_id`),
   KEY `department_id` (`department_id`),
   KEY `location_id` (`location_id`),
+  KEY `rack_id` (`rack_id`),
   KEY `company_id` (`company_id`),
   KEY `idx_employees_external_id` (`external_id`),
   KEY `idx_employees_username` (`username`),
@@ -334,6 +335,7 @@ CREATE TABLE `equipment` (
   KEY `equipment_type_id` (`equipment_type_id`),
   KEY `manufacturer_id` (`manufacturer_id`),
   KEY `location_id` (`location_id`),
+  KEY `rack_id` (`rack_id`),
   KEY `rack_id` (`rack_id`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
@@ -684,6 +686,7 @@ CREATE TABLE `idfs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `location_id` int NOT NULL,
+  `rack_id` int DEFAULT NULL,
   `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `idf_code` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -693,11 +696,13 @@ CREATE TABLE `idfs` (
   UNIQUE KEY `idf_code` (`company_id`,`idf_code`),
   KEY `company_id` (`company_id`),
   KEY `location_id` (`location_id`),
+  KEY `rack_id` (`rack_id`),
   CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `idfs_ibfk_rack` FOREIGN KEY (`rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `idfs`
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) VALUES ('1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '2026-03-31 00:25:58');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `created_at`) VALUES ('1', '1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '2026-03-31 00:25:58');
 
 -- Table structure for `inventory_categories`
 DROP TABLE IF EXISTS `inventory_categories`;
@@ -744,6 +749,7 @@ CREATE TABLE `inventory_items` (
   KEY `category_id` (`category_id`),
   KEY `manufacturer_id` (`manufacturer_id`),
   KEY `location_id` (`location_id`),
+  KEY `rack_id` (`rack_id`),
   KEY `supplier_id` (`supplier_id`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `inventory_items_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -1075,6 +1081,7 @@ CREATE TABLE `racks` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `rack_code` (`company_id`,`rack_code`),
   KEY `location_id` (`location_id`),
+  KEY `rack_id` (`rack_id`),
   KEY `company_id` (`company_id`),
   KEY `status_id` (`status_id`),
   CONSTRAINT `racks_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
