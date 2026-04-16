@@ -23,7 +23,7 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 * `includes/`: UI components (headers, sidebars) and utility functions.
 * `modules/`: Feature-specific CRUD logic.
 * `scripts/`: Maintenance, security audits, and CLI tools.
-* `js/` & `css/`: Assets (Note: `css/style.css` is **deprecated**; use `css/styles.css`).
+* `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, and `backups/` must exist with write permissions.
 
 ---
@@ -35,7 +35,7 @@ Each module must maintain a flat structure with these specific files:
 `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
 
 > [!IMPORTANT]
-> **No Master Templates:** Do not attempt to abstract CRUD into a single master template. Each module must remain independent.
+> **Do not create Master Templates:** Do not attempt to abstract CRUD into a single master template. Each module must remain independent.
 
 ### 2. Database & Schema Rules
 * **Schema Updates:** If a field/table is deleted or a header renamed, update `database.sql`.
