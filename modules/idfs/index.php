@@ -100,6 +100,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
+    itm_require_post_csrf();
+
+    $idf_id = (int)($_POST['idf_id'] ?? 0);
+    $name = trim((string)($_POST['name'] ?? ''));
+    $idf_code = trim((string)($_POST['idf_code'] ?? ''));
+    $location_id = (int)($_POST['location_id'] ?? 0);
+    $rack_id = (int)($_POST['rack_id'] ?? 0);
+    $notes = trim((string)($_POST['notes'] ?? ''));
+    $active = isset($_POST['active']) ? 1 : 0;
+
+    if ($idf_id <= 0 || $name === '' || $location_id <= 0 || $rack_id <= 0 || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Please provide valid IDF values before saving.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $idf_code_val = $idf_code !== '' ? $idf_code : null;
+    $notes_val = $notes !== '' ? $notes : null;
+
+    $updateStmt = mysqli_prepare(
+        $conn,
+        "UPDATE idfs SET location_id=?, rack_id=?, name=?, idf_code=?, notes=?, active=? WHERE id=? AND company_id=? LIMIT 1"
+    );
+    if ($updateStmt) {
+        mysqli_stmt_bind_param($updateStmt, 'iisssiii', $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active, $idf_id, $company_id);
+        if (!mysqli_stmt_execute($updateStmt)) {
+            $_SESSION['crud_error'] = 'DB error updating IDF: ' . mysqli_stmt_error($updateStmt);
+            mysqli_stmt_close($updateStmt);
+            header('Location: index.php?edit_idf=' . $idf_id);
+            exit;
+        }
+        if (mysqli_stmt_affected_rows($updateStmt) < 0) {
+            $_SESSION['crud_error'] = 'Unable to update the selected IDF.';
+            mysqli_stmt_close($updateStmt);
+            header('Location: index.php?edit_idf=' . $idf_id);
+            exit;
+        }
+        mysqli_stmt_close($updateStmt);
+    } else {
+        $_SESSION['crud_error'] = 'DB error preparing update statement: ' . mysqli_error($conn);
+        header('Location: index.php?edit_idf=' . $idf_id);
+        exit;
+    }
+
+    $_SESSION['crud_success'] = 'IDF updated successfully.';
+    header('Location: index.php?edit_idf=' . $idf_id);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
     itm_require_post_csrf();
 
@@ -140,6 +190,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
     $_SESSION['crud_success'] = 'IDF deleted successfully.';
     header('Location: index.php');
     exit;
+}
+
+$edit_idf = null;
+$edit_idf_id = (int)($_GET['edit_idf'] ?? 0);
+if ($edit_idf_id > 0 && $company_id > 0) {
+    $editStmt = mysqli_prepare($conn, "SELECT * FROM idfs WHERE id=? AND company_id=? LIMIT 1");
+    if ($editStmt) {
+        mysqli_stmt_bind_param($editStmt, 'ii', $edit_idf_id, $company_id);
+        mysqli_stmt_execute($editStmt);
+        $editResult = mysqli_stmt_get_result($editStmt);
+        $edit_idf = $editResult ? mysqli_fetch_assoc($editResult) : null;
+        mysqli_stmt_close($editStmt);
+    }
 }
 
 $locations = [];
@@ -198,19 +261,62 @@ if ($company_id > 0) {
     }
 }
 
+$idfSortMap = [
+    'id' => 'i.id',
+    'name' => 'i.name',
+    'code' => 'i.idf_code',
+    'location' => 'l.name',
+    'rack' => 'r.name',
+    'active' => 'i.active',
+];
+$idf_sort_by = (string)($_GET['sort_by'] ?? 'id');
+$idf_sort_dir = strtolower((string)($_GET['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+if (!isset($idfSortMap[$idf_sort_by])) {
+    $idf_sort_by = 'id';
+}
+$idfOrderSql = $idfSortMap[$idf_sort_by] . ' ' . strtoupper($idf_sort_dir) . ', i.id DESC';
+$idf_search = trim((string)($_GET['q'] ?? ''));
+$idf_search_like = '%' . $idf_search . '%';
+
 $idfs = [];
 if ($company_id > 0) {
+    $idfWhereSearchSql = '';
+    if ($idf_search !== '') {
+        $idfWhereSearchSql = " AND (
+            CAST(i.id AS CHAR) LIKE ?
+            OR i.name LIKE ?
+            OR i.idf_code LIKE ?
+            OR l.name LIKE ?
+            OR r.name LIKE ?
+            OR CASE WHEN i.active=1 THEN 'active' ELSE 'inactive' END LIKE ?
+        )";
+    }
+
     $stmtIdfs = mysqli_prepare(
         $conn,
         "SELECT i.*, l.name AS location_name, r.name AS rack_name
          FROM idfs i
          JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN racks r ON r.id=i.rack_id
-         WHERE i.company_id=?
-         ORDER BY i.created_at DESC, i.id DESC"
+         WHERE i.company_id=? {$idfWhereSearchSql}
+         ORDER BY {$idfOrderSql}"
     );
     if ($stmtIdfs) {
-        mysqli_stmt_bind_param($stmtIdfs, 'i', $company_id);
+        if ($idf_search !== '') {
+            mysqli_stmt_bind_param(
+                $stmtIdfs,
+                'issssss',
+                $company_id,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like
+            );
+        } else {
+            mysqli_stmt_bind_param($stmtIdfs, 'i', $company_id);
+        }
         mysqli_stmt_execute($stmtIdfs);
         $res = mysqli_stmt_get_result($stmtIdfs);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -290,6 +396,27 @@ $rackExtraFieldsJson = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
+
+function itm_idf_sort_url($column, $currentSortBy, $currentSortDir, $searchTerm = '')
+{
+    $nextDir = ($currentSortBy === $column && $currentSortDir === 'asc') ? 'desc' : 'asc';
+    $query = [
+        'sort_by' => $column,
+        'sort_dir' => $nextDir,
+    ];
+    if ($searchTerm !== '') {
+        $query['q'] = $searchTerm;
+    }
+    return 'index.php?' . http_build_query($query);
+}
+
+function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
+{
+    if ($currentSortBy !== $column) {
+        return '';
+    }
+    return $currentSortDir === 'asc' ? ' ▲' : ' ▼';
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -362,6 +489,22 @@ $rackExtraFieldsJson = htmlspecialchars(
                     </div>
                 </section>
 
+                <section class="idf-panel">
+                    <h3>🔎 Search IDFs <span class="idf-badge">Filter current company records</span></h3>
+                    <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                        <div style="min-width:280px; flex:1;">
+                            <label class="label">Search</label>
+                            <input class="input" type="text" name="q" value="<?php echo sanitize($idf_search); ?>" placeholder="Search ID, name, code, location, rack, active...">
+                        </div>
+                        <input type="hidden" name="sort_by" value="<?php echo sanitize($idf_sort_by); ?>">
+                        <input type="hidden" name="sort_dir" value="<?php echo sanitize($idf_sort_dir); ?>">
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" type="submit">Search</button>
+                            <a class="btn" href="index.php">Clear</a>
+                        </div>
+                    </form>
+                </section>
+
                 <div class="idf-layout-grid">
                     <section class="idf-panel">
                         <h3>➕ Create IDF <span class="idf-badge">New closet profile</span></h3>
@@ -426,6 +569,73 @@ $rackExtraFieldsJson = htmlspecialchars(
                         <button class="btn btn-primary" type="submit">Create IDF</button>
                     </div>
                 </form>
+                        <?php if ($edit_idf): ?>
+                            <hr style="margin:16px 0; border:0; border-top:1px solid var(--border);">
+                            <h3>✏️ Edit IDF <span class="idf-badge">Update closet profile</span></h3>
+                            <form method="post" class="idf-grid-2">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
+                                <input type="hidden" name="update_idf" value="1">
+                                <input type="hidden" name="idf_id" value="<?php echo (int)$edit_idf['id']; ?>">
+                                <div>
+                                    <label class="label">Name</label>
+                                    <input class="input" name="name" placeholder="e.g. IDF-01 Main Closet" value="<?php echo sanitize((string)($edit_idf['name'] ?? '')); ?>" required>
+                                </div>
+                                <div>
+                                    <label class="label">IDF Code (optional)</label>
+                                    <input class="input" name="idf_code" placeholder="e.g. IDF-01" value="<?php echo sanitize((string)($edit_idf['idf_code'] ?? '')); ?>">
+                                </div>
+                                <div>
+                                    <label class="label">Rack</label>
+                                    <select class="input" id="edit-idf-rack-select" name="rack_id" required
+                                            data-addable-select="1"
+                                            data-add-table="racks"
+                                            data-add-id-col="id"
+                                            data-add-label-col="name"
+                                            data-add-company-scoped="1"
+                                            data-add-friendly="rack"
+                                            data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>">
+                                        <option value="">-- Select rack --</option>
+                                        <?php foreach ($racks as $rack): ?>
+                                            <option value="<?php echo (int)$rack['id']; ?>" <?php echo ((int)$rack['id'] === (int)($edit_idf['rack_id'] ?? 0)) ? 'selected' : ''; ?>><?php echo sanitize($rack['name']); ?></option>
+                                        <?php endforeach; ?>
+                                        <option value="__add_new__">➕</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label">Location</label>
+                                    <select class="input" id="edit-idf-location-select" name="location_id" required
+                                            data-addable-select="1"
+                                            data-add-table="it_locations"
+                                            data-add-id-col="id"
+                                            data-add-label-col="name"
+                                            data-add-company-scoped="1"
+                                            data-add-friendly="location"
+                                            data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>">
+                                        <option value="">-- Select location --</option>
+                                        <?php foreach ($locations as $l): ?>
+                                            <option value="<?php echo (int)$l['id']; ?>" <?php echo ((int)$l['id'] === (int)($edit_idf['location_id'] ?? 0)) ? 'selected' : ''; ?>><?php echo sanitize($l['name']); ?></option>
+                                        <?php endforeach; ?>
+                                        <option value="__add_new__">➕</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label">Notes</label>
+                                    <input class="input" name="notes" placeholder="Optional notes" value="<?php echo sanitize((string)($edit_idf['notes'] ?? '')); ?>">
+                                </div>
+                                <div>
+                                    <label class="label">Active</label>
+                                    <div class="role-flags-grid">
+                                        <label class="role-flag-option">
+                                            <input type="checkbox" name="active" value="1" <?php echo ((int)($edit_idf['active'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+                                    <a class="btn" href="index.php">Cancel Edit</a>
+                                    <button class="btn btn-primary" type="submit">Update IDF</button>
+                                </div>
+                            </form>
+                        <?php endif; ?>
                     </section>
 
                     <section class="idf-panel">
@@ -433,7 +643,13 @@ $rackExtraFieldsJson = htmlspecialchars(
                         <table class="table idf-list-table">
                     <thead>
                         <tr>
-                            <th>ID</th><th>Name</th><th>Code</th><th>Location</th><th>Rack</th><th>Active</th><th>Actions</th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('id', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">ID<?php echo sanitize(itm_idf_sort_indicator('id', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('name', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Name<?php echo sanitize(itm_idf_sort_indicator('name', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('code', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Code<?php echo sanitize(itm_idf_sort_indicator('code', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('location', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Location<?php echo sanitize(itm_idf_sort_indicator('location', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('rack', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Rack<?php echo sanitize(itm_idf_sort_indicator('rack', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('active', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Active<?php echo sanitize(itm_idf_sort_indicator('active', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -451,12 +667,13 @@ $rackExtraFieldsJson = htmlspecialchars(
                                     <input type="checkbox" <?php echo ((int)($idf['active'] ?? 1) === 1) ? 'checked' : ''; ?> disabled>
                                 </td>
                                 <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>">Open</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>" title="🔎">🔎</a>
+                                    <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>">Edit</a>
                                     <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                                         <input type="hidden" name="delete_idf" value="1">
                                         <input type="hidden" name="idf_id" value="<?php echo (int)$idf['id']; ?>">
-                                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                        <button class="btn btn-sm btn-danger" type="submit" title="🗑️">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
@@ -526,10 +743,24 @@ if (rackSelect) {
     });
 }
 
+var editRackSelect = document.getElementById('edit-idf-rack-select');
+if (editRackSelect) {
+    editRackSelect.addEventListener('mousedown', function () {
+        refreshIdfSelectOptions(editRackSelect, 'rack');
+    });
+}
+
 var locationSelect = document.getElementById('idf-location-select');
 if (locationSelect) {
     locationSelect.addEventListener('mousedown', function () {
         refreshIdfSelectOptions(locationSelect, 'location');
+    });
+}
+
+var editLocationSelect = document.getElementById('edit-idf-location-select');
+if (editLocationSelect) {
+    editLocationSelect.addEventListener('mousedown', function () {
+        refreshIdfSelectOptions(editLocationSelect, 'location');
     });
 }
 
