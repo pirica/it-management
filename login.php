@@ -273,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
         <div class="links">
             <a href="forgot-password.php">Forgot Password?</a> ·
-            <a href="register.php">Register</a>
+            <a href="register.php">Register with Invite</a>
         </div>
     </div>
     <script>
