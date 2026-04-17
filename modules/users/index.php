@@ -125,10 +125,43 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_fk_label_from_id($conn, $table, $id) {
+    $fkId = (int)$id;
+    if ($fkId <= 0) {
+        return '';
+    }
+
+    static $labelCache = [];
+    $cacheKey = $table . ':' . $fkId;
+    if (array_key_exists($cacheKey, $labelCache)) {
+        return (string)$labelCache[$cacheKey];
+    }
+
+    $sql = 'SELECT `name` FROM ' . cr_escape_identifier($table) . ' WHERE `id`=' . $fkId . ' LIMIT 1';
+    $result = mysqli_query($conn, $sql);
+    $label = '';
+    if ($result && ($row = mysqli_fetch_assoc($result))) {
+        $label = (string)($row['name'] ?? '');
+    }
+
+    $labelCache[$cacheKey] = $label;
+    return $label;
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if ($table === 'users' && $field === 'role_id') {
+        $roleName = cr_fk_label_from_id($GLOBALS['conn'], 'user_roles', $value);
+        return sanitize($roleName !== '' ? $roleName : (string)$value);
+    }
+
+    if ($table === 'users' && $field === 'access_level_id') {
+        $accessLevelName = cr_fk_label_from_id($GLOBALS['conn'], 'access_levels', $value);
+        return sanitize($accessLevelName !== '' ? $accessLevelName : (string)$value);
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -253,6 +286,23 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
 
+$currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$currentUserIsAdmin = false;
+if ($currentUserId > 0) {
+    $adminCheckSql = 'SELECT 1
+        FROM `users` u
+        LEFT JOIN `user_roles` ur ON ur.id = u.role_id
+        WHERE u.id=' . $currentUserId . '
+          AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(COALESCE(u.username, "")) = "admin")
+        LIMIT 1';
+    $adminCheckResult = mysqli_query($conn, $adminCheckSql);
+    $currentUserIsAdmin = $adminCheckResult && mysqli_num_rows($adminCheckResult) > 0;
+}
+
+$applyCompanyScope = $hasCompany && $company_id > 0 && !$currentUserIsAdmin;
+$hideAdminAccounts = !$currentUserIsAdmin;
+$hideAdminAccountsSql = "LOWER(COALESCE(`username`, '')) <> 'admin' AND COALESCE((SELECT LOWER(COALESCE(urv.name, '')) FROM `user_roles` urv WHERE urv.id = `users`.`role_id` LIMIT 1), '') <> 'admin'";
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
@@ -273,8 +323,11 @@ if ($crud_action === 'delete') {
 
     if ($bulkAction === 'clear_table') {
         $where = '';
-        if ($hasCompany && $company_id > 0) {
+        if ($applyCompanyScope) {
             $where = ' WHERE company_id=' . (int)$company_id;
+        }
+        if ($hideAdminAccounts) {
+            $where .= ($where === '' ? ' WHERE ' : ' AND ') . $hideAdminAccountsSql;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -299,8 +352,11 @@ if ($crud_action === 'delete') {
 
         if (!empty($idList)) {
             $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
+            if ($applyCompanyScope) {
                 $where .= ' AND company_id=' . (int)$company_id;
+            }
+            if ($hideAdminAccounts) {
+                $where .= ' AND ' . $hideAdminAccountsSql;
             }
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -316,8 +372,11 @@ if ($crud_action === 'delete') {
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) {
+        if ($applyCompanyScope) {
             $where .= ' AND company_id=' . (int)$company_id;
+        }
+        if ($hideAdminAccounts) {
+            $where .= ' AND ' . $hideAdminAccountsSql;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -342,8 +401,11 @@ $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
-    if ($hasCompany && $company_id > 0) {
+    if ($applyCompanyScope) {
         $where .= ' AND company_id=' . (int)$company_id;
+    }
+    if ($hideAdminAccounts) {
+        $where .= ' AND ' . $hideAdminAccountsSql;
     }
     $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
@@ -489,8 +551,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $sets[] = cr_escape_identifier($name) . '=' . $data[$name];
             }
             $where = ' WHERE id=' . $editId;
-            if ($hasCompany && $company_id > 0) {
+            if ($applyCompanyScope) {
                 $where .= ' AND company_id=' . (int)$company_id;
+            }
+            if ($hideAdminAccounts) {
+                $where .= ' AND ' . $hideAdminAccountsSql;
             }
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
@@ -506,8 +571,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 $where = '';
-if ($hasCompany && $company_id > 0) {
+if ($applyCompanyScope) {
     $where = ' WHERE company_id=' . (int)$company_id;
+}
+if ($hideAdminAccounts) {
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . $hideAdminAccountsSql;
 }
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
