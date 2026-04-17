@@ -264,11 +264,10 @@ $stmtDestinationPorts = mysqli_prepare(
      JOIN idf_positions p ON p.id = pr.position_id
      JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
      WHERE i.company_id = ?
-       AND p.id <> ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
 if ($stmtDestinationPorts) {
-    mysqli_stmt_bind_param($stmtDestinationPorts, 'ii', $company_id, $position_id);
+    mysqli_stmt_bind_param($stmtDestinationPorts, 'i', $company_id);
     mysqli_stmt_execute($stmtDestinationPorts);
     $resDestinationPorts = mysqli_stmt_get_result($stmtDestinationPorts);
     while ($resDestinationPorts && ($row = mysqli_fetch_assoc($resDestinationPorts))) {
@@ -1179,7 +1178,9 @@ function openLinkModal(portId) {
     }
     const f = document.getElementById('linkForm');
     const destinationSelect = f.port_id_b;
-    const destinations = DESTINATION_PORTS.filter(p => !p.is_linked);
+    const destinations = DESTINATION_PORTS.filter((p) =>
+        Number(p.id) !== Number(source.id) && !p.is_linked
+    );
 
     destinationSelect.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
