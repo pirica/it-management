@@ -55,7 +55,15 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    $selectParts = [
+        cr_escape_identifier($col) . ' AS id',
+        cr_escape_identifier($labelCol) . ' AS label',
+    ];
+    if ($table === 'cable_colors' && in_array('hex_color', $available, true)) {
+        $selectParts[] = '`hex_color` AS color_hex';
+    }
+
+    $sql = 'SELECT ' . implode(', ', $selectParts) . ' FROM ' . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -71,7 +79,7 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'title', 'username', 'code', 'mode_name', 'color_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
@@ -125,12 +133,60 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_safe_color_value($value) {
+    $color = trim((string)$value);
+    return (bool)preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
+}
+
+function cr_render_color_swatch($value) {
+    $safeColor = trim((string)$value);
+    if (!cr_is_safe_color_value($safeColor)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($safeColor) . '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($safeColor) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
+function cr_switch_status_color_hex($conn, $colorId, $companyId) {
+    static $cache = [];
+
+    $id = (int)$colorId;
+    if ($id <= 0) {
+        return '';
+    }
+
+    $cacheKey = $id . ':' . (int)$companyId;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    $sql = 'SELECT `hex_color` FROM `cable_colors` WHERE `id`=' . $id;
+    if ((int)$companyId > 0) {
+        $sql .= ' AND `company_id`=' . (int)$companyId;
+    }
+    $sql .= ' LIMIT 1';
+
+    $hex = '';
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $hex = (string)($row['hex_color'] ?? '');
+    }
+
+    $cache[$cacheKey] = $hex;
+    return $hex;
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
+    }
+
+    if ($table === 'switch_status' && $field === 'color_id') {
+        $hex = cr_switch_status_color_hex($GLOBALS['conn'], $value, (int)($GLOBALS['company_id'] ?? 0));
+        return cr_render_color_swatch($hex);
     }
 
     $text = (string)($value ?? '');
@@ -548,10 +604,24 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" data-color-hex="<?php echo sanitize((string)($opt['color_hex'] ?? '')); ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                                <?php if ($crud_table === 'switch_status' && $name === 'color_id'): ?>
+                                    <?php
+                                        $selectedColorHex = '';
+                                        foreach ($opts as $opt) {
+                                            if ((string)$displayVal === (string)($opt['id'] ?? '')) {
+                                                $selectedColorHex = (string)($opt['color_hex'] ?? '');
+                                                break;
+                                            }
+                                        }
+                                    ?>
+                                    <span class="itm-switch-status-color-preview" aria-label="Selected color preview" style="display:inline-block;margin-top:8px;">
+                                        <?php echo cr_render_color_swatch($selectedColorHex); ?>
+                                    </span>
+                                <?php endif; ?>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -610,6 +680,19 @@ document.addEventListener('change', function (event) {
     if (indicator) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
+});
+
+document.addEventListener('change', function (event) {
+    if (!event.target.matches('select[name="color_id"]')) return;
+    const selected = event.target.options[event.target.selectedIndex];
+    const colorHex = selected ? (selected.getAttribute('data-color-hex') || '') : '';
+    const preview = event.target.parentElement ? event.target.parentElement.querySelector('.itm-switch-status-color-preview') : null;
+    if (!preview) return;
+
+    const safeHex = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(colorHex) ? colorHex : '';
+    preview.innerHTML = safeHex
+        ? '<span title="' + safeHex + '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + safeHex + ';vertical-align:middle;border-radius:2px;"></span>'
+        : '<span style="color:#666;">—</span>';
 });
 </script>
 
