@@ -110,6 +110,7 @@ Every module (excluding the Protection Zone) must implement:
 ### UI/UX Requirements
 * **Layout:** `.container` > `.main-content` > `.content`.
 * **Hide** `company_id` from all UI views.
+* **Foreign Keys in UI:** Never display raw FK numeric IDs in list/detail screens when a related label exists. Render human-readable values (e.g., `name`, `title`, `username`) instead.
 * **Buttons:** `btn-primary` for main actions; `btn-sm` for table actions.
 * **Tables:** Use `.itm-actions-cell` and `.itm-actions-wrap` for action columns.
 * **Active field use badges for status (index.php/view.php).
@@ -129,3 +130,13 @@ Every module (excluding the Protection Zone) must implement:
 * **Dev Credentials:** `localhost` | `root` | `itmanagement`.
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging.
+
+---
+
+## 🧹 Change Hygiene Rules (Diff Quality)
+To keep PRs reviewable and avoid noisy churn, follow these rules for every change:
+* **No line-ending normalization:** Preserve existing CRLF/LF style per file. Do not rewrite whole files just to change one line.
+* **No broad search/replace across modules unless explicitly requested:** Prefer targeted edits to only the files required by the task.
+* **Minimize touched lines:** Keep patches surgical and avoid formatting-only edits (spacing, wrapping, reindent) when logic is unchanged.
+* **Preserve file encoding and structure:** Do not change charset, BOM behavior, or module layout unless requested.
+* **If a change must be bulk-applied, state why in the PR description** and confirm the scope before continuing.

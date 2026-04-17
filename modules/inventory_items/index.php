@@ -711,7 +711,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="number" name="company_id" value="<?php echo (int)$company_id; ?>" readonly>
+                                <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>

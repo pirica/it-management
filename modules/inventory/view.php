@@ -11,8 +11,15 @@ require '../../config/config.php';
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
-    // Fetch the item record and ensure it belongs to the active company context.
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM inventory_items WHERE id = ? AND company_id = ? LIMIT 1');
+    // Fetch the item record with category name so FK values stay human-readable.
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT i.*, c.name AS category_name
+         FROM inventory_items i
+         LEFT JOIN inventory_categories c ON c.id = i.category_id
+         WHERE i.id = ? AND i.company_id = ?
+         LIMIT 1'
+    );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
@@ -29,7 +36,7 @@ $labels = [
     'name' => 'Name',
     'item_code' => 'Item Code',
     'serial' => 'Serial',
-    'category_id' => 'Category ID',
+    'category_id' => 'Category',
     'quantity_on_hand' => 'Quantity On Hand',
     'quantity_minimum' => 'Minimum Quantity',
     'price_eur' => 'Price (€)',
@@ -63,6 +70,7 @@ $labels = [
                         <?php foreach ($item as $field => $value): ?>
                             <!-- Skip internal database IDs -->
                             <?php if ($field === 'id' || $field === 'company_id'): continue; endif; ?>
+                            <?php if ($field === 'category_name'): continue; endif; ?>
                             <tr>
                                 <th style="width:220px;">
                                     <?php echo sanitize($labels[$field] ?? ucwords(str_replace('_', ' ', (string)$field))); ?>
@@ -72,6 +80,8 @@ $labels = [
                                         €<?php echo number_format((float)$value, 2); ?>
                                     <?php elseif ($field === 'active'): ?>
                                         <?php echo ((int)$value === 1) ? 'Active' : 'Inactive'; ?>
+                                    <?php elseif ($field === 'category_id'): ?>
+                                        <?php echo sanitize((string)($item['category_name'] ?? '')); ?>
                                     <?php else: ?>
                                         <?php echo sanitize((string)($value ?? '')); ?>
                                     <?php endif; ?>
