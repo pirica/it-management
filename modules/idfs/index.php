@@ -233,6 +233,52 @@ if ($company_id > 0) {
     }
 }
 
+if ($edit_idf && $company_id > 0) {
+    $editLocationId = (int)($edit_idf['location_id'] ?? 0);
+    $hasEditLocationOption = false;
+    foreach ($locations as $existingLocation) {
+        if ((int)($existingLocation['id'] ?? 0) === $editLocationId) {
+            $hasEditLocationOption = true;
+            break;
+        }
+    }
+    if (!$hasEditLocationOption && $editLocationId > 0) {
+        $stmtEditLocation = mysqli_prepare($conn, "SELECT id, name FROM it_locations WHERE id=? AND company_id=? LIMIT 1");
+        if ($stmtEditLocation) {
+            mysqli_stmt_bind_param($stmtEditLocation, 'ii', $editLocationId, $company_id);
+            mysqli_stmt_execute($stmtEditLocation);
+            $editLocationResult = mysqli_stmt_get_result($stmtEditLocation);
+            $editLocationRow = $editLocationResult ? mysqli_fetch_assoc($editLocationResult) : null;
+            mysqli_stmt_close($stmtEditLocation);
+            if ($editLocationRow) {
+                $locations[] = $editLocationRow;
+            }
+        }
+    }
+
+    $editRackId = (int)($edit_idf['rack_id'] ?? 0);
+    $hasEditRackOption = false;
+    foreach ($racks as $existingRack) {
+        if ((int)($existingRack['id'] ?? 0) === $editRackId) {
+            $hasEditRackOption = true;
+            break;
+        }
+    }
+    if (!$hasEditRackOption && $editRackId > 0) {
+        $stmtEditRack = mysqli_prepare($conn, "SELECT id, name FROM racks WHERE id=? AND company_id=? LIMIT 1");
+        if ($stmtEditRack) {
+            mysqli_stmt_bind_param($stmtEditRack, 'ii', $editRackId, $company_id);
+            mysqli_stmt_execute($stmtEditRack);
+            $editRackResult = mysqli_stmt_get_result($stmtEditRack);
+            $editRackRow = $editRackResult ? mysqli_fetch_assoc($editRackResult) : null;
+            mysqli_stmt_close($stmtEditRack);
+            if ($editRackRow) {
+                $racks[] = $editRackRow;
+            }
+        }
+    }
+}
+
 $locationTypes = [];
 if ($company_id > 0) {
     $stmtLocationTypes = mysqli_prepare($conn, "SELECT id, name FROM location_types WHERE company_id=? ORDER BY name");
