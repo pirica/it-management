@@ -69,6 +69,43 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+function cr_fk_ensure_selected_option($conn, $fk, $options, $selectedValue) {
+    $selectedRaw = trim((string)$selectedValue);
+    if ($selectedRaw === '' || strtoupper($selectedRaw) === 'NULL') {
+        return $options;
+    }
+
+    foreach ($options as $option) {
+        if ((string)($option['id'] ?? '') === $selectedRaw) {
+            return $options;
+        }
+    }
+
+    if (!preg_match('/^-?\d+$/', $selectedRaw)) {
+        return $options;
+    }
+
+    $selectedId = (int)$selectedRaw;
+    if ($selectedId <= 0) {
+        return $options;
+    }
+
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $meta = cr_fk_metadata($conn, $table);
+    $labelCol = $meta['label_col'];
+
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol)
+        . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $selectedId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $options[] = $row;
+    }
+
+    return $options;
+}
+
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -590,6 +627,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_fk_ensure_selected_option($conn, $fkMap[$name], $opts, $displayVal);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
