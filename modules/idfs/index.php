@@ -9,6 +9,20 @@ if (!isset($_SESSION['company_id'])) {
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $csrf = itm_get_csrf_token();
 
+$idfLocationIsNullable = false;
+$stmtLocationNullability = mysqli_prepare(
+    $conn,
+    "SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'idfs' AND COLUMN_NAME = 'location_id' LIMIT 1"
+);
+if ($stmtLocationNullability) {
+    mysqli_stmt_execute($stmtLocationNullability);
+    $resLocationNullability = mysqli_stmt_get_result($stmtLocationNullability);
+    $rowLocationNullability = $resLocationNullability ? mysqli_fetch_assoc($resLocationNullability) : null;
+    $idfLocationIsNullable = isset($rowLocationNullability['IS_NULLABLE'])
+        && strtoupper((string)$rowLocationNullability['IS_NULLABLE']) === 'YES';
+    mysqli_stmt_close($stmtLocationNullability);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['refresh_select_options'])) {
     header('Content-Type: application/json; charset=utf-8');
 
@@ -71,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($name === '' || $location_id <= 0 || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Please provide IDF name and location.';
+    if ($name === '' || (!$idfLocationIsNullable && $location_id <= 0) || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Please provide IDF name' . (!$idfLocationIsNullable ? ' and location' : '') . '.';
         header('Location: index.php');
         exit;
     }
@@ -80,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $idf_code_val = $idf_code !== '' ? $idf_code : null;
     $notes_val = $notes !== '' ? $notes : null;
 
-    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes, active) VALUES (?, ?, NULLIF(?, 0), ?, ?, ?, ?)");
+    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes, active) VALUES (?, NULLIF(?, 0), NULLIF(?, 0), ?, ?, ?, ?)");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'iiisssi', $company_id, $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active);
         if (!mysqli_stmt_execute($stmt)) {
@@ -111,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($idf_id <= 0 || $name === '' || $location_id <= 0 || $company_id <= 0) {
+    if ($idf_id <= 0 || $name === '' || (!$idfLocationIsNullable && $location_id <= 0) || $company_id <= 0) {
         $_SESSION['crud_error'] = 'Please provide valid IDF values before saving.';
         header('Location: index.php');
         exit;
@@ -122,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
 
     $updateStmt = mysqli_prepare(
         $conn,
-        "UPDATE idfs SET location_id=?, rack_id=NULLIF(?, 0), name=?, idf_code=?, notes=?, active=? WHERE id=? AND company_id=? LIMIT 1"
+        "UPDATE idfs SET location_id=NULLIF(?, 0), rack_id=NULLIF(?, 0), name=?, idf_code=?, notes=?, active=? WHERE id=? AND company_id=? LIMIT 1"
     );
     if ($updateStmt) {
         mysqli_stmt_bind_param($updateStmt, 'iisssiii', $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active, $idf_id, $company_id);
@@ -342,7 +356,7 @@ if ($company_id > 0) {
         $conn,
         "SELECT i.*, l.name AS location_name, r.name AS rack_name
          FROM idfs i
-         JOIN it_locations l ON l.id=i.location_id
+         LEFT JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN racks r ON r.id=i.rack_id
          WHERE i.company_id=? {$idfWhereSearchSql}
          ORDER BY {$idfOrderSql}"
@@ -584,7 +598,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                     </div>
                     <div>
                         <label class="label">Location</label>
-                        <select class="input" id="idf-location-select" name="location_id" required
+                        <select class="input" id="idf-location-select" name="location_id"
                                 data-addable-select="1"
                                 data-add-table="it_locations"
                                 data-add-id-col="id"
@@ -649,7 +663,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                                 </div>
                                 <div>
                                     <label class="label">Location</label>
-                                    <select class="input" id="edit-idf-location-select" name="location_id" required
+                                    <select class="input" id="edit-idf-location-select" name="location_id"
                                             data-addable-select="1"
                                             data-add-table="it_locations"
                                             data-add-id-col="id"
