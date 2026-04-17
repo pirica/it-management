@@ -640,16 +640,16 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
 
                     <section class="idf-panel">
                         <h3>📋 Existing IDFs <span class="idf-badge">Tap an IDF to open</span></h3>
-                        <table class="table idf-list-table">
+                        <table class="table idf-list-table" data-table-tools-attached="1">
                     <thead>
                         <tr>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('id', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">ID<?php echo sanitize(itm_idf_sort_indicator('id', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('name', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Name<?php echo sanitize(itm_idf_sort_indicator('name', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('code', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Code<?php echo sanitize(itm_idf_sort_indicator('code', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('location', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Location<?php echo sanitize(itm_idf_sort_indicator('location', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('rack', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Rack<?php echo sanitize(itm_idf_sort_indicator('rack', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('active', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>">Active<?php echo sanitize(itm_idf_sort_indicator('active', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th>Actions</th>
+                            <th data-itm-actions-origin="1" class="itm-actions-cell itm-actions-left">Actions</th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('id', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">ID<?php echo sanitize(itm_idf_sort_indicator('id', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('name', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Name<?php echo sanitize(itm_idf_sort_indicator('name', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('code', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Code<?php echo sanitize(itm_idf_sort_indicator('code', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('location', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Location<?php echo sanitize(itm_idf_sort_indicator('location', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('rack', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Rack<?php echo sanitize(itm_idf_sort_indicator('rack', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('active', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Active<?php echo sanitize(itm_idf_sort_indicator('active', $idf_sort_by, $idf_sort_dir)); ?></a></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -658,6 +658,18 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                         <?php endif; ?>
                         <?php foreach ($idfs as $idf): ?>
                             <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
+                                <td class="itm-actions-cell itm-actions-left">
+                                    <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>" title="View IDF">🔎</a>
+                                        <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>" title="Edit IDF">✏️</a>
+                                        <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
+                                            <input type="hidden" name="delete_idf" value="1">
+                                            <input type="hidden" name="idf_id" value="<?php echo (int)$idf['id']; ?>">
+                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete IDF">🗑️</button>
+                                        </form>
+                                    </div>
+                                </td>
                                 <td><?php echo (int)$idf['id']; ?></td>
                                 <td><?php echo sanitize($idf['name']); ?></td>
                                 <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
@@ -665,16 +677,6 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                                 <td><?php echo sanitize((string)($idf['rack_name'] ?? '')); ?></td>
                                 <td>
                                     <input type="checkbox" <?php echo ((int)($idf['active'] ?? 1) === 1) ? 'checked' : ''; ?> disabled>
-                                </td>
-                                <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>" title="🔎">🔎</a>
-                                    <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>">Edit</a>
-                                    <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
-                                        <input type="hidden" name="delete_idf" value="1">
-                                        <input type="hidden" name="idf_id" value="<?php echo (int)$idf['id']; ?>">
-                                        <button class="btn btn-sm btn-danger" type="submit" title="🗑️">🗑️</button>
-                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
