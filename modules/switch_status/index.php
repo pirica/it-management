@@ -72,6 +72,54 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+function cr_find_fk_option_by_id($options, $id) {
+    $targetId = (string)$id;
+    foreach ($options as $option) {
+        if ((string)($option['id'] ?? '') === $targetId) {
+            return $option;
+        }
+    }
+    return null;
+}
+
+function cr_fetch_fk_option_by_id($conn, $fk, $valueId, $company_id) {
+    $id = (int)$valueId;
+    if ($id <= 0) {
+        return null;
+    }
+
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $labelCol = $fkMeta['label_col'];
+    $available = $fkMeta['available'];
+
+    $selectParts = [
+        cr_escape_identifier($col) . ' AS id',
+        cr_escape_identifier($labelCol) . ' AS label',
+    ];
+    if ($table === 'cable_colors' && in_array('hex_color', $available, true)) {
+        $selectParts[] = '`hex_color` AS color_hex';
+    }
+
+    $queries = [];
+    if (in_array('company_id', $available, true) && (int)$company_id > 0) {
+        $queries[] = 'SELECT ' . implode(', ', $selectParts) . ' FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' AND `company_id`=' . (int)$company_id . ' LIMIT 1';
+    }
+    $queries[] = 'SELECT ' . implode(', ', $selectParts) . ' FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
+
+    foreach ($queries as $sql) {
+        $res = mysqli_query($conn, $sql);
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            return $row;
+        }
+    }
+
+    return null;
+}
+
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -783,6 +831,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    if ($displayVal !== '' && cr_find_fk_option_by_id($opts, $displayVal) === null) {
+                                        $selectedOption = cr_fetch_fk_option_by_id($conn, $fkMap[$name], $displayVal, (int)$company_id);
+                                        if (is_array($selectedOption)) {
+                                            $opts[] = $selectedOption;
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -801,13 +855,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </select>
                                 <?php if ($crud_table === 'switch_status' && $name === 'color_id'): ?>
                                     <?php
-                                        $selectedColorHex = '';
-                                        foreach ($opts as $opt) {
-                                            if ((string)$displayVal === (string)($opt['id'] ?? '')) {
-                                                $selectedColorHex = (string)($opt['color_hex'] ?? '');
-                                                break;
-                                            }
-                                        }
+                                        $selectedColor = cr_find_fk_option_by_id($opts, $displayVal);
+                                        $selectedColorHex = is_array($selectedColor) ? (string)($selectedColor['color_hex'] ?? '') : '';
                                     ?>
                                     <span class="itm-switch-status-color-preview" aria-label="Selected color preview" style="display:inline-block;margin-top:8px;">
                                         <?php echo cr_render_color_swatch($selectedColorHex); ?>
