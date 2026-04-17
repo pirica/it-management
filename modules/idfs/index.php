@@ -598,7 +598,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                     </div>
                     <div>
                         <label class="label">Location</label>
-                        <select class="input" id="idf-location-select" name="location_id" <?php echo $idfLocationIsNullable ? '' : 'required'; ?>
+                        <select class="input" id="idf-location-select" name="location_id"
                                 data-addable-select="1"
                                 data-add-table="it_locations"
                                 data-add-id-col="id"
@@ -663,7 +663,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                                 </div>
                                 <div>
                                     <label class="label">Location</label>
-                                    <select class="input" id="edit-idf-location-select" name="location_id" <?php echo $idfLocationIsNullable ? '' : 'required'; ?>
+                                    <select class="input" id="edit-idf-location-select" name="location_id"
                                             data-addable-select="1"
                                             data-add-table="it_locations"
                                             data-add-id-col="id"
