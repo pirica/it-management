@@ -71,8 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($name === '' || $location_id <= 0 || $rack_id <= 0 || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Please provide IDF name, location, and rack.';
+    if ($name === '' || $location_id <= 0 || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Please provide IDF name and location.';
         header('Location: index.php');
         exit;
     }
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $idf_code_val = $idf_code !== '' ? $idf_code : null;
     $notes_val = $notes !== '' ? $notes : null;
 
-    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes, active) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes, active) VALUES (?, ?, NULLIF(?, 0), ?, ?, ?, ?)");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'iiisssi', $company_id, $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active);
         if (!mysqli_stmt_execute($stmt)) {
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($idf_id <= 0 || $name === '' || $location_id <= 0 || $rack_id <= 0 || $company_id <= 0) {
+    if ($idf_id <= 0 || $name === '' || $location_id <= 0 || $company_id <= 0) {
         $_SESSION['crud_error'] = 'Please provide valid IDF values before saving.';
         header('Location: index.php');
         exit;
@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
 
     $updateStmt = mysqli_prepare(
         $conn,
-        "UPDATE idfs SET location_id=?, rack_id=?, name=?, idf_code=?, notes=?, active=? WHERE id=? AND company_id=? LIMIT 1"
+        "UPDATE idfs SET location_id=?, rack_id=NULLIF(?, 0), name=?, idf_code=?, notes=?, active=? WHERE id=? AND company_id=? LIMIT 1"
     );
     if ($updateStmt) {
         mysqli_stmt_bind_param($updateStmt, 'iisssiii', $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active, $idf_id, $company_id);
@@ -567,7 +567,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                     </div>
                     <div>
                         <label class="label">Rack</label>
-                        <select class="input" id="idf-rack-select" name="rack_id" required
+                        <select class="input" id="idf-rack-select" name="rack_id"
                                 data-addable-select="1"
                                 data-add-table="racks"
                                 data-add-id-col="id"
@@ -632,7 +632,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                                 </div>
                                 <div>
                                     <label class="label">Rack</label>
-                                    <select class="input" id="edit-idf-rack-select" name="rack_id" required
+                                    <select class="input" id="edit-idf-rack-select" name="rack_id"
                                             data-addable-select="1"
                                             data-add-table="racks"
                                             data-add-id-col="id"
