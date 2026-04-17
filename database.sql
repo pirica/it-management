@@ -1530,6 +1530,37 @@ CREATE TABLE `users` (
 -- Data for `users`
 INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
 
+-- Table structure for `registration_invitations`
+DROP TABLE IF EXISTS `registration_invitations`;
+CREATE TABLE `registration_invitations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `invitation_code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `invited_by_user_id` int DEFAULT NULL,
+  `role_id` int DEFAULT NULL,
+  `access_level_id` int DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `accepted_at` datetime DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_registration_invitations_code` (`invitation_code`),
+  KEY `idx_registration_invitations_company_email` (`company_id`,`email`),
+  KEY `idx_registration_invitations_active_expires_at` (`active`,`expires_at`),
+  KEY `idx_registration_invitations_invited_by` (`invited_by_user_id`),
+  KEY `idx_registration_invitations_role` (`role_id`),
+  KEY `idx_registration_invitations_access_level` (`access_level_id`),
+  CONSTRAINT `fk_registration_invitations_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_registration_invitations_invited_by` FOREIGN KEY (`invited_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_registration_invitations_role` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_registration_invitations_access_level` FOREIGN KEY (`access_level_id`) REFERENCES `access_levels` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `registration_invitations`
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '5', '1', NULL, NULL, '1', '2026-03-28 19:44:00');
+
 -- Table structure for `attempts`
 -- Why: Unified security telemetry table for login and password reset events (legacy module folders were merged into modules/attempts).
 DROP TABLE IF EXISTS `attempts`;

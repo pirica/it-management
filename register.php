@@ -1,145 +1,157 @@
 <?php
 /**
- * User Registration Page
- * 
- * Allows new users to create an account and select which companies they belong to.
- * Automatically assigns default roles and access levels based on the primary company.
+ * User Registration Page (Invitation-Based)
+ *
+ * New users can only register with a valid invitation code tied to their email.
+ * Company membership and optional role/access assignments come from the invitation.
  */
 
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
 
-// Fetch all active companies for the multi-select dropdown
-$companiesStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company');
-$companies = false;
-if ($companiesStmt) {
-    mysqli_stmt_execute($companiesStmt);
-    $companies = mysqli_stmt_get_result($companiesStmt);
-    mysqli_stmt_close($companiesStmt);
-}
-$companyOptions = [];
-if ($companies) {
-    while ($company = mysqli_fetch_assoc($companies)) {
-        $companyOptions[] = $company;
-    }
-}
+$prefilledEmail = trim((string)($_GET['email'] ?? ''));
+$prefilledInviteCode = trim((string)($_GET['invite'] ?? ''));
 
-// Handle registration form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
-    
+
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $rawPassword = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
-    $selected_company_ids = $_POST['company_ids'] ?? [];
-    
-    // Normalize and sanitize selected company IDs
-    if (!is_array($selected_company_ids)) {
-        $selected_company_ids = [];
-    }
-    $selected_company_ids = array_values(array_unique(array_filter(array_map('intval', $selected_company_ids))));
+    $inviteCode = trim($_POST['invite_code'] ?? '');
 
-    // Basic validation
-    if ($rawPassword === '' || $confirmPassword === '') {
+    if ($inviteCode === '') {
+        $error = 'Invitation code is required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please provide a valid email address.';
+    } elseif ($rawPassword === '' || $confirmPassword === '') {
         $error = 'Password and confirmation are required.';
     } elseif ($rawPassword !== $confirmPassword) {
         $error = 'Password confirmation does not match.';
-    } elseif (empty($selected_company_ids)) {
-        $error = 'Please select at least one valid company.';
     } else {
-        // Verify that all selected companies are active and valid
-        $placeholders = implode(',', array_fill(0, count($selected_company_ids), '?'));
-        $types = str_repeat('i', count($selected_company_ids));
-        $companyCheck = mysqli_prepare($conn, "SELECT id FROM companies WHERE active = 1 AND id IN ($placeholders)");
-        $valid_company_ids = [];
+        mysqli_begin_transaction($conn);
 
-        if ($companyCheck) {
-            mysqli_stmt_bind_param($companyCheck, $types, ...$selected_company_ids);
-            mysqli_stmt_execute($companyCheck);
-            $companyRes = mysqli_stmt_get_result($companyCheck);
-            if ($companyRes) {
-                while ($row = mysqli_fetch_assoc($companyRes)) {
-                    $valid_company_ids[] = (int)$row['id'];
+        $inviteSql = 'SELECT i.id, i.company_id, i.invited_by_user_id, i.role_id, i.access_level_id
+                      FROM registration_invitations i
+                      INNER JOIN companies c ON c.id = i.company_id
+                      WHERE i.invitation_code = ?
+                        AND i.email = ?
+                        AND i.active = 1
+                        AND i.accepted_at IS NULL
+                        AND (i.expires_at IS NULL OR i.expires_at >= NOW())
+                        AND c.active = 1
+                      LIMIT 1
+                      FOR UPDATE';
+        $inviteStmt = mysqli_prepare($conn, $inviteSql);
+        $invitation = null;
+
+        if ($inviteStmt) {
+            mysqli_stmt_bind_param($inviteStmt, 'ss', $inviteCode, $email);
+            mysqli_stmt_execute($inviteStmt);
+            $inviteResult = mysqli_stmt_get_result($inviteStmt);
+            if ($inviteResult) {
+                $invitation = mysqli_fetch_assoc($inviteResult) ?: null;
+            }
+            mysqli_stmt_close($inviteStmt);
+        }
+
+        if (!$invitation) {
+            mysqli_rollback($conn);
+            $error = 'Invalid, expired, or already-used invitation for this email.';
+        } else {
+            $companyId = (int)$invitation['company_id'];
+            $invitationId = (int)$invitation['id'];
+            $grantedByUserId = isset($invitation['invited_by_user_id']) ? (int)$invitation['invited_by_user_id'] : null;
+
+            $roleId = isset($invitation['role_id']) ? (int)$invitation['role_id'] : 0;
+            if ($roleId <= 0) {
+                $roleStmt = mysqli_prepare($conn, 'SELECT id FROM user_roles WHERE company_id = ? AND name = "User" LIMIT 1');
+                if ($roleStmt) {
+                    mysqli_stmt_bind_param($roleStmt, 'i', $companyId);
+                    mysqli_stmt_execute($roleStmt);
+                    $roleResult = mysqli_stmt_get_result($roleStmt);
+                    $roleRow = $roleResult ? mysqli_fetch_assoc($roleResult) : null;
+                    $roleId = $roleRow ? (int)$roleRow['id'] : 0;
+                    mysqli_stmt_close($roleStmt);
                 }
             }
-            mysqli_stmt_close($companyCheck);
-        }
 
-        // Compare submitted IDs with valid IDs from the database
-        sort($valid_company_ids);
-        $submitted_ids = $selected_company_ids;
-        sort($submitted_ids);
-        $allCompaniesValid = !empty($valid_company_ids) && $submitted_ids === $valid_company_ids;
+            $accessLevelId = isset($invitation['access_level_id']) ? (int)$invitation['access_level_id'] : 0;
+            if ($accessLevelId <= 0) {
+                $accessStmt = mysqli_prepare($conn, 'SELECT id FROM access_levels WHERE company_id = ? AND name = "Limited" LIMIT 1');
+                if ($accessStmt) {
+                    mysqli_stmt_bind_param($accessStmt, 'i', $companyId);
+                    mysqli_stmt_execute($accessStmt);
+                    $accessResult = mysqli_stmt_get_result($accessStmt);
+                    $accessRow = $accessResult ? mysqli_fetch_assoc($accessResult) : null;
+                    $accessLevelId = $accessRow ? (int)$accessRow['id'] : 0;
+                    mysqli_stmt_close($accessStmt);
+                }
+            }
 
-        if (!$allCompaniesValid) {
-            $error = 'Please select only valid active companies.';
-        }
-    }
+            if ($roleId <= 0 || $accessLevelId <= 0) {
+                mysqli_rollback($conn);
+                $error = 'Registration cannot continue because default role/access settings are missing for this company.';
+            } else {
+                $password = password_hash($rawPassword, PASSWORD_DEFAULT);
 
-    // Proceed if there are no validation errors
-    if (!isset($error)) {
-        $password = password_hash($rawPassword, PASSWORD_DEFAULT);
-        $primary_company_id = $selected_company_ids[0];
-        
-        // Insert new user into the database
-        // Assigns default "User" role and "Limited" access level for the primary company
-        $stmt = mysqli_prepare($conn, 'INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, ?, (SELECT id FROM user_roles WHERE company_id = ? AND name = "User" LIMIT 1), (SELECT id FROM access_levels WHERE company_id = ? AND name = "Limited" LIMIT 1), 1)');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'isssii', $primary_company_id, $username, $email, $password, $primary_company_id, $primary_company_id);
-            if (mysqli_stmt_execute($stmt)) {
-                $user_id = (int)mysqli_insert_id($conn);
-                
-                // Assign all selected companies to the new user in a transaction
-                mysqli_begin_transaction($conn);
-                $uc = mysqli_prepare($conn, 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (?, ?, NULL)');
-                if ($uc) {
-                    $insertedRows = 0;
-                    foreach ($selected_company_ids as $company_id) {
-                        mysqli_stmt_bind_param($uc, 'ii', $user_id, $company_id);
-                        if (!mysqli_stmt_execute($uc)) {
-                            break;
+                $userStmt = mysqli_prepare($conn, 'INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, ?, ?, ?, 1)');
+                if ($userStmt) {
+                    mysqli_stmt_bind_param($userStmt, 'isssii', $companyId, $username, $email, $password, $roleId, $accessLevelId);
+                    $userInserted = mysqli_stmt_execute($userStmt);
+                    $newUserId = $userInserted ? (int)mysqli_insert_id($conn) : 0;
+                    mysqli_stmt_close($userStmt);
+
+                    if ($userInserted && $newUserId > 0) {
+                        $companyLinkStmt = mysqli_prepare($conn, 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (?, ?, ?)');
+                        $invitationUpdateStmt = mysqli_prepare($conn, 'UPDATE registration_invitations SET accepted_at = NOW(), active = 0 WHERE id = ?');
+
+                        if ($companyLinkStmt && $invitationUpdateStmt) {
+                            mysqli_stmt_bind_param($companyLinkStmt, 'iii', $newUserId, $companyId, $grantedByUserId);
+                            mysqli_stmt_bind_param($invitationUpdateStmt, 'i', $invitationId);
+
+                            $companyLinked = mysqli_stmt_execute($companyLinkStmt);
+                            $invitationMarkedUsed = mysqli_stmt_execute($invitationUpdateStmt);
+
+                            mysqli_stmt_close($companyLinkStmt);
+                            mysqli_stmt_close($invitationUpdateStmt);
+
+                            if ($companyLinked && $invitationMarkedUsed) {
+                                mysqli_commit($conn);
+                                $success = 'Registration successful! You can login now.';
+                                $prefilledEmail = '';
+                                $prefilledInviteCode = '';
+                            } else {
+                                mysqli_rollback($conn);
+                                $error = 'Registration failed while finalizing invitation usage. Please try again.';
+                            }
+                        } else {
+                            if ($companyLinkStmt) {
+                                mysqli_stmt_close($companyLinkStmt);
+                            }
+                            if ($invitationUpdateStmt) {
+                                mysqli_stmt_close($invitationUpdateStmt);
+                            }
+                            mysqli_rollback($conn);
+                            $error = 'Registration failed while finalizing invitation usage. Please try again.';
                         }
-                        $insertedRows += mysqli_stmt_affected_rows($uc);
-                    }
-                    mysqli_stmt_close($uc);
-                    
-                    if ($insertedRows === count($selected_company_ids)) {
-                        mysqli_commit($conn);
-                        $success = 'Registration successful! You can login now.';
                     } else {
-                        // Rollback and cleanup on partial failure
                         mysqli_rollback($conn);
-                        $cleanup = mysqli_prepare($conn, 'DELETE FROM users WHERE id = ?');
-                        if ($cleanup) {
-                            mysqli_stmt_bind_param($cleanup, 'i', $user_id);
-                            mysqli_stmt_execute($cleanup);
-                            mysqli_stmt_close($cleanup);
-                        }
-                        $error = 'Registration failed while assigning companies. Please try again.';
+                        $error = 'Registration failed. Email/username may already exist.';
                     }
                 } else {
                     mysqli_rollback($conn);
-                    $cleanup = mysqli_prepare($conn, 'DELETE FROM users WHERE id = ?');
-                    if ($cleanup) {
-                        mysqli_stmt_bind_param($cleanup, 'i', $user_id);
-                        mysqli_stmt_execute($cleanup);
-                        mysqli_stmt_close($cleanup);
-                    }
-                    $error = 'Registration failed while assigning companies. Please try again.';
+                    $error = 'Registration failed. Please try again.';
                 }
-            } else {
-                $error = 'Registration failed. Email/username may already exist.';
             }
-            mysqli_stmt_close($stmt);
         }
     }
-}
 
-// Preserve selected company IDs on form submission error
-$posted_company_ids = [];
-if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
-    $posted_company_ids = array_map('intval', $_POST['company_ids']);
+    if (isset($error)) {
+        $prefilledEmail = $email;
+        $prefilledInviteCode = $inviteCode;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -158,11 +170,12 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
         .logo h1 { color: var(--accent); font-size: 28px; }
         .logo p { color: var(--muted); font-size: 14px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
-        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); margin-bottom: 16px; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); margin-bottom: 16px; }
         button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .links { margin-top: 14px; text-align: center; }
         .links a { color: var(--accent); text-decoration: none; }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .help-text { color: var(--muted); font-size: 12px; margin-top: -10px; margin-bottom: 14px; }
     </style>
 </head>
 <body>
@@ -170,7 +183,7 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
     <div class="container">
         <div class="logo">
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
-            <p>Create your account</p>
+            <p>Create your account with an invitation</p>
         </div>
 
         <?php if (isset($success)): ?><p style="color:#2f855a; margin-bottom:14px;"><?php echo htmlspecialchars($success); ?></p><?php endif; ?>
@@ -178,21 +191,17 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
 
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-            <label for="company_ids">Companies:</label>
-            <select id="company_ids" name="company_ids[]" multiple required size="6">
-                <?php foreach ($companyOptions as $company): ?>
-                    <option value="<?php echo (int)$company['id']; ?>" <?php echo in_array((int)$company['id'], $posted_company_ids, true) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($company['company']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+
+            <label for="invite_code">Invitation Code</label>
+            <input id="invite_code" type="text" name="invite_code" placeholder="Paste invitation code" value="<?php echo htmlspecialchars($prefilledInviteCode); ?>" required>
 
             <label for="email">Email</label>
-            <input id="email" type="email" name="email" placeholder="Email" required>
+            <input id="email" type="email" name="email" placeholder="Email" value="<?php echo htmlspecialchars($prefilledEmail); ?>" required>
+            <p class="help-text">Use the same email address that received the invitation.</p>
 
             <label for="username">Username</label>
             <input id="username" type="text" name="username" placeholder="Username" required>
-            
+
             <label for="password">Password</label>
             <input id="password" type="password" name="password" placeholder="Password" required>
 
@@ -205,7 +214,7 @@ if (isset($_POST['company_ids']) && is_array($_POST['company_ids'])) {
     </div>
     <script>
         /**
-         * Toggle between light and dark themes
+         * Toggle between light and dark themes.
          */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
