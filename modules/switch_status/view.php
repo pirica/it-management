@@ -160,16 +160,22 @@ function cr_switch_status_color_hex($conn, $colorId, $companyId) {
         return $cache[$cacheKey];
     }
 
-    $sql = 'SELECT `hex_color` FROM `cable_colors` WHERE `id`=' . $id;
-    if ((int)$companyId > 0) {
-        $sql .= ' AND `company_id`=' . (int)$companyId;
-    }
-    $sql .= ' LIMIT 1';
-
     $hex = '';
-    $res = mysqli_query($conn, $sql);
-    if ($res && ($row = mysqli_fetch_assoc($res))) {
-        $hex = (string)($row['hex_color'] ?? '');
+    $queries = [];
+
+    if ((int)$companyId > 0) {
+        $queries[] = 'SELECT `hex_color` FROM `cable_colors` WHERE `id`=' . $id . ' AND `company_id`=' . (int)$companyId . ' LIMIT 1';
+    }
+    $queries[] = 'SELECT `hex_color` FROM `cable_colors` WHERE `id`=' . $id . ' LIMIT 1';
+
+    foreach ($queries as $sql) {
+        $res = mysqli_query($conn, $sql);
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            $hex = (string)($row['hex_color'] ?? '');
+            if ($hex !== '') {
+                break;
+            }
+        }
     }
 
     $cache[$cacheKey] = $hex;

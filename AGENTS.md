@@ -146,5 +146,6 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
 * **For display renderer updates** (for example badges/swatches/label mapping), propagate the same renderer/helper logic to both `index.php` and `view.php` before commit.
 * **Verify FK label rendering in both list and detail/edit flows** (no raw FK IDs when a related label exists), including company-scoped fallback behavior where seeded reference rows may be missing for a tenant.
+* **Switch Status color fallback lookup:** in `modules/switch_status/` keep `color_id` swatch rendering resilient by trying tenant-scoped `cable_colors` (`id` + `company_id`) first, then falling back to `id` lookup when legacy/shared color rows are outside the active tenant.
 * **Ensure FK dropdowns preserve persisted selections:** if a saved FK value is not returned by the current company-scoped options query, append/load that saved value so edit forms do not fall back to `-- Select --`.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
