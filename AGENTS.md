@@ -140,3 +140,9 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 * **Minimize touched lines:** Keep patches surgical and avoid formatting-only edits (spacing, wrapping, reindent) when logic is unchanged.
 * **Preserve file encoding and structure:** Do not change charset, BOM behavior, or module layout unless requested.
 * **If a change must be bulk-applied, state why in the PR description** and confirm the scope before continuing.
+
+### Module Consistency Guardrail (Mandatory)
+When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
+* **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
+* **Verify FK label rendering in both list and detail/edit flows** (no raw FK IDs when a related label exists), including company-scoped fallback behavior where seeded reference rows may be missing for a tenant.
+* **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.

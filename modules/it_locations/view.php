@@ -66,6 +66,16 @@ function cr_fk_options($conn, $fk, $company_id) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
     }
+
+    // Fallback for tenants without pre-seeded FK rows: still allow selecting
+    // shared/default rows so edit forms can resolve existing references.
+    if (empty($rows) && $where !== '') {
+        $fallbackSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . ' ORDER BY label';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        while ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $rows[] = $fallbackRow;
+        }
+    }
     return $rows;
 }
 
@@ -153,10 +163,27 @@ function cr_it_location_type_name($conn, $companyId, $typeId) {
         return $typeCache[$companyKey][$typeKey];
     }
 
+    // Company-scoped lookup may miss older/global rows; fallback by ID.
+    if ($typeKey > 0) {
+        $fallbackSql = 'SELECT name FROM `location_types` WHERE id=' . $typeKey . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $typeName = (string)($fallbackRow['name'] ?? '');
+            if ($typeName !== '') {
+                return $typeName;
+            }
+        }
+    }
+
     return (string)$typeId;
 }
 
 function cr_render_cell_value($table, $field, $value, $conn = null, $companyId = 0) {
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -188,13 +215,7 @@ function cr_get_csrf_token() {
 }
 
 function cr_require_valid_csrf_token() {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
+    itm_require_post_csrf();
 }
 
 function cr_numeric_validation_error($field, $message) {

@@ -66,6 +66,13 @@ function cr_fk_options($conn, $fk, $company_id) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
     }
+    if (empty($rows) && $where !== '') {
+        $fallbackSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . ' ORDER BY label';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        while ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $rows[] = $fallbackRow;
+        }
+    }
     return $rows;
 }
 
@@ -130,12 +137,57 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
-function cr_render_cell_value($table, $field, $value) {
+function cr_it_location_type_name($conn, $companyId, $typeId) {
+    static $typeCache = [];
+
+    $companyKey = (int)$companyId;
+    if (!isset($typeCache[$companyKey])) {
+        $typeCache[$companyKey] = [];
+        $where = '';
+        if ($companyKey > 0) {
+            $where = ' WHERE company_id=' . $companyKey;
+        }
+
+        $sql = 'SELECT id, name FROM `location_types`' . $where . ' ORDER BY name';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $typeCache[$companyKey][(int)$row['id']] = (string)$row['name'];
+        }
+    }
+
+    $typeKey = (int)$typeId;
+    if (isset($typeCache[$companyKey][$typeKey])) {
+        return $typeCache[$companyKey][$typeKey];
+    }
+    if ($typeKey > 0) {
+        $fallbackSql = 'SELECT name FROM `location_types` WHERE id=' . $typeKey . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $typeName = (string)($fallbackRow['name'] ?? '');
+            if ($typeName !== '') {
+                return $typeName;
+            }
+        }
+    }
+
+    return (string)$typeId;
+}
+
+function cr_render_cell_value($table, $field, $value, $conn = null, $companyId = 0) {
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
-        $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
+    }
+
+    if ($table === 'it_locations' && $field === 'type_id' && $conn) {
+        return sanitize(cr_it_location_type_name($conn, (int)$companyId, (int)$value));
     }
 
     $text = (string)($value ?? '');
@@ -158,13 +210,7 @@ function cr_get_csrf_token() {
 }
 
 function cr_require_valid_csrf_token() {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
+    itm_require_post_csrf();
 }
 
 function cr_numeric_validation_error($field, $message) {
@@ -494,7 +540,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
-                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
+                                    <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? '', $conn, (int)$company_id); ?></td>
                                 <?php endforeach; ?>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
@@ -536,17 +582,21 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
-                            <?php elseif (isset($fkMap[$name])): ?>
+                            <?php elseif (isset($fkMap[$name]) || ($crud_table === 'it_locations' && $name === 'type_id')): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                    $fkConfig = $fkMap[$name] ?? [
+                                        'REFERENCED_TABLE_NAME' => 'location_types',
+                                        'REFERENCED_COLUMN_NAME' => 'id',
+                                    ];
+                                    $opts = cr_fk_options($conn, $fkConfig, (int)$company_id);
+                                    $fkMeta = cr_fk_metadata($conn, $fkConfig['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                    data-add-table="<?php echo sanitize($fkConfig['REFERENCED_TABLE_NAME']); ?>"
+                                    data-add-id-col="<?php echo sanitize($fkConfig['REFERENCED_COLUMN_NAME']); ?>"
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
@@ -582,7 +632,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? '', $conn, (int)$company_id); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

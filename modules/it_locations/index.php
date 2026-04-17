@@ -80,6 +80,16 @@ function cr_fk_options($conn, $fk, $company_id) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
     }
+
+    // Fallback for tenants without pre-seeded FK rows: still allow selecting
+    // shared/default rows so edit forms can resolve existing references.
+    if (empty($rows) && $where !== '') {
+        $fallbackSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . ' ORDER BY label';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        while ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $rows[] = $fallbackRow;
+        }
+    }
     return $rows;
 }
 
@@ -179,6 +189,18 @@ function cr_it_location_type_name($conn, $companyId, $typeId) {
         return $typeCache[$companyKey][$typeKey];
     }
 
+    // Company-scoped lookup may miss older/global rows; fallback by ID.
+    if ($typeKey > 0) {
+        $fallbackSql = 'SELECT name FROM `location_types` WHERE id=' . $typeKey . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $typeName = (string)($fallbackRow['name'] ?? '');
+            if ($typeName !== '') {
+                return $typeName;
+            }
+        }
+    }
+
     return (string)$typeId;
 }
 
@@ -222,13 +244,7 @@ function cr_get_csrf_token() {
  * Validates CSRF tokens for security on POST.
  */
 function cr_require_valid_csrf_token() {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
+    itm_require_post_csrf();
 }
 
 function cr_numeric_validation_error($field, $message) {
@@ -586,6 +602,7 @@ if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
+    $displayFieldColumns = $uiColumns;
     foreach ($displayFieldColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') {
@@ -673,7 +690,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    <?php if ($totalRows >= $perPage): ?>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    <?php endif; ?>
                 </form>
             </div>
 
@@ -709,7 +728,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -725,15 +744,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="hidden" name="bulk_action" value="single_delete">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                    </form>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                    <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="hidden" name="bulk_action" value="single_delete">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
