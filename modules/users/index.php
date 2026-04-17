@@ -125,10 +125,43 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_fk_label_from_id($conn, $table, $id) {
+    $fkId = (int)$id;
+    if ($fkId <= 0) {
+        return '';
+    }
+
+    static $labelCache = [];
+    $cacheKey = $table . ':' . $fkId;
+    if (array_key_exists($cacheKey, $labelCache)) {
+        return (string)$labelCache[$cacheKey];
+    }
+
+    $sql = 'SELECT `name` FROM ' . cr_escape_identifier($table) . ' WHERE `id`=' . $fkId . ' LIMIT 1';
+    $result = mysqli_query($conn, $sql);
+    $label = '';
+    if ($result && ($row = mysqli_fetch_assoc($result))) {
+        $label = (string)($row['name'] ?? '');
+    }
+
+    $labelCache[$cacheKey] = $label;
+    return $label;
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if ($table === 'users' && $field === 'role_id') {
+        $roleName = cr_fk_label_from_id($GLOBALS['conn'], 'user_roles', $value);
+        return sanitize($roleName !== '' ? $roleName : (string)$value);
+    }
+
+    if ($table === 'users' && $field === 'access_level_id') {
+        $accessLevelName = cr_fk_label_from_id($GLOBALS['conn'], 'access_levels', $value);
+        return sanitize($accessLevelName !== '' ? $accessLevelName : (string)$value);
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
