@@ -8,21 +8,6 @@ if (!isset($_SESSION['company_id'])) {
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $csrf = itm_get_csrf_token();
-
-$idfLocationIsNullable = false;
-$stmtLocationNullability = mysqli_prepare(
-    $conn,
-    "SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'idfs' AND COLUMN_NAME = 'location_id' LIMIT 1"
-);
-if ($stmtLocationNullability) {
-    mysqli_stmt_execute($stmtLocationNullability);
-    $resLocationNullability = mysqli_stmt_get_result($stmtLocationNullability);
-    $rowLocationNullability = $resLocationNullability ? mysqli_fetch_assoc($resLocationNullability) : null;
-    $idfLocationIsNullable = isset($rowLocationNullability['IS_NULLABLE'])
-        && strtoupper((string)$rowLocationNullability['IS_NULLABLE']) === 'YES';
-    mysqli_stmt_close($stmtLocationNullability);
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['refresh_select_options'])) {
     header('Content-Type: application/json; charset=utf-8');
 
@@ -85,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($name === '' || (!$idfLocationIsNullable && $location_id <= 0) || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Please provide IDF name' . (!$idfLocationIsNullable ? ' and location' : '') . '.';
+    if ($name === '' || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Please provide IDF name.';
         header('Location: index.php');
         exit;
     }
@@ -125,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($idf_id <= 0 || $name === '' || (!$idfLocationIsNullable && $location_id <= 0) || $company_id <= 0) {
+    if ($idf_id <= 0 || $name === '' || $company_id <= 0) {
         $_SESSION['crud_error'] = 'Please provide valid IDF values before saving.';
         header('Location: index.php');
         exit;

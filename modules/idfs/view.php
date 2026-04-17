@@ -101,7 +101,7 @@ if ($idf_id > 0 && $company_id > 0) {
         $conn,
         "SELECT i.*, l.name AS location_name, c.company AS company_name, r.name AS rack_name
          FROM idfs i
-         JOIN it_locations l ON l.id=i.location_id
+         LEFT JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN companies c ON c.id=i.company_id
          LEFT JOIN racks r ON r.id=i.rack_id AND r.company_id=i.company_id
          WHERE i.id=? AND i.company_id=?
@@ -120,6 +120,12 @@ if (!$idf) {
     $_SESSION['crud_error'] = 'IDF not found.';
     header('Location: index.php');
     exit;
+}
+
+
+$locationNameLabel = trim((string)($idf['location_name'] ?? ''));
+if ($locationNameLabel === '') {
+    $locationNameLabel = 'Unknown Location';
 }
 
 $positions = [];
@@ -495,7 +501,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                         <div style="display:flex; gap:8px; align-items:center;">
                             <a class="btn btn-sm" href="index.php">← Back</a>
                             <div class="idf-rack-title">
-                                🗄️ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($idf['location_name']); ?>
+                                🗄️ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($locationNameLabel); ?>
                                 <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
                             </div>
                         </div>
@@ -517,7 +523,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                 <div class="idf-rack-title">Rack Face (<?php echo $displayMaxPos; ?> positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
-                                    · Location: <?php echo sanitize((string)($idf['location_name'] ?? 'Unknown Location')); ?>
+                                    · Location: <?php echo sanitize($locationNameLabel); ?>
                                     · Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
                                     · IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
                                     · Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
@@ -556,7 +562,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
                                                         'clickable' => true,
                                                         'company_name' => (string)($idf['company_name'] ?? ''),
-                                                        'location_name' => (string)($idf['location_name'] ?? ''),
+                                                        'location_name' => $locationNameLabel,
                                                         'idf_name' => (string)($idf['name'] ?? ''),
                                                         'idf_code' => (string)($idf['idf_code'] ?? ''),
                                                         'rack_name' => (string)($idf['rack_name'] ?? ''),
