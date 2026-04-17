@@ -683,7 +683,7 @@ DROP TABLE IF EXISTS `idfs`;
 CREATE TABLE `idfs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `location_id` int NOT NULL,
+  `location_id` int DEFAULT NULL,
   `rack_id` int DEFAULT NULL,
   `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `idf_code` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1070,7 +1070,7 @@ DROP TABLE IF EXISTS `racks`;
 CREATE TABLE `racks` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `location_id` int NOT NULL,
+  `location_id` int DEFAULT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `rack_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status_id` int NOT NULL,
