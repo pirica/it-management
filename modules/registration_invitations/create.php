@@ -73,7 +73,22 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    $tableEscaped = cr_escape_identifier($table);
+    $idEscaped = cr_escape_identifier($col);
+    $labelEscaped = cr_escape_identifier($labelCol);
+    $sql = 'SELECT ' . $idEscaped . ' AS id, ' . $labelEscaped . ' AS label';
+    if ($table === 'users') {
+        $sql .= ', CASE WHEN LOWER(COALESCE(ur.name, \'\')) = \'admin\' THEN 1 ELSE 0 END AS is_admin_user';
+        $sql .= ' FROM ' . $tableEscaped . ' u';
+        $sql .= ' LEFT JOIN `user_roles` ur ON ur.id = u.role_id';
+        if ($company_id > 0) {
+            $sql .= ' AND ur.company_id=' . (int)$company_id;
+            $sql .= ' WHERE u.company_id=' . (int)$company_id;
+        }
+    } else {
+        $sql .= ' FROM ' . $tableEscaped . $where;
+    }
+    $sql .= ' ORDER BY label';
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -592,7 +607,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php $isAdminUserOption = isset($opt['is_admin_user']) && (int)$opt['is_admin_user'] === 1 ? 1 : 0; ?>
+                                        <option value="<?php echo (int)$opt['id']; ?>" data-is-admin-user="<?php echo $isAdminUserOption; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
@@ -658,6 +674,40 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+/**
+ * Why: Admin inviter account should only be available when the invited role is Admin.
+ */
+function crSyncAdminInviterVisibility() {
+    const roleSelect = document.querySelector('select[name="role_id"]');
+    const inviterSelect = document.querySelector('select[name="invited_by_user_id"]');
+    if (!roleSelect || !inviterSelect) return;
+
+    const selectedRoleText = (roleSelect.options[roleSelect.selectedIndex]?.text || '').trim().toLowerCase();
+    const isAdminRoleSelected = selectedRoleText === 'admin';
+    const inviterOptions = inviterSelect.querySelectorAll('option[data-is-admin-user]');
+
+    inviterOptions.forEach(function (option) {
+        const isAdminUser = option.getAttribute('data-is-admin-user') === '1';
+        if (!isAdminUser) {
+            option.hidden = false;
+            return;
+        }
+
+        option.hidden = !isAdminRoleSelected;
+        if (option.hidden && option.selected) {
+            inviterSelect.value = '';
+        }
+    });
+}
+
+document.addEventListener('change', function (event) {
+    if (event.target.matches('select[name="role_id"]')) {
+        crSyncAdminInviterVisibility();
+    }
+});
+
+crSyncAdminInviterVisibility();
 </script>
 
 </body>
