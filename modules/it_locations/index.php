@@ -80,6 +80,16 @@ function cr_fk_options($conn, $fk, $company_id) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
     }
+
+    // Fallback for tenants without pre-seeded FK rows: still allow selecting
+    // shared/default rows so edit forms can resolve existing references.
+    if (empty($rows) && $where !== '') {
+        $fallbackSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . ' ORDER BY label';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        while ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $rows[] = $fallbackRow;
+        }
+    }
     return $rows;
 }
 
@@ -177,6 +187,18 @@ function cr_it_location_type_name($conn, $companyId, $typeId) {
     $typeKey = (int)$typeId;
     if (isset($typeCache[$companyKey][$typeKey])) {
         return $typeCache[$companyKey][$typeKey];
+    }
+
+    // Company-scoped lookup may miss older/global rows; fallback by ID.
+    if ($typeKey > 0) {
+        $fallbackSql = 'SELECT name FROM `location_types` WHERE id=' . $typeKey . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $typeName = (string)($fallbackRow['name'] ?? '');
+            if ($typeName !== '') {
+                return $typeName;
+            }
+        }
     }
 
     return (string)$typeId;
