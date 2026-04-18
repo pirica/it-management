@@ -338,7 +338,12 @@ $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
-    return !cr_is_hidden_employee_field($col['Field']);
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName === 'created_by' && ($GLOBALS['crud_table'] ?? '') === 'patches_updates') {
+        return false;
+    }
+
+    return !cr_is_hidden_employee_field($fieldName);
 }));
 $hasCompany = false;
 foreach ($fieldColumns as $c) {
