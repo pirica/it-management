@@ -8,9 +8,9 @@
  * the generic system-wide CRUD structure.
  */
 
-$crud_table = 'inventory_items';
-$crud_title = 'Inventory Items';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'inventory_items';
+$crud_title = $crud_title ?? 'Inventory Items';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
