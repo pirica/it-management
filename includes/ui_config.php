@@ -587,6 +587,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
     $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         `company_id` INT NOT NULL,
+        `user_id` INT NOT NULL,
         `table_actions_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `new_button_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `export_buttons_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
@@ -602,7 +603,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         `sidebar_submenu_order` LONGTEXT NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY `uq_ui_configuration_company` (`company_id`),
+        UNIQUE KEY `uq_ui_configuration_company_user` (`company_id`, `user_id`),
         CONSTRAINT `fk_ui_configuration_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
@@ -623,6 +624,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
 
     // Add missing columns if they don't exist
     $columns = [
+        'user_id' => "ALTER TABLE `ui_configuration` ADD COLUMN `user_id` INT NOT NULL DEFAULT 0 AFTER `company_id`",
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_audit_logs`",
@@ -644,6 +646,24 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         }
         if (mysqli_num_rows($check) === 0) {
             $localReport['added_columns'][] = 'ui_configuration.' . $column;
+        }
+    }
+
+    // Why: UI settings must be isolated per user within each company.
+    $legacyUniqueRes = mysqli_query($conn, "SHOW INDEX FROM `ui_configuration` WHERE Key_name = 'uq_ui_configuration_company'");
+    if ($legacyUniqueRes && mysqli_num_rows($legacyUniqueRes) > 0) {
+        if (mysqli_query($conn, 'ALTER TABLE `ui_configuration` DROP INDEX `uq_ui_configuration_company`') !== true) {
+            return false;
+        }
+    }
+
+    $newUniqueRes = mysqli_query($conn, "SHOW INDEX FROM `ui_configuration` WHERE Key_name = 'uq_ui_configuration_company_user'");
+    if (!$newUniqueRes) {
+        return false;
+    }
+    if (mysqli_num_rows($newUniqueRes) === 0) {
+        if (mysqli_query($conn, 'ALTER TABLE `ui_configuration` ADD UNIQUE KEY `uq_ui_configuration_company_user` (`company_id`, `user_id`)') !== true) {
+            return false;
         }
     }
 
@@ -715,22 +735,26 @@ function itm_ensure_sidebar_layout_table($conn, &$report = null) {
 /**
  * Fetches the UI configuration for a specific company
  */
-function itm_get_ui_configuration($conn, $company_id) {
+function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     $defaults = itm_ui_config_defaults();
     $company_id = (int)$company_id;
+    if ($user_id === null) {
+        $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    }
+    $user_id = (int)$user_id;
 
-    if ($company_id <= 0 || !itm_ensure_ui_configuration_table($conn)) {
+    if ($company_id <= 0 || $user_id <= 0 || !itm_ensure_ui_configuration_table($conn)) {
         return $defaults;
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
     }
 
-    mysqli_stmt_bind_param($stmt, 'i', $company_id);
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $row = $result ? mysqli_fetch_assoc($result) : null;
@@ -989,16 +1013,20 @@ function itm_normalize_sidebar_submenu_order($raw) {
 /**
  * Saves UI configuration to the database
  */
-function itm_save_ui_configuration($conn, $company_id, $input) {
+function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) {
     $company_id = (int)$company_id;
-    if ($company_id <= 0 || !itm_ensure_ui_configuration_table($conn)) {
+    if ($user_id === null) {
+        $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    }
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0 || !itm_ensure_ui_configuration_table($conn)) {
         return false;
     }
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, user_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -1026,8 +1054,9 @@ function itm_save_ui_configuration($conn, $company_id, $input) {
 
     mysqli_stmt_bind_param(
         $stmt,
-        'issssiisssssss',
+        'iissssiisssssss',
         $company_id,
+        $user_id,
         $config['table_actions_position'],
         $config['new_button_position'],
         $config['export_buttons_position'],
