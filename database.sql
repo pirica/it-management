@@ -1111,6 +1111,107 @@ CREATE TABLE `sidebar_layout` (
   CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- Data for `sidebar_layout`
+INSERT INTO `sidebar_layout` (`company_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`)
+SELECT c.`company_id`, t.`entry_type`, t.`entry_id`, t.`section_id`, t.`display_order`, t.`is_visible`
+FROM (
+  SELECT 1 AS `company_id`
+  UNION ALL SELECT 2
+  UNION ALL SELECT 3
+  UNION ALL SELECT 4
+  UNION ALL SELECT 5
+) AS c
+CROSS JOIN (
+  SELECT 'section' AS `entry_type`, 'dashboard' AS `entry_id`, NULL AS `section_id`, 0 AS `display_order`, 1 AS `is_visible`
+  UNION ALL SELECT 'section', 'management', NULL, 1, 1
+  UNION ALL SELECT 'section', 'employee', NULL, 2, 1
+  UNION ALL SELECT 'section', 'admin', NULL, 3, 1
+  UNION ALL SELECT 'section', 'reference_data', NULL, 4, 1
+  UNION ALL SELECT 'item', 'dashboard_link', 'dashboard', 0, 1
+  UNION ALL SELECT 'item', 'settings', 'dashboard', 1, 1
+  UNION ALL SELECT 'item', 'equipment', 'management', 0, 1
+  UNION ALL SELECT 'item', 'is_workstation', 'management', 1, 1
+  UNION ALL SELECT 'item', 'is_server', 'management', 2, 1
+  UNION ALL SELECT 'item', 'is_switch', 'management', 3, 1
+  UNION ALL SELECT 'item', 'is_printer', 'management', 4, 1
+  UNION ALL SELECT 'item', 'is_pos', 'management', 5, 1
+  UNION ALL SELECT 'item', 'switch_ports', 'management', 6, 1
+  UNION ALL SELECT 'item', 'tickets', 'management', 7, 1
+  UNION ALL SELECT 'item', 'is_other', 'management', 8, 1
+  UNION ALL SELECT 'item', 'is_port_patch_panel', 'management', 9, 1
+  UNION ALL SELECT 'item', 'is_cctv', 'management', 10, 1
+  UNION ALL SELECT 'item', 'is_phone', 'management', 11, 1
+  UNION ALL SELECT 'item', 'is_access_point', 'management', 12, 1
+  UNION ALL SELECT 'item', 'is_firewall', 'management', 13, 1
+  UNION ALL SELECT 'item', 'is_router', 'management', 14, 1
+  UNION ALL SELECT 'item', 'employees', 'employee', 0, 1
+  UNION ALL SELECT 'item', 'employee_system_access', 'employee', 1, 1
+  UNION ALL SELECT 'item', 'system_access', 'employee', 2, 1
+  UNION ALL SELECT 'item', 'departments', 'employee', 3, 1
+  UNION ALL SELECT 'item', 'inventory', 'admin', 0, 1
+  UNION ALL SELECT 'item', 'users', 'admin', 1, 1
+  UNION ALL SELECT 'item', 'companies', 'admin', 2, 1
+  UNION ALL SELECT 'item', 'it_locations', 'reference_data', 0, 1
+  UNION ALL SELECT 'item', 'location_types', 'reference_data', 1, 1
+  UNION ALL SELECT 'item', 'equipment_types', 'reference_data', 2, 1
+  UNION ALL SELECT 'item', 'equipment_statuses', 'reference_data', 3, 1
+  UNION ALL SELECT 'item', 'manufacturers', 'reference_data', 4, 1
+  UNION ALL SELECT 'item', 'catalogs', 'reference_data', 5, 1
+  UNION ALL SELECT 'item', 'suppliers', 'reference_data', 6, 1
+  UNION ALL SELECT 'item', 'supplier_statuses', 'reference_data', 7, 1
+  UNION ALL SELECT 'item', 'racks', 'reference_data', 8, 1
+  UNION ALL SELECT 'item', 'idfs', 'reference_data', 9, 1
+  UNION ALL SELECT 'item', 'rack_statuses', 'reference_data', 10, 1
+  UNION ALL SELECT 'item', 'switch_status', 'reference_data', 11, 1
+  UNION ALL SELECT 'item', 'cable_colors', 'reference_data', 12, 1
+  UNION ALL SELECT 'item', 'ticket_categories', 'reference_data', 13, 1
+  UNION ALL SELECT 'item', 'ticket_statuses', 'reference_data', 14, 1
+  UNION ALL SELECT 'item', 'ticket_priorities', 'reference_data', 15, 1
+  UNION ALL SELECT 'item', 'employee_statuses', 'reference_data', 16, 1
+  UNION ALL SELECT 'item', 'audit_logs', 'reference_data', 17, 1
+  UNION ALL SELECT 'item', 'access_levels', 'reference_data', 18, 1
+  UNION ALL SELECT 'item', 'assignment_types', 'reference_data', 19, 1
+  UNION ALL SELECT 'item', 'attempts', 'reference_data', 20, 1
+  UNION ALL SELECT 'item', 'employee_onboarding_requests', 'reference_data', 21, 1
+  UNION ALL SELECT 'item', 'employee_system_access_relations', 'reference_data', 22, 1
+  UNION ALL SELECT 'item', 'equipment_environment', 'reference_data', 23, 1
+  UNION ALL SELECT 'item', 'equipment_fiber', 'reference_data', 24, 1
+  UNION ALL SELECT 'item', 'equipment_fiber_count', 'reference_data', 25, 1
+  UNION ALL SELECT 'item', 'equipment_fiber_patch', 'reference_data', 26, 1
+  UNION ALL SELECT 'item', 'equipment_fiber_rack', 'reference_data', 27, 1
+  UNION ALL SELECT 'item', 'equipment_poe', 'reference_data', 28, 1
+  UNION ALL SELECT 'item', 'equipment_rj45', 'reference_data', 29, 1
+  UNION ALL SELECT 'item', 'idf_device_type', 'reference_data', 30, 1
+  UNION ALL SELECT 'item', 'idf_links', 'reference_data', 31, 1
+  UNION ALL SELECT 'item', 'idf_ports', 'reference_data', 32, 1
+  UNION ALL SELECT 'item', 'idf_positions', 'reference_data', 33, 1
+  UNION ALL SELECT 'item', 'inventory_categories', 'reference_data', 34, 1
+  UNION ALL SELECT 'item', 'inventory_items', 'reference_data', 35, 1
+  UNION ALL SELECT 'item', 'patches_updates', 'reference_data', 36, 1
+  UNION ALL SELECT 'item', 'patches_updates_level', 'reference_data', 37, 1
+  UNION ALL SELECT 'item', 'patches_updates_status', 'reference_data', 38, 1
+  UNION ALL SELECT 'item', 'printer_device_types', 'reference_data', 39, 1
+  UNION ALL SELECT 'item', 'role_assignment_rights', 'reference_data', 40, 1
+  UNION ALL SELECT 'item', 'role_hierarchy', 'reference_data', 41, 1
+  UNION ALL SELECT 'item', 'role_module_permissions', 'reference_data', 42, 1
+  UNION ALL SELECT 'item', 'sidebar_layout', 'reference_data', 43, 1
+  UNION ALL SELECT 'item', 'switch_port_numbering_layout', 'reference_data', 44, 1
+  UNION ALL SELECT 'item', 'switch_port_types', 'reference_data', 45, 1
+  UNION ALL SELECT 'item', 'ui_configuration', 'reference_data', 46, 1
+  UNION ALL SELECT 'item', 'user_companies', 'reference_data', 47, 1
+  UNION ALL SELECT 'item', 'user_roles', 'reference_data', 48, 1
+  UNION ALL SELECT 'item', 'vlans', 'reference_data', 49, 1
+  UNION ALL SELECT 'item', 'warranty_types', 'reference_data', 50, 1
+  UNION ALL SELECT 'item', 'workstation_device_types', 'reference_data', 51, 1
+  UNION ALL SELECT 'item', 'workstation_modes', 'reference_data', 52, 1
+  UNION ALL SELECT 'item', 'workstation_office', 'reference_data', 53, 1
+  UNION ALL SELECT 'item', 'workstation_os_types', 'reference_data', 54, 1
+  UNION ALL SELECT 'item', 'workstation_os_versions', 'reference_data', 55, 1
+  UNION ALL SELECT 'item', 'workstation_ram', 'reference_data', 56, 1
+  UNION ALL SELECT 'item', 'registration_invitations', 'reference_data', 57, 1
+) AS t;
+
 -- Table structure for `supplier_statuses`
 DROP TABLE IF EXISTS `supplier_statuses`;
 CREATE TABLE `supplier_statuses` (
