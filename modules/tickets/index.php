@@ -222,7 +222,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                 <?php endif; ?>
             </div>
             <?php if ($company_id > 0 && $companyTotalRows === 0): ?>
-                <div style="margin-top:16px;">
+                <div style="margin-top:16px;text-align:center;">
                     <form method="POST" action="index.php">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                         <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
