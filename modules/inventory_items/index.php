@@ -867,8 +867,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
         });
     }
 
-    if (bulkDeleteForm && toggleButton) {
+    if (bulkDeleteForm) {
+        // Why: keep action links clickable by default and only expose selection UI on demand.
         setSelectionVisibility(false);
+    }
+
+    if (bulkDeleteForm && toggleButton) {
         bulkDeleteForm.addEventListener('submit', function (event) {
             if (event.submitter !== toggleButton) { return; }
             if (!selectionMode) {
