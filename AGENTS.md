@@ -129,9 +129,10 @@ Every module (excluding the Protection Zone) must implement:
 
 ## 🛠 Setup & Debugging
 * **Dev Credentials:** `localhost` | `root` | `itmanagement`.
-* **Online AI Test Environment:
+* **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
-  * `https://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
+  * `http://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
+  * Note: `https://nelsonsalvador.myddns.me/phpmyadmin/` currently returns upstream TLS/certificate errors; use HTTP for phpMyAdmin checks.
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging.
 
