@@ -118,6 +118,7 @@ Every module (excluding the Protection Zone) must implement:
     * `<span class="badge badge-success">Active</span>`
     * `<span class="badge badge-danger">Inactive</span>`
 * **Booleans (Edit Mode):** Use icons: `1` = ✅, `0` = ❌.
+* **Active Checkbox Guardrail:** In create/edit forms, treat `active` as a checkbox boolean for `tinyint` variants (not only `tinyint(1)`) so the Active toggle is always rendered and normalized reliably.
 
 
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
@@ -145,6 +146,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 ### Module Consistency Guardrail (Mandatory)
 When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
 * **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
+* **Boolean detection consistency:** If checkbox detection logic is updated (example: `active` with `tinyint` variant handling), propagate the same update to every duplicated entry file that shares create/edit rendering or POST normalization paths.
 * **For display renderer updates** (for example badges/swatches/label mapping), propagate the same renderer/helper logic to both `index.php` and `view.php` before commit.
 * **Verify FK label rendering in both list and detail/edit flows** (no raw FK IDs when a related label exists), including company-scoped fallback behavior where seeded reference rows may be missing for a tenant.
 * **Switch Status FK + color fallback guardrail (mandatory for `modules/switch_status/`):**
