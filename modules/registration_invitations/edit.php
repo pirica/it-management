@@ -71,7 +71,7 @@ function cr_fk_map($conn, $table) {
 /**
  * Fetches available options for a foreign key dropdown, scoped by company if applicable
  */
-function cr_fk_options($conn, $fk, $company_id) {
+function cr_fk_options($conn, $fk, $company_id, $currentUserId = 0, $currentUserIsAdmin = false) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
@@ -85,7 +85,19 @@ function cr_fk_options($conn, $fk, $company_id) {
     }
 
     if ($table === 'users') {
-        $sql = 'SELECT u.' . cr_escape_identifier($col) . ' AS id, u.' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . ' u';
+        $sql = 'SELECT u.' . cr_escape_identifier($col) . ' AS id, u.' . cr_escape_identifier($labelCol) . ' AS label';
+        if ($currentUserId > 0) {
+            $preferredLabelExpr = $currentUserIsAdmin
+                ? "NULLIF(TRIM(COALESCE(u.last_name, '')), '')"
+                : "NULLIF(TRIM(COALESCE(u.email, '')), '')";
+            $defaultLabelExpr = "NULLIF(TRIM(COALESCE(u.username, '')), '')";
+            $fallbackLabelExpr = "CONCAT('User #', u.id)";
+            $sql = 'SELECT u.' . cr_escape_identifier($col) . ' AS id, '
+                . 'CASE WHEN u.id=' . (int)$currentUserId
+                . ' THEN COALESCE(' . $preferredLabelExpr . ', ' . $defaultLabelExpr . ', ' . $fallbackLabelExpr . ') '
+                . 'ELSE u.' . cr_escape_identifier($labelCol) . ' END AS label';
+        }
+        $sql .= ', COALESCE(u.role_id, 0) AS inviter_role_id FROM ' . cr_escape_identifier($table) . ' u';
         if ($company_id > 0) {
             $companyFilters = ['u.company_id=' . (int)$company_id];
             if (cr_table_exists($conn, 'user_companies')) {
@@ -94,7 +106,7 @@ function cr_fk_options($conn, $fk, $company_id) {
             }
             $sql .= " WHERE (" . implode(' OR ', $companyFilters) . " OR LOWER(COALESCE(u.username, ''))='admin')";
         }
-        $sql .= ' GROUP BY u.' . cr_escape_identifier($col) . ', label ORDER BY label';
+        $sql .= ' GROUP BY u.' . cr_escape_identifier($col) . ', label, inviter_role_id ORDER BY label';
     } else {
         $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     }
@@ -153,8 +165,13 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
+    // Why: registration invitations should show inviter by surname when available.
+    if ($table === 'users' && in_array('last_name', $available, true)) {
+        $labelCol = 'last_name';
+    }
+
     // Preferred label columns in order of priority
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'title', 'last_name', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
@@ -164,6 +181,185 @@ function cr_fk_metadata($conn, $table) {
         'label_col' => $labelCol,
         'available' => $available,
     ];
+}
+
+/**
+ * Determines the current inviter defaults for form display.
+ */
+function cr_current_user_inviter_defaults($conn) {
+    $defaults = [
+        'id' => 0,
+        'is_admin' => false,
+        'preferred_label' => '',
+    ];
+
+    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($sessionUserId <= 0) {
+        return $defaults;
+    }
+
+    $sql = 'SELECT u.id, u.email, u.last_name, u.username, ur.name AS role_name
+            FROM users u
+            LEFT JOIN user_roles ur ON ur.id = u.role_id
+            WHERE u.id = ?
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $defaults;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $sessionUserId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    if (!$row) {
+        return $defaults;
+    }
+
+    $roleName = strtolower(trim((string)($row['role_name'] ?? '')));
+    $isAdmin = ($roleName === 'admin');
+    $lastName = trim((string)($row['last_name'] ?? ''));
+    $email = trim((string)($row['email'] ?? ''));
+    $username = trim((string)($row['username'] ?? ''));
+    $preferredLabel = $isAdmin ? $lastName : $email;
+    if ($preferredLabel === '') {
+        $preferredLabel = $username !== '' ? $username : ('User #' . (int)$row['id']);
+    }
+
+    return [
+        'id' => (int)$row['id'],
+        'is_admin' => $isAdmin,
+        'preferred_label' => $preferredLabel,
+    ];
+}
+
+/**
+ * Returns current user role/access metadata for hierarchy-based restrictions.
+ */
+function cr_current_user_permission_profile($conn) {
+    $profile = [
+        'id' => 0,
+        'role_id' => 0,
+        'role_name' => '',
+        'access_level_id' => 0,
+        'access_level_name' => '',
+        'is_admin' => false,
+    ];
+
+    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($sessionUserId <= 0) {
+        return $profile;
+    }
+
+    $sql = 'SELECT u.id, u.role_id, u.access_level_id, ur.name AS role_name, al.name AS access_level_name
+            FROM users u
+            LEFT JOIN user_roles ur ON ur.id = u.role_id
+            LEFT JOIN access_levels al ON al.id = u.access_level_id
+            WHERE u.id = ?
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $profile;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $sessionUserId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    if (!$row) {
+        return $profile;
+    }
+
+    $roleName = trim((string)($row['role_name'] ?? ''));
+    $accessLevelName = trim((string)($row['access_level_name'] ?? ''));
+
+    return [
+        'id' => (int)($row['id'] ?? 0),
+        'role_id' => (int)($row['role_id'] ?? 0),
+        'role_name' => $roleName,
+        'access_level_id' => (int)($row['access_level_id'] ?? 0),
+        'access_level_name' => $accessLevelName,
+        'is_admin' => strtolower($roleName) === 'admin',
+    ];
+}
+
+function cr_role_rank($roleLabel) {
+    $normalized = strtolower(trim((string)$roleLabel));
+    $rankMap = [
+        'admin' => 500,
+        'it manager' => 400,
+        'it assistant' => 300,
+        'helpdesk' => 200,
+        'user' => 100,
+    ];
+    return $rankMap[$normalized] ?? 0;
+}
+
+function cr_access_level_rank($accessLevelLabel) {
+    $normalized = strtolower(trim((string)$accessLevelLabel));
+    $rankMap = [
+        'full' => 300,
+        'read only' => 200,
+        'limited' => 100,
+    ];
+    return $rankMap[$normalized] ?? 0;
+}
+
+function cr_filter_invitation_hierarchy_options($fieldName, $options, $permissionProfile) {
+    if (!in_array($fieldName, ['role_id', 'access_level_id'], true) || !is_array($options)) {
+        return $options;
+    }
+
+    if (!empty($permissionProfile['is_admin'])) {
+        return $options;
+    }
+
+    $maxRank = 0;
+    if ($fieldName === 'role_id') {
+        $maxRank = cr_role_rank((string)($permissionProfile['role_name'] ?? ''));
+    } elseif ($fieldName === 'access_level_id') {
+        $maxRank = cr_access_level_rank((string)($permissionProfile['access_level_name'] ?? ''));
+    }
+
+    if ($maxRank <= 0) {
+        return [];
+    }
+
+    $filtered = [];
+    foreach ($options as $option) {
+        $label = (string)($option['label'] ?? '');
+        $rank = ($fieldName === 'role_id') ? cr_role_rank($label) : cr_access_level_rank($label);
+        if ($rank > 0 && $rank <= $maxRank) {
+            $filtered[] = $option;
+        }
+    }
+
+    return $filtered;
+}
+
+function cr_validate_invitation_hierarchy_selection($fieldName, $postedId, $allowedOptions, &$errors) {
+    if (!in_array($fieldName, ['role_id', 'access_level_id'], true)) {
+        return;
+    }
+
+    $selectionId = (int)$postedId;
+    if ($selectionId <= 0) {
+        return;
+    }
+
+    foreach ($allowedOptions as $option) {
+        if ((int)($option['id'] ?? 0) === $selectionId) {
+            return;
+        }
+    }
+
+    $errors[] = $fieldName === 'role_id'
+        ? 'You cannot assign a role above your own role.'
+        : 'You cannot assign an access level above your own access level.';
 }
 
 /**
@@ -441,6 +637,8 @@ $data = [];
 foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
+$inviterDefaults = cr_current_user_inviter_defaults($conn);
+$permissionProfile = cr_current_user_permission_profile($conn);
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -456,10 +654,21 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
         $errors[] = 'Record not found.';
     }
 }
+if ($crud_action === 'edit' && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($data['invited_by_user_id']) && (int)$data['invited_by_user_id'] <= 0) {
+    if ((int)($inviterDefaults['id'] ?? 0) > 0) {
+        $data['invited_by_user_id'] = (string)(int)$inviterDefaults['id'];
+    }
+}
 
 // Handle record submission (Create or Edit)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
+    $allowedRoleOptions = isset($fkMap['role_id'])
+        ? cr_filter_invitation_hierarchy_options('role_id', cr_fk_options($conn, $fkMap['role_id'], (int)$company_id), $permissionProfile)
+        : [];
+    $allowedAccessLevelOptions = isset($fkMap['access_level_id'])
+        ? cr_filter_invitation_hierarchy_options('access_level_id', cr_fk_options($conn, $fkMap['access_level_id'], (int)$company_id), $permissionProfile)
+        : [];
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
@@ -528,6 +737,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 }
                 continue;
             }
+        }
+
+        if ($name === 'role_id') {
+            cr_validate_invitation_hierarchy_selection($name, $_POST[$name] ?? 0, $allowedRoleOptions, $errors);
+        } elseif ($name === 'access_level_id') {
+            cr_validate_invitation_hierarchy_selection($name, $_POST[$name] ?? 0, $allowedAccessLevelOptions, $errors);
         }
 
         // Sanitize regular field values
@@ -799,7 +1014,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_fk_options(
+                                        $conn,
+                                        $fkMap[$name],
+                                        (int)$company_id,
+                                        (int)($inviterDefaults['id'] ?? 0),
+                                        !empty($inviterDefaults['is_admin'])
+                                    );
+                                    $opts = cr_filter_invitation_hierarchy_options($name, $opts, $permissionProfile);
                                     $selectedOptionExists = false;
                                     foreach ($opts as $optRow) {
                                         if ((string)$displayVal === (string)($optRow['id'] ?? '')) {
@@ -827,7 +1049,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php $inviterRoleId = isset($opt['inviter_role_id']) ? (int)$opt['inviter_role_id'] : 0; ?>
+                                        <option value="<?php echo (int)$opt['id']; ?>" data-inviter-role-id="<?php echo $inviterRoleId; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>

@@ -237,6 +237,145 @@ function cr_current_user_inviter_defaults($conn) {
 }
 
 /**
+ * Returns current user role/access metadata for hierarchy-based restrictions.
+ */
+function cr_current_user_permission_profile($conn) {
+    $profile = [
+        'id' => 0,
+        'role_id' => 0,
+        'role_name' => '',
+        'access_level_id' => 0,
+        'access_level_name' => '',
+        'is_admin' => false,
+    ];
+
+    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($sessionUserId <= 0) {
+        return $profile;
+    }
+
+    $sql = 'SELECT u.id, u.role_id, u.access_level_id, ur.name AS role_name, al.name AS access_level_name
+            FROM users u
+            LEFT JOIN user_roles ur ON ur.id = u.role_id
+            LEFT JOIN access_levels al ON al.id = u.access_level_id
+            WHERE u.id = ?
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $profile;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $sessionUserId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    if (!$row) {
+        return $profile;
+    }
+
+    $roleName = trim((string)($row['role_name'] ?? ''));
+    $accessLevelName = trim((string)($row['access_level_name'] ?? ''));
+
+    return [
+        'id' => (int)($row['id'] ?? 0),
+        'role_id' => (int)($row['role_id'] ?? 0),
+        'role_name' => $roleName,
+        'access_level_id' => (int)($row['access_level_id'] ?? 0),
+        'access_level_name' => $accessLevelName,
+        'is_admin' => strtolower($roleName) === 'admin',
+    ];
+}
+
+/**
+ * Ranks roles so users can only invite at or below their own role.
+ */
+function cr_role_rank($roleLabel) {
+    $normalized = strtolower(trim((string)$roleLabel));
+    $rankMap = [
+        'admin' => 500,
+        'it manager' => 400,
+        'it assistant' => 300,
+        'helpdesk' => 200,
+        'user' => 100,
+    ];
+    return $rankMap[$normalized] ?? 0;
+}
+
+/**
+ * Ranks access levels so users can only invite at or below their own level.
+ */
+function cr_access_level_rank($accessLevelLabel) {
+    $normalized = strtolower(trim((string)$accessLevelLabel));
+    $rankMap = [
+        'full' => 300,
+        'read only' => 200,
+        'limited' => 100,
+    ];
+    return $rankMap[$normalized] ?? 0;
+}
+
+/**
+ * Filters role/access options based on logged user hierarchy.
+ */
+function cr_filter_invitation_hierarchy_options($fieldName, $options, $permissionProfile) {
+    if (!in_array($fieldName, ['role_id', 'access_level_id'], true) || !is_array($options)) {
+        return $options;
+    }
+
+    if (!empty($permissionProfile['is_admin'])) {
+        return $options;
+    }
+
+    $maxRank = 0;
+    if ($fieldName === 'role_id') {
+        $maxRank = cr_role_rank((string)($permissionProfile['role_name'] ?? ''));
+    } elseif ($fieldName === 'access_level_id') {
+        $maxRank = cr_access_level_rank((string)($permissionProfile['access_level_name'] ?? ''));
+    }
+
+    if ($maxRank <= 0) {
+        return [];
+    }
+
+    $filtered = [];
+    foreach ($options as $option) {
+        $label = (string)($option['label'] ?? '');
+        $rank = ($fieldName === 'role_id') ? cr_role_rank($label) : cr_access_level_rank($label);
+        if ($rank > 0 && $rank <= $maxRank) {
+            $filtered[] = $option;
+        }
+    }
+
+    return $filtered;
+}
+
+/**
+ * Validates posted role/access selections against current user hierarchy.
+ */
+function cr_validate_invitation_hierarchy_selection($fieldName, $postedId, $allowedOptions, &$errors) {
+    if (!in_array($fieldName, ['role_id', 'access_level_id'], true)) {
+        return;
+    }
+
+    $selectionId = (int)$postedId;
+    if ($selectionId <= 0) {
+        return;
+    }
+
+    foreach ($allowedOptions as $option) {
+        if ((int)($option['id'] ?? 0) === $selectionId) {
+            return;
+        }
+    }
+
+    $errors[] = $fieldName === 'role_id'
+        ? 'You cannot assign a role above your own role.'
+        : 'You cannot assign an access level above your own access level.';
+}
+
+/**
  * Filters system-managed columns
  */
 function cr_manageable_columns($columns) {
@@ -462,6 +601,7 @@ foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
 $inviterDefaults = cr_current_user_inviter_defaults($conn);
+$permissionProfile = cr_current_user_permission_profile($conn);
 
 if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($data['invited_by_user_id'])) {
     if ($inviterDefaults['id'] > 0) {
@@ -487,6 +627,13 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 // Process data entry and updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
+
+    $allowedRoleOptions = isset($fkMap['role_id'])
+        ? cr_filter_invitation_hierarchy_options('role_id', cr_fk_options($conn, $fkMap['role_id'], (int)$company_id), $permissionProfile)
+        : [];
+    $allowedAccessLevelOptions = isset($fkMap['access_level_id'])
+        ? cr_filter_invitation_hierarchy_options('access_level_id', cr_fk_options($conn, $fkMap['access_level_id'], (int)$company_id), $permissionProfile)
+        : [];
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
@@ -552,6 +699,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 }
                 continue;
             }
+        }
+
+        if ($name === 'role_id') {
+            cr_validate_invitation_hierarchy_selection($name, $_POST[$name] ?? 0, $allowedRoleOptions, $errors);
+        } elseif ($name === 'access_level_id') {
+            cr_validate_invitation_hierarchy_selection($name, $_POST[$name] ?? 0, $allowedAccessLevelOptions, $errors);
         }
 
         // Sanitize regular inputs
@@ -726,6 +879,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         (int)($inviterDefaults['id'] ?? 0),
                                         !empty($inviterDefaults['is_admin'])
                                     );
+                                    $opts = cr_filter_invitation_hierarchy_options($name, $opts, $permissionProfile);
                                     $selectedOptionExists = false;
                                     foreach ($opts as $optRow) {
                                         if ((string)$displayVal === (string)($optRow['id'] ?? '')) {
