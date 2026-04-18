@@ -39,6 +39,15 @@ function cr_fk_map($conn, $table) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $map[$row['COLUMN_NAME']] = $row;
     }
+
+    if ($table === 'ui_configuration' && !isset($map['user_id'])) {
+        $map['user_id'] = [
+            'COLUMN_NAME' => 'user_id',
+            'REFERENCED_TABLE_NAME' => 'users',
+            'REFERENCED_COLUMN_NAME' => 'id',
+        ];
+    }
+
     return $map;
 }
 
@@ -665,13 +674,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <span></span>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <span></span>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
