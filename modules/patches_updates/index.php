@@ -310,10 +310,15 @@ function cr_get_csrf_token() {
     return (string)$_SESSION['csrf_token'];
 }
 
+function cr_validate_csrf_token($token) {
+    $requestToken = (string)$token;
+    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+    return $requestToken !== '' && $sessionToken !== '' && hash_equals($sessionToken, $requestToken);
+}
+
 function cr_require_valid_csrf_token() {
     $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
+    if (!cr_validate_csrf_token($token)) {
         http_response_code(403);
         echo 'Forbidden: invalid CSRF token.';
         exit;
@@ -527,6 +532,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         }
 
         $insertedRows = 0;
+        $failedRows = 0;
+        $firstInsertError = '';
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -605,10 +612,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+                continue;
+            }
+
+            $failedRows++;
+            if ($firstInsertError === '') {
+                $friendlyError = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                $firstInsertError = 'Row ' . ($rowIndex + 1) . ': ' . $friendlyError;
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        if ($insertedRows <= 0) {
+            http_response_code(400);
+            $importError = $firstInsertError !== ''
+                ? $firstInsertError
+                : 'Import failed: no valid rows were saved.';
+            echo json_encode(['ok' => false, 'error' => $importError]);
+            exit;
+        }
+
+        echo json_encode([
+            'ok' => true,
+            'inserted' => $insertedRows,
+            'failed' => $failedRows,
+            'warning' => $firstInsertError,
+        ]);
         exit;
     }
 }
