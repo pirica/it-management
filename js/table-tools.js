@@ -156,26 +156,74 @@
         });
     }
 
+    async function importRowsIntoDatabase(table, rows) {
+        const endpoint = table.dataset.itmDbImportEndpoint || '';
+        if (!endpoint) {
+            return false;
+        }
+
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+        if (!csrfToken) {
+            window.alert('Import failed: missing CSRF token.');
+            return true;
+        }
+
+        const response = await window.fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                import_excel_rows: rows,
+                csrf_token: csrfToken
+            })
+        });
+
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = null;
+        }
+
+        if (!response.ok || !payload || payload.ok !== true) {
+            const message = (payload && payload.error) ? payload.error : 'Import failed while saving to database.';
+            window.alert(message);
+            return true;
+        }
+
+        const inserted = Number(payload.inserted || 0);
+        window.alert(`Import completed. ${inserted} row(s) saved.`);
+        window.location.reload();
+        return true;
+    }
+
     function importTableFromFile(table, file) {
         const extension = (file.name.split('.').pop() || '').toLowerCase();
         const reader = new FileReader();
 
         if (extension === 'csv') {
-            reader.onload = () => {
+            reader.onload = async () => {
                 const text = typeof reader.result === 'string' ? reader.result : '';
-                importRowsIntoTable(table, readCsv(text));
+                const rows = readCsv(text);
+                const handledByDbImport = await importRowsIntoDatabase(table, rows);
+                if (!handledByDbImport) {
+                    importRowsIntoTable(table, rows);
+                }
             };
             reader.readAsText(file);
             return;
         }
 
         if (window.XLSX && (extension === 'xlsx' || extension === 'xls')) {
-            reader.onload = () => {
+            reader.onload = async () => {
                 const data = new Uint8Array(reader.result);
                 const workbook = window.XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.SheetNames[0];
                 const rows = window.XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: '' });
-                importRowsIntoTable(table, rows);
+                const handledByDbImport = await importRowsIntoDatabase(table, rows);
+                if (!handledByDbImport) {
+                    importRowsIntoTable(table, rows);
+                }
             };
             reader.readAsArrayBuffer(file);
             return;
