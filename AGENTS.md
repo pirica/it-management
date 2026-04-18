@@ -58,6 +58,7 @@ Do **not** modify logic or structure unless explicitly requested:
 Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Button Positions:** Render refresh/add controls based on `new_button_position`.
 * **Table Actions:** Add `data-itm-actions-origin="1"` to "Actions" headers/cells to allow the global layout engine to map `table_actions_position`.
+* **DB Import Endpoint (Index Tables):** Add `data-itm-db-import-endpoint="index.php"` to every module index table so `📥Import Excel` can use the save-to-database flow.
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
 
 ### 5. Standard Feature Set
