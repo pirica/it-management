@@ -29,6 +29,16 @@ function cr_escape_identifier($name) {
 }
 
 /**
+ * Verifies table existence before adding optional joins.
+ */
+function cr_table_exists($conn, $table) {
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $sql = "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$tableEsc}' LIMIT 1";
+    $res = mysqli_query($conn, $sql);
+    return $res && mysqli_fetch_row($res) !== null;
+}
+
+/**
  * Fetches column metadata for the current table using DESCRIBE
  */
 function cr_table_columns($conn, $table) {
@@ -77,8 +87,12 @@ function cr_fk_options($conn, $fk, $company_id) {
     if ($table === 'users') {
         $sql = 'SELECT u.' . cr_escape_identifier($col) . ' AS id, u.' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . ' u';
         if ($company_id > 0) {
-            $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
-            $sql .= ' WHERE (u.company_id=' . (int)$company_id . ' OR uc.company_id=' . (int)$company_id . " OR LOWER(COALESCE(u.username, ''))='admin')";
+            $companyFilters = ['u.company_id=' . (int)$company_id];
+            if (cr_table_exists($conn, 'user_companies')) {
+                $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
+                $companyFilters[] = 'uc.company_id=' . (int)$company_id;
+            }
+            $sql .= " WHERE (" . implode(' OR ', $companyFilters) . " OR LOWER(COALESCE(u.username, ''))='admin')";
         }
         $sql .= ' GROUP BY u.' . cr_escape_identifier($col) . ', label ORDER BY label';
     } else {
