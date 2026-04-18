@@ -126,7 +126,7 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === 'active') {
+    if (in_array($field, ['active', 'is_visible'], true)) {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
@@ -528,7 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
@@ -836,7 +836,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = (strpos((string)$col['Type'], 'text') !== false);
