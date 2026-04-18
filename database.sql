@@ -1561,6 +1561,10 @@ CREATE TABLE `registration_invitations` (
 
 -- Data for `registration_invitations`
 INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:00');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('2', '2', 'new.user@datacenterplus.example', 'INVITE-DATACENTERPLUS-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:10');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('3', '3', 'new.user@networksolutions.example', 'INVITE-NETWORKSOLUTIONS-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:20');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('4', '4', 'new.user@cloudtech.example', 'INVITE-CLOUDTECH-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:30');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('5', '5', 'new.user@enterpriseit.example', 'INVITE-ENTERPRISEIT-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:40');
 
 -- Table structure for `attempts`
 -- Why: Unified security telemetry table for login and password reset events (legacy module folders were merged into modules/attempts).
