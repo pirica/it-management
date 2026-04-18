@@ -80,13 +80,7 @@ function cr_humanize_field($field) {
 
 // CSRF check
 function cr_require_valid_csrf_token() {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo 'Forbidden: invalid CSRF token.';
-        exit;
-    }
+    itm_require_post_csrf();
 }
 
 // Module initialization
