@@ -131,8 +131,13 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
+    // Why: registration invitations should show inviter by surname when available.
+    if ($table === 'users' && in_array('last_name', $available, true)) {
+        $labelCol = 'last_name';
+    }
+
     // Preferred label columns in order of priority
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'title', 'last_name', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;

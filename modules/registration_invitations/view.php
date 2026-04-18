@@ -131,7 +131,12 @@ function cr_fk_metadata($conn, $table) {
         $available[] = $d['Field'];
     }
     // Preferred label columns in order of priority
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    // Why: registration invitations should show inviter by surname when available.
+    if ($table === 'users' && in_array('last_name', $available, true)) {
+        $labelCol = 'last_name';
+    }
+
+    foreach (['name', 'title', 'last_name', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
