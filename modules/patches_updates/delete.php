@@ -88,6 +88,49 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+
+function cr_fk_option_by_id($conn, $fk, $rawId, $company_id) {
+    $id = (int)$rawId;
+    if ($id <= 0) {
+        return null;
+    }
+
+    $table = (string)$fk['REFERENCED_TABLE_NAME'];
+    $col = (string)$fk['REFERENCED_COLUMN_NAME'];
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $labelCol = $fkMeta['label_col'];
+    $available = $fkMeta['available'];
+    $selectExtras = '';
+    if ($table === 'patches_updates_status') {
+        $selectExtras = ', color';
+    }
+
+    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label' . $selectExtras
+        . ' FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+
+    $scopedSql = $baseSql;
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $scopedSql .= ' AND company_id=' . (int)$company_id;
+    }
+    $scopedSql .= ' LIMIT 1';
+
+    $res = mysqli_query($conn, $scopedSql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        return $row;
+    }
+
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $fallbackSql = $baseSql . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            return $fallbackRow;
+        }
+    }
+
+    return null;
+}
+
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
         return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
@@ -143,11 +186,14 @@ function cr_status_color_by_id($statusId) {
     $sql .= ' LIMIT 1';
 
     $res = mysqli_query($GLOBALS['conn'], $sql);
-    if (!$res) {
-        return '';
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+
+    if (!$row && (int)($GLOBALS['company_id'] ?? 0) > 0) {
+        $fallbackSql = 'SELECT color FROM `patches_updates_status` WHERE id=' . $statusId . ' LIMIT 1';
+        $fallbackRes = mysqli_query($GLOBALS['conn'], $fallbackSql);
+        $row = $fallbackRes ? mysqli_fetch_assoc($fallbackRes) : null;
     }
 
-    $row = mysqli_fetch_assoc($res);
     $color = (string)($row['color'] ?? '');
     if (!preg_match('/^#[A-Fa-f0-9]{6}$/', $color)) {
         return '';
@@ -157,26 +203,24 @@ function cr_status_color_by_id($statusId) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === 'status_id' && (string)$value !== '') {
-        $statusId = (int)$value;
-        $statusName = '';
+    if (isset($GLOBALS['fkMap'][$field]) && (string)$value !== '') {
+        $fkOption = cr_fk_option_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], $value, (int)($GLOBALS['company_id'] ?? 0));
 
-        $sql = 'SELECT name FROM `patches_updates_status` WHERE id=' . $statusId;
-        if ((int)($GLOBALS['company_id'] ?? 0) > 0) {
-            $sql .= ' AND company_id=' . (int)$GLOBALS['company_id'];
+        if ($field === 'status_id') {
+            $color = cr_status_color_by_id((int)$value);
+            if ($fkOption && isset($fkOption['color']) && preg_match('/^#[A-Fa-f0-9]{6}$/', (string)$fkOption['color'])) {
+                $color = strtoupper((string)$fkOption['color']);
+            }
+            $square = $color !== ''
+                ? '<span title="' . sanitize($color) . '" style="display:inline-block;width:10px;height:10px;border:1px solid #999;border-radius:2px;vertical-align:middle;margin-right:6px;background:' . sanitize($color) . ';"></span>'
+                : '';
+            $statusLabel = (string)($fkOption['label'] ?? '');
+            return $square . sanitize($statusLabel !== '' ? $statusLabel : (string)$value);
         }
-        $sql .= ' LIMIT 1';
-        $res = mysqli_query($GLOBALS['conn'], $sql);
-        if ($res && ($row = mysqli_fetch_assoc($res))) {
-            $statusName = (string)($row['name'] ?? '');
+
+        if ($fkOption && isset($fkOption['label']) && (string)$fkOption['label'] !== '') {
+            return sanitize((string)$fkOption['label']);
         }
-
-        $color = cr_status_color_by_id($statusId);
-        $square = $color !== ''
-            ? '<span title="' . sanitize($color) . '" style="display:inline-block;width:10px;height:10px;border:1px solid #999;border-radius:2px;vertical-align:middle;margin-right:6px;background:' . sanitize($color) . ';"></span>'
-            : '';
-
-        return $square . sanitize($statusName !== '' ? $statusName : (string)$value);
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -278,6 +322,11 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
     $error = cr_numeric_validation_error($fieldName, 'has an unsupported numeric type');
     return false;
+}
+
+function cr_is_tinyint_column($column) {
+    $type = strtolower((string)($column['Type'] ?? ''));
+    return preg_match('/^tinyint\(\d+\)/', $type) === 1;
 }
 
 $columns = cr_table_columns($conn, $crud_table);
@@ -415,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = cr_is_tinyint_column($col);
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
@@ -635,7 +684,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = cr_is_tinyint_column($col);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
@@ -656,6 +705,21 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    if ($displayVal !== '' && !in_array($displayVal, ['__new__', '__add_new__'], true)) {
+                                        $hasSelectedOption = false;
+                                        foreach ($opts as $opt) {
+                                            if ((string)($opt['id'] ?? '') === (string)$displayVal) {
+                                                $hasSelectedOption = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!$hasSelectedOption) {
+                                            $selectedOption = cr_fk_option_by_id($conn, $fkMap[$name], $displayVal, (int)$company_id);
+                                            if ($selectedOption) {
+                                                $opts[] = $selectedOption;
+                                            }
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
