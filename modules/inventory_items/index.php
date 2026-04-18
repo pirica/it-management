@@ -32,6 +32,19 @@ function cr_escape_identifier($name) {
 }
 
 /**
+ * PHP 7.4-compatible substring helpers (replacement for PHP 8 string helpers).
+ */
+function cr_string_contains($haystack, $needle) {
+    return $needle !== '' && strpos((string)$haystack, (string)$needle) !== false;
+}
+
+function cr_string_starts_with($haystack, $needle) {
+    $haystack = (string)$haystack;
+    $needle = (string)$needle;
+    return $needle === '' || strpos($haystack, $needle) === 0;
+}
+
+/**
  * Retrieves column metadata for the current table.
  */
 function cr_table_columns($conn, $table) {
@@ -240,7 +253,7 @@ function cr_numeric_validation_error($field, $message) {
  */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
-    $isUnsigned = str_contains($type, 'unsigned');
+    $isUnsigned = cr_string_contains($type, 'unsigned');
     $raw = trim((string)$rawValue);
 
     if (preg_match('/^(tinyint|smallint|mediumint|int|bigint)\b/', $type, $match)) {
@@ -694,7 +707,7 @@ if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$comp
 // SEARCH LOGIC
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchPattern = (cr_string_contains($searchRaw, '%') || cr_string_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
     foreach ($fieldColumns as $col) {
@@ -882,9 +895,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
-                        $isDate = str_starts_with($col['Type'], 'date');
-                        $isDateTime = str_starts_with($col['Type'], 'datetime');
-                        $isText = str_contains($col['Type'], 'text');
+                        $isDate = cr_string_starts_with($col['Type'], 'date');
+                        $isDateTime = cr_string_starts_with($col['Type'], 'datetime');
+                        $isText = cr_string_contains($col['Type'], 'text');
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
