@@ -621,10 +621,54 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             return 0;
         }
 
+        $sourceHasCompanyRows = false;
+        $sourceHasRequestedCompanyRows = false;
+        foreach ($tableRows as $rowEntry) {
+            $rawColumns = $rowEntry['columns'] ?? [];
+            $rawValues = $rowEntry['values'] ?? [];
+            foreach ($rawColumns as $index => $columnToken) {
+                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                if ($columnName !== 'company_id') {
+                    continue;
+                }
+                $sourceHasCompanyRows = true;
+                $rawCompanyToken = trim((string)($rawValues[$index] ?? ''));
+                if ($rawCompanyToken === '' || strtoupper($rawCompanyToken) === 'NULL') {
+                    continue;
+                }
+                $rawCompanyToken = trim($rawCompanyToken, "'\"");
+                if ((int)$rawCompanyToken === $companyId) {
+                    $sourceHasRequestedCompanyRows = true;
+                }
+                break;
+            }
+        }
+
         $insertCount = 0;
         foreach ($tableRows as $rowEntry) {
             $rawColumns = $rowEntry['columns'] ?? [];
             $rawValues = $rowEntry['values'] ?? [];
+
+            // Why: When database.sql already includes per-company samples, seed only rows
+            // for the active company to avoid global-unique collisions on tenant-specific tables.
+            if ($sourceHasCompanyRows && $sourceHasRequestedCompanyRows) {
+                $rowCompanyId = null;
+                foreach ($rawColumns as $index => $columnToken) {
+                    $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                    if ($columnName !== 'company_id') {
+                        continue;
+                    }
+                    $rawCompanyToken = trim((string)($rawValues[$index] ?? ''));
+                    if ($rawCompanyToken !== '' && strtoupper($rawCompanyToken) !== 'NULL') {
+                        $rawCompanyToken = trim($rawCompanyToken, "'\"");
+                        $rowCompanyId = (int)$rawCompanyToken;
+                    }
+                    break;
+                }
+                if ($rowCompanyId !== $companyId) {
+                    continue;
+                }
+            }
 
             $targetColumns = [];
             $targetValues = [];
