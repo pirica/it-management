@@ -168,7 +168,7 @@ function cr_numeric_validation_error($field, $message) {
 
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
-    $isUnsigned = str_contains($type, 'unsigned');
+    $isUnsigned = (strpos($type, 'unsigned') !== false);
     $raw = trim((string)$rawValue);
 
     if (preg_match('/^(tinyint|smallint|mediumint|int|bigint)\b/', $type, $match)) {
@@ -569,7 +569,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
-                        $isText = str_contains($col['Type'], 'text');
+                        $isText = (strpos((string)$col['Type'], 'text') !== false);
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
