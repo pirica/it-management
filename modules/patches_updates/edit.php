@@ -378,10 +378,6 @@ $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     $fieldName = (string)($col['Field'] ?? '');
-    if ($fieldName === 'created_by' && ($GLOBALS['crud_table'] ?? '') === 'patches_updates') {
-        return false;
-    }
-
     return !cr_is_hidden_employee_field($fieldName);
 }));
 $hasCompany = false;
@@ -528,6 +524,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         $value = $_POST[$name] ?? null;
+        if ($name === 'created_by' && ($GLOBALS['crud_table'] ?? '') === 'patches_updates' && $crud_action === 'create' && ($value === '' || $value === null)) {
+            $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
+            $data[$name] = $sessionUserId > 0 ? (string)$sessionUserId : 'NULL';
+            continue;
+        }
+
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
