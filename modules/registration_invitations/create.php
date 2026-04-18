@@ -82,7 +82,7 @@ function cr_fk_options($conn, $fk, $company_id) {
         $sql .= ' FROM ' . $tableEscaped . ' u';
         if ($company_id > 0) {
             $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
-            $sql .= ' WHERE (u.company_id=' . (int)$company_id . ' OR uc.company_id=' . (int)$company_id . ')';
+            $sql .= ' WHERE (u.company_id=' . (int)$company_id . ' OR uc.company_id=' . (int)$company_id . " OR LOWER(COALESCE(u.username, ''))='admin')";
         }
     } else {
         $sql .= ' FROM ' . $tableEscaped . $where;

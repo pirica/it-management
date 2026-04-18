@@ -74,7 +74,16 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    if ($table === 'users') {
+        $sql = 'SELECT u.' . cr_escape_identifier($col) . ' AS id, u.' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . ' u';
+        if ($company_id > 0) {
+            $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
+            $sql .= ' WHERE (u.company_id=' . (int)$company_id . ' OR uc.company_id=' . (int)$company_id . " OR LOWER(COALESCE(u.username, ''))='admin')";
+        }
+        $sql .= ' GROUP BY u.' . cr_escape_identifier($col) . ', label ORDER BY label';
+    } else {
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    }
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
