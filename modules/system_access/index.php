@@ -11,6 +11,8 @@
  */
 
 require '../../config/config.php';
+itm_handle_json_table_import($conn, 'system_access', (int)($company_id ?? 0));
+
 require '../../includes/employee_system_access.php';
 
 // Ensure database schema is ready before any logic.

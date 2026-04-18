@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+itm_handle_json_table_import($conn, 'equipment', (int)($company_id ?? 0));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     itm_require_post_csrf();

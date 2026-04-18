@@ -10,6 +10,8 @@
  */
 
 require '../../config/config.php';
+itm_handle_json_table_import($conn, 'tickets', (int)($company_id ?? 0));
+
 
 /**
  * Validates if a string is a valid Hex Color code

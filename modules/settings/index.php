@@ -11,6 +11,8 @@
  **/
 
 require '../../config/config.php';
+itm_handle_json_table_import($conn, 'settings', (int)($company_id ?? 0));
+
 
 $message = '';
 $error = '';

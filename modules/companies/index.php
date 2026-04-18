@@ -7,6 +7,8 @@
  */
 
 require '../../config/config.php';
+itm_handle_json_table_import($conn, 'companies', (int)($company_id ?? 0));
+
 
 /**
  * Helper to build a clean query string for sorting and filtering

@@ -8,6 +8,8 @@
  */
 
 require '../../config/config.php';
+itm_handle_json_table_import($conn, 'audit_logs', (int)($company_id ?? 0));
+
 
 /**
  * Audit Logs - Search and List

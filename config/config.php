@@ -853,6 +853,178 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
 }
 
 /**
+ * Handles JSON import requests from table-tools.js and writes rows directly to a table.
+ */
+if (!function_exists('itm_handle_json_table_import')) {
+    function itm_handle_json_table_import($conn, $tableName, $companyId = 0) {
+        if ((string)($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            return false;
+        }
+
+        $contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+        if (strpos($contentType, 'application/json') === false) {
+            return false;
+        }
+
+        $rawBody = file_get_contents('php://input');
+        $jsonBody = json_decode((string)$rawBody, true);
+        if (!is_array($jsonBody) || !isset($jsonBody['import_excel_rows'])) {
+            return false;
+        }
+
+        header('Content-Type: application/json');
+
+        $tableName = trim((string)$tableName);
+        if ($tableName === '' || !itm_is_safe_identifier($tableName)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid import table.']);
+            exit;
+        }
+
+        $requestToken = (string)($jsonBody['csrf_token'] ?? '');
+        if (!itm_validate_csrf_token($requestToken)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
+            exit;
+        }
+
+        $columns = [];
+        $describeSql = 'DESCRIBE `' . str_replace('`', '``', $tableName) . '`';
+        $describeResult = mysqli_query($conn, $describeSql);
+        while ($describeResult && ($column = mysqli_fetch_assoc($describeResult))) {
+            $fieldName = (string)($column['Field'] ?? '');
+            if ($fieldName === '' || $fieldName === 'id' || $fieldName === 'created_at' || $fieldName === 'updated_at') {
+                continue;
+            }
+
+            $columns[$fieldName] = [
+                'field' => $fieldName,
+                'type' => strtolower((string)($column['Type'] ?? '')),
+            ];
+        }
+
+        if (empty($columns)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Import columns were not found.']);
+            exit;
+        }
+
+        $hasCompanyColumn = isset($columns['company_id']);
+        $companyId = (int)$companyId;
+        if ($hasCompanyColumn && $companyId <= 0) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Import requires an active company.']);
+            exit;
+        }
+
+        $importRows = $jsonBody['import_excel_rows'];
+        if (!is_array($importRows) || count($importRows) < 2) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'The uploaded file has no data rows.']);
+            exit;
+        }
+
+        $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
+        $headerMap = [];
+        foreach ($columns as $fieldName => $meta) {
+            $normalizedField = strtolower(str_replace('_', ' ', $fieldName));
+            $headerMap[$normalizedField] = $fieldName;
+            $headerMap[strtolower(ucwords($normalizedField))] = $fieldName;
+        }
+
+        $importColumnFields = [];
+        foreach ($headerRow as $headerValue) {
+            $normalizedHeader = strtolower(trim(preg_replace('/\s+/', ' ', (string)$headerValue)));
+            $importColumnFields[] = $headerMap[$normalizedHeader] ?? null;
+        }
+
+        $targetFields = array_keys($columns);
+        $insertedRows = 0;
+        $failedRows = 0;
+
+        for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
+            $sourceRow = (array)$importRows[$rowIndex];
+            $hasValues = false;
+            foreach ($sourceRow as $cellValue) {
+                if (trim((string)$cellValue) !== '') {
+                    $hasValues = true;
+                    break;
+                }
+            }
+            if (!$hasValues) {
+                continue;
+            }
+
+            $rowValues = [];
+            foreach ($targetFields as $fieldName) {
+                $rowValues[$fieldName] = 'NULL';
+            }
+
+            foreach ($importColumnFields as $index => $fieldName) {
+                if ($fieldName === null || !isset($columns[$fieldName])) {
+                    continue;
+                }
+                if ($fieldName === 'company_id') {
+                    continue;
+                }
+
+                $rawValue = trim((string)($sourceRow[$index] ?? ''));
+                if ($rawValue === '' || $rawValue === '—') {
+                    continue;
+                }
+
+                $columnType = (string)$columns[$fieldName]['type'];
+                if (preg_match('/^tinyint(\(\d+\))?/i', $columnType)) {
+                    $normalizedBool = strtolower($rawValue);
+                    if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
+                        $rowValues[$fieldName] = '1';
+                    } elseif (in_array($normalizedBool, ['0', 'inactive', 'no', 'false', 'off', '❌'], true)) {
+                        $rowValues[$fieldName] = '0';
+                    }
+                    continue;
+                }
+
+                if (preg_match('/\b(int|decimal|float|double)\b/i', $columnType)) {
+                    if (is_numeric($rawValue)) {
+                        $rowValues[$fieldName] = (string)$rawValue;
+                    }
+                    continue;
+                }
+
+                $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
+            }
+
+            if ($hasCompanyColumn) {
+                $rowValues['company_id'] = (string)$companyId;
+            }
+
+            $insertFields = [];
+            $insertValues = [];
+            foreach ($targetFields as $fieldName) {
+                $insertFields[] = '`' . str_replace('`', '``', $fieldName) . '`';
+                $insertValues[] = $rowValues[$fieldName] ?? 'NULL';
+            }
+
+            $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                $insertedRows++;
+            } else {
+                $failedRows++;
+            }
+        }
+
+        echo json_encode([
+            'ok' => true,
+            'inserted' => $insertedRows,
+            'failed' => $failedRows,
+        ]);
+        exit;
+    }
+}
+
+/**
  * Retrieves a company name by its ID
  */
 if (!function_exists('get_company_name')) {
