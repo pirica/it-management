@@ -476,6 +476,135 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
+    $rawBody = file_get_contents('php://input');
+    $jsonBody = json_decode((string)$rawBody, true);
+    if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
+        header('Content-Type: application/json');
+
+        $_POST['csrf_token'] = (string)($jsonBody['csrf_token'] ?? '');
+        if (!cr_validate_csrf_token($_POST['csrf_token'])) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
+            exit;
+        }
+
+        if (!$hasCompany || $company_id <= 0) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Import requires an active company.']);
+            exit;
+        }
+
+        $importRows = $jsonBody['import_excel_rows'];
+        if (!is_array($importRows) || count($importRows) < 2) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'The uploaded file has no data rows.']);
+            exit;
+        }
+
+        $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
+        $columnKeys = [];
+        foreach ($headerRow as $headerValue) {
+            $columnKeys[] = strtolower(preg_replace('/\s+/', ' ', $headerValue));
+        }
+
+        $fieldByLabel = [];
+        foreach ($uiColumns as $col) {
+            $fieldByLabel[strtolower((string)cr_humanize_field($col['Field']))] = $col;
+        }
+
+        $importColumns = [];
+        foreach ($columnKeys as $labelKey) {
+            $importColumns[] = $fieldByLabel[$labelKey] ?? null;
+        }
+
+        $insertedRows = 0;
+        for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
+            $sourceRow = (array)$importRows[$rowIndex];
+            if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
+                continue;
+            }
+
+            $rowData = [];
+            foreach ($fieldColumns as $col) {
+                $rowData[$col['Field']] = 'NULL';
+            }
+
+            foreach ($importColumns as $idx => $columnMeta) {
+                if (!is_array($columnMeta)) {
+                    continue;
+                }
+
+                $fieldName = (string)$columnMeta['Field'];
+                $rawValue = trim((string)($sourceRow[$idx] ?? ''));
+                if ($rawValue === '' || $rawValue === '—') {
+                    continue;
+                }
+
+                if ($fieldName === 'company_id') {
+                    continue;
+                }
+
+                if (isset($fkMap[$fieldName])) {
+                    $fk = $fkMap[$fieldName];
+                    $options = cr_fk_options($conn, $fk, (int)$company_id);
+                    $resolvedId = 0;
+                    foreach ($options as $option) {
+                        if (strcasecmp((string)$option['label'], $rawValue) === 0) {
+                            $resolvedId = (int)$option['id'];
+                            break;
+                        }
+                    }
+                    if ($resolvedId <= 0 && ctype_digit($rawValue)) {
+                        $resolvedId = (int)$rawValue;
+                    }
+                    $rowData[$fieldName] = $resolvedId > 0 ? (string)$resolvedId : 'NULL';
+                    continue;
+                }
+
+                if (preg_match('/int|decimal|float|double/', (string)$columnMeta['Type'])) {
+                    $normalizedNumeric = null;
+                    $numericError = '';
+                    if (cr_validate_numeric_value($rawValue, $columnMeta, $fieldName, $normalizedNumeric, $numericError)) {
+                        $rowData[$fieldName] = $normalizedNumeric;
+                    }
+                    continue;
+                }
+
+                $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
+            }
+
+            if ($hasCompany) {
+                $rowData['company_id'] = (string)(int)$company_id;
+            }
+            if (array_key_exists('created_by', $rowData) && $rowData['created_by'] === 'NULL') {
+                $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
+                if ($sessionUserId > 0) {
+                    $rowData['created_by'] = (string)$sessionUserId;
+                }
+            }
+
+            $fields = [];
+            $values = [];
+            foreach ($fieldColumns as $col) {
+                $name = (string)$col['Field'];
+                $fields[] = cr_escape_identifier($name);
+                $values[] = $rowData[$name] ?? 'NULL';
+            }
+
+            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+                $insertedRows++;
+            }
+        }
+
+        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        exit;
+    }
+}
+
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
@@ -748,7 +877,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <?php foreach ($uiColumns as $col): ?>
