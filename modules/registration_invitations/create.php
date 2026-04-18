@@ -70,7 +70,7 @@ function cr_fk_map($conn, $table) {
 /**
  * Fetches data for foreign key select boxes
  */
-function cr_fk_options($conn, $fk, $company_id) {
+function cr_fk_options($conn, $fk, $company_id, $currentUserId = 0, $currentUserIsAdmin = false) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
@@ -88,6 +88,17 @@ function cr_fk_options($conn, $fk, $company_id) {
     $labelEscaped = cr_escape_identifier($labelCol);
     $sql = 'SELECT ' . $idEscaped . ' AS id, ' . $labelEscaped . ' AS label';
     if ($table === 'users') {
+        if ($currentUserId > 0) {
+            $preferredLabelExpr = $currentUserIsAdmin
+                ? "NULLIF(TRIM(COALESCE(u.last_name, '')), '')"
+                : "NULLIF(TRIM(COALESCE(u.email, '')), '')";
+            $defaultLabelExpr = "NULLIF(TRIM(COALESCE(u.username, '')), '')";
+            $fallbackLabelExpr = "CONCAT('User #', u.id)";
+            $sql = 'SELECT ' . $idEscaped . ' AS id, '
+                . 'CASE WHEN u.id=' . (int)$currentUserId
+                . ' THEN COALESCE(' . $preferredLabelExpr . ', ' . $defaultLabelExpr . ', ' . $fallbackLabelExpr . ') '
+                . 'ELSE ' . $labelEscaped . ' END AS label';
+        }
         $sql .= ', COALESCE(u.role_id, 0) AS inviter_role_id';
         $sql .= ' FROM ' . $tableEscaped . ' u';
         if ($company_id > 0) {
@@ -169,6 +180,59 @@ function cr_fk_metadata($conn, $table) {
     return [
         'label_col' => $labelCol,
         'available' => $available,
+    ];
+}
+
+/**
+ * Determines the current inviter defaults for create forms.
+ */
+function cr_current_user_inviter_defaults($conn) {
+    $defaults = [
+        'id' => 0,
+        'is_admin' => false,
+        'preferred_label' => '',
+    ];
+
+    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($sessionUserId <= 0) {
+        return $defaults;
+    }
+
+    $sql = 'SELECT u.id, u.email, u.last_name, u.username, ur.name AS role_name
+            FROM users u
+            LEFT JOIN user_roles ur ON ur.id = u.role_id
+            WHERE u.id = ?
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $defaults;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $sessionUserId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    if (!$row) {
+        return $defaults;
+    }
+
+    $roleName = strtolower(trim((string)($row['role_name'] ?? '')));
+    $isAdmin = ($roleName === 'admin');
+
+    $lastName = trim((string)($row['last_name'] ?? ''));
+    $email = trim((string)($row['email'] ?? ''));
+    $username = trim((string)($row['username'] ?? ''));
+    $preferredLabel = $isAdmin ? $lastName : $email;
+    if ($preferredLabel === '') {
+        $preferredLabel = $username !== '' ? $username : ('User #' . (int)$row['id']);
+    }
+
+    return [
+        'id' => (int)$row['id'],
+        'is_admin' => $isAdmin,
+        'preferred_label' => $preferredLabel,
     ];
 }
 
@@ -396,6 +460,13 @@ if (!empty($_SESSION['crud_error'])) {
 $data = [];
 foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
+}
+$inviterDefaults = cr_current_user_inviter_defaults($conn);
+
+if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($data['invited_by_user_id'])) {
+    if ($inviterDefaults['id'] > 0) {
+        $data['invited_by_user_id'] = (string)$inviterDefaults['id'];
+    }
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -648,7 +719,13 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_fk_options(
+                                        $conn,
+                                        $fkMap[$name],
+                                        (int)$company_id,
+                                        (int)($inviterDefaults['id'] ?? 0),
+                                        !empty($inviterDefaults['is_admin'])
+                                    );
                                     $selectedOptionExists = false;
                                     foreach ($opts as $optRow) {
                                         if ((string)$displayVal === (string)($optRow['id'] ?? '')) {
@@ -660,6 +737,19 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         $fallbackLabel = cr_fk_label_for_value($conn, $fkMap[$name], (int)$company_id, $displayVal);
                                         if ($fallbackLabel !== '') {
                                             $opts[] = ['id' => (int)$displayVal, 'label' => $fallbackLabel];
+                                        }
+                                    }
+                                    if (
+                                        $name === 'invited_by_user_id'
+                                        && $crud_action === 'create'
+                                        && (string)$displayVal === (string)($inviterDefaults['id'] ?? '')
+                                        && trim((string)($inviterDefaults['preferred_label'] ?? '')) !== ''
+                                    ) {
+                                        foreach ($opts as $inviterIdx => $inviterOpt) {
+                                            if ((int)($inviterOpt['id'] ?? 0) === (int)$inviterDefaults['id']) {
+                                                $opts[$inviterIdx]['label'] = (string)$inviterDefaults['preferred_label'];
+                                                break;
+                                            }
                                         }
                                     }
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
