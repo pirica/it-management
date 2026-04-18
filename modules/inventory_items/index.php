@@ -87,6 +87,43 @@ function cr_fk_options($conn, $fk, $company_id) {
 }
 
 /**
+ * Resolves a foreign-key label using company-scoped lookup first, then ID fallback.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $valueId) {
+    $id = (int)$valueId;
+    if ($id <= 0) {
+        return '';
+    }
+
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $meta = cr_fk_metadata($conn, $table);
+    $labelCol = $meta['label_col'];
+    $available = $meta['available'];
+
+    $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $where .= ' AND company_id=' . (int)$company_id;
+    }
+
+    $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res)) && isset($row['label'])) {
+        return (string)$row['label'];
+    }
+
+    // Why: keeps readable labels for legacy/shared reference rows.
+    $fallbackSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
+    $fallbackRes = mysqli_query($conn, $fallbackSql);
+    if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes)) && isset($fallbackRow['label'])) {
+        return (string)$fallbackRow['label'];
+    }
+
+    return '';
+}
+
+/**
  * Heuristically determines which column to use as a display label for a table.
  */
 function cr_fk_metadata($conn, $table) {
@@ -407,7 +444,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
         
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
@@ -596,8 +633,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <div class="card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                        <?php if ($totalRows >= $perPage): ?>
+                            <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                            <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                        <?php endif; ?>
                     </form>
                 </div>
 
@@ -620,7 +659,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 
                 <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
@@ -634,7 +673,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -645,12 +684,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
+                                        <?php elseif (isset($fkMap[$f]) && (string)($row[$f] ?? '') !== '' && (string)($row[$f] ?? '') !== '0'): ?>
+                                            <?php
+                                                $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$company_id, (int)$row[$f]);
+                                                echo sanitize($fkLabel !== '' ? $fkLabel : (string)$row[$f]);
+                                            ?>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="itm-actions-cell">
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
@@ -701,7 +745,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
@@ -722,6 +766,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $hasSelectedValue = false;
+                                    foreach ($opts as $existingOpt) {
+                                        if ((string)$displayVal === (string)$existingOpt['id']) {
+                                            $hasSelectedValue = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!$hasSelectedValue && $displayVal !== '' && $displayVal !== 'NULL') {
+                                        $fallbackLabel = cr_fk_label_by_id($conn, $fkMap[$name], (int)$company_id, (int)$displayVal);
+                                        if ($fallbackLabel !== '') {
+                                            $opts[] = ['id' => (int)$displayVal, 'label' => $fallbackLabel];
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -764,7 +821,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php if (isset($fkMap[$f]) && (string)($data[$f] ?? '') !== '' && (string)($data[$f] ?? '') !== '0'): ?>
+                                        <?php
+                                            $viewFkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$company_id, (int)$data[$f]);
+                                            echo sanitize($viewFkLabel !== '' ? $viewFkLabel : (string)($data[$f] ?? ''));
+                                        ?>
+                                    <?php else: ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
