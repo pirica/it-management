@@ -116,6 +116,43 @@ function cr_fk_options($conn, $fk, $company_id) {
 /**
  * Helper to determine which column to use for display label
  */
+
+
+/**
+ * Resolves a foreign-key label for an ID with tenant-scoped lookup and safe fallback.
+ */
+function cr_fk_label_for_value($conn, $fk, $company_id, $rawId) {
+    $id = (int)$rawId;
+    if ($id <= 0) {
+        return '';
+    }
+
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $labelCol = $fkMeta['label_col'];
+    $available = $fkMeta['available'];
+
+    $idEscaped = cr_escape_identifier($col);
+    $labelEscaped = cr_escape_identifier($labelCol);
+    $tableEscaped = cr_escape_identifier($table);
+
+    $sql = 'SELECT ' . $labelEscaped . ' AS label FROM ' . $tableEscaped . ' WHERE ' . $idEscaped . '=' . $id;
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $sqlScoped = $sql . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+        $resScoped = mysqli_query($conn, $sqlScoped);
+        if ($resScoped && ($rowScoped = mysqli_fetch_assoc($resScoped))) {
+            return (string)($rowScoped['label'] ?? '');
+        }
+    }
+
+    $res = mysqli_query($conn, $sql . ' LIMIT 1');
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        return (string)($row['label'] ?? '');
+    }
+
+    return '';
+}
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -190,6 +227,15 @@ function cr_is_hidden_employee_field($field) {
  * Standardized cell rendering
  */
 function cr_render_cell_value($table, $field, $value) {
+    global $fkMap, $conn, $company_id;
+
+    if (isset($fkMap[$field]) && $value !== null && $value !== '' && strtoupper((string)$value) !== 'NULL') {
+        $fkLabel = cr_fk_label_for_value($conn, $fkMap[$field], (int)$company_id, $value);
+        if ($fkLabel !== '') {
+            return sanitize($fkLabel);
+        }
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -603,6 +649,19 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $selectedOptionExists = false;
+                                    foreach ($opts as $optRow) {
+                                        if ((string)$displayVal === (string)($optRow['id'] ?? '')) {
+                                            $selectedOptionExists = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!$selectedOptionExists && $displayVal !== '' && strtoupper((string)$displayVal) !== 'NULL') {
+                                        $fallbackLabel = cr_fk_label_for_value($conn, $fkMap[$name], (int)$company_id, $displayVal);
+                                        if ($fallbackLabel !== '') {
+                                            $opts[] = ['id' => (int)$displayVal, 'label' => $fallbackLabel];
+                                        }
+                                    }
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
