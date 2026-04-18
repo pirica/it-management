@@ -41,6 +41,32 @@ function cr_fk_map($conn, $table) {
     }
     return $map;
 }
+function cr_user_label_select($idCol, $available) {
+    $parts = [];
+    if (in_array('first_name', $available, true)) {
+        $parts[] = "NULLIF(`first_name`, '')";
+    }
+    if (in_array('last_name', $available, true)) {
+        $parts[] = "NULLIF(`last_name`, '')";
+    }
+
+    $idExpr = 'CAST(' . cr_escape_identifier($idCol) . ' AS CHAR)';
+
+    if (!empty($parts)) {
+        $fullExpr = 'TRIM(CONCAT_WS(\' \', ' . implode(', ', $parts) . '))';
+        if (in_array('username', $available, true)) {
+            return 'COALESCE(NULLIF(' . $fullExpr . ", ''), NULLIF(`username`, ''), " . $idExpr . ')';
+        }
+        return 'COALESCE(NULLIF(' . $fullExpr . ", ''), " . $idExpr . ')';
+    }
+
+    if (in_array('username', $available, true)) {
+        return 'COALESCE(NULLIF(`username`, \'\'), ' . $idExpr . ')';
+    }
+
+    return $idExpr;
+}
+
 
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
@@ -62,7 +88,7 @@ function cr_fk_options($conn, $fk, $company_id) {
 
     $labelSelect = cr_escape_identifier($labelCol);
     if ($table === 'users') {
-        $labelSelect = 'COALESCE(NULLIF(`last_name`, \'\'), NULLIF(`username`, \'\'), CAST(' . cr_escape_identifier($col) . ' AS CHAR))';
+        $labelSelect = cr_user_label_select($col, $available);
     }
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSelect . " AS label" . $selectExtras . " FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
@@ -119,7 +145,7 @@ function cr_fk_option_by_id($conn, $fk, $rawId, $company_id) {
 
     $labelSelect = cr_escape_identifier($labelCol);
     if ($table === 'users') {
-        $labelSelect = 'COALESCE(NULLIF(`last_name`, \'\'), NULLIF(`username`, \'\'), CAST(' . cr_escape_identifier($col) . ' AS CHAR))';
+        $labelSelect = cr_user_label_select($col, $available);
     }
 
     $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSelect . ' AS label' . $selectExtras
@@ -493,6 +519,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         $value = $_POST[$name] ?? null;
+        if ($name === 'created_by' && ($GLOBALS['crud_table'] ?? '') === 'patches_updates' && $crud_action === 'create' && ($value === '' || $value === null)) {
+            $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
+            $data[$name] = $sessionUserId > 0 ? (string)$sessionUserId : 'NULL';
+            continue;
+        }
+
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
