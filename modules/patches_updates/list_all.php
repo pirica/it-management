@@ -310,10 +310,15 @@ function cr_get_csrf_token() {
     return (string)$_SESSION['csrf_token'];
 }
 
+function cr_validate_csrf_token($token) {
+    $requestToken = (string)$token;
+    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
+    return $requestToken !== '' && $sessionToken !== '' && hash_equals($sessionToken, $requestToken);
+}
+
 function cr_require_valid_csrf_token() {
     $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
+    if (!cr_validate_csrf_token($token)) {
         http_response_code(403);
         echo 'Forbidden: invalid CSRF token.';
         exit;
