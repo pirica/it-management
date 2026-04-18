@@ -59,6 +59,14 @@ Run these scripts to audit baseline security coverage:
 - SQL injection static audit:
   - `php scripts/check_sql_injection_coverage.php`
 
+## Database Analyze Troubleshooting (phpMyAdmin)
+
+If phpMyAdmin returns an error when using **Analyze table** at the database level, run:
+
+- `php scripts/analyze_database_health.php`
+
+This helper runs `ANALYZE TABLE` per base table and prints table-specific warnings/errors so you can quickly identify which table is failing.
+
 ## Production Deployment Note
 
 - Keep `debug.php` for development/troubleshooting only.
