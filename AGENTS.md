@@ -52,7 +52,7 @@ Each module must maintain a flat structure with these specific files:
 
 ### 3. Protection Zone (STRICT: No Auto-Changes)
 Do **not** modify logic or structure unless explicitly requested:
-`/modules/equipment/`, `/modules/idfs/`, `/modules/idf_links/`, `/modules/idf_positions/`, `/modules/idf_ports/`, `/modules/audit_logs/`, `/modules/employees/`, `/modules/settings/`, `/modules/user_companies/`, `modules/employee_system_access/`, `modules/cable_colors/`.
+`/modules/equipment/`, `/modules/idfs/`, `/modules/idf_links/`, `/modules/idf_positions/`, `/modules/idf_ports/`, `/modules/audit_logs/`, `/modules/employees/`, `/modules/settings/`, `/modules/user_companies/`, `modules/employee_system_access/`, `modules/cable_colors/`, `ui_configuration`.
 
 ### 4. Dynamic UI Configuration (Settings)
 Modules must read/validate settings via `itm_get_ui_configuration()`:
