@@ -78,15 +78,17 @@ function cr_fk_options($conn, $fk, $company_id) {
     $labelEscaped = cr_escape_identifier($labelCol);
     $sql = 'SELECT ' . $idEscaped . ' AS id, ' . $labelEscaped . ' AS label';
     if ($table === 'users') {
-        $sql .= ', CASE WHEN LOWER(COALESCE(ur.name, \'\')) = \'admin\' THEN 1 ELSE 0 END AS is_admin_user';
+        $sql .= ', COALESCE(u.role_id, 0) AS inviter_role_id';
         $sql .= ' FROM ' . $tableEscaped . ' u';
-        $sql .= ' LEFT JOIN `user_roles` ur ON ur.id = u.role_id';
         if ($company_id > 0) {
-            $sql .= ' AND ur.company_id=' . (int)$company_id;
-            $sql .= ' WHERE u.company_id=' . (int)$company_id;
+            $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
+            $sql .= ' WHERE (u.company_id=' . (int)$company_id . ' OR uc.company_id=' . (int)$company_id . ')';
         }
     } else {
         $sql .= ' FROM ' . $tableEscaped . $where;
+    }
+    if ($table === 'users') {
+        $sql .= ' GROUP BY u.id, label, inviter_role_id';
     }
     $sql .= ' ORDER BY label';
     $rows = [];
@@ -607,8 +609,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <?php $isAdminUserOption = isset($opt['is_admin_user']) && (int)$opt['is_admin_user'] === 1 ? 1 : 0; ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" data-is-admin-user="<?php echo $isAdminUserOption; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <?php $inviterRoleId = isset($opt['inviter_role_id']) ? (int)$opt['inviter_role_id'] : 0; ?>
+                                        <option value="<?php echo (int)$opt['id']; ?>" data-inviter-role-id="<?php echo $inviterRoleId; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
@@ -683,12 +685,25 @@ function crSyncAdminInviterVisibility() {
     const inviterSelect = document.querySelector('select[name="invited_by_user_id"]');
     if (!roleSelect || !inviterSelect) return;
 
-    const selectedRoleText = (roleSelect.options[roleSelect.selectedIndex]?.text || '').trim().toLowerCase();
-    const isAdminRoleSelected = selectedRoleText === 'admin';
-    const inviterOptions = inviterSelect.querySelectorAll('option[data-is-admin-user]');
+    let adminRoleId = '';
+    Array.prototype.forEach.call(roleSelect.options, function (option) {
+        if (adminRoleId !== '') {
+            return;
+        }
+        if ((option.text || '').trim().toLowerCase().indexOf('admin') !== -1) {
+            adminRoleId = option.value;
+        }
+    });
+
+    if (adminRoleId === '') {
+        return;
+    }
+
+    const isAdminRoleSelected = roleSelect.value === adminRoleId;
+    const inviterOptions = inviterSelect.querySelectorAll('option[data-inviter-role-id]');
 
     inviterOptions.forEach(function (option) {
-        const isAdminUser = option.getAttribute('data-is-admin-user') === '1';
+        const isAdminUser = option.getAttribute('data-inviter-role-id') === adminRoleId;
         if (!isAdminUser) {
             option.hidden = false;
             return;
