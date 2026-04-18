@@ -67,6 +67,14 @@ If phpMyAdmin returns an error when using **Analyze table** at the database leve
 
 This helper runs `ANALYZE TABLE` per base table and prints table-specific warnings/errors so you can quickly identify which table is failing.
 
+If a table reports `doesn't exist in engine`, rebuild only that table from `database.sql`:
+
+- `php scripts/repair_table_from_schema.php --table=<table_name>`
+
+Then re-run:
+
+- `php scripts/analyze_database_health.php`
+
 ## Production Deployment Note
 
 - Keep `debug.php` for development/troubleshooting only.

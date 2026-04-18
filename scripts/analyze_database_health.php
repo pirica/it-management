@@ -78,6 +78,12 @@ foreach ($tables as $tableName) {
             $errorCount++;
             $tableHadIssue = true;
             fwrite(STDOUT, "[ERROR] {$tableName}: {$msgText}\n");
+            if (stripos($msgText, "doesn't exist in engine") !== false) {
+                fwrite(
+                    STDOUT,
+                    "        Hint: php scripts/repair_table_from_schema.php --table={$tableName}\n"
+                );
+            }
         } elseif ($msgType === 'warning') {
             $warningCount++;
             $tableHadIssue = true;
