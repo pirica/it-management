@@ -527,6 +527,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         }
 
         $insertedRows = 0;
+        $failedRows = 0;
+        $firstInsertError = '';
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -605,10 +607,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+                continue;
+            }
+
+            $failedRows++;
+            if ($firstInsertError === '') {
+                $friendlyError = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                $firstInsertError = 'Row ' . ($rowIndex + 1) . ': ' . $friendlyError;
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        if ($insertedRows <= 0) {
+            http_response_code(400);
+            $importError = $firstInsertError !== ''
+                ? $firstInsertError
+                : 'Import failed: no valid rows were saved.';
+            echo json_encode(['ok' => false, 'error' => $importError]);
+            exit;
+        }
+
+        echo json_encode([
+            'ok' => true,
+            'inserted' => $insertedRows,
+            'failed' => $failedRows,
+            'warning' => $firstInsertError,
+        ]);
         exit;
     }
 }

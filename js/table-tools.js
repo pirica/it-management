@@ -178,21 +178,34 @@
             })
         });
 
+        const responseBody = await response.text();
         let payload = null;
         try {
-            payload = await response.json();
+            payload = responseBody ? JSON.parse(responseBody) : null;
         } catch (error) {
             payload = null;
         }
 
         if (!response.ok || !payload || payload.ok !== true) {
-            const message = (payload && payload.error) ? payload.error : 'Import failed while saving to database.';
+            let message = (payload && payload.error) ? payload.error : '';
+            if (!message && responseBody) {
+                const textOnly = responseBody.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (textOnly) {
+                    message = textOnly.slice(0, 220);
+                }
+            }
+            if (!message) {
+                message = 'Import failed while saving to database.';
+            }
             window.alert(message);
             return true;
         }
 
         const inserted = Number(payload.inserted || 0);
-        window.alert(`Import completed. ${inserted} row(s) saved.`);
+        const failed = Number(payload.failed || 0);
+        const warning = payload.warning ? `\nNote: ${payload.warning}` : '';
+        const failedLabel = failed > 0 ? ` ${failed} row(s) failed.` : '';
+        window.alert(`Import completed. ${inserted} row(s) saved.${failedLabel}${warning}`);
         window.location.reload();
         return true;
     }
