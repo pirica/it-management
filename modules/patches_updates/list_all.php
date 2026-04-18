@@ -76,6 +76,10 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
+    if ($table === 'users' && in_array('last_name', $available, true)) {
+        $labelCol = 'last_name';
+    }
+
     foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
@@ -149,6 +153,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'created_by' => 'Created by',
     ];
 
     if (isset($map[$label])) {
