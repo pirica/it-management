@@ -64,6 +64,38 @@ function cr_fk_options($conn, $fk, $company_id) {
     return $rows;
 }
 
+function cr_fk_label_for_value($conn, $fk, $value, $company_id) {
+    $id = (int)$value;
+    if ($id <= 0) {
+        return null;
+    }
+
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $labelCol = $fkMeta['label_col'];
+    $available = $fkMeta['available'];
+
+    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $companySql = $baseSql . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+        $companyResult = mysqli_query($conn, $companySql);
+        if ($companyResult && ($companyRow = mysqli_fetch_assoc($companyResult))) {
+            return $companyRow;
+        }
+    }
+
+    $fallbackSql = $baseSql . ' LIMIT 1';
+    $fallbackResult = mysqli_query($conn, $fallbackSql);
+    if ($fallbackResult && ($fallbackRow = mysqli_fetch_assoc($fallbackResult))) {
+        return $fallbackRow;
+    }
+
+    return null;
+}
+
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -129,6 +161,13 @@ function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkLabel = cr_fk_label_for_value($GLOBALS['conn'], $GLOBALS['fkMap'][$field], $value, (int)($GLOBALS['company_id'] ?? 0));
+        if ($fkLabel !== null) {
+            return sanitize((string)($fkLabel['label'] ?? ''));
+        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -745,6 +784,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $hasSelectedOption = false;
+                                    foreach ($opts as $optItem) {
+                                        if ((string)$displayVal === (string)($optItem['id'] ?? '')) {
+                                            $hasSelectedOption = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!$hasSelectedOption && (string)$displayVal !== '' && strtoupper((string)$displayVal) !== 'NULL') {
+                                        $persistedOption = cr_fk_label_for_value($conn, $fkMap[$name], $displayVal, (int)$company_id);
+                                        if ($persistedOption !== null) {
+                                            $opts[] = $persistedOption;
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -855,6 +907,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 })();
 </script>
 <script src="../../js/theme.js"></script>
+<script src="../../js/table-tools.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
