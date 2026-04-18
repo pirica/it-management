@@ -267,6 +267,24 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
+    if ($table === 'patches_updates' && $field === 'patches_updates_photos') {
+        $photos = cr_parse_photo_filenames((string)$value);
+        if (empty($photos)) {
+            return '—';
+        }
+
+        $html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+        foreach ($photos as $photo) {
+            $photoUrl = cr_photo_public_path($photo);
+            $html .= '<a href="' . sanitize($photoUrl) . '" target="_blank">'
+                . '<img src="' . sanitize($photoUrl) . '" alt="Photo" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #d0d7de;">'
+                . '</a>';
+        }
+        $html .= '</div>';
+
+        return $html;
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -373,6 +391,67 @@ function cr_is_tinyint_column($column) {
     return preg_match('/^tinyint\(\d+\)/', $type) === 1;
 }
 
+
+function cr_parse_photo_filenames($rawValue) {
+    if (!is_string($rawValue) || trim($rawValue) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($rawValue, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('strval', $decoded), static function ($value) {
+        return $value !== '';
+    }));
+}
+
+function cr_photo_public_path(string $filename): string {
+    return TICKET_UPLOAD_URL . rawurlencode($filename);
+}
+
+function cr_detect_upload_mime_type(string $tmpName): string {
+    if ($tmpName === '' || !is_file($tmpName)) {
+        return '';
+    }
+
+    if (function_exists('finfo_open') && defined('FILEINFO_MIME_TYPE')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo !== false) {
+            $mime = @finfo_file($finfo, $tmpName);
+            @finfo_close($finfo);
+            if (is_string($mime) && $mime !== '') {
+                return strtolower($mime);
+            }
+        }
+    }
+
+    $imageInfo = @getimagesize($tmpName);
+    if (is_array($imageInfo) && isset($imageInfo['mime']) && $imageInfo['mime'] !== '') {
+        return strtolower((string)$imageInfo['mime']);
+    }
+
+    return '';
+}
+
+function cr_resolve_upload_record_id(mysqli $conn, string $table, bool $isEdit, int $editId): int {
+    if ($isEdit && $editId > 0) {
+        return $editId;
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $statusResult = mysqli_query($conn, "SHOW TABLE STATUS LIKE '{$tableEsc}'");
+    if ($statusResult) {
+        $statusRow = mysqli_fetch_assoc($statusResult);
+        if (is_array($statusRow) && isset($statusRow['Auto_increment'])) {
+            return (int)$statusRow['Auto_increment'];
+        }
+    }
+
+    return 0;
+}
+
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -442,6 +521,7 @@ foreach ($fieldColumns as $col) {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$patchPhotoFilenamesToDeleteAfterSave = [];
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
@@ -458,11 +538,57 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
+    $isPatchEdit = ($crud_action === 'edit' && $editId > 0);
+    $patchPhotoFilenames = cr_parse_photo_filenames((string)($data['patches_updates_photos'] ?? ''));
+
+    if ($isPatchEdit && isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1') {
+        $patchPhotoFilenamesToDeleteAfterSave = $patchPhotoFilenames;
+        $patchPhotoFilenames = [];
+    }
+
+    if (isset($_FILES['photo']) && is_array($_FILES['photo']['error'])) {
+        $uploadRecordId = cr_resolve_upload_record_id($conn, $crud_table, $isPatchEdit, $editId);
+        foreach ($_FILES['photo']['error'] as $index => $fileError) {
+            if ($fileError === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            if ($fileError !== UPLOAD_ERR_OK) {
+                $errors[] = 'Photo upload failed.';
+                break;
+            }
+
+            $tmpName = (string)($_FILES['photo']['tmp_name'][$index] ?? '');
+            $name = (string)($_FILES['photo']['name'][$index] ?? '');
+            if (!in_array(cr_detect_upload_mime_type($tmpName), ALLOWED_TYPES, true)) {
+                $errors[] = 'Only image files are allowed for photo uploads.';
+                break;
+            }
+
+            $ext = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
+            if ($ext === '') {
+                $ext = 'jpg';
+            }
+            $photoFilename = 'patch_update_' . $uploadRecordId . '_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
+            if (move_uploaded_file($tmpName, TICKET_UPLOAD_PATH . $photoFilename)) {
+                $patchPhotoFilenames[] = $photoFilename;
+            }
+        }
+    }
+
+    $patchPhotoSqlValue = empty($patchPhotoFilenames)
+        ? 'NULL'
+        : "'" . mysqli_real_escape_string($conn, json_encode(array_values($patchPhotoFilenames), JSON_UNESCAPED_SLASHES)) . "'";
+
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = cr_is_tinyint_column($col);
         if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
+            continue;
+        }
+
+        if ($name === 'patches_updates_photos') {
+            $data[$name] = $patchPhotoSqlValue;
             continue;
         }
 
@@ -589,6 +715,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 itm_log_audit($conn, $crud_table, $auditRecordId, $auditAction, $auditOldValues, $auditNewValues);
             }
 
+            foreach ($patchPhotoFilenamesToDeleteAfterSave as $photoToDelete) {
+                @unlink(TICKET_UPLOAD_PATH . $photoToDelete);
+            }
+
             header('Location: ' . $listUrl);
             exit;
         }
@@ -683,7 +813,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
-                <form method="POST" class="form-grid" style="max-width:980px;">
+                <form method="POST" enctype="multipart/form-data" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = cr_is_tinyint_column($col);
@@ -747,6 +877,27 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <?php if ($name === 'status_id'): ?>
                                     <?php $statusColor = cr_status_color_by_id((int)$displayVal); ?>
                                     <span data-status-color-preview style="display:inline-block;width:12px;height:12px;border:1px solid #999;border-radius:2px;vertical-align:middle;margin-left:8px;background:<?php echo sanitize($statusColor !== '' ? $statusColor : '#FFFFFF'); ?>;"></span>
+                                <?php endif; ?>
+                            <?php elseif ($name === 'patches_updates_photos'): ?>
+                                <?php $existingPatchPhotos = cr_parse_photo_filenames((string)($data['patches_updates_photos'] ?? '')); ?>
+                                <input type="file" name="photo[]" accept="image/*" multiple>
+                                <div class="form-hint" style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span><?php echo count($existingPatchPhotos); ?> photos current.</span>
+                                    <?php if (!empty($existingPatchPhotos)): ?>
+                                        <label class="itm-checkbox-control" style="margin:0;">
+                                            <input type="checkbox" name="delete_photo" value="1">
+                                            <span>Remove current photos</span>
+                                        </label>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!empty($existingPatchPhotos)): ?>
+                                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                                        <?php foreach ($existingPatchPhotos as $patchPhoto): ?>
+                                            <a href="<?php echo sanitize(cr_photo_public_path($patchPhoto)); ?>" target="_blank">
+                                                <img src="<?php echo sanitize(cr_photo_public_path($patchPhoto)); ?>" alt="Photo" style="width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid #d0d7de;">
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
                                 <?php endif; ?>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
