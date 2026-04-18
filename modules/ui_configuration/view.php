@@ -55,7 +55,12 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    $labelSql = cr_escape_identifier($labelCol);
+    if ($table === 'users' && in_array('username', $available, true) && in_array('first_name', $available, true) && in_array('last_name', $available, true)) {
+        $labelSql = "CASE WHEN TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) = '' THEN username ELSE CONCAT(username, ' - ', TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')))) END";
+    }
+
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSql . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -76,7 +81,12 @@ function cr_fk_label_for_value($conn, $fk, $value, $company_id) {
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
-    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+    $labelSql = cr_escape_identifier($labelCol);
+    if ($table === 'users' && in_array('username', $available, true) && in_array('first_name', $available, true) && in_array('last_name', $available, true)) {
+        $labelSql = "CASE WHEN TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) = '' THEN username ELSE CONCAT(username, ' - ', TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')))) END";
+    }
+
+    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSql . ' AS label FROM ' . cr_escape_identifier($table)
         . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
 
     if (in_array('company_id', $available, true) && $company_id > 0) {
@@ -161,6 +171,10 @@ function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if (isset($GLOBALS['tinyIntFields']) && in_array($field, $GLOBALS['tinyIntFields'], true)) {
+        return ((int)$value === 1) ? '✅' : '❌';
     }
 
     if (isset($GLOBALS['fkMap'][$field])) {
@@ -264,6 +278,12 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 }
 
 $columns = cr_table_columns($conn, $crud_table);
+$tinyIntFields = [];
+foreach ($columns as $columnDef) {
+    if (preg_match('/^tinyint(\(\d+\))?/i', (string)($columnDef['Type'] ?? '')) === 1) {
+        $tinyIntFields[] = (string)$columnDef['Field'];
+    }
+}
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
