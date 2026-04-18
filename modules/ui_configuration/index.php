@@ -240,9 +240,12 @@ $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
 }));
 $hasCompany = false;
+$hasUser = false;
 foreach ($fieldColumns as $c) {
-    if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
+    if ($c['Field'] === 'company_id') { $hasCompany = true; }
+    if ($c['Field'] === 'user_id') { $hasUser = true; }
 }
+$currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
@@ -275,6 +278,9 @@ if ($crud_action === 'delete') {
         $where = '';
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
+            if ($hasUser && $currentUserId > 0) {
+                $where .= ' AND user_id=' . (int)$currentUserId;
+            }
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -302,6 +308,9 @@ if ($crud_action === 'delete') {
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
+            if ($hasUser && $currentUserId > 0) {
+                $where .= ' AND user_id=' . (int)$currentUserId;
+            }
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
@@ -318,6 +327,9 @@ if ($crud_action === 'delete') {
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
+        }
+        if ($hasUser && $currentUserId > 0) {
+            $where .= ' AND user_id=' . (int)$currentUserId;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -345,6 +357,9 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     if ($hasCompany && $company_id > 0) {
         $where .= ' AND company_id=' . (int)$company_id;
     }
+    if ($hasUser && $currentUserId > 0) {
+        $where .= ' AND user_id=' . (int)$currentUserId;
+    }
     $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
     if (!$data) {
@@ -364,6 +379,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 
     $where = ' WHERE company_id=' . (int)$company_id;
+    if ($hasUser && $currentUserId > 0) {
+        $where .= ' AND user_id=' . (int)$currentUserId;
+    }
     $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
@@ -400,6 +418,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         if ($name === 'company_id' && $company_id > 0) {
             $data[$name] = (int)$company_id;
+            continue;
+        }
+
+        if ($name === 'user_id' && $currentUserId > 0) {
+            $data[$name] = (int)$currentUserId;
             continue;
         }
 
@@ -492,6 +515,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
+            if ($hasUser && $currentUserId > 0) {
+                $where .= ' AND user_id=' . (int)$currentUserId;
+            }
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
@@ -508,6 +534,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
+    if ($hasUser && $currentUserId > 0) {
+        $where .= ' AND user_id=' . (int)$currentUserId;
+    }
 }
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));

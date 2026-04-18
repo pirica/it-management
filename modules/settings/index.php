@@ -388,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($error !== '') {
             // Why: Preserve the existing config when upload validation fails in a mixed form submit.
-        } elseif (!itm_save_ui_configuration($conn, $company_id, $newConfig)) {
+        } elseif (!itm_save_ui_configuration($conn, $company_id, $newConfig, $settingsUserId)) {
             $error = 'Unable to save UI configuration.';
         } else {
             if ($hasEquipmentTypeEditEmoji) {
