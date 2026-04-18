@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+itm_handle_json_table_import($conn, 'idfs', (int)($company_id ?? 0));
+
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');
