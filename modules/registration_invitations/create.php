@@ -81,10 +81,14 @@ function cr_fk_options($conn, $fk, $company_id) {
         $sql .= ', COALESCE(u.role_id, 0) AS inviter_role_id';
         $sql .= ' FROM ' . $tableEscaped . ' u';
         if ($company_id > 0) {
-            $sql .= ' WHERE u.company_id=' . (int)$company_id;
+            $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
+            $sql .= ' WHERE (u.company_id=' . (int)$company_id . ' OR uc.company_id=' . (int)$company_id . ')';
         }
     } else {
         $sql .= ' FROM ' . $tableEscaped . $where;
+    }
+    if ($table === 'users') {
+        $sql .= ' GROUP BY u.id, label, inviter_role_id';
     }
     $sql .= ' ORDER BY label';
     $rows = [];
@@ -686,7 +690,7 @@ function crSyncAdminInviterVisibility() {
         if (adminRoleId !== '') {
             return;
         }
-        if ((option.text || '').trim().toLowerCase() === 'admin') {
+        if ((option.text || '').trim().toLowerCase().indexOf('admin') !== -1) {
             adminRoleId = option.value;
         }
     });
