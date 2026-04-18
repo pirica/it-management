@@ -650,6 +650,10 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php if ($name === 'company_id'): ?>
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
                             <?php continue; ?>
+                        <?php elseif ($name === 'created_by' && ($GLOBALS['crud_table'] ?? '') === 'patches_updates'): ?>
+                            <?php $createdByValue = $displayVal !== '' ? $displayVal : (string)(int)($_SESSION['user_id'] ?? 0); ?>
+                            <input type="hidden" name="created_by" value="<?php echo sanitize($createdByValue); ?>">
+                            <?php continue; ?>
                         <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
