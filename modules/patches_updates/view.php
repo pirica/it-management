@@ -60,7 +60,12 @@ function cr_fk_options($conn, $fk, $company_id) {
         $selectExtras = ', color';
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label" . $selectExtras . " FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    $labelSelect = cr_escape_identifier($labelCol);
+    if ($table === 'users') {
+        $labelSelect = 'COALESCE(NULLIF(`last_name`, \'\'), NULLIF(`username`, \'\'), CAST(' . cr_escape_identifier($col) . ' AS CHAR))';
+    }
+
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSelect . " AS label" . $selectExtras . " FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -112,7 +117,12 @@ function cr_fk_option_by_id($conn, $fk, $rawId, $company_id) {
         $selectExtras = ', color';
     }
 
-    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label' . $selectExtras
+    $labelSelect = cr_escape_identifier($labelCol);
+    if ($table === 'users') {
+        $labelSelect = 'COALESCE(NULLIF(`last_name`, \'\'), NULLIF(`username`, \'\'), CAST(' . cr_escape_identifier($col) . ' AS CHAR))';
+    }
+
+    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSelect . ' AS label' . $selectExtras
         . ' FROM ' . cr_escape_identifier($table)
         . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
 
