@@ -1559,7 +1559,7 @@ CREATE TABLE `registration_invitations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `registration_invitations`
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '5', '1', NULL, NULL, '1', '2026-03-28 19:44:00');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:00');
 
 -- Table structure for `attempts`
 -- Why: Unified security telemetry table for login and password reset events (legacy module folders were merged into modules/attempts).
