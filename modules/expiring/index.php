@@ -148,7 +148,6 @@ if ($company_id > 0) {
         LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id
         WHERE e.company_id = ?
           AND e.%s IS NOT NULL
-          AND e.%s <> ''
           AND e.%s <> '0000-00-00'
         ORDER BY e.%s ASC, e.name ASC
     ";
@@ -168,7 +167,6 @@ if ($company_id > 0) {
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
         WHERE e.company_id = ?
           AND e.%s IS NOT NULL
-          AND e.%s <> ''
           AND e.%s <> '0000-00-00'
         ORDER BY e.%s ASC, e.name ASC
     ";
