@@ -117,6 +117,10 @@ $certificateRows = [];
 $warrantyRows = [];
 $fetchError = '';
 $debugInfo = [];
+$expirySummaries = [
+    'certificate_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'warranty_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+];
 
 if ($company_id > 0) {
     $totalEquipment = 0;
@@ -243,6 +247,7 @@ if ($company_id > 0) {
                 $targetRows[] = [
                     'id' => (int)($row['id'] ?? 0),
                     'equipment_title' => $equipmentTitle,
+                    'hostname' => (string)($row['hostname'] ?? ''),
                     'equipment_type' => (string)($row['equipment_type'] ?? ''),
                     'warranty_type' => (string)($row['warranty_type'] ?? ''),
                     'serial_number' => (string)($row['serial_number'] ?? ''),
@@ -253,7 +258,33 @@ if ($company_id > 0) {
                     'countdown_text' => $countdownText,
                     'term_text' => $termText,
                 ];
+
+                if ($expiryDate instanceof DateTimeImmutable) {
+                    if ($daysLeft < 0) {
+                        $expirySummaries[$field]['expired']++;
+                    } elseif ($daysLeft < 30) {
+                        $expirySummaries[$field]['lt30']++;
+                    } elseif ($daysLeft > 60) {
+                        $expirySummaries[$field]['gt60']++;
+                    }
+                }
             }
+        }
+
+        $unknownSql = sprintf(
+            "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR %s = '0000-00-00')",
+            $field,
+            $field
+        );
+        $unknownStmt = mysqli_prepare($conn, $unknownSql);
+        if ($unknownStmt) {
+            mysqli_stmt_bind_param($unknownStmt, 'i', $company_id);
+            mysqli_stmt_execute($unknownStmt);
+            $unknownResult = mysqli_stmt_get_result($unknownStmt);
+            if ($unknownResult && ($unknownRow = mysqli_fetch_assoc($unknownResult))) {
+                $expirySummaries[$field]['unknown'] = (int)($unknownRow['unknown_count'] ?? 0);
+            }
+            mysqli_stmt_close($unknownStmt);
         }
 
         $debugInfo[] = ucfirst(str_replace('_', ' ', $field)) . ': ' . count($targetRows) . ' record(s) ready for display.';
@@ -274,6 +305,36 @@ if ($moduleTitle === '') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo sanitize($moduleTitle); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .idf-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--surface-secondary);
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .idf-hero h2 { margin: 0; font-size: 24px; }
+        .idf-hero p { margin: 6px 0 0; color: var(--text-secondary); }
+        .idf-stat-grid { display:grid; grid-template-columns: repeat(4,minmax(130px,1fr)); gap:10px; min-width:420px; }
+        .idf-stat {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            background: var(--surface-primary);
+        }
+        .idf-stat small { display:block; color: var(--text-secondary); margin-bottom:4px; }
+        .idf-stat strong { font-size: 20px; display:block; }
+        .idf-stat-expired strong { color: #dc2626; }
+        .idf-stat-unknown strong { color: #111111; }
+        @media (max-width: 900px) {
+            .idf-stat-grid { width: 100%; min-width: unset; grid-template-columns: repeat(2,minmax(130px,1fr)); }
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -321,7 +382,35 @@ if ($moduleTitle === '') {
             ?>
 
             <?php foreach ($sections as $section): ?>
+                <?php
+                $summaryField = ($section['title'] === 'Certificate Expiry') ? 'certificate_expiry' : 'warranty_expiry';
+                $summary = $expirySummaries[$summaryField] ?? ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0];
+                ?>
                 <div class="card" style="margin-top: 16px;">
+                    <section class="idf-hero">
+                        <div>
+                            <h2><?php echo sanitize($section['emoji'] . ' ' . $section['title']); ?></h2>
+                            <p>Red = expired, black = unknown date, plus upcoming urgency buckets.</p>
+                        </div>
+                        <div class="idf-stat-grid">
+                            <div class="idf-stat idf-stat-expired">
+                                <small>Expired</small>
+                                <strong><?php echo (int)$summary['expired']; ?></strong>
+                            </div>
+                            <div class="idf-stat idf-stat-unknown">
+                                <small>Unknown</small>
+                                <strong><?php echo (int)$summary['unknown']; ?></strong>
+                            </div>
+                            <div class="idf-stat">
+                                <small>&lt; 30 days</small>
+                                <strong><?php echo (int)$summary['lt30']; ?></strong>
+                            </div>
+                            <div class="idf-stat">
+                                <small>&gt; 60 days</small>
+                                <strong><?php echo (int)$summary['gt60']; ?></strong>
+                            </div>
+                        </div>
+                    </section>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                         <h3 style="margin:0;"><?php echo sanitize($section['emoji'] . ' ' . $section['title']); ?></h3>
                         <span class="badge badge-info"><?php echo (int)count($section['rows']); ?> records</span>
@@ -335,6 +424,7 @@ if ($moduleTitle === '') {
                                 <thead>
                                 <tr>
                                     <th>Equipment</th>
+                                    <th>Hostname</th>
                                     <th>Type</th>
                                     <th>Warranty Type</th>
                                     <th>Serial</th>
@@ -349,6 +439,7 @@ if ($moduleTitle === '') {
                                 <?php foreach ($section['rows'] as $row): ?>
                                     <tr>
                                         <td><a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a></td>
+                                        <td><?php echo sanitize($row['hostname'] !== '' ? $row['hostname'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['equipment_type'] !== '' ? $row['equipment_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['warranty_type'] !== '' ? $row['warranty_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['serial_number'] !== '' ? $row['serial_number'] : '—'); ?></td>
