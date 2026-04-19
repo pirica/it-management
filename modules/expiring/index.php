@@ -331,6 +331,8 @@ if ($moduleTitle === '') {
         .idf-stat strong { font-size: 20px; display:block; }
         .idf-stat-expired strong { color: #dc2626; }
         .idf-stat-unknown strong { color: #111111; }
+        .idf-stat-lt30 strong { color: #dc2626; }
+        .idf-stat-gt60 strong { color: #ca8a04; }
         @media (max-width: 900px) {
             .idf-stat-grid { width: 100%; min-width: unset; grid-template-columns: repeat(2,minmax(130px,1fr)); }
         }
@@ -390,7 +392,7 @@ if ($moduleTitle === '') {
                     <section class="idf-hero">
                         <div>
                             <h2><?php echo sanitize($section['emoji'] . ' ' . $section['title']); ?></h2>
-                            <p>Red = expired, black = unknown date, plus upcoming urgency buckets.</p>
+                            <p>Red = expired/under 30 days, black = unknown date, yellow = over 60 days.</p>
                         </div>
                         <div class="idf-stat-grid">
                             <div class="idf-stat idf-stat-expired">
@@ -401,11 +403,11 @@ if ($moduleTitle === '') {
                                 <small>Unknown</small>
                                 <strong><?php echo (int)$summary['unknown']; ?></strong>
                             </div>
-                            <div class="idf-stat">
+                            <div class="idf-stat idf-stat-lt30">
                                 <small>&lt; 30 days</small>
                                 <strong><?php echo (int)$summary['lt30']; ?></strong>
                             </div>
-                            <div class="idf-stat">
+                            <div class="idf-stat idf-stat-gt60">
                                 <small>&gt; 60 days</small>
                                 <strong><?php echo (int)$summary['gt60']; ?></strong>
                             </div>
