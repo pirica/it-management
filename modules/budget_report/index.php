@@ -10,7 +10,7 @@ require '../../config/config.php';
 
 $reportCompanyId = (int)($company_id ?? 0);
 $selectedYear = (int)date('Y');
-$selectedMonth = (int)date('n');
+$selectedMonth = 0;
 $selectedCostCenterId = 0;
 $selectedGlAccountId = 0;
 $reportRows = [];
@@ -20,7 +20,8 @@ if (isset($_GET['year'])) {
     $selectedYear = (int)$_GET['year'];
 }
 if (isset($_GET['month'])) {
-    $selectedMonth = (int)$_GET['month'];
+    $selectedMonthRaw = trim((string)$_GET['month']);
+    $selectedMonth = ($selectedMonthRaw === '') ? 0 : (int)$selectedMonthRaw;
 }
 if (isset($_GET['cost_center_id'])) {
     $selectedCostCenterId = max(0, (int)$_GET['cost_center_id']);
@@ -32,22 +33,25 @@ if (isset($_GET['gl_account_id'])) {
 if ($selectedYear < 2000 || $selectedYear > 2100) {
     $selectedYear = (int)date('Y');
 }
-if ($selectedMonth < 1 || $selectedMonth > 12) {
-    $selectedMonth = (int)date('n');
+if ($selectedMonth < 0 || $selectedMonth > 12) {
+    $selectedMonth = 0;
 }
 
-$reportDate = DateTime::createFromFormat('Y-n-j', $selectedYear . '-' . $selectedMonth . '-1');
-if ($reportDate instanceof DateTime) {
-    $prevDate = clone $reportDate;
-    $prevDate->modify('-1 month');
-    $previousMonthYear = (int)$prevDate->format('Y');
-    $previousMonth = (int)$prevDate->format('n');
-} else {
-    $previousMonthYear = $selectedYear;
-    $previousMonth = max(1, $selectedMonth - 1);
-}
-
+$isMonthMode = $selectedMonth >= 1 && $selectedMonth <= 12;
 $previousYear = $selectedYear - 1;
+$previousMonthYear = $selectedYear;
+$previousMonth = 0;
+if ($isMonthMode) {
+    $reportDate = DateTime::createFromFormat('Y-n-j', $selectedYear . '-' . $selectedMonth . '-1');
+    if ($reportDate instanceof DateTime) {
+        $prevDate = clone $reportDate;
+        $prevDate->modify('-1 month');
+        $previousMonthYear = (int)$prevDate->format('Y');
+        $previousMonth = (int)$prevDate->format('n');
+    } else {
+        $previousMonth = max(1, $selectedMonth - 1);
+    }
+}
 
 $costCenterOptions = [];
 $costCenterSql = 'SELECT id, name FROM cost_centers WHERE company_id = ? ORDER BY name ASC';
@@ -78,42 +82,77 @@ if ($glAccountStmt) {
 if ($reportCompanyId <= 0) {
     $reportError = 'Please select an active company before generating the report.';
 } else {
-    $reportSql = "SELECT
-            cc.name AS cost_center,
-            ga.account_code,
-            ga.account_name,
-            COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_curr_month,
-            COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_prev_month,
-            COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_prev_year_same_month
-        FROM cost_centers cc
-        JOIN gl_accounts ga ON ga.company_id = cc.company_id
-        LEFT JOIN expenses e
-            ON e.company_id = cc.company_id
-           AND e.cost_center_id = cc.id
-           AND e.gl_account_id = ga.id
-        WHERE cc.company_id = ?
-          AND (? = 0 OR cc.id = ?)
-          AND (? = 0 OR ga.id = ?)
-        GROUP BY cc.id, ga.id
-        ORDER BY cc.name, ga.account_code";
+    if ($isMonthMode) {
+        $reportSql = "SELECT
+                cc.name AS cost_center,
+                ga.account_code,
+                ga.account_name,
+                COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_curr_period,
+                COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_prev_period,
+                COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_prev_year_same_month
+            FROM cost_centers cc
+            JOIN gl_accounts ga ON ga.company_id = cc.company_id
+            LEFT JOIN expenses e
+                ON e.company_id = cc.company_id
+               AND e.cost_center_id = cc.id
+               AND e.gl_account_id = ga.id
+            WHERE cc.company_id = ?
+              AND (? = 0 OR cc.id = ?)
+              AND (? = 0 OR ga.id = ?)
+            GROUP BY cc.id, ga.id
+            ORDER BY cc.name, ga.account_code";
+    } else {
+        $reportSql = "SELECT
+                cc.name AS cost_center,
+                ga.account_code,
+                ga.account_name,
+                COALESCE(SUM(CASE WHEN YEAR(e.date)=? THEN e.amount END),0) AS actual_curr_period,
+                COALESCE(SUM(CASE WHEN YEAR(e.date)=? THEN e.amount END),0) AS actual_prev_period,
+                0 AS actual_prev_year_same_month
+            FROM cost_centers cc
+            JOIN gl_accounts ga ON ga.company_id = cc.company_id
+            LEFT JOIN expenses e
+                ON e.company_id = cc.company_id
+               AND e.cost_center_id = cc.id
+               AND e.gl_account_id = ga.id
+            WHERE cc.company_id = ?
+              AND (? = 0 OR cc.id = ?)
+              AND (? = 0 OR ga.id = ?)
+            GROUP BY cc.id, ga.id
+            ORDER BY cc.name, ga.account_code";
+    }
 
     $reportStmt = mysqli_prepare($conn, $reportSql);
     if ($reportStmt) {
-        mysqli_stmt_bind_param(
-            $reportStmt,
-            'iiiiiiiiiii',
-            $selectedYear,
-            $selectedMonth,
-            $previousMonthYear,
-            $previousMonth,
-            $previousYear,
-            $selectedMonth,
-            $reportCompanyId,
-            $selectedCostCenterId,
-            $selectedCostCenterId,
-            $selectedGlAccountId,
-            $selectedGlAccountId
-        );
+        if ($isMonthMode) {
+            mysqli_stmt_bind_param(
+                $reportStmt,
+                'iiiiiiiiiii',
+                $selectedYear,
+                $selectedMonth,
+                $previousMonthYear,
+                $previousMonth,
+                $previousYear,
+                $selectedMonth,
+                $reportCompanyId,
+                $selectedCostCenterId,
+                $selectedCostCenterId,
+                $selectedGlAccountId,
+                $selectedGlAccountId
+            );
+        } else {
+            mysqli_stmt_bind_param(
+                $reportStmt,
+                'iiiiiii',
+                $selectedYear,
+                $previousYear,
+                $reportCompanyId,
+                $selectedCostCenterId,
+                $selectedCostCenterId,
+                $selectedGlAccountId,
+                $selectedGlAccountId
+            );
+        }
         mysqli_stmt_execute($reportStmt);
         $reportResult = mysqli_stmt_get_result($reportStmt);
         while ($reportResult && ($row = mysqli_fetch_assoc($reportResult))) {
@@ -157,8 +196,9 @@ $monthOptions = [
                     </div>
 
                     <div class="form-group" style="margin:0;min-width:180px;">
-                        <label for="reportMonth">Month</label>
+                        <label for="reportMonth">Month (optional)</label>
                         <select id="reportMonth" name="month">
+                            <option value="" <?php echo $selectedMonth === 0 ? 'selected' : ''; ?>>All Months</option>
                             <?php foreach ($monthOptions as $monthNumber => $monthLabel): ?>
                                 <option value="<?php echo (int)$monthNumber; ?>" <?php echo $selectedMonth === (int)$monthNumber ? 'selected' : ''; ?>>
                                     <?php echo sanitize($monthLabel); ?>
@@ -208,9 +248,9 @@ $monthOptions = [
                         <th>Cost Center</th>
                         <th>Account Code</th>
                         <th>Account Name</th>
-                        <th>Actual (Selected Month)</th>
-                        <th>Actual (Previous Month)</th>
-                        <th>Actual (Same Month Previous Year)</th>
+                        <th><?php echo $isMonthMode ? 'Actual (Selected Month)' : 'Actual (Selected Year)'; ?></th>
+                        <th><?php echo $isMonthMode ? 'Actual (Previous Month)' : 'Actual (Previous Year)'; ?></th>
+                        <th><?php echo $isMonthMode ? 'Actual (Same Month Previous Year)' : 'N/A'; ?></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -220,9 +260,15 @@ $monthOptions = [
                                 <td><?php echo sanitize((string)$row['cost_center']); ?></td>
                                 <td><?php echo sanitize((string)$row['account_code']); ?></td>
                                 <td><?php echo sanitize((string)$row['account_name']); ?></td>
-                                <td><?php echo number_format((float)$row['actual_curr_month'], 2); ?></td>
-                                <td><?php echo number_format((float)$row['actual_prev_month'], 2); ?></td>
-                                <td><?php echo number_format((float)$row['actual_prev_year_same_month'], 2); ?></td>
+                                <td><?php echo number_format((float)$row['actual_curr_period'], 2); ?></td>
+                                <td><?php echo number_format((float)$row['actual_prev_period'], 2); ?></td>
+                                <td>
+                                    <?php if ($isMonthMode): ?>
+                                        <?php echo number_format((float)$row['actual_prev_year_same_month'], 2); ?>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
