@@ -57,10 +57,13 @@ if ($searchRaw !== '') {
         OR e.model LIKE '{$searchEsc}'
         OR e.hostname LIKE '{$searchEsc}'
         OR e.ip_address LIKE '{$searchEsc}'
+        OR e.mac_address LIKE '{$searchEsc}'
         OR c.company LIKE '{$searchEsc}'
         OR et.name LIKE '{$searchEsc}'
         OR m.name LIKE '{$searchEsc}'
         OR l.name LIKE '{$searchEsc}'
+        OR r.name LIKE '{$searchEsc}'
+        OR idf.name LIKE '{$searchEsc}'
         OR es.name LIKE '{$searchEsc}'
     )";
 }
@@ -75,22 +78,26 @@ $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
-$sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
+$sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.mac_address,
                c.company AS company_name,
                et.name AS equipment_type_name,
                m.name AS manufacturer_name,
                l.name AS location_name,
+               r.name AS rack_name,
+               idf.name AS idf_name,
                es.name AS status_name
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
-        LEFT JOIN it_locations l ON l.id = e.location_id
+        LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
+        LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
+        LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id
         WHERE e.company_id = $company_id
         {$moduleFilterSql}
         {$searchSql}";
-$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'manufacturer_name', 'location_name', 'status_name', 'ip_address', 'serial_number'];
+$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'status_name'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -104,18 +111,22 @@ $orderByMap = [
     'name' => 'e.name',
     'equipment_type_name' => 'et.name',
     'hostname' => 'e.hostname',
-    'manufacturer_name' => 'm.name',
-    'location_name' => 'l.name',
-    'status_name' => 'es.name',
     'ip_address' => 'e.ip_address',
-    'serial_number' => 'e.serial_number',
+    'idf_name' => 'idf.name',
+    'rack_name' => 'r.name',
+    'location_name' => 'l.name',
+    'manufacturer_name' => 'm.name',
+    'mac_address' => 'e.mac_address',
+    'status_name' => 'es.name',
 ];
 $countSql = "SELECT COUNT(*) AS total
              FROM equipment e
              LEFT JOIN companies c ON c.id = e.company_id
              LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
              LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
-             LEFT JOIN it_locations l ON l.id = e.location_id
+             LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
+             LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
+             LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
              LEFT JOIN equipment_statuses es ON es.id = e.status_id
              WHERE e.company_id = $company_id
              {$moduleFilterSql}
@@ -269,11 +280,13 @@ if (!empty($_SESSION['crud_success'])) {
                             'name' => 'Name',
                             'equipment_type_name' => 'Type',
                             'hostname' => 'Hostname',
-                            'manufacturer_name' => 'Manufacturer',
-                            'location_name' => 'Location',
-                            'status_name' => 'Status',
                             'ip_address' => 'IP Address',
-                            'serial_number' => 'Serial Number',
+                            'idf_name' => 'IDF',
+                            'rack_name' => 'RACK',
+                            'location_name' => 'Location',
+                            'manufacturer_name' => 'Manufacturer',
+                            'mac_address' => 'MAC Address',
+                            'status_name' => 'Status',
                         ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?switch_id=<?php echo (int)$selectedSwitchId; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?><?php echo $showSwitchPortManager ? '&spm=1' : ''; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -293,8 +306,12 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td><?php echo sanitize($row['name']); ?></td>
                                 <td><?php echo sanitize($row['equipment_type_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['hostname'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['manufacturer_name'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['ip_address'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['idf_name'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['rack_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['location_name'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['manufacturer_name'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['mac_address'] ?? '-'); ?></td>
                                 <td>
                                     <?php
                                     $statusText = trim((string)($row['status_name'] ?? ''));
@@ -310,8 +327,6 @@ if (!empty($_SESSION['crud_success'])) {
                                     ?>
                                     <span class="badge <?php echo $statusBadgeClass; ?>"><?php echo sanitize($statusText); ?></span>
                                 </td>
-                                <td><?php echo sanitize($row['ip_address'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['serial_number'] ?? '-'); ?></td>
                                 <td>
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
@@ -337,7 +352,7 @@ if (!empty($_SESSION['crud_success'])) {
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="10" style="text-align:center;">No equipment records found.</td></tr>
+                        <tr><td colspan="12" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
