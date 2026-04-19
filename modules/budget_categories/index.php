@@ -86,6 +86,68 @@ function cr_fk_options($conn, $fk, $company_id) {
 }
 
 /**
+ * Resolves a human-readable label for a saved foreign-key value.
+ * Uses tenant-scoped lookup first and falls back to global-by-id for legacy/shared rows.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    $id = (int)$rawId;
+    if ($id <= 0) { return ''; }
+
+    $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
+    $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
+    $meta = cr_fk_metadata($conn, $fkTable);
+    $labelCol = $meta['label_col'];
+    $available = $meta['available'];
+
+    $tableSql = cr_escape_identifier($fkTable);
+    $idSql = cr_escape_identifier($fkCol);
+    $labelSql = cr_escape_identifier($labelCol);
+
+    if ($company_id > 0 && in_array('company_id', $available, true)) {
+        $tenantSql = 'SELECT ' . $labelSql . ' AS label FROM ' . $tableSql
+            . ' WHERE ' . $idSql . '=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+        $tenantRes = mysqli_query($conn, $tenantSql);
+        $tenantRow = ($tenantRes) ? mysqli_fetch_assoc($tenantRes) : null;
+        if (is_array($tenantRow) && isset($tenantRow['label'])) {
+            return (string)$tenantRow['label'];
+        }
+    }
+
+    $fallbackSql = 'SELECT ' . $labelSql . ' AS label FROM ' . $tableSql
+        . ' WHERE ' . $idSql . '=' . $id . ' LIMIT 1';
+    $fallbackRes = mysqli_query($conn, $fallbackSql);
+    $fallbackRow = ($fallbackRes) ? mysqli_fetch_assoc($fallbackRes) : null;
+    if (is_array($fallbackRow) && isset($fallbackRow['label'])) {
+        return (string)$fallbackRow['label'];
+    }
+
+    return '';
+}
+
+/**
+ * Ensures edit forms preserve persisted FK selections even if option lists are tenant-filtered.
+ */
+function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
+    $selectedId = (int)$selectedValue;
+    if ($selectedId <= 0) {
+        return $options;
+    }
+
+    foreach ((array)$options as $opt) {
+        if ((int)($opt['id'] ?? 0) === $selectedId) {
+            return $options;
+        }
+    }
+
+    $resolvedLabel = cr_fk_label_by_id($conn, $fk, (int)$company_id, $selectedId);
+    if ($resolvedLabel !== '') {
+        $options[] = ['id' => $selectedId, 'label' => $resolvedLabel];
+    }
+
+    return $options;
+}
+
+/**
  * Heuristically determines which column to use as a display label for a table.
  */
 function cr_fk_metadata($conn, $table) {
@@ -161,6 +223,13 @@ function cr_render_cell_value($table, $field, $value) {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), $value);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
         }
     }
 
@@ -888,6 +957,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_append_selected_fk_option($conn, $fkMap[$name], (int)$company_id, $opts, $displayVal);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
