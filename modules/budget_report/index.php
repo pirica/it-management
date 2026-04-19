@@ -92,8 +92,40 @@ if ($reportCompanyId <= 0) {
                 COALESCE(a_cur.amount, 0) AS actual_curr_period,
                 COALESCE(a_prev.amount, 0) AS actual_prev_period,
                 COALESCE(a_prev_year_month.amount, 0) AS actual_prev_year_same_month
-            FROM cost_centers cc
-            JOIN gl_accounts ga ON ga.company_id = cc.company_id
+            FROM (
+                SELECT e.cost_center_id, e.gl_account_id
+                FROM expenses e
+                WHERE e.company_id = ?
+                  AND (
+                        (YEAR(e.date) = ? AND MONTH(e.date) = ?)
+                     OR (YEAR(e.date) = ? AND MONTH(e.date) = ?)
+                     OR (YEAR(e.date) = ? AND MONTH(e.date) = ?)
+                  )
+                GROUP BY e.cost_center_id, e.gl_account_id
+                UNION
+                SELECT fr.cost_center_id, fr.gl_account_id
+                FROM forecast_revisions fr
+                WHERE fr.company_id = ?
+                  AND fr.year = ?
+                  AND fr.month = ?
+                GROUP BY fr.cost_center_id, fr.gl_account_id
+                UNION
+                SELECT ab.cost_center_id, ab.gl_account_id
+                FROM annual_budgets ab
+                JOIN monthly_budgets mb
+                  ON mb.company_id = ab.company_id
+                 AND mb.annual_budget_id = ab.id
+                WHERE ab.company_id = ?
+                  AND ab.year = ?
+                  AND mb.month = ?
+                GROUP BY ab.cost_center_id, ab.gl_account_id
+            ) base_pairs
+            JOIN cost_centers cc
+              ON cc.company_id = ?
+             AND cc.id = base_pairs.cost_center_id
+            JOIN gl_accounts ga
+              ON ga.company_id = ?
+             AND ga.id = base_pairs.gl_account_id
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
@@ -156,8 +188,31 @@ if ($reportCompanyId <= 0) {
                 COALESCE(a_cur.amount, 0) AS actual_curr_period,
                 COALESCE(a_prev.amount, 0) AS actual_prev_period,
                 0 AS actual_prev_year_same_month
-            FROM cost_centers cc
-            JOIN gl_accounts ga ON ga.company_id = cc.company_id
+            FROM (
+                SELECT e.cost_center_id, e.gl_account_id
+                FROM expenses e
+                WHERE e.company_id = ?
+                  AND YEAR(e.date) IN (?, ?)
+                GROUP BY e.cost_center_id, e.gl_account_id
+                UNION
+                SELECT fr.cost_center_id, fr.gl_account_id
+                FROM forecast_revisions fr
+                WHERE fr.company_id = ?
+                  AND fr.year = ?
+                GROUP BY fr.cost_center_id, fr.gl_account_id
+                UNION
+                SELECT ab.cost_center_id, ab.gl_account_id
+                FROM annual_budgets ab
+                WHERE ab.company_id = ?
+                  AND ab.year = ?
+                GROUP BY ab.cost_center_id, ab.gl_account_id
+            ) base_pairs
+            JOIN cost_centers cc
+              ON cc.company_id = ?
+             AND cc.id = base_pairs.cost_center_id
+            JOIN gl_accounts ga
+              ON ga.company_id = ?
+             AND ga.id = base_pairs.gl_account_id
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
@@ -205,7 +260,22 @@ if ($reportCompanyId <= 0) {
         if ($isMonthMode) {
             mysqli_stmt_bind_param(
                 $reportStmt,
-                'iiiiiiiiiiiiiiiiiiii',
+                'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii',
+                $reportCompanyId,
+                $selectedYear,
+                $selectedMonth,
+                $previousMonthYear,
+                $previousMonth,
+                $previousYear,
+                $selectedMonth,
+                $reportCompanyId,
+                $selectedYear,
+                $selectedMonth,
+                $reportCompanyId,
+                $selectedYear,
+                $selectedMonth,
+                $reportCompanyId,
+                $reportCompanyId,
                 $reportCompanyId,
                 $selectedYear,
                 $selectedMonth,
@@ -230,7 +300,16 @@ if ($reportCompanyId <= 0) {
         } else {
             mysqli_stmt_bind_param(
                 $reportStmt,
-                'iiiiiiiiiiiii',
+                'iiiiiiiiiiiiiiiiiiiiii',
+                $reportCompanyId,
+                $selectedYear,
+                $previousYear,
+                $reportCompanyId,
+                $selectedYear,
+                $reportCompanyId,
+                $selectedYear,
+                $reportCompanyId,
+                $reportCompanyId,
                 $reportCompanyId,
                 $selectedYear,
                 $reportCompanyId,
