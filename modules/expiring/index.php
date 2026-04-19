@@ -272,7 +272,8 @@ if ($company_id > 0) {
         }
 
         $unknownSql = sprintf(
-            "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR %s = '0000-00-00')",
+            "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
+            $field,
             $field,
             $field
         );
