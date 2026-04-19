@@ -1,14 +1,14 @@
 <?php
 /**
- * 📈 Forecast Revisions Module - Index
+ * 📊 Forecast Revisions Status Module - Index
  * 
  * Uses the flattened master CRUD pattern to display a sortable, searchable list 
- * of forecast revisions records.
+ * of forecast revision statuses records.
  * Configures $crud_table and $crud_title before execution to scope the logic.
  */
 
-$crud_table = 'forecast_revisions';
-$crud_title = '📈 Forecast Revisions';
+$crud_table = 'forecast_revisions_status';
+$crud_title = '📊 Forecast Revisions Status';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
@@ -67,28 +67,6 @@ function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
-    if ($table === 'annual_budgets') {
-        $where = '';
-        if ($company_id > 0) {
-            $where = ' WHERE ab.company_id=' . (int)$company_id;
-        }
-
-        // Show a human-friendly annual budget label that includes year + cost center + GL account.
-        $sql = 'SELECT ab.' . cr_escape_identifier($col) . ' AS id, '
-            . "CONCAT(ab.`year`, ' - ', COALESCE(cc.`name`, ''), ' - ', COALESCE(ga.`account_name`, '')) AS label "
-            . 'FROM `annual_budgets` ab '
-            . 'LEFT JOIN `cost_centers` cc ON cc.`id`=ab.`cost_center_id` '
-            . 'LEFT JOIN `gl_accounts` ga ON ga.`id`=ab.`gl_account_id`'
-            . $where
-            . ' ORDER BY ab.`year` DESC, cc.`name` ASC, ga.`account_name` ASC';
-        $res = mysqli_query($conn, $sql);
-        $out = [];
-        if ($res) {
-            while ($r = mysqli_fetch_assoc($res)) { $out[] = $r; }
-        }
-        return $out;
-    }
-
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
@@ -116,29 +94,6 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
 
     $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
     $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
-
-    if ($fkTable === 'annual_budgets') {
-        $selectSql = "SELECT CONCAT(ab.`year`, ' - ', COALESCE(cc.`name`, ''), ' - ', COALESCE(ga.`account_name`, '')) AS label "
-            . 'FROM `annual_budgets` ab '
-            . 'LEFT JOIN `cost_centers` cc ON cc.`id`=ab.`cost_center_id` '
-            . 'LEFT JOIN `gl_accounts` ga ON ga.`id`=ab.`gl_account_id` '
-            . 'WHERE ab.' . cr_escape_identifier($fkCol) . '=' . $id;
-
-        if ($company_id > 0) {
-            $tenantRes = mysqli_query($conn, $selectSql . ' AND ab.company_id=' . (int)$company_id . ' LIMIT 1');
-            if ($tenantRes && ($tenantRow = mysqli_fetch_assoc($tenantRes))) {
-                return (string)($tenantRow['label'] ?? '');
-            }
-        }
-
-        $fallbackRes = mysqli_query($conn, $selectSql . ' LIMIT 1');
-        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
-            return (string)($fallbackRow['label'] ?? '');
-        }
-
-        return '';
-    }
-
     $meta = cr_fk_metadata($conn, $fkTable);
     $labelCol = (string)$meta['label_col'];
     $available = (array)$meta['available'];
@@ -277,7 +232,7 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'account_name', 'account_code', 'code', 'description', 'email', 'status', 'mode_name', 'year'] as $candidate) {
+    foreach (['name', 'title', 'username', 'account_name', 'account_code', 'code', 'description', 'email', 'status', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
@@ -322,32 +277,6 @@ function cr_humanize_field($field) {
 }
 
 /**
- * Month helpers for forecast_revisions module.
- */
-function cr_month_options() {
-    return [
-        1 => 'January',
-        2 => 'February',
-        3 => 'March',
-        4 => 'April',
-        5 => 'May',
-        6 => 'June',
-        7 => 'July',
-        8 => 'August',
-        9 => 'September',
-        10 => 'October',
-        11 => 'November',
-        12 => 'December',
-    ];
-}
-
-function cr_month_label($rawMonth) {
-    $months = cr_month_options();
-    $monthNumber = (int)$rawMonth;
-    return $months[$monthNumber] ?? '';
-}
-
-/**
  * Special handling for employee privacy - hides internal IDs from general lists.
  */
 function cr_is_hidden_employee_field($field) {
@@ -360,13 +289,6 @@ function cr_is_hidden_employee_field($field) {
  * Renders cell values with appropriate formatting (badges for booleans, etc.)
  */
 function cr_render_cell_value($table, $field, $value) {
-    if ($table === 'forecast_revisions' && $field === 'month') {
-        $monthLabel = cr_month_label($value);
-        if ($monthLabel !== '') {
-            return sanitize($monthLabel);
-        }
-    }
-
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -506,7 +428,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'forecast_revisions', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'forecast_revisions_status', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -799,17 +721,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
-
-        if ($crud_table === 'forecast_revisions' && $name === 'month') {
-            $monthValue = (int)($_POST[$name] ?? 0);
-            if ($monthValue < 1 || $monthValue > 12) {
-                $errors[] = 'Month must be between January and December.';
-                $data[$name] = 'NULL';
-            } else {
-                $data[$name] = (string)$monthValue;
-            }
-            continue;
-        }
         
         // Booleans (checkboxes)
         if ($isTinyInt) {
@@ -1126,16 +1037,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
-                            <?php elseif ($crud_table === 'forecast_revisions' && $name === 'month'): ?>
-                                <?php $monthOptions = cr_month_options(); ?>
-                                <select name="month" required>
-                                    <option value="">-- Select Month --</option>
-                                    <?php foreach ($monthOptions as $monthNumber => $monthName): ?>
-                                        <option value="<?php echo (int)$monthNumber; ?>" <?php echo ((string)$displayVal === (string)$monthNumber ? 'selected' : ''); ?>>
-                                            <?php echo sanitize($monthName); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
