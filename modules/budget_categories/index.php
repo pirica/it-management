@@ -295,10 +295,13 @@ $isJsonImportRequest = false;
 $rawBody = '';
 $jsonBody = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true)) {
-    $rawBody = file_get_contents('php://input');
-    $jsonBody = json_decode((string)$rawBody, true);
+    $rawBody = (string)file_get_contents('php://input');
+    $jsonBody = json_decode($rawBody, true);
     $hasImportRows = is_array($jsonBody) && isset($jsonBody['import_excel_rows']);
-    $isJsonImportRequest = strpos($requestContentType, 'application/json') !== false || $hasImportRows;
+
+    // Why: table-tools.js may send JSON payloads with non-JSON content-type headers.
+    $bodyMentionsImportRows = strpos($rawBody, '"import_excel_rows"') !== false;
+    $isJsonImportRequest = strpos($requestContentType, 'application/json') !== false || $hasImportRows || $bodyMentionsImportRows;
 }
 if ($isJsonImportRequest) {
         header('Content-Type: application/json');
