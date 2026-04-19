@@ -89,12 +89,50 @@ if (($uiConfig['enable_all_error_reporting'] ?? 0) == 1) {
 
 $recordsPerPage = max(5, (int)($uiConfig['records_per_page'] ?? 10));
 
+
+// Handle JSON import requests from table-tools.js so this dashboard does not fall through to HTML rendering.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($expiring_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
+    $rawBody = file_get_contents('php://input');
+    $jsonBody = json_decode((string)$rawBody, true);
+    if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
+        header('Content-Type: application/json');
+
+        $requestToken = (string)($jsonBody['csrf_token'] ?? '');
+        if (!itm_validate_csrf_token($requestToken)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
+            exit;
+        }
+
+        http_response_code(400);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Database import is not supported in Expiring Equipment because this is a computed dashboard based on equipment dates.'
+        ]);
+        exit;
+    }
+}
+
 $certificateRows = [];
 $warrantyRows = [];
 $fetchError = '';
+$debugInfo = [];
 
 if ($company_id > 0) {
-    $baseSql = "
+    $totalEquipment = 0;
+    $totalStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_count FROM equipment WHERE company_id = ?');
+    if ($totalStmt) {
+        mysqli_stmt_bind_param($totalStmt, 'i', $company_id);
+        mysqli_stmt_execute($totalStmt);
+        $totalResult = mysqli_stmt_get_result($totalStmt);
+        if ($totalResult && ($totalRow = mysqli_fetch_assoc($totalResult))) {
+            $totalEquipment = (int)($totalRow['total_count'] ?? 0);
+        }
+        mysqli_stmt_close($totalStmt);
+    }
+    $debugInfo[] = $totalEquipment . ' equipment detected for company #' . $company_id . '.';
+
+    $baseSqlWithJoin = "
         SELECT
             e.id,
             e.name,
@@ -115,21 +153,56 @@ if ($company_id > 0) {
         ORDER BY e.%s ASC, e.name ASC
     ";
 
+    $baseSqlNoWarrantyJoin = "
+        SELECT
+            e.id,
+            e.name,
+            e.hostname,
+            e.model,
+            e.serial_number,
+            e.purchase_date,
+            e.%s AS expiry_date,
+            et.name AS equipment_type,
+            '' AS warranty_type
+        FROM equipment e
+        LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+        WHERE e.company_id = ?
+          AND e.%s IS NOT NULL
+          AND e.%s <> ''
+          AND e.%s <> '0000-00-00'
+        ORDER BY e.%s ASC, e.name ASC
+    ";
+
     $datasets = [
         'certificate_expiry' => &$certificateRows,
         'warranty_expiry' => &$warrantyRows,
     ];
 
     foreach ($datasets as $field => &$targetRows) {
-        $sql = sprintf($baseSql, $field, $field, $field, $field, $field);
+        $sql = sprintf($baseSqlWithJoin, $field, $field, $field, $field, $field);
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
-            $fetchError = 'Unable to prepare expiring equipment query.';
-            continue;
+            $initialError = (string)mysqli_error($conn);
+            $debugInfo[] = 'Primary query prepare failed for ' . $field . ': ' . $initialError;
+
+            $fallbackSql = sprintf($baseSqlNoWarrantyJoin, $field, $field, $field, $field, $field);
+            $stmt = mysqli_prepare($conn, $fallbackSql);
+            if (!$stmt) {
+                $fetchError = 'Unable to prepare expiring equipment query for ' . $field . '. DB says: ' . (string)mysqli_error($conn);
+                $debugInfo[] = 'Fallback query also failed for ' . $field . '.';
+                continue;
+            }
+
+            $debugInfo[] = 'Fallback query without warranty_types join enabled for ' . $field . '.';
         }
 
         mysqli_stmt_bind_param($stmt, 'i', $company_id);
-        mysqli_stmt_execute($stmt);
+        if (!mysqli_stmt_execute($stmt)) {
+            $fetchError = 'Unable to execute expiring equipment query for ' . $field . '. DB says: ' . (string)mysqli_stmt_error($stmt);
+            $debugInfo[] = 'Execution failed for ' . $field . '.';
+            mysqli_stmt_close($stmt);
+            continue;
+        }
         $result = mysqli_stmt_get_result($stmt);
 
         if ($result) {
@@ -185,6 +258,7 @@ if ($company_id > 0) {
             }
         }
 
+        $debugInfo[] = ucfirst(str_replace('_', ' ', $field)) . ': ' . count($targetRows) . ' record(s) ready for display.';
         mysqli_stmt_close($stmt);
     }
     unset($targetRows);
@@ -218,6 +292,17 @@ if ($moduleTitle === '') {
                 <div class="card"><p>Please select a company to view expiration timelines.</p></div>
             <?php elseif ($fetchError !== ''): ?>
                 <div class="card"><p class="alert alert-error"><?php echo sanitize($fetchError); ?></p></div>
+            <?php endif; ?>
+
+            <?php if (!empty($debugInfo)): ?>
+                <div class="card" style="margin-top: 12px;">
+                    <h4 style="margin-bottom:8px;">🧪 Debug details</h4>
+                    <ul style="margin:0;padding-left:18px;">
+                        <?php foreach ($debugInfo as $debugLine): ?>
+                            <li><?php echo sanitize($debugLine); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
             <?php endif; ?>
 
             <?php
