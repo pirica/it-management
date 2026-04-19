@@ -42,6 +42,40 @@ if (!function_exists('expiring_days_left_badge')) {
     }
 }
 
+if (!function_exists('expiring_parse_date')) {
+    function expiring_parse_date($rawDate) {
+        $raw = trim((string)$rawDate);
+        if ($raw === '' || $raw === '0000-00-00') {
+            return null;
+        }
+
+        foreach (['Y-m-d', 'd/m/Y', 'm/d/Y'] as $format) {
+            $parsed = DateTimeImmutable::createFromFormat($format, $raw);
+            if ($parsed instanceof DateTimeImmutable) {
+                return $parsed;
+            }
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp !== false) {
+            return (new DateTimeImmutable())->setTimestamp($timestamp);
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('expiring_display_date')) {
+    function expiring_display_date($rawDate) {
+        $parsed = expiring_parse_date($rawDate);
+        if (!$parsed instanceof DateTimeImmutable) {
+            return trim((string)$rawDate);
+        }
+
+        return $parsed->format('Y-m-d');
+    }
+}
+
 $company_id = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
 $uiConfig = function_exists('itm_get_ui_configuration') ? itm_get_ui_configuration($conn, $company_id, isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null) : [];
 
@@ -69,9 +103,11 @@ if ($company_id > 0) {
             e.serial_number,
             e.purchase_date,
             e.%s AS expiry_date,
-            et.name AS equipment_type
+            et.name AS equipment_type,
+            wt.name AS warranty_type
         FROM equipment e
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+        LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id
         WHERE e.company_id = ?
           AND e.%s IS NOT NULL
           AND e.%s <> ''
@@ -105,16 +141,21 @@ if ($company_id > 0) {
                 }
 
                 $purchaseRaw = trim((string)($row['purchase_date'] ?? ''));
-                $expiryDate = DateTimeImmutable::createFromFormat('Y-m-d', $expiryRaw);
-                $purchaseDate = ($purchaseRaw !== '') ? DateTimeImmutable::createFromFormat('Y-m-d', $purchaseRaw) : null;
-                if (!$expiryDate) {
-                    continue;
-                }
+                $expiryDate = expiring_parse_date($expiryRaw);
+                $purchaseDate = expiring_parse_date($purchaseRaw);
 
-                $todayDuration = expiring_format_duration($today, $expiryDate);
-                $termDuration = null;
-                if ($purchaseDate instanceof DateTimeImmutable) {
-                    $termDuration = expiring_format_duration($purchaseDate, $expiryDate);
+                $countdownText = 'Date format not recognized';
+                $termText = '—';
+                $daysLeft = 0;
+                if ($expiryDate instanceof DateTimeImmutable) {
+                    $todayDuration = expiring_format_duration($today, $expiryDate);
+                    $countdownText = $todayDuration['invert'] ? ('Expired ' . $todayDuration['text'] . ' ago') : ('In ' . $todayDuration['text']);
+                    $daysLeft = (int)$today->diff($expiryDate)->format('%r%a');
+
+                    if ($purchaseDate instanceof DateTimeImmutable) {
+                        $termDuration = expiring_format_duration($purchaseDate, $expiryDate);
+                        $termText = $termDuration['text'];
+                    }
                 }
 
                 $equipmentTitle = trim((string)($row['name'] ?? ''));
@@ -128,18 +169,18 @@ if ($company_id > 0) {
                     $equipmentTitle = 'Equipment #' . (int)($row['id'] ?? 0);
                 }
 
-                $daysLeft = (int)$today->diff($expiryDate)->format('%r%a');
-
                 $targetRows[] = [
                     'id' => (int)($row['id'] ?? 0),
                     'equipment_title' => $equipmentTitle,
                     'equipment_type' => (string)($row['equipment_type'] ?? ''),
+                    'warranty_type' => (string)($row['warranty_type'] ?? ''),
                     'serial_number' => (string)($row['serial_number'] ?? ''),
-                    'purchase_date' => $purchaseRaw,
-                    'expiry_date' => $expiryRaw,
+                    'purchase_date' => expiring_display_date($purchaseRaw),
+                    'expiry_date' => expiring_display_date($expiryRaw),
                     'days_left' => $daysLeft,
-                    'countdown_text' => $todayDuration['invert'] ? ('Expired ' . $todayDuration['text'] . ' ago') : ('In ' . $todayDuration['text']),
-                    'term_text' => $termDuration ? $termDuration['text'] : '—',
+                    'has_valid_expiry' => ($expiryDate instanceof DateTimeImmutable),
+                    'countdown_text' => $countdownText,
+                    'term_text' => $termText,
                 ];
             }
         }
@@ -212,6 +253,7 @@ if ($moduleTitle === '') {
                                 <tr>
                                     <th>Equipment</th>
                                     <th>Type</th>
+                                    <th>Warranty Type</th>
                                     <th>Serial</th>
                                     <th>Purchase Date</th>
                                     <th>Expiry Date</th>
@@ -225,12 +267,19 @@ if ($moduleTitle === '') {
                                     <tr>
                                         <td><a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a></td>
                                         <td><?php echo sanitize($row['equipment_type'] !== '' ? $row['equipment_type'] : '—'); ?></td>
+                                        <td><?php echo sanitize($row['warranty_type'] !== '' ? $row['warranty_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['serial_number'] !== '' ? $row['serial_number'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['purchase_date'] !== '' ? $row['purchase_date'] : '—'); ?></td>
                                         <td><strong><?php echo sanitize($row['expiry_date']); ?></strong></td>
                                         <td><?php echo sanitize($row['term_text']); ?></td>
                                         <td><?php echo sanitize($row['countdown_text']); ?></td>
-                                        <td><?php echo expiring_days_left_badge((int)$row['days_left']); ?></td>
+                                        <td>
+                                            <?php if (!empty($row['has_valid_expiry'])): ?>
+                                                <?php echo expiring_days_left_badge((int)$row['days_left']); ?>
+                                            <?php else: ?>
+                                                <span class="badge badge-warning">Check date</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                                 </tbody>
