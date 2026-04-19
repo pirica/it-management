@@ -77,12 +77,70 @@ function cr_fk_options($conn, $fk, $company_id) {
     }
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
-    $rows = [];
     $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rows[] = $row;
+    $out = [];
+    if ($res) {
+        while ($r = mysqli_fetch_assoc($res)) { $out[] = $r; }
     }
-    return $rows;
+    return $out;
+}
+
+/**
+ * Resolves FK display labels with tenant-first and legacy-id fallback.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    $id = (int)$rawId;
+    if ($id <= 0) { return ''; }
+
+    $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
+    $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
+    $meta = cr_fk_metadata($conn, $fkTable);
+    $labelCol = (string)$meta['label_col'];
+    $available = (array)$meta['available'];
+
+    $tableSql = cr_escape_identifier($fkTable);
+    $idSql = cr_escape_identifier($fkCol);
+    $labelSql = cr_escape_identifier($labelCol);
+
+    if ($company_id > 0 && in_array('company_id', $available, true)) {
+        $tenantSql = 'SELECT ' . $labelSql . ' AS label FROM ' . $tableSql
+            . ' WHERE ' . $idSql . '=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+        $tenantRes = mysqli_query($conn, $tenantSql);
+        if ($tenantRes && ($tenantRow = mysqli_fetch_assoc($tenantRes))) {
+            return (string)($tenantRow['label'] ?? '');
+        }
+    }
+
+    $fallbackSql = 'SELECT ' . $labelSql . ' AS label FROM ' . $tableSql
+        . ' WHERE ' . $idSql . '=' . $id . ' LIMIT 1';
+    $fallbackRes = mysqli_query($conn, $fallbackSql);
+    if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+        return (string)($fallbackRow['label'] ?? '');
+    }
+
+    return '';
+}
+
+/**
+ * Keeps persisted FK selections visible in edit/create forms even if tenant options are incomplete.
+ */
+function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
+    $selectedId = (int)$selectedValue;
+    if ($selectedId <= 0) { return $options; }
+
+    foreach ($options as $option) {
+        if ((int)($option['id'] ?? 0) === $selectedId) {
+            return $options;
+        }
+    }
+
+    $resolvedLabel = cr_fk_label_by_id($conn, $fk, (int)$company_id, $selectedId);
+    if ($resolvedLabel === '') {
+        $resolvedLabel = (string)$selectedId;
+    }
+
+    $options[] = ['id' => $selectedId, 'label' => $resolvedLabel];
+    return $options;
 }
 
 /**
@@ -161,6 +219,13 @@ function cr_render_cell_value($table, $field, $value) {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), $value);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
         }
     }
 
@@ -867,6 +932,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_append_selected_fk_option($conn, $fkMap[$name], (int)$company_id, $opts, $displayVal);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
