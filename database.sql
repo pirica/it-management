@@ -98,6 +98,154 @@ INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `a
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('4', '1', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('5', '4', 'Front Office', '', '', '1');
 
+
+-- Table structure for `budget_categories`
+DROP TABLE IF EXISTS `budget_categories`;
+CREATE TABLE `budget_categories` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_budget_categories_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `budget_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `budget_categories`
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('1', '1', 'Revenue', 'Revenue-related general ledger accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('2', '1', 'Operating Expense', 'Operational expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('3', '1', 'Capital Expense', 'Capital expense accounts', '1');
+
+-- Table structure for `cost_centers`
+DROP TABLE IF EXISTS `cost_centers`;
+CREATE TABLE `cost_centers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `department_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cost_centers_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  KEY `department_id` (`department_id`),
+  CONSTRAINT `cost_centers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `cost_centers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `cost_centers`
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('1', '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('2', '1', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('3', '1', '4', 'Room Maintenance', 'CC-HK-RM', '1');
+
+-- Table structure for `gl_accounts`
+DROP TABLE IF EXISTS `gl_accounts`;
+CREATE TABLE `gl_accounts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `account_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `account_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category_id` int DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_gl_accounts_company_code` (`company_id`,`account_code`),
+  KEY `company_id` (`company_id`),
+  KEY `category_id` (`category_id`),
+  CONSTRAINT `gl_accounts_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `gl_accounts_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `budget_categories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `gl_accounts`
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('1', '1', '6100', 'IT Maintenance Contracts', '2', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('2', '1', '6200', 'Software Licensing', '2', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('3', '1', '7100', 'Capital IT Equipment', '3', '1');
+
+-- Table structure for `annual_budgets`
+DROP TABLE IF EXISTS `annual_budgets`;
+CREATE TABLE `annual_budgets` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `cost_center_id` int NOT NULL,
+  `gl_account_id` int NOT NULL,
+  `year` int NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `created_by` int DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_annual_budgets_company_scope` (`company_id`,`cost_center_id`,`gl_account_id`,`year`),
+  KEY `company_id` (`company_id`),
+  KEY `cost_center_id` (`cost_center_id`),
+  KEY `gl_account_id` (`gl_account_id`),
+  CONSTRAINT `annual_budgets_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `annual_budgets_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `annual_budgets_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `annual_budgets`
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026', '48000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('2', '1', '1', '2', '2026', '36000.00', '1', '1');
+
+-- Table structure for `monthly_budgets`
+DROP TABLE IF EXISTS `monthly_budgets`;
+CREATE TABLE `monthly_budgets` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `annual_budget_id` int NOT NULL,
+  `month` tinyint NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_monthly_budgets_scope` (`company_id`,`annual_budget_id`,`month`),
+  KEY `company_id` (`company_id`),
+  KEY `annual_budget_id` (`annual_budget_id`),
+  CONSTRAINT `monthly_budgets_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `monthly_budgets_ibfk_annual_budget` FOREIGN KEY (`annual_budget_id`) REFERENCES `annual_budgets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `monthly_budgets_chk_month` CHECK ((`month` between 1 and 12))
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `monthly_budgets`
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('1', '1', '1', '1', '4000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('2', '1', '2', '1', '3000.00', '1');
+
+-- Table structure for `expenses`
+DROP TABLE IF EXISTS `expenses`;
+CREATE TABLE `expenses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `cost_center_id` int NOT NULL,
+  `gl_account_id` int NOT NULL,
+  `date` date NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `invoice_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `cost_center_id` (`cost_center_id`),
+  KEY `gl_account_id` (`gl_account_id`),
+  CONSTRAINT `expenses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `expenses_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `expenses_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `expenses`
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
+
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
 CREATE TABLE `employee_onboarding_requests` (
