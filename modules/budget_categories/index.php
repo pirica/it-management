@@ -300,8 +300,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     $hasImportRows = is_array($jsonBody) && isset($jsonBody['import_excel_rows']);
     $isJsonImportRequest = strpos($requestContentType, 'application/json') !== false || $hasImportRows;
 }
-if ($isJsonImportRequest && is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
+if ($isJsonImportRequest) {
         header('Content-Type: application/json');
+
+        if (!is_array($jsonBody)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid JSON import payload.']);
+            exit;
+        }
+
+        if (!isset($jsonBody['import_excel_rows'])) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Missing import rows payload.']);
+            exit;
+        }
 
         $requestToken = (string)($jsonBody['csrf_token'] ?? '');
         if (!itm_validate_csrf_token($requestToken)) {
