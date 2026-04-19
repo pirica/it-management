@@ -67,6 +67,28 @@ function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
+    if ($table === 'annual_budgets') {
+        $where = '';
+        if ($company_id > 0) {
+            $where = ' WHERE ab.company_id=' . (int)$company_id;
+        }
+
+        // Show a human-friendly annual budget label that includes year + cost center + GL account.
+        $sql = 'SELECT ab.' . cr_escape_identifier($col) . ' AS id, '
+            . "CONCAT(ab.`year`, ' - ', COALESCE(cc.`name`, ''), ' - ', COALESCE(ga.`account_name`, '')) AS label "
+            . 'FROM `annual_budgets` ab '
+            . 'LEFT JOIN `cost_centers` cc ON cc.`id`=ab.`cost_center_id` '
+            . 'LEFT JOIN `gl_accounts` ga ON ga.`id`=ab.`gl_account_id`'
+            . $where
+            . ' ORDER BY ab.`year` DESC, cc.`name` ASC, ga.`account_name` ASC';
+        $res = mysqli_query($conn, $sql);
+        $out = [];
+        if ($res) {
+            while ($r = mysqli_fetch_assoc($res)) { $out[] = $r; }
+        }
+        return $out;
+    }
+
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
@@ -94,6 +116,29 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
 
     $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
     $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
+
+    if ($fkTable === 'annual_budgets') {
+        $selectSql = "SELECT CONCAT(ab.`year`, ' - ', COALESCE(cc.`name`, ''), ' - ', COALESCE(ga.`account_name`, '')) AS label "
+            . 'FROM `annual_budgets` ab '
+            . 'LEFT JOIN `cost_centers` cc ON cc.`id`=ab.`cost_center_id` '
+            . 'LEFT JOIN `gl_accounts` ga ON ga.`id`=ab.`gl_account_id` '
+            . 'WHERE ab.' . cr_escape_identifier($fkCol) . '=' . $id;
+
+        if ($company_id > 0) {
+            $tenantRes = mysqli_query($conn, $selectSql . ' AND ab.company_id=' . (int)$company_id . ' LIMIT 1');
+            if ($tenantRes && ($tenantRow = mysqli_fetch_assoc($tenantRes))) {
+                return (string)($tenantRow['label'] ?? '');
+            }
+        }
+
+        $fallbackRes = mysqli_query($conn, $selectSql . ' LIMIT 1');
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            return (string)($fallbackRow['label'] ?? '');
+        }
+
+        return '';
+    }
+
     $meta = cr_fk_metadata($conn, $fkTable);
     $labelCol = (string)$meta['label_col'];
     $available = (array)$meta['available'];
