@@ -963,10 +963,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </tr>
                         </thead>
                         <tbody>
+                        <?php
+                        $totalsByField = [];
+                        foreach ($uiColumns as $itmTotalsCol) {
+                            if (preg_match('/^(decimal|float|double)/i', (string)($itmTotalsCol['Type'] ?? ''))) {
+                                $totalsByField[(string)$itmTotalsCol['Field']] = 0.0;
+                            }
+                        }
+                        ?>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
+                                    <?php if (isset($totalsByField[$f])) { $totalsByField[$f] += (float)($row[$f] ?? 0); } ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
@@ -990,6 +999,23 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             </tr>
                         <?php endwhile; else: ?>
                             <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                        <?php endif; ?>
+                        <?php if (count($totalsByField) > 0 && $rows && mysqli_num_rows($rows) > 0): ?>
+                            <tr style="font-weight:700;background-color:rgba(0,0,0,0.03);">
+                                <td></td>
+                                <?php $totalsLabelRendered = false; ?>
+                                <?php foreach ($uiColumns as $col): $f = (string)$col['Field']; ?>
+                                    <td>
+                                        <?php if (isset($totalsByField[$f])): ?>
+                                            <?php echo number_format((float)$totalsByField[$f], 2); ?>
+                                        <?php elseif (!$totalsLabelRendered): ?>
+                                            <?php $totalsLabelRendered = true; ?>
+                                            Totals
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1"></td>
+                            </tr>
                         <?php endif; ?>
                         </tbody>
                     </table>

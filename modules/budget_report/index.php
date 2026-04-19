@@ -457,27 +457,73 @@ $monthOptions = [
                     </thead>
                     <tbody>
                     <?php if (count($reportRows) > 0): ?>
+                        <?php
+                        $totalsBudgetSelectedPeriod = 0.0;
+                        $totalsForecastSelectedPeriod = 0.0;
+                        $totalsActualCurrPeriod = 0.0;
+                        $totalsActualPrevPeriod = 0.0;
+                        $totalsActualPrevYearSameMonth = 0.0;
+                        $totalsForecastMinusActual = 0.0;
+                        $totalsBudgetMinusForecast = 0.0;
+                        $totalsBudgetMinusActual = 0.0;
+                        ?>
                         <?php foreach ($reportRows as $row): ?>
+                            <?php
+                            $rowBudgetSelectedPeriod = (float)$row['budget_selected_period'];
+                            $rowForecastSelectedPeriod = (float)$row['forecast_selected_period'];
+                            $rowActualCurrPeriod = (float)$row['actual_curr_period'];
+                            $rowActualPrevPeriod = (float)$row['actual_prev_period'];
+                            $rowActualPrevYearSameMonth = (float)$row['actual_prev_year_same_month'];
+                            $rowForecastMinusActual = $rowForecastSelectedPeriod - $rowActualCurrPeriod;
+                            $rowBudgetMinusForecast = $rowBudgetSelectedPeriod - $rowForecastSelectedPeriod;
+                            $rowBudgetMinusActual = $rowBudgetSelectedPeriod - $rowActualCurrPeriod;
+
+                            $totalsBudgetSelectedPeriod += $rowBudgetSelectedPeriod;
+                            $totalsForecastSelectedPeriod += $rowForecastSelectedPeriod;
+                            $totalsActualCurrPeriod += $rowActualCurrPeriod;
+                            $totalsActualPrevPeriod += $rowActualPrevPeriod;
+                            $totalsActualPrevYearSameMonth += $rowActualPrevYearSameMonth;
+                            $totalsForecastMinusActual += $rowForecastMinusActual;
+                            $totalsBudgetMinusForecast += $rowBudgetMinusForecast;
+                            $totalsBudgetMinusActual += $rowBudgetMinusActual;
+                            ?>
                             <tr>
                                 <td><?php echo sanitize((string)$row['cost_center']); ?></td>
                                 <td><?php echo sanitize((string)$row['account_code']); ?></td>
                                 <td><?php echo sanitize((string)$row['account_name']); ?></td>
-                                <td><?php echo number_format((float)$row['budget_selected_period'], 2); ?></td>
-                                <td><?php echo number_format((float)$row['forecast_selected_period'], 2); ?></td>
-                                <td><?php echo number_format((float)$row['actual_curr_period'], 2); ?></td>
-                                <td><?php echo number_format((float)$row['actual_prev_period'], 2); ?></td>
+                                <td><?php echo number_format($rowBudgetSelectedPeriod, 2); ?></td>
+                                <td><?php echo number_format($rowForecastSelectedPeriod, 2); ?></td>
+                                <td><?php echo number_format($rowActualCurrPeriod, 2); ?></td>
+                                <td><?php echo number_format($rowActualPrevPeriod, 2); ?></td>
                                 <td>
                                     <?php if ($isMonthMode): ?>
-                                        <?php echo number_format((float)$row['actual_prev_year_same_month'], 2); ?>
+                                        <?php echo number_format($rowActualPrevYearSameMonth, 2); ?>
                                     <?php else: ?>
                                         -
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo number_format(((float)$row['forecast_selected_period'] - (float)$row['actual_curr_period']), 2); ?></td>
-                                <td><?php echo number_format(((float)$row['budget_selected_period'] - (float)$row['forecast_selected_period']), 2); ?></td>
-                                <td><?php echo number_format(((float)$row['budget_selected_period'] - (float)$row['actual_curr_period']), 2); ?></td>
+                                <td><?php echo number_format($rowForecastMinusActual, 2); ?></td>
+                                <td><?php echo number_format($rowBudgetMinusForecast, 2); ?></td>
+                                <td><?php echo number_format($rowBudgetMinusActual, 2); ?></td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr style="font-weight:700;background-color:rgba(0,0,0,0.03);">
+                            <td colspan="3" style="text-align:right;">Totals</td>
+                            <td><?php echo number_format($totalsBudgetSelectedPeriod, 2); ?></td>
+                            <td><?php echo number_format($totalsForecastSelectedPeriod, 2); ?></td>
+                            <td><?php echo number_format($totalsActualCurrPeriod, 2); ?></td>
+                            <td><?php echo number_format($totalsActualPrevPeriod, 2); ?></td>
+                            <td>
+                                <?php if ($isMonthMode): ?>
+                                    <?php echo number_format($totalsActualPrevYearSameMonth, 2); ?>
+                                <?php else: ?>
+                                    -
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo number_format($totalsForecastMinusActual, 2); ?></td>
+                            <td><?php echo number_format($totalsBudgetMinusForecast, 2); ?></td>
+                            <td><?php echo number_format($totalsBudgetMinusActual, 2); ?></td>
+                        </tr>
                     <?php else: ?>
                         <tr>
                             <td colspan="11" style="text-align:center;">No data found for the selected filters.</td>
