@@ -149,16 +149,14 @@ function cr_user_label_by_id($conn, $company_id, $rawId) {
     }
 
     if ($res && ($row = mysqli_fetch_assoc($res))) {
-        $username = trim((string)($row['username'] ?? ''));
         $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-        if ($username !== '' && $fullName !== '') {
-            return $username . ' (' . $fullName . ')';
-        }
-        if ($username !== '') {
-            return $username;
-        }
         if ($fullName !== '') {
             return $fullName;
+        }
+
+        $username = trim((string)($row['username'] ?? ''));
+        if ($username !== '') {
+            return $username;
         }
     }
 
