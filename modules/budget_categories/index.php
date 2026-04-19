@@ -290,7 +290,8 @@ $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
 // Handle Excel/CSV database import requests from table-tools.js.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
+$requestContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos($requestContentType, 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
     $jsonBody = json_decode((string)$rawBody, true);
     if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
