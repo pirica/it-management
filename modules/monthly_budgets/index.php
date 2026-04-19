@@ -277,6 +277,32 @@ function cr_humanize_field($field) {
 }
 
 /**
+ * Month helpers for monthly_budgets module.
+ */
+function cr_month_options() {
+    return [
+        1 => 'January',
+        2 => 'February',
+        3 => 'March',
+        4 => 'April',
+        5 => 'May',
+        6 => 'June',
+        7 => 'July',
+        8 => 'August',
+        9 => 'September',
+        10 => 'October',
+        11 => 'November',
+        12 => 'December',
+    ];
+}
+
+function cr_month_label($rawMonth) {
+    $months = cr_month_options();
+    $monthNumber = (int)$rawMonth;
+    return $months[$monthNumber] ?? '';
+}
+
+/**
  * Special handling for employee privacy - hides internal IDs from general lists.
  */
 function cr_is_hidden_employee_field($field) {
@@ -289,6 +315,13 @@ function cr_is_hidden_employee_field($field) {
  * Renders cell values with appropriate formatting (badges for booleans, etc.)
  */
 function cr_render_cell_value($table, $field, $value) {
+    if ($table === 'monthly_budgets' && $field === 'month') {
+        $monthLabel = cr_month_label($value);
+        if ($monthLabel !== '') {
+            return sanitize($monthLabel);
+        }
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -721,6 +754,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
+
+        if ($crud_table === 'monthly_budgets' && $name === 'month') {
+            $monthValue = (int)($_POST[$name] ?? 0);
+            if ($monthValue < 1 || $monthValue > 12) {
+                $errors[] = 'Month must be between January and December.';
+                $data[$name] = 'NULL';
+            } else {
+                $data[$name] = (string)$monthValue;
+            }
+            continue;
+        }
         
         // Booleans (checkboxes)
         if ($isTinyInt) {
@@ -1037,6 +1081,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                            <?php elseif ($crud_table === 'monthly_budgets' && $name === 'month'): ?>
+                                <?php $monthOptions = cr_month_options(); ?>
+                                <select name="month" required>
+                                    <option value="">-- Select Month --</option>
+                                    <?php foreach ($monthOptions as $monthNumber => $monthName): ?>
+                                        <option value="<?php echo (int)$monthNumber; ?>" <?php echo ((string)$displayVal === (string)$monthNumber ? 'selected' : ''); ?>>
+                                            <?php echo sanitize($monthName); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
