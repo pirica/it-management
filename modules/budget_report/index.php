@@ -87,38 +87,116 @@ if ($reportCompanyId <= 0) {
                 cc.name AS cost_center,
                 ga.account_code,
                 ga.account_name,
-                COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_curr_period,
-                COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_prev_period,
-                COALESCE(SUM(CASE WHEN YEAR(e.date)=? AND MONTH(e.date)=? THEN e.amount END),0) AS actual_prev_year_same_month
+                COALESCE(b_cur.amount, 0) AS budget_selected_period,
+                COALESCE(f_cur.amount, 0) AS forecast_selected_period,
+                COALESCE(a_cur.amount, 0) AS actual_curr_period,
+                COALESCE(a_prev.amount, 0) AS actual_prev_period,
+                COALESCE(a_prev_year_month.amount, 0) AS actual_prev_year_same_month
             FROM cost_centers cc
             JOIN gl_accounts ga ON ga.company_id = cc.company_id
-            LEFT JOIN expenses e
-                ON e.company_id = cc.company_id
-               AND e.cost_center_id = cc.id
-               AND e.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
+                FROM expenses
+                WHERE company_id = ? AND YEAR(date) = ? AND MONTH(date) = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) a_cur
+                ON a_cur.company_id = cc.company_id
+               AND a_cur.cost_center_id = cc.id
+               AND a_cur.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
+                FROM expenses
+                WHERE company_id = ? AND YEAR(date) = ? AND MONTH(date) = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) a_prev
+                ON a_prev.company_id = cc.company_id
+               AND a_prev.cost_center_id = cc.id
+               AND a_prev.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
+                FROM expenses
+                WHERE company_id = ? AND YEAR(date) = ? AND MONTH(date) = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) a_prev_year_month
+                ON a_prev_year_month.company_id = cc.company_id
+               AND a_prev_year_month.cost_center_id = cc.id
+               AND a_prev_year_month.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(forecast_amount) AS amount
+                FROM forecast_revisions
+                WHERE company_id = ? AND year = ? AND month = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) f_cur
+                ON f_cur.company_id = cc.company_id
+               AND f_cur.cost_center_id = cc.id
+               AND f_cur.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT ab.company_id, ab.cost_center_id, ab.gl_account_id, SUM(mb.amount) AS amount
+                FROM annual_budgets ab
+                JOIN monthly_budgets mb
+                  ON mb.company_id = ab.company_id
+                 AND mb.annual_budget_id = ab.id
+                WHERE ab.company_id = ? AND ab.year = ? AND mb.month = ?
+                GROUP BY ab.company_id, ab.cost_center_id, ab.gl_account_id
+            ) b_cur
+                ON b_cur.company_id = cc.company_id
+               AND b_cur.cost_center_id = cc.id
+               AND b_cur.gl_account_id = ga.id
             WHERE cc.company_id = ?
               AND (? = 0 OR cc.id = ?)
               AND (? = 0 OR ga.id = ?)
-            GROUP BY cc.id, ga.id
             ORDER BY cc.name, ga.account_code";
     } else {
         $reportSql = "SELECT
                 cc.name AS cost_center,
                 ga.account_code,
                 ga.account_name,
-                COALESCE(SUM(CASE WHEN YEAR(e.date)=? THEN e.amount END),0) AS actual_curr_period,
-                COALESCE(SUM(CASE WHEN YEAR(e.date)=? THEN e.amount END),0) AS actual_prev_period,
+                COALESCE(b_cur.amount, 0) AS budget_selected_period,
+                COALESCE(f_cur.amount, 0) AS forecast_selected_period,
+                COALESCE(a_cur.amount, 0) AS actual_curr_period,
+                COALESCE(a_prev.amount, 0) AS actual_prev_period,
                 0 AS actual_prev_year_same_month
             FROM cost_centers cc
             JOIN gl_accounts ga ON ga.company_id = cc.company_id
-            LEFT JOIN expenses e
-                ON e.company_id = cc.company_id
-               AND e.cost_center_id = cc.id
-               AND e.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
+                FROM expenses
+                WHERE company_id = ? AND YEAR(date) = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) a_cur
+                ON a_cur.company_id = cc.company_id
+               AND a_cur.cost_center_id = cc.id
+               AND a_cur.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
+                FROM expenses
+                WHERE company_id = ? AND YEAR(date) = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) a_prev
+                ON a_prev.company_id = cc.company_id
+               AND a_prev.cost_center_id = cc.id
+               AND a_prev.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(forecast_amount) AS amount
+                FROM forecast_revisions
+                WHERE company_id = ? AND year = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) f_cur
+                ON f_cur.company_id = cc.company_id
+               AND f_cur.cost_center_id = cc.id
+               AND f_cur.gl_account_id = ga.id
+            LEFT JOIN (
+                SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
+                FROM annual_budgets
+                WHERE company_id = ? AND year = ?
+                GROUP BY company_id, cost_center_id, gl_account_id
+            ) b_cur
+                ON b_cur.company_id = cc.company_id
+               AND b_cur.cost_center_id = cc.id
+               AND b_cur.gl_account_id = ga.id
             WHERE cc.company_id = ?
               AND (? = 0 OR cc.id = ?)
               AND (? = 0 OR ga.id = ?)
-            GROUP BY cc.id, ga.id
             ORDER BY cc.name, ga.account_code";
     }
 
@@ -127,12 +205,21 @@ if ($reportCompanyId <= 0) {
         if ($isMonthMode) {
             mysqli_stmt_bind_param(
                 $reportStmt,
-                'iiiiiiiiiii',
+                'iiiiiiiiiiiiiiiiiiii',
+                $reportCompanyId,
                 $selectedYear,
                 $selectedMonth,
+                $reportCompanyId,
                 $previousMonthYear,
                 $previousMonth,
+                $reportCompanyId,
                 $previousYear,
+                $selectedMonth,
+                $reportCompanyId,
+                $selectedYear,
+                $selectedMonth,
+                $reportCompanyId,
+                $selectedYear,
                 $selectedMonth,
                 $reportCompanyId,
                 $selectedCostCenterId,
@@ -143,9 +230,15 @@ if ($reportCompanyId <= 0) {
         } else {
             mysqli_stmt_bind_param(
                 $reportStmt,
-                'iiiiiii',
+                'iiiiiiiiiiiii',
+                $reportCompanyId,
                 $selectedYear,
+                $reportCompanyId,
                 $previousYear,
+                $reportCompanyId,
+                $selectedYear,
+                $reportCompanyId,
+                $selectedYear,
                 $reportCompanyId,
                 $selectedCostCenterId,
                 $selectedCostCenterId,
@@ -248,9 +341,14 @@ $monthOptions = [
                         <th>Cost Center</th>
                         <th>Account Code</th>
                         <th>Account Name</th>
+                        <th>Budget (Selected Period)</th>
+                        <th>Forecast (Selected Period)</th>
                         <th><?php echo $isMonthMode ? 'Actual (Selected Month)' : 'Actual (Selected Year)'; ?></th>
                         <th><?php echo $isMonthMode ? 'Actual (Previous Month)' : 'Actual (Previous Year)'; ?></th>
                         <th><?php echo $isMonthMode ? 'Actual (Same Month Previous Year)' : 'N/A'; ?></th>
+                        <th>Forecast - Actual</th>
+                        <th>Budget - Forecast</th>
+                        <th>Budget - Actual</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -260,6 +358,8 @@ $monthOptions = [
                                 <td><?php echo sanitize((string)$row['cost_center']); ?></td>
                                 <td><?php echo sanitize((string)$row['account_code']); ?></td>
                                 <td><?php echo sanitize((string)$row['account_name']); ?></td>
+                                <td><?php echo number_format((float)$row['budget_selected_period'], 2); ?></td>
+                                <td><?php echo number_format((float)$row['forecast_selected_period'], 2); ?></td>
                                 <td><?php echo number_format((float)$row['actual_curr_period'], 2); ?></td>
                                 <td><?php echo number_format((float)$row['actual_prev_period'], 2); ?></td>
                                 <td>
@@ -269,11 +369,14 @@ $monthOptions = [
                                         -
                                     <?php endif; ?>
                                 </td>
+                                <td><?php echo number_format(((float)$row['forecast_selected_period'] - (float)$row['actual_curr_period']), 2); ?></td>
+                                <td><?php echo number_format(((float)$row['budget_selected_period'] - (float)$row['forecast_selected_period']), 2); ?></td>
+                                <td><?php echo number_format(((float)$row['budget_selected_period'] - (float)$row['actual_curr_period']), 2); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" style="text-align:center;">No data found for the selected filters.</td>
+                            <td colspan="11" style="text-align:center;">No data found for the selected filters.</td>
                         </tr>
                     <?php endif; ?>
                     </tbody>
