@@ -16,6 +16,31 @@ $selectedGlAccountId = 0;
 $reportRows = [];
 $reportError = '';
 
+// Handle JSON import requests from table-tools.js so this report does not silently
+// fall through to HTML rendering when users click 📥Import Excel.
+$budgetReportContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($budgetReportContentType, 'application/json') !== false) {
+    $budgetReportRawBody = file_get_contents('php://input');
+    $budgetReportJsonBody = json_decode((string)$budgetReportRawBody, true);
+    if (is_array($budgetReportJsonBody) && isset($budgetReportJsonBody['import_excel_rows'])) {
+        header('Content-Type: application/json');
+
+        $budgetReportToken = (string)($budgetReportJsonBody['csrf_token'] ?? '');
+        if (!itm_validate_csrf_token($budgetReportToken)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
+            exit;
+        }
+
+        http_response_code(400);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Database import is not supported in Budget Report because this screen is a computed summary from budget, forecast, and expense source tables.'
+        ]);
+        exit;
+    }
+}
+
 if (isset($_GET['year'])) {
     $selectedYear = (int)$_GET['year'];
 }
@@ -414,7 +439,7 @@ $monthOptions = [
             <?php endif; ?>
 
             <div class="card">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <th>Cost Center</th>
