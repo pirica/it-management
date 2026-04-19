@@ -55,6 +55,8 @@ function itm_sidebar_base_structure() {
                 ['id' => 'gl_accounts', 'label' => '📚 Chart of Accounts', 'href' => 'modules/gl_accounts/', 'match_dir' => 'gl_accounts'],
                 ['id' => 'annual_budgets', 'label' => '📅 Annual Budget', 'href' => 'modules/annual_budgets/', 'match_dir' => 'annual_budgets'],
                 ['id' => 'monthly_budgets', 'label' => '📆 Monthly Budget', 'href' => 'modules/monthly_budgets/', 'match_dir' => 'monthly_budgets'],
+                ['id' => 'forecast_revisions', 'label' => '📈 Forecast Revisions', 'href' => 'modules/forecast_revisions/', 'match_dir' => 'forecast_revisions'],
+                ['id' => 'approvals', 'label' => '✅ Forecast Approvals', 'href' => 'modules/approvals/', 'match_dir' => 'approvals'],
                 ['id' => 'expenses', 'label' => '💸 Expenses', 'href' => 'modules/expenses/', 'match_dir' => 'expenses'],
             ],
         ],

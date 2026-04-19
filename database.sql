@@ -246,6 +246,73 @@ CREATE TABLE `expenses` (
 -- Data for `expenses`
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
 
+-- Table structure for `forecast_revisions`
+DROP TABLE IF EXISTS `forecast_revisions`;
+CREATE TABLE `forecast_revisions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `cost_center_id` int NOT NULL,
+  `gl_account_id` int NOT NULL,
+  `year` int NOT NULL,
+  `month` tinyint unsigned NOT NULL COMMENT '1=January ... 12=December',
+  `forecast_amount` decimal(12,2) NOT NULL,
+  `status` enum('draft','submitted','finance_review','gm_review','approved','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `locked` tinyint DEFAULT '0',
+  `submitted_by` int DEFAULT NULL,
+  `finance_reviewed_by` int DEFAULT NULL,
+  `gm_approved_by` int DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_forecast_revisions_scope` (`company_id`,`cost_center_id`,`gl_account_id`,`year`,`month`),
+  KEY `company_id` (`company_id`),
+  KEY `cost_center_id` (`cost_center_id`),
+  KEY `gl_account_id` (`gl_account_id`),
+  KEY `submitted_by` (`submitted_by`),
+  KEY `finance_reviewed_by` (`finance_reviewed_by`),
+  KEY `gm_approved_by` (`gm_approved_by`),
+  CONSTRAINT `forecast_revisions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `forecast_revisions_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `forecast_revisions_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `forecast_revisions_ibfk_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `forecast_revisions_ibfk_finance_reviewed_by` FOREIGN KEY (`finance_reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `forecast_revisions_ibfk_gm_approved_by` FOREIGN KEY (`gm_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `forecast_revisions_chk_month` CHECK ((`month` between 1 and 12))
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `forecast_revisions`
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('1', '1', '1', '1', '2026', '2', '4200.00', 'draft', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('2', '1', '1', '2', '2026', '2', '3150.00', 'submitted', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+
+-- Table structure for `approvals`
+DROP TABLE IF EXISTS `approvals`;
+CREATE TABLE `approvals` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `forecast_revision_id` int NOT NULL,
+  `stage` enum('finance_review','gm_review') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'finance_review',
+  `status` enum('pending','in_progress','approved','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `approved_by` int DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `forecast_revision_id` (`forecast_revision_id`),
+  KEY `approved_by` (`approved_by`),
+  CONSTRAINT `approvals_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approvals_ibfk_forecast_revision` FOREIGN KEY (`forecast_revision_id`) REFERENCES `forecast_revisions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approvals_ibfk_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `approvals`
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('1', '1', '2', 'finance_review', 'in_progress', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('2', '1', '1', 'finance_review', 'pending', NULL, NULL, 'Draft not submitted yet.', '1');
+
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
 CREATE TABLE `employee_onboarding_requests` (
