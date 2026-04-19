@@ -291,10 +291,16 @@ $csrfToken = cr_get_csrf_token();
 
 // Handle Excel/CSV database import requests from table-tools.js.
 $requestContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos($requestContentType, 'application/json') !== false) {
+$isJsonImportRequest = false;
+$rawBody = '';
+$jsonBody = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true)) {
     $rawBody = file_get_contents('php://input');
     $jsonBody = json_decode((string)$rawBody, true);
-    if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
+    $hasImportRows = is_array($jsonBody) && isset($jsonBody['import_excel_rows']);
+    $isJsonImportRequest = strpos($requestContentType, 'application/json') !== false || $hasImportRows;
+}
+if ($isJsonImportRequest && is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
         header('Content-Type: application/json');
 
         $requestToken = (string)($jsonBody['csrf_token'] ?? '');
@@ -424,7 +430,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
         exit;
     }
-}
 
 // HANDLE BULK DELETIONS (from POST)
 if ($crud_action === 'delete') {
