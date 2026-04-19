@@ -243,6 +243,7 @@ if ($company_id > 0) {
                 $targetRows[] = [
                     'id' => (int)($row['id'] ?? 0),
                     'equipment_title' => $equipmentTitle,
+                    'hostname' => (string)($row['hostname'] ?? ''),
                     'equipment_type' => (string)($row['equipment_type'] ?? ''),
                     'warranty_type' => (string)($row['warranty_type'] ?? ''),
                     'serial_number' => (string)($row['serial_number'] ?? ''),
@@ -335,6 +336,7 @@ if ($moduleTitle === '') {
                                 <thead>
                                 <tr>
                                     <th>Equipment</th>
+                                    <th>Hostname</th>
                                     <th>Type</th>
                                     <th>Warranty Type</th>
                                     <th>Serial</th>
@@ -349,6 +351,7 @@ if ($moduleTitle === '') {
                                 <?php foreach ($section['rows'] as $row): ?>
                                     <tr>
                                         <td><a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a></td>
+                                        <td><?php echo sanitize($row['hostname'] !== '' ? $row['hostname'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['equipment_type'] !== '' ? $row['equipment_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['warranty_type'] !== '' ? $row['warranty_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['serial_number'] !== '' ? $row['serial_number'] : '—'); ?></td>
