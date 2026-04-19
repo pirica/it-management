@@ -92,11 +92,11 @@ CREATE TABLE `departments` (
   CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `departments`
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('1', '1', 'IT Operations', 'ITOPS', 'Core IT operations team', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('1', '1', 'IT Operations', 'IT', 'Core IT operations team', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('2', '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('3', '1', 'Human Resources', 'HR', 'Human resources department', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('4', '1', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('5', '4', 'Front Office', '', '', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('5', '4', 'Front Office', 'FO', 'Front Office', '1');
 
 
 -- Table structure for `budget_categories`
@@ -329,8 +329,8 @@ CREATE TABLE `approvals_stage` (
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `approvals_stage`
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('1', '1', 'finance_review', 'Finance team review stage before general manager approval.', '1');
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('2', '1', 'gm_review', 'General manager review stage before final approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('1', '1', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('2', '1', 'GM Review', 'General manager review stage before final approval.', '1');
 
 -- Table structure for `approvals`
 DROP TABLE IF EXISTS `approvals`;
@@ -1879,7 +1879,7 @@ CREATE TABLE `cable_colors` (
 
 -- Data for `cable_colors`
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '1', 'Gray', '#808080', NULL);
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '2', 'Green', '#03b003', 'Used for Printers');
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '2', 'Green', '#03b003', 'Printers');
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '3', 'Red', '#ff0000', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '4', 'Yellow', '#ffff00', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '5', 'Black', '#000000', NULL);
