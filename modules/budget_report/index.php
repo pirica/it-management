@@ -424,7 +424,7 @@ $monthOptions = [
                         <th>Forecast (Selected Period)</th>
                         <th><?php echo $isMonthMode ? 'Actual (Selected Month)' : 'Actual (Selected Year)'; ?></th>
                         <th><?php echo $isMonthMode ? 'Actual (Previous Month)' : 'Actual (Previous Year)'; ?></th>
-                        <th><?php echo $isMonthMode ? 'Actual (Same Month Previous Year)' : 'N/A'; ?></th>
+                        <th>Actual (Same Month Previous Year)</th>
                         <th>Forecast - Actual</th>
                         <th>Budget - Forecast</th>
                         <th>Budget - Actual</th>
