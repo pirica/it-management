@@ -60,6 +60,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'approvals', 'label' => '✅ Forecast Approvals', 'href' => 'modules/approvals/', 'match_dir' => 'approvals'],
                 ['id' => 'approvals_stage', 'label' => '🪜 Approval Stages', 'href' => 'modules/approvals_stage/', 'match_dir' => 'approvals_stage'],
                 ['id' => 'expenses', 'label' => '💸 Expenses', 'href' => 'modules/expenses/', 'match_dir' => 'expenses'],
+                ['id' => 'budget_report', 'label' => '📑 Budget Report', 'href' => 'modules/budget_report/', 'match_dir' => 'budget_report'],
             ],
         ],
         [
