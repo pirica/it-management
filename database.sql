@@ -201,7 +201,7 @@ CREATE TABLE `monthly_budgets` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `annual_budget_id` int NOT NULL,
-  `month` tinyint NOT NULL,
+  `month` tinyint unsigned NOT NULL COMMENT '1=January ... 12=December',
   `amount` decimal(12,2) NOT NULL,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
