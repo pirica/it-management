@@ -165,6 +165,15 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Open `index.php` and `view.php` and confirm FK columns render labels (not numeric IDs).
   * Open `edit.php` and confirm persisted FK values remain selected even when company-scoped options are incomplete.
   * Confirm fallback lookup is tenant-safe (company scoped first, then id-only fallback only for preserving legacy/shared references).
+* **Created-by UX guardrail (hard fail):**
+  * For fields such as `created_by`, `updated_by`, `approved_by`, and `*_by_user_id`, list/detail screens must never show raw numeric IDs when a user row exists.
+  * In `create.php`/`edit.php`, these fields must render as user dropdowns (human-readable labels), not free-text numeric inputs.
+  * User labels must prefer `first_name + last_name`; use `username` only as fallback when full name is empty.
+  * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
+* **Testing/reporting guardrail (mandatory):**
+  * Do not claim “No tests run” when checks were executed.
+  * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
+  * PR descriptions must list the exact commands that were run and their outcomes.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
 
