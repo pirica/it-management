@@ -27,7 +27,7 @@ $workstationRamJoin = $hasWorkstationRamIdColumn
     : '';
 
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
-               r.name rack_name, es.name status_name, wt.name warranty_type_name,
+               r.name rack_name, idf.name idf_name, es.name status_name, wt.name warranty_type_name,
                pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$workstationOsVersionSelect$workstationRamSelect
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
@@ -35,6 +35,7 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id AND m.company_id = e.company_id
         LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
         LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
+        LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id AND es.company_id = e.company_id
         LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id AND wt.company_id = e.company_id
         LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id AND pdt.company_id = e.company_id
