@@ -124,6 +124,45 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
 /**
  * Keeps persisted FK selections visible in edit/create forms even if tenant options are incomplete.
  */
+
+/**
+ * Resolves a user display label for *_by fields when schema does not declare a foreign key.
+ */
+function cr_user_label_by_id($conn, $company_id, $rawId) {
+    if ($rawId === null || $rawId === '') {
+        return '';
+    }
+
+    $id = (int)$rawId;
+    if ($id <= 0) {
+        return '';
+    }
+
+    $whereCompany = ($company_id > 0)
+        ? ' WHERE id=' . $id . ' AND company_id=' . (int)$company_id
+        : ' WHERE id=' . $id;
+    $sql = 'SELECT username, first_name, last_name FROM `users`' . $whereCompany . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+
+    if ((!$res || mysqli_num_rows($res) === 0) && $company_id > 0) {
+        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `users` WHERE id=' . $id . ' LIMIT 1');
+    }
+
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+        if ($fullName !== '') {
+            return $fullName;
+        }
+
+        $username = trim((string)($row['username'] ?? ''));
+        if ($username !== '') {
+            return $username;
+        }
+    }
+
+    return '';
+}
+
 function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
     $selectedId = (int)$selectedValue;
     if ($selectedId <= 0) { return $options; }
@@ -153,7 +192,7 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'title', 'username', 'account_name', 'account_code', 'code', 'description', 'email', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
@@ -226,6 +265,13 @@ function cr_render_cell_value($table, $field, $value) {
         $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), $value);
         if ($resolvedLabel !== '') {
             return sanitize($resolvedLabel);
+        }
+    }
+
+    if (preg_match('/(_by|_by_user_id)$/', (string)$field)) {
+        $userLabel = cr_user_label_by_id($GLOBALS['conn'], (int)($GLOBALS['company_id'] ?? 0), $value);
+        if ($userLabel !== '') {
+            return sanitize($userLabel);
         }
     }
 
@@ -634,7 +680,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
         
         // Booleans (checkboxes)
         if ($isTinyInt) {
@@ -934,7 +980,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
