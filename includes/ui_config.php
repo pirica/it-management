@@ -58,6 +58,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'forecast_revisions', 'label' => '📈 Forecast Revisions', 'href' => 'modules/forecast_revisions/', 'match_dir' => 'forecast_revisions'],
                 ['id' => 'forecast_revisions_status', 'label' => '📊 Forecast Revisions Status', 'href' => 'modules/forecast_revisions_status/', 'match_dir' => 'forecast_revisions_status'],
                 ['id' => 'approvals', 'label' => '✅ Forecast Approvals', 'href' => 'modules/approvals/', 'match_dir' => 'approvals'],
+                ['id' => 'approvals_stage', 'label' => '🪜 Approval Stages', 'href' => 'modules/approvals_stage/', 'match_dir' => 'approvals_stage'],
                 ['id' => 'expenses', 'label' => '💸 Expenses', 'href' => 'modules/expenses/', 'match_dir' => 'expenses'],
             ],
         ],

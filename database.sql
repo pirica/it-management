@@ -312,13 +312,33 @@ CREATE TABLE `forecast_revisions` (
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('1', '1', '1', '1', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('2', '1', '1', '2', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
 
+-- Table structure for `approvals_stage`
+DROP TABLE IF EXISTS `approvals_stage`;
+CREATE TABLE `approvals_stage` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `stage` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_approvals_stage_company_stage` (`company_id`,`stage`),
+  KEY `approvals_stage_company_id` (`company_id`),
+  CONSTRAINT `approvals_stage_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `approvals_stage`
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('1', '1', 'finance_review', 'Finance team review stage before general manager approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('2', '1', 'gm_review', 'General manager review stage before final approval.', '1');
+
 -- Table structure for `approvals`
 DROP TABLE IF EXISTS `approvals`;
 CREATE TABLE `approvals` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `forecast_revision_id` int NOT NULL,
-  `stage` enum('finance_review','gm_review') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'finance_review',
+  `stage` int NOT NULL DEFAULT '1',
   `status` int NOT NULL DEFAULT '1',
   `approved_by` int DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
@@ -329,17 +349,19 @@ CREATE TABLE `approvals` (
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
   KEY `forecast_revision_id` (`forecast_revision_id`),
+  KEY `stage` (`stage`),
   KEY `status` (`status`),
   KEY `approved_by` (`approved_by`),
   CONSTRAINT `approvals_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `approvals_ibfk_forecast_revision` FOREIGN KEY (`forecast_revision_id`) REFERENCES `forecast_revisions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approvals_ibfk_stage` FOREIGN KEY (`stage`) REFERENCES `approvals_stage` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvals_ibfk_status` FOREIGN KEY (`status`) REFERENCES `forecast_revisions_status` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvals_ibfk_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `approvals`
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('1', '1', '2', 'finance_review', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('2', '1', '1', 'finance_review', '1', NULL, NULL, 'Draft not submitted yet.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('1', '1', '2', '1', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('2', '1', '1', '1', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
