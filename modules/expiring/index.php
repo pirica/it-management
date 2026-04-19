@@ -331,7 +331,7 @@ if ($moduleTitle === '') {
         .idf-stat small { display:block; color: var(--text-secondary); margin-bottom:4px; }
         .idf-stat strong { font-size: 20px; display:block; }
         .idf-stat-expired strong { color: #dc2626; }
-        .idf-stat-unknown strong { color: #111111; }
+        .idf-stat-unknown strong { color: var(--text-primary); }
         .idf-stat-lt30 strong { color: #dc2626; }
         .idf-stat-gt60 strong { color: #ca8a04; }
         @media (max-width: 900px) {
@@ -354,17 +354,6 @@ if ($moduleTitle === '') {
                 <div class="card"><p>Please select a company to view expiration timelines.</p></div>
             <?php elseif ($fetchError !== ''): ?>
                 <div class="card"><p class="alert alert-error"><?php echo sanitize($fetchError); ?></p></div>
-            <?php endif; ?>
-
-            <?php if (!empty($debugInfo)): ?>
-                <div class="card" style="margin-top: 12px;">
-                    <h4 style="margin-bottom:8px;">🧪 Debug details</h4>
-                    <ul style="margin:0;padding-left:18px;">
-                        <?php foreach ($debugInfo as $debugLine): ?>
-                            <li><?php echo sanitize($debugLine); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
             <?php endif; ?>
 
             <?php
@@ -393,7 +382,6 @@ if ($moduleTitle === '') {
                     <section class="idf-hero">
                         <div>
                             <h2><?php echo sanitize($section['emoji'] . ' ' . $section['title']); ?></h2>
-                            <p>Red = expired/under 30 days, black = unknown date, yellow = over 60 days.</p>
                         </div>
                         <div class="idf-stat-grid">
                             <div class="idf-stat idf-stat-expired">
