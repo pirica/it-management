@@ -166,6 +166,46 @@ function cr_user_label_by_id($conn, $company_id, $rawId) {
     return '';
 }
 
+
+/**
+ * Loads selectable users for *_by edit/create fields.
+ */
+function cr_user_options($conn, $company_id) {
+    $where = ($company_id > 0)
+        ? ' WHERE company_id=' . (int)$company_id
+        : '';
+    $sql = 'SELECT id, username, first_name, last_name FROM `users`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
+    $res = mysqli_query($conn, $sql);
+    $options = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+        $username = trim((string)($row['username'] ?? ''));
+        $label = $fullName !== '' ? $fullName : ($username !== '' ? $username : ('User #' . (int)$row['id']));
+        $options[] = ['id' => (int)$row['id'], 'label' => $label];
+    }
+    return $options;
+}
+
+function cr_append_selected_user_option($conn, $company_id, $options, $selectedValue) {
+    $selectedId = (int)$selectedValue;
+    if ($selectedId <= 0) {
+        return $options;
+    }
+
+    foreach ($options as $option) {
+        if ((int)$option['id'] === $selectedId) {
+            return $options;
+        }
+    }
+
+    $label = cr_user_label_by_id($conn, $company_id, $selectedId);
+    if ($label !== '') {
+        $options[] = ['id' => $selectedId, 'label' => $label];
+    }
+
+    return $options;
+}
+
 function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
     $selectedId = (int)$selectedValue;
     if ($selectedId <= 0) {
@@ -698,6 +738,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             continue;
         }
 
+        if (preg_match('/(_by|_by_user_id)$/', (string)$name)) {
+            $userValue = trim((string)($_POST[$name] ?? ''));
+            $data[$name] = ($userValue === '') ? 'NULL' : (string)(int)$userValue;
+            continue;
+        }
+
         // Foreign keys with inline addition capability
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
@@ -1000,6 +1046,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif (preg_match('/(_by|_by_user_id)$/', (string)$name)): ?>
+                                <?php
+                                    $userOpts = cr_user_options($conn, (int)$company_id);
+                                    $userOpts = cr_append_selected_user_option($conn, (int)$company_id, $userOpts, $displayVal);
+                                ?>
+                                <select name="<?php echo sanitize($name); ?>">
+                                    <option value="">-- Select --</option>
+                                    <?php foreach ($userOpts as $userOpt): ?>
+                                        <option value="<?php echo (int)$userOpt['id']; ?>" <?php echo ((string)$displayVal === (string)$userOpt['id']) ? 'selected' : ''; ?>><?php echo sanitize($userOpt['label']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
