@@ -412,7 +412,7 @@ if ($moduleTitle === '') {
                         </div>
                     </section>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                        <h3 style="margin:0;"><?php echo sanitize($section['emoji'] . ' ' . $section['title']); ?></h3>
+                        
                         <span class="badge badge-info"><?php echo (int)count($section['rows']); ?> records</span>
                     </div>
 
