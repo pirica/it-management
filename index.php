@@ -190,7 +190,7 @@ if ($isAdmin) {
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                 <div style="margin-bottom: 20px;">
                     <label for="company">Company:</label>
-                    <select name="company_id" id="company" required onchange="updateName()" data-addable-select="1" data-add-table="companies" data-add-id-col="id" data-add-label-col="company" data-add-company-scoped="0" data-add-friendly="company">
+                    <select name="company_id" id="company" required onchange="updateName()">
                         <option value="">-- Select a Company --</option>
                         <?php while ($c = mysqli_fetch_assoc($companies)): ?>
                             <option value="<?php echo $c['id']; ?>" data-name="<?php echo htmlspecialchars($c['company']); ?>">
