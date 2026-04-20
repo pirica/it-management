@@ -286,11 +286,51 @@ if (!function_exists('itm_run_query')) {
         $errorCode = null;
         $errorMessage = null;
 
+        $auditMeta = null;
+        $auditOldValues = null;
+        $auditRecordId = 0;
+        $auditCompanyId = (int)($_SESSION['company_id'] ?? 0);
+
+        if (function_exists('itm_parse_audit_sql')) {
+            $parsedMeta = itm_parse_audit_sql($sql);
+            if (is_array($parsedMeta)) {
+                $parsedTable = (string)($parsedMeta['table'] ?? '');
+                if ($parsedTable !== '') {
+                    $auditMeta = $parsedMeta;
+                    $auditRecordId = (int)($auditMeta['record_id'] ?? 0);
+
+                    if (
+                        in_array((string)($auditMeta['action'] ?? ''), ['UPDATE', 'DELETE'], true)
+                        && $auditRecordId > 0
+                        && function_exists('itm_fetch_audit_record')
+                    ) {
+                        $auditOldValues = itm_fetch_audit_record($conn, $parsedTable, $auditRecordId, $auditCompanyId);
+                    }
+                }
+            }
+        }
+
         try {
             $result = mysqli_query($conn, $sql);
             if ($result === false) {
                 $errorCode = (int)mysqli_errno($conn);
                 $errorMessage = (string)mysqli_error($conn);
+            } elseif (is_array($auditMeta) && function_exists('itm_log_audit') && function_exists('itm_fetch_audit_record')) {
+                $auditAction = (string)($auditMeta['action'] ?? '');
+                $auditTable = (string)($auditMeta['table'] ?? '');
+                if ($auditAction !== '' && $auditTable !== '') {
+                    if ($auditAction === 'INSERT') {
+                        $auditRecordId = (int)mysqli_insert_id($conn);
+                    }
+
+                    if ($auditRecordId > 0) {
+                        $auditNewValues = null;
+                        if ($auditAction !== 'DELETE') {
+                            $auditNewValues = itm_fetch_audit_record($conn, $auditTable, $auditRecordId, $auditCompanyId);
+                        }
+                        itm_log_audit($conn, $auditTable, $auditRecordId, $auditAction, $auditOldValues, $auditNewValues);
+                    }
+                }
             }
             return $result;
         } catch (Throwable $t) {
