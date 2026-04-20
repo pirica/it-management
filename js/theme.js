@@ -23,9 +23,11 @@ function updateThemeButton() {
 
 function initSidebar() {
     const savedSidebar = localStorage.getItem('sidebar');
-    // Default phones/tablets to collapsed so content remains usable on small screens.
-    const fallbackState = window.matchMedia('(max-width: 768px)').matches ? 'collapsed' : 'open';
-    const sidebarState = savedSidebar || fallbackState;
+    const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+    // Why: A desktop "open" preference should not force the sidebar visible on phones.
+    // Mobile viewports always start collapsed to keep the content area unobstructed.
+    const fallbackState = isMobileViewport ? 'collapsed' : 'open';
+    const sidebarState = isMobileViewport ? 'collapsed' : (savedSidebar || fallbackState);
     applySidebarState(sidebarState === 'collapsed');
 }
 
