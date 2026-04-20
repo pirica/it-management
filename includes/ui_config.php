@@ -1147,16 +1147,12 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         'section_id' => 'VARCHAR(191) NULL DEFAULT NULL',
     ];
     foreach ($legacyLengthColumns as $columnName => $columnDefinition) {
-        $columnStmt = mysqli_prepare($conn, 'SHOW COLUMNS FROM user_sidebar_preferences LIKE ?');
-        if (!$columnStmt) {
+        $columnCheckSql = "SHOW COLUMNS FROM `user_sidebar_preferences` LIKE '" . mysqli_real_escape_string($conn, $columnName) . "'";
+        $columnRes = mysqli_query($conn, $columnCheckSql);
+        if ($columnRes === false) {
             return false;
         }
-
-        mysqli_stmt_bind_param($columnStmt, 's', $columnName);
-        mysqli_stmt_execute($columnStmt);
-        $columnRes = mysqli_stmt_get_result($columnStmt);
-        $columnMeta = $columnRes ? mysqli_fetch_assoc($columnRes) : null;
-        mysqli_stmt_close($columnStmt);
+        $columnMeta = mysqli_fetch_assoc($columnRes);
 
         $columnType = strtolower((string)($columnMeta['Type'] ?? ''));
         if ($columnType === 'varchar(100)') {
