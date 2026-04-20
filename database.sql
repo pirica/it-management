@@ -24,8 +24,20 @@ CREATE TABLE `access_levels` (
 
 -- Data for `access_levels`
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Full');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Full');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('3', '7', 'Full');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('4', '10', 'Full');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('5', '13', 'Full');
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Limited');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('2', '5', 'Limited');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('3', '8', 'Limited');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('4', '11', 'Limited');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('5', '14', 'Limited');
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Read Only');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Read Only');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('3', '9', 'Read Only');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('4', '12', 'Read Only');
+INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('5', '15', 'Read Only');
 
 -- Table structure for `assignment_types`
 DROP TABLE IF EXISTS `assignment_types`;
@@ -44,8 +56,20 @@ CREATE TABLE `assignment_types` (
 
 -- Data for `assignment_types`
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Department');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Department');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('3', '7', 'Department');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('4', '10', 'Department');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('5', '13', 'Department');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Individual');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('2', '5', 'Individual');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('3', '8', 'Individual');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('4', '11', 'Individual');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('5', '14', 'Individual');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Shared');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Shared');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('3', '9', 'Shared');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('4', '12', 'Shared');
+INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('5', '15', 'Shared');
 
 -- Table structure for `companies`
 DROP TABLE IF EXISTS `companies`;
@@ -137,8 +161,20 @@ CREATE TABLE `budget_categories` (
 
 -- Data for `budget_categories`
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('1', '1', 'Revenue', 'Revenue-related general ledger accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('4', '2', 'Revenue', 'Revenue-related general ledger accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('7', '3', 'Revenue', 'Revenue-related general ledger accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('10', '4', 'Revenue', 'Revenue-related general ledger accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('13', '5', 'Revenue', 'Revenue-related general ledger accounts', '1');
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('2', '1', 'Operating Expense', 'Operational expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('5', '2', 'Operating Expense', 'Operational expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('8', '3', 'Operating Expense', 'Operational expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('11', '4', 'Operating Expense', 'Operational expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('14', '5', 'Operating Expense', 'Operational expense accounts', '1');
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('3', '1', 'Capital Expense', 'Capital expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('6', '2', 'Capital Expense', 'Capital expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('9', '3', 'Capital Expense', 'Capital expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('12', '4', 'Capital Expense', 'Capital expense accounts', '1');
+INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('15', '5', 'Capital Expense', 'Capital expense accounts', '1');
 
 -- Table structure for `cost_centers`
 DROP TABLE IF EXISTS `cost_centers`;
@@ -161,8 +197,20 @@ CREATE TABLE `cost_centers` (
 
 -- Data for `cost_centers`
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('1', '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('4', '2', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('7', '3', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('10', '4', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('13', '5', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('2', '1', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('5', '2', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('8', '3', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('11', '4', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('14', '5', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1');
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('3', '1', '4', 'Room Maintenance', 'CC-HK-RM', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('6', '2', '4', 'Room Maintenance', 'CC-HK-RM', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('9', '3', '4', 'Room Maintenance', 'CC-HK-RM', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('12', '4', '4', 'Room Maintenance', 'CC-HK-RM', '1');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('15', '5', '4', 'Room Maintenance', 'CC-HK-RM', '1');
 
 -- Table structure for `gl_accounts`
 DROP TABLE IF EXISTS `gl_accounts`;
@@ -185,8 +233,20 @@ CREATE TABLE `gl_accounts` (
 
 -- Data for `gl_accounts`
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('1', '1', '6100', 'IT Maintenance Contracts', '2', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('4', '2', '6100', 'IT Maintenance Contracts', '5', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('7', '3', '6100', 'IT Maintenance Contracts', '8', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('10', '4', '6100', 'IT Maintenance Contracts', '11', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('13', '5', '6100', 'IT Maintenance Contracts', '14', '1');
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('2', '1', '6200', 'Software Licensing', '2', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('5', '2', '6200', 'Software Licensing', '5', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('8', '3', '6200', 'Software Licensing', '8', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('11', '4', '6200', 'Software Licensing', '11', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('14', '5', '6200', 'Software Licensing', '14', '1');
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('3', '1', '7100', 'Capital IT Equipment', '3', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('6', '2', '7100', 'Capital IT Equipment', '6', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('9', '3', '7100', 'Capital IT Equipment', '9', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('12', '4', '7100', 'Capital IT Equipment', '12', '1');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('15', '5', '7100', 'Capital IT Equipment', '15', '1');
 
 -- Table structure for `annual_budgets`
 DROP TABLE IF EXISTS `annual_budgets`;
@@ -213,7 +273,15 @@ CREATE TABLE `annual_budgets` (
 
 -- Data for `annual_budgets`
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026', '48000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('3', '2', '4', '4', '2026', '48000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('5', '3', '7', '7', '2026', '48000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('7', '4', '10', '10', '2026', '48000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('9', '5', '13', '13', '2026', '48000.00', '1', '1');
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('2', '1', '1', '2', '2026', '36000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('4', '2', '4', '5', '2026', '36000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('6', '3', '7', '8', '2026', '36000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('8', '4', '10', '11', '2026', '36000.00', '1', '1');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('10', '5', '13', '14', '2026', '36000.00', '1', '1');
 
 -- Table structure for `monthly_budgets`
 DROP TABLE IF EXISTS `monthly_budgets`;
@@ -237,7 +305,15 @@ CREATE TABLE `monthly_budgets` (
 
 -- Data for `monthly_budgets`
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('1', '1', '1', '1', '4000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('3', '2', '3', '1', '4000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('5', '3', '5', '1', '4000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('7', '4', '7', '1', '4000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('9', '5', '9', '1', '4000.00', '1');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('2', '1', '2', '1', '3000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('4', '2', '4', '1', '3000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('6', '3', '6', '1', '3000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('8', '4', '8', '1', '3000.00', '1');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('10', '5', '10', '1', '3000.00', '1');
 
 -- Table structure for `expenses`
 DROP TABLE IF EXISTS `expenses`;
@@ -265,6 +341,10 @@ CREATE TABLE `expenses` (
 
 -- Data for `expenses`
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('2', '2', '4', '4', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('3', '3', '7', '7', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('4', '4', '10', '10', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('5', '5', '13', '13', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
 
 -- Table structure for `forecast_revisions_status`
 DROP TABLE IF EXISTS `forecast_revisions_status`;
@@ -330,7 +410,15 @@ CREATE TABLE `forecast_revisions` (
 
 -- Data for `forecast_revisions`
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('1', '1', '1', '1', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('3', '2', '4', '4', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('5', '3', '7', '7', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('7', '4', '10', '10', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('9', '5', '13', '13', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('2', '1', '1', '2', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('4', '2', '4', '5', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('6', '3', '7', '8', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('8', '4', '10', '11', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('10', '5', '13', '14', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
 
 -- Table structure for `approvals_stage`
 DROP TABLE IF EXISTS `approvals_stage`;
@@ -350,7 +438,15 @@ CREATE TABLE `approvals_stage` (
 
 -- Data for `approvals_stage`
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('1', '1', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('3', '2', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('5', '3', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('7', '4', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('9', '5', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('2', '1', 'GM Review', 'General manager review stage before final approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('4', '2', 'GM Review', 'General manager review stage before final approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('6', '3', 'GM Review', 'General manager review stage before final approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('8', '4', 'GM Review', 'General manager review stage before final approval.', '1');
+INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('10', '5', 'GM Review', 'General manager review stage before final approval.', '1');
 
 -- Table structure for `approvals`
 DROP TABLE IF EXISTS `approvals`;
@@ -381,7 +477,15 @@ CREATE TABLE `approvals` (
 
 -- Data for `approvals`
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('1', '1', '2', '1', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('3', '2', '4', '3', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('5', '3', '6', '5', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('7', '4', '8', '7', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('9', '5', '10', '9', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('2', '1', '1', '1', '1', NULL, NULL, 'Draft not submitted yet.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('4', '2', '3', '3', '1', NULL, NULL, 'Draft not submitted yet.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('6', '3', '5', '5', '1', NULL, NULL, 'Draft not submitted yet.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('8', '4', '7', '7', '1', NULL, NULL, 'Draft not submitted yet.', '1');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('10', '5', '9', '9', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
@@ -431,6 +535,10 @@ CREATE TABLE `employee_onboarding_requests` (
 
 -- Data for `employee_onboarding_requests`
 INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) VALUES ('1', '1', '4', 'NICKY', 'SCHOUTEN', 'TRAINEE', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', 'Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl', '2026-03-16', 'ALEXANDRANUNES', '2026-03-24', 'Sonia Costa', 'Pedro Mendes', 'Kenneth Starreveld', '2026-03-28 19:43:17');
+INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) VALUES ('2', '2', '4', 'NICKY', 'SCHOUTEN', 'TRAINEE', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', 'Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl', '2026-03-16', 'ALEXANDRANUNES', '2026-03-24', 'Sonia Costa', 'Pedro Mendes', 'Kenneth Starreveld', '2026-03-28 19:43:17');
+INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) VALUES ('3', '3', '4', 'NICKY', 'SCHOUTEN', 'TRAINEE', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', 'Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl', '2026-03-16', 'ALEXANDRANUNES', '2026-03-24', 'Sonia Costa', 'Pedro Mendes', 'Kenneth Starreveld', '2026-03-28 19:43:17');
+INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) VALUES ('4', '4', '4', 'NICKY', 'SCHOUTEN', 'TRAINEE', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', 'Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl', '2026-03-16', 'ALEXANDRANUNES', '2026-03-24', 'Sonia Costa', 'Pedro Mendes', 'Kenneth Starreveld', '2026-03-28 19:43:17');
+INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) VALUES ('5', '5', '4', 'NICKY', 'SCHOUTEN', 'TRAINEE', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', 'Starting date: 16/03/2026 || 302325432@student.rocmondriaan.nl', '2026-03-16', 'ALEXANDRANUNES', '2026-03-24', 'Sonia Costa', 'Pedro Mendes', 'Kenneth Starreveld', '2026-03-28 19:43:17');
 
 -- Table structure for `employee_statuses`
 DROP TABLE IF EXISTS `employee_statuses`;
@@ -449,10 +557,30 @@ CREATE TABLE `employee_statuses` (
 
 -- Data for `employee_statuses`
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Active');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('3', '11', 'Active');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Active');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('5', '21', 'Active');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Contractor');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Contractor');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Contractor');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('4', '17', 'Contractor');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('5', '22', 'Contractor');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inactive');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Inactive');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('3', '13', 'Inactive');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('4', '18', 'Inactive');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('5', '23', 'Inactive');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'On Leave');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '9', 'On Leave');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('3', '14', 'On Leave');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('4', '19', 'On Leave');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('5', '24', 'On Leave');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Terminated');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '10', 'Terminated');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('3', '15', 'Terminated');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('4', '20', 'Terminated');
+INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('5', '25', 'Terminated');
 
 -- Table structure for `employee_system_access`
 DROP TABLE IF EXISTS `employee_system_access`;
@@ -663,6 +791,10 @@ CREATE TABLE `equipment` (
 
 -- Data for `equipment`
 INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_count_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', '1', '2', '1', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_count_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', '1', '2', '1', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_count_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', '1', '2', '1', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_count_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', '1', '2', '1', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_count_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', '1', '2', '1', '1', '1', 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', '2025-01-10', '8500.00', NULL, '2027-01-10', '4', NULL, '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '3', '1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', '2026-03-28 19:43:17', '2026-03-31 00:39:19');
 
 -- Table structure for `equipment_environment`
 DROP TABLE IF EXISTS `equipment_environment`;
@@ -679,7 +811,15 @@ CREATE TABLE `equipment_environment` (
 
 -- Data for `equipment_environment`
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Managed');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Managed');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('3', '5', 'Managed');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('4', '7', 'Managed');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('5', '9', 'Managed');
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Unmanaged');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Unmanaged');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Unmanaged');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Unmanaged');
+INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Unmanaged');
 
 -- Table structure for `equipment_fiber`
 DROP TABLE IF EXISTS `equipment_fiber`;
@@ -696,8 +836,20 @@ CREATE TABLE `equipment_fiber` (
 
 -- Data for `equipment_fiber`
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '3', 'QSFP 40 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('2', '4', 'QSFP 40 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('3', '7', 'QSFP 40 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('4', '10', 'QSFP 40 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('5', '13', 'QSFP 40 Gbps');
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '1', 'SFP 1 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('2', '5', 'SFP 1 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('3', '8', 'SFP 1 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('4', '11', 'SFP 1 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('5', '14', 'SFP 1 Gbps');
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '2', 'SFP+ 10 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('2', '6', 'SFP+ 10 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('3', '9', 'SFP+ 10 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('4', '12', 'SFP+ 10 Gbps');
+INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('5', '15', 'SFP+ 10 Gbps');
 
 -- Table structure for `equipment_fiber_patch`
 DROP TABLE IF EXISTS `equipment_fiber_patch`;
@@ -714,7 +866,15 @@ CREATE TABLE `equipment_fiber_patch` (
 
 -- Data for `equipment_fiber_patch`
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Patch Panel A');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Patch Panel A');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('3', '5', 'Patch Panel A');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('4', '7', 'Patch Panel A');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('5', '9', 'Patch Panel A');
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Patch Panel B');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Patch Panel B');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Patch Panel B');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Patch Panel B');
+INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Patch Panel B');
 
 -- Table structure for `equipment_fiber_rack`
 DROP TABLE IF EXISTS `equipment_fiber_rack`;
@@ -731,7 +891,15 @@ CREATE TABLE `equipment_fiber_rack` (
 
 -- Data for `equipment_fiber_rack`
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Rack A');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Rack A');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('3', '5', 'Rack A');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('4', '7', 'Rack A');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('5', '9', 'Rack A');
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Rack B');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Rack B');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Rack B');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Rack B');
+INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Rack B');
 
 -- Table structure for `equipment_fiber_count`
 DROP TABLE IF EXISTS `equipment_fiber_count`;
@@ -748,9 +916,25 @@ CREATE TABLE `equipment_fiber_count` (
 
 -- Data for `equipment_fiber_count`
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '1', '1');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('2', '5', '1');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('3', '9', '1');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('4', '13', '1');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('5', '17', '1');
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '2', '2');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('2', '6', '2');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('3', '10', '2');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('4', '14', '2');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('5', '18', '2');
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '3', '3');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('2', '7', '3');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('3', '11', '3');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('4', '15', '3');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('5', '19', '3');
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '4', '4');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('2', '8', '4');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('3', '12', '4');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('4', '16', '4');
+INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('5', '20', '4');
 
 -- Table structure for `idf_ports`
 DROP TABLE IF EXISTS `idf_ports`;
@@ -800,8 +984,20 @@ CREATE TABLE `equipment_poe` (
 
 -- Data for `equipment_poe`
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '1', 'PoE (802.3af) - up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('2', '4', 'PoE (802.3af) - up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('3', '7', 'PoE (802.3af) - up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '10', 'PoE (802.3af) - up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '13', 'PoE (802.3af) - up to 15.4W');
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '2', 'PoE+ (802.3at) - up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('2', '5', 'PoE+ (802.3at) - up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('3', '8', 'PoE+ (802.3at) - up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '11', 'PoE+ (802.3at) - up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '14', 'PoE+ (802.3at) - up to 30W');
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '3', 'PoE++ (802.3bt) - up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('2', '6', 'PoE++ (802.3bt) - up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('3', '9', 'PoE++ (802.3bt) - up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '12', 'PoE++ (802.3bt) - up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '15', 'PoE++ (802.3bt) - up to 60-90W');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed_id`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe_id`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL;
@@ -821,9 +1017,25 @@ CREATE TABLE `equipment_rj45` (
 
 -- Data for `equipment_rj45`
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '2', '16 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('2', '5', '16 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('3', '9', '16 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('4', '13', '16 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('5', '17', '16 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '3', '24 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('2', '6', '24 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('3', '10', '24 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('4', '14', '24 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('5', '18', '24 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '4', '48 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('2', '7', '48 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('3', '11', '48 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('4', '15', '48 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('5', '19', '48 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '1', '8 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('2', '8', '8 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('3', '12', '8 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('4', '16', '8 ports');
+INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('5', '20', '8 ports');
 
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
@@ -840,13 +1052,45 @@ CREATE TABLE `equipment_statuses` (
 
 -- Data for `equipment_statuses`
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '9', 'Active');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '17', 'Active');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '25', 'Active');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '33', 'Active');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Decommissioned');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '10', 'Decommissioned');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '18', 'Decommissioned');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '26', 'Decommissioned');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '34', 'Decommissioned');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Faulty');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '11', 'Faulty');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '19', 'Faulty');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '27', 'Faulty');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '35', 'Faulty');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inactive');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '12', 'Inactive');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '20', 'Inactive');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '28', 'Inactive');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '36', 'Inactive');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Maintenance');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '13', 'Maintenance');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '21', 'Maintenance');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '29', 'Maintenance');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '37', 'Maintenance');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '7', 'On-Order');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '14', 'On-Order');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '22', 'On-Order');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '30', 'On-Order');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '38', 'On-Order');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Other');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '15', 'Other');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '23', 'Other');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '31', 'Other');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '39', 'Other');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Reserved');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '16', 'Reserved');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '24', 'Reserved');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '32', 'Reserved');
+INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '40', 'Reserved');
 
 -- Table structure for `equipment_types`
 DROP TABLE IF EXISTS `equipment_types`;
@@ -980,10 +1224,30 @@ CREATE TABLE `idf_device_type` (
 
 -- Data for `idf_device_type`
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('6', '2', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('11', '3', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('16', '4', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('21', '5', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('7', '2', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('12', '3', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('17', '4', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('22', '5', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('8', '2', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('13', '3', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('18', '4', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('23', '5', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('9', '2', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('14', '3', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('19', '4', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('24', '5', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('10', '2', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('15', '3', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('20', '4', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('25', '5', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
 
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
@@ -1038,6 +1302,10 @@ CREATE TABLE `idfs` (
 
 -- Data for `idfs`
 INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('1', '1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('2', '2', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('3', '3', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('4', '4', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('5', '5', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
 
 -- Table structure for `inventory_categories`
 DROP TABLE IF EXISTS `inventory_categories`;
@@ -1056,11 +1324,35 @@ CREATE TABLE `inventory_categories` (
 
 -- Data for `inventory_categories`
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Cables - Ethernet', 'CBL-ETH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '7', 'Cables - Ethernet', 'CBL-ETH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '13', 'Cables - Ethernet', 'CBL-ETH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '19', 'Cables - Ethernet', 'CBL-ETH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '25', 'Cables - Ethernet', 'CBL-ETH', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Cables - USB', 'CBL-USB', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '8', 'Cables - USB', 'CBL-USB', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '14', 'Cables - USB', 'CBL-USB', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '20', 'Cables - USB', 'CBL-USB', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '26', 'Cables - USB', 'CBL-USB', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'Adapters', 'ADP', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '9', 'Adapters', 'ADP', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '15', 'Adapters', 'ADP', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '21', 'Adapters', 'ADP', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '27', 'Adapters', 'ADP', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Batteries', 'BAT', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '10', 'Batteries', 'BAT', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '16', 'Batteries', 'BAT', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '22', 'Batteries', 'BAT', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '28', 'Batteries', 'BAT', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Consumables', 'CONS', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '11', 'Consumables', 'CONS', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '17', 'Consumables', 'CONS', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '23', 'Consumables', 'CONS', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '29', 'Consumables', 'CONS', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '6', 'Other', 'OTH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '12', 'Other', 'OTH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '18', 'Other', 'OTH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '24', 'Other', 'OTH', '1');
+INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '30', 'Other', 'OTH', '1');
 
 -- Table structure for `inventory_items`
 DROP TABLE IF EXISTS `inventory_items`;
@@ -1095,6 +1387,10 @@ CREATE TABLE `inventory_items` (
 
 -- Data for `inventory_items`
 INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '1', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) VALUES ('2', '2', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '7', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) VALUES ('3', '3', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '13', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) VALUES ('4', '4', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '19', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`) VALUES ('5', '5', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '25', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1');
 
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
@@ -1122,6 +1418,10 @@ CREATE TABLE `it_locations` (
 
 -- Data for `it_locations`
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
 
 -- Table structure for `location_types`
 DROP TABLE IF EXISTS `location_types`;
@@ -1138,12 +1438,40 @@ CREATE TABLE `location_types` (
 
 -- Data for `location_types`
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Branch');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Branch');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '15', 'Branch');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '22', 'Branch');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '29', 'Branch');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'DataCenter');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '9', 'DataCenter');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '16', 'DataCenter');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '23', 'DataCenter');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '30', 'DataCenter');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Headquarters');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '10', 'Headquarters');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '17', 'Headquarters');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '24', 'Headquarters');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '31', 'Headquarters');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Office');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '11', 'Office');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '18', 'Office');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '25', 'Office');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '32', 'Office');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'Other');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '12', 'Other');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '19', 'Other');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '26', 'Other');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '33', 'Other');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Remote');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '13', 'Remote');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '20', 'Remote');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '27', 'Remote');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '34', 'Remote');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Warehouse');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '14', 'Warehouse');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '21', 'Warehouse');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '28', 'Warehouse');
+INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '35', 'Warehouse');
 
 -- Table structure for `manufacturers`
 DROP TABLE IF EXISTS `manufacturers`;
@@ -1163,13 +1491,45 @@ CREATE TABLE `manufacturers` (
 
 -- Data for `manufacturers`
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Cisco Systems', 'CSCO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '9', 'Cisco Systems', 'CSCO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '17', 'Cisco Systems', 'CSCO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '25', 'Cisco Systems', 'CSCO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '33', 'Cisco Systems', 'CSCO', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Dell Technologies', 'DELL', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '10', 'Dell Technologies', 'DELL', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '18', 'Dell Technologies', 'DELL', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '26', 'Dell Technologies', 'DELL', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '34', 'Dell Technologies', 'DELL', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'HP Inc', 'HPE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '11', 'HP Inc', 'HPE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '19', 'HP Inc', 'HPE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '27', 'HP Inc', 'HPE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '35', 'HP Inc', 'HPE', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Juniper Networks', 'JNPR', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '12', 'Juniper Networks', 'JNPR', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '20', 'Juniper Networks', 'JNPR', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '28', 'Juniper Networks', 'JNPR', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '36', 'Juniper Networks', 'JNPR', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Ubiquiti Networks', 'UBNT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '13', 'Ubiquiti Networks', 'UBNT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '21', 'Ubiquiti Networks', 'UBNT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '29', 'Ubiquiti Networks', 'UBNT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '37', 'Ubiquiti Networks', 'UBNT', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '6', 'Apple', 'APPLE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '14', 'Apple', 'APPLE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '22', 'Apple', 'APPLE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '30', 'Apple', 'APPLE', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '38', 'Apple', 'APPLE', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '7', 'Lenovo', 'LENOVO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '15', 'Lenovo', 'LENOVO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '23', 'Lenovo', 'LENOVO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '31', 'Lenovo', 'LENOVO', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '39', 'Lenovo', 'LENOVO', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '8', 'Microsoft', 'MSFT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '16', 'Microsoft', 'MSFT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '24', 'Microsoft', 'MSFT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '32', 'Microsoft', 'MSFT', '1');
+INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '40', 'Microsoft', 'MSFT', '1');
 
 
 
@@ -1377,14 +1737,50 @@ CREATE TABLE `printer_device_types` (
 
 -- Data for `printer_device_types`
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'All-in-One');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '10', 'All-in-One');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '19', 'All-in-One');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '28', 'All-in-One');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '37', 'All-in-One');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Dotmatrix');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '11', 'Dotmatrix');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '20', 'Dotmatrix');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '29', 'Dotmatrix');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '38', 'Dotmatrix');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inkjet');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '12', 'Inkjet');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '21', 'Inkjet');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '30', 'Inkjet');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '39', 'Inkjet');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'Label');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '13', 'Label');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '22', 'Label');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '31', 'Label');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '40', 'Label');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Laser');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '14', 'Laser');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '23', 'Laser');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '32', 'Laser');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '41', 'Laser');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '9', 'Other');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '15', 'Other');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '24', 'Other');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '33', 'Other');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '42', 'Other');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Photo');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '16', 'Photo');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '25', 'Photo');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '34', 'Photo');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '43', 'Photo');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Thermal');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '17', 'Thermal');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '26', 'Thermal');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '35', 'Thermal');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '44', 'Thermal');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Wide-Format');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '18', 'Wide-Format');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '27', 'Wide-Format');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '36', 'Wide-Format');
+INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '45', 'Wide-Format');
 
 -- Table structure for `rack_statuses`
 DROP TABLE IF EXISTS `rack_statuses`;
@@ -1401,9 +1797,25 @@ CREATE TABLE `rack_statuses` (
 
 -- Data for `rack_statuses`
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('2', '5', 'Active');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('3', '9', 'Active');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('4', '13', 'Active');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('5', '17', 'Active');
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Decommissioned');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Decommissioned');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('3', '10', 'Decommissioned');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('4', '14', 'Decommissioned');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('5', '18', 'Decommissioned');
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Full');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Full');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('3', '11', 'Full');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('4', '15', 'Full');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('5', '19', 'Full');
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Maintenance');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Maintenance');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Maintenance');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Maintenance');
+INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('5', '20', 'Maintenance');
 
 -- Table structure for `racks`
 DROP TABLE IF EXISTS `racks`;
@@ -1428,6 +1840,10 @@ CREATE TABLE `racks` (
 
 -- Data for `racks`
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('1', '1', '1', 'Main Rack A', 'RACK-A', '1', '1');
+INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('2', '2', '2', 'Main Rack A', 'RACK-A', '5', '1');
+INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('3', '3', '3', 'Main Rack A', 'RACK-A', '9', '1');
+INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('4', '4', '4', 'Main Rack A', 'RACK-A', '13', '1');
+INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('5', '5', '5', 'Main Rack A', 'RACK-A', '17', '1');
 
 
 -- Table structure for `user_sidebar_preferences`
@@ -1466,10 +1882,30 @@ CREATE TABLE `supplier_statuses` (
 
 -- Data for `supplier_statuses`
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Active');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('3', '11', 'Active');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Active');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('5', '21', 'Active');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Backup');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Backup');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Backup');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('4', '17', 'Backup');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('5', '22', 'Backup');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Inactive');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Inactive');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('3', '13', 'Inactive');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('4', '18', 'Inactive');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('5', '23', 'Inactive');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Other');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '9', 'Other');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('3', '14', 'Other');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('4', '19', 'Other');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('5', '24', 'Other');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Preferred');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '10', 'Preferred');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('3', '15', 'Preferred');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('4', '20', 'Preferred');
+INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('5', '25', 'Preferred');
 
 -- Table structure for `suppliers`
 DROP TABLE IF EXISTS `suppliers`;
@@ -1494,6 +1930,10 @@ CREATE TABLE `suppliers` (
 
 -- Data for `suppliers`
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1');
+INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('2', '2', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '6', '1');
+INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('3', '3', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '11', '1');
+INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('4', '4', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '16', '1');
+INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('5', '5', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '21', '1');
 
 -- Table structure for `cable_colors`
 DROP TABLE IF EXISTS `cable_colors`;
@@ -1512,15 +1952,55 @@ CREATE TABLE `cable_colors` (
 
 -- Data for `cable_colors`
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '1', 'Gray', '#808080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '11', 'Gray', '#808080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '21', 'Gray', '#808080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '31', 'Gray', '#808080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '41', 'Gray', '#808080', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '2', 'Green', '#03b003', 'Printers');
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '12', 'Green', '#03b003', 'Printers');
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '22', 'Green', '#03b003', 'Printers');
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '32', 'Green', '#03b003', 'Printers');
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '42', 'Green', '#03b003', 'Printers');
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '3', 'Red', '#ff0000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '13', 'Red', '#ff0000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '23', 'Red', '#ff0000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '33', 'Red', '#ff0000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '43', 'Red', '#ff0000', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '4', 'Yellow', '#ffff00', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '14', 'Yellow', '#ffff00', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '24', 'Yellow', '#ffff00', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '34', 'Yellow', '#ffff00', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '44', 'Yellow', '#ffff00', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '5', 'Black', '#000000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '15', 'Black', '#000000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '25', 'Black', '#000000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '35', 'Black', '#000000', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '45', 'Black', '#000000', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '6', 'Blue', '#0000ff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '16', 'Blue', '#0000ff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '26', 'Blue', '#0000ff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '36', 'Blue', '#0000ff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '46', 'Blue', '#0000ff', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '7', 'White', '#ffffff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '17', 'White', '#ffffff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '27', 'White', '#ffffff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '37', 'White', '#ffffff', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '47', 'White', '#ffffff', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '8', 'Orange', '#ffa500', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '18', 'Orange', '#ffa500', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '28', 'Orange', '#ffa500', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '38', 'Orange', '#ffa500', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '48', 'Orange', '#ffa500', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '9', 'Dark Pink', '#800080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '19', 'Dark Pink', '#800080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '29', 'Dark Pink', '#800080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '39', 'Dark Pink', '#800080', NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '49', 'Dark Pink', '#800080', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '10', 'Other', NULL, NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '20', 'Other', NULL, NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '30', 'Other', NULL, NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '40', 'Other', NULL, NULL);
+INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '50', 'Other', NULL, NULL);
 
 -- Table structure for `switch_port_numbering_layout`
 DROP TABLE IF EXISTS `switch_port_numbering_layout`;
@@ -1537,7 +2017,15 @@ CREATE TABLE `switch_port_numbering_layout` (
 
 -- Data for `switch_port_numbering_layout`
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Horizontal');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Horizontal');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('3', '5', 'Horizontal');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('4', '7', 'Horizontal');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('5', '9', 'Horizontal');
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Vertical');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Vertical');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Vertical');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Vertical');
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Vertical');
 
 -- Table structure for `switch_port_types`
 DROP TABLE IF EXISTS `switch_port_types`;
@@ -1554,8 +2042,20 @@ CREATE TABLE `switch_port_types` (
 
 -- Data for `switch_port_types`
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '1', 'RJ45');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '4', 'RJ45');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '7', 'RJ45');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '10', 'RJ45');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '13', 'RJ45');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '2', 'SFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '5', 'SFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '8', 'SFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '11', 'SFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '14', 'SFP');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '3', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '6', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '9', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '12', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '15', 'SFP+');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`);
 
@@ -1592,29 +2092,125 @@ CREATE TABLE `switch_ports` (
 
 -- Data for `switch_ports`
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('1', '1', '1', NULL, 'RJ45', '1', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('25', '2', '2', NULL, 'RJ45', '1', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('49', '3', '3', NULL, 'RJ45', '1', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('73', '4', '4', NULL, 'RJ45', '1', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('97', '5', '5', NULL, 'RJ45', '1', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('2', '1', '1', NULL, 'RJ45', '2', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('26', '2', '2', NULL, 'RJ45', '2', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('50', '3', '3', NULL, 'RJ45', '2', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('74', '4', '4', NULL, 'RJ45', '2', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('98', '5', '5', NULL, 'RJ45', '2', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('3', '1', '1', NULL, 'RJ45', '3', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('27', '2', '2', NULL, 'RJ45', '3', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('51', '3', '3', NULL, 'RJ45', '3', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('75', '4', '4', NULL, 'RJ45', '3', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('99', '5', '5', NULL, 'RJ45', '3', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('4', '1', '1', NULL, 'RJ45', '4', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('28', '2', '2', NULL, 'RJ45', '4', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('52', '3', '3', NULL, 'RJ45', '4', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('76', '4', '4', NULL, 'RJ45', '4', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('100', '5', '5', NULL, 'RJ45', '4', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('5', '1', '1', NULL, 'RJ45', '5', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('29', '2', '2', NULL, 'RJ45', '5', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('53', '3', '3', NULL, 'RJ45', '5', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('77', '4', '4', NULL, 'RJ45', '5', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('101', '5', '5', NULL, 'RJ45', '5', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('6', '1', '1', NULL, 'RJ45', '6', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('30', '2', '2', NULL, 'RJ45', '6', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('54', '3', '3', NULL, 'RJ45', '6', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('78', '4', '4', NULL, 'RJ45', '6', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('102', '5', '5', NULL, 'RJ45', '6', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('7', '1', '1', NULL, 'RJ45', '7', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('31', '2', '2', NULL, 'RJ45', '7', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('55', '3', '3', NULL, 'RJ45', '7', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('79', '4', '4', NULL, 'RJ45', '7', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('103', '5', '5', NULL, 'RJ45', '7', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('8', '1', '1', NULL, 'RJ45', '8', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('32', '2', '2', NULL, 'RJ45', '8', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('56', '3', '3', NULL, 'RJ45', '8', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('80', '4', '4', NULL, 'RJ45', '8', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('104', '5', '5', NULL, 'RJ45', '8', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('9', '1', '1', NULL, 'RJ45', '9', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('33', '2', '2', NULL, 'RJ45', '9', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('57', '3', '3', NULL, 'RJ45', '9', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('81', '4', '4', NULL, 'RJ45', '9', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('105', '5', '5', NULL, 'RJ45', '9', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('10', '1', '1', NULL, 'RJ45', '10', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('34', '2', '2', NULL, 'RJ45', '10', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('58', '3', '3', NULL, 'RJ45', '10', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('82', '4', '4', NULL, 'RJ45', '10', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('106', '5', '5', NULL, 'RJ45', '10', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('11', '1', '1', NULL, 'RJ45', '11', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('35', '2', '2', NULL, 'RJ45', '11', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('59', '3', '3', NULL, 'RJ45', '11', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('83', '4', '4', NULL, 'RJ45', '11', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('107', '5', '5', NULL, 'RJ45', '11', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('12', '1', '1', NULL, 'RJ45', '12', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('36', '2', '2', NULL, 'RJ45', '12', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('60', '3', '3', NULL, 'RJ45', '12', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('84', '4', '4', NULL, 'RJ45', '12', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('108', '5', '5', NULL, 'RJ45', '12', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('13', '1', '1', NULL, 'RJ45', '13', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('37', '2', '2', NULL, 'RJ45', '13', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('61', '3', '3', NULL, 'RJ45', '13', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('85', '4', '4', NULL, 'RJ45', '13', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('109', '5', '5', NULL, 'RJ45', '13', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('14', '1', '1', NULL, 'RJ45', '14', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('38', '2', '2', NULL, 'RJ45', '14', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('62', '3', '3', NULL, 'RJ45', '14', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('86', '4', '4', NULL, 'RJ45', '14', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('110', '5', '5', NULL, 'RJ45', '14', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('15', '1', '1', NULL, 'RJ45', '15', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('39', '2', '2', NULL, 'RJ45', '15', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('63', '3', '3', NULL, 'RJ45', '15', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('87', '4', '4', NULL, 'RJ45', '15', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('111', '5', '5', NULL, 'RJ45', '15', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('16', '1', '1', NULL, 'RJ45', '16', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('40', '2', '2', NULL, 'RJ45', '16', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('64', '3', '3', NULL, 'RJ45', '16', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('88', '4', '4', NULL, 'RJ45', '16', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('112', '5', '5', NULL, 'RJ45', '16', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('17', '1', '1', NULL, 'RJ45', '17', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('41', '2', '2', NULL, 'RJ45', '17', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('65', '3', '3', NULL, 'RJ45', '17', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('89', '4', '4', NULL, 'RJ45', '17', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('113', '5', '5', NULL, 'RJ45', '17', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('18', '1', '1', NULL, 'RJ45', '18', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('42', '2', '2', NULL, 'RJ45', '18', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('66', '3', '3', NULL, 'RJ45', '18', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('90', '4', '4', NULL, 'RJ45', '18', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('114', '5', '5', NULL, 'RJ45', '18', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('19', '1', '1', NULL, 'RJ45', '19', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('43', '2', '2', NULL, 'RJ45', '19', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('67', '3', '3', NULL, 'RJ45', '19', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('91', '4', '4', NULL, 'RJ45', '19', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('115', '5', '5', NULL, 'RJ45', '19', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('20', '1', '1', NULL, 'RJ45', '20', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('44', '2', '2', NULL, 'RJ45', '20', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('68', '3', '3', NULL, 'RJ45', '20', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('92', '4', '4', NULL, 'RJ45', '20', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('116', '5', '5', NULL, 'RJ45', '20', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('21', '1', '1', NULL, 'RJ45', '21', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('45', '2', '2', NULL, 'RJ45', '21', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('69', '3', '3', NULL, 'RJ45', '21', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('93', '4', '4', NULL, 'RJ45', '21', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('117', '5', '5', NULL, 'RJ45', '21', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('22', '1', '1', NULL, 'RJ45', '22', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('46', '2', '2', NULL, 'RJ45', '22', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('70', '3', '3', NULL, 'RJ45', '22', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('94', '4', '4', NULL, 'RJ45', '22', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('118', '5', '5', NULL, 'RJ45', '22', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('23', '1', '1', NULL, 'RJ45', '23', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('47', '2', '2', NULL, 'RJ45', '23', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('71', '3', '3', NULL, 'RJ45', '23', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('95', '4', '4', NULL, 'RJ45', '23', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('119', '5', '5', NULL, 'RJ45', '23', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('24', '1', '1', NULL, 'RJ45', '24', '0', '5', '1', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('48', '2', '2', NULL, 'RJ45', '24', '0', '5', '11', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('72', '3', '3', NULL, 'RJ45', '24', '0', '5', '21', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('96', '4', '4', NULL, 'RJ45', '24', '0', '5', '31', NULL, '', '2026-03-31 00:39:19');
+INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`) VALUES ('120', '5', '5', NULL, 'RJ45', '24', '0', '5', '41', NULL, '', '2026-03-31 00:39:19');
 
 -- Table structure for `switch_status`
 DROP TABLE IF EXISTS `switch_status`;
@@ -1634,14 +2230,50 @@ CREATE TABLE `switch_status` (
 
 -- Data for `switch_status`
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '4', 'Disabled', '1');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '10', 'Disabled', '1');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '19', 'Disabled', '11');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '28', 'Disabled', '21');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '37', 'Disabled', '41');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '2', 'Down', '3');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '11', 'Down', '3');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '20', 'Down', '13');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '29', 'Down', '23');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '38', 'Down', '43');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '6', 'Err-Disabled', '9');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '12', 'Err-Disabled', '9');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '21', 'Err-Disabled', '19');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '30', 'Err-Disabled', '29');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '39', 'Err-Disabled', '49');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '8', 'Faulty', '8');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '13', 'Faulty', '8');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '22', 'Faulty', '18');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '31', 'Faulty', '28');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '40', 'Faulty', '48');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '3', 'Free', '2');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '14', 'Free', '2');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '23', 'Free', '12');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '32', 'Free', '22');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '41', 'Free', '42');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '9', 'Reserved', '4');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '15', 'Reserved', '4');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '24', 'Reserved', '14');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '33', 'Reserved', '24');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '42', 'Reserved', '44');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '7', 'Testing', '6');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '16', 'Testing', '6');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '25', 'Testing', '16');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '34', 'Testing', '26');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '43', 'Testing', '46');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '5', 'Unknown', '1');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '17', 'Unknown', '1');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '26', 'Unknown', '11');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '35', 'Unknown', '21');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '44', 'Unknown', '41');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '1', 'Up', '6');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '18', 'Up', '6');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('2', '27', 'Up', '16');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('3', '36', 'Up', '26');
+INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '45', 'Up', '46');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`);
 
@@ -1663,20 +2295,80 @@ CREATE TABLE `system_access` (
 
 -- Data for `system_access`
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('16', '2', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('31', '3', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('46', '4', 'network_access', 'Network Access', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('61', '5', 'network_access', 'Network Access', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('2', '1', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('17', '2', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('32', '3', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('47', '4', 'micros_emc', 'Micros Emc', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('62', '5', 'micros_emc', 'Micros Emc', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('3', '1', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('18', '2', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('33', '3', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('48', '4', 'opera_username', 'Opera Username', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('63', '5', 'opera_username', 'Opera Username', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('4', '1', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('19', '2', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('34', '3', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('49', '4', 'micros_card', 'Micros Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('64', '5', 'micros_card', 'Micros Card', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('5', '1', 'pms_id', 'PMS Id', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('20', '2', 'pms_id', 'PMS Id', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('35', '3', 'pms_id', 'PMS Id', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('50', '4', 'pms_id', 'PMS Id', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('65', '5', 'pms_id', 'PMS Id', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('6', '1', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('21', '2', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('36', '3', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('51', '4', 'synergy_mms', 'Synergy Mms', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('66', '5', 'synergy_mms', 'Synergy Mms', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('7', '1', 'hu_the_lobby', 'HU The Lobby', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('22', '2', 'hu_the_lobby', 'HU The Lobby', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('37', '3', 'hu_the_lobby', 'HU The Lobby', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('52', '4', 'hu_the_lobby', 'HU The Lobby', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('67', '5', 'hu_the_lobby', 'HU The Lobby', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('8', '1', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('23', '2', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('38', '3', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('53', '4', 'navision', 'Navision', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('68', '5', 'navision', 'Navision', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('9', '1', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('24', '2', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('39', '3', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('54', '4', 'onq_ri', 'Onq Ri', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('69', '5', 'onq_ri', 'Onq Ri', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('10', '1', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('25', '2', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('40', '3', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('55', '4', 'birchstreet', 'Birchstreet', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('70', '5', 'birchstreet', 'Birchstreet', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('11', '1', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('26', '2', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('41', '3', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('56', '4', 'delphi', 'Delphi', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('71', '5', 'delphi', 'Delphi', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('12', '1', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('27', '2', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('42', '3', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('57', '4', 'omina', 'Omina', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('72', '5', 'omina', 'Omina', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('13', '1', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('28', '2', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('43', '3', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('58', '4', 'vingcard_system', 'Vingcard System', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('73', '5', 'vingcard_system', 'Vingcard System', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('14', '1', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('29', '2', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('44', '3', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('59', '4', 'digital_rev', 'Digital Rev', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('74', '5', 'digital_rev', 'Digital Rev', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('15', '1', 'office_key_card', 'Office Key Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('30', '2', 'office_key_card', 'Office Key Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('45', '3', 'office_key_card', 'Office Key Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('60', '4', 'office_key_card', 'Office Key Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('75', '5', 'office_key_card', 'Office Key Card', '1');
 
 -- Table structure for `ticket_categories`
 DROP TABLE IF EXISTS `ticket_categories`;
@@ -1695,10 +2387,30 @@ CREATE TABLE `ticket_categories` (
 
 -- Data for `ticket_categories`
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Hardware Issue', 'HW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '6', 'Hardware Issue', 'HW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '11', 'Hardware Issue', 'HW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '16', 'Hardware Issue', 'HW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '21', 'Hardware Issue', 'HW', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '2', 'Network Problem', 'NET', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '7', 'Network Problem', 'NET', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '12', 'Network Problem', 'NET', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '17', 'Network Problem', 'NET', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '22', 'Network Problem', 'NET', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '3', 'Software Issue', 'SW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '8', 'Software Issue', 'SW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '13', 'Software Issue', 'SW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '18', 'Software Issue', 'SW', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '23', 'Software Issue', 'SW', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '4', 'Maintenance', 'MAINT', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '9', 'Maintenance', 'MAINT', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '14', 'Maintenance', 'MAINT', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '19', 'Maintenance', 'MAINT', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '24', 'Maintenance', 'MAINT', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '5', 'Other', 'OTHER', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '10', 'Other', 'OTHER', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '15', 'Other', 'OTHER', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '20', 'Other', 'OTHER', '1');
+INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '25', 'Other', 'OTHER', '1');
 
 -- Table structure for `ticket_priorities`
 DROP TABLE IF EXISTS `ticket_priorities`;
@@ -1718,10 +2430,30 @@ CREATE TABLE `ticket_priorities` (
 
 -- Data for `ticket_priorities`
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '1', 'Low', '1', '#0000FF', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('2', '6', 'Low', '1', '#0000FF', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('3', '11', 'Low', '1', '#0000FF', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('4', '16', 'Low', '1', '#0000FF', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('5', '21', 'Low', '1', '#0000FF', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '2', 'Normal', '2', '#00FF00', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('2', '7', 'Normal', '2', '#00FF00', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('3', '12', 'Normal', '2', '#00FF00', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('4', '17', 'Normal', '2', '#00FF00', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('5', '22', 'Normal', '2', '#00FF00', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '3', 'High', '3', '#FFA500', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('2', '8', 'High', '3', '#FFA500', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('3', '13', 'High', '3', '#FFA500', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('4', '18', 'High', '3', '#FFA500', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('5', '23', 'High', '3', '#FFA500', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '4', 'Urgent', '4', '#FF0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('2', '9', 'Urgent', '4', '#FF0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('3', '14', 'Urgent', '4', '#FF0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('4', '19', 'Urgent', '4', '#FF0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('5', '24', 'Urgent', '4', '#FF0000', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '5', 'Critical', '5', '#8B0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('2', '10', 'Critical', '5', '#8B0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('3', '15', 'Critical', '5', '#8B0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('4', '20', 'Critical', '5', '#8B0000', '1');
+INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('5', '25', 'Critical', '5', '#8B0000', '1');
 
 -- Table structure for `ticket_statuses`
 DROP TABLE IF EXISTS `ticket_statuses`;
@@ -1741,9 +2473,25 @@ CREATE TABLE `ticket_statuses` (
 
 -- Data for `ticket_statuses`
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('2', '5', 'Open', '#FF0000', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('3', '9', 'Open', '#FF0000', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('4', '13', 'Open', '#FF0000', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('5', '17', 'Open', '#FF0000', '0', '1');
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '2', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('2', '6', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('3', '10', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('4', '14', 'In Progress', '#FFA500', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('5', '18', 'In Progress', '#FFA500', '0', '1');
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '3', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('2', '7', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('3', '11', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('4', '15', 'Resolved', '#00FF00', '0', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('5', '19', 'Resolved', '#00FF00', '0', '1');
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '4', 'Closed', '#808080', '1', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('2', '8', 'Closed', '#808080', '1', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('3', '12', 'Closed', '#808080', '1', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('4', '16', 'Closed', '#808080', '1', '1');
+INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('5', '20', 'Closed', '#808080', '1', '1');
 
 -- Table structure for `tickets`
 DROP TABLE IF EXISTS `tickets`;
@@ -1782,6 +2530,10 @@ CREATE TABLE `tickets` (
 
 -- Data for `tickets`
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', '#0969da', NULL, '2026-03-28 19:43:17');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', '#0969da', NULL, '2026-03-28 19:43:17');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '1', '1', '3', '#0969da', NULL, '2026-03-28 19:43:17');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', '#0969da', NULL, '2026-03-28 19:43:17');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', '#0969da', NULL, '2026-03-28 19:43:17');
 
 -- Table structure for `ui_configuration`
 DROP TABLE IF EXISTS `ui_configuration`;
@@ -1833,10 +2585,30 @@ CREATE TABLE `user_roles` (
 
 -- Data for `user_roles`
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Admin');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Admin');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('3', '11', 'Admin');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Admin');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('5', '21', 'Admin');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Helpdesk');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Helpdesk');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Helpdesk');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('4', '17', 'Helpdesk');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('5', '22', 'Helpdesk');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '3', 'IT Assistant');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '8', 'IT Assistant');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('3', '13', 'IT Assistant');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('4', '18', 'IT Assistant');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('5', '23', 'IT Assistant');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '2', 'IT Manager');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '9', 'IT Manager');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('3', '14', 'IT Manager');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('4', '19', 'IT Manager');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('5', '24', 'IT Manager');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '5', 'User');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '10', 'User');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('3', '15', 'User');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('4', '20', 'User');
+INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('5', '25', 'User');
 
 -- Table structure for `users`
 DROP TABLE IF EXISTS `users`;
@@ -1873,6 +2645,10 @@ CREATE TABLE `users` (
 
 -- Data for `users`
 INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('2', '2', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '6', '4', '1', '2026-03-28 19:43:17');
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('3', '3', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '11', '7', '1', '2026-03-28 19:43:17');
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('4', '4', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '16', '10', '1', '2026-03-28 19:43:17');
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('5', '5', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '21', '13', '1', '2026-03-28 19:43:17');
 
 -- Table structure for `registration_invitations`
 DROP TABLE IF EXISTS `registration_invitations`;
@@ -1946,6 +2722,10 @@ CREATE TABLE `user_companies` (
 
 -- Data for `user_companies`
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`) VALUES ('1', '1', NULL);
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`) VALUES ('2', '2', NULL);
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`) VALUES ('3', '3', NULL);
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`) VALUES ('4', '4', NULL);
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`) VALUES ('5', '5', NULL);
 
 -- Table structure for `role_hierarchy`
 DROP TABLE IF EXISTS `role_hierarchy`;
@@ -1964,10 +2744,30 @@ CREATE TABLE `role_hierarchy` (
 
 -- Data for `role_hierarchy`
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('1', '1', '1');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('2', '6', '1');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('3', '11', '1');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('4', '16', '1');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('5', '21', '1');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('1', '2', '2');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('2', '9', '2');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('3', '14', '2');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('4', '19', '2');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('5', '24', '2');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('1', '3', '3');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('2', '8', '3');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('3', '13', '3');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('4', '18', '3');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('5', '23', '3');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('1', '4', '4');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('2', '7', '4');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('3', '12', '4');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('4', '17', '4');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('5', '22', '4');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('1', '5', '5');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('2', '10', '5');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('3', '15', '5');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('4', '20', '5');
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('5', '25', '5');
 
 -- Table structure for `role_module_permissions`
 DROP TABLE IF EXISTS `role_module_permissions`;
@@ -1989,8 +2789,20 @@ CREATE TABLE `role_module_permissions` (
 
 -- Data for `role_module_permissions`
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('1', '1', 'ALL', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('2', '6', 'ALL', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('3', '11', 'ALL', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('4', '16', 'ALL', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('5', '21', 'ALL', '1', '1', '1', '1');
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('1', '4', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('2', '7', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('3', '12', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('4', '17', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('5', '22', 'Tickets', '1', '1', '1', '1');
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('1', '5', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('2', '10', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('3', '15', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('4', '20', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('5', '25', 'Tickets', '1', '1', '1', '1');
 
 -- Table structure for `role_assignment_rights`
 DROP TABLE IF EXISTS `role_assignment_rights`;
@@ -2009,14 +2821,50 @@ CREATE TABLE `role_assignment_rights` (
 
 -- Data for `role_assignment_rights`
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '1', '2');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '6', '9');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '11', '14');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '16', '19');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '21', '24');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '1', '3');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '6', '8');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '11', '13');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '16', '18');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '21', '23');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '1', '4');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '6', '7');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '11', '12');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '16', '17');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '21', '22');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '1', '5');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '6', '10');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '11', '15');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '16', '20');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '21', '25');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '2', '3');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '9', '8');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '14', '13');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '19', '18');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '24', '23');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '2', '4');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '9', '7');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '14', '12');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '19', '17');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '24', '22');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '2', '5');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '9', '10');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '14', '15');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '19', '20');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '24', '25');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '3', '4');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '8', '7');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '13', '12');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '18', '17');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '23', '22');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '3', '5');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '8', '10');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '13', '15');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '18', '20');
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '23', '25');
 
 -- Table structure for `audit_logs`
 DROP TABLE IF EXISTS `audit_logs`;
@@ -2072,6 +2920,10 @@ CREATE TABLE `vlans` (
 
 -- Data for `vlans`
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('2', '2', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('3', '3', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('4', '4', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('5', '5', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL;
 
@@ -2090,11 +2942,35 @@ CREATE TABLE `warranty_types` (
 
 -- Data for `warranty_types`
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Enterprise');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Enterprise');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '13', 'Enterprise');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '19', 'Enterprise');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '25', 'Enterprise');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Extended');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Extended');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '14', 'Extended');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '20', 'Extended');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '26', 'Extended');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'None');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '9', 'None');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '15', 'None');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '21', 'None');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '27', 'None');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Other');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '10', 'Other');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '16', 'Other');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '22', 'Other');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '28', 'Other');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Premium');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '11', 'Premium');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '17', 'Premium');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '23', 'Premium');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '29', 'Premium');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Standard');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '12', 'Standard');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '18', 'Standard');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '24', 'Standard');
+INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '30', 'Standard');
 
 -- Table structure for `workstation_device_types`
 DROP TABLE IF EXISTS `workstation_device_types`;
@@ -2111,13 +2987,45 @@ CREATE TABLE `workstation_device_types` (
 
 -- Data for `workstation_device_types`
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'All-in-One');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '9', 'All-in-One');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '17', 'All-in-One');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '25', 'All-in-One');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '33', 'All-in-One');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Desktop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '10', 'Desktop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '18', 'Desktop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '26', 'Desktop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '34', 'Desktop');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Laptop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '11', 'Laptop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '19', 'Laptop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '27', 'Laptop');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '35', 'Laptop');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Mobile');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '12', 'Mobile');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '20', 'Mobile');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '28', 'Mobile');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '36', 'Mobile');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Other');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '13', 'Other');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '21', 'Other');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '29', 'Other');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '37', 'Other');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'POS');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '14', 'POS');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '22', 'POS');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '30', 'POS');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '38', 'POS');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Tablet');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '15', 'Tablet');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '23', 'Tablet');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '31', 'Tablet');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '39', 'Tablet');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Thin-Client');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '16', 'Thin-Client');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '24', 'Thin-Client');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '32', 'Thin-Client');
+INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '40', 'Thin-Client');
 
 -- Table structure for `workstation_modes`
 DROP TABLE IF EXISTS `workstation_modes`;
@@ -2142,16 +3050,60 @@ CREATE TABLE `workstation_modes` (
 
 -- Data for `workstation_modes`
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '12', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '23', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '34', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '45', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '2', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '13', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '24', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '35', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '46', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '3', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '14', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '25', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '36', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '47', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '4', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '15', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '26', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '37', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '48', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '5', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '16', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '27', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '38', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '49', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '6', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '17', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '28', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '39', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '50', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '7', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '18', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '29', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '40', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '51', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '8', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '19', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '30', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '41', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '52', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '9', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '20', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '31', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '42', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '53', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '21', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '32', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '43', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '54', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '22', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '33', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '44', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
+INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '55', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
 
 -- Table structure for `workstation_office`
 DROP TABLE IF EXISTS `workstation_office`;
@@ -2168,9 +3120,25 @@ CREATE TABLE `workstation_office` (
 
 -- Data for `workstation_office`
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '1', 'None');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('2', '5', 'None');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('3', '9', 'None');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('4', '13', 'None');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('5', '17', 'None');
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Office 2024 Pro');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Office 2024 Pro');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('3', '10', 'Office 2024 Pro');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('4', '14', 'Office 2024 Pro');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('5', '18', 'Office 2024 Pro');
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Office 2024 STD');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Office 2024 STD');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('3', '11', 'Office 2024 STD');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('4', '15', 'Office 2024 STD');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('5', '19', 'Office 2024 STD');
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Office 365');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Office 365');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Office 365');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Office 365');
+INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('5', '20', 'Office 365');
 
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
@@ -2187,20 +3155,80 @@ CREATE TABLE `workstation_os_types` (
 
 -- Data for `workstation_os_types`
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Windows');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '16', 'Windows');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '31', 'Windows');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '46', 'Windows');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '61', 'Windows');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Windows 11');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '17', 'Windows 11');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '32', 'Windows 11');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '47', 'Windows 11');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '62', 'Windows 11');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'Windows 10');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '18', 'Windows 10');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '33', 'Windows 10');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '48', 'Windows 10');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '63', 'Windows 10');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Windows Server');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '19', 'Windows Server');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '34', 'Windows Server');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '49', 'Windows Server');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '64', 'Windows Server');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '5', 'Windows Server 2012');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '20', 'Windows Server 2012');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '35', 'Windows Server 2012');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '50', 'Windows Server 2012');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '65', 'Windows Server 2012');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '6', 'Windows Server 2016');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '21', 'Windows Server 2016');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '36', 'Windows Server 2016');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '51', 'Windows Server 2016');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '66', 'Windows Server 2016');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '7', 'Windows Server 2019');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '22', 'Windows Server 2019');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '37', 'Windows Server 2019');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '52', 'Windows Server 2019');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '67', 'Windows Server 2019');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '8', 'Windows Server 2022');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '23', 'Windows Server 2022');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '38', 'Windows Server 2022');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '53', 'Windows Server 2022');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '68', 'Windows Server 2022');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '9', 'Windows Server 2025');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '24', 'Windows Server 2025');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '39', 'Windows Server 2025');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '54', 'Windows Server 2025');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '69', 'Windows Server 2025');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '10', 'Android');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '25', 'Android');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '40', 'Android');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '55', 'Android');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '70', 'Android');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '11', 'iOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '26', 'iOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '41', 'iOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '56', 'iOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '71', 'iOS');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '12', 'ChromeOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '27', 'ChromeOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '42', 'ChromeOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '57', 'ChromeOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '72', 'ChromeOS');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '13', 'Linux');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '28', 'Linux');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '43', 'Linux');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '58', 'Linux');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '73', 'Linux');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '14', 'macOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '29', 'macOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '44', 'macOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '59', 'macOS');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '74', 'macOS');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '15', 'Other');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '30', 'Other');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '45', 'Other');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '60', 'Other');
+INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '75', 'Other');
 
 -- Table structure for `workstation_os_versions`
 DROP TABLE IF EXISTS `workstation_os_versions`;
@@ -2217,9 +3245,25 @@ CREATE TABLE `workstation_os_versions` (
 
 -- Data for `workstation_os_versions`
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '1', '24H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('2', '5', '24H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('3', '9', '24H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('4', '13', '24H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('5', '17', '24H2');
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '2', '25H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('2', '6', '25H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('3', '10', '25H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('4', '14', '25H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('5', '18', '25H2');
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '3', '26H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('2', '7', '26H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('3', '11', '26H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('4', '15', '26H2');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('5', '19', '26H2');
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '4', '10 LTSC');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('2', '8', '10 LTSC');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('3', '12', '10 LTSC');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('4', '16', '10 LTSC');
+INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('5', '20', '10 LTSC');
 
 -- Table structure for `workstation_ram`
 DROP TABLE IF EXISTS `workstation_ram`;
@@ -2236,11 +3280,35 @@ CREATE TABLE `workstation_ram` (
 
 -- Data for `workstation_ram`
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '1', '4 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '7', '4 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '13', '4 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '19', '4 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '25', '4 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '2', '8 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '8', '8 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '14', '8 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '20', '8 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '26', '8 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '3', '16 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '9', '16 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '15', '16 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '21', '16 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '27', '16 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '4', '32 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '10', '32 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '16', '32 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '22', '32 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '28', '32 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '5', '64 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '11', '64 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '17', '64 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '23', '64 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '29', '64 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '6', '128 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '12', '128 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '18', '128 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '24', '128 GB');
+INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '30', '128 GB');
 
 -- Replicate shared table data to all companies
 INSERT INTO `access_levels` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
