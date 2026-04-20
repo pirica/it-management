@@ -34,6 +34,46 @@ $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    if ((int)$company_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $existingRowsStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_rows FROM system_access WHERE company_id = ?');
+    $existingRows = 0;
+    if ($existingRowsStmt) {
+        mysqli_stmt_bind_param($existingRowsStmt, 'i', $company_id);
+        mysqli_stmt_execute($existingRowsStmt);
+        $existingRowsResult = mysqli_stmt_get_result($existingRowsStmt);
+        $existingRowsData = $existingRowsResult ? mysqli_fetch_assoc($existingRowsResult) : null;
+        $existingRows = (int)($existingRowsData['total_rows'] ?? 0);
+        mysqli_stmt_close($existingRowsStmt);
+    }
+    if ($existingRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'system_access', (int)$company_id, $seedError);
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
+if (!empty($_SESSION['crud_error'])) {
+    $errors[] = (string)$_SESSION['crud_error'];
+    unset($_SESSION['crud_error']);
+}
+
 // HANDLE BULK IMPORT
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_system_access')) {
     itm_require_post_csrf();
@@ -282,6 +322,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     </tbody>
                 </table>
             </div>
+
+            <?php if ($totalRows === 0): ?>
+                <div class="card" style="margin-top:12px;">
+                    <form method="POST" style="display:flex;justify-content:center;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                    </form>
+                </div>
+            <?php endif; ?>
 
             <!-- PAGINATION -->
             <?php if ($totalRows > $perPage): ?>
