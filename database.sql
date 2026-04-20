@@ -2207,15 +2207,15 @@ INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_po
 INSERT INTO `user_sidebar_preferences` (`company_id`, `user_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
 SELECT sl.`company_id`, uc.`user_id`, sl.`entry_type`, sl.`entry_id`, sl.`section_id`, sl.`display_order`, sl.`is_visible`, 1
 FROM `sidebar_layout` sl
-INNER JOIN `ui_configuration` uc ON uc.`company_id` = sl.`company_id`;
-
-
-
--- Data migration for `user_sidebar_preferences`
-INSERT INTO `user_sidebar_preferences` (`company_id`, `user_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
-SELECT sl.`company_id`, uc.`user_id`, sl.`entry_type`, sl.`entry_id`, sl.`section_id`, sl.`display_order`, sl.`is_visible`, 1
-FROM `sidebar_layout` sl
-INNER JOIN `ui_configuration` uc ON uc.`company_id` = sl.`company_id`;
+INNER JOIN `ui_configuration` uc ON uc.`company_id` = sl.`company_id`
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM `user_sidebar_preferences` usp
+  WHERE usp.`company_id` = sl.`company_id`
+    AND usp.`user_id` = uc.`user_id`
+    AND usp.`entry_type` = sl.`entry_type`
+    AND usp.`entry_id` = sl.`entry_id`
+);
 
 
 -- Table structure for `user_roles`
