@@ -1126,8 +1126,8 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         `company_id` INT NOT NULL,
         `user_id` INT NOT NULL,
         `entry_type` ENUM('section','item') NOT NULL,
-        `entry_id` VARCHAR(100) NOT NULL,
-        `section_id` VARCHAR(100) NULL,
+        `entry_id` VARCHAR(191) NOT NULL,
+        `section_id` VARCHAR(191) NULL,
         `display_order` INT NOT NULL DEFAULT 0,
         `is_visible` TINYINT(1) NOT NULL DEFAULT 1,
         `active` TINYINT DEFAULT '1',
@@ -1140,6 +1140,37 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
 
     if (mysqli_query($conn, $sql) !== true) {
         return false;
+    }
+
+    $legacyLengthColumns = [
+        'entry_id' => 'VARCHAR(191) NOT NULL',
+        'section_id' => 'VARCHAR(191) NULL DEFAULT NULL',
+    ];
+    foreach ($legacyLengthColumns as $columnName => $columnDefinition) {
+        $columnStmt = mysqli_prepare($conn, 'SHOW COLUMNS FROM user_sidebar_preferences LIKE ?');
+        if (!$columnStmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($columnStmt, 's', $columnName);
+        mysqli_stmt_execute($columnStmt);
+        $columnRes = mysqli_stmt_get_result($columnStmt);
+        $columnMeta = $columnRes ? mysqli_fetch_assoc($columnRes) : null;
+        mysqli_stmt_close($columnStmt);
+
+        $columnType = strtolower((string)($columnMeta['Type'] ?? ''));
+        if ($columnType === 'varchar(100)') {
+            $alterSql = 'ALTER TABLE `user_sidebar_preferences` MODIFY `' . $columnName . '` ' . $columnDefinition;
+            if (!itm_run_query($conn, $alterSql)) {
+                return false;
+            }
+            if (is_array($report)) {
+                if (!isset($report['added_columns']) || !is_array($report['added_columns'])) {
+                    $report['added_columns'] = [];
+                }
+                $report['added_columns'][] = 'user_sidebar_preferences.' . $columnName . ' widened to 191 chars';
+            }
+        }
     }
 
     if (is_array($report)) {
