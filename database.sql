@@ -2207,15 +2207,15 @@ INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_po
 INSERT INTO `user_sidebar_preferences` (`company_id`, `user_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
 SELECT sl.`company_id`, uc.`user_id`, sl.`entry_type`, sl.`entry_id`, sl.`section_id`, sl.`display_order`, sl.`is_visible`, 1
 FROM `sidebar_layout` sl
-INNER JOIN `ui_configuration` uc ON uc.`company_id` = sl.`company_id`;
-
-
-
--- Data migration for `user_sidebar_preferences`
-INSERT INTO `user_sidebar_preferences` (`company_id`, `user_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
-SELECT sl.`company_id`, uc.`user_id`, sl.`entry_type`, sl.`entry_id`, sl.`section_id`, sl.`display_order`, sl.`is_visible`, 1
-FROM `sidebar_layout` sl
-INNER JOIN `ui_configuration` uc ON uc.`company_id` = sl.`company_id`;
+INNER JOIN `ui_configuration` uc ON uc.`company_id` = sl.`company_id`
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM `user_sidebar_preferences` usp
+  WHERE usp.`company_id` = sl.`company_id`
+    AND usp.`user_id` = uc.`user_id`
+    AND usp.`entry_type` = sl.`entry_type`
+    AND usp.`entry_id` = sl.`entry_id`
+);
 
 
 -- Table structure for `user_roles`
@@ -2898,7 +2898,7 @@ LEFT JOIN `equipment` e_source ON e_source.`id` = t.`asset_id`
 LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
 WHERE t.`company_id` = 1
   AND COALESCE(u_creator_target.`id`, u_fallback.`id`) IS NOT NULL;
-INSERT INTO `ui_configuration` (`company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`user_id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`enable_audit_logs`, t.`records_per_page`, t.`app_name`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id` AND u.`user_id` = t.`user_id`);
+INSERT INTO `ui_configuration` (`company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) SELECT c.`id`, t.`user_id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`enable_audit_logs`, t.`records_per_page`, t.`app_name`, t.`favicon_path`, t.`equipment_type_sidebar_visibility`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id` AND u.`user_id` = t.`user_id`);
 INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 -- Workstations are tenant-specific and reference tenant-bound records.
 -- Keep this table empty on bootstrap to avoid cross-company foreign key mismatches.
