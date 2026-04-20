@@ -565,6 +565,11 @@ function itm_equipment_type_sidebar_item_id($typeName) {
         $normalized = 'is_' . $normalized;
     }
 
+    if (strlen($normalized) > 191) {
+        // Why: user_sidebar_preferences.entry_id is VARCHAR(191); keep IDs deterministic but storage-safe.
+        $normalized = substr($normalized, 0, 174) . '_' . substr(sha1($normalized), 0, 16);
+    }
+
     return $normalized;
 }
 
@@ -1147,16 +1152,12 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         'section_id' => 'VARCHAR(191) NULL DEFAULT NULL',
     ];
     foreach ($legacyLengthColumns as $columnName => $columnDefinition) {
-        $columnStmt = mysqli_prepare($conn, 'SHOW COLUMNS FROM user_sidebar_preferences LIKE ?');
-        if (!$columnStmt) {
+        $columnCheckSql = "SHOW COLUMNS FROM `user_sidebar_preferences` LIKE '" . mysqli_real_escape_string($conn, $columnName) . "'";
+        $columnRes = mysqli_query($conn, $columnCheckSql);
+        if ($columnRes === false) {
             return false;
         }
-
-        mysqli_stmt_bind_param($columnStmt, 's', $columnName);
-        mysqli_stmt_execute($columnStmt);
-        $columnRes = mysqli_stmt_get_result($columnStmt);
-        $columnMeta = $columnRes ? mysqli_fetch_assoc($columnRes) : null;
-        mysqli_stmt_close($columnStmt);
+        $columnMeta = mysqli_fetch_assoc($columnRes);
 
         $columnType = strtolower((string)($columnMeta['Type'] ?? ''));
         if ($columnType === 'varchar(100)') {
@@ -1173,6 +1174,37 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         }
     }
 
+    // Why: Legacy installs may keep old enum/nullability definitions that reject current insert payloads.
+    $entryTypeRes = mysqli_query($conn, "SHOW COLUMNS FROM `user_sidebar_preferences` LIKE 'entry_type'");
+    if ($entryTypeRes === false) {
+        return false;
+    }
+    $entryTypeMeta = mysqli_fetch_assoc($entryTypeRes);
+    $entryTypeRaw = strtolower((string)($entryTypeMeta['Type'] ?? ''));
+    $hasExpectedEntryEnum = ($entryTypeRaw === "enum('section','item')" || $entryTypeRaw === "enum('item','section')");
+    if (!$hasExpectedEntryEnum) {
+        if (!itm_run_query($conn, "ALTER TABLE `user_sidebar_preferences` MODIFY `entry_type` ENUM('section','item') NOT NULL")) {
+            return false;
+        }
+    }
+
+    $sectionIdRes = mysqli_query($conn, "SHOW COLUMNS FROM `user_sidebar_preferences` LIKE 'section_id'");
+    if ($sectionIdRes === false) {
+        return false;
+    }
+    $sectionIdMeta = mysqli_fetch_assoc($sectionIdRes);
+    $sectionIdType = strtolower((string)($sectionIdMeta['Type'] ?? ''));
+    $sectionIdAllowsNull = strtoupper((string)($sectionIdMeta['Null'] ?? 'NO')) === 'YES';
+    if ($sectionIdType !== 'varchar(191)' || !$sectionIdAllowsNull) {
+        if (!itm_run_query($conn, 'ALTER TABLE `user_sidebar_preferences` MODIFY `section_id` VARCHAR(191) NULL DEFAULT NULL')) {
+            return false;
+        }
+    }
+
+    if (!itm_ensure_user_sidebar_preferences_audit_triggers($conn)) {
+        return false;
+    }
+
     if (is_array($report)) {
         if (!isset($report['created_tables']) || !is_array($report['created_tables'])) {
             $report['created_tables'] = [];
@@ -1184,6 +1216,73 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         if (!in_array('user_sidebar_preferences', $report[$bucketKey], true)) {
             $report[$bucketKey][] = 'user_sidebar_preferences';
         }
+    }
+
+    return true;
+}
+
+/**
+ * Ensures sidebar preference audit triggers target the current audit_logs column names.
+ */
+function itm_ensure_user_sidebar_preferences_audit_triggers($conn) {
+    $triggerNames = [
+        'trg_user_sidebar_preferences_audit_insert',
+        'trg_user_sidebar_preferences_audit_update',
+        'trg_user_sidebar_preferences_audit_delete',
+    ];
+
+    $needsRebuild = false;
+    $existingTriggers = [];
+    foreach ($triggerNames as $triggerName) {
+        $triggerSql = "SHOW TRIGGERS WHERE `Trigger` = '" . mysqli_real_escape_string($conn, $triggerName) . "'";
+        $triggerRes = mysqli_query($conn, $triggerSql);
+        if ($triggerRes === false) {
+            return false;
+        }
+        $triggerMeta = mysqli_fetch_assoc($triggerRes);
+        if (!$triggerMeta) {
+            $needsRebuild = true;
+            continue;
+        }
+        $existingTriggers[$triggerName] = $triggerMeta;
+        $actionStatement = (string)($triggerMeta['Statement'] ?? '');
+        if (strpos($actionStatement, '`username`') !== false || strpos($actionStatement, '`user_email`') !== false) {
+            $needsRebuild = true;
+        }
+    }
+
+    if (!$needsRebuild) {
+        return true;
+    }
+
+    foreach ($triggerNames as $triggerName) {
+        if (!itm_run_query($conn, 'DROP TRIGGER IF EXISTS `' . $triggerName . '`')) {
+            return false;
+        }
+    }
+
+    $createInsertTrigger = "CREATE TRIGGER `trg_user_sidebar_preferences_audit_insert` AFTER INSERT ON `user_sidebar_preferences` FOR EACH ROW BEGIN
+        INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+        VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+    END";
+    if (!itm_run_query($conn, $createInsertTrigger)) {
+        return false;
+    }
+
+    $createUpdateTrigger = "CREATE TRIGGER `trg_user_sidebar_preferences_audit_update` AFTER UPDATE ON `user_sidebar_preferences` FOR EACH ROW BEGIN
+        INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+        VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+    END";
+    if (!itm_run_query($conn, $createUpdateTrigger)) {
+        return false;
+    }
+
+    $createDeleteTrigger = "CREATE TRIGGER `trg_user_sidebar_preferences_audit_delete` AFTER DELETE ON `user_sidebar_preferences` FOR EACH ROW BEGIN
+        INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+        VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+    END";
+    if (!itm_run_query($conn, $createDeleteTrigger)) {
+        return false;
     }
 
     return true;
@@ -1293,10 +1392,20 @@ function itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config
         $entryType = (string)$row['entry_type'];
         $entryId = (string)$row['entry_id'];
         $sectionId = isset($row['section_id']) ? (string)$row['section_id'] : null;
+        if ($entryId === '') {
+            continue;
+        }
+        if (strlen($entryId) > 191) {
+            $entryId = substr($entryId, 0, 174) . '_' . substr(sha1($entryId), 0, 16);
+        }
+        if ($sectionId !== null && strlen($sectionId) > 191) {
+            $sectionId = substr($sectionId, 0, 174) . '_' . substr(sha1($sectionId), 0, 16);
+        }
         $displayOrder = (int)$row['display_order'];
         $isVisible = (int)$row['is_visible'];
         mysqli_stmt_bind_param($insertStmt, 'iisssii', $company_id, $user_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
         if (!mysqli_stmt_execute($insertStmt)) {
+            error_log('itm_save_user_sidebar_preferences insert failed: ' . mysqli_stmt_error($insertStmt));
             mysqli_stmt_close($insertStmt);
             mysqli_rollback($conn);
             return false;
