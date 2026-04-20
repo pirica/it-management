@@ -615,9 +615,6 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
         `favicon_path` VARCHAR(255) NOT NULL DEFAULT '',
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
-        `sidebar_visibility` LONGTEXT NULL,
-        `sidebar_main_order` LONGTEXT NULL,
-        `sidebar_submenu_order` LONGTEXT NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY `uq_ui_configuration_company_user` (`company_id`, `user_id`),
@@ -648,9 +645,6 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
-        'sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_visibility` LONGTEXT NULL AFTER `back_save_position`",
-        'sidebar_main_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_main_order` LONGTEXT NULL AFTER `sidebar_visibility`",
-        'sidebar_submenu_order' => "ALTER TABLE `ui_configuration` ADD COLUMN `sidebar_submenu_order` LONGTEXT NULL AFTER `sidebar_main_order`",
     ];
 
     foreach ($columns as $column => $alterSql) {
@@ -663,6 +657,21 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         }
         if (mysqli_num_rows($check) === 0) {
             $localReport['added_columns'][] = 'ui_configuration.' . $column;
+        }
+    }
+
+    // Why: Sidebar layout is now normalized in user_sidebar_preferences; remove deprecated JSON blob columns.
+    $legacySidebarColumns = ['sidebar_visibility', 'sidebar_main_order', 'sidebar_submenu_order'];
+    foreach ($legacySidebarColumns as $legacyColumn) {
+        $legacyColumnCheck = mysqli_query($conn, "SHOW COLUMNS FROM `ui_configuration` LIKE '" . mysqli_real_escape_string($conn, $legacyColumn) . "'");
+        if (!$legacyColumnCheck) {
+            return false;
+        }
+        if (mysqli_num_rows($legacyColumnCheck) > 0) {
+            $dropColumnSql = "ALTER TABLE `ui_configuration` DROP COLUMN `" . $legacyColumn . "`";
+            if (mysqli_query($conn, $dropColumnSql) !== true) {
+                return false;
+            }
         }
     }
 
@@ -685,6 +694,10 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
     }
 
     if (!itm_ensure_sidebar_layout_table($conn, $localReport)) {
+        return false;
+    }
+
+    if (!itm_ensure_user_sidebar_preferences_table($conn, $localReport)) {
         return false;
     }
 
@@ -765,7 +778,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -779,7 +792,10 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
 
     if (!$row) {
         // Fallback to layout configuration if main config missing
-        $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
+        $layoutConfig = itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id);
+        if ($layoutConfig === null) {
+            $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
+        }
         if ($layoutConfig !== null) {
             $defaults['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
             $defaults['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
@@ -790,7 +806,10 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
 
     $config = itm_normalize_ui_configuration($row);
     // Overlay detailed layout configuration
-    $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
+    $layoutConfig = itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id);
+    if ($layoutConfig === null) {
+        $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
+    }
     if ($layoutConfig !== null) {
         $config['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
         $config['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
@@ -1042,8 +1061,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, user_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, sidebar_visibility, sidebar_main_order, sidebar_submenu_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, user_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -1054,24 +1073,18 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
                 records_per_page = VALUES(records_per_page),
                 app_name = VALUES(app_name),
                 favicon_path = VALUES(favicon_path),
-                equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility),
-                sidebar_visibility = VALUES(sidebar_visibility),
-                sidebar_main_order = VALUES(sidebar_main_order),
-                sidebar_submenu_order = VALUES(sidebar_submenu_order)';
+                equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility)';
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
     }
 
-    $sidebarVisibility = json_encode($config['sidebar_visibility']);
-    $sidebarMainOrder = json_encode($config['sidebar_main_order']);
-    $sidebarSubmenuOrder = json_encode($config['sidebar_submenu_order']);
     $equipmentTypeSidebarVisibility = json_encode($config['equipment_type_sidebar_visibility']);
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iissssiisssssss',
+        'iissssiissss',
         $company_id,
         $user_id,
         $config['table_actions_position'],
@@ -1083,10 +1096,7 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
         $config['records_per_page'],
         $config['app_name'],
         $config['favicon_path'],
-        $equipmentTypeSidebarVisibility,
-        $sidebarVisibility,
-        $sidebarMainOrder,
-        $sidebarSubmenuOrder
+        $equipmentTypeSidebarVisibility
     );
 
     $ok = mysqli_stmt_execute($stmt);
@@ -1095,7 +1105,172 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
         return false;
     }
 
-    return itm_save_sidebar_layout($conn, $company_id, $config);
+    return itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config);
+}
+
+/**
+ * Ensures the user_sidebar_preferences table exists for per-user relational sidebar preferences.
+ */
+function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
+    $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'user_sidebar_preferences'");
+    if (!$tableExistsRes) {
+        return false;
+    }
+    $tableExistedBefore = mysqli_num_rows($tableExistsRes) > 0;
+
+    $sql = "CREATE TABLE IF NOT EXISTS `user_sidebar_preferences` (
+        `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        `company_id` INT NOT NULL,
+        `user_id` INT NOT NULL,
+        `entry_type` ENUM('section','item') NOT NULL,
+        `entry_id` VARCHAR(100) NOT NULL,
+        `section_id` VARCHAR(100) NULL,
+        `display_order` INT NOT NULL DEFAULT 0,
+        `is_visible` TINYINT(1) NOT NULL DEFAULT 1,
+        `active` TINYINT DEFAULT '1',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY `uq_user_sidebar_pref_entry` (`company_id`, `user_id`, `entry_type`, `entry_id`),
+        KEY `idx_user_sidebar_pref_company_user_type_order` (`company_id`, `user_id`, `entry_type`, `display_order`),
+        CONSTRAINT `fk_user_sidebar_pref_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    if (mysqli_query($conn, $sql) !== true) {
+        return false;
+    }
+
+    if (is_array($report)) {
+        if (!isset($report['created_tables']) || !is_array($report['created_tables'])) {
+            $report['created_tables'] = [];
+        }
+        if (!isset($report['verified_tables']) || !is_array($report['verified_tables'])) {
+            $report['verified_tables'] = [];
+        }
+        $bucketKey = $tableExistedBefore ? 'verified_tables' : 'created_tables';
+        if (!in_array('user_sidebar_preferences', $report[$bucketKey], true)) {
+            $report[$bucketKey][] = 'user_sidebar_preferences';
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Retrieves per-user relational sidebar preferences.
+ */
+function itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id) {
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0 || !itm_ensure_user_sidebar_preferences_table($conn)) {
+        return null;
+    }
+
+    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
+            FROM user_sidebar_preferences
+            WHERE company_id = ? AND user_id = ? AND active = 1
+            ORDER BY entry_type ASC, display_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $rows = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
+    mysqli_stmt_close($stmt);
+
+    if (!$rows) {
+        return null;
+    }
+
+    $visibility = [];
+    $mainOrder = [];
+    $submenuOrder = [];
+
+    foreach ($rows as $row) {
+        $entryType = (string)($row['entry_type'] ?? '');
+        $entryId = (string)($row['entry_id'] ?? '');
+        $sectionId = (string)($row['section_id'] ?? '');
+        $visible = ((int)($row['is_visible'] ?? 1) === 0) ? 0 : 1;
+
+        if ($entryId === '') {
+            continue;
+        }
+
+        $visibility[$entryId] = $visible;
+        if ($entryType === 'section') {
+            $mainOrder[] = $entryId;
+            if (!isset($submenuOrder[$entryId])) {
+                $submenuOrder[$entryId] = [];
+            }
+            continue;
+        }
+
+        if (!isset($submenuOrder[$sectionId])) {
+            $submenuOrder[$sectionId] = [];
+        }
+        $submenuOrder[$sectionId][] = $entryId;
+    }
+
+    return [
+        'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
+        'sidebar_main_order' => itm_normalize_sidebar_main_order($mainOrder),
+        'sidebar_submenu_order' => itm_normalize_sidebar_submenu_order($submenuOrder),
+    ];
+}
+
+/**
+ * Synchronizes per-user relational sidebar preferences.
+ */
+function itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config) {
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0 || !itm_ensure_user_sidebar_preferences_table($conn)) {
+        return false;
+    }
+
+    $rows = itm_sidebar_layout_rows_from_config($config);
+
+    mysqli_begin_transaction($conn);
+    $deleteStmt = mysqli_prepare($conn, 'DELETE FROM user_sidebar_preferences WHERE company_id = ? AND user_id = ?');
+    if (!$deleteStmt) {
+        mysqli_rollback($conn);
+        return false;
+    }
+    mysqli_stmt_bind_param($deleteStmt, 'ii', $company_id, $user_id);
+    $deleteOk = mysqli_stmt_execute($deleteStmt);
+    mysqli_stmt_close($deleteStmt);
+    if (!$deleteOk) {
+        mysqli_rollback($conn);
+        return false;
+    }
+
+    $insertStmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO user_sidebar_preferences (company_id, user_id, entry_type, entry_id, section_id, display_order, is_visible, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+    );
+    if (!$insertStmt) {
+        mysqli_rollback($conn);
+        return false;
+    }
+
+    foreach ($rows as $row) {
+        $entryType = (string)$row['entry_type'];
+        $entryId = (string)$row['entry_id'];
+        $sectionId = isset($row['section_id']) ? (string)$row['section_id'] : null;
+        $displayOrder = (int)$row['display_order'];
+        $isVisible = (int)$row['is_visible'];
+        mysqli_stmt_bind_param($insertStmt, 'iisssii', $company_id, $user_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
+        if (!mysqli_stmt_execute($insertStmt)) {
+            mysqli_stmt_close($insertStmt);
+            mysqli_rollback($conn);
+            return false;
+        }
+    }
+
+    mysqli_stmt_close($insertStmt);
+    return mysqli_commit($conn);
 }
 
 /**
