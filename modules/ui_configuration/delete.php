@@ -51,6 +51,22 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
+function cr_format_user_label_from_row($row) {
+    $firstName = trim((string)($row['first_name'] ?? ''));
+    $lastName = trim((string)($row['last_name'] ?? ''));
+    $fullName = trim($firstName . ' ' . $lastName);
+    if ($fullName !== '') {
+        return $fullName;
+    }
+
+    $username = trim((string)($row['username'] ?? ''));
+    if ($username !== '') {
+        return $username;
+    }
+
+    return 'User #' . (int)($row['id'] ?? 0);
+}
+
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
@@ -64,13 +80,20 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $labelSql = cr_escape_identifier($labelCol);
-    if ($table === 'users' && in_array('username', $available, true) && in_array('first_name', $available, true) && in_array('last_name', $available, true)) {
-        $labelSql = "CASE WHEN TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) = '' THEN username ELSE TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) END";
+    $rows = [];
+    if ($table === 'users') {
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, first_name, last_name, username FROM ' . cr_escape_identifier($table) . $where . ' ORDER BY first_name, last_name, username';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = [
+                'id' => (int)$row['id'],
+                'label' => cr_format_user_label_from_row($row),
+            ];
+        }
+        return $rows;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSql . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
-    $rows = [];
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
@@ -90,12 +113,33 @@ function cr_fk_label_for_value($conn, $fk, $value, $company_id) {
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
-    $labelSql = cr_escape_identifier($labelCol);
-    if ($table === 'users' && in_array('username', $available, true) && in_array('first_name', $available, true) && in_array('last_name', $available, true)) {
-        $labelSql = "CASE WHEN TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) = '' THEN username ELSE TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) END";
+    if ($table === 'users') {
+        $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, first_name, last_name, username FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+
+        if (in_array('company_id', $available, true) && $company_id > 0) {
+            $companySql = $baseSql . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+            $companyResult = mysqli_query($conn, $companySql);
+            if ($companyResult && ($companyRow = mysqli_fetch_assoc($companyResult))) {
+                return [
+                    'id' => (int)$companyRow['id'],
+                    'label' => cr_format_user_label_from_row($companyRow),
+                ];
+            }
+        }
+
+        $fallbackResult = mysqli_query($conn, $baseSql . ' LIMIT 1');
+        if ($fallbackResult && ($fallbackRow = mysqli_fetch_assoc($fallbackResult))) {
+            return [
+                'id' => (int)$fallbackRow['id'],
+                'label' => cr_format_user_label_from_row($fallbackRow),
+            ];
+        }
+
+        return null;
     }
 
-    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSql . ' AS label FROM ' . cr_escape_identifier($table)
+    $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
         . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
 
     if (in_array('company_id', $available, true) && $company_id > 0) {

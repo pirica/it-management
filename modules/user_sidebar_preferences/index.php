@@ -39,6 +39,15 @@ function cr_fk_map($conn, $table) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $map[$row['COLUMN_NAME']] = $row;
     }
+
+    if ($table === 'user_sidebar_preferences' && !isset($map['user_id'])) {
+        $map['user_id'] = [
+            'COLUMN_NAME' => 'user_id',
+            'REFERENCED_TABLE_NAME' => 'users',
+            'REFERENCED_COLUMN_NAME' => 'id',
+        ];
+    }
+
     return $map;
 }
 
