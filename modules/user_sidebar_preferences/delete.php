@@ -42,6 +42,72 @@ function cr_fk_map($conn, $table) {
     return $map;
 }
 
+function cr_format_user_label_from_row($row) {
+    $firstName = trim((string)($row['first_name'] ?? ''));
+    $lastName = trim((string)($row['last_name'] ?? ''));
+    $fullName = trim($firstName . ' ' . $lastName);
+    if ($fullName !== '') {
+        return $fullName;
+    }
+
+    $username = trim((string)($row['username'] ?? ''));
+    if ($username !== '') {
+        return $username;
+    }
+
+    return 'User #' . (int)($row['id'] ?? 0);
+}
+
+function cr_fk_option_by_id($conn, $fk, $optionId, $company_id) {
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $optionId = (int)$optionId;
+    if ($optionId <= 0) {
+        return null;
+    }
+
+    $fkMeta = cr_fk_metadata($conn, $table);
+    $available = $fkMeta['available'];
+
+    if ($table === 'users') {
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, first_name, last_name, username FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($col) . '=' . $optionId;
+
+        if (in_array('company_id', $available, true) && $company_id > 0) {
+            $scopedSql = $sql . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+            $scopedRes = mysqli_query($conn, $scopedSql);
+            if ($scopedRes && ($scopedRow = mysqli_fetch_assoc($scopedRes))) {
+                return ['id' => (int)$scopedRow['id'], 'label' => cr_format_user_label_from_row($scopedRow)];
+            }
+        }
+
+        $fallbackRes = mysqli_query($conn, $sql . ' LIMIT 1');
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            return ['id' => (int)$fallbackRow['id'], 'label' => cr_format_user_label_from_row($fallbackRow)];
+        }
+        return null;
+    }
+
+    $labelCol = $fkMeta['label_col'];
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $optionId;
+
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $scopedSql = $sql . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+        $scopedRes = mysqli_query($conn, $scopedSql);
+        if ($scopedRes && ($scopedRow = mysqli_fetch_assoc($scopedRes))) {
+            return ['id' => (int)$scopedRow['id'], 'label' => (string)($scopedRow['label'] ?? '')];
+        }
+    }
+
+    $fallbackRes = mysqli_query($conn, $sql . ' LIMIT 1');
+    if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+        return ['id' => (int)$fallbackRow['id'], 'label' => (string)($fallbackRow['label'] ?? '')];
+    }
+
+    return null;
+}
+
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
@@ -55,8 +121,20 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $rows = [];
+    if ($table === 'users') {
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, first_name, last_name, username FROM ' . cr_escape_identifier($table) . $where . ' ORDER BY first_name, last_name, username';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = [
+                'id' => (int)$row['id'],
+                'label' => cr_format_user_label_from_row($row),
+            ];
+        }
+        return $rows;
+    }
+
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
@@ -136,6 +214,19 @@ function cr_render_cell_value($table, $field, $value) {
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
+    }
+
+    if (isset($GLOBALS['fkMap'][$field]) && (string)$value !== '' && $value !== null) {
+        static $fkLabelCache = [];
+        $rawValue = (string)$value;
+        if (!isset($fkLabelCache[$field])) {
+            $fkLabelCache[$field] = [];
+        }
+        if (!isset($fkLabelCache[$field][$rawValue])) {
+            $resolved = cr_fk_option_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)$rawValue, (int)($GLOBALS['company_id'] ?? 0));
+            $fkLabelCache[$field][$rawValue] = $resolved['label'] ?? $rawValue;
+        }
+        return sanitize((string)$fkLabelCache[$field][$rawValue]);
     }
 
     $text = (string)($value ?? '');
@@ -363,7 +454,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'edit') {
     cr_require_valid_csrf_token();
 
     foreach ($fieldColumns as $col) {
@@ -522,7 +613,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($crud_title); ?></h1>
-                    <a href="create.php" class="btn btn-primary">➕</a>
+                    <span></span>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
@@ -566,8 +657,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     </table>
                 </div>
 
-            <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
-                <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
+            <?php elseif ($crud_action === 'edit'): ?>
+                <h1>Edit <?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
@@ -592,6 +683,19 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $hasSelectedOption = false;
+                                    foreach ($opts as $existingOpt) {
+                                        if ((string)$displayVal !== '' && (string)$displayVal === (string)$existingOpt['id']) {
+                                            $hasSelectedOption = true;
+                                            break;
+                                        }
+                                    }
+                                    if ((string)$displayVal !== '' && !$hasSelectedOption) {
+                                        $fallbackOption = cr_fk_option_by_id($conn, $fkMap[$name], (int)$displayVal, (int)$company_id);
+                                        if (is_array($fallbackOption)) {
+                                            $opts[] = $fallbackOption;
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
