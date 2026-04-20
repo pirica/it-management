@@ -688,6 +688,56 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         return false;
     }
     if (mysqli_num_rows($newUniqueRes) === 0) {
+        // Why: Legacy installs can contain duplicate company/user rows (commonly user_id=0),
+        // which blocks the unique key migration and causes all future saves to fail.
+        $dupPairsRes = mysqli_query(
+            $conn,
+            'SELECT company_id, user_id
+             FROM ui_configuration
+             GROUP BY company_id, user_id
+             HAVING COUNT(*) > 1'
+        );
+        if ($dupPairsRes === false) {
+            return false;
+        }
+
+        while ($dupPair = mysqli_fetch_assoc($dupPairsRes)) {
+            $dupCompanyId = (int)($dupPair['company_id'] ?? 0);
+            $dupUserId = (int)($dupPair['user_id'] ?? 0);
+
+            $dupRowsRes = mysqli_query(
+                $conn,
+                'SELECT id
+                 FROM ui_configuration
+                 WHERE company_id = ' . $dupCompanyId . ' AND user_id = ' . $dupUserId . '
+                 ORDER BY updated_at DESC, id DESC'
+            );
+            if ($dupRowsRes === false) {
+                return false;
+            }
+
+            $keepFirst = true;
+            $deleteIds = [];
+            while ($dupRow = mysqli_fetch_assoc($dupRowsRes)) {
+                $rowId = (int)($dupRow['id'] ?? 0);
+                if ($rowId <= 0) {
+                    continue;
+                }
+                if ($keepFirst) {
+                    $keepFirst = false;
+                    continue;
+                }
+                $deleteIds[] = $rowId;
+            }
+
+            if (!empty($deleteIds)) {
+                $deleteSql = 'DELETE FROM ui_configuration WHERE id IN (' . implode(',', $deleteIds) . ')';
+                if (mysqli_query($conn, $deleteSql) !== true) {
+                    return false;
+                }
+            }
+        }
+
         if (mysqli_query($conn, 'ALTER TABLE `ui_configuration` ADD UNIQUE KEY `uq_ui_configuration_company_user` (`company_id`, `user_id`)') !== true) {
             return false;
         }
