@@ -1101,7 +1101,14 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
         return false;
     }
 
-    return itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config);
+    $sidebarPreferencesSaved = itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config);
+    if (!$sidebarPreferencesSaved) {
+        // Why: UI configuration updates (positions, app name, toggles) must remain saveable
+        // even when legacy sidebar preference data cannot be migrated in one request.
+        error_log('itm_save_ui_configuration: sidebar preferences sync failed for company_id=' . $company_id . ', user_id=' . $user_id);
+    }
+
+    return true;
 }
 
 /**
