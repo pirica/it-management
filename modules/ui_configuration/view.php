@@ -245,6 +245,15 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     $text = (string)($value ?? '');
+    if ($table === 'ui_configuration' && $field === 'favicon_path' && trim($text) !== '') {
+        $faviconPath = trim($text);
+        $faviconSrc = '../../' . ltrim($faviconPath, '/');
+        return '<span style="display:inline-flex;align-items:center;gap:8px;">'
+            . '<img src="' . sanitize($faviconSrc) . '" alt="Favicon preview" style="width:18px;height:18px;object-fit:contain;border:1px solid #d0d7de;border-radius:4px;padding:2px;background:#fff;">'
+            . '<span>' . sanitize($faviconPath) . '</span>'
+            . '</span>';
+    }
+
     if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
@@ -892,6 +901,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
+                            <?php elseif ($crud_table === 'ui_configuration' && $name === 'favicon_path'): ?>
+                                <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
+                                <?php if (trim($displayVal) !== ''): ?>
+                                    <?php $faviconPreviewSrc = '../../' . ltrim($displayVal, '/'); ?>
+                                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                                        <img src="<?php echo sanitize($faviconPreviewSrc); ?>" alt="Favicon preview" style="width:18px;height:18px;object-fit:contain;border:1px solid #d0d7de;border-radius:4px;padding:2px;background:#fff;">
+                                        <small><?php echo sanitize($displayVal); ?></small>
+                                    </div>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
