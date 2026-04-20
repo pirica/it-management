@@ -89,14 +89,34 @@ CREATE TABLE `departments` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `departments`
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('1', '1', 'IT Operations', 'IT', 'Core IT operations team', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('2', '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('3', '1', 'Human Resources', 'HR', 'Human resources department', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('4', '1', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('5', '4', 'Front Office', 'FO', 'Front Office', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('5', '1', 'Front Office', 'FO', 'Front Office', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('6', '2', 'IT Operations', 'IT', 'Core IT operations team', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('7', '2', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('8', '2', 'Human Resources', 'HR', 'Human resources department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('9', '2', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('10', '2', 'Front Office', 'FO', 'Front Office', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('11', '3', 'IT Operations', 'IT', 'Core IT operations team', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('12', '3', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('13', '3', 'Human Resources', 'HR', 'Human resources department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('14', '3', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('15', '3', 'Front Office', 'FO', 'Front Office', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('16', '4', 'IT Operations', 'IT', 'Core IT operations team', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('17', '4', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('18', '4', 'Human Resources', 'HR', 'Human resources department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('19', '4', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('20', '4', 'Front Office', 'FO', 'Front Office', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('21', '5', 'IT Operations', 'IT', 'Core IT operations team', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('22', '5', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('23', '5', 'Human Resources', 'HR', 'Human resources department', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('24', '5', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('25', '5', 'Front Office', 'FO', 'Front Office', '1');
 
 
 -- Table structure for `budget_categories`
