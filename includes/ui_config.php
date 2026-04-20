@@ -1201,6 +1201,10 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         }
     }
 
+    if (!itm_ensure_user_sidebar_preferences_audit_triggers($conn)) {
+        return false;
+    }
+
     if (is_array($report)) {
         if (!isset($report['created_tables']) || !is_array($report['created_tables'])) {
             $report['created_tables'] = [];
@@ -1212,6 +1216,73 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         if (!in_array('user_sidebar_preferences', $report[$bucketKey], true)) {
             $report[$bucketKey][] = 'user_sidebar_preferences';
         }
+    }
+
+    return true;
+}
+
+/**
+ * Ensures sidebar preference audit triggers target the current audit_logs column names.
+ */
+function itm_ensure_user_sidebar_preferences_audit_triggers($conn) {
+    $triggerNames = [
+        'trg_user_sidebar_preferences_audit_insert',
+        'trg_user_sidebar_preferences_audit_update',
+        'trg_user_sidebar_preferences_audit_delete',
+    ];
+
+    $needsRebuild = false;
+    $existingTriggers = [];
+    foreach ($triggerNames as $triggerName) {
+        $triggerSql = "SHOW TRIGGERS WHERE `Trigger` = '" . mysqli_real_escape_string($conn, $triggerName) . "'";
+        $triggerRes = mysqli_query($conn, $triggerSql);
+        if ($triggerRes === false) {
+            return false;
+        }
+        $triggerMeta = mysqli_fetch_assoc($triggerRes);
+        if (!$triggerMeta) {
+            $needsRebuild = true;
+            continue;
+        }
+        $existingTriggers[$triggerName] = $triggerMeta;
+        $actionStatement = (string)($triggerMeta['Statement'] ?? '');
+        if (strpos($actionStatement, '`username`') !== false || strpos($actionStatement, '`user_email`') !== false) {
+            $needsRebuild = true;
+        }
+    }
+
+    if (!$needsRebuild) {
+        return true;
+    }
+
+    foreach ($triggerNames as $triggerName) {
+        if (!itm_run_query($conn, 'DROP TRIGGER IF EXISTS `' . $triggerName . '`')) {
+            return false;
+        }
+    }
+
+    $createInsertTrigger = "CREATE TRIGGER `trg_user_sidebar_preferences_audit_insert` AFTER INSERT ON `user_sidebar_preferences` FOR EACH ROW BEGIN
+        INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+        VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+    END";
+    if (!itm_run_query($conn, $createInsertTrigger)) {
+        return false;
+    }
+
+    $createUpdateTrigger = "CREATE TRIGGER `trg_user_sidebar_preferences_audit_update` AFTER UPDATE ON `user_sidebar_preferences` FOR EACH ROW BEGIN
+        INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+        VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+    END";
+    if (!itm_run_query($conn, $createUpdateTrigger)) {
+        return false;
+    }
+
+    $createDeleteTrigger = "CREATE TRIGGER `trg_user_sidebar_preferences_audit_delete` AFTER DELETE ON `user_sidebar_preferences` FOR EACH ROW BEGIN
+        INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+        VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+    END";
+    if (!itm_run_query($conn, $createDeleteTrigger)) {
+        return false;
     }
 
     return true;
