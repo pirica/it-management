@@ -744,6 +744,15 @@ if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
 $showBulkActions = ($totalRows >= $perPage);
+
+$companyTotalRows = $totalRows;
+if ($hasCompany && $company_id > 0) {
+    $companyCountSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . ' WHERE company_id=' . (int)$company_id;
+    $companyCountRes = mysqli_query($conn, $companyCountSql);
+    if ($companyCountRes && ($companyCountRow = mysqli_fetch_assoc($companyCountRes))) {
+        $companyTotalRows = (int)($companyCountRow['total_rows'] ?? 0);
+    }
+}
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) {
     $page = 1;
@@ -877,7 +886,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </table>
                 </div>
 
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($hasCompany && $company_id > 0 && $companyTotalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
