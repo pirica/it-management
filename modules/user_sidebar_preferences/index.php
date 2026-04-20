@@ -175,7 +175,6 @@ function cr_humanize_field($field) {
 
     $map = [
         'department_id' => 'Department Name',
-        'user_id' => 'User (First Name Last Name)',
         'office_key_card_department_id' => 'Office Key Card Department',
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
