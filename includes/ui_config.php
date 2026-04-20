@@ -1174,6 +1174,33 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
         }
     }
 
+    // Why: Legacy installs may keep old enum/nullability definitions that reject current insert payloads.
+    $entryTypeRes = mysqli_query($conn, "SHOW COLUMNS FROM `user_sidebar_preferences` LIKE 'entry_type'");
+    if ($entryTypeRes === false) {
+        return false;
+    }
+    $entryTypeMeta = mysqli_fetch_assoc($entryTypeRes);
+    $entryTypeRaw = strtolower((string)($entryTypeMeta['Type'] ?? ''));
+    $hasExpectedEntryEnum = ($entryTypeRaw === "enum('section','item')" || $entryTypeRaw === "enum('item','section')");
+    if (!$hasExpectedEntryEnum) {
+        if (!itm_run_query($conn, "ALTER TABLE `user_sidebar_preferences` MODIFY `entry_type` ENUM('section','item') NOT NULL")) {
+            return false;
+        }
+    }
+
+    $sectionIdRes = mysqli_query($conn, "SHOW COLUMNS FROM `user_sidebar_preferences` LIKE 'section_id'");
+    if ($sectionIdRes === false) {
+        return false;
+    }
+    $sectionIdMeta = mysqli_fetch_assoc($sectionIdRes);
+    $sectionIdType = strtolower((string)($sectionIdMeta['Type'] ?? ''));
+    $sectionIdAllowsNull = strtoupper((string)($sectionIdMeta['Null'] ?? 'NO')) === 'YES';
+    if ($sectionIdType !== 'varchar(191)' || !$sectionIdAllowsNull) {
+        if (!itm_run_query($conn, 'ALTER TABLE `user_sidebar_preferences` MODIFY `section_id` VARCHAR(191) NULL DEFAULT NULL')) {
+            return false;
+        }
+    }
+
     if (is_array($report)) {
         if (!isset($report['created_tables']) || !is_array($report['created_tables'])) {
             $report['created_tables'] = [];
@@ -1307,6 +1334,7 @@ function itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config
         $isVisible = (int)$row['is_visible'];
         mysqli_stmt_bind_param($insertStmt, 'iisssii', $company_id, $user_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
         if (!mysqli_stmt_execute($insertStmt)) {
+            error_log('itm_save_user_sidebar_preferences insert failed: ' . mysqli_stmt_error($insertStmt));
             mysqli_stmt_close($insertStmt);
             mysqli_rollback($conn);
             return false;
