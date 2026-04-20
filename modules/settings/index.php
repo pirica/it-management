@@ -493,6 +493,8 @@ usort($backupFiles, static function ($a, $b) {
 
 // Initialize configuration for form pre-filling.
 $currentFaviconUrl = itm_ui_config_favicon_url($currentUiConfig);
+$currentFaviconPath = trim((string)($currentUiConfig['favicon_path'] ?? ''));
+$currentFaviconDisplayPath = $currentFaviconPath !== '' ? '/' . ltrim($currentFaviconPath, '/') : '';
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
 // If the database has a custom pagination value not in our default array, add it to the dropdown.
 if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
@@ -602,6 +604,9 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                 </span>
                                 <input id="favicon_file" name="favicon_file" type="file" accept=".ico,image/x-icon">
                             </div>
+                            <?php if ($currentFaviconDisplayPath !== ''): ?>
+                                <p class="form-hint" style="margin-top:6px;">Current favicon: <?php echo sanitize($currentFaviconDisplayPath); ?></p>
+                            <?php endif; ?>
                             <p class="form-hint" style="margin-top:6px;">Upload a new ICO file to replace the current browser tab icon (max 512 KB).</p>
                         </div>
 
