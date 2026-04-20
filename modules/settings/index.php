@@ -390,6 +390,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($error !== '') {
             // Why: Preserve the existing config when upload validation fails in a mixed form submit.
+        } elseif ((int)$company_id <= 0) {
+            $error = 'Unable to save UI configuration: please select an active company first.';
+        } elseif ($settingsUserId <= 0) {
+            $error = 'Unable to save UI configuration: your session user is missing. Please sign in again.';
         } elseif (!itm_save_ui_configuration($conn, $company_id, $newConfig, $settingsUserId)) {
             $error = 'Unable to save UI configuration.';
         } else {
