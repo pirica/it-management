@@ -693,9 +693,6 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         }
     }
 
-    if (!itm_ensure_sidebar_layout_table($conn, $localReport)) {
-        return false;
-    }
 
     if (!itm_ensure_user_sidebar_preferences_table($conn, $localReport)) {
         return false;
@@ -711,51 +708,6 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
                     $report[$reportKey][] = $reportItem;
                 }
             }
-        }
-    }
-
-    return true;
-}
-
-/**
- * Ensures the sidebar_layout junction table exists
- */
-function itm_ensure_sidebar_layout_table($conn, &$report = null) {
-    $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'sidebar_layout'");
-    if (!$tableExistsRes) {
-        return false;
-    }
-    $tableExistedBefore = mysqli_num_rows($tableExistsRes) > 0;
-
-    $sql = "CREATE TABLE IF NOT EXISTS `sidebar_layout` (
-        `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        `company_id` INT NOT NULL,
-        `entry_type` ENUM('section','item') NOT NULL,
-        `entry_id` VARCHAR(100) NOT NULL,
-        `section_id` VARCHAR(100) NULL,
-        `display_order` INT NOT NULL DEFAULT 0,
-        `is_visible` TINYINT(1) NOT NULL DEFAULT 1,
-        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY `uq_sidebar_layout_entry` (`company_id`, `entry_type`, `entry_id`),
-        KEY `idx_sidebar_layout_company_type_order` (`company_id`, `entry_type`, `display_order`),
-        CONSTRAINT `fk_sidebar_layout_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-
-    if (mysqli_query($conn, $sql) !== true) {
-        return false;
-    }
-
-    if (is_array($report)) {
-        if (!isset($report['created_tables']) || !is_array($report['created_tables'])) {
-            $report['created_tables'] = [];
-        }
-        if (!isset($report['verified_tables']) || !is_array($report['verified_tables'])) {
-            $report['verified_tables'] = [];
-        }
-        $bucketKey = $tableExistedBefore ? 'verified_tables' : 'created_tables';
-        if (!in_array('sidebar_layout', $report[$bucketKey], true)) {
-            $report[$bucketKey][] = 'sidebar_layout';
         }
     }
 
@@ -793,9 +745,6 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     if (!$row) {
         // Fallback to layout configuration if main config missing
         $layoutConfig = itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id);
-        if ($layoutConfig === null) {
-            $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
-        }
         if ($layoutConfig !== null) {
             $defaults['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
             $defaults['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
@@ -807,9 +756,6 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     $config = itm_normalize_ui_configuration($row);
     // Overlay detailed layout configuration
     $layoutConfig = itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id);
-    if ($layoutConfig === null) {
-        $layoutConfig = itm_get_sidebar_layout_config($conn, $company_id);
-    }
     if ($layoutConfig !== null) {
         $config['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
         $config['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
@@ -1274,71 +1220,6 @@ function itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config
 }
 
 /**
- * Retrieves granular sidebar layout configuration
- */
-function itm_get_sidebar_layout_config($conn, $company_id) {
-    $company_id = (int)$company_id;
-    if ($company_id <= 0 || !itm_ensure_sidebar_layout_table($conn)) {
-        return null;
-    }
-
-    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
-            FROM sidebar_layout
-            WHERE company_id = ?
-            ORDER BY entry_type ASC, display_order ASC, id ASC';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-        return null;
-    }
-
-    mysqli_stmt_bind_param($stmt, 'i', $company_id);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $rows = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
-    mysqli_stmt_close($stmt);
-
-    if (!$rows) {
-        return null;
-    }
-
-    $visibility = [];
-    $mainOrder = [];
-    $submenuOrder = [];
-
-    // Reconstruct hierarchical configuration from flat database rows
-    foreach ($rows as $row) {
-        $entryType = (string)($row['entry_type'] ?? '');
-        $entryId = (string)($row['entry_id'] ?? '');
-        $sectionId = (string)($row['section_id'] ?? '');
-        $visible = ((int)($row['is_visible'] ?? 1) === 0) ? 0 : 1;
-
-        if ($entryId === '') {
-            continue;
-        }
-
-        $visibility[$entryId] = $visible;
-        if ($entryType === 'section') {
-            $mainOrder[] = $entryId;
-            if (!isset($submenuOrder[$entryId])) {
-                $submenuOrder[$entryId] = [];
-            }
-            continue;
-        }
-
-        if (!isset($submenuOrder[$sectionId])) {
-            $submenuOrder[$sectionId] = [];
-        }
-        $submenuOrder[$sectionId][] = $entryId;
-    }
-
-    return [
-        'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
-        'sidebar_main_order' => itm_normalize_sidebar_main_order($mainOrder),
-        'sidebar_submenu_order' => itm_normalize_sidebar_submenu_order($submenuOrder),
-    ];
-}
-
-/**
  * Transforms configuration structure into flat database rows for storage
  */
 function itm_sidebar_layout_rows_from_config($config) {
@@ -1413,60 +1294,6 @@ function itm_sidebar_layout_rows_from_config($config) {
     }
 
     return $rows;
-}
-
-/**
- * Synchronizes the sidebar_layout table with the provided configuration
- */
-function itm_save_sidebar_layout($conn, $company_id, $config) {
-    $company_id = (int)$company_id;
-    if ($company_id <= 0 || !itm_ensure_sidebar_layout_table($conn)) {
-        return false;
-    }
-
-    $rows = itm_sidebar_layout_rows_from_config($config);
-
-    mysqli_begin_transaction($conn);
-    // Clear old layout
-    $deleteStmt = mysqli_prepare($conn, 'DELETE FROM sidebar_layout WHERE company_id = ?');
-    if (!$deleteStmt) {
-        mysqli_rollback($conn);
-        return false;
-    }
-    mysqli_stmt_bind_param($deleteStmt, 'i', $company_id);
-    $deleteOk = mysqli_stmt_execute($deleteStmt);
-    mysqli_stmt_close($deleteStmt);
-    if (!$deleteOk) {
-        mysqli_rollback($conn);
-        return false;
-    }
-
-    // Insert new layout row by row
-    $insertStmt = mysqli_prepare(
-        $conn,
-        'INSERT INTO sidebar_layout (company_id, entry_type, entry_id, section_id, display_order, is_visible) VALUES (?, ?, ?, ?, ?, ?)'
-    );
-    if (!$insertStmt) {
-        mysqli_rollback($conn);
-        return false;
-    }
-
-    foreach ($rows as $row) {
-        $entryType = (string)$row['entry_type'];
-        $entryId = (string)$row['entry_id'];
-        $sectionId = isset($row['section_id']) ? (string)$row['section_id'] : null;
-        $displayOrder = (int)$row['display_order'];
-        $isVisible = (int)$row['is_visible'];
-        mysqli_stmt_bind_param($insertStmt, 'isssii', $company_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
-        if (!mysqli_stmt_execute($insertStmt)) {
-            mysqli_stmt_close($insertStmt);
-            mysqli_rollback($conn);
-            return false;
-        }
-    }
-
-    mysqli_stmt_close($insertStmt);
-    return mysqli_commit($conn);
 }
 
 /**
