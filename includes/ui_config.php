@@ -660,6 +660,21 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         }
     }
 
+    // Why: Sidebar layout is now normalized in user_sidebar_preferences; remove deprecated JSON blob columns.
+    $legacySidebarColumns = ['sidebar_visibility', 'sidebar_main_order', 'sidebar_submenu_order'];
+    foreach ($legacySidebarColumns as $legacyColumn) {
+        $legacyColumnCheck = mysqli_query($conn, "SHOW COLUMNS FROM `ui_configuration` LIKE '" . mysqli_real_escape_string($conn, $legacyColumn) . "'");
+        if (!$legacyColumnCheck) {
+            return false;
+        }
+        if (mysqli_num_rows($legacyColumnCheck) > 0) {
+            $dropColumnSql = "ALTER TABLE `ui_configuration` DROP COLUMN `" . $legacyColumn . "`";
+            if (mysqli_query($conn, $dropColumnSql) !== true) {
+                return false;
+            }
+        }
+    }
+
     // Why: UI settings must be isolated per user within each company.
     $legacyUniqueRes = mysqli_query($conn, "SHOW INDEX FROM `ui_configuration` WHERE Key_name = 'uq_ui_configuration_company'");
     if ($legacyUniqueRes && mysqli_num_rows($legacyUniqueRes) > 0) {
