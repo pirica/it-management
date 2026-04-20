@@ -10,6 +10,37 @@
 require '../../config/config.php';
 itm_handle_json_table_import($conn, 'inventory_items', (int)($company_id ?? 0));
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    if ((int)$company_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $existingRowsResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM inventory_items WHERE company_id=' . (int)$company_id);
+    $existingRowsData = $existingRowsResult ? mysqli_fetch_assoc($existingRowsResult) : null;
+    $existingRows = (int)($existingRowsData['total_rows'] ?? 0);
+    if ($existingRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'inventory_items', (int)$company_id, $seedError);
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
+$inventoryError = (string)($_SESSION['crud_error'] ?? '');
+unset($_SESSION['crud_error']);
+
 
 // HANDLE SEARCH LOGIC
 $searchRaw = trim((string)($_GET['search'] ?? ''));
@@ -120,6 +151,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <?php endif; ?>
             </div>
 
+            <?php if ($inventoryError !== ''): ?>
+                <div class="alert alert-danger"><?php echo sanitize($inventoryError); ?></div>
+            <?php endif; ?>
+
             <!-- SEARCH BAR -->
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -212,6 +247,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <?php if ($totalRows === 0): ?>
+                    <div class="card" style="margin-top:12px;">
+                        <form method="POST" style="display:flex;justify-content:center;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
                 <?php if ($totalPages > 1): ?>
                     <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>

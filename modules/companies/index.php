@@ -9,6 +9,35 @@
 require '../../config/config.php';
 itm_handle_json_table_import($conn, 'companies', (int)($company_id ?? 0));
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    $activeCompanyId = (int)($company_id ?? 0);
+    if ($activeCompanyId <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $existingRowsResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM companies');
+    $existingRowsData = $existingRowsResult ? mysqli_fetch_assoc($existingRowsResult) : null;
+    $existingRows = (int)($existingRowsData['total_rows'] ?? 0);
+    if ($existingRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'companies', $activeCompanyId, $seedError);
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 
 /**
  * Helper to build a clean query string for sorting and filtering
@@ -216,6 +245,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 <?php endif; ?>
             </div>
+
+            <?php if ($totalRows === 0): ?>
+                <div class="card" style="margin-top:12px;">
+                    <form method="POST" style="display:flex;justify-content:center;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                    </form>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
