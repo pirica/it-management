@@ -832,6 +832,23 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
                 $rawColumns = $rowEntry['columns'] ?? [];
                 $rawValues = $rowEntry['values'] ?? [];
 
+                $sourceRowCompanyId = null;
+                foreach ($rawColumns as $index => $columnToken) {
+                    $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                    if ($columnName !== 'company_id') {
+                        continue;
+                    }
+                    $rawCompanyToken = trim((string)($rawValues[$index] ?? ''));
+                    if ($rawCompanyToken !== '' && strtoupper($rawCompanyToken) !== 'NULL') {
+                        $rawCompanyToken = trim($rawCompanyToken, "'\"");
+                        $sourceRowCompanyId = (int)$rawCompanyToken;
+                    }
+                    break;
+                }
+                if ($sourceRowCompanyId !== null && $sourceRowCompanyId !== $companyId) {
+                    continue;
+                }
+
                 $targetColumns = [];
                 $targetValues = [];
                 foreach ($rawColumns as $index => $columnToken) {

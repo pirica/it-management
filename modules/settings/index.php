@@ -444,7 +444,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . 'Inserted: ' . $insertedSummary . '. '
                 . 'Not imported: ' . $notImportedSummary . '.';
             if ($seedError !== '') {
-                $error = $seedError;
+                $message .= ' Warning: ' . $seedError;
             }
         } else {
             $error = $seedError !== '' ? $seedError : 'No sample rows were inserted.';
