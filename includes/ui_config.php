@@ -565,6 +565,11 @@ function itm_equipment_type_sidebar_item_id($typeName) {
         $normalized = 'is_' . $normalized;
     }
 
+    if (strlen($normalized) > 191) {
+        // Why: user_sidebar_preferences.entry_id is VARCHAR(191); keep IDs deterministic but storage-safe.
+        $normalized = substr($normalized, 0, 174) . '_' . substr(sha1($normalized), 0, 16);
+    }
+
     return $normalized;
 }
 
@@ -1289,6 +1294,15 @@ function itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config
         $entryType = (string)$row['entry_type'];
         $entryId = (string)$row['entry_id'];
         $sectionId = isset($row['section_id']) ? (string)$row['section_id'] : null;
+        if ($entryId === '') {
+            continue;
+        }
+        if (strlen($entryId) > 191) {
+            $entryId = substr($entryId, 0, 174) . '_' . substr(sha1($entryId), 0, 16);
+        }
+        if ($sectionId !== null && strlen($sectionId) > 191) {
+            $sectionId = substr($sectionId, 0, 174) . '_' . substr(sha1($sectionId), 0, 16);
+        }
         $displayOrder = (int)$row['display_order'];
         $isVisible = (int)$row['is_visible'];
         mysqli_stmt_bind_param($insertStmt, 'iisssii', $company_id, $user_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
