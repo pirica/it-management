@@ -49,10 +49,6 @@ if ($id > 0) {
                     <table>
                         <tbody>
                         <tr>
-                            <th style="width:220px;">ID</th>
-                            <td><?php echo (int)$item['id']; ?></td>
-                        </tr>
-                        <tr>
                             <th>Code</th>
                             <td><?php echo sanitize((string)($item['code'] ?? '')); ?></td>
                         </tr>
