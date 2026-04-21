@@ -174,8 +174,6 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
-    $text = (string)($value ?? '');
-    if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
         $outlook = 'ms-outlook://compose?to=' . $text;
