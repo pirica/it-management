@@ -252,6 +252,13 @@ if (!empty($_SESSION['crud_success'])) {
                 </div>
             </div>
 
+                <div style="margin-bottom:12px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <?php if ($hasSelectedSwitch): ?>
