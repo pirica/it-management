@@ -954,7 +954,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 
                 <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
@@ -1093,7 +1093,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <!-- VIEW (DETAILS) -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
                 <div class="card">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <tbody>
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>

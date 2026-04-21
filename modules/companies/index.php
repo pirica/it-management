@@ -186,7 +186,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             <!-- Companies Data Table -->
             <div class="card">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>

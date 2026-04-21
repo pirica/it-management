@@ -168,7 +168,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
 
             <!-- DATA TABLE -->
             <div class="card">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>

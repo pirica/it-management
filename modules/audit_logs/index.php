@@ -418,7 +418,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             <!-- LOG DATA TABLE -->
             <div class="card audit-table-wrap">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                         <tr>
                             <th style="width:36px;">Select <input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
