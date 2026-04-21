@@ -635,6 +635,7 @@ CREATE TABLE `employee_system_access` (
   UNIQUE KEY `uq_employee_system_access_company_employee` (`company_id`,`employee_id`),
   KEY `idx_employee_system_access_company` (`company_id`),
   KEY `fk_employee_system_access_employee` (`employee_id`),
+  CONSTRAINT `fk_employee_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_employee_system_access_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `employee_system_access_relations`
@@ -652,6 +653,7 @@ CREATE TABLE `employee_system_access_relations` (
   KEY `idx_esa_rel_company_employee` (`company_id`,`employee_id`),
   KEY `idx_esa_rel_system_access` (`system_access_id`),
   KEY `fk_esa_rel_employee` (`employee_id`),
+  CONSTRAINT `fk_esa_rel_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_esa_rel_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_esa_rel_system_access` FOREIGN KEY (`system_access_id`) REFERENCES `system_access` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
