@@ -94,6 +94,36 @@ function equipment_table_varchar_length(mysqli $conn, string $table, string $col
     return 0;
 }
 
+function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $excludeId = 0): bool
+{
+    if ($companyId <= 0 || trim($name) === '') {
+        return false;
+    }
+
+    $sql = 'SELECT id FROM equipment WHERE company_id = ? AND name = ?';
+    $types = 'is';
+    $params = [$companyId, $name];
+
+    if ($excludeId > 0) {
+        $sql .= ' AND id <> ?';
+        $types .= 'i';
+        $params[] = $excludeId;
+    }
+
+    $sql .= ' LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $exists = $result && mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+    return $exists;
+}
+
 function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentId): void
 {
     if ($equipmentId <= 0 || $companyId <= 0) {
@@ -325,6 +355,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($data['name'] === '' || (int)$data['equipment_type_id'] <= 0) {
         $error = 'Please fill required fields: Name, Type.';
+    } elseif (equipment_name_exists($conn, (int)$company_id, $data['name'], $isEdit ? (int)$id : 0)) {
+        $error = 'Equipment name already exists for this company.';
     } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
         $error = 'Please fill required field: RJ45 Ports for switch equipment.';
     }
