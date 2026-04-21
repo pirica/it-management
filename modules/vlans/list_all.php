@@ -230,6 +230,28 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+
+function cr_vlan_name_exists($conn, $table, $vlanName, $companyId, $excludeId = 0) {
+    $trimmedName = trim((string)$vlanName);
+    if ($trimmedName === '') {
+        return false;
+    }
+
+    $escapedName = mysqli_real_escape_string($conn, $trimmedName);
+    $sql = 'SELECT id FROM ' . cr_escape_identifier($table)
+        . " WHERE vlan_name='" . $escapedName . "'";
+    if ((int)$companyId > 0) {
+        $sql .= ' AND company_id=' . (int)$companyId;
+    }
+    if ((int)$excludeId > 0) {
+        $sql .= ' AND id<>' . (int)$excludeId;
+    }
+    $sql .= ' LIMIT 1';
+
+    $result = mysqli_query($conn, $sql);
+    return ($result && mysqli_num_rows($result) > 0);
+}
+
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -380,6 +402,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         } else {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+        }
+    }
+
+
+    if (isset($data['vlan_name']) && trim((string)($_POST['vlan_name'] ?? '')) !== '') {
+        $checkEditId = ($crud_action === 'edit') ? (int)$editId : 0;
+        if (cr_vlan_name_exists($conn, $crud_table, (string)$_POST['vlan_name'], (int)$company_id, $checkEditId)) {
+            $errors[] = 'Vlan Name must be unique.';
         }
     }
 
