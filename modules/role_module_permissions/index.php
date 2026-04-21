@@ -185,6 +185,20 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_boolean_field($columnType, $fieldName) {
+    $type = strtolower((string)$columnType);
+    if (preg_match('/^tinyint(\(\d+\))?/i', $type)) {
+        return true;
+    }
+    if (preg_match('/^(bit|bool|boolean)\b/i', $type)) {
+        return true;
+    }
+    if (in_array((string)$fieldName, ['can_view', 'can_create', 'can_edit', 'can_delete'], true)) {
+        return true;
+    }
+    return false;
+}
+
 function cr_render_cell_value($table, $field, $value, $displayValue = null) {
     if ($field === 'color') {
         $color = (string)($value ?? '');
@@ -202,6 +216,11 @@ function cr_render_cell_value($table, $field, $value, $displayValue = null) {
     if ($field === 'is_closed') {
         $isClosed = ((int)$value === 1);
         return '<span class="badge ' . ($isClosed ? 'badge-danger' : 'badge-success') . '">' . ($isClosed ? 'Closed' : 'Open') . '</span>';
+    }
+
+    if ($table === 'role_module_permissions' && in_array($field, ['can_view', 'can_create', 'can_edit', 'can_delete'], true)) {
+        $isChecked = ((int)$value === 1);
+        return '<label class="itm-checkbox-control" style="pointer-events:none;opacity:.95;"><input type="checkbox" disabled ' . ($isChecked ? 'checked' : '') . '><span>' . ($isChecked ? '✅' : '❌') . '</span></label>';
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -606,8 +625,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
-        if ($isTinyInt) {
+        if (cr_is_boolean_field((string)$col['Type'], $name)) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -916,7 +934,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
+                        $isBoolean = cr_is_boolean_field((string)$col['Type'], $name);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
@@ -927,7 +945,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
-                            <?php elseif ($isTinyInt): ?>
+                            <?php elseif ($isBoolean): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
