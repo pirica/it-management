@@ -3486,7 +3486,7 @@ LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_
 WHERE t.`company_id` = @replicate_source_company_id
   AND dt_target.`id` IS NOT NULL;
 INSERT IGNORE INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`)
+INSERT IGNORE INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`)
 SELECT
     c.`id`,
     t.`name`,
@@ -3564,7 +3564,7 @@ WHERE NOT EXISTS (
     FROM `user_companies` uc
     WHERE uc.`user_id` = u.`id` AND uc.`company_id` = c.`id`
 );
-INSERT INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `created_at`)
+INSERT IGNORE INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `created_at`)
 SELECT
     c.`id`,
     t.`ticket_external_code`,
