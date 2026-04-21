@@ -162,6 +162,40 @@ function cr_username_for_user_id($userId) {
     return $username;
 }
 
+
+function cr_attempt_email_is_active(mysqli $conn, $email) {
+    $normalizedEmail = strtolower(trim((string)$email));
+    if ($normalizedEmail === '') {
+        return 0;
+    }
+
+    $userStmt = mysqli_prepare($conn, 'SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ""))) = ? LIMIT 1');
+    if ($userStmt) {
+        mysqli_stmt_bind_param($userStmt, 's', $normalizedEmail);
+        mysqli_stmt_execute($userStmt);
+        $userRes = mysqli_stmt_get_result($userStmt);
+        $userFound = $userRes && mysqli_num_rows($userRes) > 0;
+        mysqli_stmt_close($userStmt);
+        if ($userFound) {
+            return 1;
+        }
+    }
+
+    $employeeStmt = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ""))) = ? LIMIT 1');
+    if ($employeeStmt) {
+        mysqli_stmt_bind_param($employeeStmt, 's', $normalizedEmail);
+        mysqli_stmt_execute($employeeStmt);
+        $employeeRes = mysqli_stmt_get_result($employeeStmt);
+        $employeeFound = $employeeRes && mysqli_num_rows($employeeRes) > 0;
+        mysqli_stmt_close($employeeStmt);
+        if ($employeeFound) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 function cr_pick_display_ip($value) {
     $raw = trim((string)($value ?? ''));
     if ($raw === '') {
@@ -482,7 +516,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
@@ -560,6 +594,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         } else {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
+    }
+
+    if (empty($errors) && $crud_table === 'attempts' && array_key_exists('active', $data)) {
+        $attemptEmail = trim((string)($_POST['email'] ?? ''));
+        $data['active'] = (string)cr_attempt_email_is_active($conn, $attemptEmail);
     }
 
     if (empty($errors)) {
@@ -785,7 +824,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime') || str_starts_with($col['Type'], 'timestamp');
                         $isText = str_contains($col['Type'], 'text');
@@ -847,7 +886,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php if ($f === 'active'): ?>
+                                        <label class="itm-checkbox-control" style="display:inline-flex;align-items:center;gap:8px;">
+                                            <input type="checkbox" disabled <?php echo ((int)($data[$f] ?? 0) === 1) ? 'checked' : ''; ?>>
+                                            <span><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></span>
+                                        </label>
+                                    <?php else: ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

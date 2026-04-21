@@ -15,9 +15,18 @@ $csrfToken = itm_get_csrf_token();
  */
 function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $email = null, ?int $userId = null): void
 {
-    $stmt = mysqli_prepare($conn, "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id) VALUES ('password_reset', ?, ?, ?, ?)");
+    $stmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id, active)
+         VALUES ('password_reset', ?, ?, ?, ?, IF(
+            EXISTS(SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1)
+            OR EXISTS(SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1),
+            1,
+            0
+         ))"
+    );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssi', $attemptType, $ipAddress, $email, $userId);
+        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $email, $userId, $email, $email);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }

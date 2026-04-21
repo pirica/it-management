@@ -16,11 +16,20 @@ $csrfToken = itm_get_csrf_token();
  * Why: Password reset completion is public, so we record attempts to enforce
  * per-IP/per-account throttles and reduce brute-force pressure.
  */
-function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAddress, ?int $userId = null): void
+function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAddress, ?int $userId = null, ?string $email = null): void
 {
-    $stmt = mysqli_prepare($conn, "INSERT INTO attempts (attempt_source, attempt_type, ip_address, user_id) VALUES ('password_reset', 'reset', ?, ?)");
+    $stmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, user_id, email, active)
+         VALUES ('password_reset', 'reset', ?, ?, ?, IF(
+            EXISTS(SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1)
+            OR EXISTS(SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1),
+            1,
+            0
+         ))"
+    );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'si', $ipAddress, $userId);
+        mysqli_stmt_bind_param($stmt, 'sisss', $ipAddress, $userId, $email, $email, $email);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
@@ -76,19 +85,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     // Why: Keep auth attempt IP selection consistent with login and forgot-password flows.
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
     $matchedUserId = null;
+    $matchedUserEmail = null;
 
     // Look up a valid, unexpired token hash before attempting an update.
-    $findUserStmt = mysqli_prepare($conn, 'SELECT id FROM users WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1');
+    $findUserStmt = mysqli_prepare($conn, 'SELECT id, email FROM users WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1');
     if ($findUserStmt) {
         mysqli_stmt_bind_param($findUserStmt, 's', $tokenHash);
         mysqli_stmt_execute($findUserStmt);
-        mysqli_stmt_bind_result($findUserStmt, $matchedUserId);
+        mysqli_stmt_bind_result($findUserStmt, $matchedUserId, $matchedUserEmail);
         mysqli_stmt_fetch($findUserStmt);
         mysqli_stmt_close($findUserStmt);
     }
 
     $isRateLimited = itm_is_password_reset_completion_rate_limited($conn, $requestIp, $matchedUserId);
-    itm_record_password_reset_completion_attempt($conn, $requestIp, $matchedUserId);
+    itm_record_password_reset_completion_attempt($conn, $requestIp, $matchedUserId, $matchedUserEmail);
 
     if (!$isRateLimited && $matchedUserId !== null) {
         // Hash the new password before storing it.
