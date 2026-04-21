@@ -349,7 +349,7 @@ INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `
 -- Table structure for `forecast_revisions_status`
 DROP TABLE IF EXISTS `forecast_revisions_status`;
 CREATE TABLE `forecast_revisions_status` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -3356,7 +3356,7 @@ INSERT IGNORE INTO `equipment_types` (`company_id`, `name`, `code`, `field_edit_
 INSERT IGNORE INTO `inventory_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `inventory_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `location_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `location_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `manufacturers` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `manufacturers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `forecast_revisions_status` (`company_id`, `name`, `active`) SELECT c.`id`, t.`name`, t.`active` FROM `forecast_revisions_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `forecast_revisions_status` (`company_id`, `status`, `active`) SELECT c.`id`, t.`status`, t.`active` FROM `forecast_revisions_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `approvals_stage` (`company_id`, `name`, `active`) SELECT c.`id`, t.`name`, t.`active` FROM `approvals_stage` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `catalogs` (`company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) SELECT c.`id`, t.`model`, t.`equipment_type_id`, t.`image_url`, t.`price`, t.`supplier_id`, t.`manufacturer_id`, t.`product_url`, t.`active` FROM `catalogs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `printer_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `printer_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
