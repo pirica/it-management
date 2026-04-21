@@ -1,6 +1,6 @@
 <?php
 /**
- * 📚 Chart of Accounts Module - Index
+ * 📚 DL Accounts Module - Index
  * 
  * Uses the flattened master CRUD pattern to display a sortable, searchable list 
  * of gl accounts records.
@@ -8,7 +8,7 @@
  */
 
 $crud_table = 'gl_accounts';
-$crud_title = '📚 GL Accounts';
+$crud_title = '📚 DL Accounts';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
