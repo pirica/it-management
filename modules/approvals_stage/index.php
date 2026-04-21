@@ -834,15 +834,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
 
-        $dbErrorCode = 0; $dbErrorMessage = '';
-            if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-                $insertedRows++;
-                $insertedId = (int)mysqli_insert_id($conn);
-                if ((int)($ui_config["enable_audit_logs"] ?? 1) === 1) {
-                    itm_log_audit($conn, $crud_table, $insertedId, "INSERT", null, $rowData);
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            if ((int)($ui_config["enable_audit_logs"] ?? 1) === 1) {
+                if ($crud_action === 'create') {
+                    $insertedId = (int)mysqli_insert_id($conn);
+                    itm_log_audit($conn, $crud_table, $insertedId, 'INSERT', null, $data);
+                } else {
+                    itm_log_audit($conn, $crud_table, (int)$editId, 'UPDATE', null, $data);
                 }
             }
-        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        } else {
+            $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        }
     }
 }
 
