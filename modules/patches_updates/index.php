@@ -612,7 +612,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
-                continue;
+                $insertedId = (int)mysqli_insert_id($conn);
+                if ((int)($ui_config["enable_audit_logs"] ?? 1) === 1) {
+                    itm_log_audit($conn, $crud_table, $insertedId, "INSERT", null, $rowData);
+                }
             }
 
             $failedRows++;
@@ -934,9 +937,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $dbErrorCode = 0;
         $dbErrorMessage = '';
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            foreach ($patchPhotoFilenamesToDeleteAfterSave as $photoToDelete) {
-                @unlink(TICKET_UPLOAD_PATH . $photoToDelete);
+            if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+                $insertedRows++;
+                $insertedId = (int)mysqli_insert_id($conn);
+                if ((int)($ui_config["enable_audit_logs"] ?? 1) === 1) {
+                    itm_log_audit($conn, $crud_table, $insertedId, "INSERT", null, $rowData);
+                }
             }
 
             header('Location: ' . $listUrl);
