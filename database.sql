@@ -3599,12 +3599,50 @@ LEFT JOIN `equipment` e_source ON e_source.`id` = t.`asset_id`
 LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
 WHERE t.`company_id` = @replicate_source_company_id
   AND COALESCE(u_creator_target.`id`, u_fallback.`id`) IS NOT NULL;
-INSERT IGNORE INTO `ui_configuration` (`company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`user_id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`enable_audit_logs`, t.`records_per_page`, t.`app_name`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id` AND u.`user_id` = t.`user_id`);
+INSERT IGNORE INTO `ui_configuration` (
+    `company_id`,
+    `user_id`,
+    `table_actions_position`,
+    `new_button_position`,
+    `export_buttons_position`,
+    `back_save_position`,
+    `enable_all_error_reporting`,
+    `enable_audit_logs`,
+    `records_per_page`,
+    `app_name`,
+    `favicon_path`,
+    `equipment_type_sidebar_visibility`,
+    `created_at`,
+    `updated_at`
+)
+SELECT
+    c.`id`,
+    t.`user_id`,
+    t.`table_actions_position`,
+    t.`new_button_position`,
+    t.`export_buttons_position`,
+    t.`back_save_position`,
+    t.`enable_all_error_reporting`,
+    t.`enable_audit_logs`,
+    t.`records_per_page`,
+    t.`app_name`,
+    t.`favicon_path`,
+    t.`equipment_type_sidebar_visibility`,
+    t.`created_at`,
+    t.`updated_at`
+FROM `ui_configuration` t
+JOIN `companies` c
+    ON c.`id` <> t.`company_id`
+WHERE t.`company_id` = @replicate_source_company_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `ui_configuration` u
+      WHERE u.`company_id` = c.`id`
+        AND u.`user_id` = t.`user_id`
+  );
 INSERT IGNORE INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 -- Workstations are tenant-specific and reference tenant-bound records.
 -- Keep this table empty on bootstrap to avoid cross-company foreign key mismatches.
-
-
 
 -- Build database-level audit triggers for every application table.
 DROP TRIGGER IF EXISTS `trg_access_levels_audit_insert`;
