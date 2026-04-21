@@ -1,0 +1,1213 @@
+<?php
+require '../../config/config.php';
+
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$isEdit = $id > 0;
+$error = '';
+$success = isset($_GET['saved']) && $_GET['saved'] === '1';
+$originalData = null;
+$csrfToken = itm_get_csrf_token();
+
+function fetch_options($conn, $table, $label = 'name', $where = '') {
+    $items = [];
+    if (!equipment_table_exists($conn, $table)) {
+        return $items;
+    }
+    $hasCompanyColumn = equipment_table_has_column($conn, $table, 'company_id');
+    $companyScope = ($hasCompanyColumn && isset($GLOBALS['company_id']) && (int)$GLOBALS['company_id'] > 0)
+        ? 'company_id = ' . (int)$GLOBALS['company_id']
+        : '';
+
+    $where = trim((string)$where);
+    if ($companyScope !== '') {
+        if ($where === '') {
+            $where = 'WHERE ' . $companyScope;
+        } elseif (stripos($where, 'where') === 0) {
+            $where .= ' AND ' . $companyScope;
+        } else {
+            $where = 'WHERE ' . $where . ' AND ' . $companyScope;
+        }
+    }
+
+    $res = mysqli_query($conn, "SELECT id, $label AS label FROM $table $where ORDER BY $label");
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $items[] = $row;
+    }
+    return $items;
+}
+
+function equipment_table_exists(mysqli $conn, string $table): bool
+{
+    static $cache = [];
+
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $res = mysqli_query(
+        $conn,
+        "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$tableEsc}' LIMIT 1"
+    );
+
+    $cache[$table] = $res && mysqli_num_rows($res) > 0;
+    return $cache[$table];
+}
+
+function equipment_table_has_column(mysqli $conn, string $table, string $column): bool
+{
+    if (!equipment_table_exists($conn, $table)) {
+        return false;
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
+}
+
+function equipment_table_varchar_length(mysqli $conn, string $table, string $column): int
+{
+    static $cache = [];
+
+    $cacheKey = $table . '.' . $column;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    if (!equipment_table_exists($conn, $table)) {
+        $cache[$cacheKey] = 0;
+        return 0;
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    $type = strtolower((string)($row['Type'] ?? ''));
+    if (preg_match('/^varchar\((\d+)\)$/', $type, $matches) === 1) {
+        $cache[$cacheKey] = (int)$matches[1];
+        return $cache[$cacheKey];
+    }
+
+    $cache[$cacheKey] = 0;
+    return 0;
+}
+
+function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $excludeId = 0): bool
+{
+    if ($companyId <= 0 || trim($name) === '') {
+        return false;
+    }
+
+    $sql = 'SELECT id FROM equipment WHERE company_id = ? AND name = ?';
+    $types = 'is';
+    $params = [$companyId, $name];
+
+    if ($excludeId > 0) {
+        $sql .= ' AND id <> ?';
+        $types .= 'i';
+        $params[] = $excludeId;
+    }
+
+    $sql .= ' LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $exists = $result && mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+    return $exists;
+}
+
+function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentId): void
+{
+    if ($equipmentId <= 0 || $companyId <= 0) {
+        return;
+    }
+
+    $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
+    $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
+    $companyFilter = $hasCompanyColumn
+        ? " AND company_id = '" . mysqli_real_escape_string($conn, (string)$companyId) . "'"
+        : '';
+    mysqli_query(
+        $conn,
+        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
+    );
+}
+
+function equipment_detect_upload_mime(array $file): string
+{
+    $tmpName = (string)($file['tmp_name'] ?? '');
+    if ($tmpName === '' || !is_file($tmpName)) {
+        return '';
+    }
+
+    if (function_exists('finfo_open') && defined('FILEINFO_MIME_TYPE')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = (string)@finfo_file($finfo, $tmpName);
+            @finfo_close($finfo);
+            if ($mime !== '') {
+                return strtolower($mime);
+            }
+        }
+    }
+
+    if (function_exists('mime_content_type')) {
+        $mime = (string)@mime_content_type($tmpName);
+        if ($mime !== '') {
+            return strtolower($mime);
+        }
+    }
+
+    $imageInfo = @getimagesize($tmpName);
+    if (is_array($imageInfo) && isset($imageInfo['mime']) && $imageInfo['mime'] !== '') {
+        return strtolower((string)$imageInfo['mime']);
+    }
+
+    $extension = strtolower((string)pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
+    $extensionMimeMap = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+    ];
+    return $extensionMimeMap[$extension] ?? '';
+}
+
+function equipment_parse_photo_filenames($rawValue): array
+{
+    if ($rawValue === null) {
+        return [];
+    }
+
+    $value = trim((string)$rawValue);
+    if ($value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        $items = $decoded;
+    } elseif (str_contains($value, ',')) {
+        $items = explode(',', $value);
+    } else {
+        $items = [$value];
+    }
+
+    $filenames = [];
+    foreach ($items as $item) {
+        $filename = basename((string)$item);
+        if ($filename !== '') {
+            $filenames[$filename] = $filename;
+        }
+    }
+
+    return array_values($filenames);
+}
+
+function equipment_encode_photo_filenames(array $filenames): string
+{
+    $clean = [];
+    foreach ($filenames as $filename) {
+        $base = basename((string)$filename);
+        if ($base !== '') {
+            $clean[$base] = $base;
+        }
+    }
+    $clean = array_values($clean);
+
+    if (count($clean) === 0) {
+        return '';
+    }
+    if (count($clean) === 1) {
+        return $clean[0];
+    }
+
+    return json_encode($clean, JSON_UNESCAPED_SLASHES);
+}
+
+$types = fetch_options($conn, 'equipment_types');
+$manufacturers = fetch_options($conn, 'manufacturers');
+$locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
+$locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
+$racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
+$idfs = fetch_options($conn, 'idfs', 'name', "WHERE company_id = $company_id");
+$rackStatuses = fetch_options($conn, 'rack_statuses');
+$statuses = fetch_options($conn, 'equipment_statuses');
+$defaultStatusId = '';
+foreach ($statuses as $statusItem) {
+    if (strcasecmp((string)$statusItem['label'], 'Active') === 0) {
+        $defaultStatusId = (string)$statusItem['id'];
+        break;
+    }
+}
+if ($defaultStatusId === '' && !empty($statuses)) {
+    $defaultStatusId = (string)$statuses[0]['id'];
+}
+if ($defaultStatusId === '') {
+    $defaultStatusId = '1';
+}
+$warrantyTypes = fetch_options($conn, 'warranty_types');
+$printerTypes = fetch_options($conn, 'printer_device_types');
+$workstationDeviceTypes = fetch_options($conn, 'workstation_device_types');
+$workstationOsTypes = fetch_options($conn, 'workstation_os_types');
+$workstationOsVersions = fetch_options($conn, 'workstation_os_versions');
+$workstationRamOptions = fetch_options($conn, 'workstation_ram');
+$workstationOfficeOptions = fetch_options($conn, 'workstation_office');
+$switchRj45Options = fetch_options($conn, 'equipment_rj45');
+$switchFiberOptions = fetch_options($conn, 'equipment_fiber');
+$switchFiberPatchOptions = fetch_options($conn, 'equipment_fiber_patch');
+$switchFiberRackOptions = fetch_options($conn, 'equipment_fiber_rack');
+$switchPoeOptions = fetch_options($conn, 'equipment_poe');
+$switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
+$switchFiberCountOptions = fetch_options($conn, 'equipment_fiber_count');
+$switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_layout');
+$hasWorkstationOfficeIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_office_id');
+$hasWorkstationOsVersionIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_version_id');
+$hasWorkstationRamIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_ram_id');
+$hasWorkstationStorageColumn = equipment_table_has_column($conn, 'equipment', 'workstation_storage');
+$hasWorkstationOsInstalledOnColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_installed_on');
+$hasSwitchFiberPortLabelColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_port_label');
+
+$switchTypeId = 0;
+$serverTypeId = 0;
+$printerTypeId = 0;
+foreach ($types as $typeItem) {
+    if (strcasecmp((string)$typeItem['label'], 'Switch') === 0) {
+        $switchTypeId = (int)$typeItem['id'];
+    }
+    if (strcasecmp((string)$typeItem['label'], 'Server') === 0) {
+        $serverTypeId = (int)$typeItem['id'];
+    }
+    if (strcasecmp((string)$typeItem['label'], 'Printer') === 0) {
+        $printerTypeId = (int)$typeItem['id'];
+    }
+}
+
+$data = [
+    'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'idf_id' => '', 'name' => '',
+    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '',
+    'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
+    'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
+    'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
+    'workstation_office_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
+    'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
+    'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_count_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
+    'notes' => '', 'photo_filename' => '', 'active' => 1
+];
+
+if ($isEdit) {
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && mysqli_num_rows($res) === 1) {
+            $data = array_merge($data, mysqli_fetch_assoc($res));
+            if (empty($data['switch_port_numbering_layout_id'])) {
+                $data['switch_port_numbering_layout_id'] = '1';
+            }
+            $originalData = $data;
+        } else {
+            $error = 'Equipment record not found.';
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+    foreach ($data as $k => $v) {
+        if (in_array($k, ['printer_color_capable', 'printer_scan'], true)) {
+            $data[$k] = isset($_POST[$k]) ? 1 : 0;
+        } elseif ($k === 'photo_filename') {
+            $data[$k] = $isEdit ? (string)($originalData['photo_filename'] ?? $v) : '';
+        } elseif ($k === 'active') {
+            $postedActive = $_POST['active'] ?? $data['active'];
+            $data[$k] = (int)$postedActive === 1 ? 1 : 0;
+        } else {
+            $data[$k] = trim($_POST[$k] ?? '');
+        }
+    }
+
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_fiber_count_id','switch_poe_id','switch_environment_id'] as $fkField) {
+        if (($data[$fkField] ?? '') === '__add_new__') {
+            $data[$fkField] = '';
+        }
+    }
+    $data['switch_fiber_ports_number'] = isset($_POST['switch_fiber_ports_number']) ? substr(trim((string)$_POST['switch_fiber_ports_number']), 0, 50) : '';
+    $data['switch_fiber_port_label'] = isset($_POST['switch_fiber_port_label']) ? substr(trim((string)$_POST['switch_fiber_port_label']), 0, 100) : '';
+
+    if ((int)$data['status_id'] <= 0) {
+        $data['status_id'] = $defaultStatusId;
+    }
+
+    $isSwitchEquipment = $switchTypeId > 0 && (int)$data['equipment_type_id'] === $switchTypeId;
+    $isServerEquipment = $serverTypeId > 0 && (int)$data['equipment_type_id'] === $serverTypeId;
+
+    if ($data['name'] === '' || (int)$data['equipment_type_id'] <= 0) {
+        $error = 'Please fill required fields: Name, Type.';
+    } elseif (equipment_name_exists($conn, (int)$company_id, $data['name'], $isEdit ? (int)$id : 0)) {
+        $error = 'Equipment name already exists for this company.';
+    } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
+        $error = 'Please fill required field: RJ45 Ports for switch equipment.';
+    }
+
+    if (!$error && $data['mac_address'] !== '') {
+        $macColumnLength = equipment_table_varchar_length($conn, 'equipment', 'mac_address');
+        if ($macColumnLength > 0 && strlen($data['mac_address']) > $macColumnLength) {
+            $error = 'MAC Address is too long. Maximum allowed is ' . $macColumnLength . ' characters.';
+        }
+    }
+
+    $photoFilenames = equipment_parse_photo_filenames($data['photo_filename']);
+    $photoFilenamesToDeleteAfterSave = [];
+    $deleteCurrentPhoto = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
+    $deletePhotoIndexesRaw = trim((string)($_POST['delete_photo_indexes'] ?? ''));
+    $deletePhotoIndexes = [];
+    if ($deletePhotoIndexesRaw !== '') {
+        $deletePhotoIndexes = array_values(array_unique(array_filter(array_map(static function ($indexValue) {
+            if (!is_numeric($indexValue)) {
+                return null;
+            }
+            $index = (int)$indexValue;
+            return $index >= 0 ? $index : null;
+        }, explode(',', $deletePhotoIndexesRaw)), static function ($value) {
+            return $value !== null;
+        })));
+    }
+    if (!$error && $isEdit && $deleteCurrentPhoto && !empty($photoFilenames)) {
+        $photoFilenamesToDeleteAfterSave = array_values(array_unique(array_merge(
+            $photoFilenamesToDeleteAfterSave,
+            $photoFilenames
+        )));
+        $photoFilenames = [];
+    } elseif (!$error && $isEdit && !empty($deletePhotoIndexes) && !empty($photoFilenames)) {
+        foreach ($deletePhotoIndexes as $deletePhotoIndex) {
+            if (!array_key_exists($deletePhotoIndex, $photoFilenames)) {
+                continue;
+            }
+            $photoFilenamesToDeleteAfterSave[] = (string)$photoFilenames[$deletePhotoIndex];
+            unset($photoFilenames[$deletePhotoIndex]);
+        }
+        $photoFilenames = array_values($photoFilenames);
+        $photoFilenamesToDeleteAfterSave = array_values(array_unique($photoFilenamesToDeleteAfterSave));
+    }
+
+    if (
+        !$error
+        && isset($_FILES['photo'])
+        && is_array($_FILES['photo']['error'] ?? null)
+    ) {
+        $uploadedPhotoFilenames = [];
+        $fileCount = count($_FILES['photo']['error']);
+
+        for ($index = 0; $index < $fileCount; $index++) {
+            $fileError = (int)($_FILES['photo']['error'][$index] ?? UPLOAD_ERR_NO_FILE);
+            if ($fileError === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            if ($fileError !== UPLOAD_ERR_OK) {
+                $error = 'One of the photo uploads failed.';
+                break;
+            }
+
+            $fileSize = (int)($_FILES['photo']['size'][$index] ?? 0);
+            if ($fileSize > MAX_FILE_SIZE) {
+                $error = 'One of the photos exceeds max allowed size.';
+                break;
+            }
+
+            $currentFile = [
+                'tmp_name' => $_FILES['photo']['tmp_name'][$index] ?? '',
+                'name' => $_FILES['photo']['name'][$index] ?? '',
+            ];
+            $mime = equipment_detect_upload_mime($currentFile);
+            if (!in_array($mime, ALLOWED_TYPES, true)) {
+                $error = 'One of the uploaded files has an unsupported image type.';
+                break;
+            }
+
+            if (!is_dir(UPLOAD_PATH)) {
+                @mkdir(UPLOAD_PATH, 0775, true);
+            }
+
+            $ext = pathinfo((string)$currentFile['name'], PATHINFO_EXTENSION);
+            $photoFilename = 'equipment_' . time() . '_' . mt_rand(1000, 9999) . '_' . $index . '.' . strtolower((string)$ext);
+            if (!move_uploaded_file((string)$currentFile['tmp_name'], UPLOAD_PATH . $photoFilename)) {
+                $error = 'Unable to save one of the uploaded photos.';
+                break;
+            }
+            $uploadedPhotoFilenames[] = $photoFilename;
+        }
+
+        if ($error !== '' && !empty($uploadedPhotoFilenames)) {
+            foreach ($uploadedPhotoFilenames as $uploadedPhotoFilename) {
+                $uploadedPath = UPLOAD_PATH . $uploadedPhotoFilename;
+                if (is_file($uploadedPath)) {
+                    @unlink($uploadedPath);
+                }
+            }
+        } elseif (!$error && !empty($uploadedPhotoFilenames)) {
+            $photoFilenames = array_values(array_unique(array_merge($photoFilenames, $uploadedPhotoFilenames)));
+        }
+    }
+
+    if (!$error) {
+        $equipment_type_id = (int)$data['equipment_type_id'];
+        $manufacturer_id = (int)$data['manufacturer_id'] ?: 'NULL';
+        $location_id = (int)$data['location_id'] ?: 'NULL';
+        $rack_id = (int)$data['rack_id'] ?: 'NULL';
+        $idf_id = (int)$data['idf_id'] ?: 'NULL';
+        $name = "'" . escape_sql($data['name'], $conn) . "'";
+        $serial_number = $data['serial_number'] === '' ? 'NULL' : "'" . escape_sql($data['serial_number'], $conn) . "'";
+        $model = $data['model'] === '' ? 'NULL' : "'" . escape_sql($data['model'], $conn) . "'";
+        $hostname = $data['hostname'] === '' ? 'NULL' : "'" . escape_sql($data['hostname'], $conn) . "'";
+        $ip_address = $data['ip_address'] === '' ? 'NULL' : "'" . escape_sql($data['ip_address'], $conn) . "'";
+        $patch_port = $data['patch_port'] === '' ? 'NULL' : "'" . escape_sql($data['patch_port'], $conn) . "'";
+        $mac_address = $data['mac_address'] === '' ? 'NULL' : "'" . escape_sql($data['mac_address'], $conn) . "'";
+        $status_id = (int)$data['status_id'] ?: 'NULL';
+        $purchase_date = $data['purchase_date'] === '' ? 'NULL' : "'" . escape_sql($data['purchase_date'], $conn) . "'";
+        $purchase_cost = $data['purchase_cost'] === '' ? 'NULL' : (float)$data['purchase_cost'];
+        $warranty_expiry = $data['warranty_expiry'] === '' ? 'NULL' : "'" . escape_sql($data['warranty_expiry'], $conn) . "'";
+        $certificate_expiry = ($isServerEquipment && $data['certificate_expiry'] !== '')
+            ? "'" . escape_sql($data['certificate_expiry'], $conn) . "'"
+            : 'NULL';
+        $warranty_type_id = (int)$data['warranty_type_id'] ?: 'NULL';
+        $printer_device_type_id = (int)$data['printer_device_type_id'] ?: 'NULL';
+        $printer_color_capable = (int)$data['printer_color_capable'];
+        $printer_scan = (int)$data['printer_scan'];
+        $workstation_device_type_id = (int)$data['workstation_device_type_id'] ?: 'NULL';
+        $workstation_os_type_id = (int)$data['workstation_os_type_id'] ?: 'NULL';
+        $workstation_office_id = (int)$data['workstation_office_id'] ?: 'NULL';
+        $workstation_os_version_id = (int)$data['workstation_os_version_id'] ?: 'NULL';
+        $workstation_ram_id = (int)$data['workstation_ram_id'] ?: 'NULL';
+        $workstation_processor = $data['workstation_processor'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_processor'], $conn) . "'";
+        $workstation_storage = $data['workstation_storage'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_storage'], $conn) . "'";
+        $workstation_os_installed_on = $data['workstation_os_installed_on'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_os_installed_on'], $conn) . "'";
+        $switch_rj45_id = (int)$data['switch_rj45_id'] ?: 'NULL';
+        $switch_port_numbering_layout_id = (int)$data['switch_port_numbering_layout_id'] ?: '1';
+        $switch_fiber_id = (int)$data['switch_fiber_id'] ?: 'NULL';
+        $switch_fiber_patch_id = (int)$data['switch_fiber_patch_id'] ?: 'NULL';
+        $switch_fiber_rack_id = (int)$data['switch_fiber_rack_id'] ?: 'NULL';
+        $switch_fiber_count_id = (int)$data['switch_fiber_count_id'] ?: 'NULL';
+        $switch_fiber_ports_number = $data['switch_fiber_ports_number'] === ''
+            ? 'NULL'
+            : "'" . escape_sql($data['switch_fiber_ports_number'], $conn) . "'";
+        $switch_fiber_port_label = $data['switch_fiber_port_label'] === ''
+            ? 'NULL'
+            : "'" . escape_sql($data['switch_fiber_port_label'], $conn) . "'";
+        $switch_poe_id = (int)$data['switch_poe_id'] ?: 'NULL';
+        $switch_environment_id = (int)$data['switch_environment_id'] ?: 'NULL';
+        $notes = $data['notes'] === '' ? 'NULL' : "'" . escape_sql($data['notes'], $conn) . "'";
+        $encodedPhotoFilenames = equipment_encode_photo_filenames($photoFilenames);
+        $photo = $encodedPhotoFilenames === '' ? 'NULL' : "'" . escape_sql($encodedPhotoFilenames, $conn) . "'";
+        $active = (int)$data['active'];
+
+        $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
+        $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
+        $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
+        $workstationOsVersionUpdateSql = $hasWorkstationOsVersionIdColumn ? "workstation_os_version_id=$workstation_os_version_id,\n                    " : '';
+        $workstationOsVersionInsertColumns = $hasWorkstationOsVersionIdColumn ? ', workstation_os_version_id' : '';
+        $workstationOsVersionInsertValues = $hasWorkstationOsVersionIdColumn ? ", $workstation_os_version_id" : '';
+        $workstationRamUpdateSql = $hasWorkstationRamIdColumn ? "workstation_ram_id=$workstation_ram_id,\n                    " : '';
+        $workstationRamInsertColumns = $hasWorkstationRamIdColumn ? ', workstation_ram_id' : '';
+        $workstationRamInsertValues = $hasWorkstationRamIdColumn ? ", $workstation_ram_id" : '';
+        $workstationStorageUpdateSql = $hasWorkstationStorageColumn ? "workstation_storage=$workstation_storage,\n                    " : '';
+        $workstationStorageInsertColumns = $hasWorkstationStorageColumn ? ', workstation_storage' : '';
+        $workstationStorageInsertValues = $hasWorkstationStorageColumn ? ", $workstation_storage" : '';
+        $workstationOsInstalledOnUpdateSql = $hasWorkstationOsInstalledOnColumn ? "workstation_os_installed_on=$workstation_os_installed_on,\n                    " : '';
+        $workstationOsInstalledOnInsertColumns = $hasWorkstationOsInstalledOnColumn ? ', workstation_os_installed_on' : '';
+        $workstationOsInstalledOnInsertValues = $hasWorkstationOsInstalledOnColumn ? ", $workstation_os_installed_on" : '';
+        $switchFiberPortLabelUpdateSql = $hasSwitchFiberPortLabelColumn ? "switch_fiber_port_label=$switch_fiber_port_label, " : '';
+        $switchFiberPortLabelInsertColumns = $hasSwitchFiberPortLabelColumn ? ', switch_fiber_port_label' : '';
+        $switchFiberPortLabelInsertValues = $hasSwitchFiberPortLabelColumn ? ", $switch_fiber_port_label" : '';
+
+        if ($isEdit) {
+            $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id, idf_id=$idf_id,
+                    name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
+                    status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
+                    warranty_type_id=$warranty_type_id, printer_device_type_id=$printer_device_type_id,
+                    printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
+                    workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
+                    $workstationOfficeUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
+                    workstation_processor=$workstation_processor, $workstationStorageUpdateSql$workstationOsInstalledOnUpdateSql
+                    switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_count_id=$switch_fiber_count_id, switch_fiber_ports_number=$switch_fiber_ports_number, $switchFiberPortLabelUpdateSql
+                    switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
+                    notes=$notes,
+                    photo_filename=$photo, active=$active
+                    WHERE id=$id AND company_id=$company_id";
+        } else {
+            $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, name, serial_number, model, hostname,
+                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id,
+                    printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
+                    workstation_os_type_id$workstationOfficeInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_count_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, active)
+                    VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $name, $serial_number, $model, $hostname,
+                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id,
+                    $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
+                    $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_count_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+        }
+
+        if (mysqli_query($conn, $sql)) {
+            foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
+                $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
+                if (is_file($existingPhotoPath)) {
+                    @unlink($existingPhotoPath);
+                }
+            }
+            if ($isEdit && $originalData) {
+                $switchConfigChanged = (int)$originalData['switch_rj45_id'] !== (int)$data['switch_rj45_id']
+                    || (int)$originalData['switch_fiber_id'] !== (int)$data['switch_fiber_id']
+                    || (int)$originalData['switch_fiber_patch_id'] !== (int)$data['switch_fiber_patch_id']
+                    || (int)$originalData['switch_fiber_rack_id'] !== (int)$data['switch_fiber_rack_id']
+                    || (int)$originalData['switch_fiber_count_id'] !== (int)$data['switch_fiber_count_id']
+                    || (int)$originalData['switch_fiber_ports_number'] !== (int)$data['switch_fiber_ports_number']
+                    || trim((string)($originalData['switch_fiber_port_label'] ?? '')) !== trim((string)$data['switch_fiber_port_label']);
+                $changedAwayFromSwitch = (int)$originalData['equipment_type_id'] === $switchTypeId && $equipment_type_id !== $switchTypeId;
+
+                if ($switchConfigChanged || $changedAwayFromSwitch) {
+                    $hasEquipmentId = equipment_table_has_column($conn, 'switch_ports', 'equipment_id');
+                    if ($hasEquipmentId) {
+                        mysqli_query(
+                            $conn,
+                            "DELETE FROM switch_ports WHERE company_id = $company_id AND equipment_id = $id"
+                        );
+                    } else {
+                        mysqli_query(
+                            $conn,
+                            "DELETE FROM switch_ports WHERE company_id = $company_id"
+                        );
+                    }
+                }
+
+                if ($changedAwayFromSwitch) {
+                    equipment_delete_idf_data($conn, (int)$company_id, $id);
+                }
+            }
+
+            if ($isEdit) {
+                if ($equipment_type_id === $switchTypeId) {
+                    header('Location: index.php?switch_id=' . $id . '&saved=1&spm=1#switch-port-manager');
+                    exit;
+                }
+                header('Location: edit.php?id=' . $id . '&saved=1');
+                exit;
+            }
+            header('Location: index.php');
+            exit;
+        }
+        $dbErrorCode = (int)mysqli_errno($conn);
+        $dbErrorMessage = (string)mysqli_error($conn);
+        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+    }
+}
+
+function render_options($items, $selected = '') {
+    foreach ($items as $i) {
+        $sel = ((string)$selected === (string)$i['id']) ? 'selected' : '';
+        echo '<option value="' . (int)$i['id'] . '" ' . $sel . '>' . sanitize($i['label']) . '</option>';
+    }
+}
+
+$locationExtraFieldsConfig = [
+    [
+        'name' => 'type_id',
+        'label' => 'Location Type',
+        'type' => 'select',
+        'options' => array_map(static function ($type) {
+            return [
+                'value' => (string)((int)($type['id'] ?? 0)),
+                'label' => (string)($type['label'] ?? ''),
+            ];
+        }, $locationTypes),
+    ],
+];
+$locationExtraFieldsJson = htmlspecialchars(
+    json_encode($locationExtraFieldsConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
+$rackExtraFieldsConfig = [
+    [
+        'name' => 'location_id',
+        'label' => 'Location',
+        'type' => 'select',
+        'options' => array_map(static function ($location) {
+            return [
+                'value' => (string)((int)($location['id'] ?? 0)),
+                'label' => (string)($location['label'] ?? ''),
+            ];
+        }, $locations),
+    ],
+    [
+        'name' => 'status_id',
+        'label' => 'Rack Status',
+        'type' => 'select',
+        'options' => array_map(static function ($status) {
+            return [
+                'value' => (string)((int)($status['id'] ?? 0)),
+                'label' => (string)($status['label'] ?? ''),
+            ];
+        }, $rackStatuses),
+    ],
+];
+$rackExtraFieldsJson = htmlspecialchars(
+    json_encode($rackExtraFieldsConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
+$currentPhotoFilenames = equipment_parse_photo_filenames($data['photo_filename'] ?? '');
+$currentPhotoUrls = [];
+foreach ($currentPhotoFilenames as $currentPhotoFilename) {
+    $currentPhotoUrls[] = UPLOAD_URL . rawurlencode((string)$currentPhotoFilename);
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $isEdit ? 'Edit' : 'New'; ?> Equipment</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+    .photo-preview-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 1200;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .photo-preview-content {
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--border, #ddd);
+        border-radius: 10px;
+        max-width: min(90vw, 900px);
+        max-height: 90vh;
+        overflow: auto;
+        padding: 12px;
+        text-align: center;
+    }
+    .photo-preview-content img {
+        max-width: 100%;
+        max-height: calc(90vh - 120px);
+        border-radius: 8px;
+    }
+    .photo-preview-actions {
+        margin-bottom: 10px;
+        text-align: right;
+    }
+    .photo-preview-trigger {
+        margin-left: 8px;
+    }
+    .photo-preview-gallery {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .photo-preview-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .photo-preview-gallery img {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
+    }
+    .switch-details-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: 14px 20px;
+    }
+    .form-row-3 {
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+    }
+    .switch-details-grid .form-group {
+        margin: 0;
+    }
+    .role-flags-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        margin-top: 8px;
+    }
+    .role-flag-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 38px;
+        padding: 8px 12px;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
+        background: var(--bg-secondary, #f6f8fa);
+        color: var(--text-primary, #24292f);
+        white-space: nowrap;
+    }
+    .role-flag-option input[type="checkbox"] {
+        margin: 0;
+    }
+    .status-field-wrap {
+        margin-top: 12px;
+    }
+    @media (max-width: 1100px) {
+        .switch-details-grid {
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+        }
+    }
+    @media (max-width: 900px) {
+        .form-row-3,
+        .switch-details-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    </style>
+</head>
+<body>
+<div class="container">
+    <?php include '../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <?php include '../../includes/header.php'; ?>
+        <div class="content">
+            <h1><?php echo $isEdit ? '✏️ Edit' : '➕ New'; ?> Equipment</h1>
+            <?php if ($success): ?>
+                <div class="alert alert-success">Equipment updated successfully.</div>
+            <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
+            <?php endif; ?>
+            <div class="card">
+                <form id="equipmentForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
+                <div class="form-group"><label>Type *</label><select name="equipment_type_id" required data-addable-select="1" data-add-table="equipment_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment type"><option value="">-- Select --</option><?php render_options($types, $data['equipment_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack" data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>IDF</label><select class="input" id="idf-rack-select" name="idf_id" data-addable-select="1" data-add-table="idfs" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="idf"><option value="">-- Select IDF --</option><?php render_options($idfs, $data['idf_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Patch Port</label><input name="patch_port" value="<?php echo sanitize($data['patch_port']); ?>"></div><div class="form-group"></div><div class="form-group"></div>
+            </div>
+            <div class="form-row form-row-3"> 
+                <div class="form-group"><label>Hostname</label><input name="hostname" value="<?php echo sanitize($data['hostname']); ?>"></div>
+                <div class="form-group"><label>IP Address</label><input name="ip_address" value="<?php echo sanitize($data['ip_address']); ?>"></div>
+                <div class="form-group"><label>MAC Address</label><input name="mac_address" value="<?php echo sanitize($data['mac_address']); ?>"></div>
+            </div>
+            <div id="printer-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group"><label>Printer Type</label><select name="printer_device_type_id" data-addable-select="1" data-add-table="printer_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="printer type"><option value="">-- None --</option><?php render_options($printerTypes, $data['printer_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="role-flags-grid">
+                        <label class="role-flag-option"><input type="checkbox" name="printer_color_capable" <?php echo (int)$data['printer_color_capable'] === 1 ? 'checked' : ''; ?>> Printer Color Capable</label>
+                        <label class="role-flag-option"><input type="checkbox" name="printer_scan" <?php echo (int)$data['printer_scan'] === 1 ? 'checked' : ''; ?>> Printer & Scan</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
+                <div class="form-group"><label>Model</label><input name="model" value="<?php echo sanitize($data['model']); ?>"></div>
+                <div class="form-group"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
+                <div class="form-group"></div>
+            </div>
+            <div id="server-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group"><label>Certificate Expiry</label><input type="date" name="certificate_expiry" value="<?php echo sanitize($data['certificate_expiry']); ?>"></div>
+                    <div class="form-group"></div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
+                <div class="form-group"><label>Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" value="<?php echo sanitize($data['purchase_cost']); ?>"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Photo Upload</label>
+                    <input type="file" name="photo[]" accept="image/*" multiple>
+                    <div class="form-hint">You can upload one or many photos at once.<?php if ($isEdit): ?> Files upload automatically after selection when editing.<?php endif; ?></div>
+                    <?php if (!empty($currentPhotoFilenames)): ?>
+                        <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
+                        <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
+                    <?php endif; ?>
+                    <div class="form-hint" id="currentPhotoHint">
+                        <span id="currentPhotoHintText"><?php echo !empty($currentPhotoFilenames) ? 'Current photos: ' . count($currentPhotoFilenames) : 'Selected photos: 0'; ?></span>
+                        <button type="button" class="btn btn-sm photo-preview-trigger" id="openPhotoPreview">🔎</button>
+                        <?php if (!empty($currentPhotoFilenames)): ?>
+                            <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>RAM</label><select name="workstation_ram_id" data-addable-select="1" data-add-table="workstation_ram" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="ram"><option value="">-- None --</option><?php render_options($workstationRamOptions, $data['workstation_ram_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Storage (GB/TB)</label><input name="workstation_storage" value="<?php echo sanitize($data['workstation_storage']); ?>" placeholder="e.g. 512 GB / 1 TB"></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Workstation Processor</label><input name="workstation_processor" value="<?php echo sanitize($data['workstation_processor']); ?>"></div>
+                <div class="form-group"><label>Workstation Device Type</label><select name="workstation_device_type_id" data-addable-select="1" data-add-table="workstation_device_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation device type"><option value="">-- None --</option><?php render_options($workstationDeviceTypes, $data['workstation_device_type_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Workstation OS Type</label><select name="workstation_os_type_id" data-addable-select="1" data-add-table="workstation_os_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os type"><option value="">-- None --</option><?php render_options($workstationOsTypes, $data['workstation_os_type_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>Workstation OS Installed On</label><input type="date" name="workstation_os_installed_on" value="<?php echo sanitize($data['workstation_os_installed_on']); ?>"></div>
+                <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-group"><label>Comments</label><textarea name="notes" rows="5"><?php echo sanitize($data['notes']); ?></textarea></div>
+            <div id="switch-fields" style="display:none;">
+                <h3 style="margin-top:20px;">Switch Details</h3>
+                <div class="switch-details-grid">
+                    <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Port Numbering Layout</label><select name="switch_port_numbering_layout_id" data-addable-select="1" data-add-table="switch_port_numbering_layout" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="port numbering layout"><option value="">-- Select --</option><?php render_options($switchPortNumberingLayoutOptions, $data['switch_port_numbering_layout_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id" data-addable-select="1" data-add-table="equipment_fiber" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber port option"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Patch</label><select name="switch_fiber_patch_id" data-addable-select="1" data-add-table="equipment_fiber_patch" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber patch option"><option value="">-- None --</option><?php render_options($switchFiberPatchOptions, $data['switch_fiber_patch_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Rack</label><select name="switch_fiber_rack_id" data-addable-select="1" data-add-table="equipment_fiber_rack" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber rack option"><option value="">-- None --</option><?php render_options($switchFiberRackOptions, $data['switch_fiber_rack_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Count</label><select name="switch_fiber_count_id" data-addable-select="1" data-add-table="equipment_fiber_count" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber count option"><option value="">-- None --</option><?php render_options($switchFiberCountOptions, $data['switch_fiber_count_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Ports Number</label><input type="text" maxlength="50" name="switch_fiber_ports_number" value="<?php echo sanitize($data['switch_fiber_ports_number']); ?>" placeholder="e.g. 4"></div>
+                    <div class="form-group"><label>Fiber Port Label</label><input type="text" maxlength="100" name="switch_fiber_port_label" value="<?php echo sanitize($data['switch_fiber_port_label']); ?>" placeholder="e.g. Uplink / SFP+"></div>
+                    <div class="form-group"><label>PoE Type</label><select name="switch_poe_id" data-addable-select="1" data-add-table="equipment_poe" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="poe type"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Management</label><select name="switch_environment_id" data-addable-select="1" data-add-table="equipment_environment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="management type"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?><option value="__add_new__">➕</option></select></div>
+                </div>
+            </div>
+            <div class="form-group status-field-wrap">
+                <label>Status</label>
+                <select name="status_id" data-addable-select="1" data-add-table="equipment_statuses" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="status">
+                    <option value="">-- Select --</option>
+                    <?php render_options($statuses, $data['status_id']); ?>
+                    <option value="__add_new__">➕</option>
+                </select>
+            </div>
+            <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">💾</button>
+                <a href="index.php" class="btn">🔙</a>
+            </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
+    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Equipment photos" onclick="event.stopPropagation()">
+        <div class="photo-preview-actions">
+            <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
+        </div>
+        <div class="photo-preview-gallery" id="existingPhotoPreviewGallery">
+            <?php foreach ($currentPhotoUrls as $photoIndex => $photoUrl): ?>
+                <div class="photo-preview-item">
+                    <a href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
+                        <img src="<?php echo sanitize($photoUrl); ?>" alt="Current equipment photo <?php echo (int)$photoIndex + 1; ?>">
+                    </a>
+                    <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <h4 style="margin:14px 0 8px;">Selected (not saved yet)</h4>
+        <div class="photo-preview-gallery" id="pendingPhotoPreviewGallery"></div>
+        <p id="photoPreviewEmptyHint" style="margin-top:12px;color:var(--text-muted,#666);display:none;">No photos to preview yet.</p>
+    </div>
+</div>
+<script src="../../js/theme.js"></script>
+<script src="../../js/select-add-option.js"></script>
+<script>
+(function () {
+    var typeSelect = document.querySelector('select[name="equipment_type_id"]');
+    var switchFields = document.getElementById('switch-fields');
+    var serverFields = document.getElementById('server-fields');
+    var printerFields = document.getElementById('printer-fields');
+    var switchTypeId = '<?php echo (int)$switchTypeId; ?>';
+    var serverTypeId = '<?php echo (int)$serverTypeId; ?>';
+    var printerTypeId = '<?php echo (int)$printerTypeId; ?>';
+
+    function toggleSwitchFields() {
+        if (!typeSelect || !switchFields) {
+            return;
+        }
+        var show = switchTypeId !== '0' && typeSelect.value === switchTypeId;
+        switchFields.style.display = show ? 'block' : 'none';
+        if (!show) {
+            switchFields.querySelectorAll('select').forEach(function (el) {
+                el.value = '';
+            });
+        }
+    }
+
+    function toggleServerFields() {
+        if (!typeSelect || !serverFields) {
+            return;
+        }
+        var show = serverTypeId !== '0' && typeSelect.value === serverTypeId;
+        serverFields.style.display = show ? 'block' : 'none';
+        if (!show) {
+            var certificateInput = serverFields.querySelector('input[name="certificate_expiry"]');
+            if (certificateInput) {
+                certificateInput.value = '';
+            }
+        }
+    }
+
+    function togglePrinterFields() {
+        if (!typeSelect || !printerFields) {
+            return;
+        }
+
+        var show = printerTypeId !== '0' && typeSelect.value === printerTypeId;
+        printerFields.style.display = show ? 'block' : 'none';
+
+        if (!show) {
+            var printerTypeSelect = printerFields.querySelector('select[name="printer_device_type_id"]');
+            if (printerTypeSelect) {
+                printerTypeSelect.value = '';
+            }
+            var colorCapableInput = printerFields.querySelector('input[name="printer_color_capable"]');
+            if (colorCapableInput) {
+                colorCapableInput.checked = false;
+            }
+            var printerScanInput = printerFields.querySelector('input[name="printer_scan"]');
+            if (printerScanInput) {
+                printerScanInput.checked = false;
+            }
+        }
+    }
+
+    if (typeSelect) {
+        typeSelect.addEventListener('change', toggleSwitchFields);
+        typeSelect.addEventListener('change', toggleServerFields);
+        typeSelect.addEventListener('change', togglePrinterFields);
+        toggleSwitchFields();
+        toggleServerFields();
+        togglePrinterFields();
+    }
+
+    var openPhotoPreview = document.getElementById('openPhotoPreview');
+    var photoPreviewModal = document.getElementById('photoPreviewModal');
+    var closePhotoPreview = document.getElementById('closePhotoPreview');
+    var deletePhotoButton = document.getElementById('deletePhotoButton');
+    var deletePhotoInput = document.getElementById('deletePhotoInput');
+    var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
+    var currentPhotoHintText = document.getElementById('currentPhotoHintText');
+    var photoInput = document.querySelector('input[name="photo[]"]');
+    var equipmentForm = document.getElementById('equipmentForm');
+    var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
+    var existingPhotoPreviewGallery = document.getElementById('existingPhotoPreviewGallery');
+    var pendingPhotoPreviewGallery = document.getElementById('pendingPhotoPreviewGallery');
+    var photoPreviewEmptyHint = document.getElementById('photoPreviewEmptyHint');
+    var pendingDeletedPhotoIndexes = new Set();
+    var totalCurrentPhotos = deletePhotoItemButtons.length;
+    var isEditMode = <?php echo $isEdit ? 'true' : 'false'; ?>;
+    var isAutoSubmitting = false;
+    var selectedPhotoPreviewUrls = [];
+
+    function resetPendingPhotoDeletionState() {
+        pendingDeletedPhotoIndexes.clear();
+        if (deletePhotoInput) {
+            deletePhotoInput.value = '0';
+        }
+        if (deletePhotoIndexesInput) {
+            deletePhotoIndexesInput.value = '';
+        }
+        if (deletePhotoButton) {
+            deletePhotoButton.disabled = false;
+        }
+    }
+
+    function syncDeletePhotoIndexes() {
+        if (!deletePhotoIndexesInput) {
+            return;
+        }
+        deletePhotoIndexesInput.value = Array.from(pendingDeletedPhotoIndexes).sort(function (a, b) { return a - b; }).join(',');
+    }
+
+    function updateCurrentPhotoHint() {
+        if (!currentPhotoHintText) {
+            return;
+        }
+        var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
+        if (deletePhotoInput && deletePhotoInput.value === '1') {
+            currentPhotoHintText.textContent = 'Current photos will be deleted after you save.';
+            return;
+        }
+        if (pendingDeletedPhotoIndexes.size > 0) {
+            var remainingPhotos = Math.max(totalCurrentPhotos - pendingDeletedPhotoIndexes.size, 0);
+            currentPhotoHintText.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save. Remaining: ' + remainingPhotos + '.';
+            return;
+        }
+        if (totalCurrentPhotos > 0) {
+            currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos + '. Selected (not saved): ' + selectedPhotoCount + '.';
+            return;
+        }
+        currentPhotoHintText.textContent = 'Selected photos: ' + selectedPhotoCount + ' (not saved yet).';
+    }
+
+    function updatePhotoPreviewActionState() {
+        var visibleExistingPhotos = 0;
+        if (existingPhotoPreviewGallery) {
+            Array.prototype.forEach.call(existingPhotoPreviewGallery.children, function (item) {
+                if (item.style.display !== 'none') {
+                    visibleExistingPhotos += 1;
+                }
+            });
+        }
+        var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
+        var hasAnyPhotos = visibleExistingPhotos > 0 || selectedPhotoCount > 0;
+
+        if (openPhotoPreview) {
+            openPhotoPreview.disabled = !hasAnyPhotos;
+        }
+        if (photoPreviewEmptyHint) {
+            photoPreviewEmptyHint.style.display = hasAnyPhotos ? 'none' : 'block';
+        }
+    }
+
+    function clearPendingPhotoPreview() {
+        selectedPhotoPreviewUrls.forEach(function (url) {
+            URL.revokeObjectURL(url);
+        });
+        selectedPhotoPreviewUrls = [];
+        if (pendingPhotoPreviewGallery) {
+            pendingPhotoPreviewGallery.innerHTML = '';
+        }
+    }
+
+    function renderPendingPhotoPreview() {
+        clearPendingPhotoPreview();
+        if (!pendingPhotoPreviewGallery || !photoInput || !photoInput.files) {
+            updatePhotoPreviewActionState();
+            updateCurrentPhotoHint();
+            return;
+        }
+
+        Array.prototype.forEach.call(photoInput.files, function (file, index) {
+            if (!file || typeof file.type !== 'string' || file.type.indexOf('image/') !== 0) {
+                return;
+            }
+            var previewUrl = URL.createObjectURL(file);
+            selectedPhotoPreviewUrls.push(previewUrl);
+
+            var item = document.createElement('div');
+            item.className = 'photo-preview-item';
+            var image = document.createElement('img');
+            image.src = previewUrl;
+            image.alt = 'Selected equipment photo ' + (index + 1);
+            item.appendChild(image);
+
+            var label = document.createElement('small');
+            label.textContent = file.name;
+            item.appendChild(label);
+            pendingPhotoPreviewGallery.appendChild(item);
+        });
+
+        updatePhotoPreviewActionState();
+        updateCurrentPhotoHint();
+    }
+
+    function hidePhotoModal() {
+        if (!photoPreviewModal) {
+            return;
+        }
+        photoPreviewModal.style.display = 'none';
+        photoPreviewModal.setAttribute('aria-hidden', 'true');
+    }
+
+    resetPendingPhotoDeletionState();
+    updateCurrentPhotoHint();
+    updatePhotoPreviewActionState();
+    window.addEventListener('pageshow', function () {
+        resetPendingPhotoDeletionState();
+        clearPendingPhotoPreview();
+        updateCurrentPhotoHint();
+        updatePhotoPreviewActionState();
+    });
+
+    if (openPhotoPreview && photoPreviewModal) {
+        openPhotoPreview.addEventListener('click', function (event) {
+            event.preventDefault();
+            photoPreviewModal.style.display = 'flex';
+            photoPreviewModal.setAttribute('aria-hidden', 'false');
+        });
+
+        photoPreviewModal.addEventListener('click', hidePhotoModal);
+
+        if (closePhotoPreview) {
+            closePhotoPreview.addEventListener('click', hidePhotoModal);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePhotoModal();
+            }
+        });
+    }
+
+    if (deletePhotoButton && deletePhotoInput) {
+        deletePhotoButton.addEventListener('click', function () {
+            deletePhotoInput.value = '1';
+            pendingDeletedPhotoIndexes.clear();
+            syncDeletePhotoIndexes();
+            hidePhotoModal();
+            updateCurrentPhotoHint();
+            if (photoInput) {
+                photoInput.value = '';
+            }
+            deletePhotoButton.disabled = true;
+        });
+    }
+
+    if (deletePhotoItemButtons.length > 0 && deletePhotoInput) {
+        deletePhotoItemButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (deletePhotoInput.value === '1') {
+                    return;
+                }
+                var photoIndex = parseInt(button.getAttribute('data-photo-index') || '', 10);
+                if (!Number.isInteger(photoIndex) || photoIndex < 0) {
+                    return;
+                }
+                pendingDeletedPhotoIndexes.add(photoIndex);
+                syncDeletePhotoIndexes();
+                var photoItem = button.closest('.photo-preview-item');
+                if (photoItem) {
+                    photoItem.style.display = 'none';
+                }
+                updateCurrentPhotoHint();
+                updatePhotoPreviewActionState();
+            });
+        });
+    }
+
+    if (photoInput) {
+        photoInput.addEventListener('change', renderPendingPhotoPreview);
+    }
+
+    if (photoInput && equipmentForm && isEditMode) {
+        photoInput.addEventListener('change', function () {
+            if (isAutoSubmitting || !photoInput.files || photoInput.files.length === 0) {
+                return;
+            }
+            isAutoSubmitting = true;
+            equipmentForm.requestSubmit();
+        });
+    }
+})();
+</script>
+</body>
+</html>

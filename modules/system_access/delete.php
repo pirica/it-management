@@ -1,0 +1,63 @@
+<?php
+require '../../config/config.php';
+require '../../includes/employee_system_access.php';
+
+esa_ensure_table($conn);
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed');
+}
+
+itm_require_post_csrf();
+
+$bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+
+if ($bulkAction === 'clear_table') {
+    mysqli_query($conn, 'DELETE FROM system_access WHERE company_id=' . (int)$company_id);
+    header('Location: index.php');
+    exit;
+}
+
+if ($bulkAction === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if (!is_array($ids)) {
+        $ids = [];
+    }
+
+    $idList = [];
+    foreach ($ids as $rawId) {
+        $id = (int)$rawId;
+        if ($id > 0) {
+            $idList[$id] = $id;
+        }
+    }
+
+    if (!empty($idList)) {
+        $deleteSql = 'DELETE FROM system_access WHERE id IN (' . implode(',', array_values($idList)) . ') AND company_id=' . (int)$company_id;
+        mysqli_query($conn, $deleteSql);
+    } else {
+        $_SESSION['crud_error'] = 'No records selected for deletion.';
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
+$id = (int)($_POST['id'] ?? 0);
+if ($id > 0) {
+    $usageError = '';
+    if (!itm_can_delete_record($conn, 'system_access', 'id', $id, $company_id, $usageError)) {
+        $_SESSION['crud_error'] = $usageError;
+    } else {
+        $stmt = mysqli_prepare($conn, 'DELETE FROM system_access WHERE id = ? AND company_id = ?');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+    }
+}
+
+header('Location: index.php');
+exit;
