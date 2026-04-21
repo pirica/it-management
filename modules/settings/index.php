@@ -793,7 +793,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
             <div class="card">
                 <div class="card-header"><h2>All Backups</h2></div>
                 <div class="card-body" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <th>File Name</th>

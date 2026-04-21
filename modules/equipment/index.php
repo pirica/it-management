@@ -272,7 +272,7 @@ if (!empty($_SESSION['crud_success'])) {
             </div>
 
             <div class="card" style="overflow:auto;">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php foreach ([

@@ -816,10 +816,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </form>
                 </div>
                 <div class="card" style="overflow:auto;">
-                    <table>
-                        <thead>
-                        <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -953,7 +949,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <!-- DETAILED RECORD VIEW -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
                 <div class="card">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <tbody>
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>

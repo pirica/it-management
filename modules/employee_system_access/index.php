@@ -229,7 +229,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
 
             <!-- Permission Matrix Table -->
             <div class="card" style="overflow:auto;">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php foreach ($columns as $column): ?>

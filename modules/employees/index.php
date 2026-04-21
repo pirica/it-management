@@ -607,7 +607,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
 
             <!-- DATA TABLE -->
             <div class="card" style="overflow:auto;">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php foreach ($columns as $col): ?>
