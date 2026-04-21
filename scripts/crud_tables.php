@@ -43,9 +43,15 @@ foreach ($moduleDirs as $moduleName) {
 
     echo $moduleName . PHP_EOL;
     if ($crudLineNumber !== null && $crudLineText !== null) {
+        echo '<br>';
         echo '/index.php line ' . $crudLineNumber . ': ' . $crudLineText . PHP_EOL;
+        echo '<br>';
     } else {
+        echo '<br>';
         echo '/index.php: (not set in index.php)' . PHP_EOL;
+        echo '<br>';
     }
+    echo '<br>';
     echo 'sidebar link: modules/' . $moduleName . '/' . PHP_EOL . PHP_EOL;
+    echo '<br>';
 }
