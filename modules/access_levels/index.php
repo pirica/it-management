@@ -425,6 +425,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+                $insertedId = (int)mysqli_insert_id($conn);
+                if ((int)($ui_config["enable_audit_logs"] ?? 1) === 1) {
+                    itm_log_audit($conn, $crud_table, $insertedId, "INSERT", null, $rowData);
+                }
             }
         }
 
@@ -685,10 +689,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $dbErrorCode = 0;
         $dbErrorMessage = '';
-        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: ' . $listUrl);
-            exit;
-        }
+            if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+                $insertedRows++;
+                $insertedId = (int)mysqli_insert_id($conn);
+                if ((int)($ui_config["enable_audit_logs"] ?? 1) === 1) {
+                    itm_log_audit($conn, $crud_table, $insertedId, "INSERT", null, $rowData);
+                }
+            }
         $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
