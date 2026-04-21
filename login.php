@@ -17,9 +17,18 @@ $csrfToken = itm_get_csrf_token();
  */
 function itm_record_login_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $identifier = null, ?int $userId = null): void
 {
-    $stmt = mysqli_prepare($conn, "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id) VALUES ('login', ?, ?, ?, ?)");
+    $stmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id, active)
+         VALUES ('login', ?, ?, ?, ?, IF(
+            EXISTS(SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1)
+            OR EXISTS(SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1),
+            1,
+            0
+         ))"
+    );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssi', $attemptType, $ipAddress, $identifier, $userId);
+        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $identifier, $userId, $identifier, $identifier);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
@@ -86,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Search for an active user by email or username
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id, password FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
+            'SELECT id, password, email FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
         );
 
         if ($stmt) {
@@ -99,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $storedPassword = (string)($user['password'] ?? '');
             $userId = (int)($user['id'] ?? 0);
             $passwordMatches = false;
+            $resolvedEmail = (string)($user['email'] ?? '');
 
         if ($user) {
             // Why: Accept modern password_hash() values and transparently upgrade cost/algorithm when needed.
@@ -138,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
             if ($passwordMatches) {
-                itm_record_login_attempt($conn, 'success', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, $userId);
+                itm_record_login_attempt($conn, 'success', $requestIp, $resolvedEmail !== '' ? $resolvedEmail : ($loginIdentifier === '' ? null : $loginIdentifier), $userId);
 
             $userId = (int)$user['id'];
             $_SESSION['user_id'] = $userId;
@@ -217,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
-            itm_record_login_attempt($conn, 'failure', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, $userId > 0 ? $userId : null);
+            itm_record_login_attempt($conn, 'failure', $requestIp, $resolvedEmail !== '' ? $resolvedEmail : ($loginIdentifier === '' ? null : $loginIdentifier), $userId > 0 ? $userId : null);
         }
 
         $error = 'Invalid credentials.';
