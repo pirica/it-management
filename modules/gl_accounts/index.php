@@ -8,7 +8,7 @@
  */
 
 $crud_table = 'gl_accounts';
-$crud_title = '📚 Chart of Accounts';
+$crud_title = '📚 GL Accounts';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
