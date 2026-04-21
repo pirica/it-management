@@ -43,7 +43,6 @@ foreach ($moduleDirs as $moduleName) {
 
     echo $moduleName . PHP_EOL;
     if ($crudLineNumber !== null && $crudLineText !== null) {
-        echo '<br>';
         echo '/index.php line ' . $crudLineNumber . ': ' . $crudLineText . PHP_EOL;
         echo '<br>';
     } else {
