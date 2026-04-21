@@ -208,6 +208,27 @@ function cr_numeric_validation_error($field, $message) {
 }
 
 /**
+ * Ensures department names are unique inside the active company scope.
+ */
+function cr_department_name_exists($conn, $table, $nameSqlValue, $company_id, $excludeId = 0) {
+    if ($table !== 'departments' || $nameSqlValue === 'NULL' || $company_id <= 0) {
+        return false;
+    }
+
+    $checkSql = 'SELECT id FROM ' . cr_escape_identifier($table)
+        . ' WHERE name = ' . $nameSqlValue
+        . ' AND company_id = ' . (int)$company_id;
+
+    if ($excludeId > 0) {
+        $checkSql .= ' AND id != ' . (int)$excludeId;
+    }
+
+    $checkSql .= ' LIMIT 1';
+    $checkRes = mysqli_query($conn, $checkSql);
+    return ($checkRes && mysqli_num_rows($checkRes) > 0);
+}
+
+/**
  * Validates and normalizes numeric input for database safety and range compliance
  */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
@@ -667,6 +688,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // Build and execute the dynamic query
     if (empty($errors)) {
+        $excludeId = ($crud_action === 'edit') ? (int)$editId : 0;
+        if (cr_department_name_exists($conn, $crud_table, ($data['name'] ?? 'NULL'), (int)$company_id, $excludeId)) {
+            $errors[] = 'A department with this name already exists.';
+        }
+    }
+
+    if (empty($errors)) {
         if ($crud_action === 'create') {
             $fields = [];
             $values = [];
@@ -674,17 +702,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $name = $col['Field'];
                 $fields[] = cr_escape_identifier($name);
                 $values[] = $data[$name];
-            }
-            // Check for duplicate name
-            if ($name === 'name') {
-                $checkSql = 'SELECT id FROM ' . cr_escape_identifier($crud_table) . ' WHERE name = ' . $data[$name] . ' AND company_id = ' . (int)$company_id;
-                if ($crud_action === 'edit') {
-                    $checkSql .= ' AND id != ' . (int)$editId;
-                }
-                $checkRes = mysqli_query($conn, $checkSql);
-                if ($checkRes && mysqli_num_rows($checkRes) > 0) {
-                    $errors[] = 'A department with this name already exists.';
-                }
             }
 
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
