@@ -2757,10 +2757,10 @@ CREATE TABLE `user_companies` (
 
 -- Data for `user_companies`
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '1', NULL, '1');
-INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('2', '2', NULL, '1');
-INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('3', '3', NULL, '1');
-INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('4', '4', NULL, '1');
-INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('5', '5', NULL, '1');
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '2', NULL, '1');
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '3', NULL, '1');
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '4', NULL, '1');
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '5', NULL, '1');
 
 -- Table structure for `role_hierarchy`
 DROP TABLE IF EXISTS `role_hierarchy`;
