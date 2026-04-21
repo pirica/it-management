@@ -208,6 +208,35 @@ function cr_numeric_validation_error($field, $message) {
 }
 
 /**
+ * Ensures department names are unique within the active company scope.
+ */
+function cr_department_name_exists($conn, $companyId, $departmentName, $excludeId = 0) {
+    $sql = 'SELECT id FROM `departments` WHERE `company_id` = ? AND `name` = ?';
+    if ($excludeId > 0) {
+        $sql .= ' AND `id` <> ?';
+    }
+    $sql .= ' LIMIT 1';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    if ($excludeId > 0) {
+        mysqli_stmt_bind_param($stmt, 'isi', $companyId, $departmentName, $excludeId);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $departmentName);
+    }
+
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $exists = $result && mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+
+    return $exists;
+}
+
+/**
  * Validates and normalizes numeric input for database safety and range compliance
  */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
@@ -572,6 +601,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
+
+    if ($crud_table === 'departments') {
+        $departmentName = trim((string)($_POST['name'] ?? ''));
+        if ($departmentName === '') {
+            $errors[] = 'Name is required.';
+        } elseif ($company_id > 0 && cr_department_name_exists($conn, (int)$company_id, $departmentName, $crud_action === 'edit' ? $editId : 0)) {
+            $errors[] = 'A department with this Name already exists.';
+        }
+    }
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
