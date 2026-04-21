@@ -1,6 +1,6 @@
 <?php
 /**
- * 📚 Chart of Accounts Module - Index
+ * 📚 GL Accounts Module - Index
  * 
  * Uses the flattened master CRUD pattern to display a sortable, searchable list 
  * of gl accounts records.
