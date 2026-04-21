@@ -348,7 +348,29 @@ if (!function_exists('itm_format_db_constraint_error')) {
     function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
         switch ((int)$errorCode) {
             case 1451:
-                return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
+                $referenceDetails = '';
+                $fallbackText = (string)$fallbackMessage;
+
+                if ($fallbackText !== '') {
+                    $childTable = '';
+                    $childColumn = '';
+
+                    if (preg_match('/foreign key constraint fails \(`[^`]+`\.`([^`]+)`/i', $fallbackText, $tableMatch)) {
+                        $childTable = (string)($tableMatch[1] ?? '');
+                    }
+
+                    if (preg_match('/FOREIGN KEY \(`([^`]+)`\)/i', $fallbackText, $columnMatch)) {
+                        $childColumn = (string)($columnMatch[1] ?? '');
+                    }
+
+                    if ($childTable !== '' && $childColumn !== '') {
+                        $referenceDetails = ' Referenced by table "' . $childTable . '" via column "' . $childColumn . '".';
+                    } elseif ($childTable !== '') {
+                        $referenceDetails = ' Referenced by table "' . $childTable . '".';
+                    }
+                }
+
+                return 'This record cannot be deleted because other records still reference it.' . $referenceDetails . ' Remove or reassign the related records first.';
             case 1452:
                 return 'The selected related record is no longer available for your company. It may have been deleted or moved. Please refresh the page and select a different value.';
             case 1062:
