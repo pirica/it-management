@@ -675,6 +675,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $fields[] = cr_escape_identifier($name);
                 $values[] = $data[$name];
             }
+            // Check for duplicate name
+            if ($name === 'name') {
+                $checkSql = 'SELECT id FROM ' . cr_escape_identifier($crud_table) . ' WHERE name = ' . $data[$name] . ' AND company_id = ' . (int)$company_id;
+                if ($crud_action === 'edit') {
+                    $checkSql .= ' AND id != ' . (int)$editId;
+                }
+                $checkRes = mysqli_query($conn, $checkSql);
+                if ($checkRes && mysqli_num_rows($checkRes) > 0) {
+                    $errors[] = 'A department with this name already exists.';
+                }
+            }
+
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
             $sets = [];
