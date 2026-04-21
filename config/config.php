@@ -344,11 +344,96 @@ if (!function_exists('itm_run_query')) {
 /**
  * Translates MySQL error codes into user-friendly messages
  */
+if (!function_exists('itm_extract_fk_constraint_context')) {
+    function itm_extract_fk_constraint_context($mysqlMessage) {
+        $context = [
+            'schema' => '',
+            'table' => '',
+            'constraint' => '',
+            'column' => '',
+        ];
+
+        $message = (string)$mysqlMessage;
+        if ($message === '') {
+            return $context;
+        }
+
+        if (preg_match('/foreign key constraint fails \\(`([^`]+)`\\.`([^`]+)`, CONSTRAINT `([^`]+)` FOREIGN KEY \\(`([^`]+)`\\)/i', $message, $matches)) {
+            $context['schema'] = (string)($matches[1] ?? '');
+            $context['table'] = (string)($matches[2] ?? '');
+            $context['constraint'] = (string)($matches[3] ?? '');
+            $context['column'] = (string)($matches[4] ?? '');
+        }
+
+        return $context;
+    }
+}
+
+if (!function_exists('itm_resolve_fk_constraint_usage_message')) {
+    function itm_resolve_fk_constraint_usage_message($conn, $constraintContext) {
+        if (!$conn || !is_array($constraintContext)) {
+            return '';
+        }
+
+        $table = (string)($constraintContext['table'] ?? '');
+        $constraint = (string)($constraintContext['constraint'] ?? '');
+        $column = (string)($constraintContext['column'] ?? '');
+
+        if ($table !== '' && $column !== '') {
+            return 'In use by table "' . $table . '" via column "' . $column . '".';
+        }
+
+        if ($constraint === '') {
+            return '';
+        }
+
+        $sql = "SELECT TABLE_NAME, COLUMN_NAME
+FROM information_schema.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = DATABASE()
+  AND CONSTRAINT_NAME = ?
+LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return '';
+        }
+
+        mysqli_stmt_bind_param($stmt, 's', $constraint);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+
+        if (!$row) {
+            return '';
+        }
+
+        $resolvedTable = (string)($row['TABLE_NAME'] ?? '');
+        $resolvedColumn = (string)($row['COLUMN_NAME'] ?? '');
+        if ($resolvedTable === '' || $resolvedColumn === '') {
+            return '';
+        }
+
+        return 'In use by table "' . $resolvedTable . '" via column "' . $resolvedColumn . '".';
+    }
+}
+
 if (!function_exists('itm_format_db_constraint_error')) {
     function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
         switch ((int)$errorCode) {
             case 1451:
-                return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
+                $details = '';
+                $constraintContext = itm_extract_fk_constraint_context($fallbackMessage);
+                if (!empty($constraintContext)) {
+                    global $conn;
+                    $details = itm_resolve_fk_constraint_usage_message($conn ?? null, $constraintContext);
+                }
+
+                $message = 'This record cannot be deleted because other records still reference it.';
+                if ($details !== '') {
+                    $message .= ' ' . $details;
+                }
+
+                return $message . ' Remove or reassign the related records first.';
             case 1452:
                 return 'The selected related record is no longer available for your company. It may have been deleted or moved. Please refresh the page and select a different value.';
             case 1062:
