@@ -52,7 +52,7 @@ function itm_sidebar_base_structure() {
             'items' => [
                 ['id' => 'budget_categories', 'label' => '📚 Budget Categories', 'href' => 'modules/budget_categories/', 'match_dir' => 'budget_categories'],
                 ['id' => 'cost_centers', 'label' => '🧾 Cost Centers', 'href' => 'modules/cost_centers/', 'match_dir' => 'cost_centers'],
-                ['id' => 'gl_accounts', 'label' => '📚 Chart of Accounts', 'href' => 'modules/gl_accounts/', 'match_dir' => 'gl_accounts'],
+                ['id' => 'gl_accounts', 'label' => '📚 DL Accounts', 'href' => 'modules/gl_accounts/', 'match_dir' => 'gl_accounts'],
                 ['id' => 'annual_budgets', 'label' => '📅 Annual Budget', 'href' => 'modules/annual_budgets/', 'match_dir' => 'annual_budgets'],
                 ['id' => 'monthly_budgets', 'label' => '📆 Monthly Budget', 'href' => 'modules/monthly_budgets/', 'match_dir' => 'monthly_budgets'],
                 ['id' => 'forecast_revisions', 'label' => '📈 Forecast Revisions', 'href' => 'modules/forecast_revisions/', 'match_dir' => 'forecast_revisions'],
