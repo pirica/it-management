@@ -793,6 +793,7 @@ CREATE TABLE `equipment` (
   KEY `switch_fiber_count_id` (`switch_fiber_count_id`),
   KEY `switch_poe_id` (`switch_poe_id`),
   KEY `switch_environment_id` (`switch_environment_id`),
+  UNIQUE KEY `uq_equipment_company_name` (`company_id`,`name`),
   CONSTRAINT `equipment_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `equipment_ibfk_10` FOREIGN KEY (`workstation_os_type_id`) REFERENCES `workstation_os_types` (`id`),
   CONSTRAINT `equipment_ibfk_17` FOREIGN KEY (`workstation_ram_id`) REFERENCES `workstation_ram` (`id`),
