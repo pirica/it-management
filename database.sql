@@ -368,7 +368,31 @@ INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, 
 (3, 1, 'Finance Review', NULL, 1, NULL, NULL),
 (4, 1, 'Gm Review', NULL, 1, NULL, NULL),
 (5, 1, 'Approved', NULL, 1, NULL, NULL),
-(6, 1, 'Rejected', NULL, 1, NULL, NULL);
+(6, 1, 'Rejected', NULL, 1, NULL, NULL),
+(7, 2, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
+(8, 2, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
+(9, 2, 'Finance Review', NULL, 1, NULL, NULL),
+(10, 2, 'Gm Review', NULL, 1, NULL, NULL),
+(11, 2, 'Approved', NULL, 1, NULL, NULL),
+(12, 2, 'Rejected', NULL, 1, NULL, NULL),
+(13, 3, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
+(14, 3, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
+(15, 3, 'Finance Review', NULL, 1, NULL, NULL),
+(16, 3, 'Gm Review', NULL, 1, NULL, NULL),
+(17, 3, 'Approved', NULL, 1, NULL, NULL),
+(18, 3, 'Rejected', NULL, 1, NULL, NULL),
+(19, 4, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
+(20, 4, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
+(21, 4, 'Finance Review', NULL, 1, NULL, NULL),
+(22, 4, 'Gm Review', NULL, 1, NULL, NULL),
+(23, 4, 'Approved', NULL, 1, NULL, NULL),
+(24, 4, 'Rejected', NULL, 1, NULL, NULL),
+(25, 5, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
+(26, 5, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
+(27, 5, 'Finance Review', NULL, 1, NULL, NULL),
+(28, 5, 'Gm Review', NULL, 1, NULL, NULL),
+(29, 5, 'Approved', NULL, 1, NULL, NULL),
+(30, 5, 'Rejected', NULL, 1, NULL, NULL);
 
 -- Table structure for `forecast_revisions`
 DROP TABLE IF EXISTS `forecast_revisions`;
@@ -410,15 +434,15 @@ CREATE TABLE `forecast_revisions` (
 
 -- Data for `forecast_revisions`
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('1', '1', '1', '1', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('3', '2', '4', '4', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('5', '3', '7', '7', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('7', '4', '10', '10', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('9', '5', '13', '13', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('3', '2', '4', '4', '2026', '2', '4200.00', '7', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('5', '3', '7', '7', '2026', '2', '4200.00', '13', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('7', '4', '10', '10', '2026', '2', '4200.00', '19', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('9', '5', '13', '13', '2026', '2', '4200.00', '25', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('2', '1', '1', '2', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('4', '2', '4', '5', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('6', '3', '7', '8', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('8', '4', '10', '11', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('10', '5', '13', '14', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('4', '2', '4', '5', '2026', '2', '3150.00', '8', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('6', '3', '7', '8', '2026', '2', '3150.00', '14', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('8', '4', '10', '11', '2026', '2', '3150.00', '20', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('10', '5', '13', '14', '2026', '2', '3150.00', '26', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
 
 -- Table structure for `approvals_stage`
 DROP TABLE IF EXISTS `approvals_stage`;
