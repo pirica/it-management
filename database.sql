@@ -3344,6 +3344,18 @@ SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
 INSERT IGNORE INTO `access_levels` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `assignment_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `active`) SELECT c.`id`, t.`name`, t.`description`, t.`active` FROM `budget_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `gl_accounts` (`company_id`, `account_code`, `account_name`, `category_id`, `active`)
+SELECT
+    c.`id`,
+    ga.`account_code`,
+    ga.`account_name`,
+    target_bc.`id`,
+    ga.`active`
+FROM `gl_accounts` ga
+JOIN `companies` c ON c.`id` <> ga.`company_id`
+LEFT JOIN `budget_categories` source_bc ON source_bc.`id` = ga.`category_id`
+LEFT JOIN `budget_categories` target_bc ON target_bc.`company_id` = c.`id` AND target_bc.`name` = source_bc.`name`
+WHERE ga.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `employee_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `employee_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_environment` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_environment` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_fiber` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
