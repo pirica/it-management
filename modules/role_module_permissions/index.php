@@ -219,8 +219,7 @@ function cr_render_cell_value($table, $field, $value, $displayValue = null) {
     }
 
     if ($table === 'role_module_permissions' && in_array($field, ['can_view', 'can_create', 'can_edit', 'can_delete'], true)) {
-        $isChecked = ((int)$value === 1);
-        return '<label class="itm-checkbox-control" style="pointer-events:none;opacity:.95;"><input type="checkbox" disabled ' . ($isChecked ? 'checked' : '') . '><span>' . ($isChecked ? '✅' : '❌') . '</span></label>';
+        return ((int)$value === 1) ? '✅' : '❌';
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
