@@ -411,7 +411,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             <div class="audit-kpis">
                 <div class="audit-kpi"><div class="label">Rows on Screen</div><div class="value"><?php echo (int)count($rows); ?></div></div>
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($companyId > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -420,7 +420,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 <?php endif; ?>
                 <div class="audit-kpi"><div class="label">Insert Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'INSERT'))); ?></div></div>
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($companyId > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -429,7 +429,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 <?php endif; ?>
                 <div class="audit-kpi"><div class="label">Update Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'UPDATE'))); ?></div></div>
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($companyId > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -438,7 +438,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 <?php endif; ?>
                 <div class="audit-kpi"><div class="label">Delete Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'DELETE'))); ?></div></div>
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($companyId > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
