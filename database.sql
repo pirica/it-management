@@ -3314,6 +3314,266 @@ INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '18', '1
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '24', '128 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '30', '128 GB');
 
+-- Replicate shared table data to all companies
+INSERT INTO `access_levels` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `assignment_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `employee_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `employee_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_environment` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_environment` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_fiber` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_fiber_patch` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_patch` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_fiber_rack` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_rack` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_fiber_count` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_count` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_poe` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_poe` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_rj45` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_rj45` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment_types` (`company_id`, `name`, `code`, `field_edit_emoji`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`field_edit_emoji`, t.`active` FROM `equipment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `inventory_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `inventory_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `location_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `location_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `manufacturers` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `manufacturers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `catalogs` (`company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`) SELECT c.`id`, t.`model`, t.`equipment_type_id`, t.`image_url`, t.`price`, t.`supplier_id`, t.`manufacturer_id`, t.`product_url`, t.`active` FROM `catalogs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `printer_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `printer_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `rack_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `rack_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `supplier_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `supplier_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `cable_colors` (`company_id`, `color_name`, `hex_color`, `comments`) SELECT c.`id`, t.`color_name`, t.`hex_color`, t.`comments` FROM `cable_colors` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_port_numbering_layout` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `switch_port_numbering_layout` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_port_types` (`company_id`, `type`) SELECT c.`id`, t.`type` FROM `switch_port_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_status` (`company_id`, `status`) SELECT c.`id`, t.`status` FROM `switch_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ticket_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `ticket_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ticket_priorities` (`company_id`, `name`, `level`, `color`, `active`) SELECT c.`id`, t.`name`, t.`level`, t.`color`, t.`active` FROM `ticket_priorities` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`, `active`) SELECT c.`id`, t.`name`, t.`color`, t.`is_closed`, t.`active` FROM `ticket_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `user_roles` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `user_roles` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `warranty_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `warranty_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_modes` (`company_id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) SELECT c.`id`, t.`mode_name`, t.`mode_code`, t.`description`, t.`monitor_count`, t.`has_keyboard_mouse`, t.`pos`, t.`active` FROM `workstation_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_office` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_os_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_os_versions` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_os_versions` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `workstation_ram` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_ram` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `departments` (`company_id`, `name`, `code`, `description`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`active` FROM `departments` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `employee_onboarding_requests` (`company_id`, `employee_id`, `first_name`, `last_name`, `position_title`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `comments`, `starting_date`, `requested_by`, `requested_on`, `hod_approval`, `hrd_approval`, `ism_approval`, `created_at`) SELECT c.`id`, t.`employee_id`, t.`first_name`, t.`last_name`, t.`position_title`, t.`department_name`, t.`request_date`, t.`termination_date`, t.`network_access`, t.`micros_emc`, t.`opera`, t.`micros_card`, t.`pms_id`, t.`synergy_mms`, t.`email_account`, t.`landline_phone`, t.`hu_the_lobby`, t.`mobile_phone`, t.`navision`, t.`mobile_email`, t.`onq_ri`, t.`birchstreet`, t.`delphi`, t.`omina`, t.`vingcard_system`, t.`digital_rev`, t.`office_key_card`, t.`comments`, t.`starting_date`, t.`requested_by`, t.`requested_on`, t.`hod_approval`, t.`hrd_approval`, t.`ism_approval`, t.`created_at` FROM `employee_onboarding_requests` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_count_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`)
+SELECT
+    c.`id`,
+    COALESCE(et_target.`id`, et_fallback.`id`),
+    m_target.`id`,
+    l_target.`id`,
+    r_target.`id`,
+    t.`name`, t.`serial_number`, t.`model`, t.`hostname`, t.`ip_address`, t.`patch_port`, t.`mac_address`,
+    COALESCE(es_target.`id`, es_fallback.`id`),
+    t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`, t.`certificate_expiry`,
+    wt_target.`id`,
+    pdt_target.`id`,
+    t.`printer_color_capable`,
+    t.`printer_scan`,
+    wdt_target.`id`,
+    wot_target.`id`,
+    t.`workstation_processor`, t.`workstation_storage`, t.`workstation_os_installed_on`,
+    wr_target.`id`,
+    wov_target.`id`,
+    rj45_target.`id`,
+    spnl_target.`id`,
+    fiber_target.`id`,
+    fiber_patch_target.`id`,
+    fiber_rack_target.`id`,
+    fiber_count_target.`id`,
+    t.`switch_fiber_ports_number`,
+    t.`switch_fiber_port_label`,
+    poe_target.`id`,
+    env_target.`id`,
+    t.`notes`, t.`photo_filename`, t.`active`, t.`created_at`, t.`updated_at`
+FROM `equipment` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `equipment_types` et_source ON et_source.`id` = t.`equipment_type_id`
+LEFT JOIN `equipment_types` et_target ON et_target.`company_id` = c.`id` AND et_target.`name` = et_source.`name`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `equipment_types`
+    GROUP BY `company_id`
+) et_fallback ON et_fallback.`company_id` = c.`id`
+LEFT JOIN `manufacturers` m_source ON m_source.`id` = t.`manufacturer_id`
+LEFT JOIN `manufacturers` m_target ON m_target.`company_id` = c.`id` AND m_target.`name` = m_source.`name`
+LEFT JOIN `it_locations` l_source ON l_source.`id` = t.`location_id`
+LEFT JOIN `it_locations` l_target ON l_target.`company_id` = c.`id` AND l_target.`name` = l_source.`name`
+LEFT JOIN `racks` r_source ON r_source.`id` = t.`rack_id`
+LEFT JOIN `racks` r_target ON r_target.`company_id` = c.`id` AND r_target.`name` = r_source.`name`
+LEFT JOIN `equipment_statuses` es_source ON es_source.`id` = t.`status_id`
+LEFT JOIN `equipment_statuses` es_target ON es_target.`company_id` = c.`id` AND es_target.`name` = es_source.`name`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `equipment_statuses`
+    GROUP BY `company_id`
+) es_fallback ON es_fallback.`company_id` = c.`id`
+LEFT JOIN `warranty_types` wt_source ON wt_source.`id` = t.`warranty_type_id`
+LEFT JOIN `warranty_types` wt_target ON wt_target.`company_id` = c.`id` AND wt_target.`name` = wt_source.`name`
+LEFT JOIN `printer_device_types` pdt_source ON pdt_source.`id` = t.`printer_device_type_id`
+LEFT JOIN `printer_device_types` pdt_target ON pdt_target.`company_id` = c.`id` AND pdt_target.`name` = pdt_source.`name`
+LEFT JOIN `workstation_device_types` wdt_source ON wdt_source.`id` = t.`workstation_device_type_id`
+LEFT JOIN `workstation_device_types` wdt_target ON wdt_target.`company_id` = c.`id` AND wdt_target.`name` = wdt_source.`name`
+LEFT JOIN `workstation_os_types` wot_source ON wot_source.`id` = t.`workstation_os_type_id`
+LEFT JOIN `workstation_os_types` wot_target ON wot_target.`company_id` = c.`id` AND wot_target.`name` = wot_source.`name`
+LEFT JOIN `workstation_ram` wr_source ON wr_source.`id` = t.`workstation_ram_id`
+LEFT JOIN `workstation_ram` wr_target ON wr_target.`company_id` = c.`id` AND wr_target.`name` = wr_source.`name`
+LEFT JOIN `workstation_os_versions` wov_source ON wov_source.`id` = t.`workstation_os_version_id`
+LEFT JOIN `workstation_os_versions` wov_target ON wov_target.`company_id` = c.`id` AND wov_target.`name` = wov_source.`name`
+LEFT JOIN `equipment_rj45` rj45_source ON rj45_source.`id` = t.`switch_rj45_id`
+LEFT JOIN `equipment_rj45` rj45_target ON rj45_target.`company_id` = c.`id` AND rj45_target.`name` = rj45_source.`name`
+LEFT JOIN `switch_port_numbering_layout` spnl_source ON spnl_source.`id` = t.`switch_port_numbering_layout_id`
+LEFT JOIN `switch_port_numbering_layout` spnl_target ON spnl_target.`company_id` = c.`id` AND spnl_target.`name` = spnl_source.`name`
+LEFT JOIN `equipment_fiber` fiber_source ON fiber_source.`id` = t.`switch_fiber_id`
+LEFT JOIN `equipment_fiber` fiber_target ON fiber_target.`company_id` = c.`id` AND fiber_target.`name` = fiber_source.`name`
+LEFT JOIN `equipment_fiber_patch` fiber_patch_source ON fiber_patch_source.`id` = t.`switch_fiber_patch_id`
+LEFT JOIN `equipment_fiber_patch` fiber_patch_target ON fiber_patch_target.`company_id` = c.`id` AND fiber_patch_target.`name` = fiber_patch_source.`name`
+LEFT JOIN `equipment_fiber_rack` fiber_rack_source ON fiber_rack_source.`id` = t.`switch_fiber_rack_id`
+LEFT JOIN `equipment_fiber_rack` fiber_rack_target ON fiber_rack_target.`company_id` = c.`id` AND fiber_rack_target.`name` = fiber_rack_source.`name`
+LEFT JOIN `equipment_fiber_count` fiber_count_source ON fiber_count_source.`id` = t.`switch_fiber_count_id`
+LEFT JOIN `equipment_fiber_count` fiber_count_target ON fiber_count_target.`company_id` = c.`id` AND fiber_count_target.`name` = fiber_count_source.`name`
+LEFT JOIN `equipment_poe` poe_source ON poe_source.`id` = t.`switch_poe_id`
+LEFT JOIN `equipment_poe` poe_target ON poe_target.`company_id` = c.`id` AND poe_target.`name` = poe_source.`name`
+LEFT JOIN `equipment_environment` env_source ON env_source.`id` = t.`switch_environment_id`
+LEFT JOIN `equipment_environment` env_target ON env_target.`company_id` = c.`id` AND env_target.`name` = env_source.`name`
+WHERE t.`company_id` = 1
+  AND COALESCE(et_target.`id`, et_fallback.`id`) IS NOT NULL
+  AND COALESCE(es_target.`id`, es_fallback.`id`) IS NOT NULL;
+INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status_id`, `connected_to`, `vlan_id`, `speed_id`, `poe_id`, `cable_color`, `hex_color`, `notes`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status_id`, t.`connected_to`, t.`vlan_id`, t.`speed_id`, t.`poe_id`, t.`cable_color`, t.`hex_color`, t.`notes`, t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `idf_device_type` (`company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`)
+SELECT c.`id`, t.`idfdevicetype_name`, t.`field_edit_emoji`, t.`active`, t.`created_at`, t.`updated_at`
+FROM `idf_device_type` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+WHERE t.`company_id` = 1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM `idf_device_type` t_existing
+    WHERE t_existing.`company_id` = c.`id`
+      AND t_existing.`idfdevicetype_name` = t.`idfdevicetype_name`
+  );
+INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `port_count`, `notes`, `created_at`, `updated_at`)
+SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`port_count`, t.`notes`, t.`created_at`, t.`updated_at`
+FROM `idf_positions` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `idf_device_type` dt_source ON dt_source.`id` = t.`device_type`
+LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_target.`idfdevicetype_name` = dt_source.`idfdevicetype_name`
+WHERE t.`company_id` = 1
+  AND dt_target.`id` IS NOT NULL;
+INSERT INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`)
+SELECT
+    c.`id`,
+    t.`name`,
+    t.`item_code`,
+    t.`serial`,
+    ic_target.`id`,
+    m_target.`id`,
+    t.`quantity_on_hand`,
+    t.`quantity_minimum`,
+    t.`price_eur`,
+    t.`comments`,
+    l_target.`id`,
+    s_target.`id`,
+    t.`active`
+FROM `inventory_items` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `inventory_categories` ic_source ON ic_source.`id` = t.`category_id`
+LEFT JOIN `inventory_categories` ic_target ON ic_target.`company_id` = c.`id` AND ic_target.`name` = ic_source.`name`
+LEFT JOIN `manufacturers` m_source ON m_source.`id` = t.`manufacturer_id`
+LEFT JOIN `manufacturers` m_target ON m_target.`company_id` = c.`id` AND m_target.`name` = m_source.`name`
+LEFT JOIN `it_locations` l_source ON l_source.`id` = t.`location_id`
+LEFT JOIN `it_locations` l_target ON l_target.`company_id` = c.`id` AND l_target.`name` = l_source.`name`
+LEFT JOIN `suppliers` s_source ON s_source.`id` = t.`supplier_id`
+LEFT JOIN `suppliers` s_target ON s_target.`company_id` = c.`id` AND s_target.`name` = s_source.`name`
+WHERE t.`company_id` = 1;
+INSERT INTO `it_locations` (`company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`) SELECT c.`id`, t.`name`, t.`location_code`, t.`address`, t.`city`, t.`state`, t.`country`, t.`postal_code`, t.`phone`, t.`type_id`, t.`active` FROM `it_locations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `racks` (`company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) SELECT c.`id`, t.`location_id`, t.`name`, t.`rack_code`, t.`status_id`, t.`active` FROM `racks` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `suppliers` (`company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) SELECT c.`id`, t.`name`, t.`supplier_code`, t.`contact_person`, t.`email`, t.`phone`, t.`status_id`, t.`active` FROM `suppliers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `label`, `status_id`, `color_id`, `vlan_id`, `comments`, `updated_at`)
+SELECT
+    c.`id`,
+    e_target.`id`,
+    t.`hostname`,
+    t.`port_type`,
+    t.`port_number`,
+    t.`label`,
+    COALESCE(ss_target.`id`, ss_fallback.`id`),
+    COALESCE(sc_target.`id`, sc_fallback.`id`),
+    v_target.`id`,
+    t.`comments`,
+    t.`updated_at`
+FROM `switch_ports` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `equipment` e_source ON e_source.`id` = t.`equipment_id`
+LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
+LEFT JOIN `switch_status` ss_source ON ss_source.`id` = t.`status_id`
+LEFT JOIN `switch_status` ss_target ON ss_target.`company_id` = c.`id` AND ss_target.`status` = ss_source.`status`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `switch_status`
+    GROUP BY `company_id`
+) ss_fallback ON ss_fallback.`company_id` = c.`id`
+LEFT JOIN `cable_colors` sc_source ON sc_source.`id` = t.`color_id`
+LEFT JOIN `cable_colors` sc_target ON sc_target.`company_id` = c.`id` AND sc_target.`color_name` = sc_source.`color_name`
+LEFT JOIN (
+    SELECT `company_id`, MIN(`id`) AS `id`
+    FROM `cable_colors`
+    GROUP BY `company_id`
+) sc_fallback ON sc_fallback.`company_id` = c.`id`
+LEFT JOIN `vlans` v_source ON v_source.`id` = t.`vlan_id`
+LEFT JOIN `vlans` v_target ON v_target.`company_id` = c.`id` AND v_target.`vlan_number` = v_source.`vlan_number`
+WHERE t.`company_id` = 1
+  AND COALESCE(ss_target.`id`, ss_fallback.`id`) IS NOT NULL
+  AND COALESCE(sc_target.`id`, sc_fallback.`id`) IS NOT NULL;
+INSERT INTO `system_access` (`company_id`, `code`, `name`, `active`) SELECT c.`id`, t.`code`, t.`name`, t.`active` FROM `system_access` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) SELECT c.`id`, ur_target.`id`, rh.`hierarchy_order` FROM `role_hierarchy` rh JOIN `companies` c ON c.`id` <> rh.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rh.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rh.`company_id` = 1;
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) SELECT c.`id`, ur_target.`id`, rmp.`module_name`, rmp.`can_view`, rmp.`can_create`, rmp.`can_edit`, rmp.`can_delete` FROM `role_module_permissions` rmp JOIN `companies` c ON c.`id` <> rmp.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rmp.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rmp.`company_id` = 1;
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) SELECT c.`id`, ur_granter_target.`id`, ur_target_target.`id` FROM `role_assignment_rights` rar JOIN `companies` c ON c.`id` <> rar.`company_id` JOIN `user_roles` ur_granter_source ON ur_granter_source.`id` = rar.`role_id` JOIN `user_roles` ur_target_source ON ur_target_source.`id` = rar.`can_assign_role_id` JOIN `user_roles` ur_granter_target ON ur_granter_target.`company_id` = c.`id` AND ur_granter_target.`name` = ur_granter_source.`name` JOIN `user_roles` ur_target_target ON ur_target_target.`company_id` = c.`id` AND ur_target_target.`name` = ur_target_source.`name` WHERE rar.`company_id` = 1;
+INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`)
+SELECT u.`id`, c.`id`, NULL
+FROM `users` u
+JOIN `companies` c ON c.`active` = 1
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `user_companies` uc
+    WHERE uc.`user_id` = u.`id` AND uc.`company_id` = c.`id`
+);
+INSERT INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `created_at`)
+SELECT
+    c.`id`,
+    t.`ticket_external_code`,
+    t.`title`,
+    t.`description`,
+    tc_target.`id`,
+    ts_target.`id`,
+    tp_target.`id`,
+    COALESCE(u_creator_target.`id`, u_fallback.`id`),
+    u_assignee_target.`id`,
+    e_target.`id`,
+    t.`ui_color`,
+    t.`created_at`
+FROM `tickets` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `ticket_categories` tc_source ON tc_source.`id` = t.`category_id`
+LEFT JOIN `ticket_categories` tc_target ON tc_target.`company_id` = c.`id` AND tc_target.`name` = tc_source.`name`
+LEFT JOIN `ticket_statuses` ts_source ON ts_source.`id` = t.`status_id`
+LEFT JOIN `ticket_statuses` ts_target ON ts_target.`company_id` = c.`id` AND ts_target.`name` = ts_source.`name`
+LEFT JOIN `ticket_priorities` tp_source ON tp_source.`id` = t.`priority_id`
+LEFT JOIN `ticket_priorities` tp_target ON tp_target.`company_id` = c.`id` AND tp_target.`name` = tp_source.`name`
+LEFT JOIN `users` u_creator_source ON u_creator_source.`id` = t.`created_by_user_id`
+LEFT JOIN `users` u_creator_target ON u_creator_target.`company_id` = c.`id` AND u_creator_target.`username` = u_creator_source.`username`
+LEFT JOIN `users` u_assignee_source ON u_assignee_source.`id` = t.`assigned_to_user_id`
+LEFT JOIN `users` u_assignee_target ON u_assignee_target.`company_id` = c.`id` AND u_assignee_target.`username` = u_assignee_source.`username`
+LEFT JOIN (
+    SELECT u1.`company_id`, MIN(u1.`id`) AS `id`
+    FROM `users` u1
+    GROUP BY u1.`company_id`
+) u_fallback ON u_fallback.`company_id` = c.`id`
+LEFT JOIN `equipment` e_source ON e_source.`id` = t.`asset_id`
+LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
+WHERE t.`company_id` = 1
+  AND COALESCE(u_creator_target.`id`, u_fallback.`id`) IS NOT NULL;
+INSERT INTO `ui_configuration` (`company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `sidebar_visibility`, `sidebar_main_order`, `sidebar_submenu_order`, `created_at`, `updated_at`) SELECT c.`id`, t.`user_id`, t.`table_actions_position`, t.`new_button_position`, t.`export_buttons_position`, t.`back_save_position`, t.`enable_all_error_reporting`, t.`enable_audit_logs`, t.`records_per_page`, t.`app_name`, t.`sidebar_visibility`, t.`sidebar_main_order`, t.`sidebar_submenu_order`, t.`created_at`, t.`updated_at` FROM `ui_configuration` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1 AND NOT EXISTS (SELECT 1 FROM `ui_configuration` u WHERE u.`company_id` = c.`id` AND u.`user_id` = t.`user_id`);
+INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active` FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+-- Workstations are tenant-specific and reference tenant-bound records.
+-- Keep this table empty on bootstrap to avoid cross-company foreign key mismatches.
+
+
 
 -- Build database-level audit triggers for every application table.
 DROP TRIGGER IF EXISTS `trg_access_levels_audit_insert`;
