@@ -393,6 +393,10 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
     $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
     $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
 
+    // Why: tenants may configure a single active approver by type without department links.
+    if ($resolved['hod_approval'] === '') {
+        $resolved['hod_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HOD Approval');
+    }
     // Why: HRD/ISM approvers are often configured as one active approver company-wide.
     if ($resolved['hrd_approval'] === '') {
         $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HRD Approval');
