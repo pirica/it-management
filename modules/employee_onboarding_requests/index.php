@@ -400,9 +400,7 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
     if ($resolved['ism_approval'] === '') {
         $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
     }
-    if ($resolved['hod_approval'] === '') {
-        $resolved['hod_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HOD Approval');
-    }
+    // Why: HOD approval must stay department-specific; do not auto-fill from other departments.
 
     return $resolved;
 }
