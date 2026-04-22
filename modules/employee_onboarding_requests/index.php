@@ -200,6 +200,7 @@ function cr_onboarding_system_access_labels($conn, $company_id) {
 
     $fieldAliasMap = [
         'opera_username' => 'opera',
+        'opera' => 'opera',
     ];
     $labels = [];
     $company_id = (int)$company_id;
@@ -208,7 +209,6 @@ function cr_onboarding_system_access_labels($conn, $company_id) {
         $sql = "SELECT code, name
                 FROM `system_access`
                 WHERE company_id={$company_id}
-                  AND active=1
                 ORDER BY name ASC";
         $res = mysqli_query($conn, $sql);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -449,9 +449,98 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 $onboardingSystemAccessLabels = cr_onboarding_system_access_labels($conn, (int)$company_id);
-$onboardingSystemAccessFields = array_fill_keys(array_keys($onboardingSystemAccessLabels), true);
-foreach (['email_account', 'landline_phone', 'mobile_phone', 'mobile_email', 'office_key_card'] as $itmOnboardingCheckboxField) {
-    $onboardingSystemAccessFields[$itmOnboardingCheckboxField] = true;
+$onboardingSystemAccessFields = array_fill_keys([
+    'network_access',
+    'micros_emc',
+    'opera',
+    'micros_card',
+    'pms_id',
+    'synergy_mms',
+    'email_account',
+    'landline_phone',
+    'hu_the_lobby',
+    'mobile_phone',
+    'navision',
+    'mobile_email',
+    'onq_ri',
+    'birchstreet',
+    'delphi',
+    'omina',
+    'vingcard_system',
+    'digital_rev',
+    'office_key_card',
+], true);
+foreach (array_keys($onboardingSystemAccessLabels) as $itmOnboardingDynamicField) {
+    $onboardingSystemAccessFields[(string)$itmOnboardingDynamicField] = true;
+}
+
+$onboardingVisibleFields = [];
+foreach ($fieldColumns as $itmOnboardingColumn) {
+    $onboardingVisibleFields[(string)($itmOnboardingColumn['Field'] ?? '')] = true;
+}
+
+$onboardingAccessFieldsOrdered = [
+    'network_access',
+    'micros_emc',
+    'opera',
+    'micros_card',
+    'pms_id',
+    'synergy_mms',
+    'email_account',
+    'landline_phone',
+    'hu_the_lobby',
+    'mobile_phone',
+    'navision',
+    'mobile_email',
+    'onq_ri',
+    'birchstreet',
+    'delphi',
+    'omina',
+    'vingcard_system',
+    'digital_rev',
+    'office_key_card',
+];
+$onboardingDynamicAccessFields = [];
+foreach ($onboardingAccessFieldsOrdered as $itmAccessFieldName) {
+    if (!isset($onboardingVisibleFields[$itmAccessFieldName]) || !isset($onboardingSystemAccessFields[$itmAccessFieldName])) {
+        continue;
+    }
+    $onboardingDynamicAccessFields[] = $itmAccessFieldName;
+}
+foreach (array_keys($onboardingSystemAccessLabels) as $itmAccessFieldName) {
+    $itmAccessFieldName = (string)$itmAccessFieldName;
+    if (!isset($onboardingVisibleFields[$itmAccessFieldName]) || !isset($onboardingSystemAccessFields[$itmAccessFieldName])) {
+        continue;
+    }
+    if (!in_array($itmAccessFieldName, $onboardingDynamicAccessFields, true)) {
+        $onboardingDynamicAccessFields[] = $itmAccessFieldName;
+    }
+}
+
+$onboardingAccessFieldPairs = [];
+for ($itmAccessIndex = 0; $itmAccessIndex < count($onboardingDynamicAccessFields); $itmAccessIndex += 2) {
+    $onboardingAccessFieldPairs[] = [
+        $onboardingDynamicAccessFields[$itmAccessIndex],
+        $onboardingDynamicAccessFields[$itmAccessIndex + 1] ?? null,
+    ];
+}
+
+$onboardingRowsShared = [
+    ['first_name', 'last_name'],
+    ['employee_position_id', 'department_name'],
+    ['request_date', 'termination_date'],
+];
+foreach ($onboardingAccessFieldPairs as $itmAccessPair) {
+    $onboardingRowsShared[] = $itmAccessPair;
+}
+foreach ([
+    ['office_key_card_dep', null],
+    ['employee_id', null],
+    ['starting_date', 'requested_on'],
+    ['requested_by', 'hod_approval'],
+    ['hrd_approval', 'ism_approval'],
+] as $itmTailPair) {
+    $onboardingRowsShared[] = $itmTailPair;
 }
 
 // Handle Excel/CSV database import requests from table-tools.js.
@@ -1037,7 +1126,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
                                     <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
-                                        <?php echo sanitize(cr_humanize_field($field)); ?>
+                                        <?php echo sanitize(cr_is_employee_onboarding_module() ? cr_onboarding_field_label($field, $onboardingSystemAccessLabels) : cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
                                             <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
                                         <?php endif; ?>
@@ -1116,25 +1205,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <table>
                             <tbody>
                             <?php
-                            $onboardingRows = [
-                                ['first_name', 'last_name'],
-                                ['employee_position_id', 'department_name'],
-                                ['request_date', 'termination_date'],
-                                ['network_access', 'micros_emc'],
-                                ['opera', 'micros_card'],
-                                ['pms_id', 'synergy_mms'],
-                                ['email_account', 'landline_phone'],
-                                ['hu_the_lobby', 'mobile_phone'],
-                                ['navision', 'mobile_email'],
-                                ['onq_ri', 'birchstreet'],
-                                ['delphi', 'omina'],
-                                ['vingcard_system', 'digital_rev'],
-                                ['office_key_card', 'office_key_card_dep'],
-                                ['employee_id', null],
-                                ['starting_date', 'requested_on'],
-                                ['requested_by', 'hod_approval'],
-                                ['hrd_approval', 'ism_approval'],
-                            ];
+                            $onboardingRows = $onboardingRowsShared;
                             ?>
                             <?php $departmentNameOptions = cr_department_name_options($conn, (int)$company_id); ?>
                             <?php foreach ($onboardingRows as $pair): ?>
@@ -1331,25 +1402,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <table>
                         <tbody>
                         <?php
-                        $viewPairs = [
-                            ['first_name', 'last_name'],
-                            ['employee_position_id', 'department_name'],
-                            ['request_date', 'termination_date'],
-                            ['network_access', 'micros_emc'],
-                            ['opera', 'micros_card'],
-                            ['pms_id', 'synergy_mms'],
-                            ['email_account', 'landline_phone'],
-                            ['hu_the_lobby', 'mobile_phone'],
-                            ['navision', 'mobile_email'],
-                            ['onq_ri', 'birchstreet'],
-                            ['delphi', 'omina'],
-                            ['vingcard_system', 'digital_rev'],
-                            ['office_key_card', 'office_key_card_dep'],
-                            ['employee_id', null],
-                            ['starting_date', 'requested_on'],
-                            ['requested_by', 'hod_approval'],
-                            ['hrd_approval', 'ism_approval'],
-                        ];
+                        $viewPairs = $onboardingRowsShared;
                         ?>
                         <?php foreach ($viewPairs as $pair): ?>
                             <tr>

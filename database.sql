@@ -2443,6 +2443,26 @@ INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUE
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('45', '3', 'office_key_card', 'Office Key Card', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('60', '4', 'office_key_card', 'Office Key Card', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('75', '5', 'office_key_card', 'Office Key Card', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('76', '1', 'email_account', 'Email Account', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('77', '2', 'email_account', 'Email Account', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('78', '3', 'email_account', 'Email Account', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('79', '4', 'email_account', 'Email Account', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('80', '5', 'email_account', 'Email Account', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('81', '1', 'landline_phone', 'Landline Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('82', '2', 'landline_phone', 'Landline Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('83', '3', 'landline_phone', 'Landline Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('84', '4', 'landline_phone', 'Landline Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('85', '5', 'landline_phone', 'Landline Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('86', '1', 'mobile_phone', 'Mobile Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('87', '2', 'mobile_phone', 'Mobile Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('88', '3', 'mobile_phone', 'Mobile Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('89', '4', 'mobile_phone', 'Mobile Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('90', '5', 'mobile_phone', 'Mobile Phone', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('91', '1', 'mobile_email', 'Mobile Email', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('92', '2', 'mobile_email', 'Mobile Email', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('93', '3', 'mobile_email', 'Mobile Email', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('94', '4', 'mobile_email', 'Mobile Email', '1');
+INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('95', '5', 'mobile_email', 'Mobile Email', '1');
 
 -- Table structure for `ticket_categories`
 DROP TABLE IF EXISTS `ticket_categories`;
