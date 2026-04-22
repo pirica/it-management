@@ -1917,14 +1917,14 @@ document.addEventListener('change', function (event) {
             }
 
             const resolvedValue = values && typeof values[fieldName] === 'string' ? values[fieldName] : '';
-            if (resolvedValue !== '') {
-                input.value = resolvedValue;
-            }
+            // Why: when a newly selected department has no active mapping, stale approval names must be cleared.
+            input.value = resolvedValue;
         });
     }
 
     function resolveApprovalsByDepartment(departmentName) {
         if (!departmentName || !window.ITM_CSRF_TOKEN) {
+            applyApprovalValues({});
             return;
         }
 
