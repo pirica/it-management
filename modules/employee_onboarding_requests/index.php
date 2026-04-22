@@ -493,6 +493,10 @@ function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, 
         $errorMessage = 'Email API is not configured in config/config.php.';
         return false;
     }
+    if (!function_exists('curl_init')) {
+        $errorMessage = 'Email API call failed: cURL extension is not available on this server.';
+        return false;
+    }
 
     $payload = json_encode([
         'from' => 'verified@yourdomain.com',
@@ -525,7 +529,14 @@ function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, 
         return false;
     }
     if ($httpCode < 200 || $httpCode >= 300) {
-        $errorMessage = 'Email API returned HTTP ' . $httpCode . '.';
+        $responseSnippet = trim((string)$responseBody);
+        if ($responseSnippet !== '') {
+            $responseSnippet = preg_replace('/\s+/', ' ', $responseSnippet);
+            $responseSnippet = substr($responseSnippet, 0, 240);
+            $errorMessage = 'Email API returned HTTP ' . $httpCode . ': ' . $responseSnippet;
+        } else {
+            $errorMessage = 'Email API returned HTTP ' . $httpCode . ' with an empty response body.';
+        }
         return false;
     }
 
@@ -1519,7 +1530,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     $recordId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
     if ($approvalType === '' || $recordId <= 0) {
-        $_SESSION['crud_error'] = 'Invalid approval request.';
+        $invalidParts = [];
+        if ($approvalType === '') {
+            $invalidParts[] = 'approval target "' . $approvalTarget . '" is not valid';
+        }
+        if ($recordId <= 0) {
+            $invalidParts[] = 'record id is missing or invalid';
+        }
+        $_SESSION['crud_error'] = 'Invalid approval request: ' . implode('; ', $invalidParts) . '.';
         header('Location: view.php?id=' . $recordId);
         exit;
     }
