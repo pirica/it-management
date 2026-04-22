@@ -516,6 +516,10 @@ $onboardingAccessFieldsOrdered = [
 ];
 $onboardingDynamicAccessFields = [];
 foreach ($onboardingAccessFieldsOrdered as $itmAccessFieldName) {
+    if ($itmAccessFieldName === 'office_key_card') {
+        // Keep Office Key Card aligned with its department selector in a dedicated paired row.
+        continue;
+    }
     if (!isset($onboardingVisibleFields[$itmAccessFieldName]) || !isset($onboardingSystemAccessFields[$itmAccessFieldName])) {
         continue;
     }
@@ -523,6 +527,9 @@ foreach ($onboardingAccessFieldsOrdered as $itmAccessFieldName) {
 }
 foreach (array_keys($onboardingSystemAccessLabels) as $itmAccessFieldName) {
     $itmAccessFieldName = (string)$itmAccessFieldName;
+    if ($itmAccessFieldName === 'office_key_card') {
+        continue;
+    }
     if (!isset($onboardingVisibleFields[$itmAccessFieldName]) || !isset($onboardingSystemAccessFields[$itmAccessFieldName])) {
         continue;
     }
@@ -548,7 +555,7 @@ foreach ($onboardingAccessFieldPairs as $itmAccessPair) {
     $onboardingRowsShared[] = $itmAccessPair;
 }
 foreach ([
-    ['office_key_card_dep', null],
+    ['office_key_card', 'office_key_card_dep'],
     ['employee_id', 'starting_date'],
     ['requested_by', 'requested_by_date'],
     ['hod_approval', 'hod_approval_date'],
