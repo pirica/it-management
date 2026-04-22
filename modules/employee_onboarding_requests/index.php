@@ -519,6 +519,13 @@ if (cr_is_employee_onboarding_module()) {
         return (string)($col['Field'] ?? '') !== 'requested_on';
     }));
 }
+$listColumns = $uiColumns;
+if (cr_is_employee_onboarding_module()) {
+    $listColumns = array_values(array_filter($listColumns, static function ($col) {
+        $field = (string)($col['Field'] ?? '');
+        return !in_array($field, ['employee', 'employee_id'], true);
+    }));
+}
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -851,6 +858,9 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     if (array_key_exists('starting_date', $data)) {
         $data['starting_date'] = '';
     }
+    if (array_key_exists('active', $data)) {
+        $data['active'] = 1;
+    }
     if (array_key_exists('comments', $data)) {
         $data['comments'] = '(Email:)';
     }
@@ -912,7 +922,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
         $isOnboardingSystemAccessField = cr_is_employee_onboarding_module() && isset($onboardingSystemAccessFields[$name]);
 
         if ($isOnboardingSystemAccessField) {
@@ -1201,7 +1211,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
-                            <?php foreach ($uiColumns as $col): ?>
+                            <?php foreach ($listColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -1220,7 +1230,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
-                                <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($listColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
@@ -1248,7 +1258,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($listColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
