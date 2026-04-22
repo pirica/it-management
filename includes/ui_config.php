@@ -94,6 +94,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'ticket_priorities', 'label' => '🔥 Ticket Priorities', 'href' => 'modules/ticket_priorities/', 'match_dir' => 'ticket_priorities'],
                 ['id' => 'employee_statuses', 'label' => '🧑‍💼 Employee Statuses', 'href' => 'modules/employee_statuses/', 'match_dir' => 'employee_statuses'],
                 ['id' => 'employee_positions', 'label' => '🪪 Positions Titles', 'href' => 'modules/employee_positions/', 'match_dir' => 'employee_positions'],
+                ['id' => 'approver_type', 'label' => '🧩 Approver Type', 'href' => 'modules/approver_type/', 'match_dir' => 'approver_type'],
                 ['id' => 'approvers', 'label' => '✅ Approvers', 'href' => 'modules/approvers/', 'match_dir' => 'approvers'],
                 ['id' => 'audit_logs', 'label' => '🧾 Audit Logs', 'href' => 'modules/audit_logs/', 'match_dir' => 'audit_logs'],
             ],
