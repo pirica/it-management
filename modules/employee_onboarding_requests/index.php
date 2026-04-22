@@ -6,9 +6,9 @@
  * records defined for the company.
  */
 
-$crud_table = 'employee_onboarding_requests';
-$crud_title = 'Employee Onboarding Requests';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'employee_onboarding_requests';
+$crud_title = $crud_title ?? 'Employee Onboarding Requests';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
@@ -192,6 +192,45 @@ function cr_is_employee_onboarding_module() {
     return (($GLOBALS['crud_table'] ?? '') === 'employee_onboarding_requests');
 }
 
+function cr_onboarding_system_access_labels($conn, $company_id) {
+    if (!cr_is_employee_onboarding_module()) {
+        return [];
+    }
+
+    $fieldAliasMap = [
+        'opera_username' => 'opera',
+    ];
+    $labels = [];
+    $company_id = (int)$company_id;
+
+    if ($company_id > 0) {
+        $sql = "SELECT code, name
+                FROM `system_access`
+                WHERE company_id={$company_id}
+                  AND active=1
+                ORDER BY name ASC";
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rawCode = trim((string)($row['code'] ?? ''));
+            if ($rawCode === '') {
+                continue;
+            }
+            $fieldName = $fieldAliasMap[$rawCode] ?? $rawCode;
+            $labels[$fieldName] = trim((string)($row['name'] ?? ''));
+        }
+    }
+
+    return $labels;
+}
+
+function cr_is_truthy_checkbox_value($value) {
+    $text = strtolower(trim((string)$value));
+    if ($text === '') {
+        return false;
+    }
+    return in_array($text, ['1', 'yes', 'true', 'on', 'active', 'y', '✅'], true);
+}
+
 function cr_format_onboarding_date($value) {
     $text = trim((string)$value);
     if ($text === '' || $text === '0000-00-00') {
@@ -214,6 +253,15 @@ function cr_onboarding_display_value($value, $isDateField = false) {
         return $formatted === '' ? 'N/A' : $formatted;
     }
     return sanitize($text);
+}
+
+function cr_onboarding_field_label($fieldName, $systemAccessLabels = []) {
+    $fieldName = (string)$fieldName;
+    $custom = trim((string)($systemAccessLabels[$fieldName] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+    return cr_humanize_field($fieldName);
 }
 
 function cr_fk_label_by_id($conn, $fk, $id, $company_id) {
@@ -377,6 +425,8 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
+$onboardingSystemAccessLabels = cr_onboarding_system_access_labels($conn, (int)$company_id);
+$onboardingSystemAccessFields = array_fill_keys(array_keys($onboardingSystemAccessLabels), true);
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
@@ -656,6 +706,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+        $isOnboardingSystemAccessField = cr_is_employee_onboarding_module() && isset($onboardingSystemAccessFields[$name]);
+
+        if ($isOnboardingSystemAccessField) {
+            $data[$name] = isset($_POST[$name]) ? "'1'" : "'0'";
+            continue;
+        }
+
         // Normalize boolean flags from checkboxes
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
@@ -1020,7 +1077,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                             $val = $data[$name] ?? '';
                                             $displayVal = ($val === 'NULL') ? '' : (string)$val;
                                         ?>
-                                        <th style="width:180px;"><?php echo sanitize(cr_humanize_field($name)); ?></th>
+                                        <th style="width:180px;"><?php echo sanitize(cr_onboarding_field_label($name, $onboardingSystemAccessLabels)); ?></th>
                                         <td>
                                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
@@ -1028,6 +1085,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 <label class="itm-checkbox-control">
                                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                                     <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span>
+                                                </label>
+                                            <?php elseif (isset($onboardingSystemAccessFields[$name])): ?>
+                                                <?php $isChecked = cr_is_truthy_checkbox_value($displayVal); ?>
+                                                <label class="itm-checkbox-control">
+                                                    <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                    <span class="itm-check-indicator" aria-hidden="true"><?php echo $isChecked ? '✅' : '❌'; ?></span>
                                                 </label>
                                             <?php elseif (isset($fkMap[$name])): ?>
                                                 <?php
@@ -1168,7 +1231,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($viewPairs as $pair): ?>
                             <tr>
                                 <?php foreach ($pair as $f): ?>
-                                    <th style="width:180px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
+                                    <th style="width:180px;"><?php echo sanitize(cr_onboarding_field_label($f, $onboardingSystemAccessLabels)); ?></th>
                                     <td>
                                         <?php if (isset($fkMap[$f]) && (int)($data[$f] ?? 0) > 0): ?>
                                             <?php
@@ -1177,6 +1240,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                             ?>
                                         <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_on'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true)); ?>
+                                        <?php elseif (isset($onboardingSystemAccessFields[$f])): ?>
+                                            <?php echo cr_is_truthy_checkbox_value($data[$f] ?? '') ? '✅' : '❌'; ?>
                                         <?php else: ?>
                                             <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '')); ?>
                                         <?php endif; ?>
