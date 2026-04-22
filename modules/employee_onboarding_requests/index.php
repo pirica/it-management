@@ -393,7 +393,14 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
     $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
     $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
 
-    // Why: approvals must remain department-specific; do not auto-fill from other departments.
+    // Why: HRD/ISM approvers are often configured as one active approver company-wide.
+    if ($resolved['hrd_approval'] === '') {
+        $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HRD Approval');
+    }
+    if ($resolved['ism_approval'] === '') {
+        $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
+    }
+    // Why: HOD approval must stay department-specific; do not auto-fill from other departments.
 
     return $resolved;
 }
