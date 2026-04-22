@@ -131,6 +131,7 @@ function cr_humanize_field($field) {
     $map = [
         'department_id' => 'Department Name',
         'office_key_card_department_id' => 'Office Key Card Department',
+        'office_key_card_dep' => 'Department',
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
@@ -297,6 +298,25 @@ function cr_fk_label_by_id($conn, $fk, $id, $company_id) {
     return '';
 }
 
+function cr_department_name_options($conn, $company_id) {
+    $rows = [];
+    $company_id = (int)$company_id;
+    if ($company_id <= 0) {
+        return $rows;
+    }
+
+    $sql = "SELECT name FROM `departments` WHERE company_id={$company_id} ORDER BY name ASC";
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $name = trim((string)($row['name'] ?? ''));
+        if ($name !== '') {
+            $rows[] = $name;
+        }
+    }
+
+    return array_values(array_unique($rows));
+}
+
 function cr_ensure_fk_selected_option($conn, &$opts, $fk, $selectedId, $company_id) {
     $selectedId = (int)$selectedId;
     if ($selectedId <= 0) {
@@ -427,6 +447,9 @@ $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 $onboardingSystemAccessLabels = cr_onboarding_system_access_labels($conn, (int)$company_id);
 $onboardingSystemAccessFields = array_fill_keys(array_keys($onboardingSystemAccessLabels), true);
+foreach (['email_account', 'landline_phone', 'mobile_phone', 'mobile_email', 'office_key_card'] as $itmOnboardingCheckboxField) {
+    $onboardingSystemAccessFields[$itmOnboardingCheckboxField] = true;
+}
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
@@ -1055,15 +1078,21 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 ['onq_ri', 'birchstreet'],
                                 ['delphi', 'omina'],
                                 ['vingcard_system', 'digital_rev'],
-                                ['office_key_card', 'employee_id'],
-                                ['starting_date', 'requested_on'],
+                                ['office_key_card', 'office_key_card_dep'],
+                                ['employee_id', 'starting_date'],
+                                ['requested_on', null],
                                 ['requested_by', 'hod_approval'],
                                 ['hrd_approval', 'ism_approval'],
                             ];
                             ?>
+                            <?php $departmentNameOptions = cr_department_name_options($conn, (int)$company_id); ?>
                             <?php foreach ($onboardingRows as $pair): ?>
                                 <tr>
                                     <?php foreach ($pair as $name): ?>
+                                        <?php if ($name === null): ?>
+                                            <th style="width:180px;"></th><td></td>
+                                            <?php continue; ?>
+                                        <?php endif; ?>
                                         <?php $col = null; foreach ($fieldColumns as $fieldCol) { if ($fieldCol['Field'] === $name) { $col = $fieldCol; break; } } ?>
                                         <?php if ($col === null): ?>
                                             <th style="width:180px;"></th><td></td>
@@ -1081,6 +1110,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <td>
                                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                                            <?php elseif ($name === 'department_name' && cr_is_employee_onboarding_module()): ?>
+                                                <div style="display:flex;gap:8px;align-items:center;">
+                                                    <select name="department_name">
+                                                        <option value="">-- Select --</option>
+                                                        <?php foreach ($departmentNameOptions as $deptName): ?>
+                                                            <option value="<?php echo sanitize($deptName); ?>" <?php echo ($displayVal === $deptName) ? 'selected' : ''; ?>><?php echo sanitize($deptName); ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                    <a class="btn btn-sm" href="../departments/index.php?search=&sort=name" target="_blank" rel="noopener">➕</a>
+                                                </div>
                                             <?php elseif ($isTinyInt): ?>
                                                 <label class="itm-checkbox-control">
                                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
@@ -1222,8 +1261,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             ['onq_ri', 'birchstreet'],
                             ['delphi', 'omina'],
                             ['vingcard_system', 'digital_rev'],
-                            ['office_key_card', 'employee_id'],
-                            ['starting_date', 'requested_on'],
+                            ['office_key_card', 'office_key_card_dep'],
+                            ['employee_id', 'starting_date'],
+                            ['requested_on', null],
                             ['requested_by', 'hod_approval'],
                             ['hrd_approval', 'ism_approval'],
                         ];
@@ -1231,6 +1271,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($viewPairs as $pair): ?>
                             <tr>
                                 <?php foreach ($pair as $f): ?>
+                                    <?php if ($f === null): ?>
+                                        <th style="width:180px;"></th><td></td>
+                                        <?php continue; ?>
+                                    <?php endif; ?>
                                     <th style="width:180px;"><?php echo sanitize(cr_onboarding_field_label($f, $onboardingSystemAccessLabels)); ?></th>
                                     <td>
                                         <?php if (isset($fkMap[$f]) && (int)($data[$f] ?? 0) > 0): ?>
