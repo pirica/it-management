@@ -675,6 +675,18 @@ foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
 
+if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if (array_key_exists('starting_date', $data)) {
+        $data['starting_date'] = '';
+    }
+    if (array_key_exists('requested_on', $data)) {
+        $data['requested_on'] = date('Y-m-d');
+    }
+    if (array_key_exists('comments', $data)) {
+        $data['comments'] = '(Email:)';
+    }
+}
+
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Fetch record details for Edit or View pages
@@ -801,6 +813,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                         $data[$name] = 'NULL';
                     }
                 }
+                continue;
+            }
+        }
+
+        if ($name === 'department_name') {
+            $value = $_POST[$name] ?? null;
+            $newKey = $name . '__new_value';
+            $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
+
+            if ($value === '__add_new__') {
+                $errors[] = 'Please wait for the new department to be created before saving.';
+                $data[$name] = 'NULL';
+                continue;
+            }
+
+            if ($value === '__new__' && $newValueRaw !== '') {
+                $deptEsc = mysqli_real_escape_string($conn, $newValueRaw);
+                $deptFindSql = "SELECT id FROM `departments` WHERE `name`='{$deptEsc}'";
+                if ($company_id > 0) {
+                    $deptFindSql .= ' AND company_id=' . (int)$company_id;
+                }
+                $deptFindSql .= ' LIMIT 1';
+                $deptExisting = mysqli_query($conn, $deptFindSql);
+
+                if (!($deptExisting && mysqli_num_rows($deptExisting) > 0)) {
+                    $deptInsertSql = "INSERT INTO `departments` (`name`, `company_id`) VALUES ('{$deptEsc}', " . (int)$company_id . ")";
+                    $deptErrorCode = 0;
+                    $deptErrorMessage = '';
+                    if (!itm_run_query($conn, $deptInsertSql, $deptErrorCode, $deptErrorMessage)) {
+                        $errors[] = 'Could not add related value for department_name. ' . itm_format_db_constraint_error($deptErrorCode, $deptErrorMessage);
+                        $data[$name] = 'NULL';
+                        continue;
+                    }
+                }
+
+                $data[$name] = "'" . $deptEsc . "'";
                 continue;
             }
         }
@@ -1136,18 +1184,25 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                     <?php endforeach; ?>
                                                     <option value="__add_new__">➕</option>
                                                 </select>
-                                                <a class="btn btn-sm" href="../employee_positions/index.php?search=&sort=name" target="_blank" rel="noopener">➕</a>
                                             </div>
                                         <?php elseif ($name === 'department_name' && cr_is_employee_onboarding_module()): ?>
                                             <div style="display:flex;gap:8px;align-items:center;">
-                                                <select name="department_name">
+                                                <select
+                                                    name="department_name"
+                                                    data-addable-select="1"
+                                                    data-add-table="departments"
+                                                    data-add-id-col="id"
+                                                    data-add-label-col="name"
+                                                    data-add-company-scoped="1"
+                                                    data-add-friendly="department"
+                                                >
                                                     <option value="">-- Select --</option>
-                                                        <?php foreach ($departmentNameOptions as $deptName): ?>
-                                                            <option value="<?php echo sanitize($deptName); ?>" <?php echo ($displayVal === $deptName) ? 'selected' : ''; ?>><?php echo sanitize($deptName); ?></option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                    <a class="btn btn-sm" href="../departments/index.php?search=&sort=name" target="_blank" rel="noopener">➕</a>
-                                                </div>
+                                                    <?php foreach ($departmentNameOptions as $deptName): ?>
+                                                        <option value="<?php echo sanitize($deptName); ?>" <?php echo ($displayVal === $deptName) ? 'selected' : ''; ?>><?php echo sanitize($deptName); ?></option>
+                                                    <?php endforeach; ?>
+                                                    <option value="__add_new__">➕</option>
+                                                </select>
+                                            </div>
                                             <?php elseif ($isTinyInt): ?>
                                                 <label class="itm-checkbox-control">
                                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
