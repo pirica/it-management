@@ -922,6 +922,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
+    if (is_array($jsonBody) && isset($jsonBody['resolve_onboarding_employee_email'])) {
+        header('Content-Type: application/json');
+
+        $requestToken = (string)($jsonBody['csrf_token'] ?? '');
+        if (!itm_validate_csrf_token($requestToken)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
+            exit;
+        }
+
+        $employeeId = isset($jsonBody['employee_id']) ? (int)$jsonBody['employee_id'] : 0;
+        $email = cr_onboarding_employee_email($conn, (int)$company_id, $employeeId);
+        echo json_encode([
+            'ok' => true,
+            'employee_id' => $employeeId,
+            'email' => $email,
+        ]);
+        exit;
+    }
+
     if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
         header('Content-Type: application/json');
 
@@ -2056,6 +2076,82 @@ document.addEventListener('change', function (event) {
 
     if (departmentField.value) {
         resolveApprovalsByDepartment(departmentField.value);
+    }
+})();
+
+(function () {
+    const employeeField = document.querySelector('select[name="employee_id"]');
+    const commentsField = document.querySelector('textarea[name="comments"]');
+    if (!employeeField || !commentsField) {
+        return;
+    }
+
+    function setCommentsEmailPrefix(email) {
+        const currentText = commentsField.value || '';
+        const trimmedText = currentText.trim();
+        const normalizedEmail = (email || '').trim();
+
+        if (normalizedEmail === '') {
+            if (trimmedText === '' || trimmedText === '(Email:)') {
+                commentsField.value = 'Email:';
+            }
+            return;
+        }
+
+        const emailLine = 'Email: ' + normalizedEmail;
+        if (trimmedText === '' || trimmedText === 'Email:' || trimmedText === '(Email:)') {
+            commentsField.value = emailLine;
+            return;
+        }
+
+        const lines = currentText.split(/\r?\n/);
+        if (lines.length > 0 && /^email\s*:/i.test(lines[0].trim())) {
+            lines[0] = emailLine;
+            commentsField.value = lines.join('\n');
+            return;
+        }
+
+        commentsField.value = emailLine + "\n" + currentText;
+    }
+
+    function resolveEmployeeEmail(employeeId) {
+        if (!window.ITM_CSRF_TOKEN) {
+            return;
+        }
+
+        fetch('index.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                resolve_onboarding_employee_email: 1,
+                csrf_token: window.ITM_CSRF_TOKEN,
+                employee_id: employeeId
+            })
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload || payload.ok !== true) {
+                return;
+            }
+            setCommentsEmailPrefix(payload.email || '');
+        })
+        .catch(function () {
+            // Why: employee selection should not block form submission if async email lookup fails.
+        });
+    }
+
+    employeeField.addEventListener('change', function () {
+        resolveEmployeeEmail(employeeField.value || '');
+    });
+
+    if (employeeField.value) {
+        resolveEmployeeEmail(employeeField.value);
+    } else {
+        setCommentsEmailPrefix('');
     }
 })();
 </script>
