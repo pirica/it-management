@@ -378,6 +378,68 @@ function cr_onboarding_find_active_approver_name_by_type($conn, $company_id, $ap
     return trim((string)($row['username'] ?? ''));
 }
 
+function cr_onboarding_employee_email($conn, $company_id, $employeeId) {
+    $employeeId = (int)$employeeId;
+    $company_id = (int)$company_id;
+    if ($employeeId <= 0) {
+        return '';
+    }
+
+    $sql = 'SELECT email FROM `employees` WHERE id=?';
+    if ($company_id > 0) {
+        $sql .= ' AND company_id=?';
+    }
+    $sql .= ' LIMIT 1';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return '';
+    }
+
+    if ($company_id > 0) {
+        mysqli_stmt_bind_param($stmt, 'ii', $employeeId, $company_id);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
+    }
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    // Why: preserve email fill for legacy shared employee rows not duplicated per tenant.
+    if ((!$row || trim((string)($row['email'] ?? '')) === '') && $company_id > 0) {
+        $fallbackStmt = mysqli_prepare($conn, 'SELECT email FROM `employees` WHERE id=? LIMIT 1');
+        if ($fallbackStmt) {
+            mysqli_stmt_bind_param($fallbackStmt, 'i', $employeeId);
+            mysqli_stmt_execute($fallbackStmt);
+            $fallbackResult = mysqli_stmt_get_result($fallbackStmt);
+            $row = $fallbackResult ? mysqli_fetch_assoc($fallbackResult) : $row;
+            mysqli_stmt_close($fallbackStmt);
+        }
+    }
+
+    return trim((string)($row['email'] ?? ''));
+}
+
+function cr_onboarding_comment_with_employee_email($conn, $company_id, $employeeId, $existingComment) {
+    $email = cr_onboarding_employee_email($conn, $company_id, $employeeId);
+    $existingComment = trim((string)$existingComment);
+
+    if ($email === '') {
+        return $existingComment;
+    }
+
+    if ($existingComment === '' || $existingComment === '(Email:)' || $existingComment === 'Email:') {
+        return 'Email: ' . $email;
+    }
+
+    if (stripos($existingComment, 'Email:') === 0) {
+        return 'Email: ' . $email;
+    }
+
+    return 'Email: ' . $email . "\n" . $existingComment;
+}
+
 function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw) {
     $departmentName = trim((string)$departmentNameRaw);
     $resolved = [
@@ -1086,7 +1148,7 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         $data['active'] = 1;
     }
     if (array_key_exists('comments', $data)) {
-        $data['comments'] = '(Email:)';
+        $data['comments'] = 'Email:';
     }
     if (array_key_exists('requested_by', $data) && $onboardingRequestedByDefault !== '') {
         $data['requested_by'] = $onboardingRequestedByDefault;
@@ -1312,6 +1374,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $data,
         $_POST['department_name'] ?? ($data['department_name'] ?? '')
     );
+
+    if (cr_is_employee_onboarding_module() && array_key_exists('comments', $data) && array_key_exists('employee_id', $data)) {
+        $employeeIdForComment = isset($_POST['employee_id']) ? (int)$_POST['employee_id'] : 0;
+        $commentInput = $_POST['comments'] ?? ($data['comments'] ?? '');
+        $commentWithEmail = cr_onboarding_comment_with_employee_email($conn, (int)$company_id, $employeeIdForComment, $commentInput);
+        if ($commentWithEmail === '') {
+            $data['comments'] = 'NULL';
+        } else {
+            $data['comments'] = "'" . mysqli_real_escape_string($conn, $commentWithEmail) . "'";
+        }
+    }
 
     // Build and execute the dynamic query
     if (empty($errors)) {
