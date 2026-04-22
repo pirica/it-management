@@ -1309,10 +1309,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
     $decision = strtolower(trim((string)($_GET['decision'] ?? '')));
     $token = trim((string)($_GET['token'] ?? ''));
     $statusField = cr_onboarding_status_field_by_target($target);
+    $approvalDateFieldMap = [
+        'hod' => 'hod_approval_date',
+        'hrd' => 'hrd_approval_date',
+        'ism' => 'ism_approval_date',
+    ];
+    $approvalDateField = (string)($approvalDateFieldMap[$target] ?? '');
     $decisionMap = ['approve' => 'Approved', 'decline' => 'Declined'];
     $statusValue = (string)($decisionMap[$decision] ?? '');
 
-    if ($recordId <= 0 || $statusField === '' || $statusValue === '' || $token === '' || !isset($fieldColumnsByName[$statusField])) {
+    if (
+        $recordId <= 0
+        || $statusField === ''
+        || $approvalDateField === ''
+        || $statusValue === ''
+        || $token === ''
+        || !isset($fieldColumnsByName[$statusField])
+        || !isset($fieldColumnsByName[$approvalDateField])
+    ) {
         http_response_code(400);
         echo 'Invalid approval link.';
         exit;
@@ -1343,7 +1357,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
     }
 
     $statusEsc = mysqli_real_escape_string($conn, $statusValue);
-    $updateSql = 'UPDATE `employee_onboarding_requests` SET ' . cr_escape_identifier($statusField) . "='" . $statusEsc . "' WHERE id=" . $recordId . ' LIMIT 1';
+    $updateParts = [
+        cr_escape_identifier($statusField) . "='" . $statusEsc . "'",
+    ];
+    if ($decision === 'approve') {
+        $updateParts[] = cr_escape_identifier($approvalDateField) . "=CURDATE()";
+    }
+    $updateSql = 'UPDATE `employee_onboarding_requests` SET ' . implode(', ', $updateParts) . ' WHERE id=' . $recordId . ' LIMIT 1';
     $dbErrorCode = 0;
     $dbErrorMessage = '';
     if (!itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage)) {
