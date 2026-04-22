@@ -542,6 +542,11 @@ INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `a
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('13', '5', 'GM Approval', '1');
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('14', '5', 'HOD Approval', '1');
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('15', '5', 'ISM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('16', '1', 'HRD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('17', '2', 'HRD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('18', '3', 'HRD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('19', '4', 'HRD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('20', '5', 'HRD Approval', '1');
 
 -- Table structure for `approvers`
 DROP TABLE IF EXISTS `approvers`;
