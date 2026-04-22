@@ -94,7 +94,6 @@ if ($employee) {
                         <table>
                             <thead>
                             <tr>
-                                <th style="width: 80px;">ID</th>
                                 <th>System</th>
                                 <th style="width: 130px;">Granted</th>
                             </tr>
@@ -103,7 +102,6 @@ if ($employee) {
                             <?php foreach ($systemAccessCatalog as $itmAccess): ?>
                                 <?php $itmAccessId = (int)($itmAccess['id'] ?? 0); ?>
                                 <tr>
-                                    <td><?php echo $itmAccessId; ?></td>
                                     <td><?php echo sanitize((string)($itmAccess['name'] ?? '')); ?></td>
                                     <td><?php echo isset($grantedAccessMap[$itmAccessId]) ? '✅' : '❌'; ?></td>
                                 </tr>
