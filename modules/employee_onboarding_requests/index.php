@@ -193,6 +193,21 @@ function cr_is_employee_onboarding_module() {
     return (($GLOBALS['crud_table'] ?? '') === 'employee_onboarding_requests');
 }
 
+function cr_onboarding_normalize_system_access_code($code) {
+    $normalized = trim((string)$code);
+    if ($normalized === '') {
+        return '';
+    }
+
+    // Why: admins may enter codes with spaces/hyphens/camel case; onboarding fields are snake_case.
+    $normalized = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $normalized);
+    $normalized = strtolower($normalized);
+    $normalized = str_replace(['-', ' '], '_', $normalized);
+    $normalized = preg_replace('/[^a-z0-9_]+/', '_', $normalized);
+    $normalized = preg_replace('/_+/', '_', $normalized);
+    return trim((string)$normalized, '_');
+}
+
 function cr_onboarding_system_access_labels($conn, $company_id) {
     if (!cr_is_employee_onboarding_module()) {
         return [];
@@ -212,7 +227,7 @@ function cr_onboarding_system_access_labels($conn, $company_id) {
                 ORDER BY name ASC";
         $res = mysqli_query($conn, $sql);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rawCode = trim((string)($row['code'] ?? ''));
+            $rawCode = cr_onboarding_normalize_system_access_code((string)($row['code'] ?? ''));
             if ($rawCode === '') {
                 continue;
             }
