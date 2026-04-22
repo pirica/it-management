@@ -1885,6 +1885,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <th style="width:180px;"></th><td></td>
                                         <?php continue; ?>
                                     <?php endif; ?>
+                                    <?php
+                                        $viewCol = null;
+                                        foreach ($fieldColumns as $fieldCol) {
+                                            if ($fieldCol['Field'] === $f) {
+                                                $viewCol = $fieldCol;
+                                                break;
+                                            }
+                                        }
+                                        $viewType = (string)($viewCol['Type'] ?? '');
+                                        $isViewTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', $viewType);
+                                    ?>
                                     <th style="width:180px;"><?php echo sanitize(cr_onboarding_field_label($f, $onboardingSystemAccessLabels)); ?></th>
                                     <td>
                                         <?php if (isset($fkMap[$f]) && (int)($data[$f] ?? 0) > 0): ?>
@@ -1892,6 +1903,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$data[$f], (int)$company_id);
                                                 echo sanitize($fkLabel !== '' ? $fkLabel : (string)$data[$f]);
                                             ?>
+                                        <?php elseif ($isViewTinyInt): ?>
+                                            <?php echo ((int)($data[$f] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true)); ?>
                                         <?php elseif (isset($onboardingSystemAccessFields[$f])): ?>
