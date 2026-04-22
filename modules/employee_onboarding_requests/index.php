@@ -223,7 +223,7 @@ function cr_onboarding_system_access_labels($conn, $company_id) {
     if ($company_id > 0) {
         $sql = "SELECT code, name
                 FROM `system_access`
-                WHERE company_id={$company_id}
+                WHERE company_id={$company_id} AND active=1
                 ORDER BY name ASC";
         $res = mysqli_query($conn, $sql);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -237,6 +237,49 @@ function cr_onboarding_system_access_labels($conn, $company_id) {
     }
 
     return $labels;
+}
+
+function cr_sync_onboarding_system_access_columns($conn, $company_id) {
+    $company_id = (int)$company_id;
+    if ($company_id <= 0) {
+        return;
+    }
+
+    $table = 'employee_onboarding_requests';
+    $existingColumns = [];
+    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
+    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+        $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
+    }
+
+    $fieldAliasMap = [
+        'opera_username' => 'opera',
+        'opera' => 'opera',
+    ];
+    $catalogSql = "SELECT code
+                   FROM `system_access`
+                   WHERE company_id={$company_id} AND active=1";
+    $catalogRes = mysqli_query($conn, $catalogSql);
+    while ($catalogRes && ($catalogRow = mysqli_fetch_assoc($catalogRes))) {
+        $rawCode = cr_onboarding_normalize_system_access_code((string)($catalogRow['code'] ?? ''));
+        if ($rawCode === '') {
+            continue;
+        }
+        $fieldName = (string)($fieldAliasMap[$rawCode] ?? $rawCode);
+        if ($fieldName === '' || isset($existingColumns[$fieldName])) {
+            continue;
+        }
+        if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($fieldName)) {
+            continue;
+        }
+
+        $alterSql = 'ALTER TABLE ' . cr_escape_identifier($table)
+            . ' ADD COLUMN ' . cr_escape_identifier($fieldName)
+            . " VARCHAR(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL";
+        if (mysqli_query($conn, $alterSql)) {
+            $existingColumns[$fieldName] = true;
+        }
+    }
 }
 
 function cr_is_truthy_checkbox_value($value) {
@@ -449,6 +492,9 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 }
 
 // Module initialization: load columns and foreign key maps
+if (cr_is_employee_onboarding_module()) {
+    cr_sync_onboarding_system_access_columns($conn, (int)$company_id);
+}
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
