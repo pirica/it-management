@@ -425,11 +425,25 @@ function cr_onboarding_comment_with_employee_email($conn, $company_id, $employee
     $email = cr_onboarding_employee_email($conn, $company_id, $employeeId);
     $existingComment = trim((string)$existingComment);
 
+    $commentLines = preg_split('/\r\n|\r|\n/', $existingComment);
+    $cleanLines = [];
+    foreach ((array)$commentLines as $commentLine) {
+        $trimmedLine = trim((string)$commentLine);
+        if ($trimmedLine === '') {
+            continue;
+        }
+        if (in_array($trimmedLine, ['(Email:)', "'(Email:)'", 'Email:'], true)) {
+            continue;
+        }
+        $cleanLines[] = $commentLine;
+    }
+    $existingComment = trim(implode("\n", $cleanLines));
+
     if ($email === '') {
         return $existingComment;
     }
 
-    if ($existingComment === '' || $existingComment === '(Email:)' || $existingComment === 'Email:') {
+    if ($existingComment === '') {
         return 'Email: ' . $email;
     }
 
@@ -2090,28 +2104,44 @@ document.addEventListener('change', function (event) {
         const currentText = commentsField.value || '';
         const trimmedText = currentText.trim();
         const normalizedEmail = (email || '').trim();
+        const placeholderValues = ['(Email:)', "'(Email:)'", 'Email:'];
+
+        function removePlaceholderLines(text) {
+            const lines = (text || '').split(/\r?\n/);
+            return lines.filter(function (line) {
+                const trimmed = (line || '').trim();
+                if (!trimmed) {
+                    return false;
+                }
+                return placeholderValues.indexOf(trimmed) === -1;
+            });
+        }
 
         if (normalizedEmail === '') {
-            if (trimmedText === '' || trimmedText === '(Email:)') {
+            if (trimmedText === '' || placeholderValues.indexOf(trimmedText) !== -1) {
                 commentsField.value = 'Email:';
             }
             return;
         }
 
         const emailLine = 'Email: ' + normalizedEmail;
-        if (trimmedText === '' || trimmedText === 'Email:' || trimmedText === '(Email:)') {
+        if (trimmedText === '' || placeholderValues.indexOf(trimmedText) !== -1) {
             commentsField.value = emailLine;
             return;
         }
 
-        const lines = currentText.split(/\r?\n/);
+        const lines = removePlaceholderLines(currentText);
+        if (lines.length === 0) {
+            commentsField.value = emailLine;
+            return;
+        }
         if (lines.length > 0 && /^email\s*:/i.test(lines[0].trim())) {
             lines[0] = emailLine;
             commentsField.value = lines.join('\n');
             return;
         }
 
-        commentsField.value = emailLine + "\n" + currentText;
+        commentsField.value = emailLine + "\n" + lines.join('\n');
     }
 
     function resolveEmployeeEmail(employeeId) {
