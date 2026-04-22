@@ -274,6 +274,93 @@ function cr_current_user_display_name($conn, $company_id) {
     return trim((string)($_SESSION['username'] ?? ''));
 }
 
+function cr_onboarding_find_active_approver_name($conn, $company_id, $departmentName, $approverTypeDescription) {
+    $company_id = (int)$company_id;
+    $departmentName = trim((string)$departmentName);
+    $approverTypeDescription = trim((string)$approverTypeDescription);
+
+    if ($company_id <= 0 || $departmentName === '' || $approverTypeDescription === '') {
+        return '';
+    }
+
+    $sql = "SELECT e.first_name, e.last_name, e.display_name, e.username
+            FROM `approvers` a
+            INNER JOIN `departments` d
+                ON d.id = a.department_id
+               AND d.company_id = a.company_id
+            INNER JOIN `approver_type` at
+                ON at.id = a.approver_type_id
+               AND at.company_id = a.company_id
+            LEFT JOIN `employees` e
+                ON e.id = a.employee_id
+               AND e.company_id = a.company_id
+            WHERE a.company_id = ?
+              AND a.active = 1
+              AND d.active = 1
+              AND at.active = 1
+              AND d.name = ?
+              AND at.approver_type_description = ?
+            ORDER BY a.id ASC
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return '';
+    }
+
+    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $departmentName, $approverTypeDescription);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return '';
+    }
+
+    $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+    if ($fullName !== '') {
+        return $fullName;
+    }
+
+    $displayName = trim((string)($row['display_name'] ?? ''));
+    if ($displayName !== '') {
+        return $displayName;
+    }
+
+    return trim((string)($row['username'] ?? ''));
+}
+
+function cr_onboarding_auto_fill_approvals($conn, $company_id, &$data, $departmentNameRaw) {
+    if (!cr_is_employee_onboarding_module()) {
+        return;
+    }
+
+    $departmentName = trim((string)$departmentNameRaw);
+    if ($departmentName === '' && isset($data['department_name'])) {
+        $departmentName = trim((string)$data['department_name'], " \t\n\r\0\x0B'");
+    }
+    if ($departmentName === '') {
+        return;
+    }
+
+    $approvalTypeByField = [
+        'hod_approval' => 'HOD Approval',
+        'hrd_approval' => 'HRD Approval',
+        'ism_approval' => 'ISM Approval',
+    ];
+    foreach ($approvalTypeByField as $approvalField => $approverTypeDescription) {
+        if (!array_key_exists($approvalField, $data)) {
+            continue;
+        }
+
+        $approverName = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, $approverTypeDescription);
+        if ($approverName === '') {
+            continue;
+        }
+
+        $data[$approvalField] = "'" . mysqli_real_escape_string($conn, $approverName) . "'";
+    }
+}
+
 function cr_sync_onboarding_system_access_columns($conn, $company_id) {
     $company_id = (int)$company_id;
     if ($company_id <= 0) {
@@ -1098,6 +1185,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
     }
+
+    cr_onboarding_auto_fill_approvals(
+        $conn,
+        (int)$company_id,
+        $data,
+        $_POST['department_name'] ?? ($data['department_name'] ?? '')
+    );
 
     // Build and execute the dynamic query
     if (empty($errors)) {
