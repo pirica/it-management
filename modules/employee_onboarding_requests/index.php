@@ -1094,6 +1094,9 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     if (array_key_exists('requested_by_date', $data)) {
         $data['requested_by_date'] = date('Y-m-d');
     }
+    if (array_key_exists('request_date', $data)) {
+        $data['request_date'] = date('Y-m-d');
+    }
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -1174,6 +1177,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         if ($name === 'requested_by' && $crud_action === 'create' && $onboardingRequestedByDefault !== '') {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $onboardingRequestedByDefault) . "'";
+            continue;
+        }
+
+        if ($name === 'request_date' && $crud_action === 'create') {
+            $requestDate = trim((string)($_POST['request_date'] ?? ''));
+            if ($requestDate === '') {
+                $requestDate = date('Y-m-d');
+            }
+            $data[$name] = "'" . mysqli_real_escape_string($conn, $requestDate) . "'";
             continue;
         }
 
