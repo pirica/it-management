@@ -262,6 +262,15 @@ function cr_onboarding_field_label($fieldName, $systemAccessLabels = []) {
     if ($custom !== '') {
         return $custom;
     }
+    $customLabels = [
+        'requested_by_date' => 'Date',
+        'hod_approval_date' => 'Date',
+        'hrd_approval_date' => 'Date',
+        'ism_approval_date' => 'Date',
+    ];
+    if (isset($customLabels[$fieldName])) {
+        return $customLabels[$fieldName];
+    }
     if ($fieldName === 'employee_position_id') {
         return 'Position Title';
     }
@@ -444,6 +453,11 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+if (cr_is_employee_onboarding_module()) {
+    $uiColumns = array_values(array_filter($uiColumns, static function ($col) {
+        return (string)($col['Field'] ?? '') !== 'requested_on';
+    }));
+}
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -535,10 +549,11 @@ foreach ($onboardingAccessFieldPairs as $itmAccessPair) {
 }
 foreach ([
     ['office_key_card_dep', null],
-    ['employee_id', null],
-    ['starting_date', 'requested_on'],
-    ['requested_by', 'hod_approval'],
-    ['hrd_approval', 'ism_approval'],
+    ['employee_id', 'starting_date'],
+    ['requested_by', 'requested_by_date'],
+    ['hod_approval', 'hod_approval_date'],
+    ['hrd_approval', 'hrd_approval_date'],
+    ['ism_approval', 'ism_approval_date'],
 ] as $itmTailPair) {
     $onboardingRowsShared[] = $itmTailPair;
 }
@@ -767,9 +782,6 @@ foreach ($fieldColumns as $col) {
 if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     if (array_key_exists('starting_date', $data)) {
         $data['starting_date'] = '';
-    }
-    if (array_key_exists('requested_on', $data)) {
-        $data['requested_on'] = date('Y-m-d');
     }
     if (array_key_exists('comments', $data)) {
         $data['comments'] = '(Email:)';
@@ -1149,7 +1161,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$row[$f], (int)$company_id);
                                                 echo sanitize($fkLabel !== '' ? $fkLabel : (string)$row[$f]);
                                             ?>
-                                        <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_on'], true)): ?>
+                                        <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($row[$f] ?? '', true)); ?>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
@@ -1418,7 +1430,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$data[$f], (int)$company_id);
                                                 echo sanitize($fkLabel !== '' ? $fkLabel : (string)$data[$f]);
                                             ?>
-                                        <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_on'], true)): ?>
+                                        <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true)); ?>
                                         <?php elseif (isset($onboardingSystemAccessFields[$f])): ?>
                                             <?php echo cr_is_truthy_checkbox_value($data[$f] ?? '') ? '✅' : '❌'; ?>
