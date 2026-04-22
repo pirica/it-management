@@ -389,16 +389,30 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
         return $resolved;
     }
 
-    $resolved['hod_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HOD Approval');
-    $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
-    $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
-
-    // Why: HRD/ISM approvers are often configured as one active approver company-wide.
-    if ($resolved['hrd_approval'] === '') {
-        $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HRD Approval');
+    $approvalTypeByField = [
+        'hod_approval' => 'HOD Approval',
+        'hrd_approval' => 'HRD Approval',
+        'ism_approval' => 'ISM Approval',
+    ];
+    foreach ($approvalTypeByField as $approvalField => $approvalTypeDescription) {
+        $resolved[$approvalField] = cr_onboarding_find_active_approver_name(
+            $conn,
+            (int)$company_id,
+            $departmentName,
+            $approvalTypeDescription
+        );
     }
-    if ($resolved['ism_approval'] === '') {
-        $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
+
+    // Why: some tenants configure approvers company-wide; fall back by approver type without department.
+    foreach ($approvalTypeByField as $approvalField => $approvalTypeDescription) {
+        if ($resolved[$approvalField] !== '') {
+            continue;
+        }
+        $resolved[$approvalField] = cr_onboarding_find_active_approver_name_by_type(
+            $conn,
+            (int)$company_id,
+            $approvalTypeDescription
+        );
     }
 
     return $resolved;
@@ -1916,9 +1930,8 @@ document.addEventListener('change', function (event) {
             }
 
             const resolvedValue = values && typeof values[fieldName] === 'string' ? values[fieldName] : '';
-            if (resolvedValue !== '') {
-                input.value = resolvedValue;
-            }
+            // Why: always update all approval fields to avoid stale values sticking to the wrong role.
+            input.value = resolvedValue;
         });
     }
 
