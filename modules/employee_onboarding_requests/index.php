@@ -329,6 +329,81 @@ function cr_onboarding_find_active_approver_name($conn, $company_id, $department
     return trim((string)($row['username'] ?? ''));
 }
 
+function cr_onboarding_find_active_approver_name_by_type($conn, $company_id, $approverTypeDescription) {
+    $company_id = (int)$company_id;
+    $approverTypeDescription = trim((string)$approverTypeDescription);
+
+    if ($company_id <= 0 || $approverTypeDescription === '') {
+        return '';
+    }
+
+    $sql = "SELECT e.first_name, e.last_name, e.display_name, e.username
+            FROM `approvers` a
+            INNER JOIN `approver_type` at
+                ON at.id = a.approver_type_id
+               AND at.company_id = a.company_id
+            LEFT JOIN `employees` e
+                ON e.id = a.employee_id
+               AND e.company_id = a.company_id
+            WHERE a.company_id = ?
+              AND a.active = 1
+              AND at.active = 1
+              AND at.approver_type_description = ?
+            ORDER BY a.id ASC
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return '';
+    }
+
+    mysqli_stmt_bind_param($stmt, 'is', $company_id, $approverTypeDescription);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return '';
+    }
+
+    $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+    if ($fullName !== '') {
+        return $fullName;
+    }
+
+    $displayName = trim((string)($row['display_name'] ?? ''));
+    if ($displayName !== '') {
+        return $displayName;
+    }
+
+    return trim((string)($row['username'] ?? ''));
+}
+
+function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw) {
+    $departmentName = trim((string)$departmentNameRaw);
+    $resolved = [
+        'hod_approval' => '',
+        'hrd_approval' => '',
+        'ism_approval' => '',
+    ];
+    if ($departmentName === '' || (int)$company_id <= 0) {
+        return $resolved;
+    }
+
+    $resolved['hod_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HOD Approval');
+    $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
+    $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
+
+    // Why: HRD/ISM approvers are often configured as one active approver company-wide.
+    if ($resolved['hrd_approval'] === '') {
+        $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HRD Approval');
+    }
+    if ($resolved['ism_approval'] === '') {
+        $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
+    }
+
+    return $resolved;
+}
+
 function cr_onboarding_auto_fill_approvals($conn, $company_id, &$data, $departmentNameRaw) {
     if (!cr_is_employee_onboarding_module()) {
         return;
@@ -342,17 +417,11 @@ function cr_onboarding_auto_fill_approvals($conn, $company_id, &$data, $departme
         return;
     }
 
-    $approvalTypeByField = [
-        'hod_approval' => 'HOD Approval',
-        'hrd_approval' => 'HRD Approval',
-        'ism_approval' => 'ISM Approval',
-    ];
-    foreach ($approvalTypeByField as $approvalField => $approverTypeDescription) {
+    $resolvedApprovals = cr_onboarding_resolve_approvals($conn, (int)$company_id, $departmentName);
+    foreach ($resolvedApprovals as $approvalField => $approverName) {
         if (!array_key_exists($approvalField, $data)) {
             continue;
         }
-
-        $approverName = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, $approverTypeDescription);
         if ($approverName === '') {
             continue;
         }
@@ -764,6 +833,32 @@ foreach ([
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
     $jsonBody = json_decode((string)$rawBody, true);
+    if (is_array($jsonBody) && isset($jsonBody['resolve_onboarding_approvals'])) {
+        header('Content-Type: application/json');
+
+        $requestToken = (string)($jsonBody['csrf_token'] ?? '');
+        if (!itm_validate_csrf_token($requestToken)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
+            exit;
+        }
+
+        if (!$hasCompany || $company_id <= 0) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Approver detection requires an active company.']);
+            exit;
+        }
+
+        $departmentName = trim((string)($jsonBody['department_name'] ?? ''));
+        $resolvedApprovals = cr_onboarding_resolve_approvals($conn, (int)$company_id, $departmentName);
+        echo json_encode([
+            'ok' => true,
+            'department_name' => $departmentName,
+            'approvals' => $resolvedApprovals,
+        ]);
+        exit;
+    }
+
     if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
         header('Content-Type: application/json');
 
@@ -1522,8 +1617,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo $isChecked ? 'checked' : ''; ?>>
                                                     <span class="itm-check-indicator" aria-hidden="true"><?php echo $isChecked ? '✅' : '❌'; ?></span>
                                                 </label>
-                                            <?php elseif ($name === 'requested_by' && $crud_action === 'create'): ?>
+                                        <?php elseif ($name === 'requested_by' && $crud_action === 'create'): ?>
                                                 <input type="text" name="requested_by" value="<?php echo sanitize($onboardingRequestedByDefault !== '' ? $onboardingRequestedByDefault : $displayVal); ?>" readonly>
+                                            <?php elseif (in_array($name, ['hod_approval', 'hrd_approval', 'ism_approval'], true)): ?>
+                                                <input
+                                                    type="text"
+                                                    name="<?php echo sanitize($name); ?>"
+                                                    data-onboarding-approval-field="1"
+                                                    value="<?php echo sanitize($displayVal); ?>"
+                                                    readonly
+                                                >
                                             <?php elseif (isset($fkMap[$name])): ?>
                                                 <?php
                                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
@@ -1792,6 +1895,71 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+(function () {
+    const departmentField = document.querySelector('select[name="department_name"]');
+    if (!departmentField) {
+        return;
+    }
+
+    const approvalFields = {
+        hod_approval: document.querySelector('input[name="hod_approval"]'),
+        hrd_approval: document.querySelector('input[name="hrd_approval"]'),
+        ism_approval: document.querySelector('input[name="ism_approval"]')
+    };
+
+    function applyApprovalValues(values) {
+        Object.keys(approvalFields).forEach(function (fieldName) {
+            const input = approvalFields[fieldName];
+            if (!input) {
+                return;
+            }
+
+            const resolvedValue = values && typeof values[fieldName] === 'string' ? values[fieldName] : '';
+            if (resolvedValue !== '') {
+                input.value = resolvedValue;
+            }
+        });
+    }
+
+    function resolveApprovalsByDepartment(departmentName) {
+        if (!departmentName || !window.ITM_CSRF_TOKEN) {
+            return;
+        }
+
+        fetch('index.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                resolve_onboarding_approvals: 1,
+                csrf_token: window.ITM_CSRF_TOKEN,
+                department_name: departmentName
+            })
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload || payload.ok !== true) {
+                return;
+            }
+            applyApprovalValues(payload.approvals || {});
+        })
+        .catch(function () {
+            // Why: keep form usable even if background approver resolution request fails.
+        });
+    }
+
+    departmentField.addEventListener('change', function () {
+        resolveApprovalsByDepartment(departmentField.value);
+    });
+
+    if (departmentField.value) {
+        resolveApprovalsByDepartment(departmentField.value);
+    }
+})();
 </script>
 
 </body>
