@@ -498,6 +498,10 @@ if (cr_is_employee_onboarding_module()) {
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
+$fieldColumnsByName = [];
+foreach ($fieldColumns as $itmFieldColumnMeta) {
+    $fieldColumnsByName[(string)($itmFieldColumnMeta['Field'] ?? '')] = $itmFieldColumnMeta;
+}
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
 }));
@@ -629,6 +633,7 @@ foreach ([
     ['hod_approval', 'hod_approval_date'],
     ['hrd_approval', 'hrd_approval_date'],
     ['ism_approval', 'ism_approval_date'],
+    ['active', null],
 ] as $itmTailPair) {
     $onboardingRowsShared[] = $itmTailPair;
 }
@@ -1241,6 +1246,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                             ?>
                                         <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($row[$f] ?? '', true)); ?>
+                                        <?php elseif (cr_is_employee_onboarding_module() && isset($onboardingSystemAccessFields[$f])): ?>
+                                            <?php echo cr_is_truthy_checkbox_value($row[$f] ?? '') ? '✅' : '❌'; ?>
+                                        <?php elseif (cr_is_employee_onboarding_module() && isset($fieldColumnsByName[$f]) && preg_match('/^tinyint(\(\d+\))?/i', (string)($fieldColumnsByName[$f]['Type'] ?? ''))): ?>
+                                            <?php echo ((int)($row[$f] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
