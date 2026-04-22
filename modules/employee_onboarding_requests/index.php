@@ -75,7 +75,10 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    $labelExpr = ($table === 'employees')
+        ? "COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NULLIF(`first_name`,''),''), ' ', COALESCE(NULLIF(`last_name`,''),''))), ''), NULLIF(`display_name`, ''), NULLIF(`username`, ''), CONCAT('Employee #', " . cr_escape_identifier($col) . "))"
+        : cr_escape_identifier($labelCol);
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelExpr . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -183,6 +186,84 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     return sanitize($text);
+}
+
+function cr_is_employee_onboarding_module() {
+    return (($GLOBALS['crud_table'] ?? '') === 'employee_onboarding_requests');
+}
+
+function cr_format_onboarding_date($value) {
+    $text = trim((string)$value);
+    if ($text === '' || $text === '0000-00-00') {
+        return '';
+    }
+    $ts = strtotime($text);
+    if ($ts === false) {
+        return $text;
+    }
+    return date('d/m/Y', $ts);
+}
+
+function cr_onboarding_display_value($value, $isDateField = false) {
+    $text = trim((string)$value);
+    if ($text === '' || $text === '0000-00-00') {
+        return 'N/A';
+    }
+    if ($isDateField) {
+        $formatted = cr_format_onboarding_date($text);
+        return $formatted === '' ? 'N/A' : $formatted;
+    }
+    return sanitize($text);
+}
+
+function cr_fk_label_by_id($conn, $fk, $id, $company_id) {
+    $table = (string)$fk['REFERENCED_TABLE_NAME'];
+    $col = (string)$fk['REFERENCED_COLUMN_NAME'];
+    $id = (int)$id;
+    if ($id <= 0) {
+        return '';
+    }
+
+    $meta = cr_fk_metadata($conn, $table);
+    $available = $meta['available'];
+    $labelExpr = ($table === 'employees')
+        ? "COALESCE(NULLIF(TRIM(CONCAT(COALESCE(NULLIF(`first_name`,''),''), ' ', COALESCE(NULLIF(`last_name`,''),''))), ''), NULLIF(`display_name`, ''), NULLIF(`username`, ''), CONCAT('Employee #', " . cr_escape_identifier($col) . "))"
+        : cr_escape_identifier($meta['label_col']);
+    $baseSql = 'SELECT ' . $labelExpr . ' AS label FROM ' . cr_escape_identifier($table) . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $companyRes = mysqli_query($conn, $baseSql . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+        if ($companyRes && ($companyRow = mysqli_fetch_assoc($companyRes))) {
+            $companyLabel = trim((string)($companyRow['label'] ?? ''));
+            if ($companyLabel !== '') {
+                return $companyLabel;
+            }
+        }
+    }
+
+    $fallbackRes = mysqli_query($conn, $baseSql . ' LIMIT 1');
+    if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+        return trim((string)($fallbackRow['label'] ?? ''));
+    }
+
+    return '';
+}
+
+function cr_ensure_fk_selected_option($conn, &$opts, $fk, $selectedId, $company_id) {
+    $selectedId = (int)$selectedId;
+    if ($selectedId <= 0) {
+        return;
+    }
+    foreach ($opts as $opt) {
+        if ((int)($opt['id'] ?? 0) === $selectedId) {
+            return;
+        }
+    }
+
+    $label = cr_fk_label_by_id($conn, $fk, $selectedId, $company_id);
+    if ($label !== '') {
+        $opts[] = ['id' => $selectedId, 'label' => $label];
+    }
 }
 
 
@@ -843,6 +924,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <?php elseif (isset($fkMap[$f]) && (int)($row[$f] ?? 0) > 0): ?>
+                                            <?php
+                                                $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$row[$f], (int)$company_id);
+                                                echo sanitize($fkLabel !== '' ? $fkLabel : (string)$row[$f]);
+                                            ?>
+                                        <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_on'], true)): ?>
+                                            <?php echo sanitize(cr_onboarding_display_value($row[$f] ?? '', true)); ?>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
@@ -889,6 +977,108 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 <?php endif; ?>
 
+            <?php elseif (in_array($crud_action, ['create', 'edit'], true) && cr_is_employee_onboarding_module()): ?>
+                <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
+                <form method="POST" style="max-width:980px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <div class="card" style="padding:14px;">
+                        <table>
+                            <tbody>
+                            <?php
+                            $onboardingRows = [
+                                ['first_name', 'last_name'],
+                                ['position_title', 'department_name'],
+                                ['request_date', 'termination_date'],
+                                ['network_access', 'micros_emc'],
+                                ['opera', 'micros_card'],
+                                ['pms_id', 'synergy_mms'],
+                                ['email_account', 'landline_phone'],
+                                ['hu_the_lobby', 'mobile_phone'],
+                                ['navision', 'mobile_email'],
+                                ['onq_ri', 'birchstreet'],
+                                ['delphi', 'omina'],
+                                ['vingcard_system', 'digital_rev'],
+                                ['office_key_card', 'employee_id'],
+                                ['starting_date', 'requested_on'],
+                                ['requested_by', 'hod_approval'],
+                                ['hrd_approval', 'ism_approval'],
+                            ];
+                            ?>
+                            <?php foreach ($onboardingRows as $pair): ?>
+                                <tr>
+                                    <?php foreach ($pair as $name): ?>
+                                        <?php $col = null; foreach ($fieldColumns as $fieldCol) { if ($fieldCol['Field'] === $name) { $col = $fieldCol; break; } } ?>
+                                        <?php if ($col === null): ?>
+                                            <th style="width:180px;"></th><td></td>
+                                            <?php continue; ?>
+                                        <?php endif; ?>
+                                        <?php
+                                            $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
+                                            $isDate = str_starts_with($col['Type'], 'date');
+                                            $isDateTime = str_starts_with($col['Type'], 'datetime');
+                                            $isText = str_contains($col['Type'], 'text');
+                                            $val = $data[$name] ?? '';
+                                            $displayVal = ($val === 'NULL') ? '' : (string)$val;
+                                        ?>
+                                        <th style="width:180px;"><?php echo sanitize(cr_humanize_field($name)); ?></th>
+                                        <td>
+                                            <?php if ($name === 'company_id' && $company_id > 0): ?>
+                                                <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                                            <?php elseif ($isTinyInt): ?>
+                                                <label class="itm-checkbox-control">
+                                                    <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
+                                                    <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span>
+                                                </label>
+                                            <?php elseif (isset($fkMap[$name])): ?>
+                                                <?php
+                                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                                    cr_ensure_fk_selected_option($conn, $opts, $fkMap[$name], (int)$displayVal, (int)$company_id);
+                                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                                    $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                                ?>
+                                                <select
+                                                    name="<?php echo sanitize($name); ?>"
+                                                    data-addable-select="1"
+                                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
+                                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                                    data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
+                                                    data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
+                                                    data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+                                                >
+                                                    <option value="">-- Select --</option>
+                                                    <?php foreach ($opts as $opt): ?>
+                                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                                    <?php endforeach; ?>
+                                                    <option value="__add_new__">➕</option>
+                                                </select>
+                                            <?php elseif ($isDateTime): ?>
+                                                <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
+                                            <?php elseif ($isDate): ?>
+                                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
+                                            <?php elseif ($isText): ?>
+                                                <textarea name="<?php echo sanitize($name); ?>" rows="3"><?php echo sanitize($displayVal); ?></textarea>
+                                            <?php else: ?>
+                                                <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr>
+                                <th><?php echo sanitize(cr_humanize_field('comments')); ?></th>
+                                <td colspan="3">
+                                    <textarea name="comments" rows="4"><?php echo sanitize((string)($data['comments'] ?? '')); ?></textarea>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a href="index.php" class="btn">🔙</a>
+                    </div>
+                </form>
+
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <!-- DATA ENTRY FORM VIEW -->
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
@@ -912,11 +1102,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
-                                <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
-                                    $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
-                                ?>
+                                    <?php
+                                        $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                        cr_ensure_fk_selected_option($conn, $opts, $fkMap[$name], (int)$displayVal, (int)$company_id);
+                                        $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                        $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
@@ -949,6 +1140,59 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </div>
                 </form>
 
+            <?php elseif ($crud_action === 'view' && cr_is_employee_onboarding_module()): ?>
+                <h1>View <?php echo sanitize($crud_title); ?></h1>
+                <div class="card">
+                    <table>
+                        <tbody>
+                        <?php
+                        $viewPairs = [
+                            ['first_name', 'last_name'],
+                            ['position_title', 'department_name'],
+                            ['request_date', 'termination_date'],
+                            ['network_access', 'micros_emc'],
+                            ['opera', 'micros_card'],
+                            ['pms_id', 'synergy_mms'],
+                            ['email_account', 'landline_phone'],
+                            ['hu_the_lobby', 'mobile_phone'],
+                            ['navision', 'mobile_email'],
+                            ['onq_ri', 'birchstreet'],
+                            ['delphi', 'omina'],
+                            ['vingcard_system', 'digital_rev'],
+                            ['office_key_card', 'employee_id'],
+                            ['starting_date', 'requested_on'],
+                            ['requested_by', 'hod_approval'],
+                            ['hrd_approval', 'ism_approval'],
+                        ];
+                        ?>
+                        <?php foreach ($viewPairs as $pair): ?>
+                            <tr>
+                                <?php foreach ($pair as $f): ?>
+                                    <th style="width:180px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
+                                    <td>
+                                        <?php if (isset($fkMap[$f]) && (int)($data[$f] ?? 0) > 0): ?>
+                                            <?php
+                                                $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$data[$f], (int)$company_id);
+                                                echo sanitize($fkLabel !== '' ? $fkLabel : (string)$data[$f]);
+                                            ?>
+                                        <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_on'], true)): ?>
+                                            <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true)); ?>
+                                        <?php else: ?>
+                                            <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '')); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                        <tr>
+                            <th><?php echo sanitize(cr_humanize_field('comments')); ?></th>
+                            <td colspan="3"><?php echo sanitize(cr_onboarding_display_value($data['comments'] ?? '')); ?></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                </div>
+
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- DETAILED RECORD VIEW -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
@@ -958,7 +1202,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td>
+                                    <?php if (isset($fkMap[$f]) && (int)($data[$f] ?? 0) > 0): ?>
+                                        <?php
+                                            $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$data[$f], (int)$company_id);
+                                            echo sanitize($fkLabel !== '' ? $fkLabel : (string)$data[$f]);
+                                        ?>
+                                    <?php else: ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
