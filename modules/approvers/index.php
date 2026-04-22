@@ -67,6 +67,27 @@ function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
+    if ($table === 'employees') {
+        $where = '';
+        if ((int)$company_id > 0) {
+            $where = ' WHERE company_id=' . (int)$company_id;
+        }
+        $sql = 'SELECT ' . cr_escape_identifier($col) . " AS id, TRIM(CONCAT(COALESCE(`first_name`, ''), ' ', COALESCE(`last_name`, ''))) AS label"
+            . ' FROM ' . cr_escape_identifier($table) . $where . ' ORDER BY `first_name` ASC, `last_name` ASC';
+        $res = mysqli_query($conn, $sql);
+        $out = [];
+        if ($res) {
+            while ($r = mysqli_fetch_assoc($res)) {
+                $label = trim((string)($r['label'] ?? ''));
+                if ($label === '') {
+                    $label = 'Employee #' . (int)($r['id'] ?? 0);
+                }
+                $out[] = ['id' => (int)($r['id'] ?? 0), 'label' => $label];
+            }
+        }
+        return $out;
+    }
+
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
@@ -94,6 +115,37 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
 
     $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
     $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
+
+    if ($fkTable === 'employees') {
+        $employeeLabelSql = "TRIM(CONCAT(COALESCE(`first_name`, ''), ' ', COALESCE(`last_name`, ''))) AS label";
+        $tableSql = cr_escape_identifier($fkTable);
+        $idSql = cr_escape_identifier($fkCol);
+
+        if ($company_id > 0) {
+            $tenantSql = 'SELECT ' . $employeeLabelSql . ' FROM ' . $tableSql
+                . ' WHERE ' . $idSql . '=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+            $tenantRes = mysqli_query($conn, $tenantSql);
+            if ($tenantRes && ($tenantRow = mysqli_fetch_assoc($tenantRes))) {
+                $tenantLabel = trim((string)($tenantRow['label'] ?? ''));
+                if ($tenantLabel !== '') {
+                    return $tenantLabel;
+                }
+            }
+        }
+
+        $fallbackSql = 'SELECT ' . $employeeLabelSql . ' FROM ' . $tableSql
+            . ' WHERE ' . $idSql . '=' . $id . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $fallbackLabel = trim((string)($fallbackRow['label'] ?? ''));
+            if ($fallbackLabel !== '') {
+                return $fallbackLabel;
+            }
+        }
+
+        return 'Employee #' . $id;
+    }
+
     $meta = cr_fk_metadata($conn, $fkTable);
     $labelCol = (string)$meta['label_col'];
     $available = (array)$meta['available'];
@@ -220,6 +272,31 @@ function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $select
 
     $options[] = ['id' => $selectedId, 'label' => $resolvedLabel];
     return $options;
+}
+
+/**
+ * Builds modal extra-field config for employee quick-add so required columns can be collected inline.
+ */
+function cr_employee_add_extra_fields($conn, $company_id) {
+    $statusOptions = [];
+    $statusSql = 'SELECT `id`, `name` FROM `employee_statuses` WHERE `active`=1';
+    if ((int)$company_id > 0) {
+        $statusSql .= ' AND `company_id`=' . (int)$company_id;
+    }
+    $statusSql .= ' ORDER BY `name` ASC';
+    $statusRes = mysqli_query($conn, $statusSql);
+    while ($statusRes && ($statusRow = mysqli_fetch_assoc($statusRes))) {
+        $statusOptions[] = [
+            'value' => (string)((int)($statusRow['id'] ?? 0)),
+            'label' => (string)($statusRow['name'] ?? ''),
+        ];
+    }
+
+    return [
+        ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'required' => true],
+        ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'required' => true],
+        ['name' => 'employment_status_id', 'label' => 'Employment Status', 'type' => 'select', 'required' => true, 'options' => $statusOptions],
+    ];
 }
 
 /**
@@ -1067,6 +1144,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     $opts = cr_append_selected_fk_option($conn, $fkMap[$name], (int)$company_id, $opts, $displayVal);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $addExtraFieldsJson = '';
+                                    if ((string)$fkMap[$name]['REFERENCED_TABLE_NAME'] === 'employees') {
+                                        $addExtraFieldsJson = json_encode(cr_employee_add_extra_fields($conn, (int)$company_id), JSON_UNESCAPED_UNICODE);
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
@@ -1076,6 +1157,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+                                    <?php if ($addExtraFieldsJson !== ''): ?>
+                                        data-add-extra-fields="<?php echo sanitize($addExtraFieldsJson); ?>"
+                                    <?php endif; ?>
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
