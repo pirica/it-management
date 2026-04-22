@@ -385,16 +385,21 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
         'hrd_approval' => '',
         'ism_approval' => '',
     ];
-    if ((int)$company_id <= 0) {
+    if ($departmentName === '' || (int)$company_id <= 0) {
         return $resolved;
     }
 
-    if ($departmentName !== '') {
-        $resolved['hod_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HOD Approval');
+    $resolved['hod_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HOD Approval');
+    $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
+    $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
+
+    // Why: HRD/ISM approvers are often configured as one active approver company-wide.
+    if ($resolved['hrd_approval'] === '') {
+        $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HRD Approval');
     }
-    // Why: HRD and ISM are configured as fixed approvers regardless of selected department.
-    $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'HRD Approval');
-    $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
+    if ($resolved['ism_approval'] === '') {
+        $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
+    }
 
     return $resolved;
 }
@@ -1911,7 +1916,9 @@ document.addEventListener('change', function (event) {
             }
 
             const resolvedValue = values && typeof values[fieldName] === 'string' ? values[fieldName] : '';
-            input.value = resolvedValue;
+            if (resolvedValue !== '') {
+                input.value = resolvedValue;
+            }
         });
     }
 
