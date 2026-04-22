@@ -1779,6 +1779,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             continue;
         }
 
+        if (in_array($name, ['status_hod', 'status_hrd', 'status_ism'], true)) {
+            $statusValue = trim((string)($_POST[$name] ?? ''));
+            if ($statusValue === '') {
+                $statusValue = 'Waiting';
+            }
+            $data[$name] = "'" . mysqli_real_escape_string($conn, $statusValue) . "'";
+            continue;
+        }
+
         // Special handling for foreign key inline creation
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
