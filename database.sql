@@ -512,6 +512,33 @@ INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `s
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('8', '4', '7', '7', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('10', '5', '9', '9', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 
+-- Table structure for `approvers`
+DROP TABLE IF EXISTS `approvers`;
+CREATE TABLE `approvers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `employee_position_id` int NOT NULL,
+  `department_id` int NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `approvers_company_id` (`company_id`),
+  KEY `approvers_employee_id` (`employee_id`),
+  KEY `approvers_employee_position_id` (`employee_position_id`),
+  KEY `approvers_department_id` (`department_id`),
+  CONSTRAINT `approvers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approvers_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `approvers_ibfk_employee_position` FOREIGN KEY (`employee_position_id`) REFERENCES `employee_positions` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `approvers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `approvers`
+INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `description`, `active`) VALUES ('1', '1', '1', '1', '1', 'Primary IT approver for onboarding and access requests.', '1');
+INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `description`, `active`) VALUES ('2', '1', '2', '2', '1', 'Backup IT approver for onboarding and access requests.', '1');
+
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
 CREATE TABLE `employee_onboarding_requests` (
