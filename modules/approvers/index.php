@@ -234,7 +234,11 @@ function cr_fk_metadata($conn, $table) {
     }
 
     if ($table === 'employees' && in_array('display_name', $available, true)) {
-        $labelCol = 'display_name';
+        // Why: approvers.employee_id must resolve to employee display names in UI/list/detail flows.
+        return [
+            'label_col' => 'display_name',
+            'available' => $available,
+        ];
     }
     foreach (['name', 'title', 'username', 'account_name', 'account_code', 'code', 'description', 'email', 'status', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
