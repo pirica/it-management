@@ -533,6 +533,35 @@ function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, 
     return true;
 }
 
+function cr_onboarding_status_field_by_target($approvalTarget) {
+    $map = [
+        'hod' => 'status_hod',
+        'hrd' => 'status_hrd',
+        'ism' => 'status_ism',
+    ];
+    return (string)($map[(string)$approvalTarget] ?? '');
+}
+
+function cr_onboarding_status_badge($value) {
+    $status = strtolower(trim((string)$value));
+    if ($status === 'approved') {
+        return '<span class="badge badge-success">Approved</span>';
+    }
+    if ($status === 'declined') {
+        return '<span class="badge badge-danger">Declined</span>';
+    }
+    return '<span class="badge">Waiting</span>';
+}
+
+function cr_onboarding_sign_approval_action($recordId, $companyId, $approvalTarget, $approvalAction) {
+    $data = (int)$recordId . '|' . (int)$companyId . '|' . trim((string)$approvalTarget) . '|' . trim((string)$approvalAction);
+    $secret = (string)(defined('MAILERLITE_API_KEY') ? MAILERLITE_API_KEY : '');
+    if ($secret === '') {
+        $secret = 'it-management-approval-secret';
+    }
+    return hash_hmac('sha256', $data, $secret);
+}
+
 function cr_onboarding_employee_email($conn, $company_id, $employeeId) {
     $employeeId = (int)$employeeId;
     $company_id = (int)$company_id;
@@ -701,6 +730,36 @@ function cr_sync_onboarding_system_access_columns($conn, $company_id) {
             . " VARCHAR(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL";
         if (mysqli_query($conn, $alterSql)) {
             $existingColumns[$fieldName] = true;
+        }
+    }
+}
+
+function cr_sync_onboarding_status_columns($conn) {
+    if (!cr_is_employee_onboarding_module()) {
+        return;
+    }
+
+    $table = 'employee_onboarding_requests';
+    $requiredColumns = ['status_hod', 'status_hrd', 'status_ism'];
+    $existingColumns = [];
+    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
+    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+        $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
+    }
+
+    foreach ($requiredColumns as $columnName) {
+        if (isset($existingColumns[$columnName])) {
+            continue;
+        }
+        if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+
+        $alterSql = 'ALTER TABLE ' . cr_escape_identifier($table)
+            . ' ADD COLUMN ' . cr_escape_identifier($columnName)
+            . " VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting'";
+        if (mysqli_query($conn, $alterSql)) {
+            $existingColumns[$columnName] = true;
         }
     }
 }
@@ -916,6 +975,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
 // Module initialization: load columns and foreign key maps
 if (cr_is_employee_onboarding_module()) {
+    cr_sync_onboarding_status_columns($conn);
     cr_sync_onboarding_system_access_columns($conn, (int)$company_id);
 }
 $columns = cr_table_columns($conn, $crud_table);
@@ -943,7 +1003,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 }));
 if (cr_is_employee_onboarding_module()) {
     $uiColumns = array_values(array_filter($uiColumns, static function ($col) {
-        return (string)($col['Field'] ?? '') !== 'requested_on';
+        return !in_array((string)($col['Field'] ?? ''), ['requested_on', 'status_hod', 'status_hrd', 'status_ism'], true);
     }));
 }
 $listColumns = $uiColumns;
@@ -1243,6 +1303,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
+    $recordId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    $target = strtolower(trim((string)($_GET['target'] ?? '')));
+    $decision = strtolower(trim((string)($_GET['decision'] ?? '')));
+    $token = trim((string)($_GET['token'] ?? ''));
+    $statusField = cr_onboarding_status_field_by_target($target);
+    $decisionMap = ['approve' => 'Approved', 'decline' => 'Declined'];
+    $statusValue = (string)($decisionMap[$decision] ?? '');
+
+    if ($recordId <= 0 || $statusField === '' || $statusValue === '' || $token === '' || !isset($fieldColumnsByName[$statusField])) {
+        http_response_code(400);
+        echo 'Invalid approval link.';
+        exit;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT company_id FROM `employee_onboarding_requests` WHERE id=? LIMIT 1');
+    $recordCompanyId = 0;
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $recordId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+        $recordCompanyId = (int)($row['company_id'] ?? 0);
+    }
+
+    if ($recordCompanyId <= 0) {
+        http_response_code(404);
+        echo 'Request not found.';
+        exit;
+    }
+
+    $expectedToken = cr_onboarding_sign_approval_action($recordId, $recordCompanyId, $target, $decision);
+    if (!hash_equals($expectedToken, $token)) {
+        http_response_code(403);
+        echo 'Invalid or expired approval token.';
+        exit;
+    }
+
+    $statusEsc = mysqli_real_escape_string($conn, $statusValue);
+    $updateSql = 'UPDATE `employee_onboarding_requests` SET ' . cr_escape_identifier($statusField) . "='" . $statusEsc . "' WHERE id=" . $recordId . ' LIMIT 1';
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+    if (!itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage)) {
+        http_response_code(500);
+        echo 'Failed to save approval decision.';
+        exit;
+    }
+
+    echo 'Approval status updated: ' . sanitize($statusValue) . '. You may close this tab.';
+    exit;
+}
+
 // Handle deletion requests (bulk or single)
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -1378,9 +1491,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
         $employeeFullName = 'Employee Onboarding Request #' . $recordId;
     }
 
+    $approvalTokenApprove = cr_onboarding_sign_approval_action($recordId, (int)$company_id, $approvalTarget, 'approve');
+    $approvalTokenDecline = cr_onboarding_sign_approval_action($recordId, (int)$company_id, $approvalTarget, 'decline');
+    $approvalApproveUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=approve&token=' . urlencode($approvalTokenApprove);
+    $approvalDeclineUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=decline&token=' . urlencode($approvalTokenDecline);
+
     $subject = $approvalType . ' Needed - ' . $employeeFullName;
     $htmlBody = '<p>Hello ' . sanitize($approverName !== '' ? $approverName : 'Approver') . ',</p>'
         . '<p>Please review and approve onboarding request <strong>#' . (int)$recordId . '</strong> for <strong>' . sanitize($employeeFullName) . '</strong>.</p>'
+        . '<p><a href="' . sanitize($approvalApproveUrl) . '">API Link: Approve</a></p>'
+        . '<p><a href="' . sanitize($approvalDeclineUrl) . '">API Link: Decline</a></p>'
         . '<p><a href="' . sanitize(BASE_URL . 'modules/employee_onboarding_requests/view.php?id=' . $recordId) . '">Open request details</a></p>';
 
     $sendError = '';
@@ -1428,6 +1548,11 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     }
     if (array_key_exists('request_date', $data)) {
         $data['request_date'] = date('Y-m-d');
+    }
+    foreach (['status_hod', 'status_hrd', 'status_ism'] as $statusField) {
+        if (array_key_exists($statusField, $data) && trim((string)$data[$statusField]) === '') {
+            $data[$statusField] = 'Waiting';
+        }
     }
 }
 
@@ -2168,16 +2293,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="hod">HOD Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_hod'] ?? 'Waiting'); ?></div>
                         </form>
                         <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="hrd">HRD Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_hrd'] ?? 'Waiting'); ?></div>
                         </form>
                         <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="ism">ISM Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_ism'] ?? 'Waiting'); ?></div>
                         </form>
                     </p>
                 </div>
