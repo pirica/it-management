@@ -1130,8 +1130,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 ['delphi', 'omina'],
                                 ['vingcard_system', 'digital_rev'],
                                 ['office_key_card', 'office_key_card_dep'],
-                                ['employee_id', 'starting_date'],
-                                ['requested_on', null],
+                                ['employee_id', null],
+                                ['starting_date', 'requested_on'],
                                 ['requested_by', 'hod_approval'],
                                 ['hrd_approval', 'ism_approval'],
                             ];
@@ -1345,8 +1345,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             ['delphi', 'omina'],
                             ['vingcard_system', 'digital_rev'],
                             ['office_key_card', 'office_key_card_dep'],
-                            ['employee_id', 'starting_date'],
-                            ['requested_on', null],
+                            ['employee_id', null],
+                            ['starting_date', 'requested_on'],
                             ['requested_by', 'hod_approval'],
                             ['hrd_approval', 'ism_approval'],
                         ];
