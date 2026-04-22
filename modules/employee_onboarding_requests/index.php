@@ -378,6 +378,219 @@ function cr_onboarding_find_active_approver_name_by_type($conn, $company_id, $ap
     return trim((string)($row['username'] ?? ''));
 }
 
+function cr_onboarding_find_active_approver_contact($conn, $company_id, $departmentName, $approverTypeDescription) {
+    $company_id = (int)$company_id;
+    $departmentName = trim((string)$departmentName);
+    $approverTypeDescription = trim((string)$approverTypeDescription);
+
+    if ($company_id <= 0 || $departmentName === '' || $approverTypeDescription === '') {
+        return ['name' => '', 'email' => ''];
+    }
+
+    $sql = "SELECT e.first_name, e.last_name, e.display_name, e.username, e.email
+            FROM `approvers` a
+            INNER JOIN `departments` d
+                ON d.id = a.department_id
+               AND d.company_id = a.company_id
+            INNER JOIN `approver_type` at
+                ON at.id = a.approver_type_id
+               AND at.company_id = a.company_id
+            LEFT JOIN `employees` e
+                ON e.id = a.employee_id
+               AND e.company_id = a.company_id
+            WHERE a.company_id = ?
+              AND a.active = 1
+              AND d.active = 1
+              AND at.active = 1
+              AND d.name = ?
+              AND at.approver_type_description = ?
+            ORDER BY a.id ASC
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['name' => '', 'email' => ''];
+    }
+
+    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $departmentName, $approverTypeDescription);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return ['name' => '', 'email' => ''];
+    }
+
+    $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+    $displayName = trim((string)($row['display_name'] ?? ''));
+    $username = trim((string)($row['username'] ?? ''));
+    $email = trim((string)($row['email'] ?? ''));
+
+    return [
+        'name' => $fullName !== '' ? $fullName : ($displayName !== '' ? $displayName : $username),
+        'email' => $email,
+    ];
+}
+
+function cr_onboarding_find_active_approver_contact_by_type($conn, $company_id, $approverTypeDescription) {
+    $company_id = (int)$company_id;
+    $approverTypeDescription = trim((string)$approverTypeDescription);
+
+    if ($company_id <= 0 || $approverTypeDescription === '') {
+        return ['name' => '', 'email' => ''];
+    }
+
+    $sql = "SELECT e.first_name, e.last_name, e.display_name, e.username, e.email
+            FROM `approvers` a
+            INNER JOIN `approver_type` at
+                ON at.id = a.approver_type_id
+               AND at.company_id = a.company_id
+            LEFT JOIN `employees` e
+                ON e.id = a.employee_id
+               AND e.company_id = a.company_id
+            WHERE a.company_id = ?
+              AND a.active = 1
+              AND at.active = 1
+              AND at.approver_type_description = ?
+            ORDER BY a.id ASC
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['name' => '', 'email' => ''];
+    }
+
+    mysqli_stmt_bind_param($stmt, 'is', $company_id, $approverTypeDescription);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return ['name' => '', 'email' => ''];
+    }
+
+    $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+    $displayName = trim((string)($row['display_name'] ?? ''));
+    $username = trim((string)($row['username'] ?? ''));
+    $email = trim((string)($row['email'] ?? ''));
+
+    return [
+        'name' => $fullName !== '' ? $fullName : ($displayName !== '' ? $displayName : $username),
+        'email' => $email,
+    ];
+}
+
+function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, $htmlBody, &$errorMessage) {
+    $toEmail = trim((string)$toEmail);
+    $toName = trim((string)$toName);
+    $subject = trim((string)$subject);
+    $htmlBody = trim((string)$htmlBody);
+
+    if ($toEmail === '' || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        $errorMessage = 'Approver email is missing or invalid.';
+        return false;
+    }
+
+    if (!defined('MAILERLITE_API_KEY') || !defined('MAILERLITE_URL') || trim((string)MAILERLITE_API_KEY) === '' || trim((string)MAILERLITE_API_KEY) === 'YOUR_MAILERLITE_API_KEY_HERE') {
+        $errorMessage = 'Email API is not configured in config/config.php.';
+        return false;
+    }
+    if (!function_exists('curl_init')) {
+        $errorMessage = 'Email API call failed: cURL extension is not available on this server.';
+        return false;
+    }
+
+    $payload = json_encode([
+        'from' => 'verified@yourdomain.com',
+        'to' => $toName !== '' ? [$toEmail => $toName] : $toEmail,
+        'subject' => $subject,
+        'html' => $htmlBody,
+    ]);
+    if ($payload === false) {
+        $errorMessage = 'Unable to encode email request payload.';
+        return false;
+    }
+
+    $ch = curl_init(MAILERLITE_URL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Accept: application/json',
+        'Authorization: Bearer ' . MAILERLITE_API_KEY,
+    ]);
+    $responseBody = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrNo = (int)curl_errno($ch);
+    $curlErrText = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlErrNo !== 0) {
+        $errorMessage = 'Email API call failed: ' . $curlErrText;
+        return false;
+    }
+    if ($httpCode < 200 || $httpCode >= 300) {
+        $responseSnippet = trim((string)$responseBody);
+        if ($responseSnippet !== '') {
+            $responseSnippet = preg_replace('/\s+/', ' ', $responseSnippet);
+            $responseSnippet = substr($responseSnippet, 0, 240);
+            $errorMessage = 'Email API returned HTTP ' . $httpCode . ': ' . $responseSnippet;
+        } else {
+            $errorMessage = 'Email API returned HTTP ' . $httpCode . ' with an empty response body.';
+        }
+        return false;
+    }
+
+    $errorMessage = '';
+    return true;
+}
+
+function cr_onboarding_status_field_by_target($approvalTarget) {
+    $map = [
+        'hod' => 'status_hod',
+        'hrd' => 'status_hrd',
+        'ism' => 'status_ism',
+    ];
+    return (string)($map[(string)$approvalTarget] ?? '');
+}
+
+function cr_onboarding_status_badge($value) {
+    $status = strtolower(trim((string)$value));
+    if ($status === 'approved') {
+        return '<span class="badge badge-success">Approved</span>';
+    }
+    if ($status === 'declined') {
+        return '<span class="badge badge-danger">Declined</span>';
+    }
+    return '<span class="badge">Waiting</span>';
+}
+
+function cr_onboarding_email_status_text($sentFlag, $sentAt) {
+    if ((int)$sentFlag !== 1) {
+        return 'Not sent';
+    }
+
+    $stamp = trim((string)$sentAt);
+    if ($stamp === '' || $stamp === '0000-00-00 00:00:00') {
+        return 'Sent';
+    }
+
+    $ts = strtotime($stamp);
+    if ($ts === false) {
+        return 'Sent (' . $stamp . ')';
+    }
+
+    return 'Sent (' . date('d/m/Y H:i', $ts) . ')';
+}
+
+function cr_onboarding_sign_approval_action($recordId, $companyId, $approvalTarget, $approvalAction) {
+    $data = (int)$recordId . '|' . (int)$companyId . '|' . trim((string)$approvalTarget) . '|' . trim((string)$approvalAction);
+    $secret = (string)(defined('MAILERLITE_API_KEY') ? MAILERLITE_API_KEY : '');
+    if ($secret === '') {
+        $secret = 'it-management-approval-secret';
+    }
+    return hash_hmac('sha256', $data, $secret);
+}
+
 function cr_onboarding_employee_email($conn, $company_id, $employeeId) {
     $employeeId = (int)$employeeId;
     $company_id = (int)$company_id;
@@ -546,6 +759,72 @@ function cr_sync_onboarding_system_access_columns($conn, $company_id) {
             . " VARCHAR(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL";
         if (mysqli_query($conn, $alterSql)) {
             $existingColumns[$fieldName] = true;
+        }
+    }
+}
+
+function cr_sync_onboarding_status_columns($conn) {
+    if (!cr_is_employee_onboarding_module()) {
+        return;
+    }
+
+    $table = 'employee_onboarding_requests';
+    $requiredColumns = ['status_hod', 'status_hrd', 'status_ism'];
+    $existingColumns = [];
+    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
+    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+        $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
+    }
+
+    foreach ($requiredColumns as $columnName) {
+        if (isset($existingColumns[$columnName])) {
+            continue;
+        }
+        if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+
+        $alterSql = 'ALTER TABLE ' . cr_escape_identifier($table)
+            . ' ADD COLUMN ' . cr_escape_identifier($columnName)
+            . " VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting'";
+        if (mysqli_query($conn, $alterSql)) {
+            $existingColumns[$columnName] = true;
+        }
+    }
+}
+
+function cr_sync_onboarding_email_tracking_columns($conn) {
+    if (!cr_is_employee_onboarding_module()) {
+        return;
+    }
+
+    $table = 'employee_onboarding_requests';
+    $requiredDefinitions = [
+        'email_sent_hod' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_hod_at' => " DATETIME DEFAULT NULL",
+        'email_sent_hrd' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_hrd_at' => " DATETIME DEFAULT NULL",
+        'email_sent_ism' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_ism_at' => " DATETIME DEFAULT NULL",
+    ];
+    $existingColumns = [];
+    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
+    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+        $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
+    }
+
+    foreach ($requiredDefinitions as $columnName => $columnSql) {
+        if (isset($existingColumns[$columnName])) {
+            continue;
+        }
+        if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+
+        $alterSql = 'ALTER TABLE ' . cr_escape_identifier($table)
+            . ' ADD COLUMN ' . cr_escape_identifier($columnName) . $columnSql;
+        if (mysqli_query($conn, $alterSql)) {
+            $existingColumns[$columnName] = true;
         }
     }
 }
@@ -761,6 +1040,8 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
 // Module initialization: load columns and foreign key maps
 if (cr_is_employee_onboarding_module()) {
+    cr_sync_onboarding_status_columns($conn);
+    cr_sync_onboarding_email_tracking_columns($conn);
     cr_sync_onboarding_system_access_columns($conn, (int)$company_id);
 }
 $columns = cr_table_columns($conn, $crud_table);
@@ -788,7 +1069,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 }));
 if (cr_is_employee_onboarding_module()) {
     $uiColumns = array_values(array_filter($uiColumns, static function ($col) {
-        return (string)($col['Field'] ?? '') !== 'requested_on';
+        return !in_array((string)($col['Field'] ?? ''), ['requested_on', 'status_hod', 'status_hrd', 'status_ism', 'email_sent_hod', 'email_sent_hod_at', 'email_sent_hrd', 'email_sent_hrd_at', 'email_sent_ism', 'email_sent_ism_at'], true);
     }));
 }
 $listColumns = $uiColumns;
@@ -1088,6 +1369,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
+    $recordId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    $target = strtolower(trim((string)($_GET['target'] ?? '')));
+    $decision = strtolower(trim((string)($_GET['decision'] ?? '')));
+    $token = trim((string)($_GET['token'] ?? ''));
+    $statusField = cr_onboarding_status_field_by_target($target);
+    $approvalDateFieldMap = [
+        'hod' => 'hod_approval_date',
+        'hrd' => 'hrd_approval_date',
+        'ism' => 'ism_approval_date',
+    ];
+    $approvalDateField = (string)($approvalDateFieldMap[$target] ?? '');
+    $decisionMap = ['approve' => 'Approved', 'decline' => 'Declined'];
+    $statusValue = (string)($decisionMap[$decision] ?? '');
+
+    if (
+        $recordId <= 0
+        || $statusField === ''
+        || $approvalDateField === ''
+        || $statusValue === ''
+        || $token === ''
+        || !isset($fieldColumnsByName[$statusField])
+        || !isset($fieldColumnsByName[$approvalDateField])
+    ) {
+        http_response_code(400);
+        echo 'Invalid approval link.';
+        exit;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT company_id FROM `employee_onboarding_requests` WHERE id=? LIMIT 1');
+    $recordCompanyId = 0;
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $recordId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+        $recordCompanyId = (int)($row['company_id'] ?? 0);
+    }
+
+    if ($recordCompanyId <= 0) {
+        http_response_code(404);
+        echo 'Request not found.';
+        exit;
+    }
+
+    $expectedToken = cr_onboarding_sign_approval_action($recordId, $recordCompanyId, $target, $decision);
+    if (!hash_equals($expectedToken, $token)) {
+        http_response_code(403);
+        echo 'Invalid or expired approval token.';
+        exit;
+    }
+
+    $statusEsc = mysqli_real_escape_string($conn, $statusValue);
+    $updateParts = [
+        cr_escape_identifier($statusField) . "='" . $statusEsc . "'",
+    ];
+    if ($decision === 'approve') {
+        $updateParts[] = cr_escape_identifier($approvalDateField) . "=CURDATE()";
+    }
+    $updateSql = 'UPDATE `employee_onboarding_requests` SET ' . implode(', ', $updateParts) . ' WHERE id=' . $recordId . ' LIMIT 1';
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+    if (!itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage)) {
+        http_response_code(500);
+        echo 'Failed to save approval decision.';
+        exit;
+    }
+
+    echo 'Approval status updated: ' . sanitize($statusValue) . '. You may close this tab.';
+    exit;
+}
+
 // Handle deletion requests (bulk or single)
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -1163,10 +1517,126 @@ if ($crud_action === 'delete') {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_POST['send_approval_email'])) {
+    cr_require_valid_csrf_token();
+
+    $approvalTarget = trim((string)($_POST['send_approval_email'] ?? ''));
+    $approvalTypeMap = [
+        'hod' => 'HOD Approval',
+        'hrd' => 'HRD Approval',
+        'ism' => 'ISM Approval',
+    ];
+    $approvalType = (string)($approvalTypeMap[$approvalTarget] ?? '');
+    $recordId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+
+    if ($approvalType === '' || $recordId <= 0) {
+        $invalidParts = [];
+        if ($approvalType === '') {
+            $invalidParts[] = 'approval target "' . $approvalTarget . '" is not valid';
+        }
+        if ($recordId <= 0) {
+            $invalidParts[] = 'record id is missing or invalid';
+        }
+        $_SESSION['crud_error'] = 'Invalid approval request: ' . implode('; ', $invalidParts) . '.';
+        header('Location: view.php?id=' . $recordId);
+        exit;
+    }
+
+    if (!$hasCompany || (int)$company_id <= 0) {
+        $_SESSION['crud_error'] = 'Approval email requires an active company.';
+        header('Location: view.php?id=' . $recordId);
+        exit;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT id, department_name, first_name, last_name FROM `employee_onboarding_requests` WHERE id=? AND company_id=? LIMIT 1');
+    $record = null;
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $recordId, $company_id);
+        mysqli_stmt_execute($stmt);
+        $recordResult = mysqli_stmt_get_result($stmt);
+        $record = $recordResult ? mysqli_fetch_assoc($recordResult) : null;
+        mysqli_stmt_close($stmt);
+    }
+
+    if (!$record) {
+        $_SESSION['crud_error'] = 'Record not found.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $departmentName = trim((string)($record['department_name'] ?? ''));
+    $approverContact = cr_onboarding_find_active_approver_contact($conn, (int)$company_id, $departmentName, $approvalType);
+    if ($approvalTarget !== 'hod' && trim((string)($approverContact['email'] ?? '')) === '') {
+        $approverContact = cr_onboarding_find_active_approver_contact_by_type($conn, (int)$company_id, $approvalType);
+    }
+
+    $approverEmail = trim((string)($approverContact['email'] ?? ''));
+    $approverName = trim((string)($approverContact['name'] ?? ''));
+
+    if ($approverEmail === '') {
+        $_SESSION['crud_error'] = $approvalType . ' email was not found in approvers configuration.';
+        header('Location: view.php?id=' . $recordId);
+        exit;
+    }
+
+    $employeeFullName = trim((string)($record['first_name'] ?? '') . ' ' . (string)($record['last_name'] ?? ''));
+    if ($employeeFullName === '') {
+        $employeeFullName = 'Employee Onboarding Request #' . $recordId;
+    }
+
+    $approvalTokenApprove = cr_onboarding_sign_approval_action($recordId, (int)$company_id, $approvalTarget, 'approve');
+    $approvalTokenDecline = cr_onboarding_sign_approval_action($recordId, (int)$company_id, $approvalTarget, 'decline');
+    $approvalApproveUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=approve&token=' . urlencode($approvalTokenApprove);
+    $approvalDeclineUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=decline&token=' . urlencode($approvalTokenDecline);
+
+    $subject = $approvalType . ' Needed - ' . $employeeFullName;
+    $htmlBody = '<p>Hello ' . sanitize($approverName !== '' ? $approverName : 'Approver') . ',</p>'
+        . '<p>Please review and approve onboarding request <strong>#' . (int)$recordId . '</strong> for <strong>' . sanitize($employeeFullName) . '</strong>.</p>'
+        . '<p><a href="' . sanitize($approvalApproveUrl) . '">API Link: Approve</a></p>'
+        . '<p><a href="' . sanitize($approvalDeclineUrl) . '">API Link: Decline</a></p>'
+        . '<p><a href="' . sanitize(BASE_URL . 'modules/employee_onboarding_requests/view.php?id=' . $recordId) . '">Open request details</a></p>';
+
+    $sendError = '';
+    if (!cr_onboarding_send_approval_email_via_api($approverEmail, $approverName, $subject, $htmlBody, $sendError)) {
+        $_SESSION['crud_error'] = $sendError;
+    } else {
+        $emailSentField = '';
+        $emailSentAtField = '';
+        if ($approvalTarget === 'hod') {
+            $emailSentField = 'email_sent_hod';
+            $emailSentAtField = 'email_sent_hod_at';
+        } elseif ($approvalTarget === 'hrd') {
+            $emailSentField = 'email_sent_hrd';
+            $emailSentAtField = 'email_sent_hrd_at';
+        } elseif ($approvalTarget === 'ism') {
+            $emailSentField = 'email_sent_ism';
+            $emailSentAtField = 'email_sent_ism_at';
+        }
+        if ($emailSentField !== '' && $emailSentAtField !== '' && isset($fieldColumnsByName[$emailSentField]) && isset($fieldColumnsByName[$emailSentAtField])) {
+            $trackSql = 'UPDATE `employee_onboarding_requests` SET '
+                . cr_escape_identifier($emailSentField) . "=1, "
+                . cr_escape_identifier($emailSentAtField) . '=NOW() '
+                . 'WHERE id=' . $recordId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+            $trackErrCode = 0;
+            $trackErrMessage = '';
+            itm_run_query($conn, $trackSql, $trackErrCode, $trackErrMessage);
+        }
+        $_SESSION['crud_success'] = $approvalType . ' email sent to ' . $approverEmail . '.';
+    }
+
+    header('Location: view.php?id=' . $recordId);
+    exit;
+}
+
 $errors = [];
 if (!empty($_SESSION['crud_error'])) {
     $errors[] = (string)$_SESSION['crud_error'];
     unset($_SESSION['crud_error']);
+}
+$successMessage = '';
+if (!empty($_SESSION['crud_success'])) {
+    $successMessage = (string)$_SESSION['crud_success'];
+    unset($_SESSION['crud_success']);
 }
 $data = [];
 foreach ($fieldColumns as $col) {
@@ -1192,6 +1662,21 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     }
     if (array_key_exists('request_date', $data)) {
         $data['request_date'] = date('Y-m-d');
+    }
+    foreach (['status_hod', 'status_hrd', 'status_ism'] as $statusField) {
+        if (array_key_exists($statusField, $data) && trim((string)$data[$statusField]) === '') {
+            $data[$statusField] = 'Waiting';
+        }
+    }
+    foreach (['email_sent_hod', 'email_sent_hrd', 'email_sent_ism'] as $emailSentField) {
+        if (array_key_exists($emailSentField, $data)) {
+            $data[$emailSentField] = 0;
+        }
+    }
+    foreach (['email_sent_hod_at', 'email_sent_hrd_at', 'email_sent_ism_at'] as $emailSentAtField) {
+        if (array_key_exists($emailSentAtField, $data)) {
+            $data[$emailSentAtField] = '';
+        }
     }
 }
 
@@ -1535,6 +2020,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         <div class="content">
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
+            <?php endif; ?>
+            <?php if ($successMessage !== ''): ?>
+                <div class="alert alert-success"><?php echo sanitize($successMessage); ?></div>
             <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
@@ -1922,7 +2410,31 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </tr>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;">
+                        <a href="index.php" class="btn">🔙</a>
+                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
+                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="hod">HOD Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_hod'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_hod'] ?? 0, $data['email_sent_hod_at'] ?? '')); ?></div>
+                        </form>
+                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="hrd">HRD Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_hrd'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_hrd'] ?? 0, $data['email_sent_hrd_at'] ?? '')); ?></div>
+                        </form>
+                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="ism">ISM Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_ism'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_ism'] ?? 0, $data['email_sent_ism_at'] ?? '')); ?></div>
+                        </form>
+                    </p>
                 </div>
 
             <?php elseif ($crud_action === 'view'): ?>
