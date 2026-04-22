@@ -512,6 +512,37 @@ INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `s
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('8', '4', '7', '7', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('10', '5', '9', '9', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 
+-- Table structure for `approver_type`
+DROP TABLE IF EXISTS `approver_type`;
+CREATE TABLE `approver_type` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `approver_type_description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `approver_type_company_id` (`company_id`),
+  CONSTRAINT `approver_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `approver_type`
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('1', '1', 'GM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('2', '1', 'HOD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('3', '1', 'ISM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('4', '2', 'GM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('5', '2', 'HOD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('6', '2', 'ISM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('7', '3', 'GM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('8', '3', 'HOD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('9', '3', 'ISM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('10', '4', 'GM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('11', '4', 'HOD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('12', '4', 'ISM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('13', '5', 'GM Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('14', '5', 'HOD Approval', '1');
+INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('15', '5', 'ISM Approval', '1');
+
 -- Table structure for `approvers`
 DROP TABLE IF EXISTS `approvers`;
 CREATE TABLE `approvers` (
@@ -520,7 +551,7 @@ CREATE TABLE `approvers` (
   `employee_id` int NOT NULL,
   `employee_position_id` int NOT NULL,
   `department_id` int NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `approver_type_id` int NOT NULL,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -529,15 +560,17 @@ CREATE TABLE `approvers` (
   KEY `approvers_employee_id` (`employee_id`),
   KEY `approvers_employee_position_id` (`employee_position_id`),
   KEY `approvers_department_id` (`department_id`),
+  KEY `approvers_approver_type_id` (`approver_type_id`),
   CONSTRAINT `approvers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `approvers_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvers_ibfk_employee_position` FOREIGN KEY (`employee_position_id`) REFERENCES `employee_positions` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `approvers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `approvers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `approvers_ibfk_approver_type` FOREIGN KEY (`approver_type_id`) REFERENCES `approver_type` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `approvers`
-INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `description`, `active`) VALUES ('1', '1', '1', '1', '1', 'Primary IT approver for onboarding and access requests.', '1');
-INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `description`, `active`) VALUES ('2', '1', '2', '2', '1', 'Backup IT approver for onboarding and access requests.', '1');
+INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `approver_type_id`, `active`) VALUES ('1', '1', '1', '1', '1', '1', '1');
+INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `approver_type_id`, `active`) VALUES ('2', '1', '2', '2', '1', '2', '1');
 
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
