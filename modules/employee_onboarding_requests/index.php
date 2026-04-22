@@ -553,6 +553,24 @@ function cr_onboarding_status_badge($value) {
     return '<span class="badge">Waiting</span>';
 }
 
+function cr_onboarding_email_status_text($sentFlag, $sentAt) {
+    if ((int)$sentFlag !== 1) {
+        return 'Not sent';
+    }
+
+    $stamp = trim((string)$sentAt);
+    if ($stamp === '' || $stamp === '0000-00-00 00:00:00') {
+        return 'Sent';
+    }
+
+    $ts = strtotime($stamp);
+    if ($ts === false) {
+        return 'Sent (' . $stamp . ')';
+    }
+
+    return 'Sent (' . date('d/m/Y H:i', $ts) . ')';
+}
+
 function cr_onboarding_sign_approval_action($recordId, $companyId, $approvalTarget, $approvalAction) {
     $data = (int)$recordId . '|' . (int)$companyId . '|' . trim((string)$approvalTarget) . '|' . trim((string)$approvalAction);
     $secret = (string)(defined('MAILERLITE_API_KEY') ? MAILERLITE_API_KEY : '');
@@ -758,6 +776,42 @@ function cr_sync_onboarding_status_columns($conn) {
         $alterSql = 'ALTER TABLE ' . cr_escape_identifier($table)
             . ' ADD COLUMN ' . cr_escape_identifier($columnName)
             . " VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting'";
+        if (mysqli_query($conn, $alterSql)) {
+            $existingColumns[$columnName] = true;
+        }
+    }
+}
+
+function cr_sync_onboarding_email_tracking_columns($conn) {
+    if (!cr_is_employee_onboarding_module()) {
+        return;
+    }
+
+    $table = 'employee_onboarding_requests';
+    $requiredDefinitions = [
+        'email_sent_hod' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_hod_at' => " DATETIME DEFAULT NULL",
+        'email_sent_hrd' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_hrd_at' => " DATETIME DEFAULT NULL",
+        'email_sent_ism' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_ism_at' => " DATETIME DEFAULT NULL",
+    ];
+    $existingColumns = [];
+    $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
+    while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
+        $existingColumns[(string)($columnRow['Field'] ?? '')] = true;
+    }
+
+    foreach ($requiredDefinitions as $columnName => $columnSql) {
+        if (isset($existingColumns[$columnName])) {
+            continue;
+        }
+        if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+
+        $alterSql = 'ALTER TABLE ' . cr_escape_identifier($table)
+            . ' ADD COLUMN ' . cr_escape_identifier($columnName) . $columnSql;
         if (mysqli_query($conn, $alterSql)) {
             $existingColumns[$columnName] = true;
         }
@@ -976,6 +1030,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // Module initialization: load columns and foreign key maps
 if (cr_is_employee_onboarding_module()) {
     cr_sync_onboarding_status_columns($conn);
+    cr_sync_onboarding_email_tracking_columns($conn);
     cr_sync_onboarding_system_access_columns($conn, (int)$company_id);
 }
 $columns = cr_table_columns($conn, $crud_table);
@@ -1003,7 +1058,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 }));
 if (cr_is_employee_onboarding_module()) {
     $uiColumns = array_values(array_filter($uiColumns, static function ($col) {
-        return !in_array((string)($col['Field'] ?? ''), ['requested_on', 'status_hod', 'status_hrd', 'status_ism'], true);
+        return !in_array((string)($col['Field'] ?? ''), ['requested_on', 'status_hod', 'status_hrd', 'status_ism', 'email_sent_hod', 'email_sent_hod_at', 'email_sent_hrd', 'email_sent_hrd_at', 'email_sent_ism', 'email_sent_ism_at'], true);
     }));
 }
 $listColumns = $uiColumns;
@@ -1527,6 +1582,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     if (!cr_onboarding_send_approval_email_via_api($approverEmail, $approverName, $subject, $htmlBody, $sendError)) {
         $_SESSION['crud_error'] = $sendError;
     } else {
+        $emailSentField = '';
+        $emailSentAtField = '';
+        if ($approvalTarget === 'hod') {
+            $emailSentField = 'email_sent_hod';
+            $emailSentAtField = 'email_sent_hod_at';
+        } elseif ($approvalTarget === 'hrd') {
+            $emailSentField = 'email_sent_hrd';
+            $emailSentAtField = 'email_sent_hrd_at';
+        } elseif ($approvalTarget === 'ism') {
+            $emailSentField = 'email_sent_ism';
+            $emailSentAtField = 'email_sent_ism_at';
+        }
+        if ($emailSentField !== '' && $emailSentAtField !== '' && isset($fieldColumnsByName[$emailSentField]) && isset($fieldColumnsByName[$emailSentAtField])) {
+            $trackSql = 'UPDATE `employee_onboarding_requests` SET '
+                . cr_escape_identifier($emailSentField) . "=1, "
+                . cr_escape_identifier($emailSentAtField) . '=NOW() '
+                . 'WHERE id=' . $recordId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+            $trackErrCode = 0;
+            $trackErrMessage = '';
+            itm_run_query($conn, $trackSql, $trackErrCode, $trackErrMessage);
+        }
         $_SESSION['crud_success'] = $approvalType . ' email sent to ' . $approverEmail . '.';
     }
 
@@ -1572,6 +1648,16 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     foreach (['status_hod', 'status_hrd', 'status_ism'] as $statusField) {
         if (array_key_exists($statusField, $data) && trim((string)$data[$statusField]) === '') {
             $data[$statusField] = 'Waiting';
+        }
+    }
+    foreach (['email_sent_hod', 'email_sent_hrd', 'email_sent_ism'] as $emailSentField) {
+        if (array_key_exists($emailSentField, $data)) {
+            $data[$emailSentField] = 0;
+        }
+    }
+    foreach (['email_sent_hod_at', 'email_sent_hrd_at', 'email_sent_ism_at'] as $emailSentAtField) {
+        if (array_key_exists($emailSentAtField, $data)) {
+            $data[$emailSentAtField] = '';
         }
     }
 }
@@ -2314,18 +2400,21 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="hod">HOD Approval - Send for Approval</button>
                             <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_hod'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_hod'] ?? 0, $data['email_sent_hod_at'] ?? '')); ?></div>
                         </form>
                         <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="hrd">HRD Approval - Send for Approval</button>
                             <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_hrd'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_hrd'] ?? 0, $data['email_sent_hrd_at'] ?? '')); ?></div>
                         </form>
                         <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="ism">ISM Approval - Send for Approval</button>
                             <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_ism'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_ism'] ?? 0, $data['email_sent_ism_at'] ?? '')); ?></div>
                         </form>
                     </p>
                 </div>
