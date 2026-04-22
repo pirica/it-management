@@ -239,6 +239,38 @@ function cr_onboarding_system_access_labels($conn, $company_id) {
     return $labels;
 }
 
+function cr_current_user_display_name($conn, $company_id) {
+    $currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($currentUserId <= 0) {
+        return '';
+    }
+
+    $companyFilter = ($company_id > 0)
+        ? ' WHERE id=' . $currentUserId . ' AND company_id=' . (int)$company_id
+        : ' WHERE id=' . $currentUserId;
+    $sql = 'SELECT username, first_name, last_name FROM `users`' . $companyFilter . ' LIMIT 1';
+    $result = mysqli_query($conn, $sql);
+
+    // Why: preserve persisted sessions for legacy shared users not fully mapped to tenant rows.
+    if ((!$result || mysqli_num_rows($result) === 0) && $company_id > 0) {
+        $result = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `users` WHERE id=' . $currentUserId . ' LIMIT 1');
+    }
+
+    if ($result && ($row = mysqli_fetch_assoc($result))) {
+        $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+        if ($fullName !== '') {
+            return $fullName;
+        }
+
+        $username = trim((string)($row['username'] ?? ''));
+        if ($username !== '') {
+            return $username;
+        }
+    }
+
+    return trim((string)($_SESSION['username'] ?? ''));
+}
+
 function cr_sync_onboarding_system_access_columns($conn, $company_id) {
     $company_id = (int)$company_id;
     if ($company_id <= 0) {
@@ -858,6 +890,7 @@ $data = [];
 foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
+$onboardingRequestedByDefault = cr_current_user_display_name($conn, (int)$company_id);
 
 if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     if (array_key_exists('starting_date', $data)) {
@@ -868,6 +901,9 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     }
     if (array_key_exists('comments', $data)) {
         $data['comments'] = '(Email:)';
+    }
+    if (array_key_exists('requested_by', $data) && $onboardingRequestedByDefault !== '') {
+        $data['requested_by'] = $onboardingRequestedByDefault;
     }
 }
 
@@ -944,6 +980,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         // Automatically assign company ID
         if ($name === 'company_id' && $company_id > 0) {
             $data[$name] = (int)$company_id;
+            continue;
+        }
+
+        if ($name === 'requested_by' && $crud_action === 'create' && $onboardingRequestedByDefault !== '') {
+            $data[$name] = "'" . mysqli_real_escape_string($conn, $onboardingRequestedByDefault) . "'";
             continue;
         }
 
@@ -1384,6 +1425,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo $isChecked ? 'checked' : ''; ?>>
                                                     <span class="itm-check-indicator" aria-hidden="true"><?php echo $isChecked ? '✅' : '❌'; ?></span>
                                                 </label>
+                                            <?php elseif ($name === 'requested_by' && $crud_action === 'create'): ?>
+                                                <input type="text" name="requested_by" value="<?php echo sanitize($onboardingRequestedByDefault !== '' ? $onboardingRequestedByDefault : $displayVal); ?>" readonly>
                                             <?php elseif (isset($fkMap[$name])): ?>
                                                 <?php
                                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
