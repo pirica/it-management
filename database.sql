@@ -554,6 +554,7 @@ CREATE TABLE `employee_onboarding_requests` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_employee_onboarding_requests_id` (`id`),
   KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   CONSTRAINT `employee_onboarding_requests_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
