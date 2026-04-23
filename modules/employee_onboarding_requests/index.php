@@ -549,6 +549,8 @@ function cr_onboarding_status_field_by_target($approvalTarget) {
         'hod' => 'status_hod',
         'hrd' => 'status_hrd',
         'ism' => 'status_ism',
+        'gm' => 'status_gm',
+        'fin' => 'status_fin',
     ];
     return (string)($map[(string)$approvalTarget] ?? '');
 }
@@ -673,14 +675,18 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
         'hod_approval' => '',
         'hrd_approval' => '',
         'ism_approval' => '',
+        'gm_approval' => '',
+        'fin_approval' => '',
     ];
-    if ($departmentName === '' || (int)$company_id <= 0) {
+    if ((int)$company_id <= 0) {
         return $resolved;
     }
 
-    $resolved['hod_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HOD Approval');
-    $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
-    $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
+    if ($departmentName !== '') {
+        $resolved['hod_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HOD Approval');
+        $resolved['hrd_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'HRD Approval');
+        $resolved['ism_approval'] = cr_onboarding_find_active_approver_name($conn, (int)$company_id, $departmentName, 'ISM Approval');
+    }
 
     // Why: HRD/ISM approvers are often configured as one active approver company-wide.
     if ($resolved['hrd_approval'] === '') {
@@ -689,6 +695,8 @@ function cr_onboarding_resolve_approvals($conn, $company_id, $departmentNameRaw)
     if ($resolved['ism_approval'] === '') {
         $resolved['ism_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'ISM Approval');
     }
+    $resolved['gm_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'GM Approval');
+    $resolved['fin_approval'] = cr_onboarding_find_active_approver_name_by_type($conn, (int)$company_id, 'FIN Approval');
     // Why: HOD approval must stay department-specific; do not auto-fill from other departments.
 
     return $resolved;
@@ -769,7 +777,7 @@ function cr_sync_onboarding_status_columns($conn) {
     }
 
     $table = 'employee_onboarding_requests';
-    $requiredColumns = ['status_hod', 'status_hrd', 'status_ism'];
+    $requiredColumns = ['status_hod', 'status_hrd', 'status_ism', 'status_gm', 'status_fin'];
     $existingColumns = [];
     $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
     while ($columnsRes && ($columnRow = mysqli_fetch_assoc($columnsRes))) {
@@ -800,12 +808,20 @@ function cr_sync_onboarding_email_tracking_columns($conn) {
 
     $table = 'employee_onboarding_requests';
     $requiredDefinitions = [
+        'gm_approval' => " VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+        'gm_approval_date' => " DATE DEFAULT NULL",
+        'fin_approval' => " VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL",
+        'fin_approval_date' => " DATE DEFAULT NULL",
         'email_sent_hod' => " TINYINT NOT NULL DEFAULT '0'",
         'email_sent_hod_at' => " DATETIME DEFAULT NULL",
         'email_sent_hrd' => " TINYINT NOT NULL DEFAULT '0'",
         'email_sent_hrd_at' => " DATETIME DEFAULT NULL",
         'email_sent_ism' => " TINYINT NOT NULL DEFAULT '0'",
         'email_sent_ism_at' => " DATETIME DEFAULT NULL",
+        'email_sent_gm' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_gm_at' => " DATETIME DEFAULT NULL",
+        'email_sent_fin' => " TINYINT NOT NULL DEFAULT '0'",
+        'email_sent_fin_at' => " DATETIME DEFAULT NULL",
     ];
     $existingColumns = [];
     $columnsRes = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -872,6 +888,8 @@ function cr_onboarding_field_label($fieldName, $systemAccessLabels = []) {
         'hod_approval_date' => 'Date',
         'hrd_approval_date' => 'Date',
         'ism_approval_date' => 'Date',
+        'gm_approval_date' => 'Date',
+        'fin_approval_date' => 'Date',
     ];
     if (isset($customLabels[$fieldName])) {
         return $customLabels[$fieldName];
@@ -1069,7 +1087,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 }));
 if (cr_is_employee_onboarding_module()) {
     $uiColumns = array_values(array_filter($uiColumns, static function ($col) {
-        return !in_array((string)($col['Field'] ?? ''), ['requested_on', 'status_hod', 'status_hrd', 'status_ism', 'email_sent_hod', 'email_sent_hod_at', 'email_sent_hrd', 'email_sent_hrd_at', 'email_sent_ism', 'email_sent_ism_at'], true);
+        return !in_array((string)($col['Field'] ?? ''), ['requested_on', 'status_hod', 'status_hrd', 'status_ism', 'status_gm', 'status_fin', 'email_sent_hod', 'email_sent_hod_at', 'email_sent_hrd', 'email_sent_hrd_at', 'email_sent_ism', 'email_sent_ism_at', 'email_sent_gm', 'email_sent_gm_at', 'email_sent_fin', 'email_sent_fin_at'], true);
     }));
 }
 $listColumns = $uiColumns;
@@ -1182,6 +1200,8 @@ foreach ([
     ['hod_approval', 'hod_approval_date'],
     ['hrd_approval', 'hrd_approval_date'],
     ['ism_approval', 'ism_approval_date'],
+    ['gm_approval', 'gm_approval_date'],
+    ['fin_approval', 'fin_approval_date'],
     ['active', null],
 ] as $itmTailPair) {
     $onboardingRowsShared[] = $itmTailPair;
@@ -1379,6 +1399,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
         'hod' => 'hod_approval_date',
         'hrd' => 'hrd_approval_date',
         'ism' => 'ism_approval_date',
+        'gm' => 'gm_approval_date',
+        'fin' => 'fin_approval_date',
     ];
     $approvalDateField = (string)($approvalDateFieldMap[$target] ?? '');
     $decisionMap = ['approve' => 'Approved', 'decline' => 'Declined'];
@@ -1525,6 +1547,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
         'hod' => 'HOD Approval',
         'hrd' => 'HRD Approval',
         'ism' => 'ISM Approval',
+        'gm' => 'GM Approval',
+        'fin' => 'FIN Approval',
     ];
     $approvalType = (string)($approvalTypeMap[$approvalTarget] ?? '');
     $recordId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -1548,7 +1572,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
         exit;
     }
 
-    $stmt = mysqli_prepare($conn, 'SELECT id, department_name, first_name, last_name FROM `employee_onboarding_requests` WHERE id=? AND company_id=? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT id, department_name, first_name, last_name, email_account FROM `employee_onboarding_requests` WHERE id=? AND company_id=? LIMIT 1');
     $record = null;
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $recordId, $company_id);
@@ -1561,6 +1585,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     if (!$record) {
         $_SESSION['crud_error'] = 'Record not found.';
         header('Location: index.php');
+        exit;
+    }
+
+    if (in_array($approvalTarget, ['gm', 'fin'], true) && !cr_is_truthy_checkbox_value($record['email_account'] ?? '')) {
+        $_SESSION['crud_error'] = 'GM/FIN approvals can only be sent when Email Account is enabled.';
+        header('Location: view.php?id=' . $recordId);
         exit;
     }
 
@@ -1589,7 +1619,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     $approvalApproveUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=approve&token=' . urlencode($approvalTokenApprove);
     $approvalDeclineUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=decline&token=' . urlencode($approvalTokenDecline);
 
-    $subject = $approvalType . ' Needed - ' . $employeeFullName;
+    $subject = 'Email request for ' . $employeeFullName;
     $htmlBody = '<p>Hello ' . sanitize($approverName !== '' ? $approverName : 'Approver') . ',</p>'
         . '<p>Please review and approve onboarding request <strong>#' . (int)$recordId . '</strong> for <strong>' . sanitize($employeeFullName) . '</strong>.</p>'
         . '<p><a href="' . sanitize($approvalApproveUrl) . '">API Link: Approve</a></p>'
@@ -1611,6 +1641,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
         } elseif ($approvalTarget === 'ism') {
             $emailSentField = 'email_sent_ism';
             $emailSentAtField = 'email_sent_ism_at';
+        } elseif ($approvalTarget === 'gm') {
+            $emailSentField = 'email_sent_gm';
+            $emailSentAtField = 'email_sent_gm_at';
+        } elseif ($approvalTarget === 'fin') {
+            $emailSentField = 'email_sent_fin';
+            $emailSentAtField = 'email_sent_fin_at';
         }
         if ($emailSentField !== '' && $emailSentAtField !== '' && isset($fieldColumnsByName[$emailSentField]) && isset($fieldColumnsByName[$emailSentAtField])) {
             $trackSql = 'UPDATE `employee_onboarding_requests` SET '
@@ -1663,17 +1699,17 @@ if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     if (array_key_exists('request_date', $data)) {
         $data['request_date'] = date('Y-m-d');
     }
-    foreach (['status_hod', 'status_hrd', 'status_ism'] as $statusField) {
+    foreach (['status_hod', 'status_hrd', 'status_ism', 'status_gm', 'status_fin'] as $statusField) {
         if (array_key_exists($statusField, $data) && trim((string)$data[$statusField]) === '') {
             $data[$statusField] = 'Waiting';
         }
     }
-    foreach (['email_sent_hod', 'email_sent_hrd', 'email_sent_ism'] as $emailSentField) {
+    foreach (['email_sent_hod', 'email_sent_hrd', 'email_sent_ism', 'email_sent_gm', 'email_sent_fin'] as $emailSentField) {
         if (array_key_exists($emailSentField, $data)) {
             $data[$emailSentField] = 0;
         }
     }
-    foreach (['email_sent_hod_at', 'email_sent_hrd_at', 'email_sent_ism_at'] as $emailSentAtField) {
+    foreach (['email_sent_hod_at', 'email_sent_hrd_at', 'email_sent_ism_at', 'email_sent_gm_at', 'email_sent_fin_at'] as $emailSentAtField) {
         if (array_key_exists($emailSentAtField, $data)) {
             $data[$emailSentAtField] = '';
         }
@@ -1779,7 +1815,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             continue;
         }
 
-        if (in_array($name, ['status_hod', 'status_hrd', 'status_ism'], true)) {
+        if (in_array($name, ['status_hod', 'status_hrd', 'status_ism', 'status_gm', 'status_fin'], true)) {
             $statusValue = trim((string)($_POST[$name] ?? ''));
             if ($statusValue === '') {
                 $statusValue = 'Waiting';
@@ -2106,7 +2142,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$row[$f], (int)$company_id);
                                                 echo sanitize($fkLabel !== '' ? $fkLabel : (string)$row[$f]);
                                             ?>
-                                        <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date'], true)): ?>
+                                        <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date', 'gm_approval_date', 'fin_approval_date'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($row[$f] ?? '', true)); ?>
                                         <?php elseif (cr_is_employee_onboarding_module() && isset($onboardingSystemAccessFields[$f])): ?>
                                             <?php echo cr_is_truthy_checkbox_value($row[$f] ?? '') ? '✅' : '❌'; ?>
@@ -2248,7 +2284,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 </label>
                                         <?php elseif ($name === 'requested_by' && $crud_action === 'create'): ?>
                                                 <input type="text" name="requested_by" value="<?php echo sanitize($onboardingRequestedByDefault !== '' ? $onboardingRequestedByDefault : $displayVal); ?>" readonly>
-                                            <?php elseif (in_array($name, ['hod_approval', 'hrd_approval', 'ism_approval'], true)): ?>
+                                            <?php elseif (in_array($name, ['hod_approval', 'hrd_approval', 'ism_approval', 'gm_approval', 'fin_approval'], true)): ?>
                                                 <input
                                                     type="text"
                                                     name="<?php echo sanitize($name); ?>"
@@ -2402,7 +2438,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                             ?>
                                         <?php elseif ($isViewTinyInt): ?>
                                             <?php echo ((int)($data[$f] ?? 0) === 1) ? '✅' : '❌'; ?>
-                                        <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date'], true)): ?>
+                                        <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date', 'gm_approval_date', 'fin_approval_date'], true)): ?>
                                             <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true)); ?>
                                         <?php elseif (isset($onboardingSystemAccessFields[$f])): ?>
                                             <?php echo cr_is_truthy_checkbox_value($data[$f] ?? '') ? '✅' : '❌'; ?>
@@ -2442,6 +2478,20 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <button type="submit" class="btn btn-primary" name="send_approval_email" value="ism">ISM Approval - Send for Approval</button>
                             <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_ism'] ?? 'Waiting'); ?></div>
                             <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_ism'] ?? 0, $data['email_sent_ism_at'] ?? '')); ?></div>
+                        </form>
+                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="gm">GM Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_gm'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_gm'] ?? 0, $data['email_sent_gm_at'] ?? '')); ?></div>
+                        </form>
+                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="fin">FIN Approval - Send for Approval</button>
+                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_fin'] ?? 'Waiting'); ?></div>
+                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_fin'] ?? 0, $data['email_sent_fin_at'] ?? '')); ?></div>
                         </form>
                     </p>
                 </div>
@@ -2571,7 +2621,9 @@ document.addEventListener('change', function (event) {
     const approvalFields = {
         hod_approval: document.querySelector('input[name="hod_approval"]'),
         hrd_approval: document.querySelector('input[name="hrd_approval"]'),
-        ism_approval: document.querySelector('input[name="ism_approval"]')
+        ism_approval: document.querySelector('input[name="ism_approval"]'),
+        gm_approval: document.querySelector('input[name="gm_approval"]'),
+        fin_approval: document.querySelector('input[name="fin_approval"]')
     };
 
     function applyApprovalValues(values) {
