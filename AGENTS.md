@@ -178,8 +178,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
 * **API:**
  *`scripts/api.php`: needs to be updated if any changes on the project.
- 
-<<<<<<< HEAD
-Implement the missing JSON import endpoint for modules/*/index.php, so 📥Import Excel now handles table-tools.js save-to-database requests instead of falling through to normal page rendering (which caused the generic “Import failed while saving to database.” error).
+* ** Implement the missing JSON import endpoint:**
+* For modules/*/index.php, so 📥Import Excel now handles table-tools.js save-to-database requests instead of falling through to normal page rendering (which caused the generic “Import failed while saving to database.” error).
 =======
 >>>>>>> e95d3a655c756f43b6b1664ae10eff9a394a1056
