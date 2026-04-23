@@ -114,6 +114,7 @@ $projectJsonEndpoints = [
             <li>This project uses <strong>session-based authentication + CSRF</strong> (not JWT bearer tokens).</li>
             <li>Most JSON APIs are internal AJAX endpoints used by module pages.</li>
             <li>Multi-tenancy is enforced via session <code>company_id</code> checks in endpoints.</li>
+            <li><strong>Do not send <code>company_id</code> in API payloads</strong>; tenant context is resolved server-side from the authenticated session.</li>
             <li>Many modules expose a JSON import endpoint at their own <code>modules/&lt;module&gt;/index.php</code>.</li>
         </ul>
     </div>
@@ -125,6 +126,7 @@ $projectJsonEndpoints = [
             <li>An authenticated PHP session cookie.</li>
             <li>A valid CSRF token in <code>csrf_token</code> (body) or <code>X-CSRF-Token</code> header (where supported).</li>
             <li>An active <code>company_id</code> context in session for tenant-scoped operations.</li>
+            <li>Tenant scope is automatic: requests are filtered by server-side session company; payload-level <code>company_id</code> is intentionally hidden from UI/API contracts.</li>
         </ol>
 <pre><code># 1) Login and store session cookies (example)
 curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
@@ -237,6 +239,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
             <li><code>id</code> is required for <code>includes/update_port.php</code>.</li>
             <li><code>import_excel_rows</code> must include header row + at least one data row for module import APIs.</li>
             <li>All DB writes are tenant-scoped by active session company.</li>
+            <li><code>company_id</code> is not a client-editable API field for these endpoints; if missing from session, endpoints return unauthorized/company-context errors.</li>
         </ul>
     </div>
 </div>
