@@ -5,8 +5,8 @@
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
  * Schema note: employee access is stored via employee_system_access mapped to system_access,
- * and active system_access codes are resolved per-company when saving matrix permissions.
- * Last reviewed: 2026-04-23 (employee import UI alignment update).
+ * and active system_access entries resolve per-company with legacy code/name fallback
+ * when mapping matrix permissions to employee_system_access columns.
  */
 
 declare(strict_types=1);

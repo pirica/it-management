@@ -67,6 +67,56 @@ function esa_resolve_ability_fields($conn, $companyId = null) {
 }
 
 /**
+ * Normalizes text for stable legacy/code label comparisons.
+ */
+function esa_normalize_access_token($value) {
+    $value = strtolower(trim((string)$value));
+    if ($value === '') {
+        return '';
+    }
+    return preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
+}
+
+/**
+ * Resolves which employee_system_access column a system_access row should map to.
+ *
+ * Why: some environments have legacy system_access codes that differ from the
+ * actual matrix column names; this fallback keeps load/save consistent.
+ */
+function esa_resolve_field_for_catalog_row($accessRow, $abilityFields) {
+    $code = (string)($accessRow['code'] ?? '');
+    if ($code !== '' && isset($abilityFields[$code])) {
+        return $code;
+    }
+
+    $name = (string)($accessRow['name'] ?? '');
+    $needleTokens = array_filter([
+        esa_normalize_access_token($code),
+        esa_normalize_access_token($name),
+    ]);
+    if (empty($needleTokens)) {
+        return '';
+    }
+
+    foreach ($abilityFields as $fieldCode => $fieldLabel) {
+        $fieldTokens = [
+            esa_normalize_access_token($fieldCode),
+            esa_normalize_access_token($fieldLabel),
+        ];
+        foreach ($needleTokens as $needle) {
+            if ($needle === '') {
+                continue;
+            }
+            if (in_array($needle, $fieldTokens, true)) {
+                return (string)$fieldCode;
+            }
+        }
+    }
+
+    return '';
+}
+
+/**
  * Safely escapes a database identifier (table or column name)
  */
 function esa_escape_identifier($name) {
@@ -213,10 +263,14 @@ function esa_get_employee_access_ids($conn, $companyId, $employeeId) {
         return $ids;
     }
 
-    $accessByCode = esa_system_access_id_map($conn);
-    foreach (array_keys($fields) as $field) {
-        if ((int)($row[$field] ?? 0) === 1 && isset($accessByCode[$field])) {
-            $mappedId = (int)$accessByCode[$field];
+    $catalog = esa_get_system_access_catalog($conn, $companyId, true);
+    foreach ($catalog as $accessRow) {
+        $mappedField = esa_resolve_field_for_catalog_row($accessRow, $fields);
+        if ($mappedField === '') {
+            continue;
+        }
+        if ((int)($row[$mappedField] ?? 0) === 1) {
+            $mappedId = (int)($accessRow['id'] ?? 0);
             if ($mappedId > 0) {
                 $ids[] = $mappedId;
             }
@@ -249,9 +303,9 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
     $validAccessById = [];
     if (!empty($cleanIds)) {
         $idSql = implode(',', array_map('intval', $cleanIds));
-        $res = mysqli_query($conn, 'SELECT `id`, `code` FROM `system_access` WHERE `company_id`=' . $companyId . ' AND `id` IN (' . $idSql . ')');
+        $res = mysqli_query($conn, 'SELECT `id`, `code`, `name` FROM `system_access` WHERE `company_id`=' . $companyId . ' AND `id` IN (' . $idSql . ')');
         while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $validAccessById[(int)$row['id']] = (string)$row['code'];
+            $validAccessById[(int)$row['id']] = $row;
         }
     }
 
@@ -260,9 +314,10 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
     foreach (array_keys($legacyFields) as $field) {
         $normalized[$field] = 0;
     }
-    foreach ($validAccessById as $code) {
-        if (isset($normalized[$code])) {
-            $normalized[$code] = 1;
+    foreach ($validAccessById as $catalogRow) {
+        $resolvedField = esa_resolve_field_for_catalog_row($catalogRow, $legacyFields);
+        if ($resolvedField !== '' && isset($normalized[$resolvedField])) {
+            $normalized[$resolvedField] = 1;
         }
     }
 
