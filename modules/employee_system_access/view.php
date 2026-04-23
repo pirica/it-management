@@ -36,6 +36,14 @@ if ($employeeId > 0) {
 
 if ($employee) {
     $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
+    $abilityFields = esa_resolve_ability_fields($conn, (int)$company_id);
+    $mappedSystemAccessCatalog = [];
+    foreach ($systemAccessCatalog as $itmAccessRow) {
+        if (esa_resolve_field_for_catalog_row($itmAccessRow, $abilityFields) !== '') {
+            $mappedSystemAccessCatalog[] = $itmAccessRow;
+        }
+    }
+    $systemAccessCatalog = $mappedSystemAccessCatalog;
     $grantedAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, (int)$employee['id']);
     $grantedAccessMap = array_fill_keys(array_map('intval', $grantedAccessIds), true);
 }
