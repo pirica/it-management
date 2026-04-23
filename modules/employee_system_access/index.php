@@ -72,7 +72,6 @@ foreach ($systemAccessCatalog as $access) {
     if ($resolvedField !== '') {
         $accessFieldById[$accessId] = $resolvedField;
     }
-    $accessLabelsById[$accessId] = (string)($access['name'] ?? '');
 }
 $accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
 
