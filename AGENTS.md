@@ -25,7 +25,7 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 * `scripts/`: Maintenance, security audits, and CLI tools.
 * `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, and `backups/` must exist with write permissions.
-
+* `scripts/api.php`: API Documentation
 ---
 
 ## 🏗 Coding Standards
@@ -176,7 +176,9 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
-
+* **API:**
+ *`scripts/api.php`: needs to be updated if any changes on the project.
+ 
 <<<<<<< HEAD
 Implement the missing JSON import endpoint for modules/*/index.php, so 📥Import Excel now handles table-tools.js save-to-database requests instead of falling through to normal page rendering (which caused the generic “Import failed while saving to database.” error).
 =======
