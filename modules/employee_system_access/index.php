@@ -63,10 +63,15 @@ esa_ensure_table($conn);
 // Load the catalog of available systems to build matrix columns
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
 $accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
+$accessIdByCode = [];
 $accessLabelsById = [];
 foreach ($systemAccessCatalog as $access) {
     $accessId = (int)($access['id'] ?? 0);
+    $accessCode = (string)($access['code'] ?? '');
     if ($accessId <= 0) { continue; }
+    if ($accessCode !== '') {
+        $accessIdByCode[$accessCode] = $accessId;
+    }
     $accessLabelsById[$accessId] = (string)($access['name'] ?? '');
 }
 
@@ -143,16 +148,21 @@ while ($rows && ($row = mysqli_fetch_assoc($rows))) {
 // Bulk fetch permission grants for all displayed employees
 if (!empty($employeeIds) && !empty($accessIds)) {
     $employeeIdSql = implode(',', array_map('intval', $employeeIds));
-    $accessIdSql = implode(',', array_map('intval', $accessIds));
-    $mapSql = 'SELECT employee_id, system_access_id FROM employee_system_access_relations WHERE company_id=' . (int)$company_id
-        . ' AND granted=1 AND employee_id IN (' . $employeeIdSql . ') AND system_access_id IN (' . $accessIdSql . ')';
+    $abilityFields = array_keys(esa_ability_fields());
+    $abilitySql = implode(', ', array_map('esa_escape_identifier', $abilityFields));
+    $mapSql = 'SELECT `employee_id`, ' . $abilitySql . ' FROM `employee_system_access` WHERE `company_id`=' . (int)$company_id
+        . ' AND `employee_id` IN (' . $employeeIdSql . ')';
     $mapRes = mysqli_query($conn, $mapSql);
     $grantsByEmployee = [];
     while ($mapRes && ($mapRow = mysqli_fetch_assoc($mapRes))) {
         $eid = (int)($mapRow['employee_id'] ?? 0);
-        $aid = (int)($mapRow['system_access_id'] ?? 0);
-        if ($eid > 0 && $aid > 0) {
-            $grantsByEmployee[$eid][$aid] = true;
+        if ($eid <= 0) {
+            continue;
+        }
+        foreach ($accessIdByCode as $code => $aid) {
+            if ((int)($mapRow[$code] ?? 0) === 1) {
+                $grantsByEmployee[$eid][(int)$aid] = true;
+            }
         }
     }
 
