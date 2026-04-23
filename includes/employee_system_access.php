@@ -142,11 +142,55 @@ function esa_ensure_table($conn) {
         return false;
     }
 
+    if (!esa_ensure_catalog_matrix_columns($conn)) {
+        return false;
+    }
+
     if (!esa_seed_system_access($conn)) {
         return false;
     }
 
     return esa_sync_from_employees_legacy($conn);
+}
+
+/**
+ * Ensures every tenant catalog code has a matching legacy matrix column.
+ *
+ * Why: custom System Access items are company-specific; without a matching
+ * employee_system_access column they cannot appear in the access matrix.
+ */
+function esa_ensure_catalog_matrix_columns($conn) {
+    $companyId = esa_current_company_id();
+    if ($companyId <= 0) {
+        return true;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT `code` FROM `system_access` WHERE `company_id` = ?');
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $code = trim((string)($row['code'] ?? ''));
+        if ($code === '' || !itm_is_safe_identifier($code)) {
+            continue;
+        }
+        if (itm_table_has_column($conn, 'employee_system_access', $code)) {
+            continue;
+        }
+
+        $sql = 'ALTER TABLE `employee_system_access` ADD COLUMN ' . esa_escape_identifier($code) . " TINYINT(1) NOT NULL DEFAULT 0";
+        if (mysqli_query($conn, $sql) === false) {
+            mysqli_stmt_close($stmt);
+            return false;
+        }
+    }
+
+    mysqli_stmt_close($stmt);
+    return true;
 }
 
 /**
