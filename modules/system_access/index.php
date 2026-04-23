@@ -4,7 +4,7 @@
  * 
  * Manages the catalog of available system access types (e.g., 'OPERA', 'Network Access').
  * Features:
- * - Lazy Schema Initialization: Calls `esa_ensure_table()` to setup modern relation tables.
+ * - Access Sync Initialization: Calls `esa_ensure_table()` to sync catalog/data for legacy access storage.
  * - Bulk Import: Supports CSV-style text import for batch creating/updating access types.
  * - Export: Provides CSV exportation of the access catalog.
  * - Multi-tenant Filtering: All actions are scoped to the active `company_id`.

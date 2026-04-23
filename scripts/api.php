@@ -4,7 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
- * Schema note: employee_system_access_relations was removed from database.sql.
+ * Schema note: employee_system_access_relations is no longer lazy-created at runtime.
  */
 
 declare(strict_types=1);
