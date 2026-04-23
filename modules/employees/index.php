@@ -606,9 +606,14 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                 <h3 style="margin-top:0;">Import from Excel / CSV</h3>
                 <form method="POST" id="employeeImportForm">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>"><input type="hidden" name="action" value="import_employees"><input type="hidden" name="import_payload" id="employeeImportPayload" value="">
-                    <div class="form-group"><label>Upload file (.xlsx, .xls, .csv)</label><input type="file" id="employeeImportFile" accept=".xlsx,.xls,.csv" /></div>
+                    <div class="form-group">
+                        <label>Upload file (.xlsx, .xls, .csv)</label>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <input type="file" id="employeeImportFile" accept=".xlsx,.xls,.csv" />
+                            <button type="submit" class="btn btn-primary">📥 Import Employees</button>
+                        </div>
+                    </div>
                     <div class="form-group"><label>Or paste tabular data</label><textarea name="import_text" id="employeeImportText" rows="2" placeholder="Paste from Excel..."></textarea></div>
-                    <div class="form-actions"><button type="submit" class="btn btn-primary">📥 Import Employees</button></div>
                 </form>
             </div>
 

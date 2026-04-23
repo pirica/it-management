@@ -6,6 +6,7 @@
  * including request format, auth model, and real endpoint paths.
  * Schema note: employee access is stored via employee_system_access mapped to system_access,
  * and active system_access codes are resolved per-company when saving matrix permissions.
+ * Last reviewed: 2026-04-23 (employee import UI alignment update).
  */
 
 declare(strict_types=1);
