@@ -157,12 +157,16 @@ function cr_humanize_field($field) {
  * Checks if a field should be hidden specifically in the employee module view
  */
 function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
-        return false;
+    $crudTable = (string)($GLOBALS['crud_table'] ?? '');
+    if ($crudTable === 'employees') {
+        $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+        return in_array($field, $hidden, true);
     }
-
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
-    return in_array($field, $hidden, true);
+    if ($crudTable === 'employee_onboarding_requests') {
+        $hidden = ['gm_approval', 'gm_approval_date', 'fin_approval', 'fin_approval_date'];
+        return in_array($field, $hidden, true);
+    }
+    return false;
 }
 
 /**
