@@ -8,10 +8,6 @@
  */
 
 require '../../config/config.php';
-require '../../includes/employee_system_access.php';
-
-// Ensure tables exist
-esa_ensure_table($conn);
 
 // Only allow POST requests for deletion
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -30,7 +26,6 @@ if ($id > 0) {
         $_SESSION['crud_error'] = $usageError;
     } else {
         // Cascade cleanup of permission data
-        mysqli_query($conn, 'DELETE FROM employee_system_access_relations WHERE employee_id=' . $id . ' AND company_id=' . (int)$company_id);
         mysqli_query($conn, 'DELETE FROM employee_system_access WHERE employee_id=' . $id . ' AND company_id=' . (int)$company_id);
         
         // Final employee record deletion
