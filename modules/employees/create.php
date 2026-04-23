@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (mysqli_query($conn, $sql)) {
             $newEmployeeId = (int)mysqli_insert_id($conn);
-            // Save associated system permissions in the relations table
+            // Persist selected system access permissions in the employee_system_access matrix
             esa_save_employee_access_ids($conn, (int)$company_id, $newEmployeeId, $selectedSystemAccessIds);
             header('Location: index.php');
             exit;
