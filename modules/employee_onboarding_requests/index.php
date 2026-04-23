@@ -157,12 +157,16 @@ function cr_humanize_field($field) {
  * Checks if a field should be hidden specifically in the employee module view
  */
 function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
-        return false;
+    $crudTable = (string)($GLOBALS['crud_table'] ?? '');
+    if ($crudTable === 'employees') {
+        $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+        return in_array($field, $hidden, true);
     }
-
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
-    return in_array($field, $hidden, true);
+    if ($crudTable === 'employee_onboarding_requests') {
+        $hidden = ['gm_approval', 'gm_approval_date', 'fin_approval', 'fin_approval_date'];
+        return in_array($field, $hidden, true);
+    }
+    return false;
 }
 
 /**
@@ -1206,6 +1210,27 @@ foreach ([
 ] as $itmTailPair) {
     $onboardingRowsShared[] = $itmTailPair;
 }
+
+$onboardingRowsFiltered = [];
+foreach ($onboardingRowsShared as $itmRowPair) {
+    $firstField = (string)($itmRowPair[0] ?? '');
+    $secondField = (string)($itmRowPair[1] ?? '');
+
+    $firstVisible = ($firstField !== '' && isset($onboardingVisibleFields[$firstField]));
+    $secondVisible = ($secondField !== '' && isset($onboardingVisibleFields[$secondField]));
+
+    if (!$firstVisible && !$secondVisible) {
+        continue;
+    }
+
+    if (!$firstVisible && $secondVisible) {
+        $onboardingRowsFiltered[] = [$secondField, null];
+        continue;
+    }
+
+    $onboardingRowsFiltered[] = [$firstField, $secondVisible ? $secondField : null];
+}
+$onboardingRowsShared = $onboardingRowsFiltered;
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
