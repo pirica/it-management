@@ -32,6 +32,14 @@ if (!$employee) {
 
 // Load available systems and current grants
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
+$abilityFields = esa_resolve_ability_fields($conn, (int)$company_id);
+$mappedSystemAccessCatalog = [];
+foreach ($systemAccessCatalog as $itmAccessRow) {
+    if (esa_resolve_field_for_catalog_row($itmAccessRow, $abilityFields) !== '') {
+        $mappedSystemAccessCatalog[] = $itmAccessRow;
+    }
+}
+$systemAccessCatalog = $mappedSystemAccessCatalog;
 $selectedSystemAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, $employeeId);
 $csrfToken = itm_get_csrf_token();
 

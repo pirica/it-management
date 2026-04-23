@@ -62,8 +62,8 @@ esa_ensure_table($conn);
 
 // Load the catalog of available systems to build matrix columns
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
-$accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
 $abilityFields = esa_resolve_ability_fields($conn, (int)$company_id);
+$filteredSystemAccessCatalog = [];
 $accessFieldById = [];
 $accessLabelsById = [];
 foreach ($systemAccessCatalog as $access) {
@@ -71,10 +71,12 @@ foreach ($systemAccessCatalog as $access) {
     if ($accessId <= 0) { continue; }
     $resolvedField = esa_resolve_field_for_catalog_row($access, $abilityFields);
     if ($resolvedField !== '') {
+        $filteredSystemAccessCatalog[] = $access;
         $accessFieldById[$accessId] = $resolvedField;
+        $accessLabelsById[$accessId] = (string)($access['name'] ?? '');
     }
-    $accessLabelsById[$accessId] = (string)($access['name'] ?? '');
 }
+$accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $filteredSystemAccessCatalog);
 
 // Define available columns for sorting
 $columns = array_merge(['employee_name', 'email'], array_map(static fn($id) => 'access_' . $id, array_keys($accessLabelsById)));
