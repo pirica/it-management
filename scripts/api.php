@@ -28,8 +28,20 @@ function itmDocCollectModuleImportEndpoints(string $rootPath): array
             continue;
         }
 
-        if (strpos($content, 'import_excel_rows') === false || strpos($content, 'Content-Type: application/json') === false) {
+        $hasImportRowsMarker = strpos($content, 'import_excel_rows') !== false;
+        $hasInlineImportHandler = $hasImportRowsMarker
+            && strpos($content, 'Content-Type: application/json') !== false;
+        $hasSharedImportHandler = strpos($content, 'itm_handle_json_table_import(') !== false;
+        $hasGuardedSharedImportHandler = $hasSharedImportHandler && $hasImportRowsMarker;
+        if (!$hasInlineImportHandler && !$hasSharedImportHandler) {
             continue;
+        }
+
+        $handlerType = 'shared';
+        if ($hasInlineImportHandler) {
+            $handlerType = 'inline';
+        } elseif ($hasGuardedSharedImportHandler) {
+            $handlerType = 'shared_guarded';
         }
 
         $module = basename(dirname($indexFile));
@@ -37,6 +49,7 @@ function itmDocCollectModuleImportEndpoints(string $rootPath): array
             'module' => $module,
             'path' => 'modules/' . $module . '/index.php',
             'method' => 'POST',
+            'handler_type' => $handlerType,
             'purpose' => 'Excel/CSV save-to-database import endpoint used by js/table-tools.js',
         ];
     }
@@ -206,12 +219,13 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/idfs/api/pos
         <h2>Module Import APIs (all detected)</h2>
         <p>Detected <strong><?= (int)count($moduleImportEndpoints); ?></strong> module import JSON endpoints. These are used by the 📥 Import Excel flow in <code>js/table-tools.js</code>.</p>
         <table>
-            <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Handler</th><th>Purpose</th></tr></thead>
             <tbody>
             <?php foreach ($moduleImportEndpoints as $endpoint): ?>
                 <tr>
                     <td><?= itmDocEscape($endpoint['method']); ?></td>
                     <td><code><?= itmDocEscape($endpoint['path']); ?></code></td>
+                    <td><?= itmDocEscape((string)($endpoint['handler_type'] ?? 'shared')); ?></td>
                     <td><?= itmDocEscape($endpoint['purpose']); ?></td>
                 </tr>
             <?php endforeach; ?>
