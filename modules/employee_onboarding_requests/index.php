@@ -2479,20 +2479,22 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_ism'] ?? 'Waiting'); ?></div>
                             <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_ism'] ?? 0, $data['email_sent_ism_at'] ?? '')); ?></div>
                         </form>
-                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
-                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
-                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="gm">GM Approval - Send for Approval</button>
-                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_gm'] ?? 'Waiting'); ?></div>
-                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_gm'] ?? 0, $data['email_sent_gm_at'] ?? '')); ?></div>
-                        </form>
-                        <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
-                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
-                            <button type="submit" class="btn btn-primary" name="send_approval_email" value="fin">FIN Approval - Send for Approval</button>
-                            <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_fin'] ?? 'Waiting'); ?></div>
-                            <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_fin'] ?? 0, $data['email_sent_fin_at'] ?? '')); ?></div>
-                        </form>
+                        <?php if (cr_is_truthy_checkbox_value($data['email_account'] ?? '')): ?>
+                            <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                                <button type="submit" class="btn btn-primary" name="send_approval_email" value="gm">GM Approval - Send for Approval</button>
+                                <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_gm'] ?? 'Waiting'); ?></div>
+                                <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_gm'] ?? 0, $data['email_sent_gm_at'] ?? '')); ?></div>
+                            </form>
+                            <form method="POST" action="view.php?id=<?php echo (int)($data['id'] ?? 0); ?>" style="display:inline-block;margin-left:8px;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                                <button type="submit" class="btn btn-primary" name="send_approval_email" value="fin">FIN Approval - Send for Approval</button>
+                                <div style="margin-top:6px;">Status: <?php echo cr_onboarding_status_badge($data['status_fin'] ?? 'Waiting'); ?></div>
+                                <div style="margin-top:4px;">Email: <?php echo sanitize(cr_onboarding_email_status_text($data['email_sent_fin'] ?? 0, $data['email_sent_fin_at'] ?? '')); ?></div>
+                            </form>
+                        <?php endif; ?>
                     </p>
                 </div>
 
