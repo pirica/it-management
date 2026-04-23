@@ -62,18 +62,19 @@ esa_ensure_table($conn);
 
 // Load the catalog of available systems to build matrix columns
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
-$accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
-$accessIdByCode = [];
+$abilityFields = esa_resolve_ability_fields($conn, (int)$company_id);
+$accessFieldById = [];
 $accessLabelsById = [];
 foreach ($systemAccessCatalog as $access) {
     $accessId = (int)($access['id'] ?? 0);
-    $accessCode = (string)($access['code'] ?? '');
     if ($accessId <= 0) { continue; }
-    if ($accessCode !== '') {
-        $accessIdByCode[$accessCode] = $accessId;
+    $resolvedField = esa_resolve_field_for_catalog_row($access, $abilityFields);
+    if ($resolvedField !== '') {
+        $accessFieldById[$accessId] = $resolvedField;
     }
     $accessLabelsById[$accessId] = (string)($access['name'] ?? '');
 }
+$accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
 
 // Define available columns for sorting
 $columns = array_merge(['employee_name', 'email'], array_map(static fn($id) => 'access_' . $id, array_keys($accessLabelsById)));
@@ -148,8 +149,7 @@ while ($rows && ($row = mysqli_fetch_assoc($rows))) {
 // Bulk fetch permission grants for all displayed employees
 if (!empty($employeeIds) && !empty($accessIds)) {
     $employeeIdSql = implode(',', array_map('intval', $employeeIds));
-    $abilityFields = array_keys(esa_ability_fields());
-    $abilitySql = implode(', ', array_map('esa_escape_identifier', $abilityFields));
+    $abilitySql = implode(', ', array_map('esa_escape_identifier', array_keys($abilityFields)));
     $mapSql = 'SELECT `employee_id`, ' . $abilitySql . ' FROM `employee_system_access` WHERE `company_id`=' . (int)$company_id
         . ' AND `employee_id` IN (' . $employeeIdSql . ')';
     $mapRes = mysqli_query($conn, $mapSql);
@@ -159,8 +159,8 @@ if (!empty($employeeIds) && !empty($accessIds)) {
         if ($eid <= 0) {
             continue;
         }
-        foreach ($accessIdByCode as $code => $aid) {
-            if ((int)($mapRow[$code] ?? 0) === 1) {
+        foreach ($accessFieldById as $aid => $fieldCode) {
+            if ((int)($mapRow[$fieldCode] ?? 0) === 1) {
                 $grantsByEmployee[$eid][(int)$aid] = true;
             }
         }
