@@ -9,6 +9,10 @@
  * when mapping matrix permissions to employee_system_access columns, with runtime
  * column backfill for standard legacy matrix flags.
  * The module also auto-seeds missing system_access catalog rows per company at read time.
+ * Custom tenant system_access codes are also backfilled into employee_system_access
+ * columns at runtime so new catalog entries can be displayed/edited in the matrix UI.
+ * Employee system-access matrix/list screens resolve catalog labels from mapped legacy fields
+ * so documented exports/imports align with visible column headers.
  */
 
 declare(strict_types=1);
