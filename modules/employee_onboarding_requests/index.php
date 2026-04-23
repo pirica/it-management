@@ -1211,6 +1211,27 @@ foreach ([
     $onboardingRowsShared[] = $itmTailPair;
 }
 
+$onboardingRowsFiltered = [];
+foreach ($onboardingRowsShared as $itmRowPair) {
+    $firstField = (string)($itmRowPair[0] ?? '');
+    $secondField = (string)($itmRowPair[1] ?? '');
+
+    $firstVisible = ($firstField !== '' && isset($onboardingVisibleFields[$firstField]));
+    $secondVisible = ($secondField !== '' && isset($onboardingVisibleFields[$secondField]));
+
+    if (!$firstVisible && !$secondVisible) {
+        continue;
+    }
+
+    if (!$firstVisible && $secondVisible) {
+        $onboardingRowsFiltered[] = [$secondField, null];
+        continue;
+    }
+
+    $onboardingRowsFiltered[] = [$firstField, $secondVisible ? $secondField : null];
+}
+$onboardingRowsShared = $onboardingRowsFiltered;
+
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
