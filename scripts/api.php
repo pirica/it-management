@@ -48,6 +48,32 @@ function itmDocCollectModuleImportEndpoints(string $rootPath): array
     return $endpoints;
 }
 
+function itmDocCollectModulesWithoutImportEndpoint(string $rootPath, array $importEndpoints): array
+{
+    $hasImport = [];
+    foreach ($importEndpoints as $endpoint) {
+        $moduleName = (string)($endpoint['module'] ?? '');
+        if ($moduleName !== '') {
+            $hasImport[$moduleName] = true;
+        }
+    }
+
+    $modules = [];
+    foreach (glob($rootPath . '/modules/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
+        $moduleName = basename($moduleDir);
+        $indexFile = $moduleDir . '/index.php';
+        if (!is_file($indexFile)) {
+            continue;
+        }
+        if (!isset($hasImport[$moduleName])) {
+            $modules[] = $moduleName;
+        }
+    }
+
+    sort($modules, SORT_NATURAL | SORT_FLAG_CASE);
+    return $modules;
+}
+
 function itmDocCollectIdfApiEndpoints(string $rootPath): array
 {
     $endpoints = [];
@@ -73,6 +99,7 @@ function itmDocCollectIdfApiEndpoints(string $rootPath): array
 }
 
 $moduleImportEndpoints = itmDocCollectModuleImportEndpoints($itmRootPath);
+$modulesWithoutImportEndpoint = itmDocCollectModulesWithoutImportEndpoint($itmRootPath, $moduleImportEndpoints);
 $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
 
 $projectJsonEndpoints = [
@@ -204,6 +231,20 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
 
 # Typical success response
 {"ok": true, "inserted": 2}</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Modules without detected JSON Import API</h2>
+        <p>The modules below currently do not expose an <code>import_excel_rows</code> JSON endpoint in their <code>index.php</code> file.</p>
+        <?php if (!empty($modulesWithoutImportEndpoint)): ?>
+            <ul>
+                <?php foreach ($modulesWithoutImportEndpoint as $moduleName): ?>
+                    <li><code>modules/<?= itmDocEscape($moduleName); ?>/index.php</code></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php else: ?>
+            <p>All modules currently expose a detected JSON import endpoint.</p>
+        <?php endif; ?>
     </div>
 
     <div class="card">
