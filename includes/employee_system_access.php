@@ -18,8 +18,12 @@ function esa_ability_fields() {
         'micros_card' => 'Micros Card',
         'pms_id' => 'Pms Id',
         'synergy_mms' => 'Synergy Mms',
+        'email_account' => 'Email Account',
+        'landline_phone' => 'Landline Phone',
         'hu_the_lobby' => 'Hu The Lobby',
+        'mobile_phone' => 'Mobile Phone',
         'navision' => 'Navision',
+        'mobile_email' => 'Mobile Email',
         'onq_ri' => 'Onq Ri',
         'birchstreet' => 'Birchstreet',
         'delphi' => 'Delphi',
@@ -134,11 +138,40 @@ function esa_current_company_id() {
  * Keeps access catalogs/data aligned without creating schema at runtime.
  */
 function esa_ensure_table($conn) {
+    if (!esa_ensure_legacy_matrix_columns($conn)) {
+        return false;
+    }
+
     if (!esa_seed_system_access($conn)) {
         return false;
     }
 
     return esa_sync_from_employees_legacy($conn);
+}
+
+/**
+ * Ensures legacy employee_system_access columns exist for all standard abilities.
+ *
+ * Why: older databases can miss newer permission flags, which makes checkboxes
+ * appear unsaved even when selected in UI.
+ */
+function esa_ensure_legacy_matrix_columns($conn) {
+    $requiredFields = array_keys(esa_ability_fields());
+    foreach ($requiredFields as $field) {
+        if (!itm_is_safe_identifier($field)) {
+            continue;
+        }
+        if (itm_table_has_column($conn, 'employee_system_access', $field)) {
+            continue;
+        }
+
+        $sql = 'ALTER TABLE `employee_system_access` ADD COLUMN ' . esa_escape_identifier($field) . " TINYINT(1) NOT NULL DEFAULT 0";
+        if (mysqli_query($conn, $sql) === false) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**
