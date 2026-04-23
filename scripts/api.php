@@ -1,0 +1,244 @@
+<?php
+/**
+ * IT Management System - API Documentation (project-aligned)
+ *
+ * Why: Document only the JSON endpoints that actually exist in this codebase,
+ * including request format, auth model, and real endpoint paths.
+ */
+
+declare(strict_types=1);
+
+header('Content-Type: text/html; charset=UTF-8');
+
+$itmDocGeneratedAt = gmdate('Y-m-d H:i:s') . ' UTC';
+$itmRootPath = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
+
+function itmDocEscape(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function itmDocCollectModuleImportEndpoints(string $rootPath): array
+{
+    $endpoints = [];
+    $pattern = $rootPath . '/modules/*/index.php';
+    foreach (glob($pattern) ?: [] as $indexFile) {
+        $content = @file_get_contents($indexFile);
+        if (!is_string($content) || $content === '') {
+            continue;
+        }
+
+        if (strpos($content, 'import_excel_rows') === false || strpos($content, 'Content-Type: application/json') === false) {
+            continue;
+        }
+
+        $module = basename(dirname($indexFile));
+        $endpoints[] = [
+            'module' => $module,
+            'path' => 'modules/' . $module . '/index.php',
+            'method' => 'POST',
+            'purpose' => 'Excel/CSV save-to-database import endpoint used by js/table-tools.js',
+        ];
+    }
+
+    usort($endpoints, static function (array $a, array $b): int {
+        return strcmp($a['module'], $b['module']);
+    });
+
+    return $endpoints;
+}
+
+function itmDocCollectIdfApiEndpoints(string $rootPath): array
+{
+    $endpoints = [];
+    $pattern = $rootPath . '/modules/idfs/api/*.php';
+    foreach (glob($pattern) ?: [] as $apiFile) {
+        $name = basename($apiFile);
+        if ($name === '_bootstrap.php' || $name === 'index.php') {
+            continue;
+        }
+
+        $endpoints[] = [
+            'name' => $name,
+            'path' => 'modules/idfs/api/' . $name,
+            'method' => 'POST',
+        ];
+    }
+
+    usort($endpoints, static function (array $a, array $b): int {
+        return strcmp($a['name'], $b['name']);
+    });
+
+    return $endpoints;
+}
+
+$moduleImportEndpoints = itmDocCollectModuleImportEndpoints($itmRootPath);
+$idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
+
+$projectJsonEndpoints = [
+    ['method' => 'POST', 'path' => 'includes/get_ports.php', 'purpose' => 'Fetch/seed switch ports and lookup metadata.'],
+    ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update a switch port label/status/color/vlan/comments.'],
+    ['method' => 'GET',  'path' => 'modules/idfs/index.php?refresh_select_options=rack|location', 'purpose' => 'Refresh select options for IDF forms.'],
+    ['method' => 'POST', 'path' => 'scripts/test_sql_injection.php', 'purpose' => 'Security test helper endpoint used during audits.'],
+];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Management API Documentation</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f6f8fa; color: #1f2328; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .card { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #f6f8fa; }
+        code, pre { background: #f0f3f6; border-radius: 6px; }
+        pre { padding: 12px; overflow-x: auto; }
+        .muted { color: #57606a; font-size: .9rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>IT Management API Documentation</h1>
+        <p>Comprehensive API documentation for the <strong>actual JSON endpoints available in this project</strong>, including authentication model, validation, error handling, and examples.</p>
+        <p class="muted">Generated: <?= itmDocEscape($itmDocGeneratedAt); ?></p>
+    </div>
+
+    <div class="card">
+        <h2>Overview</h2>
+        <ul>
+            <li>This project uses <strong>session-based authentication + CSRF</strong> (not JWT bearer tokens).</li>
+            <li>Most JSON APIs are internal AJAX endpoints used by module pages.</li>
+            <li>Multi-tenancy is enforced via session <code>company_id</code> checks in endpoints.</li>
+            <li>Many modules expose a JSON import endpoint at their own <code>modules/&lt;module&gt;/index.php</code>.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Authentication</h2>
+        <p>All protected endpoints require:</p>
+        <ol>
+            <li>An authenticated PHP session cookie.</li>
+            <li>A valid CSRF token in <code>csrf_token</code> (body) or <code>X-CSRF-Token</code> header (where supported).</li>
+            <li>An active <code>company_id</code> context in session for tenant-scoped operations.</li>
+        </ol>
+<pre><code># 1) Login and store session cookies (example)
+curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "email=Admin&amp;password=Admin&amp;csrf_token=&lt;token_from_login_form&gt;"
+
+# 2) Call a protected JSON endpoint with same cookie + CSRF token
+curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.php" \
+  -H "Content-Type: application/json" \
+  -d '{"switch_id": 1, "csrf_token": "&lt;csrf_token&gt;"}'</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Available APIs (non-module specific)</h2>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($projectJsonEndpoints as $endpoint): ?>
+                <tr>
+                    <td><?= itmDocEscape($endpoint['method']); ?></td>
+                    <td><code><?= itmDocEscape($endpoint['path']); ?></code></td>
+                    <td><?= itmDocEscape($endpoint['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>IDF API Endpoints</h2>
+        <p>All endpoints below are under <code>modules/idfs/api/</code> and are POST-only JSON handlers.</p>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th></tr></thead>
+            <tbody>
+            <?php foreach ($idfApiEndpoints as $endpoint): ?>
+                <tr>
+                    <td><?= itmDocEscape($endpoint['method']); ?></td>
+                    <td><code><?= itmDocEscape($endpoint['path']); ?></code></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+<pre><code># Example: save an IDF position
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/idfs/api/position_save.php" \
+  -H "Content-Type: application/json" \
+  -d '{"csrf_token":"&lt;csrf_token&gt;","id":12,"name":"U12","notes":"Reserved"}'</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Module Import APIs (all detected)</h2>
+        <p>Detected <strong><?= (int)count($moduleImportEndpoints); ?></strong> module import JSON endpoints. These are used by the 📥 Import Excel flow in <code>js/table-tools.js</code>.</p>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($moduleImportEndpoints as $endpoint): ?>
+                <tr>
+                    <td><?= itmDocEscape($endpoint['method']); ?></td>
+                    <td><code><?= itmDocEscape($endpoint['path']); ?></code></td>
+                    <td><?= itmDocEscape($endpoint['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+<pre><code># Example: table-tools.js JSON import payload
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/index.php" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "csrf_token":"&lt;csrf_token&gt;",
+    "import_excel_rows":[
+      ["Name","Active"],
+      ["IT", "1"],
+      ["HR", "1"]
+    ]
+  }'
+
+# Typical success response
+{"ok": true, "inserted": 2}</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Error Handling</h2>
+        <table>
+            <thead><tr><th>Status</th><th>Common message</th><th>When it happens</th></tr></thead>
+            <tbody>
+            <tr><td>400</td><td><code>Invalid CSRF token.</code>, <code>Missing switch id</code></td><td>Bad payload or missing required fields.</td></tr>
+            <tr><td>401</td><td><code>Unauthorized</code></td><td>No valid session or company context.</td></tr>
+            <tr><td>403</td><td><code>Invalid CSRF token</code></td><td>CSRF check failed.</td></tr>
+            <tr><td>404</td><td><code>Switch not found</code></td><td>Resource not found in tenant scope.</td></tr>
+            <tr><td>405</td><td><code>Method not allowed</code></td><td>Wrong HTTP verb.</td></tr>
+            <tr><td>500</td><td><code>DB error</code>, schema messages</td><td>Server-side SQL/schema issues.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Rate Limiting</h2>
+        <p>No centralized API rate limiting middleware is defined for these JSON endpoints. Login and reset flows include attempt/rate controls; implement reverse-proxy or app-level throttling if public API exposure is planned.</p>
+    </div>
+
+    <div class="card">
+        <h2>Versioning</h2>
+        <p>Current endpoints are file-path based and are not under a versioned prefix like <code>/api/v1</code>. If external integrations are planned, introduce a versioned gateway path before publishing public contracts.</p>
+    </div>
+
+    <div class="card">
+        <h2>Validation Rules (practical summary)</h2>
+        <ul>
+            <li><code>csrf_token</code> is mandatory on protected POST endpoints.</li>
+            <li><code>switch_id</code> is required for <code>includes/get_ports.php</code> and <code>includes/update_port.php</code>.</li>
+            <li><code>id</code> is required for <code>includes/update_port.php</code>.</li>
+            <li><code>import_excel_rows</code> must include header row + at least one data row for module import APIs.</li>
+            <li>All DB writes are tenant-scoped by active session company.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
