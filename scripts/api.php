@@ -8,6 +8,7 @@
  * and active system_access entries resolve per-company with legacy code/name fallback
  * when mapping matrix permissions to employee_system_access columns, with runtime
  * column backfill for standard legacy matrix flags.
+ * The module also auto-seeds missing system_access catalog rows per company at read time.
  */
 
 declare(strict_types=1);

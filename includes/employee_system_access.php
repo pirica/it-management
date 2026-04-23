@@ -258,20 +258,30 @@ function esa_get_system_access_catalog($conn, $companyId, $includeInactive = fal
         return $rows;
     }
 
-    $sql = 'SELECT `id`, `code`, `name`, `active` FROM `system_access` WHERE `company_id`=' . $companyId;
-    if (!$includeInactive) {
-        $sql .= ' AND `active`=1';
-    }
-    $sql .= ' ORDER BY `name` ASC';
+    $fetchCatalogRows = static function () use ($conn, $companyId, $includeInactive) {
+        $data = [];
+        $sql = 'SELECT `id`, `code`, `name`, `active` FROM `system_access` WHERE `company_id`=' . $companyId;
+        if (!$includeInactive) {
+            $sql .= ' AND `active`=1';
+        }
+        $sql .= ' ORDER BY `name` ASC';
 
-    $res = mysqli_query($conn, $sql);
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rows[] = [
-            'id' => (int)($row['id'] ?? 0),
-            'code' => (string)($row['code'] ?? ''),
-            'name' => (string)($row['name'] ?? ''),
-            'active' => (int)($row['active'] ?? 0),
-        ];
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $data[] = [
+                'id' => (int)($row['id'] ?? 0),
+                'code' => (string)($row['code'] ?? ''),
+                'name' => (string)($row['name'] ?? ''),
+                'active' => (int)($row['active'] ?? 0),
+            ];
+        }
+        return $data;
+    };
+
+    $rows = $fetchCatalogRows();
+    if (empty($rows)) {
+        esa_seed_system_access($conn);
+        $rows = $fetchCatalogRows();
     }
 
     return $rows;
