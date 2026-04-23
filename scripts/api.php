@@ -28,7 +28,10 @@ function itmDocCollectModuleImportEndpoints(string $rootPath): array
             continue;
         }
 
-        if (strpos($content, 'import_excel_rows') === false || strpos($content, 'Content-Type: application/json') === false) {
+        $hasInlineImportHandler = strpos($content, 'import_excel_rows') !== false
+            && strpos($content, 'Content-Type: application/json') !== false;
+        $hasSharedImportHandler = strpos($content, 'itm_handle_json_table_import(') !== false;
+        if (!$hasInlineImportHandler && !$hasSharedImportHandler) {
             continue;
         }
 

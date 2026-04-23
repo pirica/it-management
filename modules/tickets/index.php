@@ -10,7 +10,14 @@
  */
 
 require '../../config/config.php';
-itm_handle_json_table_import($conn, 'tickets', (int)($company_id ?? 0));
+// Handle Excel/CSV database import requests from table-tools.js.
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        itm_handle_json_table_import($conn, 'tickets', (int)($company_id ?? 0));
+    }
+}
 
 
 /**

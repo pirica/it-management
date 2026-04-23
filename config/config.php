@@ -941,13 +941,25 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
 
         $contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
-        if (strpos($contentType, 'application/json') === false) {
+        $rawBody = file_get_contents('php://input');
+        if ($rawBody === false) {
             return false;
         }
-
-        $rawBody = file_get_contents('php://input');
+        $bodyMentionsImportRows = strpos($rawBody, '"import_excel_rows"') !== false;
+        if (strpos($contentType, 'application/json') === false && !$bodyMentionsImportRows) {
+            return false;
+        }
         $jsonBody = json_decode((string)$rawBody, true);
-        if (!is_array($jsonBody) || !isset($jsonBody['import_excel_rows'])) {
+        if (!is_array($jsonBody)) {
+            if ($bodyMentionsImportRows) {
+                header('Content-Type: application/json');
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Invalid JSON payload.']);
+                exit;
+            }
+            return false;
+        }
+        if (!isset($jsonBody['import_excel_rows'])) {
             return false;
         }
 
