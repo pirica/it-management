@@ -4,7 +4,10 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
- * Schema note: employee access is stored via employee_system_access mapped to system_access.
+ * Schema note: employee access is stored via employee_system_access mapped to system_access,
+ * and active system_access entries resolve per-company with legacy code/name fallback
+ * when mapping matrix permissions to employee_system_access columns, with runtime
+ * column backfill for standard legacy matrix flags.
  */
 
 declare(strict_types=1);
