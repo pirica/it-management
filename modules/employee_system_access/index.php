@@ -71,6 +71,11 @@ foreach ($systemAccessCatalog as $access) {
     $resolvedField = esa_resolve_field_for_catalog_row($access, $abilityFields);
     if ($resolvedField !== '') {
         $accessFieldById[$accessId] = $resolvedField;
+        $resolvedLabel = trim((string)($access['name'] ?? ''));
+        if ($resolvedLabel === '') {
+            $resolvedLabel = (string)($abilityFields[$resolvedField] ?? $resolvedField);
+        }
+        $accessLabelsById[$accessId] = $resolvedLabel;
     }
 }
 $accessIds = array_map(static fn($row) => (int)($row['id'] ?? 0), $systemAccessCatalog);
