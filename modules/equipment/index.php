@@ -525,6 +525,27 @@ if (!empty($_SESSION['crud_success'])) {
             return parts.join(' | ');
         }
 
+        function sortPortsByLayout(portList) {
+            const ordered = Array.isArray(portList) ? portList.slice() : [];
+            ordered.sort(function (a, b) { return Number(a.port_number) - Number(b.port_number); });
+
+            const portLayout = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical').trim().toLowerCase();
+            if (portLayout !== 'vertical') {
+                return ordered;
+            }
+
+            const oddPorts = [];
+            const evenPorts = [];
+            ordered.forEach(function (port) {
+                if (Number(port.port_number) % 2 === 1) {
+                    oddPorts.push(port);
+                    return;
+                }
+                evenPorts.push(port);
+            });
+            return oddPorts.concat(evenPorts);
+        }
+
         function normalizePortType(portType) {
             const normalized = String(portType || 'rj45')
                 .trim()
@@ -855,9 +876,9 @@ if (!empty($_SESSION['crud_success'])) {
             switchManager.style.setProperty('--switch-port-size', rj45Ports.length > 25 ? '55.5px' : '74px');
             switchManager.classList.remove('switch-manager-compact', 'switch-manager-half');
 
-            const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
+            const sfpPorts = sortPortsByLayout(ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; }));
             sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
-            const sfpPlusPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; });
+            const sfpPlusPorts = sortPortsByLayout(ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; }));
             sfpPlusPorts.forEach(function (p) { sfpPlusRow.appendChild(createPortElement(p)); });
             document.getElementById('switchSfpLabel').style.display = hasPortType('sfp') ? 'block' : 'none';
             sfpRow.style.display = hasPortType('sfp') ? 'flex' : 'none';
