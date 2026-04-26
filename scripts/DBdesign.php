@@ -293,7 +293,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             <button type="button" class="btn" id="zoom-in">+ Zoom In</button>
             <button type="button" class="btn" id="zoom-reset">Reset</button>
             <span class="zoom-label" id="zoom-value">100%</span>
-            <span class="zoom-label">Max 600% (Ctrl + Wheel)</span>
+            <span class="zoom-label">Max 1000% (Ctrl + Wheel)</span>
         </div>
         <div id="diagram">
             <div id="diagram-scale">
@@ -311,7 +311,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
     (function () {
         var scale = 1;
         var minScale = 0.4;
-        var maxScale = 6;
+        var maxScale = 10;
         var step = 0.2;
         var scaleWrap = document.getElementById('diagram-scale');
         var zoomValue = document.getElementById('zoom-value');

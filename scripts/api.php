@@ -16,7 +16,7 @@
  * so documented exports/imports align with visible column headers.
  * Added scripts/DBdesign.php to generate a drawdb-style ER diagram, Mermaid source,
  * and JSON metadata by parsing database.sql directly.
- * DBdesign rendered view includes client-side zoom controls (up to 600%) for large schemas.
+ * DBdesign rendered view includes client-side zoom controls (up to 1000%) for large schemas.
  * Settings module SQL maintenance cards are rendered only for Admin-role users, while
  * backup actions are role-gated for Admin/IT Manager/IT Assistant and backup exports
  * include only rows scoped to the active session company_id.
