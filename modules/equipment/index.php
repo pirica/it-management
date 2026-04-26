@@ -418,10 +418,12 @@ if (!empty($_SESSION['crud_success'])) {
                             <div>
                                 <div id="switchSfpLabel" style="margin-bottom:6px;font-weight:600;">SFP Ports</div>
                                 <div class="switch-row" id="switchSfpRow"></div>
+                                <div class="switch-row" id="switchSfpRowAlt" style="margin-top:8px;"></div>
                             </div>
                             <div>
                                 <div id="switchSfpPlusLabel" style="margin-bottom:6px;font-weight:600;">SFP+ Ports</div>
                                 <div class="switch-row" id="switchSfpPlusRow"></div>
+                                <div class="switch-row" id="switchSfpPlusRowAlt" style="margin-top:8px;"></div>
                             </div>
                         </div>
 
@@ -523,6 +525,49 @@ if (!empty($_SESSION['crud_success'])) {
                 parts.push('SFP+: ' + sfpPlusCount);
             }
             return parts.join(' | ');
+        }
+
+        function sortPortsByLayout(portList) {
+            const ordered = Array.isArray(portList) ? portList.slice() : [];
+            ordered.sort(function (a, b) { return Number(a.port_number) - Number(b.port_number); });
+
+            const portLayout = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical').trim().toLowerCase();
+            if (portLayout !== 'vertical') {
+                return ordered;
+            }
+
+            const oddPorts = [];
+            const evenPorts = [];
+            ordered.forEach(function (port) {
+                if (Number(port.port_number) % 2 === 1) {
+                    oddPorts.push(port);
+                    return;
+                }
+                evenPorts.push(port);
+            });
+            return oddPorts.concat(evenPorts);
+        }
+
+        function renderFiberPortsByLayout(primaryRow, secondaryRow, portList) {
+            const portLayout = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical').trim().toLowerCase();
+            primaryRow.innerHTML = '';
+            secondaryRow.innerHTML = '';
+
+            const ordered = sortPortsByLayout(portList);
+            if (portLayout !== 'vertical') {
+                ordered.forEach(function (p) { primaryRow.appendChild(createPortElement(p)); });
+                secondaryRow.style.display = 'none';
+                return;
+            }
+
+            ordered.forEach(function (p) {
+                if (Number(p.port_number) % 2 === 1) {
+                    primaryRow.appendChild(createPortElement(p));
+                    return;
+                }
+                secondaryRow.appendChild(createPortElement(p));
+            });
+            secondaryRow.style.display = secondaryRow.children.length ? 'flex' : 'none';
         }
 
         function normalizePortType(portType) {
@@ -820,11 +865,15 @@ if (!empty($_SESSION['crud_success'])) {
             const row1 = document.getElementById('switchRow1');
             const row2 = document.getElementById('switchRow2');
             const sfpRow = document.getElementById('switchSfpRow');
+            const sfpRowAlt = document.getElementById('switchSfpRowAlt');
             const sfpPlusRow = document.getElementById('switchSfpPlusRow');
+            const sfpPlusRowAlt = document.getElementById('switchSfpPlusRowAlt');
             row1.innerHTML = '';
             row2.innerHTML = '';
             sfpRow.innerHTML = '';
+            sfpRowAlt.innerHTML = '';
             sfpPlusRow.innerHTML = '';
+            sfpPlusRowAlt.innerHTML = '';
 
             const rj45Ports = ports
                 .filter(function (p) { return normalizePortType(p.port_type) === 'rj45'; })
@@ -856,13 +905,15 @@ if (!empty($_SESSION['crud_success'])) {
             switchManager.classList.remove('switch-manager-compact', 'switch-manager-half');
 
             const sfpPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp'; });
-            sfpPorts.forEach(function (p) { sfpRow.appendChild(createPortElement(p)); });
             const sfpPlusPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; });
-            sfpPlusPorts.forEach(function (p) { sfpPlusRow.appendChild(createPortElement(p)); });
+            renderFiberPortsByLayout(sfpRow, sfpRowAlt, sfpPorts);
+            renderFiberPortsByLayout(sfpPlusRow, sfpPlusRowAlt, sfpPlusPorts);
             document.getElementById('switchSfpLabel').style.display = hasPortType('sfp') ? 'block' : 'none';
             sfpRow.style.display = hasPortType('sfp') ? 'flex' : 'none';
+            sfpRowAlt.style.display = hasPortType('sfp') ? sfpRowAlt.style.display : 'none';
             document.getElementById('switchSfpPlusLabel').style.display = hasPortType('sfp_plus') ? 'block' : 'none';
             sfpPlusRow.style.display = hasPortType('sfp_plus') ? 'flex' : 'none';
+            sfpPlusRowAlt.style.display = hasPortType('sfp_plus') ? sfpPlusRowAlt.style.display : 'none';
 
             const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
             document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, rj45Ports.length, sfpPorts.length, sfpPlusPorts.length);
