@@ -2012,6 +2012,123 @@ CREATE TABLE `user_sidebar_preferences` (
   CONSTRAINT `fk_user_sidebar_pref_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Data for `user_sidebar_preferences`
+-- Why: seed default sidebar layout for all 5 base companies and rely on table defaults for timestamps.
+INSERT INTO `user_sidebar_preferences` (`company_id`, `user_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
+SELECT c.company_id, 1 AS user_id, t.entry_type, t.entry_id, t.section_id, t.display_order, 1 AS is_visible, 1 AS active
+FROM (
+    SELECT 1 AS company_id
+    UNION ALL SELECT 2
+    UNION ALL SELECT 3
+    UNION ALL SELECT 4
+    UNION ALL SELECT 5
+) AS c
+CROSS JOIN (
+      SELECT 'section' AS entry_type, 'dashboard' AS entry_id, NULL AS section_id, 0 AS display_order
+      UNION ALL SELECT 'section' AS entry_type, 'management' AS entry_id, NULL AS section_id, 1 AS display_order
+      UNION ALL SELECT 'section' AS entry_type, 'employee' AS entry_id, NULL AS section_id, 2 AS display_order
+      UNION ALL SELECT 'section' AS entry_type, 'budgeting' AS entry_id, NULL AS section_id, 3 AS display_order
+      UNION ALL SELECT 'section' AS entry_type, 'admin' AS entry_id, NULL AS section_id, 4 AS display_order
+      UNION ALL SELECT 'section' AS entry_type, 'reference_data' AS entry_id, NULL AS section_id, 5 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'dashboard_link' AS entry_id, 'dashboard' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'settings' AS entry_id, 'dashboard' AS section_id, 1 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment' AS entry_id, 'management' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_workstation' AS entry_id, 'management' AS section_id, 1 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_server' AS entry_id, 'management' AS section_id, 2 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_switch' AS entry_id, 'management' AS section_id, 3 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_printer' AS entry_id, 'management' AS section_id, 4 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_pos' AS entry_id, 'management' AS section_id, 5 AS display_order
+            UNION ALL SELECT 'item' AS entry_type, 'tickets' AS entry_id, 'management' AS section_id, 6 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_other' AS entry_id, 'management' AS section_id, 7 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_router' AS entry_id, 'management' AS section_id, 8 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_port_patch_panel' AS entry_id, 'management' AS section_id, 9 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_cctv' AS entry_id, 'management' AS section_id, 10 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_phone' AS entry_id, 'management' AS section_id, 11 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_firewall' AS entry_id, 'management' AS section_id, 12 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'is_access_point' AS entry_id, 'management' AS section_id, 13 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'employees' AS entry_id, 'employee' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'employee_system_access' AS entry_id, 'employee' AS section_id, 1 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'system_access' AS entry_id, 'employee' AS section_id, 2 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'departments' AS entry_id, 'employee' AS section_id, 3 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'budget_categories' AS entry_id, 'budgeting' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'cost_centers' AS entry_id, 'budgeting' AS section_id, 1 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'gl_accounts' AS entry_id, 'budgeting' AS section_id, 2 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'annual_budgets' AS entry_id, 'budgeting' AS section_id, 3 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'monthly_budgets' AS entry_id, 'budgeting' AS section_id, 4 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'forecast_revisions' AS entry_id, 'budgeting' AS section_id, 5 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'forecast_revisions_status' AS entry_id, 'budgeting' AS section_id, 6 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'approvals' AS entry_id, 'budgeting' AS section_id, 7 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'approvals_stage' AS entry_id, 'budgeting' AS section_id, 8 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'expenses' AS entry_id, 'budgeting' AS section_id, 9 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'budget_report' AS entry_id, 'budgeting' AS section_id, 10 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'inventory' AS entry_id, 'admin' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'users' AS entry_id, 'admin' AS section_id, 1 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'companies' AS entry_id, 'admin' AS section_id, 2 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'it_locations' AS entry_id, 'reference_data' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'location_types' AS entry_id, 'reference_data' AS section_id, 1 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_types' AS entry_id, 'reference_data' AS section_id, 2 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_statuses' AS entry_id, 'reference_data' AS section_id, 3 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'manufacturers' AS entry_id, 'reference_data' AS section_id, 4 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'catalogs' AS entry_id, 'reference_data' AS section_id, 5 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'suppliers' AS entry_id, 'reference_data' AS section_id, 6 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'supplier_statuses' AS entry_id, 'reference_data' AS section_id, 7 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'racks' AS entry_id, 'reference_data' AS section_id, 8 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'idfs' AS entry_id, 'reference_data' AS section_id, 9 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'rack_statuses' AS entry_id, 'reference_data' AS section_id, 10 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'switch_status' AS entry_id, 'reference_data' AS section_id, 11 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'cable_colors' AS entry_id, 'reference_data' AS section_id, 12 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'ticket_categories' AS entry_id, 'reference_data' AS section_id, 13 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'ticket_statuses' AS entry_id, 'reference_data' AS section_id, 14 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'ticket_priorities' AS entry_id, 'reference_data' AS section_id, 15 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'employee_statuses' AS entry_id, 'reference_data' AS section_id, 16 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'employee_positions' AS entry_id, 'reference_data' AS section_id, 17 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'approver_type' AS entry_id, 'reference_data' AS section_id, 18 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'approvers' AS entry_id, 'reference_data' AS section_id, 19 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'audit_logs' AS entry_id, 'reference_data' AS section_id, 20 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'access_levels' AS entry_id, 'reference_data' AS section_id, 21 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'assignment_types' AS entry_id, 'reference_data' AS section_id, 22 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'attempts' AS entry_id, 'reference_data' AS section_id, 23 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'employee_onboarding_requests' AS entry_id, 'reference_data' AS section_id, 24 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_environment' AS entry_id, 'reference_data' AS section_id, 25 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_fiber' AS entry_id, 'reference_data' AS section_id, 26 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_fiber_count' AS entry_id, 'reference_data' AS section_id, 27 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_fiber_patch' AS entry_id, 'reference_data' AS section_id, 28 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_fiber_rack' AS entry_id, 'reference_data' AS section_id, 29 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_poe' AS entry_id, 'reference_data' AS section_id, 30 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'equipment_rj45' AS entry_id, 'reference_data' AS section_id, 31 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'expiring' AS entry_id, 'reference_data' AS section_id, 32 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'idf_device_type' AS entry_id, 'reference_data' AS section_id, 33 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'idf_links' AS entry_id, 'reference_data' AS section_id, 34 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'idf_ports' AS entry_id, 'reference_data' AS section_id, 35 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'idf_positions' AS entry_id, 'reference_data' AS section_id, 36 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'inventory_categories' AS entry_id, 'reference_data' AS section_id, 37 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'inventory_items' AS entry_id, 'reference_data' AS section_id, 38 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'patches_updates' AS entry_id, 'reference_data' AS section_id, 39 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'patches_updates_level' AS entry_id, 'reference_data' AS section_id, 40 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'patches_updates_status' AS entry_id, 'reference_data' AS section_id, 41 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'printer_device_types' AS entry_id, 'reference_data' AS section_id, 42 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'registration_invitations' AS entry_id, 'reference_data' AS section_id, 43 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'role_assignment_rights' AS entry_id, 'reference_data' AS section_id, 44 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'role_hierarchy' AS entry_id, 'reference_data' AS section_id, 45 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'role_module_permissions' AS entry_id, 'reference_data' AS section_id, 46 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'switch_ports' AS entry_id, 'reference_data' AS section_id, 47 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'switch_port_numbering_layout' AS entry_id, 'reference_data' AS section_id, 48 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'switch_port_types' AS entry_id, 'reference_data' AS section_id, 49 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'ui_configuration' AS entry_id, 'reference_data' AS section_id, 50 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'user_companies' AS entry_id, 'reference_data' AS section_id, 51 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'user_roles' AS entry_id, 'reference_data' AS section_id, 52 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'user_sidebar_preferences' AS entry_id, 'reference_data' AS section_id, 53 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'warranty_types' AS entry_id, 'reference_data' AS section_id, 55 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'workstation_device_types' AS entry_id, 'reference_data' AS section_id, 56 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'workstation_modes' AS entry_id, 'reference_data' AS section_id, 57 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'workstation_office' AS entry_id, 'reference_data' AS section_id, 58 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'workstation_os_types' AS entry_id, 'reference_data' AS section_id, 59 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'workstation_os_versions' AS entry_id, 'reference_data' AS section_id, 60 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'workstation_ram' AS entry_id, 'reference_data' AS section_id, 61 AS display_order
+) AS t
+ORDER BY c.company_id, FIELD(t.entry_type, 'section', 'item'), t.display_order, t.entry_id;
+
 
 -- Table structure for `supplier_statuses`
 DROP TABLE IF EXISTS `supplier_statuses`;
