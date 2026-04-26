@@ -292,6 +292,8 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             <button type="button" class="btn" id="zoom-out">− Zoom Out</button>
             <button type="button" class="btn" id="zoom-in">+ Zoom In</button>
             <button type="button" class="btn" id="zoom-reset">Reset</button>
+            <button type="button" class="btn" id="export-svg">Export SVG</button>
+            <button type="button" class="btn" id="export-png">Export PNG</button>
             <span class="zoom-label" id="zoom-value">100%</span>
             <span class="zoom-label">Max 1000% (Ctrl + Wheel)</span>
         </div>
@@ -318,10 +320,39 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
         var zoomIn = document.getElementById('zoom-in');
         var zoomOut = document.getElementById('zoom-out');
         var zoomReset = document.getElementById('zoom-reset');
+        var exportSvgButton = document.getElementById('export-svg');
+        var exportPngButton = document.getElementById('export-png');
         var diagramViewport = document.getElementById('diagram');
 
-        if (!scaleWrap || !zoomValue || !zoomIn || !zoomOut || !zoomReset || !diagramViewport) {
+        if (!scaleWrap || !zoomValue || !zoomIn || !zoomOut || !zoomReset || !exportSvgButton || !exportPngButton || !diagramViewport) {
             return;
+        }
+
+        function getMermaidSvgElement() {
+            return diagramViewport.querySelector('svg');
+        }
+
+        function getSerializedSvg(svgElement) {
+            var serializer = new XMLSerializer();
+            var cloned = svgElement.cloneNode(true);
+            if (!cloned.getAttribute('xmlns')) {
+                cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+            if (!cloned.getAttribute('xmlns:xlink')) {
+                cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+            }
+            return serializer.serializeToString(cloned);
+        }
+
+        function triggerDownload(blob, filename) {
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function renderScale() {
@@ -356,6 +387,62 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             }
             renderScale();
         }, { passive: false });
+
+        exportSvgButton.addEventListener('click', function () {
+            var svgElement = getMermaidSvgElement();
+            if (!svgElement) {
+                alert('Diagram not ready yet. Please wait a moment and try again.');
+                return;
+            }
+
+            var svgText = getSerializedSvg(svgElement);
+            triggerDownload(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }), 'database-diagram.svg');
+        });
+
+        exportPngButton.addEventListener('click', function () {
+            var svgElement = getMermaidSvgElement();
+            if (!svgElement) {
+                alert('Diagram not ready yet. Please wait a moment and try again.');
+                return;
+            }
+
+            var svgText = getSerializedSvg(svgElement);
+            var svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+            var svgUrl = URL.createObjectURL(svgBlob);
+            var image = new Image();
+
+            image.onload = function () {
+                var width = Math.max(1, Math.ceil(image.width));
+                var height = Math.max(1, Math.ceil(image.height));
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d');
+                canvas.width = width;
+                canvas.height = height;
+                if (!context) {
+                    URL.revokeObjectURL(svgUrl);
+                    alert('Canvas rendering is not available in this browser.');
+                    return;
+                }
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, width, height);
+                context.drawImage(image, 0, 0, width, height);
+                canvas.toBlob(function (pngBlob) {
+                    URL.revokeObjectURL(svgUrl);
+                    if (!pngBlob) {
+                        alert('Unable to create PNG file from the diagram.');
+                        return;
+                    }
+                    triggerDownload(pngBlob, 'database-diagram.png');
+                }, 'image/png');
+            };
+
+            image.onerror = function () {
+                URL.revokeObjectURL(svgUrl);
+                alert('Unable to render PNG. Try Export SVG instead.');
+            };
+
+            image.src = svgUrl;
+        });
 
         renderScale();
     })();
