@@ -216,6 +216,33 @@ function build_sql_backup($conn) {
         }
     }
 
+    $triggersRes = mysqli_query($conn, 'SHOW TRIGGERS');
+    if ($triggersRes && mysqli_num_rows($triggersRes) > 0) {
+        $dump .= "-- Trigger definitions\n";
+        while ($triggerRow = mysqli_fetch_assoc($triggersRes)) {
+            $triggerName = (string)($triggerRow['Trigger'] ?? '');
+            $triggerTiming = strtoupper((string)($triggerRow['Timing'] ?? ''));
+            $triggerEvent = strtoupper((string)($triggerRow['Event'] ?? ''));
+            $triggerTable = (string)($triggerRow['Table'] ?? '');
+            $triggerBody = (string)($triggerRow['Statement'] ?? '');
+
+            if ($triggerName === '' || $triggerTiming === '' || $triggerEvent === '' || $triggerTable === '' || $triggerBody === '') {
+                continue;
+            }
+
+            $safeTriggerName = str_replace('`', '``', $triggerName);
+            $safeTriggerTable = str_replace('`', '``', $triggerTable);
+            $createTriggerSql = 'CREATE TRIGGER `' . $safeTriggerName . '` '
+                . $triggerTiming . ' ' . $triggerEvent
+                . ' ON `' . $safeTriggerTable . '` FOR EACH ROW ' . $triggerBody;
+
+            $dump .= 'DROP TRIGGER IF EXISTS `' . $safeTriggerName . "`;\n";
+            $dump .= "DELIMITER $$\n";
+            $dump .= $createTriggerSql . "$$\n";
+            $dump .= "DELIMITER ;\n\n";
+        }
+    }
+
     $dump .= "SET FOREIGN_KEY_CHECKS=1;\n";
     return $dump;
 }
@@ -233,17 +260,33 @@ function apply_sql_file($conn, $sqlText) {
     }
 
     $statement = '';
+    $delimiter = ';';
     foreach ($lines as $line) {
         $trimmed = trim($line);
+        if (preg_match('/^DELIMITER\s+(.+)$/i', $trimmed, $delimiterMatch) === 1) {
+            $delimiter = (string)$delimiterMatch[1];
+            continue;
+        }
         // Ignore empty lines and various comment styles.
         if ($trimmed === '' || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0 || strpos($trimmed, '*/') === 0) {
             continue;
         }
 
         $statement .= $line . "\n";
-        // If the line ends with a semicolon, we assume the statement is complete.
-        if (substr(rtrim($line), -1) === ';') {
-            if (!itm_run_query($conn, $statement)) {
+        $lineWithoutTrailingSpaces = rtrim($line);
+        $isStatementComplete = false;
+        if ($delimiter === ';') {
+            $isStatementComplete = substr($lineWithoutTrailingSpaces, -1) === ';';
+        } elseif (strlen($delimiter) > 0) {
+            $isStatementComplete = substr($lineWithoutTrailingSpaces, -strlen($delimiter)) === $delimiter;
+        }
+
+        if ($isStatementComplete) {
+            $statementToRun = rtrim($statement);
+            if ($delimiter !== ';' && strlen($delimiter) > 0 && substr($statementToRun, -strlen($delimiter)) === $delimiter) {
+                $statementToRun = substr($statementToRun, 0, -strlen($delimiter));
+            }
+            if (!itm_run_query($conn, $statementToRun)) {
                 return false;
             }
             $statement = '';

@@ -8,6 +8,7 @@
  * and active system_access entries resolve per-company with legacy code/name fallback
  * when mapping matrix permissions to employee_system_access columns, with runtime
  * column backfill for standard legacy matrix flags.
+ * Settings SQL backup exports now include database trigger definitions (DROP/CREATE).
  * The module also auto-seeds missing system_access catalog rows per company at read time.
  * Custom tenant system_access codes are also backfilled into employee_system_access
  * columns at runtime so new catalog entries can be displayed/edited in the matrix UI.
