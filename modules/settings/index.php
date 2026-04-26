@@ -129,25 +129,31 @@ $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
 // Why: Backup import/export can alter or exfiltrate the full database, so we enforce
 // an explicit per-request admin check here instead of relying only on menu visibility.
 $canManageBackups = false;
+$canManageMaintenanceTools = false;
 $settingsUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 if ($settingsUserId > 0) {
-    $settingsAdminStmt = mysqli_prepare(
+    $settingsRoleStmt = mysqli_prepare(
         $conn,
-        'SELECT 1
+        'SELECT LOWER(COALESCE(ur.name, "")) AS role_name, LOWER(COALESCE(u.username, "")) AS username
          FROM users u
          LEFT JOIN user_roles ur ON ur.id = u.role_id
-         WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
+         WHERE u.id = ?
          LIMIT 1'
     );
-    if ($settingsAdminStmt) {
-        mysqli_stmt_bind_param($settingsAdminStmt, 'i', $settingsUserId);
-        mysqli_stmt_execute($settingsAdminStmt);
-        $settingsAdminRes = mysqli_stmt_get_result($settingsAdminStmt);
-        $canManageBackups = $settingsAdminRes && mysqli_num_rows($settingsAdminRes) > 0;
-        mysqli_stmt_close($settingsAdminStmt);
+    if ($settingsRoleStmt) {
+        mysqli_stmt_bind_param($settingsRoleStmt, 'i', $settingsUserId);
+        mysqli_stmt_execute($settingsRoleStmt);
+        $settingsRoleRes = mysqli_stmt_get_result($settingsRoleStmt);
+        $settingsRoleRow = $settingsRoleRes ? mysqli_fetch_assoc($settingsRoleRes) : null;
+        mysqli_stmt_close($settingsRoleStmt);
+
+        $settingsRoleName = (string)($settingsRoleRow['role_name'] ?? '');
+        $settingsUsername = (string)($settingsRoleRow['username'] ?? '');
+        $isAdminUser = ($settingsRoleName === 'admin' || $settingsUsername === 'admin');
+        $canManageMaintenanceTools = $isAdminUser;
+        $canManageBackups = $isAdminUser || $settingsRoleName === 'it manager' || $settingsRoleName === 'it assistant';
     }
 }
-$canManageMaintenanceTools = $canManageBackups;
 
 /**
  * Generates a timestamped filename for SQL backups.
@@ -163,9 +169,15 @@ function backup_filename() {
  * and exports all rows as INSERT statements. 
  * Note: Uses mysqli_real_escape_string for data safety during dump.
  */
-function build_sql_backup($conn) {
+function build_sql_backup($conn, $companyId) {
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return false;
+    }
+
     $dump = "-- IT Management SQL Backup\n";
     $dump .= '-- Generated at: ' . date('Y-m-d H:i:s') . " UTC\n";
+    $dump .= '-- Data scope: company_id = ' . $companyId . "\n";
     // Disable foreign keys during import to allow tables to be dropped/recreated in any order.
     $dump .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
 
@@ -187,7 +199,22 @@ function build_sql_backup($conn) {
         $dump .= 'DROP TABLE IF EXISTS `' . $table . "`;\n";
         $dump .= $createRow['Create Table'] . ";\n\n";
 
-        $dataRes = mysqli_query($conn, 'SELECT * FROM `' . $table . '`');
+        $hasCompanyIdColumn = false;
+        $companyColumnRes = mysqli_query($conn, 'SHOW COLUMNS FROM `' . $table . "` LIKE 'company_id'");
+        if ($companyColumnRes && mysqli_num_rows($companyColumnRes) > 0) {
+            $hasCompanyIdColumn = true;
+        }
+
+        $dataRes = false;
+        if ($hasCompanyIdColumn) {
+            $tableDataStmt = mysqli_prepare($conn, 'SELECT * FROM `' . $table . '` WHERE company_id = ?');
+            if ($tableDataStmt) {
+                mysqli_stmt_bind_param($tableDataStmt, 'i', $companyId);
+                mysqli_stmt_execute($tableDataStmt);
+                $dataRes = mysqli_stmt_get_result($tableDataStmt);
+                mysqli_stmt_close($tableDataStmt);
+            }
+        }
         if (!$dataRes) {
             continue;
         }
@@ -311,11 +338,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Action: Generate a new SQL dump file in the backups/ directory.
     if ($action === 'create_backup') {
         if (!$canManageBackups) {
-            $error = 'Only admin users can export backups.';
+            $error = 'Only Admin, IT Manager, or IT Assistant users can export backups.';
+        } elseif ($company_id <= 0) {
+            $error = 'No active company selected for backup.';
         } else {
             $filename = backup_filename();
             $fullPath = BACKUP_PATH . $filename;
-            $dump = build_sql_backup($conn);
+            $dump = build_sql_backup($conn, (int)$company_id);
 
             if ($dump === false) {
                 $error = 'Unable to generate SQL backup.';
@@ -330,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Action: Remove an existing backup file.
     if ($action === 'delete_backup') {
         if (!$canManageBackups) {
-            $error = 'Only admin users can export backups.';
+            $error = 'Only Admin, IT Manager, or IT Assistant users can export backups.';
         } else {
             $file = basename((string)($_POST['file'] ?? ''));
             $target = BACKUP_PATH . $file;
@@ -347,7 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Action: Restore database state from an uploaded .sql file.
     if ($action === 'import_backup') {
         if (!$canManageBackups) {
-            $error = 'Only admin users can import backups.';
+            $error = 'Only Admin, IT Manager, or IT Assistant users can import backups.';
         } else {
             if (!isset($_FILES['sql_file']) || (int)($_FILES['sql_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['sql_file']['tmp_name'] ?? '')) {
                 $error = 'Please upload a valid SQL file to import.';
