@@ -881,7 +881,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                     <div class="form-group"><label>Fiber Ports</label><select name="switch_fiber_id" data-addable-select="1" data-add-table="equipment_fiber" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber port option"><option value="">-- None --</option><?php render_options($switchFiberOptions, $data['switch_fiber_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Fiber Patch</label><select name="switch_fiber_patch_id" data-addable-select="1" data-add-table="equipment_fiber_patch" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber patch option"><option value="">-- None --</option><?php render_options($switchFiberPatchOptions, $data['switch_fiber_patch_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Fiber Rack</label><select name="switch_fiber_rack_id" data-addable-select="1" data-add-table="equipment_fiber_rack" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="fiber rack option"><option value="">-- None --</option><?php render_options($switchFiberRackOptions, $data['switch_fiber_rack_id']); ?><option value="__add_new__">➕</option></select></div>
-                    <div class="form-group"><label>Fiber Ports Number</label><select name="switch_fiber_ports_number"><option value="">-- None --</option><?php $switchFiberPortsNumberOptions = ['2','4','8','12','16','24','32','48']; foreach ($switchFiberPortsNumberOptions as $switchFiberPortsNumberOption): ?><option value="<?php echo sanitize($switchFiberPortsNumberOption); ?>" <?php echo ((string)$data['switch_fiber_ports_number'] === (string)$switchFiberPortsNumberOption) ? 'selected' : ''; ?>><?php echo sanitize($switchFiberPortsNumberOption); ?></option><?php endforeach; ?><?php if ((string)$data['switch_fiber_ports_number'] !== '' && !in_array((string)$data['switch_fiber_ports_number'], $switchFiberPortsNumberOptions, true)): ?><option value="<?php echo sanitize($data['switch_fiber_ports_number']); ?>" selected><?php echo sanitize($data['switch_fiber_ports_number']); ?></option><?php endif; ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Fiber Ports Number</label><select id="switch-fiber-ports-number-select" name="switch_fiber_ports_number"><option value="">-- None --</option><?php $switchFiberPortsNumberOptions = ['2','4','8','12','16','24','32','48']; foreach ($switchFiberPortsNumberOptions as $switchFiberPortsNumberOption): ?><option value="<?php echo sanitize($switchFiberPortsNumberOption); ?>" <?php echo ((string)$data['switch_fiber_ports_number'] === (string)$switchFiberPortsNumberOption) ? 'selected' : ''; ?>><?php echo sanitize($switchFiberPortsNumberOption); ?></option><?php endforeach; ?><?php if ((string)$data['switch_fiber_ports_number'] !== '' && !in_array((string)$data['switch_fiber_ports_number'], $switchFiberPortsNumberOptions, true)): ?><option value="<?php echo sanitize($data['switch_fiber_ports_number']); ?>" selected><?php echo sanitize($data['switch_fiber_ports_number']); ?></option><?php endif; ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Fiber Port Label</label><input type="text" maxlength="100" name="switch_fiber_port_label" value="<?php echo sanitize($data['switch_fiber_port_label']); ?>" placeholder="e.g. Uplink / SFP+"></div>
                     <div class="form-group"><label>PoE Type</label><select name="switch_poe_id" data-addable-select="1" data-add-table="equipment_poe" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="poe type"><option value="">-- None --</option><?php render_options($switchPoeOptions, $data['switch_poe_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Management</label><select name="switch_environment_id" data-addable-select="1" data-add-table="equipment_environment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="management type"><option value="">-- None --</option><?php render_options($switchEnvironmentOptions, $data['switch_environment_id']); ?><option value="__add_new__">➕</option></select></div>
@@ -933,9 +933,60 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     var switchFields = document.getElementById('switch-fields');
     var serverFields = document.getElementById('server-fields');
     var printerFields = document.getElementById('printer-fields');
+    var switchFiberPortsNumberSelect = document.getElementById('switch-fiber-ports-number-select');
     var switchTypeId = '<?php echo (int)$switchTypeId; ?>';
     var serverTypeId = '<?php echo (int)$serverTypeId; ?>';
     var printerTypeId = '<?php echo (int)$printerTypeId; ?>';
+
+    function setupFiberPortsNumberQuickAdd() {
+        if (!switchFiberPortsNumberSelect) {
+            return;
+        }
+
+        var previousValue = switchFiberPortsNumberSelect.value || '';
+        switchFiberPortsNumberSelect.addEventListener('focus', function () {
+            if (switchFiberPortsNumberSelect.value !== '__add_new__') {
+                previousValue = switchFiberPortsNumberSelect.value || '';
+            }
+        });
+
+        switchFiberPortsNumberSelect.addEventListener('change', function () {
+            if (switchFiberPortsNumberSelect.value !== '__add_new__') {
+                previousValue = switchFiberPortsNumberSelect.value || '';
+                return;
+            }
+
+            var typedValue = window.prompt('Enter Fiber Ports Number');
+            if (typedValue === null) {
+                switchFiberPortsNumberSelect.value = previousValue;
+                return;
+            }
+
+            typedValue = String(typedValue).trim();
+            if (typedValue === '') {
+                switchFiberPortsNumberSelect.value = previousValue;
+                return;
+            }
+
+            var existingOption = Array.prototype.find.call(switchFiberPortsNumberSelect.options, function (option) {
+                return String(option.value) === typedValue;
+            });
+            if (!existingOption) {
+                var addOption = Array.prototype.find.call(switchFiberPortsNumberSelect.options, function (option) {
+                    return String(option.value) === '__add_new__';
+                });
+                var customOption = new Option(typedValue, typedValue, true, true);
+                if (addOption) {
+                    switchFiberPortsNumberSelect.insertBefore(customOption, addOption);
+                } else {
+                    switchFiberPortsNumberSelect.appendChild(customOption);
+                }
+            }
+
+            switchFiberPortsNumberSelect.value = typedValue;
+            previousValue = typedValue;
+        });
+    }
 
     function toggleSwitchFields() {
         if (!typeSelect || !switchFields) {
@@ -996,6 +1047,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         toggleServerFields();
         togglePrinterFields();
     }
+    setupFiberPortsNumberQuickAdd();
 
     var openPhotoPreview = document.getElementById('openPhotoPreview');
     var photoPreviewModal = document.getElementById('photoPreviewModal');
