@@ -293,6 +293,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             <button type="button" class="btn" id="zoom-in">+ Zoom In</button>
             <button type="button" class="btn" id="zoom-reset">Reset</button>
             <span class="zoom-label" id="zoom-value">100%</span>
+            <span class="zoom-label">Max 600% (Ctrl + Wheel)</span>
         </div>
         <div id="diagram">
             <div id="diagram-scale">
@@ -310,15 +311,16 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
     (function () {
         var scale = 1;
         var minScale = 0.4;
-        var maxScale = 2.4;
-        var step = 0.1;
+        var maxScale = 6;
+        var step = 0.2;
         var scaleWrap = document.getElementById('diagram-scale');
         var zoomValue = document.getElementById('zoom-value');
         var zoomIn = document.getElementById('zoom-in');
         var zoomOut = document.getElementById('zoom-out');
         var zoomReset = document.getElementById('zoom-reset');
+        var diagramViewport = document.getElementById('diagram');
 
-        if (!scaleWrap || !zoomValue || !zoomIn || !zoomOut || !zoomReset) {
+        if (!scaleWrap || !zoomValue || !zoomIn || !zoomOut || !zoomReset || !diagramViewport) {
             return;
         }
 
@@ -341,6 +343,19 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             scale = 1;
             renderScale();
         });
+
+        diagramViewport.addEventListener('wheel', function (event) {
+            if (!event.ctrlKey) {
+                return;
+            }
+            event.preventDefault();
+            if (event.deltaY < 0) {
+                scale = Math.min(maxScale, scale + step);
+            } else {
+                scale = Math.max(minScale, scale - step);
+            }
+            renderScale();
+        }, { passive: false });
 
         renderScale();
     })();
