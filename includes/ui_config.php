@@ -32,7 +32,6 @@ function itm_sidebar_base_structure() {
                 ['id' => 'is_switch', 'label' => '🔀 Is Switch', 'href' => 'modules/is_switch/', 'match_dir' => 'is_switch'],
                 ['id' => 'is_printer', 'label' => '🖨️ Is Printer', 'href' => 'modules/is_printer/', 'match_dir' => 'is_printer'],
                 ['id' => 'is_pos', 'label' => '🏧 Is POS', 'href' => 'modules/is_pos/', 'match_dir' => 'is_pos'],
-                ['id' => 'switch_ports', 'label' => '🖧 Switch Ports', 'href' => 'modules/switch_ports/', 'match_dir' => 'switch_ports'],
                 ['id' => 'tickets', 'label' => '🎟️ Tickets', 'href' => 'modules/tickets/', 'match_dir' => 'tickets'],
             ],
         ],
@@ -87,6 +86,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'racks', 'label' => '🗄️ Racks', 'href' => 'modules/racks/', 'match_dir' => 'racks'],
                 ['id' => 'idfs', 'label' => '🗄️ IDFs', 'href' => 'modules/idfs/', 'match_dir' => 'idfs'],
                 ['id' => 'rack_statuses', 'label' => '📶 Rack Statuses', 'href' => 'modules/rack_statuses/', 'match_dir' => 'rack_statuses'],
+                ['id' => 'switch_ports', 'label' => '🖧 Switch Ports', 'href' => 'modules/switch_ports/', 'match_dir' => 'switch_ports'],
                 ['id' => 'switch_status', 'label' => '📡 Switch Status', 'href' => 'modules/switch_status/', 'match_dir' => 'switch_status'],
                 ['id' => 'cable_colors', 'label' => '🎨 Cable Colors', 'href' => 'modules/cable_colors/', 'match_dir' => 'cable_colors'],
                 ['id' => 'ticket_categories', 'label' => '🏷️ Ticket Categories', 'href' => 'modules/ticket_categories/', 'match_dir' => 'ticket_categories'],
@@ -1292,6 +1292,143 @@ function itm_ensure_user_sidebar_preferences_audit_triggers($conn) {
 }
 
 /**
+ * Reconciles persisted legacy rows for switch_ports in user_sidebar_preferences.
+ */
+function itm_reconcile_user_sidebar_preferences_switch_ports($conn, $company_id, $user_id) {
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0) {
+        return false;
+    }
+
+    $entryType = 'item';
+    $itemId = 'switch_ports';
+    $anchorItem = 'switch_status';
+    $targetSection = 'reference_data';
+
+    $selectSql = 'SELECT id, section_id, display_order
+                  FROM user_sidebar_preferences
+                  WHERE company_id = ? AND user_id = ? AND entry_type = ? AND entry_id = ? AND active = 1
+                  ORDER BY id ASC';
+    $selectStmt = mysqli_prepare($conn, $selectSql);
+    if (!$selectStmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($selectStmt, 'iiss', $company_id, $user_id, $entryType, $itemId);
+    mysqli_stmt_execute($selectStmt);
+    $selectResult = mysqli_stmt_get_result($selectStmt);
+    $itemRows = $selectResult ? mysqli_fetch_all($selectResult, MYSQLI_ASSOC) : [];
+    mysqli_stmt_close($selectStmt);
+
+    if (!$itemRows) {
+        return true;
+    }
+
+    $primaryId = (int)($itemRows[0]['id'] ?? 0);
+    $currentSection = (string)($itemRows[0]['section_id'] ?? '');
+    $currentOrder = (int)($itemRows[0]['display_order'] ?? 0);
+    if ($primaryId <= 0) {
+        return false;
+    }
+
+    mysqli_begin_transaction($conn);
+
+    // Why: duplicated rows can survive manual SQL edits; keep one deterministic row before repositioning.
+    if (count($itemRows) > 1) {
+        $deleteSql = 'DELETE FROM user_sidebar_preferences WHERE company_id = ? AND user_id = ? AND id = ?';
+        $deleteStmt = mysqli_prepare($conn, $deleteSql);
+        if (!$deleteStmt) {
+            mysqli_rollback($conn);
+            return false;
+        }
+        foreach (array_slice($itemRows, 1) as $row) {
+            $duplicateId = (int)($row['id'] ?? 0);
+            if ($duplicateId <= 0) {
+                continue;
+            }
+            mysqli_stmt_bind_param($deleteStmt, 'iii', $company_id, $user_id, $duplicateId);
+            if (!mysqli_stmt_execute($deleteStmt)) {
+                mysqli_stmt_close($deleteStmt);
+                mysqli_rollback($conn);
+                return false;
+            }
+        }
+        mysqli_stmt_close($deleteStmt);
+    }
+
+    $anchorSql = 'SELECT display_order
+                  FROM user_sidebar_preferences
+                  WHERE company_id = ? AND user_id = ? AND entry_type = ? AND entry_id = ? AND section_id = ? AND active = 1
+                  ORDER BY id ASC
+                  LIMIT 1';
+    $anchorStmt = mysqli_prepare($conn, $anchorSql);
+    if (!$anchorStmt) {
+        mysqli_rollback($conn);
+        return false;
+    }
+    mysqli_stmt_bind_param($anchorStmt, 'iisss', $company_id, $user_id, $entryType, $anchorItem, $targetSection);
+    mysqli_stmt_execute($anchorStmt);
+    $anchorResult = mysqli_stmt_get_result($anchorStmt);
+    $anchorRow = $anchorResult ? mysqli_fetch_assoc($anchorResult) : null;
+    mysqli_stmt_close($anchorStmt);
+
+    if (is_array($anchorRow) && isset($anchorRow['display_order'])) {
+        $targetOrder = (int)$anchorRow['display_order'];
+    } else {
+        $maxSql = 'SELECT COALESCE(MAX(display_order), -1) AS max_order
+                   FROM user_sidebar_preferences
+                   WHERE company_id = ? AND user_id = ? AND entry_type = ? AND section_id = ? AND active = 1';
+        $maxStmt = mysqli_prepare($conn, $maxSql);
+        if (!$maxStmt) {
+            mysqli_rollback($conn);
+            return false;
+        }
+        mysqli_stmt_bind_param($maxStmt, 'iiss', $company_id, $user_id, $entryType, $targetSection);
+        mysqli_stmt_execute($maxStmt);
+        $maxResult = mysqli_stmt_get_result($maxStmt);
+        $maxRow = $maxResult ? mysqli_fetch_assoc($maxResult) : null;
+        mysqli_stmt_close($maxStmt);
+        $targetOrder = isset($maxRow['max_order']) ? ((int)$maxRow['max_order'] + 1) : 0;
+    }
+
+    if ($currentSection !== $targetSection || $currentOrder !== $targetOrder) {
+        $shiftSql = 'UPDATE user_sidebar_preferences
+                     SET display_order = display_order + 1
+                     WHERE company_id = ? AND user_id = ? AND entry_type = ? AND section_id = ? AND active = 1 AND id <> ? AND display_order >= ?';
+        $shiftStmt = mysqli_prepare($conn, $shiftSql);
+        if (!$shiftStmt) {
+            mysqli_rollback($conn);
+            return false;
+        }
+        mysqli_stmt_bind_param($shiftStmt, 'iissii', $company_id, $user_id, $entryType, $targetSection, $primaryId, $targetOrder);
+        if (!mysqli_stmt_execute($shiftStmt)) {
+            mysqli_stmt_close($shiftStmt);
+            mysqli_rollback($conn);
+            return false;
+        }
+        mysqli_stmt_close($shiftStmt);
+
+        $updateSql = 'UPDATE user_sidebar_preferences
+                      SET section_id = ?, display_order = ?
+                      WHERE company_id = ? AND user_id = ? AND id = ? AND entry_type = ? AND entry_id = ?';
+        $updateStmt = mysqli_prepare($conn, $updateSql);
+        if (!$updateStmt) {
+            mysqli_rollback($conn);
+            return false;
+        }
+        mysqli_stmt_bind_param($updateStmt, 'siiiiss', $targetSection, $targetOrder, $company_id, $user_id, $primaryId, $entryType, $itemId);
+        if (!mysqli_stmt_execute($updateStmt)) {
+            mysqli_stmt_close($updateStmt);
+            mysqli_rollback($conn);
+            return false;
+        }
+        mysqli_stmt_close($updateStmt);
+    }
+
+    return mysqli_commit($conn);
+}
+
+/**
  * Retrieves per-user relational sidebar preferences.
  */
 function itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id) {
@@ -1300,6 +1437,7 @@ function itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id) {
     if ($company_id <= 0 || $user_id <= 0 || !itm_ensure_user_sidebar_preferences_table($conn)) {
         return null;
     }
+    itm_reconcile_user_sidebar_preferences_switch_ports($conn, $company_id, $user_id);
 
     $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
             FROM user_sidebar_preferences
