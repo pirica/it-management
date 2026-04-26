@@ -152,7 +152,7 @@ function itm_dbdesign_to_mermaid(array $schema): string
 
         foreach (($table['columns'] ?? []) as $column) {
             $type = strtoupper((string) ($column['type'] ?? 'TEXT'));
-            $type = preg_replace('/[^A-Z0-9_()]/', '_', $type);
+            $type = preg_replace('/[^A-Z0-9_]/', '_', $type);
             if ($type === null || $type === '') {
                 $type = 'TEXT';
             }
@@ -162,10 +162,6 @@ function itm_dbdesign_to_mermaid(array $schema): string
             if (!empty($column['is_pk'])) {
                 $flag .= ' PK';
             }
-            if (!empty($column['not_null'])) {
-                $flag .= ' NN';
-            }
-
             $lines[] = '        ' . $type . ' ' . $name . $flag;
         }
 
@@ -181,16 +177,17 @@ function itm_dbdesign_to_mermaid(array $schema): string
 
         $fromColumns = (array) ($relationship['from_columns'] ?? []);
         $toColumns = (array) ($relationship['to_columns'] ?? []);
-        $label = implode(', ', $fromColumns);
-        if ($label === '') {
+        $labelParts = $fromColumns;
+        if (!empty($toColumns)) {
+            $labelParts = array_merge($labelParts, $toColumns);
+        }
+        $label = implode('_', $labelParts);
+        $label = preg_replace('/[^A-Za-z0-9_]/', '_', $label ?? '');
+        if (!is_string($label) || $label === '') {
             $label = 'fk';
         }
 
-        if (!empty($toColumns)) {
-            $label .= ' → ' . implode(', ', $toColumns);
-        }
-
-        $lines[] = '    ' . $toTable . ' ||--o{ ' . $fromTable . ' : "' . $label . '"';
+        $lines[] = '    ' . $toTable . ' ||--o{ ' . $fromTable . ' : ' . $label;
     }
 
     return implode("\n", $lines);
