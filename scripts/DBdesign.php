@@ -295,7 +295,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             <button type="button" class="btn" id="export-svg">Export SVG</button>
             <button type="button" class="btn" id="export-png">Export PNG</button>
             <span class="zoom-label" id="zoom-value">100%</span>
-            <span class="zoom-label">Max 1000% (Ctrl + Wheel)</span>
+            <span class="zoom-label">Max 1000% (Ctrl + Wheel, export uses current zoom)</span>
         </div>
         <div id="diagram">
             <div id="diagram-scale">
@@ -332,7 +332,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             return diagramViewport.querySelector('svg');
         }
 
-        function getSerializedSvg(svgElement) {
+        function getSerializedSvg(svgElement, exportScale) {
             var serializer = new XMLSerializer();
             var cloned = svgElement.cloneNode(true);
             if (!cloned.getAttribute('xmlns')) {
@@ -341,6 +341,25 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             if (!cloned.getAttribute('xmlns:xlink')) {
                 cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
             }
+
+            var scaleForExport = Number(exportScale || 1);
+            if (!isFinite(scaleForExport) || scaleForExport <= 0) {
+                scaleForExport = 1;
+            }
+
+            var viewBox = cloned.getAttribute('viewBox');
+            if (viewBox) {
+                var vb = viewBox.trim().split(/\s+/);
+                if (vb.length === 4) {
+                    var vbWidth = parseFloat(vb[2]);
+                    var vbHeight = parseFloat(vb[3]);
+                    if (isFinite(vbWidth) && vbWidth > 0 && isFinite(vbHeight) && vbHeight > 0) {
+                        cloned.setAttribute('width', String(Math.ceil(vbWidth * scaleForExport)));
+                        cloned.setAttribute('height', String(Math.ceil(vbHeight * scaleForExport)));
+                    }
+                }
+            }
+
             return serializer.serializeToString(cloned);
         }
 
@@ -395,7 +414,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
                 return;
             }
 
-            var svgText = getSerializedSvg(svgElement);
+            var svgText = getSerializedSvg(svgElement, scale);
             triggerDownload(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }), 'database-diagram.svg');
         });
 
@@ -406,7 +425,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
                 return;
             }
 
-            var svgText = getSerializedSvg(svgElement);
+            var svgText = getSerializedSvg(svgElement, scale);
             var svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
             var svgUrl = URL.createObjectURL(svgBlob);
             var image = new Image();
