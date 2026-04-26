@@ -22,6 +22,8 @@
  * include only rows scoped to the active session company_id.
  * Equipment switch Fiber Count field was removed; switch port layout now relies on
  * switch_fiber_ports_number instead of legacy fiber-count lookups.
+ * includes/get_ports.php now adapts to both schemas by only joining equipment_fiber_count
+ * when equipment.switch_fiber_count_id exists, preventing "Switch not found" on migrated databases.
  * user_sidebar_preferences seed data now bootstraps a cleaned default sidebar layout
  * for companies 1-5 using schema defaults for created_at/updated_at timestamps.
  * Sidebar seed ordering now places switch_ports under reference_data before switch_port_numbering_layout for all base companies.

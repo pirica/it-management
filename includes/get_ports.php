@@ -166,6 +166,7 @@ $hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
 $hasVlanId = itm_table_has_column($conn, 'switch_ports', 'vlan_id');
 $hasLegacyNumberPort = itm_table_has_column($conn, 'equipment', 'numberport');
+$hasSwitchFiberCountId = itm_table_has_column($conn, 'equipment', 'switch_fiber_count_id');
 
 $hasPortTypesTable = false;
 $stmtTable = mysqli_prepare($conn, "SHOW TABLES LIKE 'switch_port_types'");
@@ -212,14 +213,16 @@ if ($switchId <= 0) {
 
 // Fetch switch configuration from the equipment table
 $legacyNumberPortSql = $hasLegacyNumberPort ? 'e.numberport AS legacy_numberport,' : 'NULL AS legacy_numberport,';
+$fiberCountSelectSql = $hasSwitchFiberCountId ? "COALESCE(efc.name, '0') AS fiber_count," : "COALESCE(e.switch_fiber_ports_number, 0) AS fiber_count,";
+$fiberCountJoinSql = $hasSwitchFiberCountId ? 'LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id' : '';
 $switchSql = "SELECT e.id, e.name, {$legacyNumberPortSql} COALESCE(er.name, '24 ports') AS rj45_name,
-                     COALESCE(ef.name, '') AS fiber_name, COALESCE(efc.name, '0') AS fiber_count,
+                     COALESCE(ef.name, '') AS fiber_name, {$fiberCountSelectSql}
                      COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number
               FROM equipment e
               LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
               LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
               LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-              LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
+              {$fiberCountJoinSql}
               WHERE e.id = ?
                 AND e.company_id = ?
               LIMIT 1";
