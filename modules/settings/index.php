@@ -147,6 +147,7 @@ if ($settingsUserId > 0) {
         mysqli_stmt_close($settingsAdminStmt);
     }
 }
+$canManageMaintenanceTools = $canManageBackups;
 
 /**
  * Generates a timestamped filename for SQL backups.
@@ -470,7 +471,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Ensure required settings tables exist (useful for fresh installs).
     if ($action === 'create_system_tables') {
-        if (!itm_ensure_ui_configuration_table($conn, $systemTableReport)) {
+        if (!$canManageMaintenanceTools) {
+            $error = 'Only admin users can manage SQL maintenance tools.';
+        } elseif (!itm_ensure_ui_configuration_table($conn, $systemTableReport)) {
             $error = 'Unable to create required system tables.';
         } else {
             $verifiedCount = count($systemTableReport['verified_tables']);
@@ -482,22 +485,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Seed every empty table with sample INSERT rows from database.sql.
     if ($action === 'add_sample_data_all_tables') {
-        $seedError = '';
-        $seedReport = [];
-        $seededRows = itm_seed_all_tables_from_database_sql($conn, (int)$company_id, $seedError, $seedReport);
-        $insertedSummary = empty($seedReport['inserted_tables']) ? 'none' : implode(', ', $seedReport['inserted_tables']);
-        $notImportedTables = array_merge($seedReport['skipped_tables'] ?? [], $seedReport['failed_tables'] ?? []);
-        $notImportedSummary = empty($notImportedTables) ? 'none' : implode(', ', $notImportedTables);
-
-        if ($seededRows > 0) {
-            $message = 'Sample data inserted successfully across all tables (' . $seededRows . ' rows). '
-                . 'Inserted: ' . $insertedSummary . '. '
-                . 'Not imported: ' . $notImportedSummary . '.';
-            if ($seedError !== '') {
-                $message .= ' Warning: ' . $seedError;
-            }
+        if (!$canManageMaintenanceTools) {
+            $error = 'Only admin users can manage SQL maintenance tools.';
         } else {
-            $error = $seedError !== '' ? $seedError : 'No sample rows were inserted.';
+            $seedError = '';
+            $seedReport = [];
+            $seededRows = itm_seed_all_tables_from_database_sql($conn, (int)$company_id, $seedError, $seedReport);
+            $insertedSummary = empty($seedReport['inserted_tables']) ? 'none' : implode(', ', $seedReport['inserted_tables']);
+            $notImportedTables = array_merge($seedReport['skipped_tables'] ?? [], $seedReport['failed_tables'] ?? []);
+            $notImportedSummary = empty($notImportedTables) ? 'none' : implode(', ', $notImportedTables);
+
+            if ($seededRows > 0) {
+                $message = 'Sample data inserted successfully across all tables (' . $seededRows . ' rows). '
+                    . 'Inserted: ' . $insertedSummary . '. '
+                    . 'Not imported: ' . $notImportedSummary . '.';
+                if ($seedError !== '') {
+                    $message .= ' Warning: ' . $seedError;
+                }
+            } else {
+                $error = $seedError !== '' ? $seedError : 'No sample rows were inserted.';
+            }
         }
     }
 }
@@ -789,42 +796,38 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                 </div>
             </div>
 
-            <div class="card" style="margin-bottom:20px;">
-                <div class="card-header"><h2>SQL Database Setup</h2></div>
-                <div class="card-body">
-                    <p style="margin-bottom:10px;">Create/verify required system tables (idempotent).</p>
-                    <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="create_system_tables">
-                        <button class="btn" type="submit">Create Missing Tables</button>
-                    </form>
-                    <form method="post" style="margin-top:10px;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="add_sample_data_all_tables">
-                        <button class="btn btn-primary" type="submit">Add sample data ALL TABLES</button>
-                    </form>
+            <?php if ($canManageMaintenanceTools): ?>
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h2>SQL Database Setup</h2></div>
+                    <div class="card-body">
+                        <p style="margin-bottom:10px;">Create/verify required system tables (idempotent).</p>
+                        <form method="post">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="action" value="create_system_tables">
+                            <button class="btn" type="submit">Create Missing Tables</button>
+                        </form>
+                        <form method="post" style="margin-top:10px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="action" value="add_sample_data_all_tables">
+                            <button class="btn btn-primary" type="submit">Add sample data ALL TABLES</button>
+                        </form>
+                    </div>
                 </div>
-            </div>
 
-            <div class="card" style="margin-bottom:20px;">
-                <div class="card-header"><h2>Create Full SQL Backup</h2></div>
-                <div class="card-body">
-                    <?php if ($canManageBackups): ?>
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h2>Create Full SQL Backup</h2></div>
+                    <div class="card-body">
                         <form method="post">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="action" value="create_backup">
                             <button class="btn btn-primary" type="submit">Create Backup Now</button>
                         </form>
-                    <?php else: ?>
-                        <p class="form-hint">Backup export is restricted to admin users.</p>
-                    <?php endif; ?>
+                    </div>
                 </div>
-            </div>
 
-            <div class="card" style="margin-bottom:20px;">
-                <div class="card-header"><h2>Import Backup</h2></div>
-                <div class="card-body">
-                    <?php if ($canManageBackups): ?>
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header"><h2>Import Backup</h2></div>
+                    <div class="card-body">
                         <form method="post" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="action" value="import_backup">
@@ -834,35 +837,31 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             </div>
                             <button class="btn" type="submit">Import SQL</button>
                         </form>
-                    <?php else: ?>
-                        <p class="form-hint">Backup import is restricted to admin users.</p>
-                    <?php endif; ?>
+                    </div>
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-header"><h2>All Backups</h2></div>
-                <div class="card-body" style="overflow:auto;">
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>File Name</th>
-                            <th>Size (KB)</th>
-                            <th>Last Modified (UTC)</th>
-                            <th>Options</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php if (empty($backupFiles)): ?>
-                            <tr><td colspan="4" style="text-align:center;">No backups yet. Example: backup_01_MAR_2026.sql</td></tr>
-                        <?php else: ?>
-                            <?php foreach ($backupFiles as $backup): ?>
-                                <tr>
-                                    <td><?php echo sanitize($backup['name']); ?></td>
-                                    <td><?php echo number_format($backup['size'] / 1024, 2); ?></td>
-                                    <td><?php echo gmdate('Y-m-d H:i:s', (int)$backup['modified']); ?></td>
-                                    <td style="display:flex;gap:8px;flex-wrap:wrap;">
-                                        <?php if ($canManageBackups): ?>
+                <div class="card">
+                    <div class="card-header"><h2>All Backups</h2></div>
+                    <div class="card-body" style="overflow:auto;">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Size (KB)</th>
+                                <th>Last Modified (UTC)</th>
+                                <th>Options</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php if (empty($backupFiles)): ?>
+                                <tr><td colspan="4" style="text-align:center;">No backups yet. Example: backup_01_MAR_2026.sql</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($backupFiles as $backup): ?>
+                                    <tr>
+                                        <td><?php echo sanitize($backup['name']); ?></td>
+                                        <td><?php echo number_format($backup['size'] / 1024, 2); ?></td>
+                                        <td><?php echo gmdate('Y-m-d H:i:s', (int)$backup['modified']); ?></td>
+                                        <td style="display:flex;gap:8px;flex-wrap:wrap;">
                                             <a class="btn btn-sm" href="index.php?download=<?php echo urlencode($backup['name']); ?>">Export</a>
                                             <form method="post" onsubmit="return confirm('Delete this backup file?');" style="display:inline;">
                                                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -870,17 +869,15 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                                 <input type="hidden" name="file" value="<?php echo sanitize($backup['name']); ?>">
                                                 <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                             </form>
-                                        <?php else: ?>
-                                            <span class="form-hint">Admin only</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                        </tbody>
-                    </table>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

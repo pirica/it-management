@@ -14,6 +14,8 @@
  * columns at runtime so new catalog entries can be displayed/edited in the matrix UI.
  * Employee system-access matrix/list screens resolve catalog labels from mapped legacy fields
  * so documented exports/imports align with visible column headers.
+ * Settings module SQL maintenance cards are now rendered only for Admin-role users and
+ * server-side actions remain role-gated for backup/table maintenance endpoints.
  */
 
 declare(strict_types=1);
