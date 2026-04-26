@@ -166,7 +166,6 @@ if ($enableSwitchPortManager) {
         "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
                 COALESCE(er.name, '24 ports') AS rj45_name,
                 COALESCE(ef.name, '') AS fiber_name,
-                COALESCE(efc.name, '0') AS fiber_count,
                 COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
                 {$switchFiberPortLabelSelect} AS fiber_port_label,
                 COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
@@ -174,7 +173,6 @@ if ($enableSwitchPortManager) {
          INNER JOIN equipment_types et ON et.id = e.equipment_type_id
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
          LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-         LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
          WHERE e.company_id = $company_id
            AND LOWER(TRIM(et.name)) LIKE '%switch%'
@@ -924,8 +922,7 @@ if (!empty($_SESSION['crud_success'])) {
         function fallbackLayout() {
             const rj45 = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.rj45_name) || '').replace(/\D+/g, ''), 10) || 24;
             const fiberPortsNumber = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_ports_number) || '').replace(/\D+/g, ''), 10) || 0;
-            const legacyFiberCount = parseInt(String((selectedSwitchMeta && selectedSwitchMeta.fiber_count) || '').replace(/\D+/g, ''), 10) || 0;
-            const fiberCount = fiberPortsNumber > 0 ? fiberPortsNumber : legacyFiberCount;
+            const fiberCount = fiberPortsNumber;
             const fiberName = String((selectedSwitchMeta && selectedSwitchMeta.fiber_name) || '').toLowerCase();
             const fiberLabel = String((selectedSwitchMeta && selectedSwitchMeta.fiber_port_label) || '').toLowerCase();
             const fiberHint = (fiberLabel + ' ' + fiberName).trim();
