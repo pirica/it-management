@@ -24,6 +24,7 @@
  * and latest sample timestamps for tenant bootstrap consistency.
  * user_sidebar_preferences seed data now bootstraps a cleaned default sidebar layout
  * for companies 1-5 using schema defaults for created_at/updated_at timestamps.
+ * Sidebar seed ordering now places switch_ports under reference_data before switch_port_numbering_layout for all base companies.
  */
 
 declare(strict_types=1);
