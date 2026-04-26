@@ -261,7 +261,11 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
         .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .toolbar a { color: #0969da; text-decoration: none; }
         .toolbar a:hover { text-decoration: underline; }
-        #diagram { overflow: auto; min-height: 400px; }
+        .btn { border: 1px solid #d0d7de; border-radius: 6px; background: #f6f8fa; color: #1f2328; padding: 6px 10px; cursor: pointer; }
+        .btn:hover { background: #eef2f7; }
+        #diagram { overflow: auto; min-height: 400px; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px; background: #fff; }
+        #diagram-scale { transform-origin: top left; transition: transform 0.1s ease-in-out; }
+        .zoom-label { font-size: 0.9rem; color: #57606a; min-width: 72px; }
         textarea { width: 100%; min-height: 220px; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     </style>
     <script type="module">
@@ -284,8 +288,16 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
 
     <div class="card">
         <h2>Rendered Diagram</h2>
+        <div class="toolbar" style="margin-bottom: 10px;">
+            <button type="button" class="btn" id="zoom-out">− Zoom Out</button>
+            <button type="button" class="btn" id="zoom-in">+ Zoom In</button>
+            <button type="button" class="btn" id="zoom-reset">Reset</button>
+            <span class="zoom-label" id="zoom-value">100%</span>
+        </div>
         <div id="diagram">
-            <pre class="mermaid"><?= itm_dbdesign_escape($itm_mermaid); ?></pre>
+            <div id="diagram-scale">
+                <pre class="mermaid"><?= itm_dbdesign_escape($itm_mermaid); ?></pre>
+            </div>
         </div>
     </div>
 
@@ -294,5 +306,44 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
         <textarea readonly><?= itm_dbdesign_escape($itm_mermaid); ?></textarea>
     </div>
 </div>
+<script>
+    (function () {
+        var scale = 1;
+        var minScale = 0.4;
+        var maxScale = 2.4;
+        var step = 0.1;
+        var scaleWrap = document.getElementById('diagram-scale');
+        var zoomValue = document.getElementById('zoom-value');
+        var zoomIn = document.getElementById('zoom-in');
+        var zoomOut = document.getElementById('zoom-out');
+        var zoomReset = document.getElementById('zoom-reset');
+
+        if (!scaleWrap || !zoomValue || !zoomIn || !zoomOut || !zoomReset) {
+            return;
+        }
+
+        function renderScale() {
+            scaleWrap.style.transform = 'scale(' + scale.toFixed(2) + ')';
+            zoomValue.textContent = Math.round(scale * 100) + '%';
+        }
+
+        zoomIn.addEventListener('click', function () {
+            scale = Math.min(maxScale, scale + step);
+            renderScale();
+        });
+
+        zoomOut.addEventListener('click', function () {
+            scale = Math.max(minScale, scale - step);
+            renderScale();
+        });
+
+        zoomReset.addEventListener('click', function () {
+            scale = 1;
+            renderScale();
+        });
+
+        renderScale();
+    })();
+</script>
 </body>
 </html>
