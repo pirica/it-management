@@ -29,6 +29,7 @@
  * Sidebar seed ordering now places switch_ports under reference_data before switch_port_numbering_layout for all base companies.
  * Sidebar preference loading now reconciles legacy user_sidebar_preferences rows in DB so switch_ports is stored under reference_data above switch_status.
  * database.sql equipment seed rows were corrected to align VALUES counts with the 44-column equipment insert signature.
+ * Equipment create/edit now renders Fiber Ports Number as a select with a quick-add (➕) option.
  */
 
 declare(strict_types=1);
