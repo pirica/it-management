@@ -14,6 +14,9 @@
  * columns at runtime so new catalog entries can be displayed/edited in the matrix UI.
  * Employee system-access matrix/list screens resolve catalog labels from mapped legacy fields
  * so documented exports/imports align with visible column headers.
+ * Added scripts/DBdesign.php to generate a drawdb-style ER diagram, Mermaid source,
+ * and JSON metadata by parsing database.sql directly.
+ * DBdesign rendered view includes client-side zoom controls (up to 1000%) and SVG/PNG export actions that use the current zoom level.
  * Settings module SQL maintenance cards are rendered only for Admin-role users, while
  * backup actions are role-gated for Admin/IT Manager/IT Assistant and backup exports
  * include only rows scoped to the active session company_id.
@@ -133,6 +136,7 @@ $projectJsonEndpoints = [
     ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update a switch port label/status/color/vlan/comments.'],
     ['method' => 'GET',  'path' => 'modules/idfs/index.php?refresh_select_options=rack|location', 'purpose' => 'Refresh select options for IDF forms.'],
     ['method' => 'POST', 'path' => 'scripts/test_sql_injection.php', 'purpose' => 'Security test helper endpoint used during audits.'],
+    ['method' => 'GET', 'path' => 'scripts/DBdesign.php?format=html|mermaid|json', 'purpose' => 'Generate database.sql ER diagram output (drawdb-style viewer, Mermaid, or JSON).'],
 ];
 ?>
 <!DOCTYPE html>
