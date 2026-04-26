@@ -31,6 +31,7 @@
  * database.sql equipment seed rows were corrected to align VALUES counts with the 44-column equipment insert signature.
  * Equipment create/edit now renders Fiber Ports Number as a select with a quick-add (➕) option.
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
+ * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  */
 
 declare(strict_types=1);
