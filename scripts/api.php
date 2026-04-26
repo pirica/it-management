@@ -20,6 +20,8 @@
  * Settings module SQL maintenance cards are rendered only for Admin-role users, while
  * backup actions are role-gated for Admin/IT Manager/IT Assistant and backup exports
  * include only rows scoped to the active session company_id.
+ * Equipment seed data in database.sql was refreshed to align per-company FK values
+ * and latest sample timestamps for tenant bootstrap consistency.
  */
 
 declare(strict_types=1);
