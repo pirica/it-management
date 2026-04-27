@@ -166,8 +166,11 @@ if ($enableSwitchPortManager) {
         "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
                 COALESCE(er.name, '24 ports') AS rj45_name,
                 COALESCE(ef.name, '') AS fiber_name,
+                COALESCE(e.switch_fiber_id, 0) AS fiber_id,
                 COALESCE(efp.name, '') AS fiber_patch_name,
+                COALESCE(e.switch_fiber_patch_id, 0) AS fiber_patch_id,
                 COALESCE(efr.name, '') AS fiber_rack_name,
+                COALESCE(e.switch_fiber_rack_id, 0) AS fiber_rack_id,
                 COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
                 {$switchFiberPortLabelSelect} AS fiber_port_label,
                 COALESCE(spnl.name, 'Vertical') AS port_numbering_layout,
@@ -436,7 +439,8 @@ if (!empty($_SESSION['crud_success'])) {
                             </div>
                         </div>
 
-                        <div class="switch-controls">
+                        <div id="switchControlsHint" style="margin-top:10px;color:#6b7280;">Click a port to view and edit options.</div>
+                        <div class="switch-controls" id="switchControls" style="display:none;">
                             <label><strong>Selected port:</strong> <span id="selectedPort">None</span></label>
                             <label>
                                 Color:
@@ -466,11 +470,11 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
-                            <label>
+                            <label id="patchPortRow">
                                 Patch port:
                                 <input type="text" id="labelInput" placeholder="Patch port">
                             </label>
-                            <label>
+                            <label id="vlanRow">
                                 VLAN:
                                 <div class="switch-control-input">
                                     <select id="vlanSelect"
@@ -485,6 +489,48 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
+                            <label id="fiberPortsRow" style="display:none;">
+                                Fiber Ports:
+                                <div class="switch-control-input">
+                                    <select id="fiberPortsSelect"
+                                        data-addable-select="1"
+                                        data-add-table="equipment_fiber"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="fiber port type">
+                                        <option value="">-- choose fiber ports --</option>
+                                    </select>
+                                </div>
+                            </label>
+                            <label id="fiberPatchRow" style="display:none;">
+                                Fiber Patch:
+                                <div class="switch-control-input">
+                                    <select id="fiberPatchSelect"
+                                        data-addable-select="1"
+                                        data-add-table="equipment_fiber_patch"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="fiber patch">
+                                        <option value="">-- choose fiber patch --</option>
+                                    </select>
+                                </div>
+                            </label>
+                            <label id="fiberRackRow" style="display:none;">
+                                Fiber Rack:
+                                <div class="switch-control-input">
+                                    <select id="fiberRackSelect"
+                                        data-addable-select="1"
+                                        data-add-table="equipment_fiber_rack"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="fiber rack">
+                                        <option value="">-- choose fiber rack --</option>
+                                    </select>
+                                </div>
+                            </label>
                             <label>
                                 Comments:
                                 <input type="text" id="commentsInput" placeholder="Comments">
@@ -492,7 +538,7 @@ if (!empty($_SESSION['crud_success'])) {
                             <button class="btn btn-primary" id="savePortBtn" type="button">💾</button>
                         </div>
 
-                        <div class="switch-legend" id="switchLegend"></div>
+                        <div class="switch-legend" id="switchLegend" style="display:none;"></div>
                     </div>
                     <div class="switch-tooltip" id="switchTooltip"></div>
                 </div>
@@ -515,6 +561,9 @@ if (!empty($_SESSION['crud_success'])) {
         let statusOptions = [];
         let vlanOptions = [];
         let availablePortTypes = ['rj45', 'sfp', 'sfp_plus'];
+        let fiberPortOptions = [];
+        let fiberPatchOptions = [];
+        let fiberRackOptions = [];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
         const csrfToken = window.ITM_CSRF_TOKEN
@@ -846,17 +895,37 @@ if (!empty($_SESSION['crud_success'])) {
             tooltip.style.opacity = '0';
         }
 
+        function isFiberPortType(portType) {
+            const normalized = normalizePortType(portType);
+            return normalized === 'sfp' || normalized === 'sfp_plus';
+        }
+
+        function togglePortControlSections(portType) {
+            const isFiber = isFiberPortType(portType);
+            document.getElementById('vlanRow').style.display = isFiber ? 'none' : '';
+            document.getElementById('fiberPortsRow').style.display = isFiber ? '' : 'none';
+            document.getElementById('fiberPatchRow').style.display = isFiber ? '' : 'none';
+            document.getElementById('fiberRackRow').style.display = isFiber ? '' : 'none';
+        }
+
         function selectPort(el) {
             document.querySelectorAll('.switch-port').forEach(function (p) {
                 p.style.outline = '';
             });
             el.style.outline = '3px solid rgba(9, 105, 218, 0.35)';
             selected = el;
+            document.getElementById('switchControls').style.display = '';
+            document.getElementById('switchControlsHint').style.display = 'none';
+            document.getElementById('switchLegend').style.display = '';
+            togglePortControlSections(el.dataset.portType || '');
             document.getElementById('selectedPort').textContent = el.dataset.portNumber;
             document.getElementById('colorSelect').value = el.dataset.color || '';
             document.getElementById('statusSelect').value = el.dataset.status || '';
             document.getElementById('labelInput').value = el.dataset.label || '';
             document.getElementById('vlanSelect').value = el.dataset.vlanId || '';
+            document.getElementById('fiberPortsSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_id) || '');
+            document.getElementById('fiberPatchSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || '');
+            document.getElementById('fiberRackSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_rack_id) || '');
             document.getElementById('commentsInput').value = el.dataset.comments || '';
         }
 
@@ -977,19 +1046,28 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
 
-        function hydrateLookups(statuses, colors, vlans) {
+        function hydrateLookups(statuses, colors, vlans, fiberPorts, fiberPatches, fiberRacks) {
             statusOptions = Array.isArray(statuses) ? statuses : [];
             colorOptions = Array.isArray(colors) ? colors : [];
             vlanOptions = Array.isArray(vlans) ? vlans : [];
+            fiberPortOptions = Array.isArray(fiberPorts) ? fiberPorts : [];
+            fiberPatchOptions = Array.isArray(fiberPatches) ? fiberPatches : [];
+            fiberRackOptions = Array.isArray(fiberRacks) ? fiberRacks : [];
 
             const statusSelect = document.getElementById('statusSelect');
             const colorSelect = document.getElementById('colorSelect');
             const vlanSelect = document.getElementById('vlanSelect');
+            const fiberPortsSelect = document.getElementById('fiberPortsSelect');
+            const fiberPatchSelect = document.getElementById('fiberPatchSelect');
+            const fiberRackSelect = document.getElementById('fiberRackSelect');
             const legend = document.getElementById('switchLegend');
 
             statusSelect.innerHTML = '<option value="">-- choose status --</option>';
             colorSelect.innerHTML = '<option value="">-- choose color --</option>';
             vlanSelect.innerHTML = '<option value="">-- choose VLAN --</option>';
+            fiberPortsSelect.innerHTML = '<option value="">-- choose fiber ports --</option>';
+            fiberPatchSelect.innerHTML = '<option value="">-- choose fiber patch --</option>';
+            fiberRackSelect.innerHTML = '<option value="">-- choose fiber rack --</option>';
             legend.innerHTML = '';
 
             statusOptions.forEach(function (item) {
@@ -1022,8 +1100,20 @@ if (!empty($_SESSION['crud_success'])) {
                 option.textContent = item.name;
                 vlanSelect.appendChild(option);
             });
+            fiberPortOptions.forEach(function (item) {
+                fiberPortsSelect.appendChild(new Option(item.name, item.id));
+            });
+            fiberPatchOptions.forEach(function (item) {
+                fiberPatchSelect.appendChild(new Option(item.name, item.id));
+            });
+            fiberRackOptions.forEach(function (item) {
+                fiberRackSelect.appendChild(new Option(item.name, item.id));
+            });
             colorSelect.appendChild(new Option('➕ Add', '__add_new__'));
             vlanSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            fiberPortsSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            fiberPatchSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            fiberRackSelect.appendChild(new Option('➕ Add', '__add_new__'));
         }
 
         function fallbackLayout() {
@@ -1124,7 +1214,14 @@ if (!empty($_SESSION['crud_success'])) {
                         availablePortTypes.push('rj45');
                     }
                     ports = data.ports || [];
-                    hydrateLookups(data.statuses || [], data.colors || [], data.vlans || []);
+                    hydrateLookups(
+                        data.statuses || [],
+                        data.colors || [],
+                        data.vlans || [],
+                        data.fiber_ports || [],
+                        data.fiber_patches || [],
+                        data.fiber_racks || []
+                    );
                     const layout = data.layout || localLayout;
                     const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
                     document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, (layout.rj45 || 0), (layout.sfp || 0), (layout.sfp_plus || 0));
@@ -1150,6 +1247,11 @@ if (!empty($_SESSION['crud_success'])) {
                 vlan: document.getElementById('vlanSelect').value || null,
                 comments: document.getElementById('commentsInput').value
             };
+            if (isFiberPortType(selected.dataset.portType || '')) {
+                payload.fiber_port_id = document.getElementById('fiberPortsSelect').value || null;
+                payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
+                payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
+            }
 
             savePort(payload, true)
                 .then(function () {

@@ -195,6 +195,9 @@ if (!$hasStatusId || !$hasColorId) {
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'cable_colors', 'color_name');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
+$fiberPorts = fetch_lookup_map($conn, 'equipment_fiber', 'name');
+$fiberPatches = fetch_lookup_map($conn, 'equipment_fiber_patch', 'name');
+$fiberRacks = fetch_lookup_map($conn, 'equipment_fiber_rack', 'name');
 if (empty($statuses) || empty($colors)) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'switch_status/cable_colors lookup tables are empty']);
@@ -478,6 +481,9 @@ echo json_encode([
     'statuses' => $statuses,
     'colors' => $colors,
     'vlans' => $vlans,
+    'fiber_ports' => $fiberPorts,
+    'fiber_patches' => $fiberPatches,
+    'fiber_racks' => $fiberRacks,
     'layout' => [
         'rj45' => $rj45Count,
         'sfp' => $sfpCount,

@@ -165,6 +165,9 @@ $statusId = find_lookup_id($statuses, $input['status'] ?? null);
 $vlanId = $hasVlanId ? find_lookup_id($vlans, $input['vlan'] ?? null) : 0;
 $label = isset($input['label']) ? trim((string)$input['label']) : null;
 $comments = isset($input['comments']) ? trim((string)$input['comments']) : null;
+$fiberPortId = isset($input['fiber_port_id']) && is_numeric((string)$input['fiber_port_id']) ? (int)$input['fiber_port_id'] : 0;
+$fiberPatchId = isset($input['fiber_patch_id']) && is_numeric((string)$input['fiber_patch_id']) ? (int)$input['fiber_patch_id'] : 0;
+$fiberRackId = isset($input['fiber_rack_id']) && is_numeric((string)$input['fiber_rack_id']) ? (int)$input['fiber_rack_id'] : 0;
 
 // Build dynamic UPDATE query based on provided fields
 $fields = [];
@@ -237,5 +240,52 @@ if (!$ok) {
 
 $updated = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
+
+if ($hasEquipmentId && (array_key_exists('fiber_port_id', $input) || array_key_exists('fiber_patch_id', $input) || array_key_exists('fiber_rack_id', $input))) {
+    $equipmentFields = [];
+    $equipmentTypes = '';
+    $equipmentParams = [];
+
+    if (array_key_exists('fiber_port_id', $input)) {
+        if ($fiberPortId > 0) {
+            $equipmentFields[] = 'switch_fiber_id = ?';
+            $equipmentTypes .= 'i';
+            $equipmentParams[] = $fiberPortId;
+        } else {
+            $equipmentFields[] = 'switch_fiber_id = NULL';
+        }
+    }
+    if (array_key_exists('fiber_patch_id', $input)) {
+        if ($fiberPatchId > 0) {
+            $equipmentFields[] = 'switch_fiber_patch_id = ?';
+            $equipmentTypes .= 'i';
+            $equipmentParams[] = $fiberPatchId;
+        } else {
+            $equipmentFields[] = 'switch_fiber_patch_id = NULL';
+        }
+    }
+    if (array_key_exists('fiber_rack_id', $input)) {
+        if ($fiberRackId > 0) {
+            $equipmentFields[] = 'switch_fiber_rack_id = ?';
+            $equipmentTypes .= 'i';
+            $equipmentParams[] = $fiberRackId;
+        } else {
+            $equipmentFields[] = 'switch_fiber_rack_id = NULL';
+        }
+    }
+
+    if (!empty($equipmentFields)) {
+        $equipmentSql = 'UPDATE equipment SET ' . implode(', ', $equipmentFields) . ' WHERE id = ? AND company_id = ?';
+        $equipmentTypes .= 'ii';
+        $equipmentParams[] = $switchId;
+        $equipmentParams[] = (int)$company_id;
+        $equipmentStmt = mysqli_prepare($conn, $equipmentSql);
+        if ($equipmentStmt) {
+            mysqli_stmt_bind_param($equipmentStmt, $equipmentTypes, ...$equipmentParams);
+            mysqli_stmt_execute($equipmentStmt);
+            mysqli_stmt_close($equipmentStmt);
+        }
+    }
+}
 
 echo json_encode(['success' => true, 'updated' => $updated]);
