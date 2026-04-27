@@ -581,10 +581,8 @@ if (!empty($_SESSION['crud_success'])) {
         function buildLayoutSummary(layoutLabel, rj45Count, sfpCount, sfpPlusCount) {
             const switchHostname = readSwitchMeta('hostname');
             const parts = [switchHostname !== '' ? ('Hostname: ' + switchHostname) : 'Hostname: N/A', 'RJ45: ' + rj45Count];
-            const fiberPortTypeLabel = readSwitchMeta('fiber_name');
             if (hasPortType('sfp') && Number(sfpCount) > 0) {
-                const sfpSummaryLabel = fiberPortTypeLabel !== '' ? fiberPortTypeLabel : 'SFP';
-                parts.push(sfpSummaryLabel + ': ' + sfpCount);
+                parts.push('SFP: ' + sfpCount);
             }
             if (hasPortType('sfp_plus') && Number(sfpPlusCount) > 0) {
                 parts.push('SFP+: ' + sfpPlusCount);
