@@ -417,7 +417,6 @@ if (!empty($_SESSION['crud_success'])) {
                     </div>
                     <div class="switch-manager" id="switchManager">
                         <div class="card" style="margin-bottom:14px;padding:12px;">
-                            <strong>Switch layout:</strong>
                             <span id="switchLayoutSummary">Loading…</span>
                         </div>
                         <div class="switch-grid">
