@@ -43,6 +43,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'employee_system_access', 'label' => '🔐 Employee System Access', 'href' => 'modules/employee_system_access/', 'match_dir' => 'employee_system_access'],
                 ['id' => 'system_access', 'label' => '🛡️ System Access', 'href' => 'modules/system_access/', 'match_dir' => 'system_access'],
                 ['id' => 'departments', 'label' => '🏢 Departments', 'href' => 'modules/departments/', 'match_dir' => 'departments'],
+                ['id' => 'employee_assignment_history', 'label' => '📝 Assignment History', 'href' => 'modules/employee_assignment_history/', 'match_dir' => 'employee_assignment_history'],
             ],
         ],
         [
