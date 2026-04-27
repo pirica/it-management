@@ -18,12 +18,20 @@ if ($id > 0) {
                 c.name AS category_name,
                 m.name AS manufacturer_name,
                 l.name AS location_name,
-                s.name AS supplier_name
+                s.name AS supplier_name,
+                COALESCE(
+                    NULLIF(TRIM(CONCAT(COALESCE(e_scoped.first_name, \'\'), \' \', COALESCE(e_scoped.last_name, \'\'))), \'\'),
+                    NULLIF(TRIM(COALESCE(e_scoped.username, \'\')), \'\'),
+                    NULLIF(TRIM(CONCAT(COALESCE(e_fallback.first_name, \'\'), \' \', COALESCE(e_fallback.last_name, \'\'))), \'\'),
+                    NULLIF(TRIM(COALESCE(e_fallback.username, \'\')), \'\')
+                ) AS last_user_label
          FROM inventory_items i
          LEFT JOIN inventory_categories c ON c.id = i.category_id
          LEFT JOIN manufacturers m ON m.id = i.manufacturer_id
          LEFT JOIN it_locations l ON l.id = i.location_id
          LEFT JOIN suppliers s ON s.id = i.supplier_id
+         LEFT JOIN employees e_scoped ON e_scoped.id = i.last_user_id AND e_scoped.company_id = i.company_id
+         LEFT JOIN employees e_fallback ON e_fallback.id = i.last_user_id
          WHERE i.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -51,6 +59,8 @@ $labels = [
     'quantity_on_hand' => 'Quantity On Hand',
     'quantity_minimum' => 'Minimum Quantity',
     'price_eur' => 'Price (€)',
+    'last_user_id' => 'Last User',
+    'last_user_manual' => 'Last User (Manual)',
     'comments' => 'Comments',
     'active' => 'Status',
     'created_at' => 'Created At',
@@ -99,6 +109,12 @@ $labels = [
                                         <?php echo sanitize((string)($item['location_name'] ?? '')); ?>
                                     <?php elseif ($field === 'supplier_id'): ?>
                                         <?php echo sanitize((string)($item['supplier_name'] ?? '')); ?>
+                                    <?php elseif ($field === 'last_user_id'): ?>
+                                        <?php
+                                        $lastUserLabel = trim((string)($item['last_user_label'] ?? ''));
+                                        $lastUserManual = trim((string)($item['last_user_manual'] ?? ''));
+                                        echo sanitize($lastUserLabel !== '' ? $lastUserLabel : ($lastUserManual !== '' ? $lastUserManual : '-'));
+                                        ?>
                                     <?php else: ?>
                                         <?php echo sanitize((string)($value ?? '')); ?>
                                     <?php endif; ?>
