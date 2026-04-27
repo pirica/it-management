@@ -63,6 +63,8 @@
  * create/edit/view/delete/list_all and the standard JSON import flow in js/table-tools.js.
  * Added missing modules/equipment_fiber CRUD entry files so create/edit/view/delete/list_all routes
  * resolve correctly and use the module index JSON import endpoint.
+ * Equipment Fiber list view table now includes data-itm-db-import-endpoint="index.php" so
+ * js/table-tools.js importRowsIntoDatabase can persist imported rows server-side.
  */
 
 declare(strict_types=1);
