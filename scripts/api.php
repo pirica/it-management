@@ -44,6 +44,7 @@
  * host_mac_manufacturer to avoid mislabeling manufacturer data as a physical MAC address.
  * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
  * Employees create/edit/view now use a workstation_mode_id relation to workstation_modes (mode_name select + quick-add in forms, label rendering in detail view).
+ * Employees create/edit/view/index now also use assignment_type_id relation to assignment_types (name select + quick-add in forms, label rendering in list/detail views).
  * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
  * Patches Updates Level schema now stores only level (dropped legacy name), enforces patches_updates_level(company_id, level) uniqueness, and keeps JSON import compatibility for legacy Name headers.
  * Patches Updates CRUD FK label resolution now recognizes `level` columns so Level dropdown/list/detail views remain human-readable after patches_updates_level schema cleanup.
