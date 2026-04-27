@@ -3083,6 +3083,8 @@ CREATE TABLE `role_module_permissions` (
   `can_create` tinyint(1) NOT NULL DEFAULT '0',
   `can_edit` tinyint(1) NOT NULL DEFAULT '0',
   `can_delete` tinyint(1) NOT NULL DEFAULT '0',
+  `can_import` tinyint(1) NOT NULL DEFAULT '0',
+  `can_export` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -3091,21 +3093,21 @@ CREATE TABLE `role_module_permissions` (
   CONSTRAINT `fk_role_module_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `role_module_permissions`
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('1', '1', 'ALL', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('2', '6', 'ALL', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('3', '11', 'ALL', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('4', '16', 'ALL', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('5', '21', 'ALL', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('1', '4', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('2', '7', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('3', '12', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('4', '17', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('5', '22', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('1', '5', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('2', '10', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('3', '15', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('4', '20', 'Tickets', '1', '1', '1', '1');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) VALUES ('5', '25', 'Tickets', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('1', '1', 'ALL', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('2', '6', 'ALL', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('3', '11', 'ALL', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('4', '16', 'ALL', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('5', '21', 'ALL', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('1', '4', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('2', '7', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('3', '12', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('4', '17', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('5', '22', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('1', '5', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('2', '10', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('3', '15', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('4', '20', 'Tickets', '1', '1', '1', '1', '1', '1');
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('5', '25', 'Tickets', '1', '1', '1', '1', '1', '1');
 
 -- Table structure for `role_assignment_rights`
 DROP TABLE IF EXISTS `role_assignment_rights`;
@@ -3866,7 +3868,7 @@ WHERE t.`company_id` = @replicate_source_company_id
   AND COALESCE(sc_target.`id`, sc_fallback.`id`) IS NOT NULL;
 INSERT IGNORE INTO `system_access` (`company_id`, `code`, `name`, `active`) SELECT c.`id`, t.`code`, t.`name`, t.`active` FROM `system_access` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) SELECT c.`id`, ur_target.`id`, rh.`hierarchy_order` FROM `role_hierarchy` rh JOIN `companies` c ON c.`id` <> rh.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rh.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rh.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`) SELECT c.`id`, ur_target.`id`, rmp.`module_name`, rmp.`can_view`, rmp.`can_create`, rmp.`can_edit`, rmp.`can_delete` FROM `role_module_permissions` rmp JOIN `companies` c ON c.`id` <> rmp.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rmp.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rmp.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) SELECT c.`id`, ur_target.`id`, rmp.`module_name`, rmp.`can_view`, rmp.`can_create`, rmp.`can_edit`, rmp.`can_delete`, rmp.`can_import`, rmp.`can_export` FROM `role_module_permissions` rmp JOIN `companies` c ON c.`id` <> rmp.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rmp.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rmp.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) SELECT c.`id`, ur_granter_target.`id`, ur_target_target.`id` FROM `role_assignment_rights` rar JOIN `companies` c ON c.`id` <> rar.`company_id` JOIN `user_roles` ur_granter_source ON ur_granter_source.`id` = rar.`role_id` JOIN `user_roles` ur_target_source ON ur_target_source.`id` = rar.`can_assign_role_id` JOIN `user_roles` ur_granter_target ON ur_granter_target.`company_id` = c.`id` AND ur_granter_target.`name` = ur_granter_source.`name` JOIN `user_roles` ur_target_target ON ur_target_target.`company_id` = c.`id` AND ur_target_target.`name` = ur_target_source.`name` WHERE rar.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`)
 SELECT u.`id`, c.`id`, NULL
@@ -4959,15 +4961,15 @@ DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_role_module_permissions_audit_insert` AFTER INSERT ON `role_module_permissions` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'role_id', NEW.`role_id`, 'module_name', NEW.`module_name`, 'can_view', NEW.`can_view`, 'can_create', NEW.`can_create`, 'can_edit', NEW.`can_edit`, 'can_delete', NEW.`can_delete`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'role_id', NEW.`role_id`, 'module_name', NEW.`module_name`, 'can_view', NEW.`can_view`, 'can_create', NEW.`can_create`, 'can_edit', NEW.`can_edit`, 'can_delete', NEW.`can_delete`, 'can_import', NEW.`can_import`, 'can_export', NEW.`can_export`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_role_module_permissions_audit_update` AFTER UPDATE ON `role_module_permissions` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'module_name', OLD.`module_name`, 'can_view', OLD.`can_view`, 'can_create', OLD.`can_create`, 'can_edit', OLD.`can_edit`, 'can_delete', OLD.`can_delete`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'role_id', NEW.`role_id`, 'module_name', NEW.`module_name`, 'can_view', NEW.`can_view`, 'can_create', NEW.`can_create`, 'can_edit', NEW.`can_edit`, 'can_delete', NEW.`can_delete`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'module_name', OLD.`module_name`, 'can_view', OLD.`can_view`, 'can_create', OLD.`can_create`, 'can_edit', OLD.`can_edit`, 'can_delete', OLD.`can_delete`, 'can_import', OLD.`can_import`, 'can_export', OLD.`can_export`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'role_id', NEW.`role_id`, 'module_name', NEW.`module_name`, 'can_view', NEW.`can_view`, 'can_create', NEW.`can_create`, 'can_edit', NEW.`can_edit`, 'can_delete', NEW.`can_delete`, 'can_import', NEW.`can_import`, 'can_export', NEW.`can_export`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_role_module_permissions_audit_delete` AFTER DELETE ON `role_module_permissions` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'module_name', OLD.`module_name`, 'can_view', OLD.`can_view`, 'can_create', OLD.`can_create`, 'can_edit', OLD.`can_edit`, 'can_delete', OLD.`can_delete`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'module_name', OLD.`module_name`, 'can_view', OLD.`can_view`, 'can_create', OLD.`can_create`, 'can_edit', OLD.`can_edit`, 'can_delete', OLD.`can_delete`, 'can_import', OLD.`can_import`, 'can_export', OLD.`can_export`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 

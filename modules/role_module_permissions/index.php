@@ -193,7 +193,7 @@ function cr_is_boolean_field($columnType, $fieldName) {
     if (preg_match('/^(bit|bool|boolean)\b/i', $type)) {
         return true;
     }
-    if (in_array((string)$fieldName, ['can_view', 'can_create', 'can_edit', 'can_delete'], true)) {
+    if (in_array((string)$fieldName, ['can_view', 'can_create', 'can_edit', 'can_delete', 'can_import', 'can_export'], true)) {
         return true;
     }
     return false;
@@ -218,7 +218,7 @@ function cr_render_cell_value($table, $field, $value, $displayValue = null) {
         return '<span class="badge ' . ($isClosed ? 'badge-danger' : 'badge-success') . '">' . ($isClosed ? 'Closed' : 'Open') . '</span>';
     }
 
-    if ($table === 'role_module_permissions' && in_array($field, ['can_view', 'can_create', 'can_edit', 'can_delete'], true)) {
+    if ($table === 'role_module_permissions' && in_array($field, ['can_view', 'can_create', 'can_edit', 'can_delete', 'can_import', 'can_export'], true)) {
         return ((int)$value === 1) ? '✅' : '❌';
     }
 
