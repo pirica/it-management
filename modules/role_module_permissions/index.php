@@ -199,6 +199,42 @@ function cr_is_boolean_field($columnType, $fieldName) {
     return false;
 }
 
+function cr_module_name_options($conn, $company_id) {
+    $options = ['ALL'];
+    $seen = ['ALL' => true];
+
+    foreach (glob(dirname(__DIR__) . '/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
+        $moduleKey = basename($moduleDir);
+        if ($moduleKey === '' || $moduleKey[0] === '.') {
+            continue;
+        }
+        $moduleLabel = ucwords(str_replace('_', ' ', $moduleKey));
+        if ($moduleLabel === '' || isset($seen[$moduleLabel])) {
+            continue;
+        }
+        $seen[$moduleLabel] = true;
+        $options[] = $moduleLabel;
+    }
+
+    $where = '';
+    if ($company_id > 0) {
+        $where = ' WHERE company_id=' . (int)$company_id;
+    }
+    $sql = 'SELECT DISTINCT module_name FROM ' . cr_escape_identifier('role_module_permissions') . $where . ' ORDER BY module_name';
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $moduleName = trim((string)($row['module_name'] ?? ''));
+        if ($moduleName === '' || isset($seen[$moduleName])) {
+            continue;
+        }
+        $seen[$moduleName] = true;
+        $options[] = $moduleName;
+    }
+
+    natcasesort($options);
+    return array_values($options);
+}
+
 function cr_render_cell_value($table, $field, $value, $displayValue = null) {
     if ($field === 'color') {
         $color = (string)($value ?? '');
@@ -949,6 +985,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif ($crud_table === 'role_module_permissions' && $name === 'module_name'): ?>
+                                <?php $moduleNameOptions = cr_module_name_options($conn, (int)$company_id); ?>
+                                <?php if ($displayVal !== '' && !in_array($displayVal, $moduleNameOptions, true)) { $moduleNameOptions[] = $displayVal; } ?>
+                                <select name="module_name">
+                                    <option value="">-- Select --</option>
+                                    <?php foreach ($moduleNameOptions as $moduleNameOption): ?>
+                                        <option value="<?php echo sanitize($moduleNameOption); ?>" <?php echo ((string)$displayVal === (string)$moduleNameOption) ? 'selected' : ''; ?>><?php echo sanitize($moduleNameOption); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options_with_current($conn, $fkMap[$name], (int)$company_id, $displayVal);
