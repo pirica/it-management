@@ -95,7 +95,7 @@ function esa_module_checked($ids, $id) {
                     <input type="hidden" name="id" value="<?php echo (int)$employeeId; ?>">
 
                     <div style="margin-bottom:10px;">
-                        <button type="button" class="btn btn-sm" id="esa-select-all-access">Select all</button>
+                        <button type="button" class="btn btn-sm" id="esa-select-all-access">Select All</button>
                     </div>
                     
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
@@ -122,11 +122,29 @@ function esa_module_checked($ids, $id) {
         return;
     }
 
+    const checkboxes = Array.from(document.querySelectorAll('input[name="system_access_ids[]"]'));
+    if (!checkboxes.length) {
+        selectAllButton.style.display = 'none';
+        return;
+    }
+
+    function updateButtonLabel() {
+        const allChecked = checkboxes.every(function (checkbox) { return checkbox.checked; });
+        selectAllButton.textContent = allChecked ? 'Deselect All' : 'Select All';
+    }
+
     selectAllButton.addEventListener('click', function () {
-        document.querySelectorAll('input[name="system_access_ids[]"]').forEach(function (checkbox) {
-            checkbox.checked = true;
+        const shouldCheckAll = !checkboxes.every(function (checkbox) { return checkbox.checked; });
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = shouldCheckAll;
         });
+        updateButtonLabel();
     });
+
+    checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateButtonLabel);
+    });
+    updateButtonLabel();
 })();
 </script>
 </body>

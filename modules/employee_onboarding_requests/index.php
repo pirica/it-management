@@ -2225,7 +2225,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="card" style="padding:14px;">
                         <div style="margin-bottom:10px;">
-                            <button type="button" class="btn btn-sm" id="onboarding-select-all-system-access">Select all system access</button>
+                            <button type="button" class="btn btn-sm" id="onboarding-select-all-system-access">Select All System Access</button>
                         </div>
                         <table>
                             <tbody>
@@ -2671,19 +2671,37 @@ document.addEventListener('change', function (event) {
         'vingcard_system'
     ];
 
+    const checkboxes = systemAccessFieldNames
+        .map(function (fieldName) {
+            return document.querySelector('input[type="checkbox"][name="' + fieldName + '"]');
+        })
+        .filter(Boolean);
+    if (!checkboxes.length) {
+        selectAllButton.style.display = 'none';
+        return;
+    }
+
+    function updateButtonLabel() {
+        const allChecked = checkboxes.every(function (checkbox) { return checkbox.checked; });
+        selectAllButton.textContent = allChecked ? 'Deselect All System Access' : 'Select All System Access';
+    }
+
     selectAllButton.addEventListener('click', function () {
-        systemAccessFieldNames.forEach(function (fieldName) {
-            const checkbox = document.querySelector('input[type="checkbox"][name="' + fieldName + '"]');
-            if (!checkbox) {
-                return;
-            }
-            checkbox.checked = true;
+        const shouldCheckAll = !checkboxes.every(function (checkbox) { return checkbox.checked; });
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = shouldCheckAll;
             const indicator = checkbox.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
             if (indicator) {
-                indicator.textContent = '✅';
+                indicator.textContent = shouldCheckAll ? '✅' : '❌';
             }
         });
+        updateButtonLabel();
     });
+
+    checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateButtonLabel);
+    });
+    updateButtonLabel();
 })();
 
 (function () {

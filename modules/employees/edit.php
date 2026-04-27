@@ -255,7 +255,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                     <!-- PERMISSION MANAGEMENT -->
                     <h3>System Access</h3>
                     <div style="margin-bottom:10px;">
-                        <button type="button" class="btn btn-sm" id="employees-edit-select-all-access">Select all</button>
+                        <button type="button" class="btn btn-sm" id="employees-edit-select-all-access">Select All</button>
                     </div>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
@@ -281,11 +281,29 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
         return;
     }
 
+    const checkboxes = Array.from(document.querySelectorAll('input[name="system_access_ids[]"]'));
+    if (!checkboxes.length) {
+        selectAllButton.style.display = 'none';
+        return;
+    }
+
+    function updateButtonLabel() {
+        const allChecked = checkboxes.every(function (checkbox) { return checkbox.checked; });
+        selectAllButton.textContent = allChecked ? 'Deselect All' : 'Select All';
+    }
+
     selectAllButton.addEventListener('click', function () {
-        document.querySelectorAll('input[name="system_access_ids[]"]').forEach(function (checkbox) {
-            checkbox.checked = true;
+        const shouldCheckAll = !checkboxes.every(function (checkbox) { return checkbox.checked; });
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = shouldCheckAll;
         });
+        updateButtonLabel();
     });
+
+    checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateButtonLabel);
+    });
+    updateButtonLabel();
 })();
 </script>
 </body>
