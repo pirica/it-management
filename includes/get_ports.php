@@ -134,7 +134,20 @@ function fetch_available_port_types(mysqli $conn): array
  */
 function fetch_default_fiber_name(mysqli $conn, int $companyId): string
 {
-    if (!itm_table_exists($conn, 'equipment_fiber')) {
+    $tableExists = function_exists('itm_table_exists')
+        ? (bool)itm_table_exists($conn, 'equipment_fiber')
+        : false;
+    if (!$tableExists) {
+        $tableCheckStmt = mysqli_prepare($conn, "SHOW TABLES LIKE 'equipment_fiber'");
+        if ($tableCheckStmt) {
+            mysqli_stmt_execute($tableCheckStmt);
+            $tableCheckRes = mysqli_stmt_get_result($tableCheckStmt);
+            $tableExists = $tableCheckRes && mysqli_num_rows($tableCheckRes) > 0;
+            mysqli_stmt_close($tableCheckStmt);
+        }
+    }
+
+    if (!$tableExists) {
         return '';
     }
 
@@ -194,10 +207,10 @@ function normalize_port_type(string $portType): string
     $normalized = str_replace(['+', '-', '/'], [' plus ', ' ', ' '], $normalized);
     $normalized = preg_replace('/\s+/', ' ', $normalized);
 
-    if (str_contains($normalized, 'sfp') && str_contains($normalized, 'plus')) {
+    if (strpos($normalized, 'sfp') !== false && strpos($normalized, 'plus') !== false) {
         return 'sfp_plus';
     }
-    if (str_contains($normalized, 'sfp')) {
+    if (strpos($normalized, 'sfp') !== false) {
         return 'sfp';
     }
     return 'rj45';
@@ -309,8 +322,10 @@ $fiberName = strtolower(trim((string)$switch['fiber_name']));
 if ($fiberCount > 0 && $fiberName === '') {
     $fiberName = fetch_default_fiber_name($conn, (int)$company_id);
 }
-$sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
-$sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
+$hasSfpPlusLabel = strpos($fiberName, 'sfp+') !== false;
+$hasSfpLabel = strpos($fiberName, 'sfp') !== false;
+$sfpCount = $hasSfpPlusLabel ? 0 : ($hasSfpLabel ? $fiberCount : 0);
+$sfpPlusCount = $hasSfpPlusLabel ? $fiberCount : 0;
 if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
 if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
 
