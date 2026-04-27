@@ -129,6 +129,50 @@ function fetch_available_port_types(mysqli $conn): array
 }
 
 /**
+ * Resolves the preferred default fiber label from equipment_fiber.name
+ * using tenant rows first, then global fallback rows.
+ */
+function fetch_default_fiber_name(mysqli $conn, int $companyId): string
+{
+    if (!itm_table_exists($conn, 'equipment_fiber')) {
+        return '';
+    }
+
+    $hasCompanyId = itm_table_has_column($conn, 'equipment_fiber', 'company_id');
+    $orderSql = "ORDER BY
+        CASE
+            WHEN LOWER(name) LIKE '%sfp+%' THEN 1
+            WHEN LOWER(name) LIKE '%sfp%' THEN 0
+            ELSE 2
+        END,
+        id ASC
+        LIMIT 1";
+
+    if ($hasCompanyId && $companyId > 0) {
+        $tenantSql = "SELECT name FROM equipment_fiber WHERE company_id = ? {$orderSql}";
+        $tenantStmt = mysqli_prepare($conn, $tenantSql);
+        if ($tenantStmt) {
+            mysqli_stmt_bind_param($tenantStmt, 'i', $companyId);
+            mysqli_stmt_execute($tenantStmt);
+            $tenantRes = mysqli_stmt_get_result($tenantStmt);
+            $tenantRow = $tenantRes ? mysqli_fetch_assoc($tenantRes) : null;
+            mysqli_stmt_close($tenantStmt);
+            if (is_array($tenantRow) && trim((string)($tenantRow['name'] ?? '')) !== '') {
+                return strtolower(trim((string)$tenantRow['name']));
+            }
+        }
+    }
+
+    $globalRes = mysqli_query($conn, "SELECT name FROM equipment_fiber {$orderSql}");
+    $globalRow = $globalRes ? mysqli_fetch_assoc($globalRes) : null;
+    if (is_array($globalRow) && trim((string)($globalRow['name'] ?? '')) !== '') {
+        return strtolower(trim((string)$globalRow['name']));
+    }
+
+    return '';
+}
+
+/**
  * Finds an ID in a list of items by name
  */
 function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
@@ -260,6 +304,11 @@ $fiberPortsNumber = (int)preg_replace('/\D+/', '', (string)$switch['fiber_ports_
 $legacyFiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
 $fiberCount = $fiberPortsNumber > 0 ? $fiberPortsNumber : $legacyFiberCount;
 $fiberName = strtolower(trim((string)$switch['fiber_name']));
+// Why: Legacy records may have Fiber Ports Number configured without a selected Fiber type.
+// Resolve the fallback label from equipment_fiber.name so seeding honors catalog values.
+if ($fiberCount > 0 && $fiberName === '') {
+    $fiberName = fetch_default_fiber_name($conn, (int)$company_id);
+}
 $sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
 $sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
 if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
