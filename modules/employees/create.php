@@ -214,6 +214,9 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
 
                     <!-- INTEGRATED SYSTEM ACCESS PERMISSIONS -->
                     <h3>System Access</h3>
+                    <div style="margin-bottom:10px;">
+                        <button type="button" class="btn btn-sm" id="employees-create-select-all-access">Select all</button>
+                    </div>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
                             <label class="role-flag-option">
@@ -230,6 +233,19 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
             </div>
         </div>
     </div>
-</div>
+<script>
+(function () {
+    const selectAllButton = document.getElementById('employees-create-select-all-access');
+    if (!selectAllButton) {
+        return;
+    }
+
+    selectAllButton.addEventListener('click', function () {
+        document.querySelectorAll('input[name="system_access_ids[]"]').forEach(function (checkbox) {
+            checkbox.checked = true;
+        });
+    });
+})();
+</script>
 </body>
 </html>

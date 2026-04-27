@@ -2224,6 +2224,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form method="POST" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="card" style="padding:14px;">
+                        <div style="margin-bottom:10px;">
+                            <button type="button" class="btn btn-sm" id="onboarding-select-all-system-access">Select all system access</button>
+                        </div>
                         <table>
                             <tbody>
                             <?php
@@ -2638,6 +2641,50 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+(function () {
+    const selectAllButton = document.getElementById('onboarding-select-all-system-access');
+    if (!selectAllButton) {
+        return;
+    }
+
+    const systemAccessFieldNames = [
+        'birchstreet',
+        'delphi',
+        'digital_rev',
+        'email_account',
+        'hu_the_lobby',
+        'landline_phone',
+        'micros_card',
+        'micros_emc',
+        'mobile_email',
+        'mobile_phone',
+        'navision',
+        'network_access',
+        'office_key_card',
+        'omina',
+        'onq_ri',
+        'opera',
+        'opera_username',
+        'pms_id',
+        'synergy_mms',
+        'vingcard_system'
+    ];
+
+    selectAllButton.addEventListener('click', function () {
+        systemAccessFieldNames.forEach(function (fieldName) {
+            const checkbox = document.querySelector('input[type="checkbox"][name="' + fieldName + '"]');
+            if (!checkbox) {
+                return;
+            }
+            checkbox.checked = true;
+            const indicator = checkbox.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
+            if (indicator) {
+                indicator.textContent = '✅';
+            }
+        });
+    });
+})();
 
 (function () {
     const departmentField = document.querySelector('select[name="department_name"]');

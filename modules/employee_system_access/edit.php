@@ -93,6 +93,10 @@ function esa_module_checked($ids, $id) {
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="id" value="<?php echo (int)$employeeId; ?>">
+
+                    <div style="margin-bottom:10px;">
+                        <button type="button" class="btn btn-sm" id="esa-select-all-access">Select all</button>
+                    </div>
                     
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
@@ -111,6 +115,19 @@ function esa_module_checked($ids, $id) {
             </div>
         </div>
     </div>
-</div>
+<script>
+(function () {
+    const selectAllButton = document.getElementById('esa-select-all-access');
+    if (!selectAllButton) {
+        return;
+    }
+
+    selectAllButton.addEventListener('click', function () {
+        document.querySelectorAll('input[name="system_access_ids[]"]').forEach(function (checkbox) {
+            checkbox.checked = true;
+        });
+    });
+})();
+</script>
 </body>
 </html>
