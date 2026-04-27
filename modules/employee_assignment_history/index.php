@@ -76,13 +76,20 @@ function cr_fk_options($conn, $fk, $company_id) {
     }
 
     if ($table === 'users' || $table === 'employees') {
+        $userWhere = $where;
+        if ($table === 'users' && in_array('company_id', $available, true) && $company_id > 0) {
+            $userWhere = ' WHERE (company_id=' . (int)$company_id
+                . " OR LOWER(COALESCE(username, ''))='admin'"
+                . " OR COALESCE((SELECT LOWER(COALESCE(ur.name, '')) FROM `user_roles` ur WHERE ur.id=`users`.role_id LIMIT 1), '')='admin')";
+        }
+
         $sql = 'SELECT '
             . cr_escape_identifier($col)
             . " AS id, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''), NULLIF(TRIM(COALESCE(username, '')), ''), CONCAT('User #', "
             . cr_escape_identifier($col)
             . ')) AS label FROM '
             . cr_escape_identifier($table)
-            . $where
+            . $userWhere
             . ' ORDER BY label';
     } else {
         $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
