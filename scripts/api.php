@@ -34,6 +34,7 @@
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
  * Inventory module UI now includes storage_date and read-only created/updated timestamps in create/edit flows,
+ * Inventory create/edit now includes a Last User employee selector (display_name) plus a manual fallback text input (varchar 100), stored in inventory_items.last_user_id and inventory_items.last_user_manual after Price (€).
  * and index list output hides item code while exposing storage_date and updated_at columns.
  * Patches Updates import endpoint now accepts multiple scanner-style header aliases and maps them to
  * expanded patches_updates fields for mixed Excel/CSV import layouts.

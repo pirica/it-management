@@ -30,6 +30,8 @@ $data = [
     'quantity_on_hand' => 0,
     'quantity_minimum' => 5,
     'price_eur' => '',
+    'last_user_id' => '',
+    'last_user_manual' => '',
     'active' => 1,
     'created_at' => '',
     'updated_at' => '',
@@ -82,6 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($supplier_post === '__add_new__') { $supplier_post = 0; }
     $supplier_id = (int)$supplier_post;
     $supplier_sql = $supplier_id ?: 'NULL';
+    $last_user_post = $_POST['last_user_id'] ?? 0;
+    if ($last_user_post === '__add_new__') { $last_user_post = 0; }
+    $last_user_id = (int)$last_user_post;
+    $last_user_sql = $last_user_id ?: 'NULL';
+    $last_user_manual_post = trim((string)($_POST['last_user_manual'] ?? ''));
+    $last_user_manual = $last_user_manual_post !== '' ? escape_sql($last_user_manual_post, $conn) : '';
+    $last_user_manual_sql = $last_user_manual !== '' ? "'$last_user_manual'" : 'NULL';
 
     // Parse numeric inputs.
     $quantity_on_hand = (int)($_POST['quantity_on_hand'] ?? 0);
@@ -107,13 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         quantity_on_hand=$quantity_on_hand,
                         quantity_minimum=$quantity_minimum,
                         price_eur=$price_eur,
+                        last_user_id=$last_user_sql,
+                        last_user_manual=$last_user_manual_sql,
                         active=$active
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO inventory_items
-                    (company_id,name,item_code,serial,storage_date,comments,category_id,location_id,manufacturer_id,supplier_id,quantity_on_hand,quantity_minimum,price_eur,active)
+                    (company_id,name,item_code,serial,storage_date,comments,category_id,location_id,manufacturer_id,supplier_id,quantity_on_hand,quantity_minimum,price_eur,last_user_id,last_user_manual,active)
                     VALUES
-                    ($company_id,'$name','$item_code','$serial'," . ($storage_date !== '' ? "'$storage_date'" : "NULL") . ",'$comments',$category_sql,$location_sql,$manufacturer_sql,$supplier_sql,$quantity_on_hand,$quantity_minimum,$price_eur,$active)";
+                    ($company_id,'$name','$item_code','$serial'," . ($storage_date !== '' ? "'$storage_date'" : "NULL") . ",'$comments',$category_sql,$location_sql,$manufacturer_sql,$supplier_sql,$quantity_on_hand,$quantity_minimum,$price_eur,$last_user_sql,$last_user_manual_sql,$active)";
         }
 
         $dbErrorCode = 0;
@@ -133,6 +144,37 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
 $locations = mysqli_query($conn, "SELECT id,name FROM it_locations WHERE company_id=$company_id AND active=1 ORDER BY name");
 $manufacturers = mysqli_query($conn, "SELECT id,name FROM manufacturers WHERE company_id=$company_id AND active=1 ORDER BY name");
 $suppliers = mysqli_query($conn, "SELECT id,name FROM suppliers WHERE company_id=$company_id AND active=1 ORDER BY name");
+$lastUsers = [];
+$lastUsersResult = mysqli_query($conn, "SELECT id, COALESCE(NULLIF(display_name, ''), CONCAT(first_name, ' ', last_name)) AS display_name FROM employees WHERE company_id=$company_id ORDER BY display_name");
+if ($lastUsersResult) {
+    while ($lastUserRow = mysqli_fetch_assoc($lastUsersResult)) {
+        $lastUsers[] = $lastUserRow;
+    }
+}
+
+$selectedLastUserId = (int)($data['last_user_id'] ?? 0);
+if ($selectedLastUserId > 0) {
+    $hasSelectedLastUser = false;
+    foreach ($lastUsers as $lastUserOption) {
+        if ((int)($lastUserOption['id'] ?? 0) === $selectedLastUserId) {
+            $hasSelectedLastUser = true;
+            break;
+        }
+    }
+
+    if (!$hasSelectedLastUser) {
+        $lastUserFallbackStmt = mysqli_prepare($conn, "SELECT id, COALESCE(NULLIF(display_name, ''), CONCAT(first_name, ' ', last_name)) AS display_name FROM employees WHERE id = ? LIMIT 1");
+        if ($lastUserFallbackStmt) {
+            mysqli_stmt_bind_param($lastUserFallbackStmt, 'i', $selectedLastUserId);
+            mysqli_stmt_execute($lastUserFallbackStmt);
+            $lastUserFallbackResult = mysqli_stmt_get_result($lastUserFallbackStmt);
+            if ($lastUserFallbackResult && ($lastUserFallbackRow = mysqli_fetch_assoc($lastUserFallbackResult))) {
+                $lastUsers[] = $lastUserFallbackRow;
+            }
+            mysqli_stmt_close($lastUserFallbackStmt);
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -275,6 +317,25 @@ $suppliers = mysqli_query($conn, "SELECT id,name FROM suppliers WHERE company_id
                             <label>Price (€)</label>
                             <input type="number" step="0.01" min="0" name="price_eur" value="<?php echo sanitize((string)($data['price_eur'] ?? '')); ?>">
                         </div>
+                        <div class="form-group">
+                            <label>Last User</label>
+                            <select name="last_user_id">
+                                <option value="">-- None --</option>
+                                <?php foreach ($lastUsers as $lastUser): ?>
+                                    <option value="<?php echo (int)$lastUser['id']; ?>" <?php echo (string)($data['last_user_id'] ?? '') === (string)$lastUser['id'] ? 'selected' : ''; ?>>
+                                        <?php echo sanitize((string)$lastUser['display_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                                <option value="__add_new__">➕</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Last User (Manual)</label>
+                            <input type="text" maxlength="100" name="last_user_manual" value="<?php echo sanitize((string)($data['last_user_manual'] ?? '')); ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="role-flag-option">
                                 <input type="checkbox" name="active" <?php echo (int)$data['active'] === 1 ? 'checked' : ''; ?>> 
