@@ -6,9 +6,9 @@
  * records defined for the company.
  */
 
-$crud_table = 'equipment_environment';
-$crud_title = 'Equipment Environment';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'equipment_environment';
+$crud_title = $crud_title ?? 'Equipment Environment';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';

@@ -54,6 +54,8 @@
  * Employee Assignment History now keeps Assigned/Received user labels non-empty by falling back to "User #<id>" when names are missing.
  * Added missing modules/equipment_environment CRUD entry files so the sidebar reference-data route now resolves
  * correctly and supports the standard JSON import handler used by js/table-tools.js.
+ * Equipment Environment wrapper routes (create/edit/view/delete/list_all) now preserve $crud_action set by wrapper
+ * files so entry screens no longer fall back to the index list view.
  */
 
 declare(strict_types=1);
