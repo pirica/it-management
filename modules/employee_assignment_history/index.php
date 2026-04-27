@@ -78,9 +78,9 @@ function cr_fk_options($conn, $fk, $company_id) {
     if ($table === 'users' || $table === 'employees') {
         $sql = 'SELECT '
             . cr_escape_identifier($col)
-            . " AS id, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''), NULLIF(TRIM(COALESCE(username, '')), ''), "
+            . " AS id, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''), NULLIF(TRIM(COALESCE(username, '')), ''), CONCAT('User #', "
             . cr_escape_identifier($col)
-            . ') AS label FROM '
+            . ')) AS label FROM '
             . cr_escape_identifier($table)
             . $where
             . ' ORDER BY label';
@@ -165,7 +165,14 @@ function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
         $res = mysqli_query($conn, $sql);
         if ($res && ($row = mysqli_fetch_assoc($res))) {
             $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-            return $fullName !== '' ? $fullName : ((string)($row['username'] ?? ''));
+            $username = trim((string)($row['username'] ?? ''));
+            if ($fullName !== '') {
+                return $fullName;
+            }
+            if ($username !== '') {
+                return $username;
+            }
+            return 'User #' . $id;
         }
 
         $fallbackSql = 'SELECT first_name,last_name,username FROM ' . cr_escape_identifier($table)
@@ -173,7 +180,14 @@ function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
         $fallbackRes = mysqli_query($conn, $fallbackSql);
         if ($fallbackRes && ($row = mysqli_fetch_assoc($fallbackRes))) {
             $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-            return $fullName !== '' ? $fullName : ((string)($row['username'] ?? ''));
+            $username = trim((string)($row['username'] ?? ''));
+            if ($fullName !== '') {
+                return $fullName;
+            }
+            if ($username !== '') {
+                return $username;
+            }
+            return 'User #' . $id;
         }
         return null;
     }
