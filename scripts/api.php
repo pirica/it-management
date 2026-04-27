@@ -41,6 +41,7 @@
  * host_mac_manufacturer to avoid mislabeling manufacturer data as a physical MAC address.
  * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
  * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
+ * Role Module Permissions now includes can_import/can_export flags so per-module access can explicitly control import/export actions.
  */
 
 declare(strict_types=1);
