@@ -56,6 +56,8 @@
  * correctly and supports the standard JSON import handler used by js/table-tools.js.
  * Equipment Environment wrapper routes (create/edit/view/delete/list_all) now preserve $crud_action set by wrapper
  * files so entry screens no longer fall back to the index list view.
+ * Added missing modules/equipment_fiber_count CRUD entry files so the reference-data route now supports
+ * create/edit/view/delete/list_all and the standard JSON import flow in js/table-tools.js.
  */
 
 declare(strict_types=1);
