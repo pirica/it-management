@@ -208,6 +208,50 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
+function cr_normalize_import_header($header) {
+    $header = strtolower(trim((string)$header));
+    $header = str_replace(['-', '/'], ' ', $header);
+    $header = preg_replace('/[^a-z0-9]+/', ' ', $header);
+    $header = trim((string)$header);
+    if ($header === '') {
+        return '';
+    }
+    return preg_replace('/\s+/', '_', $header);
+}
+
+function cr_import_header_aliases() {
+    return [
+        'id' => 'id_external',
+        'external_id' => 'id_external',
+        'id_external' => 'id_external',
+        'inncode' => 'inncode',
+        'incode' => 'inncode',
+        'dest' => 'dest',
+        'destination' => 'dest',
+        'dest_ip' => 'dest_ip',
+        'destination_ip' => 'dest_ip',
+        'severity' => 'severity',
+        'vuln_description' => 'vuln_description',
+        'vulnerability_description' => 'vuln_description',
+        'base_score' => 'base_score',
+        'remediation' => 'remediation',
+        'cve' => 'cve',
+        'host_ip' => 'host_ip',
+        'ip_address' => 'host_ip',
+        'host_mac' => 'host_mac_manufacturer',
+        'host_mac_manufacturer' => 'host_mac_manufacturer',
+        'mac_address' => 'host_mac_manufacturer',
+        'days_since_last_seen' => 'days_since_last_seen',
+        'host_health_score' => 'host_health_score',
+        'host_health_reason' => 'host_health_reason',
+        'host_resolution_priority' => 'host_resolution_priority',
+        'host_workload_type' => 'host_workload_type',
+        'operating_system' => 'operating_system',
+        'business_function' => 'business_function',
+        'data_source' => 'data_source',
+    ];
+}
+
 function cr_is_hidden_employee_field($field) {
     if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
         return false;
@@ -517,13 +561,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
         $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
         $columnKeys = [];
-        foreach ($headerRow as $headerValue) {
-            $columnKeys[] = strtolower(preg_replace('/\s+/', ' ', $headerValue));
+        $fieldByLabel = [];
+        $uiFieldNames = [];
+        foreach ($uiColumns as $col) {
+            $fieldName = (string)$col['Field'];
+            $uiFieldNames[$fieldName] = true;
+            $fieldByLabel[cr_normalize_import_header((string)cr_humanize_field($fieldName))] = $col;
+            $fieldByLabel[cr_normalize_import_header($fieldName)] = $col;
         }
 
-        $fieldByLabel = [];
-        foreach ($uiColumns as $col) {
-            $fieldByLabel[strtolower((string)cr_humanize_field($col['Field']))] = $col;
+        $headerAliases = cr_import_header_aliases();
+        foreach ($headerRow as $headerValue) {
+            $normalizedHeader = cr_normalize_import_header($headerValue);
+            if ($normalizedHeader !== '' && isset($headerAliases[$normalizedHeader])) {
+                $targetField = $headerAliases[$normalizedHeader];
+                if (isset($uiFieldNames[$targetField])) {
+                    $normalizedHeader = $targetField;
+                }
+            }
+            $columnKeys[] = $normalizedHeader;
         }
 
         $importColumns = [];

@@ -35,6 +35,11 @@
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
  * Inventory module UI now includes storage_date and read-only created/updated timestamps in create/edit flows,
  * and index list output hides item code while exposing storage_date and updated_at columns.
+ * Patches Updates import endpoint now accepts multiple scanner-style header aliases and maps them to
+ * expanded patches_updates fields for mixed Excel/CSV import layouts.
+ * Patches Updates scanner import stores vendor text from "Host MAC" columns in
+ * host_mac_manufacturer to avoid mislabeling manufacturer data as a physical MAC address.
+ * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
  */
 
 declare(strict_types=1);
