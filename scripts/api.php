@@ -30,9 +30,22 @@
  * Sidebar preference loading now reconciles legacy user_sidebar_preferences rows in DB so switch_ports is stored under reference_data above switch_status.
  * database.sql equipment seed rows were corrected to align VALUES counts with the 44-column equipment insert signature.
  * Equipment create/edit now renders Fiber Ports Number as a select with a quick-add (➕) option.
+ * Equipment switch manager summary now includes Rack/IDF/Location and uses the selected Fiber Ports label for SFP counts, while Fiber Patch/Fiber Rack/Fiber Port Label details are shown on SFP/SFP+ port tooltips.
+ * Switch port DOM metadata now includes Fiber Ports/Fiber Patch/Fiber Rack fields so selected SFP/SFP+ ports carry the expected data-* attributes and tooltip details.
+ * Switch Port Manager save flow now refreshes selected port fiber metadata in the DOM immediately after save, keeping tooltip Fiber fields in sync without requiring a page reload.
+ * Switch manager header summary now shows Hostname (instead of the prior Layout label) before RJ45/Fiber counts for clearer device identification.
+ * Switch manager header summary now hardcodes fiber count label as SFP whenever SFP ports exist, preventing fiber catalog names like "SFP 1 Gbps" from replacing the header label.
+ * Switch manager SFP section heading now stays fixed as "SFP Ports" so fiber catalog names do not rename the fiber row header.
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
+ * includes/get_ports.php now avoids PHP 8-only string helpers so the switch-port loader returns JSON correctly on PHP 7.4 environments.
+ * includes/get_ports.php now guards equipment_fiber table-existence checks when shared helpers are unavailable, preventing fatal errors that returned empty AJAX bodies.
+ * Equipment create/edit switch form now hides Fiber Ports/Fiber Patch/Fiber Rack/Fiber Port Label inputs while keeping Fiber Ports Number visible for switch sizing.
+ * Switch port seeding now resolves Fiber Ports Number-only fallback types from equipment_fiber.name (tenant-first, global fallback) when no fiber type is saved, so fiber ports are still auto-created without hardcoded labels.
+ * Switch Port Manager edit controls now stay hidden until a port is clicked; fiber-port clicks show Fiber Ports/Fiber Patch/Fiber Rack dropdowns (with quick-add), while RJ45 keeps VLAN controls.
+ * Switch Port Manager edit controls now keep VLAN visible for fiber ports so SFP/SFP+ updates can be assigned VLANs without switching port type.
+ * Switch Port Manager no longer renders the color legend block under port controls, keeping the panel focused on editable fields.
  * Inventory module UI now includes storage_date and read-only created/updated timestamps in create/edit flows,
  * Inventory create/edit now includes a Last User employee selector (display_name) plus a manual fallback text input (varchar 100), stored in inventory_items.last_user_id and inventory_items.last_user_manual after Price (€).
  * Inventory view now resolves Last User labels from employees (first_name + last_name, username fallback) with tenant-safe id fallback to avoid raw numeric user IDs in detail screens.

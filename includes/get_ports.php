@@ -129,6 +129,63 @@ function fetch_available_port_types(mysqli $conn): array
 }
 
 /**
+ * Resolves the preferred default fiber label from equipment_fiber.name
+ * using tenant rows first, then global fallback rows.
+ */
+function fetch_default_fiber_name(mysqli $conn, int $companyId): string
+{
+    $tableExists = function_exists('itm_table_exists')
+        ? (bool)itm_table_exists($conn, 'equipment_fiber')
+        : false;
+    if (!$tableExists) {
+        $tableCheckStmt = mysqli_prepare($conn, "SHOW TABLES LIKE 'equipment_fiber'");
+        if ($tableCheckStmt) {
+            mysqli_stmt_execute($tableCheckStmt);
+            $tableCheckRes = mysqli_stmt_get_result($tableCheckStmt);
+            $tableExists = $tableCheckRes && mysqli_num_rows($tableCheckRes) > 0;
+            mysqli_stmt_close($tableCheckStmt);
+        }
+    }
+
+    if (!$tableExists) {
+        return '';
+    }
+
+    $hasCompanyId = itm_table_has_column($conn, 'equipment_fiber', 'company_id');
+    $orderSql = "ORDER BY
+        CASE
+            WHEN LOWER(name) LIKE '%sfp+%' THEN 1
+            WHEN LOWER(name) LIKE '%sfp%' THEN 0
+            ELSE 2
+        END,
+        id ASC
+        LIMIT 1";
+
+    if ($hasCompanyId && $companyId > 0) {
+        $tenantSql = "SELECT name FROM equipment_fiber WHERE company_id = ? {$orderSql}";
+        $tenantStmt = mysqli_prepare($conn, $tenantSql);
+        if ($tenantStmt) {
+            mysqli_stmt_bind_param($tenantStmt, 'i', $companyId);
+            mysqli_stmt_execute($tenantStmt);
+            $tenantRes = mysqli_stmt_get_result($tenantStmt);
+            $tenantRow = $tenantRes ? mysqli_fetch_assoc($tenantRes) : null;
+            mysqli_stmt_close($tenantStmt);
+            if (is_array($tenantRow) && trim((string)($tenantRow['name'] ?? '')) !== '') {
+                return strtolower(trim((string)$tenantRow['name']));
+            }
+        }
+    }
+
+    $globalRes = mysqli_query($conn, "SELECT name FROM equipment_fiber {$orderSql}");
+    $globalRow = $globalRes ? mysqli_fetch_assoc($globalRes) : null;
+    if (is_array($globalRow) && trim((string)($globalRow['name'] ?? '')) !== '') {
+        return strtolower(trim((string)$globalRow['name']));
+    }
+
+    return '';
+}
+
+/**
  * Finds an ID in a list of items by name
  */
 function lookup_id_by_name(array $items, string $wanted, int $fallback = 0): int
@@ -150,10 +207,10 @@ function normalize_port_type(string $portType): string
     $normalized = str_replace(['+', '-', '/'], [' plus ', ' ', ' '], $normalized);
     $normalized = preg_replace('/\s+/', ' ', $normalized);
 
-    if (str_contains($normalized, 'sfp') && str_contains($normalized, 'plus')) {
+    if (strpos($normalized, 'sfp') !== false && strpos($normalized, 'plus') !== false) {
         return 'sfp_plus';
     }
-    if (str_contains($normalized, 'sfp')) {
+    if (strpos($normalized, 'sfp') !== false) {
         return 'sfp';
     }
     return 'rj45';
@@ -195,6 +252,9 @@ if (!$hasStatusId || !$hasColorId) {
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'cable_colors', 'color_name');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
+$fiberPorts = fetch_lookup_map($conn, 'equipment_fiber', 'name');
+$fiberPatches = fetch_lookup_map($conn, 'equipment_fiber_patch', 'name');
+$fiberRacks = fetch_lookup_map($conn, 'equipment_fiber_rack', 'name');
 if (empty($statuses) || empty($colors)) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'switch_status/cable_colors lookup tables are empty']);
@@ -257,8 +317,15 @@ $fiberPortsNumber = (int)preg_replace('/\D+/', '', (string)$switch['fiber_ports_
 $legacyFiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
 $fiberCount = $fiberPortsNumber > 0 ? $fiberPortsNumber : $legacyFiberCount;
 $fiberName = strtolower(trim((string)$switch['fiber_name']));
-$sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
-$sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
+// Why: Legacy records may have Fiber Ports Number configured without a selected Fiber type.
+// Resolve the fallback label from equipment_fiber.name so seeding honors catalog values.
+if ($fiberCount > 0 && $fiberName === '') {
+    $fiberName = fetch_default_fiber_name($conn, (int)$company_id);
+}
+$hasSfpPlusLabel = strpos($fiberName, 'sfp+') !== false;
+$hasSfpLabel = strpos($fiberName, 'sfp') !== false;
+$sfpCount = $hasSfpPlusLabel ? 0 : ($hasSfpLabel ? $fiberCount : 0);
+$sfpPlusCount = $hasSfpPlusLabel ? $fiberCount : 0;
 if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
 if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
 
@@ -478,6 +545,9 @@ echo json_encode([
     'statuses' => $statuses,
     'colors' => $colors,
     'vlans' => $vlans,
+    'fiber_ports' => $fiberPorts,
+    'fiber_patches' => $fiberPatches,
+    'fiber_racks' => $fiberRacks,
     'layout' => [
         'rj45' => $rj45Count,
         'sfp' => $sfpCount,
