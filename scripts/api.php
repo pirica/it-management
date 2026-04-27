@@ -40,6 +40,7 @@
  * Patches Updates scanner import stores vendor text from "Host MAC" columns in
  * host_mac_manufacturer to avoid mislabeling manufacturer data as a physical MAC address.
  * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
+ * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
  */
 
 declare(strict_types=1);
