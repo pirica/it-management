@@ -832,7 +832,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
+                                            <span title="<?php echo sanitize((string)$row[$f]); ?>">✏️</span>
                                         <?php elseif (isset($fkMap[$f]) && (string)($row[$f] ?? '') !== '' && (string)($row[$f] ?? '') !== '0'): ?>
                                             <?php
                                                 $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$company_id, (int)$row[$f]);

@@ -61,10 +61,10 @@
  * files so entry screens no longer fall back to the index list view.
  * Added missing modules/equipment_fiber_count CRUD entry files so the reference-data route now supports
  * create/edit/view/delete/list_all and the standard JSON import flow in js/table-tools.js.
- * Added missing modules/equipment_fiber CRUD entry files so create/edit/view/delete/list_all routes
- * resolve correctly and use the module index JSON import endpoint.
- * Equipment Fiber list view table now includes data-itm-db-import-endpoint="index.php" so
- * js/table-tools.js importRowsIntoDatabase can persist imported rows server-side.
+ * Added missing modules/equipment_poe CRUD entry files so PoE reference-data routes resolve create/edit/view/delete/list_all
+ * correctly and expose the standard JSON import handler consumed by js/table-tools.js.
+
+ * Inventory Items index now uses the same ✏️ glyph for non-empty comments tooltips used by other module edit affordances.
  */
 
 declare(strict_types=1);
