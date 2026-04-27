@@ -1579,11 +1579,11 @@ CREATE TABLE `inventory_items` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `inventory_items`
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '1', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '7', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '13', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '19', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '25', '1', '50', '10', '4.99', 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '1', '1', '50', '10', '4.99', NULL, NULL, 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '7', '1', '50', '10', '4.99', NULL, NULL, 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '13', '1', '50', '10', '4.99', NULL, NULL, 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '19', '1', '50', '10', '4.99', NULL, NULL, 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', '25', '1', '50', '10', '4.99', NULL, NULL, 'Stock for patching and desktop setups', '1', '1', '1', NULL, NULL);
 
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
@@ -3854,7 +3854,7 @@ LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_
 WHERE t.`company_id` = @replicate_source_company_id
   AND dt_target.`id` IS NOT NULL;
 INSERT IGNORE INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `comments`, `location_id`, `supplier_id`, `active`)
+INSERT IGNORE INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`)
 SELECT
     c.`id`,
     t.`name`,
@@ -3865,6 +3865,8 @@ SELECT
     t.`quantity_on_hand`,
     t.`quantity_minimum`,
     t.`price_eur`,
+    NULL,
+    t.`last_user_manual`,
     t.`comments`,
     l_target.`id`,
     s_target.`id`,
