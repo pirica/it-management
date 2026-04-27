@@ -134,7 +134,20 @@ function fetch_available_port_types(mysqli $conn): array
  */
 function fetch_default_fiber_name(mysqli $conn, int $companyId): string
 {
-    if (!itm_table_exists($conn, 'equipment_fiber')) {
+    $tableExists = function_exists('itm_table_exists')
+        ? (bool)itm_table_exists($conn, 'equipment_fiber')
+        : false;
+    if (!$tableExists) {
+        $tableCheckStmt = mysqli_prepare($conn, "SHOW TABLES LIKE 'equipment_fiber'");
+        if ($tableCheckStmt) {
+            mysqli_stmt_execute($tableCheckStmt);
+            $tableCheckRes = mysqli_stmt_get_result($tableCheckStmt);
+            $tableExists = $tableCheckRes && mysqli_num_rows($tableCheckRes) > 0;
+            mysqli_stmt_close($tableCheckStmt);
+        }
+    }
+
+    if (!$tableExists) {
         return '';
     }
 

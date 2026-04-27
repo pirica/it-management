@@ -36,6 +36,7 @@
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
  * includes/get_ports.php now avoids PHP 8-only string helpers so the switch-port loader returns JSON correctly on PHP 7.4 environments.
+ * includes/get_ports.php now guards equipment_fiber table-existence checks when shared helpers are unavailable, preventing fatal errors that returned empty AJAX bodies.
  * Equipment create/edit switch form now hides Fiber Ports/Fiber Patch/Fiber Rack/Fiber Port Label inputs while keeping Fiber Ports Number visible for switch sizing.
  * Switch port seeding now resolves Fiber Ports Number-only fallback types from equipment_fiber.name (tenant-first, global fallback) when no fiber type is saved, so fiber ports are still auto-created without hardcoded labels.
  * Switch Port Manager edit controls now stay hidden until a port is clicked; fiber-port clicks show Fiber Ports/Fiber Patch/Fiber Rack dropdowns (with quick-add), while RJ45 keeps VLAN controls.
