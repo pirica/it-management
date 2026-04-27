@@ -1,6 +1,6 @@
 # IT Management System
 
-A complete IT Asset Management System built with PHP and MySQL, featuring a GitHub Copilot-inspired UI theme with light and dark modes.
+A complete IT Asset Management System built with PHP and MySQL, multi-company support.
 
 ## Features
 
