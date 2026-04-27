@@ -304,6 +304,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $fieldByLabel[strtolower(str_replace('_', ' ', $fieldName))] = $col;
         }
         $fieldByLabel['id'] = null;
+        if (($GLOBALS['crud_table'] ?? '') === 'patches_updates_level' && isset($fieldByLabel['level'])) {
+            // Why: Preserve import compatibility with legacy exports that used "Name" before schema cleanup.
+            $fieldByLabel['name'] = $fieldByLabel['level'];
+        }
 
         $importColumns = [];
         foreach ($columnKeys as $labelKey) {

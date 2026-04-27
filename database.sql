@@ -1851,40 +1851,40 @@ DROP TABLE IF EXISTS `patches_updates_level`;
 CREATE TABLE `patches_updates_level` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int DEFAULT NULL,
-  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `level` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `patches_updates_level_company_level_unique` (`company_id`,`level`),
   KEY `patches_updates_level_company_idx` (`company_id`),
   CONSTRAINT `patches_updates_level_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `patches_updates_level`
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','1','Critical','Critical');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','2','High','High');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','3','Medium','Medium');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','4','Low','Low');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('1','5','Other','Other');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','6','Critical','Critical');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','7','High','High');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','8','Medium','Medium');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','9','Low','Low');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('2','10','Other','Other');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','11','Critical','Critical');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','12','High','High');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','13','Medium','Medium');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','14','Low','Low');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('3','15','Other','Other');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','16','Critical','Critical');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','17','High','High');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','18','Medium','Medium');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','19','Low','Low');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('4','20','Other','Other');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','21','Critical','Critical');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','22','High','High');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','23','Medium','Medium');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','24','Low','Low');
-INSERT INTO `patches_updates_level` (`company_id`,`id`,`name`,`level`) VALUES ('5','25','Other','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','1','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','2','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','3','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','4','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','5','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('2','6','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('2','7','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('2','8','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('2','9','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('2','10','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('3','11','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('3','12','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('3','13','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('3','14','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('3','15','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('4','16','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('4','17','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('4','18','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('4','19','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('4','20','Other');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','21','Critical');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','22','High');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','23','Medium');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','24','Low');
+INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','25','Other');
 
 -- Table structure for `patches_updates`
 DROP TABLE IF EXISTS `patches_updates`;
@@ -3728,7 +3728,7 @@ INSERT IGNORE INTO `user_roles` (`company_id`, `name`) SELECT c.`id`, t.`name` F
 INSERT IGNORE INTO `warranty_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `warranty_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `idf_device_type` (`company_id`, `idfdevicetype_name`) SELECT c.`id`, t.`idfdevicetype_name` FROM `idf_device_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `patches_updates_status` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `patches_updates_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `patches_updates_level` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `patches_updates_level` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `patches_updates_level` (`company_id`, `level`) SELECT c.`id`, t.`level` FROM `patches_updates_level` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `workstation_device_types` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `workstation_modes` (`company_id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) SELECT c.`id`, t.`mode_name`, t.`mode_code`, t.`description`, t.`monitor_count`, t.`has_keyboard_mouse`, t.`pos`, t.`active` FROM `workstation_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `workstation_office` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `workstation_office` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -4580,15 +4580,15 @@ DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_patches_updates_level_audit_insert` AFTER INSERT ON `patches_updates_level` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'level', NEW.`level`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'level', NEW.`level`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_patches_updates_level_audit_update` AFTER UPDATE ON `patches_updates_level` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'level', OLD.`level`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'level', NEW.`level`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'level', OLD.`level`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'level', NEW.`level`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_patches_updates_level_audit_delete` AFTER DELETE ON `patches_updates_level` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'level', OLD.`level`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'level', OLD.`level`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 
