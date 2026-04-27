@@ -61,9 +61,8 @@
  * files so entry screens no longer fall back to the index list view.
  * Added missing modules/equipment_fiber_count CRUD entry files so the reference-data route now supports
  * create/edit/view/delete/list_all and the standard JSON import flow in js/table-tools.js.
-
- * Added missing modules/equipment_rj45 CRUD entry files (including legacy list.php alias) so
- * create/edit/view/delete/list flows now resolve correctly for RJ45 reference data routes.
+ * Added missing modules/equipment_poe CRUD entry files so PoE reference-data routes resolve create/edit/view/delete/list_all
+ * correctly and expose the standard JSON import handler consumed by js/table-tools.js.
  */
 
 declare(strict_types=1);
