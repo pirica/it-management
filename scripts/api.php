@@ -30,6 +30,7 @@
  * Sidebar preference loading now reconciles legacy user_sidebar_preferences rows in DB so switch_ports is stored under reference_data above switch_status.
  * database.sql equipment seed rows were corrected to align VALUES counts with the 44-column equipment insert signature.
  * Equipment create/edit now renders Fiber Ports Number as a select with a quick-add (➕) option.
+ * Equipment switch manager summary now includes Rack/IDF/Location plus Fiber Patch/Fiber Rack/Fiber Port Label context, and the fiber section title reflects the selected Fiber Ports option.
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.

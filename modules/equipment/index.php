@@ -166,14 +166,24 @@ if ($enableSwitchPortManager) {
         "SELECT e.id, e.name, COALESCE(e.hostname, '') AS hostname,
                 COALESCE(er.name, '24 ports') AS rj45_name,
                 COALESCE(ef.name, '') AS fiber_name,
+                COALESCE(efp.name, '') AS fiber_patch_name,
+                COALESCE(efr.name, '') AS fiber_rack_name,
                 COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
                 {$switchFiberPortLabelSelect} AS fiber_port_label,
-                COALESCE(spnl.name, 'Vertical') AS port_numbering_layout
+                COALESCE(spnl.name, 'Vertical') AS port_numbering_layout,
+                COALESCE(r.name, '') AS rack_name,
+                COALESCE(idf.name, '') AS idf_name,
+                COALESCE(l.name, '') AS location_name
          FROM equipment e
          INNER JOIN equipment_types et ON et.id = e.equipment_type_id
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
          LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+         LEFT JOIN equipment_fiber_patch efp ON efp.id = e.switch_fiber_patch_id
+         LEFT JOIN equipment_fiber_rack efr ON efr.id = e.switch_fiber_rack_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
+         LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
+         LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
+         LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
          WHERE e.company_id = $company_id
            AND LOWER(TRIM(et.name)) LIKE '%switch%'
          ORDER BY e.name ASC"
@@ -516,6 +526,10 @@ if (!empty($_SESSION['crud_success'])) {
             return availablePortTypes.indexOf(type) !== -1;
         }
 
+        function readSwitchMeta(key) {
+            return String((selectedSwitchMeta && selectedSwitchMeta[key]) || '').trim();
+        }
+
         function buildLayoutSummary(layoutLabel, rj45Count, sfpCount, sfpPlusCount) {
             const parts = ['Layout: ' + layoutLabel, 'RJ45: ' + rj45Count];
             if (hasPortType('sfp') && Number(sfpCount) > 0) {
@@ -523,6 +537,34 @@ if (!empty($_SESSION['crud_success'])) {
             }
             if (hasPortType('sfp_plus') && Number(sfpPlusCount) > 0) {
                 parts.push('SFP+: ' + sfpPlusCount);
+            }
+            const rackName = readSwitchMeta('rack_name');
+            if (rackName !== '') {
+                parts.push('Rack: ' + rackName);
+            }
+            const idfName = readSwitchMeta('idf_name');
+            if (idfName !== '') {
+                parts.push('IDF: ' + idfName);
+            }
+            const locationName = readSwitchMeta('location_name');
+            if (locationName !== '') {
+                parts.push('Location: ' + locationName);
+            }
+            const fiberParts = [];
+            const fiberPatch = readSwitchMeta('fiber_patch_name');
+            const fiberRack = readSwitchMeta('fiber_rack_name');
+            const fiberPortLabel = readSwitchMeta('fiber_port_label');
+            if (fiberPatch !== '') {
+                fiberParts.push('Fiber Patch: ' + fiberPatch);
+            }
+            if (fiberRack !== '') {
+                fiberParts.push('Fiber Rack: ' + fiberRack);
+            }
+            if (fiberPortLabel !== '') {
+                fiberParts.push('Fiber Port Label: ' + fiberPortLabel);
+            }
+            if (fiberParts.length > 0) {
+                parts.push(fiberParts.join(' | '));
             }
             return parts.join(' | ');
         }
@@ -910,6 +952,9 @@ if (!empty($_SESSION['crud_success'])) {
             renderFiberPortsByLayout(sfpPlusRow, sfpPlusRowAlt, sfpPlusPorts);
             const showSfp = hasPortType('sfp') && sfpPorts.length > 0;
             const showSfpPlus = hasPortType('sfp_plus') && sfpPlusPorts.length > 0;
+            const fiberPortTypeLabel = readSwitchMeta('fiber_name');
+            const sfpLabelText = fiberPortTypeLabel !== '' ? (fiberPortTypeLabel + ' Ports') : 'SFP Ports';
+            document.getElementById('switchSfpLabel').textContent = sfpLabelText;
             document.getElementById('switchSfpLabel').style.display = showSfp ? 'block' : 'none';
             sfpRow.style.display = showSfp ? 'flex' : 'none';
             sfpRowAlt.style.display = showSfp ? sfpRowAlt.style.display : 'none';
