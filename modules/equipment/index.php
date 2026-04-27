@@ -1033,9 +1033,7 @@ if (!empty($_SESSION['crud_success'])) {
             renderFiberPortsByLayout(sfpPlusRow, sfpPlusRowAlt, sfpPlusPorts);
             const showSfp = hasPortType('sfp') && sfpPorts.length > 0;
             const showSfpPlus = hasPortType('sfp_plus') && sfpPlusPorts.length > 0;
-            const fiberPortTypeLabel = readSwitchMeta('fiber_name');
-            const sfpLabelText = fiberPortTypeLabel !== '' ? (fiberPortTypeLabel + ' Ports') : 'SFP Ports';
-            document.getElementById('switchSfpLabel').textContent = sfpLabelText;
+            document.getElementById('switchSfpLabel').textContent = 'SFP Ports';
             document.getElementById('switchSfpLabel').style.display = showSfp ? 'block' : 'none';
             sfpRow.style.display = showSfp ? 'flex' : 'none';
             sfpRowAlt.style.display = showSfp ? sfpRowAlt.style.display : 'none';
