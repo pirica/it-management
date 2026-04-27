@@ -35,7 +35,7 @@
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
- * Equipment create/edit switch form now hides Fiber Ports/Fiber Patch/Fiber Rack/Fiber Port Label inputs to simplify switch data entry.
+ * Equipment create/edit switch form now hides Fiber Ports/Fiber Patch/Fiber Rack/Fiber Port Label inputs while keeping Fiber Ports Number visible for switch sizing.
  * Switch Port Manager edit controls now stay hidden until a port is clicked; fiber-port clicks show Fiber Ports/Fiber Patch/Fiber Rack dropdowns (with quick-add), while RJ45 keeps VLAN controls.
  * Inventory module UI now includes storage_date and read-only created/updated timestamps in create/edit flows,
  * Inventory create/edit now includes a Last User employee selector (display_name) plus a manual fallback text input (varchar 100), stored in inventory_items.last_user_id and inventory_items.last_user_manual after Price (€).
