@@ -46,6 +46,18 @@ if (!$employee) {
 // Load reference data
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
+$workstationModeOptions = mysqli_query($conn, 'SELECT mode_name FROM workstation_modes WHERE company_id=' . (int)$company_id . ' ORDER BY pos, mode_name');
+$workstationModeNames = [];
+if ($workstationModeOptions) {
+    while ($modeRow = mysqli_fetch_assoc($workstationModeOptions)) {
+        $modeName = trim((string)($modeRow['mode_name'] ?? ''));
+        if ($modeName !== '') {
+            $workstationModeNames[$modeName] = $modeName;
+        }
+    }
+}
+$workstationModesColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'workstation_modes'");
+$hasWorkstationModesColumn = $workstationModesColumnRes && mysqli_num_rows($workstationModesColumnRes) === 1;
 esa_ensure_table($conn);
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, true);
 $csrfToken = itm_get_csrf_token();
@@ -63,6 +75,7 @@ $form = [
     'department_id' => (string)($employee['department_id'] ?? ''),
     'raw_status_code' => (string)($employee['raw_status_code'] ?? 'A'),
     'employment_status_id' => (string)($employee['employment_status_id'] ?? '1'),
+    'workstation_modes' => (string)($employee['workstation_modes'] ?? ''),
     'comments' => (string)($employee['comments'] ?? ''),
     'office_key_card_department_id' => (string)($employee['office_key_card_department_id'] ?? ''),
 ];
@@ -98,14 +111,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $officeDeptId = $form['office_key_card_department_id'] === '' ? 'NULL' : (string)(int)$form['office_key_card_department_id'];
         $rawStatusCode = $form['raw_status_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['raw_status_code']) . "'";
         $employmentStatusId = $form['employment_status_id'] === '' ? '1' : (string)(int)$form['employment_status_id'];
+        $workstationModes = $form['workstation_modes'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['workstation_modes']) . "'";
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
+        $workstationModesSql = $hasWorkstationModesColumn ? ", workstation_modes={$workstationModes}" : '';
 
         $sql = "UPDATE employees SET
             first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
             email={$email}, external_id={$externalId}, username={$username},
             department_id={$departmentId}, job_code={$jobCode}, job_title={$jobTitle},
-            comments={$comments}, raw_status_code={$rawStatusCode},
-            employment_status_id={$employmentStatusId}, office_key_card_department_id={$officeDeptId}
+            raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
+            office_key_card_department_id={$officeDeptId}{$workstationModesSql},
+            comments={$comments}
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
@@ -191,6 +207,18 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         </div>
                     </div>
 
+                    <div class="form-group" style="margin-top:12px;"><label>Workstation Modes</label>
+                        <select name="workstation_modes" data-addable-select="1" data-add-table="workstation_modes" data-add-id-col="mode_name" data-add-label-col="mode_name" data-add-company-scoped="1" data-add-friendly="workstation mode">
+                            <option value="">-- None --</option>
+                            <?php foreach ($workstationModeNames as $modeName): ?>
+                                <option value="<?php echo sanitize($modeName); ?>" <?php echo ($modeName === (string)$form['workstation_modes']) ? 'selected' : ''; ?>><?php echo sanitize($modeName); ?></option>
+                            <?php endforeach; ?>
+                            <?php if ($form['workstation_modes'] !== '' && !isset($workstationModeNames[(string)$form['workstation_modes']])): ?>
+                                <option value="<?php echo sanitize($form['workstation_modes']); ?>" selected><?php echo sanitize($form['workstation_modes']); ?></option>
+                            <?php endif; ?>
+                            <option value="__add_new__">➕</option>
+                        </select>
+                    </div>
                     <div class="form-group" style="margin-top:12px;"><label>Comments</label><textarea name="comments" rows="3"><?php echo sanitize($form['comments']); ?></textarea></div>
 
                     <!-- PERMISSION MANAGEMENT -->
