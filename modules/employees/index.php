@@ -452,7 +452,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','comments'];
+$preferredOrder = ['id','duplicate','external_id','username','display_name','email','raw_status_code','first_name','last_name','job_code','job_title','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','workstation_mode_id','assignment_type_id','comments'];
 $hiddenColumns = ['company_id','employee_code','location','phone','location_id','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
@@ -486,6 +486,8 @@ $countSql = 'SELECT COUNT(*) AS total
              FROM employees e
              LEFT JOIN departments d ON d.id = e.department_id
              LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
+             LEFT JOIN workstation_modes wm ON wm.id = e.workstation_mode_id AND wm.company_id = e.company_id
+             LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id
              LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
              . $where;
 $countResult = mysqli_query($conn, $countSql);
@@ -500,13 +502,15 @@ if ($page > $totalPages) {
 // Final Fetch including lookups and system access data
 $rows = mysqli_query(
     $conn,
-    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name,
+    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
             esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
             esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
             esa.digital_rev, esa.office_key_card
      FROM employees e
      LEFT JOIN departments d ON d.id = e.department_id
      LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
+     LEFT JOIN workstation_modes wm ON wm.id = e.workstation_mode_id AND wm.company_id = e.company_id
+     LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id
      LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id'
     . $where .
     ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset
@@ -518,6 +522,8 @@ $rows = mysqli_query(
 function emp_label($field) {
     if ($field === 'department_id') return 'Department Name';
     if ($field === 'employment_status_id') return 'Employment Status';
+    if ($field === 'workstation_mode_id') return 'Workstation Mode';
+    if ($field === 'assignment_type_id') return 'Assignment Type';
     if ($field === 'external_id') return 'External ID';
     return ucwords(str_replace('_', ' ', trim((string)$field)));
 }
@@ -639,6 +645,8 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                         <a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
                                     <?php elseif ($col === 'department_id'): ?><?php echo sanitize((string)($row['department_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employment_status_id'): ?><?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'workstation_mode_id'): ?><?php echo sanitize((string)($row['workstation_mode_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'assignment_type_id'): ?><?php echo sanitize((string)($row['assignment_type_name'] ?? '')); ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
