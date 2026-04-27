@@ -577,6 +577,49 @@ CREATE TABLE `approvers` (
 INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `approver_type_id`, `active`) VALUES ('1', '1', '1', '1', '1', '1', '1');
 INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `approver_type_id`, `active`) VALUES ('2', '1', '2', '2', '1', '2', '1');
 
+-- Table structure for `employee_assignment_history`
+DROP TABLE IF EXISTS `employee_assignment_history`;
+CREATE TABLE `employee_assignment_history` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `equipment_id` int DEFAULT NULL,
+  `inventory_item_id` int DEFAULT NULL,
+  `asset_description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sim_imei` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `assigned_date` date NOT NULL,
+  `returned_date` date DEFAULT NULL,
+  `condition_on_return` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `signed_handover` tinyint(1) NOT NULL DEFAULT '0',
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `assigned_by_user_id` int DEFAULT NULL,
+  `received_by_user_id` int DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_employee_assignment_history_company` (`company_id`),
+  KEY `idx_employee_assignment_history_employee` (`employee_id`),
+  KEY `idx_employee_assignment_history_equipment` (`equipment_id`),
+  KEY `idx_employee_assignment_history_inventory_item` (`inventory_item_id`),
+  KEY `idx_employee_assignment_history_assigned_by` (`assigned_by_user_id`),
+  KEY `idx_employee_assignment_history_received_by` (`received_by_user_id`),
+  CONSTRAINT `employee_assignment_history_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `employee_assignment_history_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `employee_assignment_history_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `employee_assignment_history_ibfk_inventory_item` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `employee_assignment_history_ibfk_assigned_by_user` FOREIGN KEY (`assigned_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `employee_assignment_history_ibfk_received_by_user` FOREIGN KEY (`received_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `employee_assignment_history`
+INSERT INTO `employee_assignment_history` (`id`, `company_id`, `employee_id`, `asset_description`, `sim_imei`, `assigned_date`, `returned_date`, `condition_on_return`, `signed_handover`, `comments`, `assigned_by_user_id`, `received_by_user_id`, `active`) VALUES
+(1, 1, 1, 'Laptop Dell Latitude 7420', NULL, '2026-01-15', NULL, NULL, 1, 'Primary company laptop assigned during onboarding.', 1, 1, 1),
+(2, 2, 6, 'iPhone 14 Pro', '356112223334445', '2026-02-01', NULL, NULL, 1, 'Corporate mobile with active SIM card.', 1, 1, 1),
+(3, 3, 10, 'Office key card - Main entrance', NULL, '2026-02-10', '2026-04-10', 'Good', 1, 'Returned after department transfer.', 1, 1, 1),
+(4, 4, 13, 'HP LaserJet printer', NULL, '2026-03-05', NULL, NULL, 0, 'Shared printer assigned to front desk supervisor.', 1, NULL, 1),
+(5, 5, 16, 'SIM card only', '352099001122334', '2026-03-20', NULL, NULL, 1, 'Data-only SIM issued for field device.', 1, 1, 1);
+
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
 CREATE TABLE `employee_onboarding_requests` (
@@ -2068,6 +2111,7 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'employee_system_access' AS entry_id, 'employee' AS section_id, 1 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'system_access' AS entry_id, 'employee' AS section_id, 2 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'departments' AS entry_id, 'employee' AS section_id, 3 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'employee_assignment_history' AS entry_id, 'employee' AS section_id, 4 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'budget_categories' AS entry_id, 'budgeting' AS section_id, 0 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'cost_centers' AS entry_id, 'budgeting' AS section_id, 1 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'gl_accounts' AS entry_id, 'budgeting' AS section_id, 2 AS display_order

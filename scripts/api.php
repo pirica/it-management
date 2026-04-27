@@ -43,6 +43,7 @@
  * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
  * Role Module Permissions now includes can_import/can_export flags so per-module access can explicitly control import/export actions.
  * Role Module Permissions create/edit now render module_name as a predefined select list (no quick-add option) to keep permission targets consistent.
+ * Added employee_assignment_history module to track per-employee handover history for laptops, phones, printers, key cards, and SIM IMEI records.
  */
 
 declare(strict_types=1);
@@ -158,6 +159,7 @@ $projectJsonEndpoints = [
     ['method' => 'POST', 'path' => 'includes/get_ports.php', 'purpose' => 'Fetch/seed switch ports and lookup metadata.'],
     ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update a switch port label/status/color/vlan/comments.'],
     ['method' => 'GET',  'path' => 'modules/idfs/index.php?refresh_select_options=rack|location', 'purpose' => 'Refresh select options for IDF forms.'],
+    ['method' => 'POST', 'path' => 'modules/employee_assignment_history/index.php', 'purpose' => 'Employee Assignment History save-to-database import endpoint (JSON rows from table-tools).'],
     ['method' => 'POST', 'path' => 'scripts/test_sql_injection.php', 'purpose' => 'Security test helper endpoint used during audits.'],
     ['method' => 'GET', 'path' => 'scripts/DBdesign.php?format=html|mermaid|json', 'purpose' => 'Generate database.sql ER diagram output (drawdb-style viewer, Mermaid, or JSON).'],
 ];
