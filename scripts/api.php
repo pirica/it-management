@@ -44,6 +44,8 @@
  * Role Module Permissions now includes can_import/can_export flags so per-module access can explicitly control import/export actions.
  * Role Module Permissions create/edit now render module_name as a predefined select list (no quick-add option) to keep permission targets consistent.
  * Added employee_assignment_history module to track per-employee handover history for laptops, phones, printers, key cards, and SIM IMEI records.
+ * Employee Assignment History now accepts JSON imports even when clients omit JSON content-type headers,
+ * and resolves FK display labels/user full names with tenant-safe fallback-by-id behavior in list/detail/edit flows.
  */
 
 declare(strict_types=1);
