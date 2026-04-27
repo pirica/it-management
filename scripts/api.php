@@ -40,7 +40,7 @@
  * Patches Updates scanner import stores vendor text from "Host MAC" columns in
  * host_mac_manufacturer to avoid mislabeling manufacturer data as a physical MAC address.
  * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
- * Employees edit flow now includes a workstation_modes dropdown (mode_name list + quick-add option) before comments and persists it when the employees table exposes that column.
+ * Employees create/edit/view now use a workstation_mode_id relation to workstation_modes (mode_name select + quick-add in forms, label rendering in detail view).
  * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
  * Role Module Permissions now includes can_import/can_export flags so per-module access can explicitly control import/export actions.
  * Role Module Permissions create/edit now render module_name as a predefined select list (no quick-add option) to keep permission targets consistent.

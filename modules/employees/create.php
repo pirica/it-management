@@ -27,6 +27,17 @@ function emp_drop_email_unique_if_exists($conn) {
 // Pre-fetch lookups for form dropdowns
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 $departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
+$workstationModeOptions = mysqli_query($conn, 'SELECT id, mode_name FROM workstation_modes WHERE company_id=' . (int)$company_id . ' ORDER BY pos, mode_name');
+$workstationModeLookup = [];
+if ($workstationModeOptions) {
+    while ($modeRow = mysqli_fetch_assoc($workstationModeOptions)) {
+        $modeId = (int)($modeRow['id'] ?? 0);
+        $modeName = trim((string)($modeRow['mode_name'] ?? ''));
+        if ($modeId > 0 && $modeName !== '') {
+            $workstationModeLookup[$modeId] = $modeName;
+        }
+    }
+}
 esa_ensure_table($conn);
 $systemAccessCatalog = esa_get_system_access_catalog($conn, (int)$company_id, false);
 $csrfToken = itm_get_csrf_token();
@@ -35,7 +46,7 @@ $errors = [];
 $form = [
     'first_name' => '', 'last_name' => '', 'display_name' => '', 'email' => '', 'external_id' => '',
     'username' => '', 'job_code' => '', 'job_title' => '', 'department_id' => '', 'raw_status_code' => 'A',
-    'employment_status_id' => '1', 'comments' => '', 'office_key_card_department_id' => '',
+    'employment_status_id' => '1', 'workstation_mode_id' => '', 'comments' => '', 'office_key_card_department_id' => '',
 ];
 
 $selectedSystemAccessIds = [];
@@ -72,15 +83,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $officeDeptId = $form['office_key_card_department_id'] === '' ? 'NULL' : (string)(int)$form['office_key_card_department_id'];
         $rawStatusCode = $form['raw_status_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['raw_status_code']) . "'";
         $employmentStatusId = $form['employment_status_id'] === '' ? '1' : (string)(int)$form['employment_status_id'];
+        $workstationModeId = $form['workstation_mode_id'] === '' ? 'NULL' : (string)(int)$form['workstation_mode_id'];
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, email, external_id, username,
             department_id, job_code, job_title, comments, raw_status_code, employment_status_id,
-            office_key_card_department_id
+            office_key_card_department_id, workstation_mode_id
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$email}, {$externalId}, {$username},
             {$departmentId}, {$jobCode}, {$jobTitle}, {$comments}, {$rawStatusCode}, {$employmentStatusId},
-            {$officeDeptId}
+            {$officeDeptId}, {$workstationModeId}
         )";
 
         if (mysqli_query($conn, $sql)) {
@@ -166,6 +178,15 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         </div>
                     </div>
 
+                    <div class="form-group" style="margin-top:12px;"><label>Workstation Mode</label>
+                        <select name="workstation_mode_id" data-addable-select="1" data-add-table="workstation_modes" data-add-id-col="id" data-add-label-col="mode_name" data-add-company-scoped="1" data-add-friendly="workstation mode">
+                            <option value="">-- None --</option>
+                            <?php foreach ($workstationModeLookup as $modeId => $modeName): ?>
+                                <option value="<?php echo (int)$modeId; ?>" <?php echo ((string)$modeId === (string)$form['workstation_mode_id']) ? 'selected' : ''; ?>><?php echo sanitize($modeName); ?></option>
+                            <?php endforeach; ?>
+                            <option value="__add_new__">➕</option>
+                        </select>
+                    </div>
                     <div class="form-group" style="margin-top:12px;"><label>Comments</label><textarea name="comments" rows="3"><?php echo sanitize($form['comments']); ?></textarea></div>
 
                     <!-- INTEGRATED SYSTEM ACCESS PERMISSIONS -->
