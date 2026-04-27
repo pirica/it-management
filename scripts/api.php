@@ -50,6 +50,7 @@
  * Added employee_assignment_history module to track per-employee handover history for laptops, phones, printers, key cards, and SIM IMEI records.
  * Employee Assignment History now accepts JSON imports even when clients omit JSON content-type headers,
  * and resolves FK display labels/user full names with tenant-safe fallback-by-id behavior in list/detail/edit flows.
+ * Employee Assignment History employee/user FK dropdowns now render full names (first_name + last_name, username fallback) so edit forms do not show raw SQL-like label text.
  * Added missing modules/equipment_environment CRUD entry files so the sidebar reference-data route now resolves
  * correctly and supports the standard JSON import handler used by js/table-tools.js.
  */
