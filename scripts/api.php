@@ -34,6 +34,8 @@
  * Switch port DOM metadata now includes Fiber Ports/Fiber Patch/Fiber Rack fields so selected SFP/SFP+ ports carry the expected data-* attributes and tooltip details.
  * Switch Port Manager save flow now refreshes selected port fiber metadata in the DOM immediately after save, keeping tooltip Fiber fields in sync without requiring a page reload.
  * Switch manager header summary now shows Hostname (instead of the prior Layout label) before RJ45/Fiber counts for clearer device identification.
+ * Switch manager header summary now hardcodes fiber count label as SFP whenever SFP ports exist, preventing fiber catalog names like "SFP 1 Gbps" from replacing the header label.
+ * Switch manager SFP section heading now stays fixed as "SFP Ports" so fiber catalog names do not rename the fiber row header.
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.

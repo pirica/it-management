@@ -581,10 +581,8 @@ if (!empty($_SESSION['crud_success'])) {
         function buildLayoutSummary(layoutLabel, rj45Count, sfpCount, sfpPlusCount) {
             const switchHostname = readSwitchMeta('hostname');
             const parts = [switchHostname !== '' ? ('Hostname: ' + switchHostname) : 'Hostname: N/A', 'RJ45: ' + rj45Count];
-            const fiberPortTypeLabel = readSwitchMeta('fiber_name');
             if (hasPortType('sfp') && Number(sfpCount) > 0) {
-                const sfpSummaryLabel = fiberPortTypeLabel !== '' ? fiberPortTypeLabel : 'SFP';
-                parts.push(sfpSummaryLabel + ': ' + sfpCount);
+                parts.push('SFP: ' + sfpCount);
             }
             if (hasPortType('sfp_plus') && Number(sfpPlusCount) > 0) {
                 parts.push('SFP+: ' + sfpPlusCount);
@@ -1035,9 +1033,7 @@ if (!empty($_SESSION['crud_success'])) {
             renderFiberPortsByLayout(sfpPlusRow, sfpPlusRowAlt, sfpPlusPorts);
             const showSfp = hasPortType('sfp') && sfpPorts.length > 0;
             const showSfpPlus = hasPortType('sfp_plus') && sfpPlusPorts.length > 0;
-            const fiberPortTypeLabel = readSwitchMeta('fiber_name');
-            const sfpLabelText = fiberPortTypeLabel !== '' ? (fiberPortTypeLabel + ' Ports') : 'SFP Ports';
-            document.getElementById('switchSfpLabel').textContent = sfpLabelText;
+            document.getElementById('switchSfpLabel').textContent = 'SFP Ports';
             document.getElementById('switchSfpLabel').style.display = showSfp ? 'block' : 'none';
             sfpRow.style.display = showSfp ? 'flex' : 'none';
             sfpRowAlt.style.display = showSfp ? sfpRowAlt.style.display : 'none';
