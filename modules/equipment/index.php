@@ -1267,6 +1267,14 @@ if (!empty($_SESSION['crud_success'])) {
                     selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
                     selected.dataset.vlanColor = selectedVlan ? (selectedVlan.color || '') : '';
                     selected.dataset.comments = payload.comments || '';
+                    if (isFiberPortType(selected.dataset.portType || '')) {
+                        const selectedFiberPortOption = document.getElementById('fiberPortsSelect').selectedOptions[0] || null;
+                        const selectedFiberPatchOption = document.getElementById('fiberPatchSelect').selectedOptions[0] || null;
+                        const selectedFiberRackOption = document.getElementById('fiberRackSelect').selectedOptions[0] || null;
+                        selected.dataset.fiberPorts = selectedFiberPortOption ? (selectedFiberPortOption.text || '') : '';
+                        selected.dataset.fiberPatch = selectedFiberPatchOption ? (selectedFiberPatchOption.text || '') : '';
+                        selected.dataset.fiberRack = selectedFiberRackOption ? (selectedFiberRackOption.text || '') : '';
+                    }
                     paintPort(selected, payload.color || selected.dataset.color);
                     paintVlan(selected, payload.vlan || '');
                     paintStatusTag(selected, payload.status || selected.dataset.status);

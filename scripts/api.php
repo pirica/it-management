@@ -32,6 +32,7 @@
  * Equipment create/edit now renders Fiber Ports Number as a select with a quick-add (➕) option.
  * Equipment switch manager summary now includes Rack/IDF/Location and uses the selected Fiber Ports label for SFP counts, while Fiber Patch/Fiber Rack/Fiber Port Label details are shown on SFP/SFP+ port tooltips.
  * Switch port DOM metadata now includes Fiber Ports/Fiber Patch/Fiber Rack fields so selected SFP/SFP+ ports carry the expected data-* attributes and tooltip details.
+ * Switch Port Manager save flow now refreshes selected port fiber metadata in the DOM immediately after save, keeping tooltip Fiber fields in sync without requiring a page reload.
  * Switch manager header summary now shows Hostname (instead of the prior Layout label) before RJ45/Fiber counts for clearer device identification.
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
