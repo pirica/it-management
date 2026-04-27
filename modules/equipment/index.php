@@ -872,9 +872,13 @@ if (!empty($_SESSION['crud_success'])) {
 
             const isFiberPort = portType === 'SFP' || portType === 'SFP+';
             if (isFiberPort) {
+                const fiberPorts = el.dataset.fiberPorts || '';
                 const fiberPatch = el.dataset.fiberPatch || '';
                 const fiberRack = el.dataset.fiberRack || '';
                 const fiberPortLabel = el.dataset.fiberPortLabel || '';
+                if (fiberPorts !== '') {
+                    tooltipParts.push('Fiber Ports: ' + escapeHtml(fiberPorts));
+                }
                 if (fiberPatch !== '') {
                     tooltipParts.push('Fiber Patch: ' + escapeHtml(fiberPatch));
                 }
@@ -942,6 +946,7 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.vlanName = p.vlan_name || '';
             el.dataset.vlanColor = p.vlan_color || '';
             el.dataset.color = p.color || 'black';
+            el.dataset.fiberPorts = readSwitchMeta('fiber_name');
             el.dataset.fiberPatch = readSwitchMeta('fiber_patch_name');
             el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
             el.dataset.fiberPortLabel = readSwitchMeta('fiber_port_label');
