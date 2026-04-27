@@ -75,7 +75,18 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    if ($table === 'users' || $table === 'employees') {
+        $sql = 'SELECT '
+            . cr_escape_identifier($col)
+            . " AS id, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''), NULLIF(TRIM(COALESCE(username, '')), ''), "
+            . cr_escape_identifier($col)
+            . ') AS label FROM '
+            . cr_escape_identifier($table)
+            . $where
+            . ' ORDER BY label';
+    } else {
+        $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    }
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -145,7 +156,7 @@ function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
     $meta = cr_fk_metadata($conn, $table);
     $available = $meta['available'];
 
-    if ($table === 'users') {
+    if ($table === 'users' || $table === 'employees') {
         $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
         if (in_array('company_id', $available, true) && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
