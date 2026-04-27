@@ -904,7 +904,7 @@ if (!empty($_SESSION['crud_success'])) {
 
         function togglePortControlSections(portType) {
             const isFiber = isFiberPortType(portType);
-            document.getElementById('vlanRow').style.display = isFiber ? 'none' : '';
+            document.getElementById('vlanRow').style.display = '';
             document.getElementById('fiberPortsRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberPatchRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberRackRow').style.display = isFiber ? '' : 'none';
