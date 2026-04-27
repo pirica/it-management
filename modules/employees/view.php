@@ -19,11 +19,12 @@ if ($employeeId <= 0) {
     exit;
 }
 
-$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name '
+$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name '
     . 'FROM employees e '
     . 'LEFT JOIN departments d ON d.id = e.department_id '
     . 'LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id '
     . 'LEFT JOIN employee_statuses es ON es.id = e.employment_status_id '
+    . 'LEFT JOIN workstation_modes wm ON wm.id = e.workstation_mode_id AND wm.company_id = e.company_id '
     . 'WHERE e.id = ? AND e.company_id = ? '
     . 'LIMIT 1';
 
@@ -69,6 +70,7 @@ $profileFields = [
     'Job Title' => (string)($employee['job_title'] ?? ''),
     'Raw Status Code' => (string)($employee['raw_status_code'] ?? ''),
     'Employment Status' => (string)($employee['employment_status_name'] ?? ''),
+    'Workstation Mode' => (string)($employee['workstation_mode_name'] ?? ''),
     'Requested By' => (string)($employee['requested_by'] ?? ''),
     'Termination Requested By' => (string)($employee['termination_requested_by'] ?? ''),
     'Request Date' => (string)($employee['request_date'] ?? ''),
