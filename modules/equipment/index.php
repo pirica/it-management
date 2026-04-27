@@ -531,9 +531,12 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
         function buildLayoutSummary(layoutLabel, rj45Count, sfpCount, sfpPlusCount) {
-            const parts = ['Layout: ' + layoutLabel, 'RJ45: ' + rj45Count];
+            const switchHostname = readSwitchMeta('hostname');
+            const parts = [switchHostname !== '' ? ('Hostname: ' + switchHostname) : 'Hostname: N/A', 'RJ45: ' + rj45Count];
+            const fiberPortTypeLabel = readSwitchMeta('fiber_name');
             if (hasPortType('sfp') && Number(sfpCount) > 0) {
-                parts.push('SFP: ' + sfpCount);
+                const sfpSummaryLabel = fiberPortTypeLabel !== '' ? fiberPortTypeLabel : 'SFP';
+                parts.push(sfpSummaryLabel + ': ' + sfpCount);
             }
             if (hasPortType('sfp_plus') && Number(sfpPlusCount) > 0) {
                 parts.push('SFP+: ' + sfpPlusCount);
@@ -549,22 +552,6 @@ if (!empty($_SESSION['crud_success'])) {
             const locationName = readSwitchMeta('location_name');
             if (locationName !== '') {
                 parts.push('Location: ' + locationName);
-            }
-            const fiberParts = [];
-            const fiberPatch = readSwitchMeta('fiber_patch_name');
-            const fiberRack = readSwitchMeta('fiber_rack_name');
-            const fiberPortLabel = readSwitchMeta('fiber_port_label');
-            if (fiberPatch !== '') {
-                fiberParts.push('Fiber Patch: ' + fiberPatch);
-            }
-            if (fiberRack !== '') {
-                fiberParts.push('Fiber Rack: ' + fiberRack);
-            }
-            if (fiberPortLabel !== '') {
-                fiberParts.push('Fiber Port Label: ' + fiberPortLabel);
-            }
-            if (fiberParts.length > 0) {
-                parts.push(fiberParts.join(' | '));
             }
             return parts.join(' | ');
         }
@@ -827,11 +814,31 @@ if (!empty($_SESSION['crud_success'])) {
             const comments = el.dataset.comments || '';
             const vlanName = el.dataset.vlanName || '—';
             const portType = normalizePortType(el.dataset.portType).replace('_', '+').toUpperCase();
-            tooltip.innerHTML = '<strong>' + escapeHtml(portType) + ' Port ' + el.dataset.portNumber + '</strong><br>'
-                + 'Patch port: ' + escapeHtml(label) + '<br>'
-                + 'Status: ' + escapeHtml(status) + '<br>'
-                + 'VLAN: ' + escapeHtml(vlanName) + '<br>'
-                + 'Comments: ' + escapeHtml(comments);
+            const tooltipParts = [
+                '<strong>' + escapeHtml(portType) + ' Port ' + el.dataset.portNumber + '</strong>',
+                'Patch port: ' + escapeHtml(label),
+                'Status: ' + escapeHtml(status),
+                'VLAN: ' + escapeHtml(vlanName),
+                'Comments: ' + escapeHtml(comments)
+            ];
+
+            const isFiberPort = portType === 'SFP' || portType === 'SFP+';
+            if (isFiberPort) {
+                const fiberPatch = el.dataset.fiberPatch || '';
+                const fiberRack = el.dataset.fiberRack || '';
+                const fiberPortLabel = el.dataset.fiberPortLabel || '';
+                if (fiberPatch !== '') {
+                    tooltipParts.push('Fiber Patch: ' + escapeHtml(fiberPatch));
+                }
+                if (fiberRack !== '') {
+                    tooltipParts.push('Fiber Rack: ' + escapeHtml(fiberRack));
+                }
+                if (fiberPortLabel !== '') {
+                    tooltipParts.push('Fiber Port Label: ' + escapeHtml(fiberPortLabel));
+                }
+            }
+
+            tooltip.innerHTML = tooltipParts.join('<br>');
             tooltip.style.opacity = '1';
             moveTooltip(ev);
         }
@@ -867,6 +874,9 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.vlanName = p.vlan_name || '';
             el.dataset.vlanColor = p.vlan_color || '';
             el.dataset.color = p.color || 'black';
+            el.dataset.fiberPatch = readSwitchMeta('fiber_patch_name');
+            el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
+            el.dataset.fiberPortLabel = readSwitchMeta('fiber_port_label');
 
             const num = document.createElement('div');
             num.className = 'switch-port-num';
