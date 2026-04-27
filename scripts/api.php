@@ -43,6 +43,7 @@
  * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
  * Role Module Permissions now includes can_import/can_export flags so per-module access can explicitly control import/export actions.
  * Role Module Permissions create/edit now render module_name as a predefined select list (no quick-add option) to keep permission targets consistent.
+ * Added employee_assignment_history module to track per-employee handover history for laptops, phones, printers, key cards, and SIM IMEI records.
  */
 
 declare(strict_types=1);
