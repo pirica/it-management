@@ -45,6 +45,8 @@
  * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
  * Employees create/edit/view now use a workstation_mode_id relation to workstation_modes (mode_name select + quick-add in forms, label rendering in detail view).
  * Database schema now enforces unique patches/updates status names per company via patches_updates_status(company_id, name).
+ * Patches Updates Level schema now stores only level (dropped legacy name), enforces patches_updates_level(company_id, level) uniqueness, and keeps JSON import compatibility for legacy Name headers.
+ * Patches Updates CRUD FK label resolution now recognizes `level` columns so Level dropdown/list/detail views remain human-readable after patches_updates_level schema cleanup.
  * Role Module Permissions now includes can_import/can_export flags so per-module access can explicitly control import/export actions.
  * Role Module Permissions create/edit now render module_name as a predefined select list (no quick-add option) to keep permission targets consistent.
  * Added employee_assignment_history module to track per-employee handover history for laptops, phones, printers, key cards, and SIM IMEI records.

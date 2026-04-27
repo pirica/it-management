@@ -114,7 +114,7 @@ function cr_fk_metadata($conn, $table) {
         ];
     }
 
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+    foreach (['name', 'level', 'title', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
