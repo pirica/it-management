@@ -681,30 +681,6 @@ input[type="color"] {
 .switch-controls button {
     width: fit-content;
 }
-
-.switch-legend {
-    margin-top: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 14px;
-}
-
-.switch-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.switch-color-swatch {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-}
-
 .switch-tooltip {
     position: fixed;
     background: #222;

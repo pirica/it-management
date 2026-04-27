@@ -538,7 +538,6 @@ if (!empty($_SESSION['crud_success'])) {
                             <button class="btn btn-primary" id="savePortBtn" type="button">💾</button>
                         </div>
 
-                        <div class="switch-legend" id="switchLegend" style="display:none;"></div>
                     </div>
                     <div class="switch-tooltip" id="switchTooltip"></div>
                 </div>
@@ -918,7 +917,6 @@ if (!empty($_SESSION['crud_success'])) {
             selected = el;
             document.getElementById('switchControls').style.display = '';
             document.getElementById('switchControlsHint').style.display = 'none';
-            document.getElementById('switchLegend').style.display = '';
             togglePortControlSections(el.dataset.portType || '');
             document.getElementById('selectedPort').textContent = el.dataset.portNumber;
             document.getElementById('colorSelect').value = el.dataset.color || '';
@@ -1061,7 +1059,6 @@ if (!empty($_SESSION['crud_success'])) {
             const fiberPortsSelect = document.getElementById('fiberPortsSelect');
             const fiberPatchSelect = document.getElementById('fiberPatchSelect');
             const fiberRackSelect = document.getElementById('fiberRackSelect');
-            const legend = document.getElementById('switchLegend');
 
             statusSelect.innerHTML = '<option value="">-- choose status --</option>';
             colorSelect.innerHTML = '<option value="">-- choose color --</option>';
@@ -1069,7 +1066,6 @@ if (!empty($_SESSION['crud_success'])) {
             fiberPortsSelect.innerHTML = '<option value="">-- choose fiber ports --</option>';
             fiberPatchSelect.innerHTML = '<option value="">-- choose fiber patch --</option>';
             fiberRackSelect.innerHTML = '<option value="">-- choose fiber rack --</option>';
-            legend.innerHTML = '';
 
             statusOptions.forEach(function (item) {
                 const option = document.createElement('option');
@@ -1085,14 +1081,6 @@ if (!empty($_SESSION['crud_success'])) {
                 option.textContent = item.name;
                 colorSelect.appendChild(option);
 
-                const legendItem = document.createElement('div');
-                legendItem.className = 'switch-legend-item';
-                const swatch = document.createElement('span');
-                swatch.className = 'switch-color-swatch';
-                swatch.style.background = getColorCss(item.name);
-                legendItem.appendChild(swatch);
-                legendItem.appendChild(document.createTextNode(item.name));
-                legend.appendChild(legendItem);
             });
 
             vlanOptions.forEach(function (item) {

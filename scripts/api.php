@@ -45,6 +45,7 @@
  * Switch port seeding now resolves Fiber Ports Number-only fallback types from equipment_fiber.name (tenant-first, global fallback) when no fiber type is saved, so fiber ports are still auto-created without hardcoded labels.
  * Switch Port Manager edit controls now stay hidden until a port is clicked; fiber-port clicks show Fiber Ports/Fiber Patch/Fiber Rack dropdowns (with quick-add), while RJ45 keeps VLAN controls.
  * Switch Port Manager edit controls now keep VLAN visible for fiber ports so SFP/SFP+ updates can be assigned VLANs without switching port type.
+ * Switch Port Manager no longer renders the color legend block under port controls, keeping the panel focused on editable fields.
  * Inventory module UI now includes storage_date and read-only created/updated timestamps in create/edit flows,
  * Inventory create/edit now includes a Last User employee selector (display_name) plus a manual fallback text input (varchar 100), stored in inventory_items.last_user_id and inventory_items.last_user_manual after Price (€).
  * Inventory view now resolves Last User labels from employees (first_name + last_name, username fallback) with tenant-safe id fallback to avoid raw numeric user IDs in detail screens.
