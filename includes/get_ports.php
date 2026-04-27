@@ -194,10 +194,10 @@ function normalize_port_type(string $portType): string
     $normalized = str_replace(['+', '-', '/'], [' plus ', ' ', ' '], $normalized);
     $normalized = preg_replace('/\s+/', ' ', $normalized);
 
-    if (str_contains($normalized, 'sfp') && str_contains($normalized, 'plus')) {
+    if (strpos($normalized, 'sfp') !== false && strpos($normalized, 'plus') !== false) {
         return 'sfp_plus';
     }
-    if (str_contains($normalized, 'sfp')) {
+    if (strpos($normalized, 'sfp') !== false) {
         return 'sfp';
     }
     return 'rj45';
@@ -309,8 +309,10 @@ $fiberName = strtolower(trim((string)$switch['fiber_name']));
 if ($fiberCount > 0 && $fiberName === '') {
     $fiberName = fetch_default_fiber_name($conn, (int)$company_id);
 }
-$sfpCount = str_contains($fiberName, 'sfp+') ? 0 : (str_contains($fiberName, 'sfp') ? $fiberCount : 0);
-$sfpPlusCount = str_contains($fiberName, 'sfp+') ? $fiberCount : 0;
+$hasSfpPlusLabel = strpos($fiberName, 'sfp+') !== false;
+$hasSfpLabel = strpos($fiberName, 'sfp') !== false;
+$sfpCount = $hasSfpPlusLabel ? 0 : ($hasSfpLabel ? $fiberCount : 0);
+$sfpPlusCount = $hasSfpPlusLabel ? $fiberCount : 0;
 if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
 if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
 
