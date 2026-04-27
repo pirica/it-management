@@ -518,10 +518,10 @@ if (!empty($_SESSION['crud_success'])) {
 
         function buildLayoutSummary(layoutLabel, rj45Count, sfpCount, sfpPlusCount) {
             const parts = ['Layout: ' + layoutLabel, 'RJ45: ' + rj45Count];
-            if (hasPortType('sfp')) {
+            if (hasPortType('sfp') && Number(sfpCount) > 0) {
                 parts.push('SFP: ' + sfpCount);
             }
-            if (hasPortType('sfp_plus')) {
+            if (hasPortType('sfp_plus') && Number(sfpPlusCount) > 0) {
                 parts.push('SFP+: ' + sfpPlusCount);
             }
             return parts.join(' | ');
@@ -908,16 +908,18 @@ if (!empty($_SESSION['crud_success'])) {
             const sfpPlusPorts = ports.filter(function (p) { return normalizePortType(p.port_type) === 'sfp_plus'; });
             renderFiberPortsByLayout(sfpRow, sfpRowAlt, sfpPorts);
             renderFiberPortsByLayout(sfpPlusRow, sfpPlusRowAlt, sfpPlusPorts);
-            document.getElementById('switchSfpLabel').style.display = hasPortType('sfp') ? 'block' : 'none';
-            sfpRow.style.display = hasPortType('sfp') ? 'flex' : 'none';
-            sfpRowAlt.style.display = hasPortType('sfp') ? sfpRowAlt.style.display : 'none';
-            document.getElementById('switchSfpPlusLabel').style.display = hasPortType('sfp_plus') ? 'block' : 'none';
-            sfpPlusRow.style.display = hasPortType('sfp_plus') ? 'flex' : 'none';
-            sfpPlusRowAlt.style.display = hasPortType('sfp_plus') ? sfpPlusRowAlt.style.display : 'none';
+            const showSfp = hasPortType('sfp') && sfpPorts.length > 0;
+            const showSfpPlus = hasPortType('sfp_plus') && sfpPlusPorts.length > 0;
+            document.getElementById('switchSfpLabel').style.display = showSfp ? 'block' : 'none';
+            sfpRow.style.display = showSfp ? 'flex' : 'none';
+            sfpRowAlt.style.display = showSfp ? sfpRowAlt.style.display : 'none';
+            document.getElementById('switchSfpPlusLabel').style.display = showSfpPlus ? 'block' : 'none';
+            sfpPlusRow.style.display = showSfpPlus ? 'flex' : 'none';
+            sfpPlusRowAlt.style.display = showSfpPlus ? sfpPlusRowAlt.style.display : 'none';
 
             const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
             document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, rj45Ports.length, sfpPorts.length, sfpPlusPorts.length);
-            document.getElementById('fiberGrid').style.display = (hasPortType('sfp') && sfpPorts.length) || (hasPortType('sfp_plus') && sfpPlusPorts.length) ? 'grid' : 'none';
+            document.getElementById('fiberGrid').style.display = (showSfp || showSfpPlus) ? 'grid' : 'none';
         }
 
 

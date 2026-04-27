@@ -32,6 +32,7 @@
  * Equipment create/edit now renders Fiber Ports Number as a select with a quick-add (➕) option.
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
+ * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
  */
 
 declare(strict_types=1);
