@@ -221,6 +221,9 @@ function cr_normalize_import_header($header) {
 
 function cr_import_header_aliases() {
     return [
+        'id' => 'id_external',
+        'external_id' => 'id_external',
+        'id_external' => 'id_external',
         'inncode' => 'inncode',
         'incode' => 'inncode',
         'dest' => 'dest',
