@@ -11,12 +11,19 @@ require '../../config/config.php';
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
-    // Fetch the item record with category name so FK values stay human-readable.
+    // Fetch the item record with related labels so FK values stay human-readable.
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT i.*, c.name AS category_name
+        'SELECT i.*,
+                c.name AS category_name,
+                m.name AS manufacturer_name,
+                l.name AS location_name,
+                s.name AS supplier_name
          FROM inventory_items i
          LEFT JOIN inventory_categories c ON c.id = i.category_id
+         LEFT JOIN manufacturers m ON m.id = i.manufacturer_id
+         LEFT JOIN it_locations l ON l.id = i.location_id
+         LEFT JOIN suppliers s ON s.id = i.supplier_id
          WHERE i.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -36,7 +43,11 @@ $labels = [
     'name' => 'Name',
     'item_code' => 'Item Code',
     'serial' => 'Serial',
+    'storage_date' => 'Storage Date',
     'category_id' => 'Category',
+    'manufacturer_id' => 'Manufacturer',
+    'location_id' => 'Location',
+    'supplier_id' => 'Supplier',
     'quantity_on_hand' => 'Quantity On Hand',
     'quantity_minimum' => 'Minimum Quantity',
     'price_eur' => 'Price (€)',
@@ -70,7 +81,7 @@ $labels = [
                         <?php foreach ($item as $field => $value): ?>
                             <!-- Skip internal database IDs -->
                             <?php if ($field === 'id' || $field === 'company_id'): continue; endif; ?>
-                            <?php if ($field === 'category_name'): continue; endif; ?>
+                            <?php if (in_array($field, ['category_name', 'manufacturer_name', 'location_name', 'supplier_name'], true)): continue; endif; ?>
                             <tr>
                                 <th style="width:220px;">
                                     <?php echo sanitize($labels[$field] ?? ucwords(str_replace('_', ' ', (string)$field))); ?>
@@ -82,6 +93,12 @@ $labels = [
                                         <?php echo ((int)$value === 1) ? 'Active' : 'Inactive'; ?>
                                     <?php elseif ($field === 'category_id'): ?>
                                         <?php echo sanitize((string)($item['category_name'] ?? '')); ?>
+                                    <?php elseif ($field === 'manufacturer_id'): ?>
+                                        <?php echo sanitize((string)($item['manufacturer_name'] ?? '')); ?>
+                                    <?php elseif ($field === 'location_id'): ?>
+                                        <?php echo sanitize((string)($item['location_name'] ?? '')); ?>
+                                    <?php elseif ($field === 'supplier_id'): ?>
+                                        <?php echo sanitize((string)($item['supplier_name'] ?? '')); ?>
                                     <?php else: ?>
                                         <?php echo sanitize((string)($value ?? '')); ?>
                                     <?php endif; ?>

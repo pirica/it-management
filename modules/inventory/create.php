@@ -21,12 +21,18 @@ $data = [
     'name' => '',
     'item_code' => '',
     'serial' => '',
+    'storage_date' => '',
     'comments' => '',
     'category_id' => '',
+    'location_id' => '',
+    'manufacturer_id' => '',
+    'supplier_id' => '',
     'quantity_on_hand' => 0,
     'quantity_minimum' => 5,
     'price_eur' => '',
     'active' => 1,
+    'created_at' => '',
+    'updated_at' => '',
 ];
 $csrfToken = itm_get_csrf_token();
 
@@ -55,6 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = escape_sql($_POST['name'] ?? '', $conn);
     $item_code = escape_sql($_POST['item_code'] ?? '', $conn);
     $serial = escape_sql($_POST['serial'] ?? '', $conn);
+    $storage_date_post = trim((string)($_POST['storage_date'] ?? ''));
+    $storage_date = $storage_date_post !== '' ? escape_sql($storage_date_post, $conn) : '';
     $comments = escape_sql($_POST['comments'] ?? '', $conn);
 
     // Normalize category selection.
@@ -62,6 +70,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($category_post === '__add_new__') { $category_post = 0; }
     $category_id = (int)$category_post;
     $category_sql = $category_id ?: 'NULL';
+    $location_post = $_POST['location_id'] ?? 0;
+    if ($location_post === '__add_new__') { $location_post = 0; }
+    $location_id = (int)$location_post;
+    $location_sql = $location_id ?: 'NULL';
+    $manufacturer_post = $_POST['manufacturer_id'] ?? 0;
+    if ($manufacturer_post === '__add_new__') { $manufacturer_post = 0; }
+    $manufacturer_id = (int)$manufacturer_post;
+    $manufacturer_sql = $manufacturer_id ?: 'NULL';
+    $supplier_post = $_POST['supplier_id'] ?? 0;
+    if ($supplier_post === '__add_new__') { $supplier_post = 0; }
+    $supplier_id = (int)$supplier_post;
+    $supplier_sql = $supplier_id ?: 'NULL';
 
     // Parse numeric inputs.
     $quantity_on_hand = (int)($_POST['quantity_on_hand'] ?? 0);
@@ -78,8 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     SET name='$name',
                         item_code='$item_code',
                         serial='$serial',
+                        storage_date=" . ($storage_date !== '' ? "'$storage_date'" : "NULL") . ",
                         comments='$comments',
                         category_id=$category_sql,
+                        location_id=$location_sql,
+                        manufacturer_id=$manufacturer_sql,
+                        supplier_id=$supplier_sql,
                         quantity_on_hand=$quantity_on_hand,
                         quantity_minimum=$quantity_minimum,
                         price_eur=$price_eur,
@@ -87,9 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO inventory_items
-                    (company_id,name,item_code,serial,comments,category_id,quantity_on_hand,quantity_minimum,price_eur,active)
+                    (company_id,name,item_code,serial,storage_date,comments,category_id,location_id,manufacturer_id,supplier_id,quantity_on_hand,quantity_minimum,price_eur,active)
                     VALUES
-                    ($company_id,'$name','$item_code','$serial','$comments',$category_sql,$quantity_on_hand,$quantity_minimum,$price_eur,$active)";
+                    ($company_id,'$name','$item_code','$serial'," . ($storage_date !== '' ? "'$storage_date'" : "NULL") . ",'$comments',$category_sql,$location_sql,$manufacturer_sql,$supplier_sql,$quantity_on_hand,$quantity_minimum,$price_eur,$active)";
         }
 
         $dbErrorCode = 0;
@@ -106,6 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch active categories for the dropdown.
 $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHERE company_id=$company_id AND active=1 ORDER BY name");
+$locations = mysqli_query($conn, "SELECT id,name FROM it_locations WHERE company_id=$company_id AND active=1 ORDER BY name");
+$manufacturers = mysqli_query($conn, "SELECT id,name FROM manufacturers WHERE company_id=$company_id AND active=1 ORDER BY name");
+$suppliers = mysqli_query($conn, "SELECT id,name FROM suppliers WHERE company_id=$company_id AND active=1 ORDER BY name");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -148,6 +175,13 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                             <input name="serial" value="<?php echo sanitize((string)($data['serial'] ?? '')); ?>">
                         </div>
                         <div class="form-group">
+                            <label>Storage Date</label>
+                            <input type="date" name="storage_date" value="<?php echo sanitize((string)($data['storage_date'] ?? '')); ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label>Category</label>
                             <!-- data-addable-select="1" enables the JS inline addition of new options -->
                             <select name="category_id"
@@ -161,6 +195,63 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                                 <?php while ($c = mysqli_fetch_assoc($categories)): ?>
                                     <option value="<?php echo (int)$c['id']; ?>" <?php echo (string)$data['category_id'] === (string)$c['id'] ? 'selected' : ''; ?>>
                                         <?php echo sanitize((string)$c['name']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                                <option value="__add_new__">➕</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <select name="location_id"
+                                    data-addable-select="1"
+                                    data-add-table="it_locations"
+                                    data-add-id-col="id"
+                                    data-add-label-col="name"
+                                    data-add-company-scoped="1"
+                                    data-add-friendly="location">
+                                <option value="">-- None --</option>
+                                <?php while ($loc = mysqli_fetch_assoc($locations)): ?>
+                                    <option value="<?php echo (int)$loc['id']; ?>" <?php echo (string)($data['location_id'] ?? '') === (string)$loc['id'] ? 'selected' : ''; ?>>
+                                        <?php echo sanitize((string)$loc['name']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                                <option value="__add_new__">➕</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Manufacturer</label>
+                            <select name="manufacturer_id"
+                                    data-addable-select="1"
+                                    data-add-table="manufacturers"
+                                    data-add-id-col="id"
+                                    data-add-label-col="name"
+                                    data-add-company-scoped="1"
+                                    data-add-friendly="manufacturer">
+                                <option value="">-- None --</option>
+                                <?php while ($manufacturer = mysqli_fetch_assoc($manufacturers)): ?>
+                                    <option value="<?php echo (int)$manufacturer['id']; ?>" <?php echo (string)($data['manufacturer_id'] ?? '') === (string)$manufacturer['id'] ? 'selected' : ''; ?>>
+                                        <?php echo sanitize((string)$manufacturer['name']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                                <option value="__add_new__">➕</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier</label>
+                            <select name="supplier_id"
+                                    data-addable-select="1"
+                                    data-add-table="suppliers"
+                                    data-add-id-col="id"
+                                    data-add-label-col="name"
+                                    data-add-company-scoped="1"
+                                    data-add-friendly="supplier">
+                                <option value="">-- None --</option>
+                                <?php while ($supplier = mysqli_fetch_assoc($suppliers)): ?>
+                                    <option value="<?php echo (int)$supplier['id']; ?>" <?php echo (string)($data['supplier_id'] ?? '') === (string)$supplier['id'] ? 'selected' : ''; ?>>
+                                        <?php echo sanitize((string)$supplier['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
                                 <option value="__add_new__">➕</option>
@@ -195,6 +286,17 @@ $categories = mysqli_query($conn, "SELECT id,name FROM inventory_categories WHER
                     <div class="form-group">
                         <label>Comments</label>
                         <textarea name="comments" rows="4"><?php echo sanitize((string)($data['comments'] ?? '')); ?></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Created At</label>
+                            <input value="<?php echo sanitize((string)($data['created_at'] ?? '')); ?>" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Updated At</label>
+                            <input value="<?php echo sanitize((string)($data['updated_at'] ?? '')); ?>" disabled>
+                        </div>
                     </div>
 
                     <div style="display:flex;gap:10px;">

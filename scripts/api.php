@@ -33,6 +33,8 @@
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
+ * Inventory module UI now includes storage_date and read-only created/updated timestamps in create/edit flows,
+ * and index list output hides item code while exposing storage_date and updated_at columns.
  */
 
 declare(strict_types=1);

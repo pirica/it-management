@@ -58,19 +58,20 @@ if ($searchRaw !== '') {
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchSql = " AND (
         i.name LIKE '{$searchEsc}'
-        OR i.item_code LIKE '{$searchEsc}'
         OR i.serial LIKE '{$searchEsc}'
+        OR CAST(i.storage_date AS CHAR) LIKE '{$searchEsc}'
         OR c.name LIKE '{$searchEsc}'
         OR CAST(i.quantity_on_hand AS CHAR) LIKE '{$searchEsc}'
         OR CAST(i.quantity_minimum AS CHAR) LIKE '{$searchEsc}'
         OR CAST(i.price_eur AS CHAR) LIKE '{$searchEsc}'
         OR i.comments LIKE '{$searchEsc}'
+        OR CAST(i.updated_at AS CHAR) LIKE '{$searchEsc}'
         OR CAST(i.active AS CHAR) LIKE '{$searchEsc}'
     )";
 }
 
 // HANDLE SORTING
-$sortableColumns = ['name', 'item_code', 'serial', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'active'];
+$sortableColumns = ['name', 'serial', 'storage_date', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'updated_at', 'active'];
 $sort = (string)($_GET['sort'] ?? 'name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -81,13 +82,14 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $orderByMap = [
     'name' => 'i.name',
-    'item_code' => 'i.item_code',
     'serial' => 'i.serial',
+    'storage_date' => 'i.storage_date',
     'category_name' => 'c.name',
     'quantity_on_hand' => 'i.quantity_on_hand',
     'quantity_minimum' => 'i.quantity_minimum',
     'price_eur' => 'i.price_eur',
     'comments' => 'i.comments',
+    'updated_at' => 'i.updated_at',
     'active' => 'i.active',
 ];
 
@@ -196,13 +198,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
                         <?php foreach ([
                             'name' => 'Name',
-                            'item_code' => 'Code',
                             'serial' => 'Serial',
+                            'storage_date' => 'Storage Date',
                             'category_name' => 'Category',
                             'quantity_on_hand' => 'QOH',
                             'quantity_minimum' => 'Min',
                             'price_eur' => 'Price (€)',
                             'comments' => 'Comments',
+                            'updated_at' => 'Updated At',
                             'active' => 'Status'
                         ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -220,8 +223,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <tr>
                             <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$i['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo sanitize((string)$i['name']); ?></td>
-                            <td><?php echo sanitize((string)($i['item_code'] ?? '-')); ?></td>
                             <td><?php echo sanitize((string)($i['serial'] ?? '-')); ?></td>
+                            <td><?php echo sanitize((string)($i['storage_date'] ?? '-')); ?></td>
                             <td><?php echo sanitize((string)($i['category_name'] ?? '-')); ?></td>
                             <td><?php echo (int)$i['quantity_on_hand']; ?></td>
                             <td><?php echo (int)$i['quantity_minimum']; ?></td>
@@ -231,6 +234,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <span title="<?php echo sanitize((string)$i['comments']); ?>">💬</span>
                                 <?php endif; ?>
                             </td>
+                            <td><?php echo sanitize((string)($i['updated_at'] ?? '-')); ?></td>
                             <td>
                                 <span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>">
                                     <?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?>
@@ -250,7 +254,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="11" style="text-align:center;">No inventory items found.</td></tr>
+                        <tr><td colspan="12" style="text-align:center;">No inventory items found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
