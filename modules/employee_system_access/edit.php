@@ -93,6 +93,10 @@ function esa_module_checked($ids, $id) {
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="id" value="<?php echo (int)$employeeId; ?>">
+
+                    <div style="margin-bottom:10px;">
+                        <button type="button" class="btn btn-sm" id="esa-select-all-access">Select All</button>
+                    </div>
                     
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
                         <?php foreach ($systemAccessCatalog as $access): ?>
@@ -111,6 +115,37 @@ function esa_module_checked($ids, $id) {
             </div>
         </div>
     </div>
-</div>
+<script>
+(function () {
+    const selectAllButton = document.getElementById('esa-select-all-access');
+    if (!selectAllButton) {
+        return;
+    }
+
+    const checkboxes = Array.from(document.querySelectorAll('input[name="system_access_ids[]"]'));
+    if (!checkboxes.length) {
+        selectAllButton.style.display = 'none';
+        return;
+    }
+
+    function updateButtonLabel() {
+        const allChecked = checkboxes.every(function (checkbox) { return checkbox.checked; });
+        selectAllButton.textContent = allChecked ? 'Deselect All' : 'Select All';
+    }
+
+    selectAllButton.addEventListener('click', function () {
+        const shouldCheckAll = !checkboxes.every(function (checkbox) { return checkbox.checked; });
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = shouldCheckAll;
+        });
+        updateButtonLabel();
+    });
+
+    checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', updateButtonLabel);
+    });
+    updateButtonLabel();
+})();
+</script>
 </body>
 </html>
