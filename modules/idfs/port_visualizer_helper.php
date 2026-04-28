@@ -295,6 +295,26 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portMetaByTypeAndNo[$typeKey . ':' . $portNo] = $portMeta;
             }
 
+
+            if (isset($options['rj45_ports']) && is_array($options['rj45_ports']) && !empty($options['rj45_ports'])) {
+                $rj45Ports = [];
+                foreach ($options['rj45_ports'] as $rj45PortNo) {
+                    $rj45Ports[] = (int)$rj45PortNo;
+                }
+            }
+            if (isset($options['sfp_ports']) && is_array($options['sfp_ports']) && !empty($options['sfp_ports'])) {
+                $sfpPorts = [];
+                foreach ($options['sfp_ports'] as $sfpPortNo) {
+                    $sfpPorts[] = (int)$sfpPortNo;
+                }
+            }
+            if (isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports']) && !empty($options['sfp_plus_ports'])) {
+                $sfpPlusPorts = [];
+                foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
+                    $sfpPlusPorts[] = (int)$sfpPlusPortNo;
+                }
+            }
+
             sort($rj45Ports);
             sort($sfpPorts);
             sort($sfpPlusPorts);
@@ -323,7 +343,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $iconDots = array_slice($iconDots, 0, 20);
             }
 
-            $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '">';
+            $iconCols = max(2, min(10, count($iconDots)));
+            $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '" style="grid-template-columns: repeat(' . $iconCols . ', 10px);">';
             foreach ($iconDots as $dotMeta) {
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);

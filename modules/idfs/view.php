@@ -239,6 +239,21 @@ if ($stmtPos) {
             mysqli_stmt_close($stmtPorts);
         }
 
+
+        $rj45PortCount = 0;
+        if (preg_match('/(\d+)/', (string)($row['switch_rj45_name'] ?? ''), $rj45Match)) {
+            $rj45PortCount = (int)$rj45Match[1];
+        }
+        if ($rj45PortCount <= 0) {
+            foreach (($row['ports'] ?? []) as $itmPortMeta) {
+                $itmTypeRaw = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? ''))));
+                if (strpos($itmTypeRaw, 'sfp') === false) {
+                    $rj45PortCount++;
+                }
+            }
+        }
+        $row['rj45_ports'] = $rj45PortCount > 0 ? range(1, $rj45PortCount) : [];
+
         $fiberPortCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
         $fiberPortHint = strtolower(trim(
             (string)($row['equipment_fiber_port_label'] ?? '') . ' ' . (string)($row['equipment_fiber_name'] ?? '')
@@ -248,7 +263,8 @@ if ($stmtPos) {
         if ($fiberPortCount > 0) {
             if (strpos($fiberPortHint, 'sfp+') !== false) {
                 $row['sfp_plus_ports'] = range(1, $fiberPortCount);
-            } elseif (strpos($fiberPortHint, 'sfp') !== false) {
+            } else {
+                // Why: Fiber port count must always surface in rack preview even when legacy labels are blank/non-standard.
                 $row['sfp_ports'] = range(1, $fiberPortCount);
             }
         }
@@ -592,6 +608,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'idf_name' => (string)($idf['name'] ?? ''),
                                                         'idf_code' => (string)($idf['idf_code'] ?? ''),
                                                         'rack_name' => (string)($idf['rack_name'] ?? ''),
+                                                        'rj45_ports' => (array)($pos['rj45_ports'] ?? []),
                                                         'sfp_ports' => (array)($pos['sfp_ports'] ?? []),
                                                         'sfp_plus_ports' => (array)($pos['sfp_plus_ports'] ?? []),
                                                     ]);
