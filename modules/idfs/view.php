@@ -156,11 +156,11 @@ $stmtPos = mysqli_prepare(
      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
      LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
-     WHERE p.idf_id=?
+     WHERE p.idf_id=? AND p.company_id=?
      ORDER BY p.position_no ASC"
 );
 if ($stmtPos) {
-    mysqli_stmt_bind_param($stmtPos, 'i', $idf_id);
+    mysqli_stmt_bind_param($stmtPos, 'ii', $idf_id, $company_id);
     mysqli_stmt_execute($stmtPos);
     $resPos = mysqli_stmt_get_result($stmtPos);
     while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
@@ -193,18 +193,18 @@ if ($stmtPos) {
                     p_remote.equipment_id AS remote_equipment_id,
                     COALESCE(dt_remote.idfdevicetype_name, et_remote.name, '') AS remote_device_type_label
              FROM idf_ports pr
-             JOIN idf_positions p_local ON p_local.id = pr.position_id
-             JOIN idfs i_local ON i_local.id = p_local.idf_id
-             LEFT JOIN equipment e_local ON e_local.id = p_local.equipment_id
-             LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id
+             JOIN idf_positions p_local ON p_local.id = pr.position_id AND p_local.company_id = pr.company_id
+             JOIN idfs i_local ON i_local.id = p_local.idf_id AND i_local.company_id = p_local.company_id
+             LEFT JOIN equipment e_local ON e_local.id = p_local.equipment_id AND e_local.company_id = p_local.company_id
+             LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id AND et_local.company_id = e_local.company_id
              LEFT JOIN idf_device_type dt_local ON dt_local.id = p_local.device_type AND dt_local.company_id = p_local.company_id
              LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
-             LEFT JOIN switch_status ss ON ss.id = pr.status_id
-             LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id
+             LEFT JOIN switch_status ss ON ss.id = pr.status_id AND ss.company_id = pr.company_id
+             LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id AND cc_ss.company_id = ss.company_id
              LEFT JOIN idf_links l ON l.id = (
                  SELECT l2.id
                  FROM idf_links l2
-                 WHERE l2.port_id_a = pr.id OR l2.port_id_b = pr.id
+                 WHERE (l2.port_id_a = pr.id OR l2.port_id_b = pr.id) AND l2.company_id = pr.company_id
                  ORDER BY l2.id ASC
                  LIMIT 1
              )
@@ -215,16 +215,16 @@ if ($stmtPos) {
                    ELSE NULL
                END
              LEFT JOIN switch_status ss_remote ON ss_remote.id = pr_remote.status_id AND ss_remote.company_id = pr_remote.company_id
-             LEFT JOIN idf_positions p_remote ON p_remote.id = pr_remote.position_id
-             LEFT JOIN equipment e_remote ON e_remote.id = p_remote.equipment_id
-             LEFT JOIN equipment_types et_remote ON et_remote.id = e_remote.equipment_type_id
+             LEFT JOIN idf_positions p_remote ON p_remote.id = pr_remote.position_id AND p_remote.company_id = pr_remote.company_id
+             LEFT JOIN equipment e_remote ON e_remote.id = p_remote.equipment_id AND e_remote.company_id = p_remote.company_id
+             LEFT JOIN equipment_types et_remote ON et_remote.id = e_remote.equipment_type_id AND et_remote.company_id = e_remote.company_id
              LEFT JOIN idf_device_type dt_remote ON dt_remote.id = p_remote.device_type AND dt_remote.company_id = p_remote.company_id
-             LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
-             WHERE pr.position_id = ?
+             LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id AND cc_l.company_id = l.company_id
+             WHERE pr.position_id = ? AND pr.company_id = ?
              ORDER BY pr.port_no ASC"
         );
         if ($stmtPorts) {
-            mysqli_stmt_bind_param($stmtPorts, 'i', $posId);
+            mysqli_stmt_bind_param($stmtPorts, 'ii', $posId, $company_id);
             mysqli_stmt_execute($stmtPorts);
             $portRes = mysqli_stmt_get_result($stmtPorts);
             while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
