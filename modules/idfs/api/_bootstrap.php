@@ -298,6 +298,29 @@ function idf_ensure_status_schema(mysqli $conn): void {
         mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `hex_color` varchar(7) DEFAULT NULL AFTER `cable_color` ");
     }
 
+    // Why: IDF ports can contain RJ45 and SFP rows with the same visible port number for linked switch equipment.
+    $resPosPortUnique = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'pos_port_unique'");
+    $hasLegacyPosPortUnique = false;
+    $legacyUniqueColumns = [];
+    if ($resPosPortUnique) {
+        while ($idxRow = mysqli_fetch_assoc($resPosPortUnique)) {
+            $hasLegacyPosPortUnique = true;
+            $seq = (int)($idxRow['Seq_in_index'] ?? 0);
+            $col = (string)($idxRow['Column_name'] ?? '');
+            if ($seq > 0 && $col !== '') {
+                $legacyUniqueColumns[$seq] = $col;
+            }
+        }
+    }
+    if ($hasLegacyPosPortUnique) {
+        ksort($legacyUniqueColumns);
+        $legacyUniqueSignature = implode(',', array_values($legacyUniqueColumns));
+        if ($legacyUniqueSignature !== 'company_id,position_id,port_no,port_type') {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` DROP INDEX `pos_port_unique`");
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD UNIQUE KEY `pos_port_unique` (`company_id`,`position_id`,`port_no`,`port_type`)");
+        }
+    }
+
     // Keep a denormalized cable hex color on links for historical snapshots and exports.
     $linkHexColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_hex'");
     if ($linkHexColorColRes && mysqli_num_rows($linkHexColorColRes) === 0) {
