@@ -78,6 +78,7 @@
  * Added missing modules/equipment_poe CRUD entry files so PoE reference-data routes resolve create/edit/view/delete/list_all
  * correctly and expose the standard JSON import handler consumed by js/table-tools.js.
  * Employees, Employee System Access, and Employee Onboarding Requests edit/create screens now include a Select All / Deselect All toggle helper for System Access checkboxes.
+ * IDF rack view device icon now derives SFP/SFP+ dot count/tooltip from equipment fiber metadata (switch_fiber_ports_number + fiber label/name), with port-type fallback, so IDF cards stay aligned with Switch Port Manager context without CSS/style changes.
 
  * Inventory Items index now uses the same ✏️ glyph for non-empty comments tooltips used by other module edit affordances.
  */
