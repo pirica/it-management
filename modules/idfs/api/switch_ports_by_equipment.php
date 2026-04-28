@@ -13,7 +13,7 @@ $sql = "SELECT
             sp.id,
             sp.equipment_id,
             COALESCE(NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
-            sp.port_type AS equipment_port_type,
+            COALESCE(spt.type, sp.port_type) AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
             COALESCE(v.vlan_name, '') AS equipment_vlan_name,
@@ -25,6 +25,7 @@ $sql = "SELECT
             COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color
         FROM switch_ports sp
         JOIN equipment e ON e.id = sp.equipment_id
+        LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
         LEFT JOIN vlans v ON v.id = sp.vlan_id
         LEFT JOIN switch_status ss ON ss.id = sp.status_id
         LEFT JOIN cable_colors sc ON sc.id = sp.color_id

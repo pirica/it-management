@@ -170,7 +170,8 @@ if ($switchPortId > 0) {
             sp.equipment_id,
             COALESCE(NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
             e.serial_number AS equipment_serial_number,
-            sp.port_type AS equipment_port_type,
+            sp.port_type AS equipment_port_type_raw,
+            COALESCE(spt.type, sp.port_type) AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
             sp.label AS equipment_label,
@@ -179,6 +180,7 @@ if ($switchPortId > 0) {
             sp.color_id AS equipment_color_id
          FROM switch_ports sp
          JOIN equipment e ON e.id = sp.equipment_id
+         LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
          WHERE sp.id = ?
            AND sp.company_id = ?
            AND sp.equipment_id = ?
@@ -290,8 +292,8 @@ if ($switchPortId > 0) {
                  LIMIT 1"
             );
             if ($stmtPortConflict) {
-                $portType = (string)($switchPort['equipment_port_type'] ?? '');
-                mysqli_stmt_bind_param($stmtPortConflict, 'iisii', $company_id, $equipmentId, $portType, $newPortNumber, $switchPortId);
+                $portTypeRaw = (string)($switchPort['equipment_port_type_raw'] ?? '');
+                mysqli_stmt_bind_param($stmtPortConflict, 'iisii', $company_id, $equipmentId, $portTypeRaw, $newPortNumber, $switchPortId);
                 mysqli_stmt_execute($stmtPortConflict);
                 $resPortConflict = mysqli_stmt_get_result($stmtPortConflict);
                 $hasConflict = $resPortConflict && mysqli_num_rows($resPortConflict) > 0;
@@ -342,7 +344,7 @@ if (
             $conn,
             "SELECT
                 COALESCE(NULLIF(sp.hostname, ''), e.hostname, e.name) AS equipment_hostname,
-                sp.port_type AS equipment_port_type,
+                COALESCE(spt.type, sp.port_type) AS equipment_port_type,
                 sp.port_number AS equipment_port,
                 sp.vlan_id AS equipment_vlan_id,
                 sp.label AS equipment_label,
@@ -351,6 +353,7 @@ if (
                 sp.color_id AS equipment_color_id
              FROM switch_ports sp
              JOIN equipment e ON e.id = sp.equipment_id
+             LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
              WHERE sp.company_id = ?
                AND sp.equipment_id = ?
                AND sp.port_number = ?
