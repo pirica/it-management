@@ -650,18 +650,60 @@ function idf_resolve_port_type_id(mysqli $conn, int $company_id, $rawPortType, s
     if (is_numeric($rawPortType) && (int)$rawPortType > 0) {
         return (int)$rawPortType;
     }
-    $portTypeName = trim((string)$rawPortType);
-    if ($portTypeName !== '') {
-        $stmtByName = mysqli_prepare($conn, 'SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1');
+    $rawCandidates = [];
+    $rawValue = trim((string)$rawPortType);
+    $fallbackValue = trim((string)$fallback);
+    if ($rawValue !== '') {
+        $rawCandidates[] = $rawValue;
+    }
+    if ($fallbackValue !== '') {
+        $rawCandidates[] = $fallbackValue;
+    }
+
+    foreach ($rawCandidates as $portTypeName) {
+        $stmtByName = mysqli_prepare(
+            $conn,
+            'SELECT id, type FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1'
+        );
         if ($stmtByName) {
             mysqli_stmt_bind_param($stmtByName, 'is', $company_id, $portTypeName);
             mysqli_stmt_execute($stmtByName);
             $resByName = mysqli_stmt_get_result($stmtByName);
             $rowByName = $resByName ? mysqli_fetch_assoc($resByName) : null;
             mysqli_stmt_close($stmtByName);
-            if ($rowByName) return (int)$rowByName['id'];
+            if ($rowByName) {
+                return (int)$rowByName['id'];
+            }
         }
     }
+
+    $stmtAllPortTypes = mysqli_prepare($conn, 'SELECT id, type FROM switch_port_types WHERE company_id = ?');
+    if ($stmtAllPortTypes) {
+        mysqli_stmt_bind_param($stmtAllPortTypes, 'i', $company_id);
+        mysqli_stmt_execute($stmtAllPortTypes);
+        $resAllPortTypes = mysqli_stmt_get_result($stmtAllPortTypes);
+        $normalizedNeedleList = [];
+        foreach ($rawCandidates as $portTypeCandidate) {
+            $normalizedNeedle = strtolower(preg_replace('/[^a-z0-9]+/', '', (string)$portTypeCandidate));
+            if ($normalizedNeedle !== '') {
+                $normalizedNeedleList[] = $normalizedNeedle;
+            }
+        }
+        while ($resAllPortTypes && ($rowPortType = mysqli_fetch_assoc($resAllPortTypes))) {
+            $candidateType = strtolower(preg_replace('/[^a-z0-9]+/', '', (string)($rowPortType['type'] ?? '')));
+            if ($candidateType === '') {
+                continue;
+            }
+            foreach ($normalizedNeedleList as $normalizedNeedle) {
+                if ($normalizedNeedle !== '' && strpos($candidateType, $normalizedNeedle) !== false) {
+                    mysqli_stmt_close($stmtAllPortTypes);
+                    return (int)($rowPortType['id'] ?? 0);
+                }
+            }
+        }
+        mysqli_stmt_close($stmtAllPortTypes);
+    }
+
     return 0;
 }
 
