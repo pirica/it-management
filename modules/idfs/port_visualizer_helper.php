@@ -338,19 +338,20 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
 
 
-            if (empty($rj45Ports) && isset($options['rj45_ports']) && is_array($options['rj45_ports']) && !empty($options['rj45_ports'])) {
+            // Why: Equipment master fields define physical port capacity; always prefer those configured ranges over sparse/legacy IDF port rows.
+            if (array_key_exists('rj45_ports', $options) && is_array($options['rj45_ports'])) {
                 $rj45Ports = [];
                 foreach ($options['rj45_ports'] as $rj45PortNo) {
                     $rj45Ports[] = (int)$rj45PortNo;
                 }
             }
-            if (empty($sfpPorts) && isset($options['sfp_ports']) && is_array($options['sfp_ports']) && !empty($options['sfp_ports'])) {
+            if (array_key_exists('sfp_ports', $options) && is_array($options['sfp_ports'])) {
                 $sfpPorts = [];
                 foreach ($options['sfp_ports'] as $sfpPortNo) {
                     $sfpPorts[] = (int)$sfpPortNo;
                 }
             }
-            if (empty($sfpPlusPorts) && isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports']) && !empty($options['sfp_plus_ports'])) {
+            if (array_key_exists('sfp_plus_ports', $options) && is_array($options['sfp_plus_ports'])) {
                 $sfpPlusPorts = [];
                 foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
                     $sfpPlusPorts[] = (int)$sfpPlusPortNo;
