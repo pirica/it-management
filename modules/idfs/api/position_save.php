@@ -346,10 +346,6 @@ if ($pid > 0) {
     }
 
     if ($port_count > 0 && $existing === 0) {
-        $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
-        if ($rj45PortTypeId <= 0) {
-            idf_fail('Unable to resolve default port type for company', 500);
-        }
         $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
@@ -357,10 +353,11 @@ if ($pid > 0) {
         $defaultCableColorName = 'Gray';
         $defaultCableHexColor = '#808080';
         $portCableColorByNumber = [];
+        $portTypeByNumber = [];
         if ($equipment_id > 0) {
             $stmtSwitchPortColors = mysqli_prepare(
                 $conn,
-                "SELECT sp.port_number,
+                "SELECT sp.port_number, sp.port_type,
                         LOWER(TRIM(COALESCE(spt.type, CAST(sp.port_type AS CHAR)))) AS normalized_port_type,
                         cc.color_name,
                         cc.hex_color
@@ -383,6 +380,12 @@ if ($pid > 0) {
                     if ($portNumber <= 0) {
                         continue;
                     }
+                    $rawPortType = $switchPortColorRow['port_type'] ?? '';
+                    $normalizedPortType = trim((string)($switchPortColorRow['normalized_port_type'] ?? ''));
+                    $resolvedPortTypeId = idf_resolve_port_type_id($conn, $company_id, $rawPortType, $normalizedPortType !== '' ? $normalizedPortType : 'RJ45');
+                    if ($resolvedPortTypeId <= 0) {
+                        continue;
+                    }
                     $cableColorName = trim((string)($switchPortColorRow['color_name'] ?? ''));
                     $cableHexColor = strtoupper(trim((string)($switchPortColorRow['hex_color'] ?? '')));
                     if ($cableColorName === '') {
@@ -391,9 +394,14 @@ if ($pid > 0) {
                     if (!preg_match('/^#[0-9A-F]{6}$/', $cableHexColor)) {
                         $cableHexColor = $defaultCableHexColor;
                     }
-                    $portCableColorByNumber[$portNumber] = [
+                    $portKey = $resolvedPortTypeId . ':' . $portNumber;
+                    $portCableColorByNumber[$portKey] = [
                         'cable_color' => $cableColorName,
                         'hex_color' => $cableHexColor,
+                    ];
+                    $portTypeByNumber[$portKey] = [
+                        'port_no' => $portNumber,
+                        'port_type' => $resolvedPortTypeId,
                     ];
                 }
                 mysqli_stmt_close($stmtSwitchPortColors);
@@ -402,11 +410,27 @@ if ($pid > 0) {
         $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status_id, cable_color, hex_color) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
-            for ($n = 1; $n <= $port_count; $n++) {
-                $portCableColor = $portCableColorByNumber[$n]['cable_color'] ?? $defaultCableColorName;
-                $portHexColor = $portCableColorByNumber[$n]['hex_color'] ?? $defaultCableHexColor;
-                mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId, $portCableColor, $portHexColor);
-                mysqli_stmt_execute($stmtInsertPort);
+            if ($portTypeByNumber) {
+                foreach ($portTypeByNumber as $portKey => $portMeta) {
+                    $portCableColor = $portCableColorByNumber[$portKey]['cable_color'] ?? $defaultCableColorName;
+                    $portHexColor = $portCableColorByNumber[$portKey]['hex_color'] ?? $defaultCableHexColor;
+                    $portNo = (int)($portMeta['port_no'] ?? 0);
+                    $portTypeId = (int)($portMeta['port_type'] ?? 0);
+                    if ($portNo <= 0 || $portTypeId <= 0) {
+                        continue;
+                    }
+                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $portNo, $portTypeId, $unknownStatusId, $portCableColor, $portHexColor);
+                    mysqli_stmt_execute($stmtInsertPort);
+                }
+            } else {
+                $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
+                if ($rj45PortTypeId <= 0) {
+                    idf_fail('Unable to resolve default port type for company', 500);
+                }
+                for ($n = 1; $n <= $port_count; $n++) {
+                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId, $defaultCableColorName, $defaultCableHexColor);
+                    mysqli_stmt_execute($stmtInsertPort);
+                }
             }
             mysqli_stmt_close($stmtInsertPort);
         }
