@@ -94,6 +94,7 @@
  * IDF rack device-icon dot counts now prefer actual IDF port rows; configured RJ45/SFP counts are used only as a fallback when no typed ports exist, preventing inflated 20-dot previews when only 16 IDF ports are present.
 
  * Inventory Items index now uses the same ✏️ glyph for non-empty comments tooltips used by other module edit affordances.
+ * IDF rack view now scopes position/port visualization queries by company_id so switch card previews and switch-port details cannot mix cross-tenant rows.
  */
 
 declare(strict_types=1);
