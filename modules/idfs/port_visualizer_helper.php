@@ -271,9 +271,36 @@ if (!function_exists('itm_render_port_visualizer')) {
 
         $showDeviceIcon = isset($options['show_device_icon']) ? !empty($options['show_device_icon']) : true;
         if ($showDeviceIcon) {
-            // Right side: Icon (The 4-square icon from reference)
-            $html .= '<div class="itm-device-icon">';
-            for($i=0; $i<4; $i++) {
+            $sfpPorts = [];
+            $sfpPlusPorts = [];
+            foreach ($ports as $portMeta) {
+                $portTypeLabel = strtoupper(trim((string)($portMeta['port_type_label'] ?? '')));
+                if ($portTypeLabel === 'SFP') {
+                    $sfpPorts[] = (int)($portMeta['port_no'] ?? 0);
+                } elseif ($portTypeLabel === 'SFP+') {
+                    $sfpPlusPorts[] = (int)($portMeta['port_no'] ?? 0);
+                }
+            }
+            $deviceIconDotCount = count($sfpPorts) + count($sfpPlusPorts);
+            if ($deviceIconDotCount <= 0) {
+                $deviceIconDotCount = 4;
+            }
+            if ($deviceIconDotCount > 16) {
+                $deviceIconDotCount = 16;
+            }
+
+            $iconTitleParts = [];
+            if (!empty($sfpPorts)) {
+                $iconTitleParts[] = 'SFP Ports: ' . implode(', ', $sfpPorts);
+            }
+            if (!empty($sfpPlusPorts)) {
+                $iconTitleParts[] = 'SFP+ Ports: ' . implode(', ', $sfpPlusPorts);
+            }
+            $iconTitle = empty($iconTitleParts) ? 'SFP Ports not configured' : implode(' • ', $iconTitleParts);
+
+            // Right side: Keep the existing icon style, but use real SFP/SFP+ metadata for dot count and tooltip.
+            $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '">';
+            for($i=0; $i<$deviceIconDotCount; $i++) {
                 $html .= '<div class="itm-device-icon-dot"></div>';
             }
             $html .= '</div>';
