@@ -200,6 +200,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    if ($company_id <= 0) {
+        $_SESSION['crud_error'] = 'No active company selected for sample data.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $stmtCount = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM idfs WHERE company_id=?");
+    $hasRows = 0;
+    if ($stmtCount) {
+        mysqli_stmt_bind_param($stmtCount, 'i', $company_id);
+        mysqli_stmt_execute($stmtCount);
+        $resCount = mysqli_stmt_get_result($stmtCount);
+        $countRow = $resCount ? mysqli_fetch_assoc($resCount) : null;
+        $hasRows = (int)($countRow['total'] ?? 0);
+        mysqli_stmt_close($stmtCount);
+    }
+
+    if ($hasRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when IDFs are empty.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $sampleName = 'Primary IDF';
+    $sampleCode = 'IDF-01';
+    $sampleNotes = 'Sample seeded IDF row for first-time setup.';
+    $sampleActive = 1;
+    $stmtSeed = mysqli_prepare($conn, "INSERT INTO idfs (company_id, location_id, rack_id, name, idf_code, notes, active) VALUES (?, NULL, NULL, ?, ?, ?, ?)");
+    if ($stmtSeed) {
+        mysqli_stmt_bind_param($stmtSeed, 'isssi', $company_id, $sampleName, $sampleCode, $sampleNotes, $sampleActive);
+        if (mysqli_stmt_execute($stmtSeed)) {
+            $_SESSION['crud_success'] = 'Sample IDF data added.';
+        } else {
+            $_SESSION['crud_error'] = 'Unable to add sample IDF data: ' . mysqli_stmt_error($stmtSeed);
+        }
+        mysqli_stmt_close($stmtSeed);
+    } else {
+        $_SESSION['crud_error'] = 'Unable to prepare sample IDF insert.';
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 $edit_idf = null;
 $edit_idf_id = (int)($_GET['edit_idf'] ?? 0);
 if ($edit_idf_id > 0 && $company_id > 0) {
@@ -709,6 +756,15 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                     <tbody>
                         <?php if (!$idfs): ?>
                             <tr><td colspan="7" style="opacity:.8;">No IDFs yet.</td></tr>
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:12px;">
+                                    <form method="post" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
+                                        <input type="hidden" name="add_sample_data" value="1">
+                                        <button class="btn btn-primary" type="submit">Add sample data</button>
+                                    </form>
+                                </td>
+                            </tr>
                         <?php endif; ?>
                         <?php foreach ($idfs as $idf): ?>
                             <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
