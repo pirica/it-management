@@ -85,6 +85,8 @@
  * IDF equipment-port API/link creation now resolves switch_ports.port_type through switch_port_types for numeric FK deployments, while preserving raw type value for uniqueness checks during switch port-number updates.
 
  * IDF link/port switch sync updates now match both port_number and port_type when mirroring to switch_ports, preventing cross-type writes on overlapping port numbers (for example RJ45 1 vs SFP 1).
+ * IDF rack device icon now derives SFP/SFP+ dots using resilient type-label matching and paints each dot using matching SFP/SFP+ cable/status colors from rendered port metadata.
+ * IDF rack device icon now includes RJ45+SFP/SFP+ dot previews (capped) and paints each dot from matching port cable/status colors so active RJ45 colors are visible in the compact card icon.
 
  * Inventory Items index now uses the same ✏️ glyph for non-empty comments tooltips used by other module edit affordances.
  */

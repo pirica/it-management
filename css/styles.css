@@ -925,7 +925,7 @@ input[type="color"] {
 
 .itm-device-icon {
     display: grid;
-    grid-template-columns: repeat(2, 10px);
+    grid-template-columns: repeat(10, 10px);
     gap: 4px;
     opacity: 0.45;
     margin-left: auto;
