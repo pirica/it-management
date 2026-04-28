@@ -338,19 +338,19 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
 
 
-            if (isset($options['rj45_ports']) && is_array($options['rj45_ports']) && !empty($options['rj45_ports'])) {
+            if (empty($rj45Ports) && isset($options['rj45_ports']) && is_array($options['rj45_ports']) && !empty($options['rj45_ports'])) {
                 $rj45Ports = [];
                 foreach ($options['rj45_ports'] as $rj45PortNo) {
                     $rj45Ports[] = (int)$rj45PortNo;
                 }
             }
-            if (isset($options['sfp_ports']) && is_array($options['sfp_ports']) && !empty($options['sfp_ports'])) {
+            if (empty($sfpPorts) && isset($options['sfp_ports']) && is_array($options['sfp_ports']) && !empty($options['sfp_ports'])) {
                 $sfpPorts = [];
                 foreach ($options['sfp_ports'] as $sfpPortNo) {
                     $sfpPorts[] = (int)$sfpPortNo;
                 }
             }
-            if (isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports']) && !empty($options['sfp_plus_ports'])) {
+            if (empty($sfpPlusPorts) && isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports']) && !empty($options['sfp_plus_ports'])) {
                 $sfpPlusPorts = [];
                 foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
                     $sfpPlusPorts[] = (int)$sfpPlusPortNo;
@@ -392,9 +392,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
-                    $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                    $dotColor = trim((string)($dotPort['status_color'] ?? ''));
                     if ($dotColor === '') {
-                        $dotColor = trim((string)($dotPort['status_color'] ?? ''));
+                        $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
                     }
                     if ($dotColor !== '') {
                         $dotStyle = ' style="background:' . sanitize($dotColor) . ';"';
