@@ -216,6 +216,40 @@ function normalize_port_type(string $portType): string
     return 'rj45';
 }
 
+function switch_ports_port_type_is_numeric(mysqli $conn): bool
+{
+    $sql = "SELECT DATA_TYPE
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'switch_ports'
+              AND COLUMN_NAME = 'port_type'
+            LIMIT 1";
+    $res = mysqli_query($conn, $sql);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    $dataType = strtolower(trim((string)($row['DATA_TYPE'] ?? '')));
+    return in_array($dataType, ['tinyint', 'smallint', 'mediumint', 'int', 'bigint'], true);
+}
+
+function fetch_port_type_id_map(mysqli $conn, int $companyId): array
+{
+    $map = [];
+    $stmt = mysqli_prepare($conn, 'SELECT id, type FROM switch_port_types WHERE company_id = ? ORDER BY id ASC');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $normalized = normalize_port_type((string)($row['type'] ?? ''));
+            if ($normalized === '' || isset($map[$normalized])) {
+                continue;
+            }
+            $map[$normalized] = (int)($row['id'] ?? 0);
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return $map;
+}
+
 // Feature Detection: Check for modern schema vs legacy schema
 $hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasPortType = itm_table_has_column($conn, 'switch_ports', 'port_type');
@@ -224,6 +258,8 @@ $hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
 $hasVlanId = itm_table_has_column($conn, 'switch_ports', 'vlan_id');
 $hasLegacyNumberPort = itm_table_has_column($conn, 'equipment', 'numberport');
 $hasSwitchFiberCountId = itm_table_has_column($conn, 'equipment', 'switch_fiber_count_id');
+$hasSwitchFiberPortLabelColumn = itm_table_has_column($conn, 'equipment', 'switch_fiber_port_label');
+$isNumericPortTypeColumn = $hasPortType ? switch_ports_port_type_is_numeric($conn) : false;
 
 $hasPortTypesTable = false;
 $stmtTable = mysqli_prepare($conn, "SHOW TABLES LIKE 'switch_port_types'");
@@ -274,10 +310,12 @@ if ($switchId <= 0) {
 // Fetch switch configuration from the equipment table
 $legacyNumberPortSql = $hasLegacyNumberPort ? 'e.numberport AS legacy_numberport,' : 'NULL AS legacy_numberport,';
 $fiberCountSelectSql = $hasSwitchFiberCountId ? "COALESCE(efc.name, '0') AS fiber_count," : "COALESCE(e.switch_fiber_ports_number, 0) AS fiber_count,";
+$fiberPortLabelSelectSql = $hasSwitchFiberPortLabelColumn ? "COALESCE(e.switch_fiber_port_label, '') AS fiber_port_label" : "'' AS fiber_port_label";
 $fiberCountJoinSql = $hasSwitchFiberCountId ? 'LEFT JOIN equipment_fiber_count efc ON efc.id = e.switch_fiber_count_id' : '';
 $switchSql = "SELECT e.id, e.name, {$legacyNumberPortSql} COALESCE(er.name, '24 ports') AS rj45_name,
                      COALESCE(ef.name, '') AS fiber_name, {$fiberCountSelectSql}
-                     COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number
+                     COALESCE(e.switch_fiber_ports_number, 0) AS fiber_ports_number,
+                     {$fiberPortLabelSelectSql}
               FROM equipment e
               LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
               LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
@@ -317,13 +355,16 @@ $fiberPortsNumber = (int)preg_replace('/\D+/', '', (string)$switch['fiber_ports_
 $legacyFiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
 $fiberCount = $fiberPortsNumber > 0 ? $fiberPortsNumber : $legacyFiberCount;
 $fiberName = strtolower(trim((string)$switch['fiber_name']));
+$fiberLabel = strtolower(trim((string)($switch['fiber_port_label'] ?? '')));
+$fiberHint = trim($fiberLabel . ' ' . $fiberName);
 // Why: Legacy records may have Fiber Ports Number configured without a selected Fiber type.
 // Resolve the fallback label from equipment_fiber.name so seeding honors catalog values.
 if ($fiberCount > 0 && $fiberName === '') {
     $fiberName = fetch_default_fiber_name($conn, (int)$company_id);
+    $fiberHint = trim($fiberLabel . ' ' . $fiberName);
 }
-$hasSfpPlusLabel = strpos($fiberName, 'sfp+') !== false;
-$hasSfpLabel = strpos($fiberName, 'sfp') !== false;
+$hasSfpPlusLabel = strpos($fiberHint, 'sfp+') !== false;
+$hasSfpLabel = strpos($fiberHint, 'sfp') !== false;
 $sfpCount = $hasSfpPlusLabel ? 0 : ($hasSfpLabel ? $fiberCount : 0);
 $sfpPlusCount = $hasSfpPlusLabel ? $fiberCount : 0;
 if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
@@ -332,7 +373,7 @@ if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
 /**
  * Automatically creates missing port records or removes excess port records
  */
-function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, int $defaultStatusId, int $defaultColorId): void
+function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, bool $isNumericPortTypeColumn, array $portTypeIdMap, int $defaultStatusId, int $defaultColorId): void
 {
     if ($count <= 0) {
         return;
@@ -341,10 +382,18 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
     if ($hasEquipmentId && $hasPortType) {
         // Modern schema: Ports are linked to a switch
         $existingPortNumbers = [];
+        $portTypeFilter = $isNumericPortTypeColumn ? (int)($portTypeIdMap[$portType] ?? 0) : $portType;
+        if ($isNumericPortTypeColumn && (int)$portTypeFilter <= 0) {
+            return;
+        }
         $existingSql = 'SELECT port_number FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ? ORDER BY port_number ASC';
         $existingStmt = mysqli_prepare($conn, $existingSql);
         if ($existingStmt) {
-            mysqli_stmt_bind_param($existingStmt, 'iis', $companyId, $switchId, $portType);
+            if ($isNumericPortTypeColumn) {
+                mysqli_stmt_bind_param($existingStmt, 'iii', $companyId, $switchId, $portTypeFilter);
+            } else {
+                mysqli_stmt_bind_param($existingStmt, 'iis', $companyId, $switchId, $portTypeFilter);
+            }
             if (mysqli_stmt_execute($existingStmt)) {
                 $existingRes = mysqli_stmt_get_result($existingStmt);
                 while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
@@ -368,7 +417,11 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
                 continue;
             }
             $label = strtoupper(str_replace('_', '+', $portType)) . ' ' . $n;
-            mysqli_stmt_bind_param($insertStmt, 'iisiiii', $companyId, $switchId, $portType, $n, $label, $defaultStatusId, $defaultColorId);
+            if ($isNumericPortTypeColumn) {
+                mysqli_stmt_bind_param($insertStmt, 'iiiiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId);
+            } else {
+                mysqli_stmt_bind_param($insertStmt, 'iisiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId);
+            }
             mysqli_stmt_execute($insertStmt);
         }
         mysqli_stmt_close($insertStmt);
@@ -377,7 +430,11 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         $deleteSql = 'DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_type = ? AND port_number > ?';
         $deleteStmt = mysqli_prepare($conn, $deleteSql);
         if ($deleteStmt) {
-            mysqli_stmt_bind_param($deleteStmt, 'iisi', $companyId, $switchId, $portType, $count);
+            if ($isNumericPortTypeColumn) {
+                mysqli_stmt_bind_param($deleteStmt, 'iiii', $companyId, $switchId, $portTypeFilter, $count);
+            } else {
+                mysqli_stmt_bind_param($deleteStmt, 'iisi', $companyId, $switchId, $portTypeFilter, $count);
+            }
             mysqli_stmt_execute($deleteStmt);
             mysqli_stmt_close($deleteStmt);
         }
@@ -445,22 +502,26 @@ function remove_duplicate_ports(mysqli $conn, int $companyId, int $switchId, boo
 }
 
 // Synchronize port records
-seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $defaultStatusId, $defaultColorId);
+$portTypeIdMap = $isNumericPortTypeColumn ? fetch_port_type_id_map($conn, (int)$company_id) : [];
+seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId);
+seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId);
+seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId);
 remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
 // Fetch all port details including status, color, and VLAN
 if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, sp.port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.comments{$vlanSelect}
+    $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
+    $portTypeJoinSql = $isNumericPortTypeColumn ? 'LEFT JOIN switch_port_types spt ON spt.id = sp.port_type' : '';
+    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
+            {$portTypeJoinSql}
             WHERE sp.company_id = ?
               AND sp.equipment_id = ?
-            ORDER BY FIELD(sp.port_type, 'rj45', 'sfp', 'sfp_plus'), sp.port_number ASC";
+            ORDER BY FIELD(LOWER({$portTypeSelectSql}), 'rj45', 'sfp', 'sfp+'), sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);
     $result = false;
     if ($stmt) {
