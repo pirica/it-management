@@ -155,11 +155,10 @@ if (!function_exists('itm_render_port_visualizer')) {
                     continue;
                 }
 
-                $statusColor = (string)($p['status_color'] ?? '#161b22');
+                $statusColor = trim((string)($p['status_color'] ?? ''));
                 $cableHexColor = trim((string)($p['cable_hex_color'] ?? ''));
-                if ($cableHexColor !== '') {
-                    // Why: Cable color provides the clearest physical patch-cord visualization for linked ports.
-                    $statusColor = $cableHexColor;
+                if ($statusColor === '') {
+                    $statusColor = $cableHexColor !== '' ? $cableHexColor : '#161b22';
                 }
                 $isActive = false;
                 if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
