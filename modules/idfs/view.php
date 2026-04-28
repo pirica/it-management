@@ -130,9 +130,20 @@ if ($locationNameLabel === '') {
 
 $positions = [];
 $maxPosInDb = 0;
+$hasSwitchFiberPortLabelColumn = false;
+$hasSwitchFiberPortLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment` LIKE 'switch_fiber_port_label'");
+if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabelColumnRes) > 0) {
+    $hasSwitchFiberPortLabelColumn = true;
+}
+$switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
+    ? "COALESCE(e.switch_fiber_port_label, '')"
+    : "''";
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name,
+            COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
+            COALESCE(ef.name, '') AS equipment_fiber_name,
+            {$switchFiberPortLabelSelect} AS equipment_fiber_port_label,
             CASE
                 WHEN UPPER(COALESCE(et.code, '')) = 'SWITCH' THEN 1
                 WHEN UPPER(COALESCE(et.name, '')) = 'SWITCH' THEN 1
@@ -143,6 +154,7 @@ $stmtPos = mysqli_prepare(
      LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
      LEFT JOIN equipment e ON e.id = p.equipment_id
      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+     LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
      WHERE p.idf_id=?
      ORDER BY p.position_no ASC"
@@ -225,6 +237,20 @@ if ($stmtPos) {
                 $row['ports'][] = $pRow;
             }
             mysqli_stmt_close($stmtPorts);
+        }
+
+        $fiberPortCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
+        $fiberPortHint = strtolower(trim(
+            (string)($row['equipment_fiber_port_label'] ?? '') . ' ' . (string)($row['equipment_fiber_name'] ?? '')
+        ));
+        $row['sfp_ports'] = [];
+        $row['sfp_plus_ports'] = [];
+        if ($fiberPortCount > 0) {
+            if (strpos($fiberPortHint, 'sfp+') !== false) {
+                $row['sfp_plus_ports'] = range(1, $fiberPortCount);
+            } elseif (strpos($fiberPortHint, 'sfp') !== false) {
+                $row['sfp_ports'] = range(1, $fiberPortCount);
+            }
         }
 
         $positions[$posNo] = $row;
@@ -566,6 +592,8 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'idf_name' => (string)($idf['name'] ?? ''),
                                                         'idf_code' => (string)($idf['idf_code'] ?? ''),
                                                         'rack_name' => (string)($idf['rack_name'] ?? ''),
+                                                        'sfp_ports' => (array)($pos['sfp_ports'] ?? []),
+                                                        'sfp_plus_ports' => (array)($pos['sfp_plus_ports'] ?? []),
                                                     ]);
                                                     ?>
                                                 </div>

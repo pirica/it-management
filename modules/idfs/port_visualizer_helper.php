@@ -273,12 +273,24 @@ if (!function_exists('itm_render_port_visualizer')) {
         if ($showDeviceIcon) {
             $sfpPorts = [];
             $sfpPlusPorts = [];
-            foreach ($ports as $portMeta) {
-                $portTypeLabel = strtoupper(trim((string)($portMeta['port_type_label'] ?? '')));
-                if ($portTypeLabel === 'SFP') {
-                    $sfpPorts[] = (int)($portMeta['port_no'] ?? 0);
-                } elseif ($portTypeLabel === 'SFP+') {
-                    $sfpPlusPorts[] = (int)($portMeta['port_no'] ?? 0);
+            if (isset($options['sfp_ports']) && is_array($options['sfp_ports'])) {
+                foreach ($options['sfp_ports'] as $sfpPortNo) {
+                    $sfpPorts[] = (int)$sfpPortNo;
+                }
+            }
+            if (isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports'])) {
+                foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
+                    $sfpPlusPorts[] = (int)$sfpPlusPortNo;
+                }
+            }
+            if (empty($sfpPorts) && empty($sfpPlusPorts)) {
+                foreach ($ports as $portMeta) {
+                    $portTypeLabel = strtoupper(trim((string)($portMeta['port_type_label'] ?? '')));
+                    if ($portTypeLabel === 'SFP') {
+                        $sfpPorts[] = (int)($portMeta['port_no'] ?? 0);
+                    } elseif ($portTypeLabel === 'SFP+') {
+                        $sfpPlusPorts[] = (int)($portMeta['port_no'] ?? 0);
+                    }
                 }
             }
             $deviceIconDotCount = count($sfpPorts) + count($sfpPlusPorts);
