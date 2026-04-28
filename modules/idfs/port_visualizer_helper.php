@@ -271,52 +271,98 @@ if (!function_exists('itm_render_port_visualizer')) {
 
         $showDeviceIcon = isset($options['show_device_icon']) ? !empty($options['show_device_icon']) : true;
         if ($showDeviceIcon) {
+            $portMetaByTypeAndNo = [];
+            $rj45Ports = [];
             $sfpPorts = [];
             $sfpPlusPorts = [];
-            if (isset($options['sfp_ports']) && is_array($options['sfp_ports'])) {
+
+            foreach ($ports as $portMeta) {
+                $portNo = (int)($portMeta['port_no'] ?? 0);
+                if ($portNo <= 0) {
+                    continue;
+                }
+                $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? ''))));
+                $typeKey = 'rj45';
+                if (strpos($typeRaw, 'sfp+') !== false) {
+                    $typeKey = 'sfp_plus';
+                    $sfpPlusPorts[] = $portNo;
+                } elseif (strpos($typeRaw, 'sfp') !== false) {
+                    $typeKey = 'sfp';
+                    $sfpPorts[] = $portNo;
+                } else {
+                    $rj45Ports[] = $portNo;
+                }
+                $portMetaByTypeAndNo[$typeKey . ':' . $portNo] = $portMeta;
+            }
+
+
+            if (isset($options['rj45_ports']) && is_array($options['rj45_ports']) && !empty($options['rj45_ports'])) {
+                $rj45Ports = [];
+                foreach ($options['rj45_ports'] as $rj45PortNo) {
+                    $rj45Ports[] = (int)$rj45PortNo;
+                }
+            }
+            if (isset($options['sfp_ports']) && is_array($options['sfp_ports']) && !empty($options['sfp_ports'])) {
+                $sfpPorts = [];
                 foreach ($options['sfp_ports'] as $sfpPortNo) {
                     $sfpPorts[] = (int)$sfpPortNo;
                 }
             }
-            if (isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports'])) {
+            if (isset($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports']) && !empty($options['sfp_plus_ports'])) {
+                $sfpPlusPorts = [];
                 foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
                     $sfpPlusPorts[] = (int)$sfpPlusPortNo;
                 }
             }
-            if (empty($sfpPorts) && empty($sfpPlusPorts)) {
-                foreach ($ports as $portMeta) {
-                    $portTypeLabel = strtoupper(trim((string)($portMeta['port_type_label'] ?? '')));
-                    if ($portTypeLabel === 'SFP') {
-                        $sfpPorts[] = (int)($portMeta['port_no'] ?? 0);
-                    } elseif ($portTypeLabel === 'SFP+') {
-                        $sfpPlusPorts[] = (int)($portMeta['port_no'] ?? 0);
-                    }
-                }
-            }
-            $deviceIconDotCount = count($sfpPorts) + count($sfpPlusPorts);
-            if ($deviceIconDotCount <= 0) {
-                $deviceIconDotCount = 4;
-            }
-            if ($deviceIconDotCount > 16) {
-                $deviceIconDotCount = 16;
-            }
+
+            sort($rj45Ports);
+            sort($sfpPorts);
+            sort($sfpPlusPorts);
 
             $iconTitleParts = [];
+            if (!empty($rj45Ports)) {
+                $iconTitleParts[] = 'RJ45 Ports: ' . implode(', ', $rj45Ports);
+            }
             if (!empty($sfpPorts)) {
                 $iconTitleParts[] = 'SFP Ports: ' . implode(', ', $sfpPorts);
             }
             if (!empty($sfpPlusPorts)) {
                 $iconTitleParts[] = 'SFP+ Ports: ' . implode(', ', $sfpPlusPorts);
             }
-            $iconTitle = empty($iconTitleParts) ? 'SFP Ports not configured' : implode(' • ', $iconTitleParts);
+            $iconTitle = empty($iconTitleParts) ? 'Ports not configured' : implode(' • ', $iconTitleParts);
 
-            // Right side: Keep the existing icon style, but use real SFP/SFP+ metadata for dot count and tooltip.
-            $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '">';
-            for($i=0; $i<$deviceIconDotCount; $i++) {
-                $html .= '<div class="itm-device-icon-dot"></div>';
+            $iconDots = [];
+            foreach ($rj45Ports as $portNo) { $iconDots[] = ['type' => 'rj45', 'no' => (int)$portNo]; }
+            foreach ($sfpPorts as $portNo) { $iconDots[] = ['type' => 'sfp', 'no' => (int)$portNo]; }
+            foreach ($sfpPlusPorts as $portNo) { $iconDots[] = ['type' => 'sfp_plus', 'no' => (int)$portNo]; }
+
+            if (empty($iconDots)) {
+                for ($i = 0; $i < 4; $i++) { $iconDots[] = ['type' => '', 'no' => 0]; }
+            }
+            if (count($iconDots) > 20) {
+                $iconDots = array_slice($iconDots, 0, 20);
+            }
+
+            $iconCols = max(2, min(10, count($iconDots)));
+            $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '" style="grid-template-columns: repeat(' . $iconCols . ', 10px);">';
+            foreach ($iconDots as $dotMeta) {
+                $dotStyle = '';
+                $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
+                if (isset($portMetaByTypeAndNo[$dotKey])) {
+                    $dotPort = $portMetaByTypeAndNo[$dotKey];
+                    $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                    if ($dotColor === '') {
+                        $dotColor = trim((string)($dotPort['status_color'] ?? ''));
+                    }
+                    if ($dotColor !== '') {
+                        $dotStyle = ' style="background:' . sanitize($dotColor) . ';"';
+                    }
+                }
+                $html .= '<div class="itm-device-icon-dot"' . $dotStyle . '></div>';
             }
             $html .= '</div>';
         }
+
 
         $html .= '</div>'; // end container
 
