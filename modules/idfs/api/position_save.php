@@ -360,8 +360,12 @@ if ($pid > 0) {
         if ($equipment_id > 0) {
             $stmtSwitchPortColors = mysqli_prepare(
                 $conn,
-                "SELECT sp.port_number, cc.color_name, cc.hex_color
+                "SELECT sp.port_number,
+                        LOWER(TRIM(COALESCE(spt.type, CAST(sp.port_type AS CHAR)))) AS normalized_port_type,
+                        cc.color_name,
+                        cc.hex_color
                  FROM switch_ports sp
+                 LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
                  LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
                  WHERE sp.company_id = ? AND sp.equipment_id = ?"
             );
@@ -370,6 +374,11 @@ if ($pid > 0) {
                 mysqli_stmt_execute($stmtSwitchPortColors);
                 $resSwitchPortColors = mysqli_stmt_get_result($stmtSwitchPortColors);
                 while ($resSwitchPortColors && ($switchPortColorRow = mysqli_fetch_assoc($resSwitchPortColors))) {
+                    $normalizedPortType = trim((string)($switchPortColorRow['normalized_port_type'] ?? ''));
+                    if ($normalizedPortType !== '' && $normalizedPortType !== 'rj45') {
+                        // Why: IDF RJ45 auto-generation must not be contaminated by SFP rows that share the same port_number values.
+                        continue;
+                    }
                     $portNumber = (int)($switchPortColorRow['port_number'] ?? 0);
                     if ($portNumber <= 0) {
                         continue;
