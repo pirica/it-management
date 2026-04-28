@@ -473,6 +473,7 @@ if (
            AND p.company_id = sp.company_id
            AND p.equipment_id = sp.equipment_id
            AND sp.port_number = pr.port_no
+           AND sp.port_type = pr.port_type
          LIMIT 1"
     );
     if ($stmtSwitchSync) {
