@@ -31,9 +31,52 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
-        // Sort ports by port_no
+        // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
+        // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
+        $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
+        foreach ($ports as $itmPortMetaScan) {
+            $scanNo = (int)($itmPortMetaScan['port_no'] ?? 0);
+            if ($scanNo <= 0) {
+                continue;
+            }
+            $scanTypeRaw = strtolower(trim((string)($itmPortMetaScan['port_type_label'] ?? ($itmPortMetaScan['port_type'] ?? 'rj45'))));
+            $scanType = 'rj45';
+            if (strpos($scanTypeRaw, 'sfp+') !== false) {
+                $scanType = 'sfp_plus';
+            } elseif (strpos($scanTypeRaw, 'sfp') !== false) {
+                $scanType = 'sfp';
+            }
+            if ($scanNo > $maxByType[$scanType]) {
+                $maxByType[$scanType] = $scanNo;
+            }
+        }
+        $typeOffset = [
+            'rj45' => 0,
+            'sfp' => max(0, $maxByType['rj45']),
+            'sfp_plus' => max(0, $maxByType['rj45']) + max(0, $maxByType['sfp']),
+        ];
+
+        foreach ($ports as &$itmPortMeta) {
+            $rawPortNo = (int)($itmPortMeta['port_no'] ?? 0);
+            $normalizedType = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? 'rj45'))));
+            $visualPortNo = $rawPortNo > 0 ? $rawPortNo : 1;
+            if (strpos($normalizedType, 'sfp+') !== false) {
+                $visualPortNo += $typeOffset['sfp_plus'];
+            } elseif (strpos($normalizedType, 'sfp') !== false) {
+                $visualPortNo += $typeOffset['sfp'];
+            }
+            $itmPortMeta['_visual_port_no'] = $visualPortNo;
+        }
+        unset($itmPortMeta);
+
+        // Sort ports by visual slot first, then by database id to keep ties deterministic.
         usort($ports, function($a, $b) {
-            return (int)($a['port_no'] ?? 0) <=> (int)($b['port_no'] ?? 0);
+            $slotA = (int)($a['_visual_port_no'] ?? ($a['port_no'] ?? 0));
+            $slotB = (int)($b['_visual_port_no'] ?? ($b['port_no'] ?? 0));
+            if ($slotA === $slotB) {
+                return (int)($a['id'] ?? 0) <=> (int)($b['id'] ?? 0);
+            }
+            return $slotA <=> $slotB;
         });
 
         $totalPorts = count($ports);
@@ -56,7 +99,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
 
             foreach ($ports as $p) {
-                $num = (int)$p['port_no'];
+                $num = (int)($p['_visual_port_no'] ?? ($p['port_no'] ?? 0));
                 if ($num <= 0) {
                     continue;
                 }
@@ -76,7 +119,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
 
             foreach ($ports as $p) {
-                $num = (int)$p['port_no'];
+                $num = (int)($p['_visual_port_no'] ?? ($p['port_no'] ?? 0));
                 if ($num <= 0) {
                     continue;
                 }
@@ -112,11 +155,10 @@ if (!function_exists('itm_render_port_visualizer')) {
                     continue;
                 }
 
-                $statusColor = (string)($p['status_color'] ?? '#161b22');
+                $statusColor = trim((string)($p['status_color'] ?? ''));
                 $cableHexColor = trim((string)($p['cable_hex_color'] ?? ''));
-                if ($cableHexColor !== '') {
-                    // Why: Cable color provides the clearest physical patch-cord visualization for linked ports.
-                    $statusColor = $cableHexColor;
+                if ($statusColor === '') {
+                    $statusColor = $cableHexColor !== '' ? $cableHexColor : '#161b22';
                 }
                 $isActive = false;
                 if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
