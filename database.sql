@@ -2372,7 +2372,7 @@ CREATE TABLE `switch_port_types` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `type` (`company_id`,`type`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `switch_port_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `switch_port_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_port_types`
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '1', 'RJ45');
@@ -2390,6 +2390,11 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '6', '
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '9', 'SFP+');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '12', 'SFP+');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '15', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '16', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '17', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '18', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '19', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '20', 'QSFP');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`);
 

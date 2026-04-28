@@ -39,6 +39,8 @@
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
+ * Database seed data now includes QSFP switch port type entries for companies 1 through 5 in `switch_port_types`.
+ * `switch_port_types` table definition now sets AUTO_INCREMENT to 21 so inserts continue correctly after seeded IDs 1-20.
  * includes/get_ports.php now avoids PHP 8-only string helpers so the switch-port loader returns JSON correctly on PHP 7.4 environments.
  * includes/get_ports.php now guards equipment_fiber table-existence checks when shared helpers are unavailable, preventing fatal errors that returned empty AJAX bodies.
  * Equipment create/edit switch form now hides Fiber Ports/Fiber Patch/Fiber Rack/Fiber Port Label inputs while keeping Fiber Ports Number visible for switch sizing.
