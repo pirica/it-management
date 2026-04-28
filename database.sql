@@ -2390,6 +2390,11 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '6', '
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '9', 'SFP+');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '12', 'SFP+');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '15', 'SFP+');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '16', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '17', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '18', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '19', 'QSFP');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '20', 'QSFP');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`);
 
