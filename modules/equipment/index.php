@@ -459,7 +459,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-company-scoped="1"
                                         data-add-friendly="cable color"
                                         data-add-extra-fields='[{"name":"hex_color","label":"Color Picker","type":"color"}]'>
-                                        <option value="">-- choose color --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -473,7 +473,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-label-col="status"
                                         data-add-company-scoped="1"
                                         data-add-friendly="switch status">
-                                        <option value="">-- choose status --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -492,7 +492,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-company-scoped="1"
                                         data-add-friendly="vlan"
                                         data-add-extra-fields='[{"name":"vlan_number","label":"VLAN Number","type":"number"},{"name":"vlan_color","label":"Vlan Color","type":"color"}]'>
-                                        <option value="">-- choose VLAN --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -506,7 +506,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-label-col="name"
                                         data-add-company-scoped="1"
                                         data-add-friendly="fiber port type">
-                                        <option value="">-- choose fiber ports --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -520,7 +520,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-label-col="name"
                                         data-add-company-scoped="1"
                                         data-add-friendly="fiber patch">
-                                        <option value="">-- choose fiber patch --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -534,7 +534,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-label-col="name"
                                         data-add-company-scoped="1"
                                         data-add-friendly="fiber rack">
-                                        <option value="">-- choose fiber rack --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -563,7 +563,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-company-scoped="1"
                                         data-add-extra-fields='[{"name":"name","label":"Code","type":"text"}]'
                                         data-add-friendly="idf">
-                                        <option value="">-- choose IDF --</option>
+                                        <option value=""></option>
                                     </select>
                                 </div>
                             </label>
@@ -1148,13 +1148,13 @@ if (!empty($_SESSION['crud_success'])) {
             const idfSelect = document.getElementById('idfSelect');
             const toRackSelect = document.getElementById('toRackSelect');
 
-            statusSelect.innerHTML = '<option value="">-- choose status --</option>';
-            colorSelect.innerHTML = '<option value="">-- choose color --</option>';
-            vlanSelect.innerHTML = '<option value="">-- choose VLAN --</option>';
-            fiberPortsSelect.innerHTML = '<option value="">-- choose fiber ports --</option>';
-            fiberPatchSelect.innerHTML = '<option value="">-- choose fiber patch --</option>';
-            fiberRackSelect.innerHTML = '<option value="">-- choose fiber rack --</option>';
-            idfSelect.innerHTML = '<option value="">-- choose IDF --</option>';
+            statusSelect.innerHTML = '<option value=""></option>';
+            colorSelect.innerHTML = '<option value=""></option>';
+            vlanSelect.innerHTML = '<option value=""></option>';
+            fiberPortsSelect.innerHTML = '<option value=""></option>';
+            fiberPatchSelect.innerHTML = '<option value=""></option>';
+            fiberRackSelect.innerHTML = '<option value=""></option>';
+            idfSelect.innerHTML = '<option value=""></option>';
             toRackSelect.innerHTML = '<option value=""></option>';
 
             statusOptions.forEach(function (item) {
