@@ -368,7 +368,7 @@ if ($pid > 0) {
     if ($equipment_id <= 0) {
         $stmtSeedPosMeta = mysqli_prepare(
             $conn,
-            "SELECT equipment_id, port_count
+            "SELECT equipment_id, port_count, device_name
              FROM idf_positions
              WHERE id = ? AND company_id = ?
              LIMIT 1"
@@ -383,6 +383,29 @@ if ($pid > 0) {
                 $equipment_id = (int)($seedPosMeta['equipment_id'] ?? 0);
                 if ($port_count <= 0) {
                     $port_count = (int)($seedPosMeta['port_count'] ?? 0);
+                }
+                if ($equipment_id <= 0) {
+                    $seedDeviceName = trim((string)($seedPosMeta['device_name'] ?? ''));
+                    if ($seedDeviceName !== '') {
+                        $stmtSeedEquipmentByName = mysqli_prepare(
+                            $conn,
+                            "SELECT id
+                             FROM equipment
+                             WHERE company_id = ? AND LOWER(name) = LOWER(?)
+                             ORDER BY id DESC
+                             LIMIT 1"
+                        );
+                        if ($stmtSeedEquipmentByName) {
+                            mysqli_stmt_bind_param($stmtSeedEquipmentByName, 'is', $company_id, $seedDeviceName);
+                            mysqli_stmt_execute($stmtSeedEquipmentByName);
+                            $resSeedEquipmentByName = mysqli_stmt_get_result($stmtSeedEquipmentByName);
+                            $seedEquipmentByName = $resSeedEquipmentByName ? mysqli_fetch_assoc($resSeedEquipmentByName) : null;
+                            mysqli_stmt_close($stmtSeedEquipmentByName);
+                            if ($seedEquipmentByName) {
+                                $equipment_id = (int)($seedEquipmentByName['id'] ?? 0);
+                            }
+                        }
+                    }
                 }
             }
         }
