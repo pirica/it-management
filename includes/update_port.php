@@ -131,6 +131,7 @@ $hasFiberPortId = itm_table_has_column($conn, 'switch_ports', 'fiber_port_id');
 $hasFiberPatchId = itm_table_has_column($conn, 'switch_ports', 'fiber_patch_id');
 $hasFiberRackId = itm_table_has_column($conn, 'switch_ports', 'fiber_rack_id');
 $hasIdfId = itm_table_has_column($conn, 'switch_ports', 'idf_id');
+$hasRackId = itm_table_has_column($conn, 'switch_ports', 'rack_id');
 
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
@@ -173,6 +174,7 @@ $fiberPortId = isset($input['fiber_port_id']) && is_numeric((string)$input['fibe
 $fiberPatchId = isset($input['fiber_patch_id']) && is_numeric((string)$input['fiber_patch_id']) ? (int)$input['fiber_patch_id'] : 0;
 $fiberRackId = isset($input['fiber_rack_id']) && is_numeric((string)$input['fiber_rack_id']) ? (int)$input['fiber_rack_id'] : 0;
 $idfId = isset($input['idf_id']) && is_numeric((string)$input['idf_id']) ? (int)$input['idf_id'] : 0;
+$rackId = isset($input['rack_id']) && is_numeric((string)$input['rack_id']) ? (int)$input['rack_id'] : 0;
 
 // Build dynamic UPDATE query based on provided fields
 $fields = [];
@@ -243,6 +245,15 @@ if ($hasIdfId && array_key_exists('idf_id', $input)) {
         $params[] = $idfId;
     } else {
         $fields[] = 'idf_id = NULL';
+    }
+}
+if ($hasRackId && array_key_exists('rack_id', $input)) {
+    if ($rackId > 0) {
+        $fields[] = 'rack_id = ?';
+        $types .= 'i';
+        $params[] = $rackId;
+    } else {
+        $fields[] = 'rack_id = NULL';
     }
 }
 
