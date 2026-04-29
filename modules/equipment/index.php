@@ -538,8 +538,22 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
+                            <label id="toRackRow" style="display:none;">
+                                To Rack:
+                                <div class="switch-control-input">
+                                    <select id="toRackSelect"
+                                        data-addable-select="1"
+                                        data-add-table="racks"
+                                        data-add-id-col="id"
+                                        data-add-label-col="name"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="rack">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                            </label>
                             <label id="idfRow" style="display:none;">
-                                IDF:
+                                To IDF:
                                 <div class="switch-control-input">
                                     <select id="idfSelect"
                                         data-addable-select="1"
@@ -587,6 +601,7 @@ if (!empty($_SESSION['crud_success'])) {
         let fiberPatchOptions = [];
         let fiberRackOptions = [];
         let idfOptions = [];
+        let rackOptions = [];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
         const csrfToken = window.ITM_CSRF_TOKEN
@@ -963,11 +978,13 @@ if (!empty($_SESSION['crud_success'])) {
 
         function togglePortControlSections(portType) {
             const isFiber = isFiberPortType(portType);
+            const isRj45 = normalizePortType(portType) === 'rj45';
             document.getElementById('vlanRow').style.display = '';
             document.getElementById('fiberPortsRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberPatchRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberRackRow').style.display = isFiber ? '' : 'none';
-            document.getElementById('idfRow').style.display = isFiber ? '' : 'none';
+            document.getElementById('idfRow').style.display = (isFiber || isRj45) ? '' : 'none';
+            document.getElementById('toRackRow').style.display = isRj45 ? '' : 'none';
         }
 
         function selectPort(el) {
@@ -988,6 +1005,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('fiberPatchSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || '');
             document.getElementById('fiberRackSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_rack_id) || '');
             document.getElementById('idfSelect').value = String(el.dataset.idfId || '');
+            document.getElementById('toRackSelect').value = String(el.dataset.toRackId || '');
             document.getElementById('commentsInput').value = el.dataset.comments || '';
         }
 
@@ -1010,6 +1028,7 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
             el.dataset.idfId = p.to_idf_id || p.idf_id || '';
             el.dataset.idfCode = p.idf_code || '';
+            el.dataset.toRackId = p.to_rack_id || '';
             el.dataset.fiberPortLabel = readSwitchMeta('fiber_port_label');
 
             const num = document.createElement('div');
@@ -1110,7 +1129,7 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
 
-        function hydrateLookups(statuses, colors, vlans, fiberPorts, fiberPatches, fiberRacks, idfs) {
+        function hydrateLookups(statuses, colors, vlans, fiberPorts, fiberPatches, fiberRacks, idfs, racks) {
             statusOptions = Array.isArray(statuses) ? statuses : [];
             colorOptions = Array.isArray(colors) ? colors : [];
             vlanOptions = Array.isArray(vlans) ? vlans : [];
@@ -1118,6 +1137,7 @@ if (!empty($_SESSION['crud_success'])) {
             fiberPatchOptions = Array.isArray(fiberPatches) ? fiberPatches : [];
             fiberRackOptions = Array.isArray(fiberRacks) ? fiberRacks : [];
             idfOptions = Array.isArray(idfs) ? idfs : [];
+            rackOptions = Array.isArray(racks) ? racks : [];
 
             const statusSelect = document.getElementById('statusSelect');
             const colorSelect = document.getElementById('colorSelect');
@@ -1126,6 +1146,7 @@ if (!empty($_SESSION['crud_success'])) {
             const fiberPatchSelect = document.getElementById('fiberPatchSelect');
             const fiberRackSelect = document.getElementById('fiberRackSelect');
             const idfSelect = document.getElementById('idfSelect');
+            const toRackSelect = document.getElementById('toRackSelect');
 
             statusSelect.innerHTML = '<option value="">-- choose status --</option>';
             colorSelect.innerHTML = '<option value="">-- choose color --</option>';
@@ -1134,6 +1155,7 @@ if (!empty($_SESSION['crud_success'])) {
             fiberPatchSelect.innerHTML = '<option value="">-- choose fiber patch --</option>';
             fiberRackSelect.innerHTML = '<option value="">-- choose fiber rack --</option>';
             idfSelect.innerHTML = '<option value="">-- choose IDF --</option>';
+            toRackSelect.innerHTML = '<option value=""></option>';
 
             statusOptions.forEach(function (item) {
                 const option = document.createElement('option');
@@ -1170,12 +1192,16 @@ if (!empty($_SESSION['crud_success'])) {
             idfOptions.forEach(function (item) {
                 idfSelect.appendChild(new Option(item.name, item.id));
             });
+            rackOptions.forEach(function (item) {
+                toRackSelect.appendChild(new Option(item.name, item.id));
+            });
             colorSelect.appendChild(new Option('➕ Add', '__add_new__'));
             vlanSelect.appendChild(new Option('➕ Add', '__add_new__'));
             fiberPortsSelect.appendChild(new Option('➕ Add', '__add_new__'));
             fiberPatchSelect.appendChild(new Option('➕ Add', '__add_new__'));
             fiberRackSelect.appendChild(new Option('➕ Add', '__add_new__'));
-            idfSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            idfSelect.appendChild(new Option('➕', '__add_new__'));
+            toRackSelect.appendChild(new Option('➕ Add', '__add_new__'));
         }
 
         function fallbackLayout() {
@@ -1283,7 +1309,8 @@ if (!empty($_SESSION['crud_success'])) {
                         data.fiber_ports || [],
                         data.fiber_patches || [],
                         data.fiber_racks || [],
-                        data.idfs || []
+                        data.idfs || [],
+                        data.racks || []
                     );
                     const layout = data.layout || localLayout;
                     const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
@@ -1322,10 +1349,9 @@ if (!empty($_SESSION['crud_success'])) {
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
                 payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
             }
-            const rackIdInput = document.getElementById('rackIdInput');
-            if (rackIdInput && rackIdInput.value !== '') {
-                payload.rack_id = rackIdInput.value;
-            }
+            const toRackSelectEl = document.getElementById('toRackSelect');
+            const selectedToRack = toRackSelectEl ? String(toRackSelectEl.value || '').trim() : '';
+            payload.to_rack_id = selectedToRack !== '' && selectedToRack !== '__add_new__' ? selectedToRack : null;
             const locationIdInput = document.getElementById('locationIdInput');
             if (locationIdInput && locationIdInput.value !== '') {
                 payload.location_id = locationIdInput.value;
@@ -1344,6 +1370,8 @@ if (!empty($_SESSION['crud_success'])) {
                     selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
                     selected.dataset.vlanColor = selectedVlan ? (selectedVlan.color || '') : '';
                     selected.dataset.comments = payload.comments || '';
+                    selected.dataset.idfId = payload.to_idf_id || '';
+                    selected.dataset.toRackId = payload.to_rack_id || '';
                     if (isFiberPortType(selected.dataset.portType || '')) {
                         const selectedFiberPortOption = document.getElementById('fiberPortsSelect').selectedOptions[0] || null;
                         const selectedFiberPatchOption = document.getElementById('fiberPatchSelect').selectedOptions[0] || null;
