@@ -2415,6 +2415,7 @@ CREATE TABLE `switch_ports` (
   `fiber_patch_id` int DEFAULT NULL,
   `fiber_rack_id` int DEFAULT NULL,
   `idf_id` int DEFAULT NULL,
+  `rack_id` int DEFAULT NULL,
   `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
