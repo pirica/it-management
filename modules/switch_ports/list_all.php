@@ -47,6 +47,7 @@ function cr_fk_map($conn, $table) {
             'color_id' => ['COLUMN_NAME' => 'color_id', 'REFERENCED_TABLE_NAME' => 'cable_colors', 'REFERENCED_COLUMN_NAME' => 'id'],
             'vlan_id' => ['COLUMN_NAME' => 'vlan_id', 'REFERENCED_TABLE_NAME' => 'vlans', 'REFERENCED_COLUMN_NAME' => 'id'],
             'port_type' => ['COLUMN_NAME' => 'port_type', 'REFERENCED_TABLE_NAME' => 'switch_port_types', 'REFERENCED_COLUMN_NAME' => 'type'],
+            'to_location_id' => ['COLUMN_NAME' => 'to_location_id', 'REFERENCED_TABLE_NAME' => 'it_locations', 'REFERENCED_COLUMN_NAME' => 'id'],
         ];
 
         foreach ($manual as $column => $definition) {
@@ -95,6 +96,7 @@ function cr_fk_metadata($conn, $table) {
         'cable_colors' => ['color_name', 'name'],
         'vlans' => ['vlan_name', 'name'],
         'switch_port_types' => ['name', 'type'],
+        'it_locations' => ['name', 'title'],
     ];
 
     $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'username', 'code', 'mode_name', 'status', 'color_name', 'vlan_name'];
@@ -125,6 +127,7 @@ function cr_humanize_field($field) {
 
     $map = [
         'to_patch_port' => 'To patch port',
+        'to_location_id' => 'To Location',
         'department_id' => 'Department Name',
         'office_key_card_department_id' => 'Office Key Card Department',
         'opera_username' => 'OPERA Username',
@@ -333,6 +336,24 @@ foreach ($fieldColumns as $c) {
 $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_display_field($col['Field']);
 }));
+
+if (($crud_table ?? '') === 'switch_ports') {
+    usort($visibleFieldColumns, static function ($a, $b) {
+        $order = [
+            'port_type' => 10,
+            'to_location_id' => 20,
+            'comments' => 30,
+        ];
+        $aField = (string)($a['Field'] ?? '');
+        $bField = (string)($b['Field'] ?? '');
+        $aWeight = $order[$aField] ?? 1000;
+        $bWeight = $order[$bField] ?? 1000;
+        if ($aWeight === $bWeight) {
+            return 0;
+        }
+        return ($aWeight < $bWeight) ? -1 : 1;
+    });
+}
 $hasRackDisplayColumn = false;
 foreach ($visibleFieldColumns as $visibleFieldColumn) {
     if (($visibleFieldColumn['Field'] ?? '') === 'port_number') {
@@ -416,6 +437,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
+        if ($name === 'to_location_id') {
+            $submittedPortType = strtoupper(trim((string)($_POST['port_type'] ?? '')));
+            if ($submittedPortType !== 'RJ45') {
+                $data[$name] = 'NULL';
+                continue;
+            }
+        }
             $newKey = $name . '__new_value';
             $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
 
@@ -467,6 +495,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         $value = $_POST[$name] ?? null;
+        if ($name === 'to_location_id') {
+            $submittedPortType = strtoupper(trim((string)($_POST['port_type'] ?? '')));
+            if ($submittedPortType !== 'RJ45') {
+                $data[$name] = 'NULL';
+                continue;
+            }
+        }
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
@@ -643,7 +678,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
-                        <div class="form-group">
+                        <div class="form-group<?php echo ($name === 'to_location_id') ? ' js-to-location-field' : ''; ?>"<?php echo ($name === 'to_location_id') ? ' data-to-location-wrapper="1"' : ''; ?>>
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
@@ -716,6 +751,26 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 <script src="../../js/select-add-option.js"></script>
 
 <script>
+(function () {
+    const portTypeSelect = document.querySelector('select[name="port_type"]');
+    const toLocationWrapper = document.querySelector('[data-to-location-wrapper="1"]');
+    const toLocationSelect = toLocationWrapper ? toLocationWrapper.querySelector('select[name="to_location_id"]') : null;
+
+    function toggleToLocationField() {
+        if (!toLocationWrapper || !portTypeSelect) return;
+        const isRj45 = String(portTypeSelect.value || '').toUpperCase() === 'RJ45';
+        toLocationWrapper.style.display = isRj45 ? '' : 'none';
+        if (!isRj45 && toLocationSelect) {
+            toLocationSelect.value = '';
+        }
+    }
+
+    if (portTypeSelect && toLocationWrapper) {
+        portTypeSelect.addEventListener('change', toggleToLocationField);
+        toggleToLocationField();
+    }
+})();
+
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[data-outlook-link="1"]');
     if (!link) return;
