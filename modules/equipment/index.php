@@ -531,6 +531,20 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
+                            <label id="idfRow" style="display:none;">
+                                IDF:
+                                <div class="switch-control-input">
+                                    <select id="idfSelect"
+                                        data-addable-select="1"
+                                        data-add-table="idfs"
+                                        data-add-id-col="id"
+                                        data-add-label-col="idf_code"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="idf">
+                                        <option value="">-- choose IDF --</option>
+                                    </select>
+                                </div>
+                            </label>
                             <label>
                                 Comments:
                                 <input type="text" id="commentsInput" placeholder="Comments">
@@ -563,6 +577,7 @@ if (!empty($_SESSION['crud_success'])) {
         let fiberPortOptions = [];
         let fiberPatchOptions = [];
         let fiberRackOptions = [];
+        let idfOptions = [];
         let selected = null;
         const tooltip = document.getElementById('switchTooltip');
         const csrfToken = window.ITM_CSRF_TOKEN
@@ -907,6 +922,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('fiberPortsRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberPatchRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberRackRow').style.display = isFiber ? '' : 'none';
+            document.getElementById('idfRow').style.display = isFiber ? '' : 'none';
         }
 
         function selectPort(el) {
@@ -926,6 +942,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('fiberPortsSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_id) || '');
             document.getElementById('fiberPatchSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || '');
             document.getElementById('fiberRackSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_rack_id) || '');
+            document.getElementById('idfSelect').value = String(el.dataset.idfId || '');
             document.getElementById('commentsInput').value = el.dataset.comments || '';
         }
 
@@ -945,6 +962,8 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.fiberPorts = readSwitchMeta('fiber_name');
             el.dataset.fiberPatch = readSwitchMeta('fiber_patch_name');
             el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
+            el.dataset.idfId = p.idf_id || '';
+            el.dataset.idfCode = p.idf_code || '';
             el.dataset.fiberPortLabel = readSwitchMeta('fiber_port_label');
 
             const num = document.createElement('div');
@@ -1045,13 +1064,14 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
 
-        function hydrateLookups(statuses, colors, vlans, fiberPorts, fiberPatches, fiberRacks) {
+        function hydrateLookups(statuses, colors, vlans, fiberPorts, fiberPatches, fiberRacks, idfs) {
             statusOptions = Array.isArray(statuses) ? statuses : [];
             colorOptions = Array.isArray(colors) ? colors : [];
             vlanOptions = Array.isArray(vlans) ? vlans : [];
             fiberPortOptions = Array.isArray(fiberPorts) ? fiberPorts : [];
             fiberPatchOptions = Array.isArray(fiberPatches) ? fiberPatches : [];
             fiberRackOptions = Array.isArray(fiberRacks) ? fiberRacks : [];
+            idfOptions = Array.isArray(idfs) ? idfs : [];
 
             const statusSelect = document.getElementById('statusSelect');
             const colorSelect = document.getElementById('colorSelect');
@@ -1059,6 +1079,7 @@ if (!empty($_SESSION['crud_success'])) {
             const fiberPortsSelect = document.getElementById('fiberPortsSelect');
             const fiberPatchSelect = document.getElementById('fiberPatchSelect');
             const fiberRackSelect = document.getElementById('fiberRackSelect');
+            const idfSelect = document.getElementById('idfSelect');
 
             statusSelect.innerHTML = '<option value="">-- choose status --</option>';
             colorSelect.innerHTML = '<option value="">-- choose color --</option>';
@@ -1066,6 +1087,7 @@ if (!empty($_SESSION['crud_success'])) {
             fiberPortsSelect.innerHTML = '<option value="">-- choose fiber ports --</option>';
             fiberPatchSelect.innerHTML = '<option value="">-- choose fiber patch --</option>';
             fiberRackSelect.innerHTML = '<option value="">-- choose fiber rack --</option>';
+            idfSelect.innerHTML = '<option value="">-- choose IDF --</option>';
 
             statusOptions.forEach(function (item) {
                 const option = document.createElement('option');
@@ -1098,11 +1120,15 @@ if (!empty($_SESSION['crud_success'])) {
             fiberRackOptions.forEach(function (item) {
                 fiberRackSelect.appendChild(new Option(item.name, item.id));
             });
+            idfOptions.forEach(function (item) {
+                idfSelect.appendChild(new Option(item.name, item.id));
+            });
             colorSelect.appendChild(new Option('➕ Add', '__add_new__'));
             vlanSelect.appendChild(new Option('➕ Add', '__add_new__'));
             fiberPortsSelect.appendChild(new Option('➕ Add', '__add_new__'));
             fiberPatchSelect.appendChild(new Option('➕ Add', '__add_new__'));
             fiberRackSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            idfSelect.appendChild(new Option('➕ Add', '__add_new__'));
         }
 
         function fallbackLayout() {
@@ -1209,7 +1235,8 @@ if (!empty($_SESSION['crud_success'])) {
                         data.vlans || [],
                         data.fiber_ports || [],
                         data.fiber_patches || [],
-                        data.fiber_racks || []
+                        data.fiber_racks || [],
+                        data.idfs || []
                     );
                     const layout = data.layout || localLayout;
                     const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
@@ -1240,6 +1267,7 @@ if (!empty($_SESSION['crud_success'])) {
                 payload.fiber_port_id = document.getElementById('fiberPortsSelect').value || null;
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
                 payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
+                payload.idf_id = document.getElementById('idfSelect').value || null;
             }
 
             savePort(payload, true)
@@ -1255,9 +1283,12 @@ if (!empty($_SESSION['crud_success'])) {
                         const selectedFiberPortOption = document.getElementById('fiberPortsSelect').selectedOptions[0] || null;
                         const selectedFiberPatchOption = document.getElementById('fiberPatchSelect').selectedOptions[0] || null;
                         const selectedFiberRackOption = document.getElementById('fiberRackSelect').selectedOptions[0] || null;
+                        const selectedIdfOption = document.getElementById('idfSelect').selectedOptions[0] || null;
                         selected.dataset.fiberPorts = selectedFiberPortOption ? (selectedFiberPortOption.text || '') : '';
                         selected.dataset.fiberPatch = selectedFiberPatchOption ? (selectedFiberPatchOption.text || '') : '';
                         selected.dataset.fiberRack = selectedFiberRackOption ? (selectedFiberRackOption.text || '') : '';
+                        selected.dataset.idfId = payload.idf_id || '';
+                        selected.dataset.idfCode = selectedIdfOption ? (selectedIdfOption.text || '') : '';
                     }
                     paintPort(selected, payload.color || selected.dataset.color);
                     paintVlan(selected, payload.vlan || '');
