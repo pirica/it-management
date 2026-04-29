@@ -427,6 +427,11 @@ if ($pid > 0) {
                 mysqli_stmt_execute($stmtSwitchPortColors);
                 $resSwitchPortColors = mysqli_stmt_get_result($stmtSwitchPortColors);
                 while ($resSwitchPortColors && ($switchPortColorRow = mysqli_fetch_assoc($resSwitchPortColors))) {
+                    $normalizedPortType = trim((string)($switchPortColorRow['normalized_port_type'] ?? ''));
+                    if ($normalizedPortType !== '' && $normalizedPortType !== 'rj45') {
+                        // Why: IDF RJ45 auto-generation must not be contaminated by SFP rows that share the same port_number values.
+                        continue;
+                    }
                     $portNumber = (int)($switchPortColorRow['port_number'] ?? 0);
                     if ($portNumber <= 0) {
                         continue;
