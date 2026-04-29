@@ -599,6 +599,39 @@ if ($pid > 0) {
             }
             mysqli_stmt_close($stmtInsertPort);
         }
+
+        if ($equipment_id > 0) {
+            // Why: enforce linked-equipment metadata parity even if seed arrays missed rows due legacy naming/lookup drift.
+            $sqlForceSync = "
+                UPDATE idf_ports ip
+                JOIN switch_ports sp
+                  ON sp.company_id = ip.company_id
+                 AND sp.equipment_id = ?
+                 AND sp.port_number = ip.port_no
+                LEFT JOIN switch_port_types spt
+                  ON spt.company_id = sp.company_id
+                 AND spt.type = sp.port_type
+                LEFT JOIN cable_colors cc
+                  ON cc.company_id = sp.company_id
+                 AND cc.id = sp.color_id
+                SET ip.label = COALESCE(NULLIF(sp.label, ''), ip.label),
+                    ip.status_id = COALESCE(sp.status_id, ip.status_id),
+                    ip.connected_to = COALESCE(NULLIF(sp.hostname, ''), ip.connected_to),
+                    ip.vlan_id = COALESCE(sp.vlan_id, ip.vlan_id),
+                    ip.cable_color = COALESCE(NULLIF(cc.color_name, ''), ip.cable_color),
+                    ip.hex_color = COALESCE(NULLIF(cc.hex_color, ''), ip.hex_color),
+                    ip.notes = COALESCE(NULLIF(sp.comments, ''), ip.notes)
+                WHERE ip.company_id = ?
+                  AND ip.position_id = ?
+                  AND spt.id = ip.port_type
+            ";
+            $stmtForceSync = mysqli_prepare($conn, $sqlForceSync);
+            if ($stmtForceSync) {
+                mysqli_stmt_bind_param($stmtForceSync, 'iii', $equipment_id, $company_id, $pid);
+                mysqli_stmt_execute($stmtForceSync);
+                mysqli_stmt_close($stmtForceSync);
+            }
+        }
     }
 }
 
