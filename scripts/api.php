@@ -110,6 +110,7 @@
  * Switch Port Manager save handler now backfills switch_ports.idf_id from equipment.idf_id when the hidden IDF payload is empty, keeping DB rows aligned with the selected switch context.
  * Switch Port Manager IDF selector now saves into switch_ports.to_idf_id while preserving existing switch_ports.idf_id values for legacy/source context.
  * Switch Port Manager RJ45 destination Rack selector now persists into switch_ports.to_rack_id, leaving legacy switch_ports.rack_id untouched for existing source rack flows.
+ * Switch Port Manager RJ45 editor now shows To Rack and To IDF selectors before Comments, with quick-add support, and saves destination rack via switch_ports.to_rack_id.
  */
 
 declare(strict_types=1);
