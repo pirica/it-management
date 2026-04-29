@@ -1000,7 +1000,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('fiberRackRow').style.display = isFiber ? '' : 'none';
             document.getElementById('idfRow').style.display = (isFiber || isRj45) ? '' : 'none';
             document.getElementById('toRackRow').style.display = isRj45 ? '' : 'none';
-            document.getElementById('toLocationRow').style.display = isRj45 ? '' : 'none';
+            document.getElementById('toLocationRow').style.display = (isFiber || isRj45) ? '' : 'none';
         }
 
         function selectPort(el) {
