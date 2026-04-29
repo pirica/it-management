@@ -438,6 +438,48 @@ if ($pid > 0) {
                 }
                 mysqli_stmt_close($stmtSwitchPortColors);
             }
+
+            $stmtFiberPorts = mysqli_prepare(
+                $conn,
+                "SELECT COALESCE(e.switch_fiber_ports_number, 0) AS switch_fiber_ports_number,
+                        COALESCE(e.switch_fiber_port_label, '') AS switch_fiber_port_label,
+                        COALESCE(ef.name, '') AS switch_fiber_name
+                 FROM equipment e
+                 LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+                 WHERE e.company_id = ? AND e.id = ?
+                 LIMIT 1"
+            );
+            if ($stmtFiberPorts) {
+                mysqli_stmt_bind_param($stmtFiberPorts, 'ii', $company_id, $equipment_id);
+                mysqli_stmt_execute($stmtFiberPorts);
+                $resFiberPorts = mysqli_stmt_get_result($stmtFiberPorts);
+                $fiberMeta = $resFiberPorts ? mysqli_fetch_assoc($resFiberPorts) : null;
+                mysqli_stmt_close($stmtFiberPorts);
+                if ($fiberMeta) {
+                    $fiberCount = (int)($fiberMeta['switch_fiber_ports_number'] ?? 0);
+                    $fiberHint = strtolower(trim((string)($fiberMeta['switch_fiber_port_label'] ?? '') . ' ' . (string)($fiberMeta['switch_fiber_name'] ?? '')));
+                    if ($fiberCount > 0) {
+                        $fiberTypeFallback = strpos($fiberHint, 'sfp+') !== false ? 'sfp+' : 'sfp';
+                        $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
+                        if ($fiberTypeId > 0) {
+                            for ($fiberPortNo = 1; $fiberPortNo <= $fiberCount; $fiberPortNo++) {
+                                $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
+                                if (!isset($portTypeByNumber[$fiberKey])) {
+                                    // Why: Equipment can declare SFP/SFP+ capacity even when switch_ports rows are incomplete; preserve those ports in IDF generation.
+                                    $portTypeByNumber[$fiberKey] = [
+                                        'port_no' => $fiberPortNo,
+                                        'port_type' => $fiberTypeId,
+                                    ];
+                                    $portCableColorByNumber[$fiberKey] = [
+                                        'cable_color' => $defaultCableColorName,
+                                        'hex_color' => $defaultCableHexColor,
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status_id, cable_color, hex_color) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
