@@ -540,6 +540,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-id-col="id"
                                         data-add-label-col="idf_code"
                                         data-add-company-scoped="1"
+                                        data-add-extra-fields='[{"name":"name","label":"Name","type":"text"}]'
                                         data-add-friendly="idf">
                                         <option value="">-- choose IDF --</option>
                                     </select>
