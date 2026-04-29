@@ -164,6 +164,38 @@ if ($device_type_name === 'switch' && $switch_rj45_id <= 0) {
     idf_fail('RJ45 Ports are required for switch devices');
 }
 
+if ($equipment_id <= 0 && $device_type_name === 'switch' && $device_name !== '') {
+    $stmtEquipmentByName = mysqli_prepare(
+        $conn,
+        "SELECT e.id, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
+         FROM equipment e
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+         WHERE e.company_id = ? AND LOWER(e.name) = LOWER(?)
+         ORDER BY e.id DESC
+         LIMIT 1"
+    );
+    if ($stmtEquipmentByName) {
+        mysqli_stmt_bind_param($stmtEquipmentByName, 'is', $company_id, $device_name);
+        mysqli_stmt_execute($stmtEquipmentByName);
+        $resEquipmentByName = mysqli_stmt_get_result($stmtEquipmentByName);
+        $equipmentByName = $resEquipmentByName ? mysqli_fetch_assoc($resEquipmentByName) : null;
+        mysqli_stmt_close($stmtEquipmentByName);
+        if ($equipmentByName) {
+            // Why: Linked equipment select may be left blank by UI flows; for switches we should still mirror known switch_ports by matching device_name.
+            $equipment_id = (int)($equipmentByName['id'] ?? 0);
+            if ($switch_rj45_id <= 0) {
+                $switch_rj45_id = (int)($equipmentByName['switch_rj45_id'] ?? 0);
+            }
+            if ($layout_id <= 0) {
+                $layout_id = (int)($equipmentByName['switch_port_numbering_layout_id'] ?? 0);
+            }
+            if ($port_count <= 0 && !empty($equipmentByName['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentByName['switch_rj45_name'], $matches)) {
+                $port_count = (int)$matches[1];
+            }
+        }
+    }
+}
+
 $stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
 if ($stmtIdf) {
     mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);
@@ -346,10 +378,6 @@ if ($pid > 0) {
     }
 
     if ($port_count > 0 && $existing === 0) {
-        $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
-        if ($rj45PortTypeId <= 0) {
-            idf_fail('Unable to resolve default port type for company', 500);
-        }
         $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
@@ -357,11 +385,16 @@ if ($pid > 0) {
         $defaultCableColorName = 'Gray';
         $defaultCableHexColor = '#808080';
         $portCableColorByNumber = [];
+        $portTypeByNumber = [];
         if ($equipment_id > 0) {
             $stmtSwitchPortColors = mysqli_prepare(
                 $conn,
-                "SELECT sp.port_number, cc.color_name, cc.hex_color
+                "SELECT sp.port_number, sp.port_type,
+                        LOWER(TRIM(COALESCE(spt.type, CAST(sp.port_type AS CHAR)))) AS normalized_port_type,
+                        cc.color_name,
+                        cc.hex_color
                  FROM switch_ports sp
+                 LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
                  LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
                  WHERE sp.company_id = ? AND sp.equipment_id = ?"
             );
@@ -374,6 +407,12 @@ if ($pid > 0) {
                     if ($portNumber <= 0) {
                         continue;
                     }
+                    $rawPortType = $switchPortColorRow['port_type'] ?? '';
+                    $normalizedPortType = trim((string)($switchPortColorRow['normalized_port_type'] ?? ''));
+                    $resolvedPortTypeId = idf_resolve_port_type_id($conn, $company_id, $rawPortType, $normalizedPortType !== '' ? $normalizedPortType : 'RJ45');
+                    if ($resolvedPortTypeId <= 0) {
+                        continue;
+                    }
                     $cableColorName = trim((string)($switchPortColorRow['color_name'] ?? ''));
                     $cableHexColor = strtoupper(trim((string)($switchPortColorRow['hex_color'] ?? '')));
                     if ($cableColorName === '') {
@@ -382,22 +421,85 @@ if ($pid > 0) {
                     if (!preg_match('/^#[0-9A-F]{6}$/', $cableHexColor)) {
                         $cableHexColor = $defaultCableHexColor;
                     }
-                    $portCableColorByNumber[$portNumber] = [
+                    $portKey = $resolvedPortTypeId . ':' . $portNumber;
+                    $portCableColorByNumber[$portKey] = [
                         'cable_color' => $cableColorName,
                         'hex_color' => $cableHexColor,
                     ];
+                    $portTypeByNumber[$portKey] = [
+                        'port_no' => $portNumber,
+                        'port_type' => $resolvedPortTypeId,
+                    ];
                 }
                 mysqli_stmt_close($stmtSwitchPortColors);
+            }
+
+            $stmtFiberPorts = mysqli_prepare(
+                $conn,
+                "SELECT COALESCE(e.switch_fiber_ports_number, 0) AS switch_fiber_ports_number,
+                        COALESCE(e.switch_fiber_port_label, '') AS switch_fiber_port_label,
+                        COALESCE(ef.name, '') AS switch_fiber_name
+                 FROM equipment e
+                 LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+                 WHERE e.company_id = ? AND e.id = ?
+                 LIMIT 1"
+            );
+            if ($stmtFiberPorts) {
+                mysqli_stmt_bind_param($stmtFiberPorts, 'ii', $company_id, $equipment_id);
+                mysqli_stmt_execute($stmtFiberPorts);
+                $resFiberPorts = mysqli_stmt_get_result($stmtFiberPorts);
+                $fiberMeta = $resFiberPorts ? mysqli_fetch_assoc($resFiberPorts) : null;
+                mysqli_stmt_close($stmtFiberPorts);
+                if ($fiberMeta) {
+                    $fiberCount = (int)($fiberMeta['switch_fiber_ports_number'] ?? 0);
+                    $fiberHint = strtolower(trim((string)($fiberMeta['switch_fiber_port_label'] ?? '') . ' ' . (string)($fiberMeta['switch_fiber_name'] ?? '')));
+                    if ($fiberCount > 0) {
+                        $fiberTypeFallback = strpos($fiberHint, 'sfp+') !== false ? 'sfp+' : 'sfp';
+                        $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
+                        if ($fiberTypeId > 0) {
+                            for ($fiberPortNo = 1; $fiberPortNo <= $fiberCount; $fiberPortNo++) {
+                                $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
+                                if (!isset($portTypeByNumber[$fiberKey])) {
+                                    // Why: Equipment can declare SFP/SFP+ capacity even when switch_ports rows are incomplete; preserve those ports in IDF generation.
+                                    $portTypeByNumber[$fiberKey] = [
+                                        'port_no' => $fiberPortNo,
+                                        'port_type' => $fiberTypeId,
+                                    ];
+                                    $portCableColorByNumber[$fiberKey] = [
+                                        'cable_color' => $defaultCableColorName,
+                                        'hex_color' => $defaultCableHexColor,
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, status_id, cable_color, hex_color) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
-            for ($n = 1; $n <= $port_count; $n++) {
-                $portCableColor = $portCableColorByNumber[$n]['cable_color'] ?? $defaultCableColorName;
-                $portHexColor = $portCableColorByNumber[$n]['hex_color'] ?? $defaultCableHexColor;
-                mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId, $portCableColor, $portHexColor);
-                mysqli_stmt_execute($stmtInsertPort);
+            if ($portTypeByNumber) {
+                foreach ($portTypeByNumber as $portKey => $portMeta) {
+                    $portCableColor = $portCableColorByNumber[$portKey]['cable_color'] ?? $defaultCableColorName;
+                    $portHexColor = $portCableColorByNumber[$portKey]['hex_color'] ?? $defaultCableHexColor;
+                    $portNo = (int)($portMeta['port_no'] ?? 0);
+                    $portTypeId = (int)($portMeta['port_type'] ?? 0);
+                    if ($portNo <= 0 || $portTypeId <= 0) {
+                        continue;
+                    }
+                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $portNo, $portTypeId, $unknownStatusId, $portCableColor, $portHexColor);
+                    mysqli_stmt_execute($stmtInsertPort);
+                }
+            } else {
+                $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
+                if ($rj45PortTypeId <= 0) {
+                    idf_fail('Unable to resolve default port type for company', 500);
+                }
+                for ($n = 1; $n <= $port_count; $n++) {
+                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiiiss', $company_id, $pid, $n, $rj45PortTypeId, $unknownStatusId, $defaultCableColorName, $defaultCableHexColor);
+                    mysqli_stmt_execute($stmtInsertPort);
+                }
             }
             mysqli_stmt_close($stmtInsertPort);
         }
