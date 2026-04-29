@@ -365,6 +365,29 @@ if ($stmtPid) {
 }
 
 if ($pid > 0) {
+    if ($equipment_id <= 0) {
+        $stmtSeedPosMeta = mysqli_prepare(
+            $conn,
+            "SELECT equipment_id, port_count
+             FROM idf_positions
+             WHERE id = ? AND company_id = ?
+             LIMIT 1"
+        );
+        if ($stmtSeedPosMeta) {
+            mysqli_stmt_bind_param($stmtSeedPosMeta, 'ii', $pid, $company_id);
+            mysqli_stmt_execute($stmtSeedPosMeta);
+            $resSeedPosMeta = mysqli_stmt_get_result($stmtSeedPosMeta);
+            $seedPosMeta = $resSeedPosMeta ? mysqli_fetch_assoc($resSeedPosMeta) : null;
+            mysqli_stmt_close($stmtSeedPosMeta);
+            if ($seedPosMeta) {
+                $equipment_id = (int)($seedPosMeta['equipment_id'] ?? 0);
+                if ($port_count <= 0) {
+                    $port_count = (int)($seedPosMeta['port_count'] ?? 0);
+                }
+            }
+        }
+    }
+
     $stmtCnt = mysqli_prepare($conn, "SELECT COUNT(*) AS c FROM idf_ports WHERE position_id=?");
     $existing = 0;
     if ($stmtCnt) {
