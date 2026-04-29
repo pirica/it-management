@@ -164,6 +164,38 @@ if ($device_type_name === 'switch' && $switch_rj45_id <= 0) {
     idf_fail('RJ45 Ports are required for switch devices');
 }
 
+if ($equipment_id <= 0 && $device_type_name === 'switch' && $device_name !== '') {
+    $stmtEquipmentByName = mysqli_prepare(
+        $conn,
+        "SELECT e.id, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
+         FROM equipment e
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+         WHERE e.company_id = ? AND LOWER(e.name) = LOWER(?)
+         ORDER BY e.id DESC
+         LIMIT 1"
+    );
+    if ($stmtEquipmentByName) {
+        mysqli_stmt_bind_param($stmtEquipmentByName, 'is', $company_id, $device_name);
+        mysqli_stmt_execute($stmtEquipmentByName);
+        $resEquipmentByName = mysqli_stmt_get_result($stmtEquipmentByName);
+        $equipmentByName = $resEquipmentByName ? mysqli_fetch_assoc($resEquipmentByName) : null;
+        mysqli_stmt_close($stmtEquipmentByName);
+        if ($equipmentByName) {
+            // Why: Linked equipment select may be left blank by UI flows; for switches we should still mirror known switch_ports by matching device_name.
+            $equipment_id = (int)($equipmentByName['id'] ?? 0);
+            if ($switch_rj45_id <= 0) {
+                $switch_rj45_id = (int)($equipmentByName['switch_rj45_id'] ?? 0);
+            }
+            if ($layout_id <= 0) {
+                $layout_id = (int)($equipmentByName['switch_port_numbering_layout_id'] ?? 0);
+            }
+            if ($port_count <= 0 && !empty($equipmentByName['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentByName['switch_rj45_name'], $matches)) {
+                $port_count = (int)$matches[1];
+            }
+        }
+    }
+}
+
 $stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
 if ($stmtIdf) {
     mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);
