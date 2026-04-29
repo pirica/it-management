@@ -31,6 +31,24 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
+        $hasRj45Rows = false;
+        $hasFiberRows = false;
+        foreach ($ports as $itmPortTypeScan) {
+            $itmTypeRawScan = strtolower(trim((string)($itmPortTypeScan['port_type_label'] ?? ($itmPortTypeScan['port_type'] ?? ''))));
+            if (strpos($itmTypeRawScan, 'sfp') !== false) {
+                $hasFiberRows = true;
+            } else {
+                $hasRj45Rows = true;
+            }
+        }
+        if ($hasRj45Rows && $hasFiberRows) {
+            // Why: Rack preview UX requires left block to show copper (RJ45) only when both copper and fiber are present.
+            $ports = array_values(array_filter($ports, function ($itmPortTypeFilter) {
+                $itmTypeRawFilter = strtolower(trim((string)($itmPortTypeFilter['port_type_label'] ?? ($itmPortTypeFilter['port_type'] ?? ''))));
+                return strpos($itmTypeRawFilter, 'sfp') === false;
+            }));
+        }
+
         // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
         // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
         $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
@@ -375,7 +393,6 @@ if (!function_exists('itm_render_port_visualizer')) {
             $iconTitle = empty($iconTitleParts) ? 'Ports not configured' : implode(' • ', $iconTitleParts);
 
             $iconDots = [];
-            foreach ($rj45Ports as $portNo) { $iconDots[] = ['type' => 'rj45', 'no' => (int)$portNo]; }
             foreach ($sfpPorts as $portNo) { $iconDots[] = ['type' => 'sfp', 'no' => (int)$portNo]; }
             foreach ($sfpPlusPorts as $portNo) { $iconDots[] = ['type' => 'sfp_plus', 'no' => (int)$portNo]; }
 
