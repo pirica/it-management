@@ -551,6 +551,7 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
+                            <input type="hidden" id="switchMetaIdfInput" value="<?php echo isset($selectedSwitchData['idf_id']) ? (int)$selectedSwitchData['idf_id'] : 0; ?>">
                             <label>
                                 Comments:
                                 <input type="text" id="commentsInput" placeholder="Comments">
@@ -1311,7 +1312,13 @@ if (!empty($_SESSION['crud_success'])) {
                 payload.fiber_port_id = document.getElementById('fiberPortsSelect').value || null;
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
                 payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
-                payload.idf_id = document.getElementById('idfSelect').value || null;
+                const switchMetaIdfInput = document.getElementById('switchMetaIdfInput');
+                const switchMetaIdfValue = switchMetaIdfInput ? String(switchMetaIdfInput.value || '').trim() : '';
+                if (switchMetaIdfValue !== '' && switchMetaIdfValue !== '0') {
+                    payload.idf_id = switchMetaIdfValue;
+                } else {
+                    payload.idf_id = document.getElementById('idfSelect').value || null;
+                }
             }
             const rackIdInput = document.getElementById('rackIdInput');
             if (rackIdInput && rackIdInput.value !== '') {
