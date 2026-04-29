@@ -526,12 +526,12 @@ if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
     $portTypeJoinSql = $isNumericPortTypeColumn ? 'LEFT JOIN switch_port_types spt ON spt.id = sp.port_type' : '';
-    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, COALESCE(sp.to_idf_id, sp.idf_id) AS to_idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
-            LEFT JOIN idfs i ON i.id = sp.idf_id
+            LEFT JOIN idfs i ON i.id = COALESCE(sp.to_idf_id, sp.idf_id)
             {$portTypeJoinSql}
             WHERE sp.company_id = ?
               AND sp.equipment_id = ?
@@ -548,12 +548,12 @@ if ($hasEquipmentId && $hasPortType) {
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, COALESCE(sp.to_idf_id, sp.idf_id) AS to_idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
-            LEFT JOIN idfs i ON i.id = sp.idf_id
+            LEFT JOIN idfs i ON i.id = COALESCE(sp.to_idf_id, sp.idf_id)
             WHERE sp.company_id = ?
             ORDER BY sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);

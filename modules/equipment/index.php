@@ -1008,7 +1008,7 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.fiberPorts = readSwitchMeta('fiber_name');
             el.dataset.fiberPatch = readSwitchMeta('fiber_patch_name');
             el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
-            el.dataset.idfId = p.idf_id || '';
+            el.dataset.idfId = p.to_idf_id || p.idf_id || '';
             el.dataset.idfCode = p.idf_code || '';
             el.dataset.fiberPortLabel = readSwitchMeta('fiber_port_label');
 
@@ -1312,7 +1312,7 @@ if (!empty($_SESSION['crud_success'])) {
             };
             const switchMetaIdfInput = document.getElementById('switchMetaIdfInput');
             const switchMetaIdfValue = switchMetaIdfInput ? String(switchMetaIdfInput.value || '').trim() : '';
-            payload.idf_id = switchMetaIdfValue !== '' ? switchMetaIdfValue : null;
+            payload.to_idf_id = switchMetaIdfValue !== '' ? switchMetaIdfValue : null;
             if (isFiberPortType(selected.dataset.portType || '')) {
                 payload.fiber_port_id = document.getElementById('fiberPortsSelect').value || null;
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
@@ -1348,7 +1348,7 @@ if (!empty($_SESSION['crud_success'])) {
                         selected.dataset.fiberPorts = selectedFiberPortOption ? (selectedFiberPortOption.text || '') : '';
                         selected.dataset.fiberPatch = selectedFiberPatchOption ? (selectedFiberPatchOption.text || '') : '';
                         selected.dataset.fiberRack = selectedFiberRackOption ? (selectedFiberRackOption.text || '') : '';
-                        selected.dataset.idfId = payload.idf_id || '';
+                        selected.dataset.idfId = payload.to_idf_id || '';
                         selected.dataset.idfCode = selectedIdfOption ? (selectedIdfOption.text || '') : '';
                     }
                     paintPort(selected, payload.color || selected.dataset.color, selected.dataset.colorHex || '');

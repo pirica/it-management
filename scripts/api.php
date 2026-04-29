@@ -108,6 +108,7 @@
  * Switch Port Manager now mirrors the form IDF select value into a hidden field used by fiber-port save payloads, keeping switch_ports.idf_id aligned with the selected form value.
  * Equipment switch list metadata includes equipment.idf_id for switch context while per-port IDF persistence continues to use the selected form value.
  * Switch Port Manager save handler now backfills switch_ports.idf_id from equipment.idf_id when the hidden IDF payload is empty, keeping DB rows aligned with the selected switch context.
+ * Switch Port Manager IDF selector now saves into switch_ports.to_idf_id while preserving existing switch_ports.idf_id values for legacy/source context.
  */
 
 declare(strict_types=1);
