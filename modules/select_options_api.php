@@ -161,6 +161,22 @@ if (!so_identifier($table) || !so_identifier($idCol) || !so_identifier($labelCol
 
 
 
+
+if ($table === 'racks' && isset($extraFields['status_id'])) {
+    $statusName = trim((string)$extraFields['status_id']);
+    if ($statusName !== '' && !ctype_digit($statusName)) {
+        $statusSql = "SELECT `id` FROM `rack_statuses` WHERE `name`='" . mysqli_real_escape_string($conn, $statusName) . "'";
+        if ($company_id > 0) {
+            $statusSql .= ' AND (`company_id`=' . (int)$company_id . ' OR `company_id` IS NULL)';
+        }
+        $statusSql .= ' ORDER BY CASE WHEN `company_id`=' . (int)$company_id . ' THEN 0 ELSE 1 END, `id` ASC LIMIT 1';
+        $statusRes = mysqli_query($conn, $statusSql);
+        if ($statusRes && ($statusRow = mysqli_fetch_assoc($statusRes))) {
+            $extraFields['status_id'] = (string)(int)$statusRow['id'];
+        }
+    }
+}
+
 if ($table === 'cable_colors') {
     $hexFromExtra = trim((string)($extraFields['hex_color'] ?? ''));
     if ($hexFromExtra !== '' && $newValue === '') {
