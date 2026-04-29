@@ -999,7 +999,8 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('selectedPort').textContent = el.dataset.portNumber;
             document.getElementById('colorSelect').value = el.dataset.color || '';
             document.getElementById('statusSelect').value = el.dataset.status || '';
-            document.getElementById('labelInput').value = el.dataset.label || '';
+            const selectedPatchPortLabel = String(el.dataset.label || '').trim();
+            document.getElementById('labelInput').value = selectedPatchPortLabel === '0' ? '' : selectedPatchPortLabel;
             document.getElementById('vlanSelect').value = el.dataset.vlanId || '';
             document.getElementById('fiberPortsSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_id) || '');
             document.getElementById('fiberPatchSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || '');

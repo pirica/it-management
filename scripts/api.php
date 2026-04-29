@@ -111,6 +111,7 @@
  * Switch Port Manager IDF selector now saves into switch_ports.to_idf_id while preserving existing switch_ports.idf_id values for legacy/source context.
  * Switch Port Manager RJ45 destination Rack selector now persists into switch_ports.to_rack_id, leaving legacy switch_ports.rack_id untouched for existing source rack flows.
  * Switch Port Manager RJ45 editor now shows To Rack and To IDF selectors before Comments, with quick-add support, and saves destination rack via switch_ports.to_rack_id.
+ * Switch Port Manager patch-port editor now treats legacy "0" labels as empty values when loading selected ports so the Patch port input stays blank by default.
  */
 
 declare(strict_types=1);
