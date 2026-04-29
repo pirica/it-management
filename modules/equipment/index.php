@@ -449,9 +449,10 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-addable-select="1"
                                         data-add-table="cable_colors"
                                         data-add-id-col="id"
-                                        data-add-label-col="color"
+                                        data-add-label-col="color_name"
                                         data-add-company-scoped="1"
-                                        data-add-friendly="cable color">
+                                        data-add-friendly="cable color"
+                                        data-add-extra-fields='[{"name":"hex_color","label":"Color Picker","type":"color"}]'>
                                         <option value="">-- choose color --</option>
                                     </select>
                                 </div>
@@ -783,41 +784,63 @@ if (!empty($_SESSION['crud_success'])) {
             return String(color || '').trim().toLowerCase();
         }
 
-        function getColorCss(color) {
+        function resolveColorToken(color) {
             const normalized = normalizeColorToken(color);
-            switch (normalized) {
-                case 'green': return 'green';
-                case 'red': return 'red';
-                case 'yellow': return 'gold';
-                case 'black': return '#111';
-                case 'blue': return 'royalblue';
-                case 'white': return '#fff';
-                case 'orange': return 'orange';
-                case 'purple': return 'purple';
-                case 'dark pink': return '#ff1493';
-                case 'grey':
-                case 'gray': return '#9ca3af';
-                case 'other': return 'lightgray';
-                default: return 'transparent';
+            if (/^#[0-9a-f]{6}$/i.test(normalized)) {
+                return normalized;
             }
+
+            const colorMap = {
+                green: '#22c55e',
+                red: '#ef4444',
+                yellow: '#facc15',
+                black: '#111111',
+                blue: '#4169e1',
+                white: '#ffffff',
+                orange: '#f97316',
+                purple: '#9333ea',
+                pink: '#ec4899',
+                'dark pink': '#be185d',
+                cyan: '#06b6d4',
+                grey: '#9ca3af',
+                gray: '#9ca3af',
+                other: '#d1d5db'
+            };
+
+            if (colorMap[normalized]) {
+                return colorMap[normalized];
+            }
+
+            const parts = normalized.split(/\s+/).filter(Boolean);
+            const hasLight = parts.includes('light');
+            const hasDark = parts.includes('dark');
+            const base = parts.filter((p) => p !== 'light' && p !== 'dark').join(' ');
+            if (base !== '' && colorMap[base]) {
+                if (hasLight) {
+                    return 'color-mix(in srgb, ' + colorMap[base] + ' 55%, white)';
+                }
+                if (hasDark) {
+                    return 'color-mix(in srgb, ' + colorMap[base] + ' 60%, black)';
+                }
+                return colorMap[base];
+            }
+
+            return 'transparent';
+        }
+
+        function getColorCss(color) {
+            return resolveColorToken(color);
         }
 
         function getPortNumberColor(color) {
             const normalized = normalizeColorToken(color);
-            switch (normalized) {
-                case 'black':
-                case 'blue':
-                case 'purple':
-                case 'red':
-                case 'green':
-                case 'dark pink':
-                    return '#fff';
-                case 'grey':
-                case 'gray':
-                    return '#0b1220';
-                default:
-                    return '#111';
+            if (normalized.includes('light')) {
+                return '#0b1220';
             }
+            if (normalized.includes('white') || normalized.includes('yellow') || normalized.includes('gray') || normalized.includes('grey')) {
+                return '#0b1220';
+            }
+            return '#fff';
         }
 
         function hasUpStatus(status) {

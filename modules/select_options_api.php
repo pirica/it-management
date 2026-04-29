@@ -61,6 +61,66 @@ function so_escape_identifier($name) {
 /**
  * Retrieves column metadata for schema introspection.
  */
+
+function so_hex_to_color_name($hexColor) {
+    $hex = strtoupper(trim((string)$hexColor));
+    if (!preg_match('/^#[0-9A-F]{6}$/', $hex)) {
+        return '';
+    }
+
+    $r = hexdec(substr($hex, 1, 2));
+    $g = hexdec(substr($hex, 3, 2));
+    $b = hexdec(substr($hex, 5, 2));
+
+    $max = max($r, $g, $b);
+    $min = min($r, $g, $b);
+    $delta = $max - $min;
+    $lightness = ($max + $min) / 510;
+
+    if ($delta < 12) {
+        if ($lightness < 0.2) { return 'Black'; }
+        if ($lightness > 0.86) { return 'White'; }
+        return 'Gray';
+    }
+
+    if ($max === $r) {
+        $hue = 60 * fmod((($g - $b) / max($delta, 1)), 6);
+    } elseif ($max === $g) {
+        $hue = 60 * ((($b - $r) / max($delta, 1)) + 2);
+    } else {
+        $hue = 60 * ((($r - $g) / max($delta, 1)) + 4);
+    }
+    if ($hue < 0) { $hue += 360; }
+
+    $baseName = 'Red';
+    if ($hue < 20 || $hue >= 345) {
+        $baseName = 'Red';
+    } elseif ($hue < 45) {
+        $baseName = 'Orange';
+    } elseif ($hue < 70) {
+        $baseName = 'Yellow';
+    } elseif ($hue < 160) {
+        $baseName = 'Green';
+    } elseif ($hue < 200) {
+        $baseName = 'Cyan';
+    } elseif ($hue < 255) {
+        $baseName = 'Blue';
+    } elseif ($hue < 290) {
+        $baseName = 'Purple';
+    } else {
+        $baseName = 'Pink';
+    }
+
+    $prefix = '';
+    if ($lightness >= 0.72) {
+        $prefix = 'Light ';
+    } elseif ($lightness <= 0.28) {
+        $prefix = 'Dark ';
+    }
+
+    return trim($prefix . $baseName);
+}
+
 function so_table_columns($conn, $table) {
     $columns = [];
     $res = mysqli_query($conn, 'DESCRIBE ' . so_escape_identifier($table));
@@ -99,12 +159,23 @@ if (!so_identifier($table) || !so_identifier($idCol) || !so_identifier($labelCol
     exit;
 }
 
+
+
+if ($table === 'cable_colors') {
+    $hexFromExtra = trim((string)($extraFields['hex_color'] ?? ''));
+    if ($hexFromExtra !== '' && $newValue === '') {
+        $newValue = so_hex_to_color_name($hexFromExtra);
+    }
+    if ($newValue === '' && $hexFromExtra !== '') {
+        $newValue = strtoupper($hexFromExtra);
+    }
+}
+
 if ($newValue === '') {
     http_response_code(422);
     echo json_encode(['ok' => false, 'error' => 'Please type a value before adding.']);
     exit;
 }
-
 // Ensure the requested table and columns actually exist.
 $columns = so_table_columns($conn, $table);
 if (!$columns || !isset($columns[$idCol]) || !isset($columns[$labelCol])) {

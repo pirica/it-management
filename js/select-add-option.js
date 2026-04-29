@@ -16,6 +16,52 @@
             .replace(/'/g, '&#039;');
     }
 
+    
+    function hexToColorName(hexColor) {
+        const hex = String(hexColor || '').trim().toUpperCase();
+        if (!/^#[0-9A-F]{6}$/.test(hex)) return '';
+
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const delta = max - min;
+        const lightness = (max + min) / 510;
+
+        if (delta < 12) {
+            if (lightness < 0.2) return 'Black';
+            if (lightness > 0.86) return 'White';
+            return 'Gray';
+        }
+
+        let hue = 0;
+        if (max === r) {
+            hue = 60 * ((((g - b) / Math.max(delta, 1)) % 6 + 6) % 6);
+        } else if (max === g) {
+            hue = 60 * (((b - r) / Math.max(delta, 1)) + 2);
+        } else {
+            hue = 60 * (((r - g) / Math.max(delta, 1)) + 4);
+        }
+        if (hue < 0) hue += 360;
+
+        let baseName = 'Red';
+        if (hue < 20 || hue >= 345) baseName = 'Red';
+        else if (hue < 45) baseName = 'Orange';
+        else if (hue < 70) baseName = 'Yellow';
+        else if (hue < 160) baseName = 'Green';
+        else if (hue < 200) baseName = 'Cyan';
+        else if (hue < 255) baseName = 'Blue';
+        else if (hue < 290) baseName = 'Purple';
+        else baseName = 'Pink';
+
+        let prefix = '';
+        if (lightness >= 0.72) prefix = 'Light ';
+        else if (lightness <= 0.28) prefix = 'Dark ';
+
+        return (prefix + baseName).trim();
+    }
+
     function endpointFor(selectEl) {
         const custom = selectEl.getAttribute('data-add-endpoint');
         if (custom) return custom;
@@ -272,6 +318,38 @@
                 form.appendChild(group);
                 renderedFields.push({ field, group, label, input });
             });
+
+            const renderedFieldMap = renderedFields.reduce((acc, item) => {
+                acc[item.field.name] = item;
+                return acc;
+            }, {});
+
+            if ((selectEl.getAttribute('data-add-table') || '') === 'cable_colors') {
+                const nameField = renderedFieldMap.new_value ? renderedFieldMap.new_value.input : null;
+                const hexField = renderedFieldMap.hex_color ? renderedFieldMap.hex_color.input : null;
+                if (nameField && hexField) {
+                    const autoUpdateName = function () {
+                        const typedName = String(nameField.value || '').trim();
+                        const isManual = nameField.dataset.manualName === '1';
+                        if (typedName !== '' && isManual) {
+                            return;
+                        }
+                        const computedName = hexToColorName(hexField.value || '');
+                        if (computedName !== '') {
+                            nameField.value = computedName;
+                        }
+                        nameField.dataset.manualName = '0';
+                        refreshConditionalFields();
+                    };
+
+                    nameField.addEventListener('input', function () {
+                        const current = String(nameField.value || '').trim();
+                        nameField.dataset.manualName = current !== '' ? '1' : '0';
+                    });
+                    hexField.addEventListener('input', autoUpdateName);
+                    autoUpdateName();
+                }
+            }
 
             renderedFields.forEach(({ field, input }) => {
                 if (field.type !== 'select' || !field.addable) {
