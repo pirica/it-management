@@ -449,9 +449,10 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-addable-select="1"
                                         data-add-table="cable_colors"
                                         data-add-id-col="id"
-                                        data-add-label-col="color"
+                                        data-add-label-col="color_name"
                                         data-add-company-scoped="1"
-                                        data-add-friendly="cable color">
+                                        data-add-friendly="cable color"
+                                        data-add-extra-fields='[{"name":"hex_color","label":"Color Picker","type":"color"}]'>
                                         <option value="">-- choose color --</option>
                                     </select>
                                 </div>
@@ -783,54 +784,90 @@ if (!empty($_SESSION['crud_success'])) {
             return String(color || '').trim().toLowerCase();
         }
 
-        function getColorCss(color) {
+        function resolveColorToken(color) {
             const normalized = normalizeColorToken(color);
-            switch (normalized) {
-                case 'green': return 'green';
-                case 'red': return 'red';
-                case 'yellow': return 'gold';
-                case 'black': return '#111';
-                case 'blue': return 'royalblue';
-                case 'white': return '#fff';
-                case 'orange': return 'orange';
-                case 'purple': return 'purple';
-                case 'dark pink': return '#ff1493';
-                case 'grey':
-                case 'gray': return '#9ca3af';
-                case 'other': return 'lightgray';
-                default: return 'transparent';
+            if (/^#[0-9a-f]{6}$/i.test(normalized)) {
+                return normalized;
             }
+
+            const colorMap = {
+                green: '#22c55e',
+                red: '#ef4444',
+                yellow: '#facc15',
+                black: '#111111',
+                blue: '#4169e1',
+                white: '#ffffff',
+                orange: '#f97316',
+                purple: '#9333ea',
+                pink: '#ec4899',
+                'dark pink': '#be185d',
+                cyan: '#06b6d4',
+                grey: '#9ca3af',
+                gray: '#9ca3af',
+                other: '#d1d5db'
+            };
+
+            if (colorMap[normalized]) {
+                return colorMap[normalized];
+            }
+
+            const parts = normalized.split(/\s+/).filter(Boolean);
+            const hasLight = parts.includes('light');
+            const hasDark = parts.includes('dark');
+            const base = parts.filter((p) => p !== 'light' && p !== 'dark').join(' ');
+            if (base !== '' && colorMap[base]) {
+                if (hasLight) {
+                    return 'color-mix(in srgb, ' + colorMap[base] + ' 55%, white)';
+                }
+                if (hasDark) {
+                    return 'color-mix(in srgb, ' + colorMap[base] + ' 60%, black)';
+                }
+                return colorMap[base];
+            }
+
+            return 'transparent';
         }
 
-        function getPortNumberColor(color) {
-            const normalized = normalizeColorToken(color);
-            switch (normalized) {
-                case 'black':
-                case 'blue':
-                case 'purple':
-                case 'red':
-                case 'green':
-                case 'dark pink':
-                    return '#fff';
-                case 'grey':
-                case 'gray':
-                    return '#0b1220';
-                default:
-                    return '#111';
+        function getColorCss(color, colorHex) {
+            const normalizedHex = String(colorHex || '').trim();
+            if (/^#[0-9a-f]{6}$/i.test(normalizedHex)) {
+                return normalizedHex;
             }
+            return resolveColorToken(color);
+        }
+
+        function getPortNumberColor(color, colorHex) {
+            const normalizedHex = String(colorHex || '').trim();
+            if (/^#[0-9a-f]{6}$/i.test(normalizedHex)) {
+                const r = parseInt(normalizedHex.slice(1, 3), 16);
+                const g = parseInt(normalizedHex.slice(3, 5), 16);
+                const b = parseInt(normalizedHex.slice(5, 7), 16);
+                const luma = (0.299 * r) + (0.587 * g) + (0.114 * b);
+                return luma > 155 ? '#0b1220' : '#fff';
+            }
+            const normalized = normalizeColorToken(color);
+            if (normalized.includes('light')) {
+                return '#0b1220';
+            }
+            if (normalized.includes('white') || normalized.includes('yellow') || normalized.includes('gray') || normalized.includes('grey')) {
+                return '#0b1220';
+            }
+            return '#fff';
         }
 
         function hasUpStatus(status) {
             return String(status || '').trim().toLowerCase() === 'up';
         }
 
-        function paintPort(el, color) {
+        function paintPort(el, color, colorHex) {
             const normalizedColor = color || 'black';
             const indicator = el.querySelector('.switch-color-indicator');
             const number = el.querySelector('.switch-port-num');
-            indicator.style.background = getColorCss(normalizedColor);
-            number.style.color = getPortNumberColor(normalizedColor);
+            const normalizedHex = String(colorHex || '').trim();
+            indicator.style.background = getColorCss(normalizedColor, normalizedHex);
+            number.style.color = getPortNumberColor(normalizedColor, normalizedHex);
             el.dataset.color = normalizedColor;
+            el.dataset.colorHex = normalizedHex;
         }
 
         function paintVlan(el, vlanId) {
@@ -960,6 +997,7 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.vlanName = p.vlan_name || '';
             el.dataset.vlanColor = p.vlan_color || '';
             el.dataset.color = p.color || 'black';
+            el.dataset.colorHex = p.color_hex || '';
             el.dataset.fiberPorts = readSwitchMeta('fiber_name');
             el.dataset.fiberPatch = readSwitchMeta('fiber_patch_name');
             el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
@@ -982,8 +1020,8 @@ if (!empty($_SESSION['crud_success'])) {
 
             const colorDiv = document.createElement('div');
             colorDiv.className = 'switch-color-indicator';
-            colorDiv.style.background = getColorCss(p.color);
-            num.style.color = getPortNumberColor(p.color);
+            colorDiv.style.background = getColorCss(p.color, p.color_hex || '');
+            num.style.color = getPortNumberColor(p.color, p.color_hex || '');
             el.appendChild(colorDiv);
 
             const statusTag = document.createElement('div');
@@ -1102,6 +1140,7 @@ if (!empty($_SESSION['crud_success'])) {
                 const option = document.createElement('option');
                 option.value = item.name;
                 option.textContent = item.name;
+                option.dataset.hex = item.hex_color || '';
                 colorSelect.appendChild(option);
 
             });
@@ -1291,7 +1330,7 @@ if (!empty($_SESSION['crud_success'])) {
                         selected.dataset.idfId = payload.idf_id || '';
                         selected.dataset.idfCode = selectedIdfOption ? (selectedIdfOption.text || '') : '';
                     }
-                    paintPort(selected, payload.color || selected.dataset.color);
+                    paintPort(selected, payload.color || selected.dataset.color, selected.dataset.colorHex || '');
                     paintVlan(selected, payload.vlan || '');
                     paintStatusTag(selected, payload.status || selected.dataset.status);
                 })
@@ -1313,11 +1352,14 @@ if (!empty($_SESSION['crud_success'])) {
             }
             const chosenColor = this.value || null;
             const oldColor = selected.dataset.color;
-            paintPort(selected, chosenColor || oldColor);
+            const oldColorHex = selected.dataset.colorHex || '';
+            const selectedColorOption = this.selectedOptions[0] || null;
+            const chosenColorHex = selectedColorOption ? String(selectedColorOption.dataset.hex || '') : '';
+            paintPort(selected, chosenColor || oldColor, chosenColorHex || oldColorHex);
 
             savePort({ id: selected.dataset.id, switch_id: selectedSwitchId, color: chosenColor }, false)
                 .catch(function () {
-                    paintPort(selected, oldColor);
+                    paintPort(selected, oldColor, oldColorHex);
                     alert('Unable to auto-save color.');
                 });
         });

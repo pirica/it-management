@@ -58,7 +58,11 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
     $res = false;
     // Prefer company-specific lookup values
     if ($hasCompanyId && $companyId > 0) {
-        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` WHERE company_id = ? ORDER BY id ASC";
+        $sql = "SELECT id, `{$labelColumn}` AS label";
+        if ($table === 'cable_colors' && itm_table_has_column($conn, $table, 'hex_color')) {
+            $sql .= ", `hex_color`";
+        }
+        $sql .= " FROM `{$table}` WHERE company_id = ? ORDER BY id ASC";
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'i', $companyId);
@@ -70,12 +74,20 @@ function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): arr
 
     // Fallback to global values if no company-specific values found
     if (!$res || mysqli_num_rows($res) === 0) {
-        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` ORDER BY id ASC";
+        $sql = "SELECT id, `{$labelColumn}` AS label";
+        if ($table === 'cable_colors' && itm_table_has_column($conn, $table, 'hex_color')) {
+            $sql .= ", `hex_color`";
+        }
+        $sql .= " FROM `{$table}` ORDER BY id ASC";
         $res = mysqli_query($conn, $sql);
     }
 
     while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
+        $entry = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
+        if ($table === 'cable_colors' && array_key_exists('hex_color', $row)) {
+            $entry['hex_color'] = (string)($row['hex_color'] ?? '');
+        }
+        $rows[] = $entry;
     }
     return $rows;
 }
@@ -514,7 +526,7 @@ if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
     $portTypeJoinSql = $isNumericPortTypeColumn ? 'LEFT JOIN switch_port_types spt ON spt.id = sp.port_type' : '';
-    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
@@ -536,7 +548,7 @@ if ($hasEquipmentId && $hasPortType) {
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
@@ -579,6 +591,7 @@ if (!($hasEquipmentId && $hasPortType)) {
             'label' => 'SFP ' . $n,
             'status' => 'Unknown',
             'color' => 'grey',
+            'color_hex' => '#9ca3af',
             'vlan_id' => null,
             'vlan_name' => null,
             'vlan_color' => null,
@@ -594,6 +607,7 @@ if (!($hasEquipmentId && $hasPortType)) {
             'label' => 'SFP+ ' . $n,
             'status' => 'Unknown',
             'color' => 'grey',
+            'color_hex' => '#9ca3af',
             'vlan_id' => null,
             'vlan_name' => null,
             'vlan_color' => null,
