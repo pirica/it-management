@@ -177,6 +177,7 @@ if ($enableSwitchPortManager) {
                 COALESCE(r.name, '') AS rack_name,
                 COALESCE(e.rack_id, 0) AS rack_id,
                 COALESCE(idf.name, '') AS idf_name,
+                COALESCE(e.idf_id, 0) AS idf_id,
                 COALESCE(l.name, '') AS location_name,
                 COALESCE(e.location_id, 0) AS location_id
          FROM equipment e
@@ -551,6 +552,7 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
+                            <input type="hidden" id="switchMetaIdfInput" value="">
                             <label>
                                 Comments:
                                 <input type="text" id="commentsInput" placeholder="Comments">
@@ -985,6 +987,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('fiberPatchSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || '');
             document.getElementById('fiberRackSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_rack_id) || '');
             document.getElementById('idfSelect').value = String(el.dataset.idfId || '');
+            document.getElementById('switchMetaIdfInput').value = String(el.dataset.idfId || '');
             document.getElementById('commentsInput').value = el.dataset.comments || '';
         }
 
@@ -1311,7 +1314,9 @@ if (!empty($_SESSION['crud_success'])) {
                 payload.fiber_port_id = document.getElementById('fiberPortsSelect').value || null;
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
                 payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
-                payload.idf_id = document.getElementById('idfSelect').value || null;
+                const switchMetaIdfInput = document.getElementById('switchMetaIdfInput');
+                const switchMetaIdfValue = switchMetaIdfInput ? String(switchMetaIdfInput.value || '').trim() : '';
+                payload.idf_id = switchMetaIdfValue !== '' ? switchMetaIdfValue : (document.getElementById('idfSelect').value || null);
             }
             const rackIdInput = document.getElementById('rackIdInput');
             if (rackIdInput && rackIdInput.value !== '') {
@@ -1374,6 +1379,10 @@ if (!empty($_SESSION['crud_success'])) {
                     paintPort(selected, oldColor, oldColorHex);
                     alert('Unable to auto-save color.');
                 });
+        });
+
+        document.getElementById('idfSelect').addEventListener('change', function () {
+            document.getElementById('switchMetaIdfInput').value = this.value || '';
         });
 
         loadPorts();
