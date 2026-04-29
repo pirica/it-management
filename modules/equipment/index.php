@@ -449,9 +449,10 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-addable-select="1"
                                         data-add-table="cable_colors"
                                         data-add-id-col="id"
-                                        data-add-label-col="color"
+                                        data-add-label-col="color_name"
                                         data-add-company-scoped="1"
-                                        data-add-friendly="cable color">
+                                        data-add-friendly="cable color"
+                                        data-add-extra-fields='[{"name":"hex_color","label":"Color Picker","type":"color"}]'>
                                         <option value="">-- choose color --</option>
                                     </select>
                                 </div>
