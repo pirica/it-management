@@ -412,6 +412,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <input type="hidden" name="spm" value="1">
                                 <input type="hidden" id="rackIdInput" value="<?php echo (int)($selectedSwitchData['rack_id'] ?? 0); ?>">
                                 <input type="hidden" id="locationIdInput" value="<?php echo (int)($selectedSwitchData['location_id'] ?? 0); ?>">
+                                <input type="hidden" id="switchHostnameInput" value="<?php echo sanitize((string)($selectedSwitchData['hostname'] ?? '')); ?>">
                                 <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
                                 <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
                                     <?php foreach ($switches as $switchItem): ?>
@@ -1324,6 +1325,10 @@ if (!empty($_SESSION['crud_success'])) {
             const locationIdInput = document.getElementById('locationIdInput');
             if (locationIdInput && locationIdInput.value !== '') {
                 payload.location_id = locationIdInput.value;
+            }
+            const switchHostnameInput = document.getElementById('switchHostnameInput');
+            if (switchHostnameInput) {
+                payload.hostname = String(switchHostnameInput.value || '').trim();
             }
 
             savePort(payload, true)

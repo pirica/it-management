@@ -133,6 +133,7 @@ $hasFiberRackId = itm_table_has_column($conn, 'switch_ports', 'fiber_rack_id');
 $hasIdfId = itm_table_has_column($conn, 'switch_ports', 'idf_id');
 $hasRackId = itm_table_has_column($conn, 'switch_ports', 'rack_id');
 $hasLocationId = itm_table_has_column($conn, 'switch_ports', 'location_id');
+$hasHostname = itm_table_has_column($conn, 'switch_ports', 'hostname');
 
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
@@ -177,6 +178,7 @@ $fiberRackId = isset($input['fiber_rack_id']) && is_numeric((string)$input['fibe
 $idfId = isset($input['idf_id']) && is_numeric((string)$input['idf_id']) ? (int)$input['idf_id'] : 0;
 $rackId = isset($input['rack_id']) && is_numeric((string)$input['rack_id']) ? (int)$input['rack_id'] : 0;
 $locationId = isset($input['location_id']) && is_numeric((string)$input['location_id']) ? (int)$input['location_id'] : 0;
+$hostname = isset($input['hostname']) ? trim((string)$input['hostname']) : null;
 
 // Build dynamic UPDATE query based on provided fields
 $fields = [];
@@ -258,6 +260,17 @@ if ($hasRackId && array_key_exists('rack_id', $input)) {
         $fields[] = 'rack_id = NULL';
     }
 }
+
+if ($hasHostname && array_key_exists('hostname', $input)) {
+    if ($hostname !== '') {
+        $fields[] = 'hostname = ?';
+        $types .= 's';
+        $params[] = $hostname;
+    } else {
+        $fields[] = 'hostname = NULL';
+    }
+}
+
 if ($hasLocationId && array_key_exists('location_id', $input)) {
     if ($locationId > 0) {
         $fields[] = 'location_id = ?';
