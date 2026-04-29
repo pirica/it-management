@@ -2416,6 +2416,7 @@ CREATE TABLE `switch_ports` (
   `fiber_rack_id` int DEFAULT NULL,
   `idf_id` int DEFAULT NULL,
   `to_idf_id` int DEFAULT NULL,
+  `to_rack_id` int DEFAULT NULL,
   `rack_id` int DEFAULT NULL,
   `location_id` int DEFAULT NULL,
   `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -2434,6 +2435,7 @@ CREATE TABLE `switch_ports` (
   KEY `idx_switch_ports_fiber_rack` (`fiber_rack_id`),
   KEY `idx_switch_ports_idf` (`idf_id`),
   KEY `idx_switch_ports_to_idf` (`to_idf_id`),
+  KEY `idx_switch_ports_to_rack` (`to_rack_id`),
   KEY `idx_switch_ports_rack` (`rack_id`),
   KEY `idx_switch_ports_location` (`location_id`),
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
@@ -2447,6 +2449,7 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_9` FOREIGN KEY (`fiber_rack_id`) REFERENCES `equipment_fiber_rack` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_10` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_13` FOREIGN KEY (`to_idf_id`) REFERENCES `idfs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `switch_ports_ibfk_14` FOREIGN KEY (`to_rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_11` FOREIGN KEY (`rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_12` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -109,6 +109,7 @@
  * Equipment switch list metadata includes equipment.idf_id for switch context while per-port IDF persistence continues to use the selected form value.
  * Switch Port Manager save handler now backfills switch_ports.idf_id from equipment.idf_id when the hidden IDF payload is empty, keeping DB rows aligned with the selected switch context.
  * Switch Port Manager IDF selector now saves into switch_ports.to_idf_id while preserving existing switch_ports.idf_id values for legacy/source context.
+ * Switch Port Manager RJ45 destination Rack selector now persists into switch_ports.to_rack_id, leaving legacy switch_ports.rack_id untouched for existing source rack flows.
  */
 
 declare(strict_types=1);
