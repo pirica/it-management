@@ -1048,6 +1048,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
+                                <?php
+                                    $addExtraFieldsJson = '';
+                                    if ($name === 'rack_id') {
+                                        $addExtraFieldsJson = htmlspecialchars(json_encode([
+                                            ['name' => 'status_id', 'label' => 'Status', 'type' => 'hidden', 'value' => 'Active'],
+                                        ]), ENT_QUOTES, 'UTF-8');
+                                    }
+                                ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
@@ -1056,6 +1064,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+                                    <?php if ($addExtraFieldsJson !== ''): ?>data-add-extra-fields='<?php echo $addExtraFieldsJson; ?>'<?php endif; ?>
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
