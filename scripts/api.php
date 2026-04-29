@@ -103,6 +103,7 @@
  * Switch Port Manager color renderer now supports light/dark color-name variants (for example: Dark Red) and hex color tokens when painting port indicators.
  * Switch port payload now includes cable_colors.hex_color and Equipment now prefers DB hex values for indicator paint before color-name fallback mapping.
  * Switch Port Manager now submits selected switch rack as a hidden input and persists switch_ports.rack_id/location_id when provided; database schema/docs include FK links to racks.id and it_locations.id.
+ * Switch Port Manager now prefers the selected equipment IDF as a hidden submitted value for fiber-port saves, and falls back to manual IDF select only when equipment IDF is empty.
  */
 
 declare(strict_types=1);
