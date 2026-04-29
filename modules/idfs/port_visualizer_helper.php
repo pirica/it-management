@@ -31,6 +31,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
+        $allPortsForMeta = $ports;
         $hasRj45Rows = false;
         $hasFiberRows = false;
         foreach ($ports as $itmPortTypeScan) {
@@ -336,7 +337,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             $sfpPorts = [];
             $sfpPlusPorts = [];
 
-            foreach ($ports as $portMeta) {
+            foreach ($allPortsForMeta as $portMeta) {
                 $portNo = (int)($portMeta['port_no'] ?? 0);
                 if ($portNo <= 0) {
                     continue;
@@ -400,12 +401,12 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $aNo = (int)($a['no'] ?? 0);
                 $bNo = (int)($b['no'] ?? 0);
                 if ($layout === 'vertical') {
-                    $aPair = (int)floor(max(0, $aNo - 1) / 2);
-                    $bPair = (int)floor(max(0, $bNo - 1) / 2);
-                    if ($aPair === $bPair) {
-                        return ($aNo % 2) <=> ($bNo % 2);
+                    $aIsEven = ($aNo % 2 === 0) ? 1 : 0;
+                    $bIsEven = ($bNo % 2 === 0) ? 1 : 0;
+                    if ($aIsEven === $bIsEven) {
+                        return $aNo <=> $bNo;
                     }
-                    return $aPair <=> $bPair;
+                    return $aIsEven <=> $bIsEven;
                 }
                 if ($aNo === $bNo) {
                     return strcmp((string)($a['type'] ?? ''), (string)($b['type'] ?? ''));
@@ -423,16 +424,24 @@ if (!function_exists('itm_render_port_visualizer')) {
             $iconCols = $layout === 'vertical'
                 ? max(2, min(10, (int)ceil(count($iconDots) / 2)))
                 : max(2, min(10, count($iconDots)));
-            $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '" style="grid-template-columns: repeat(' . $iconCols . ', 10px);">';
+            $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px);">';
             foreach ($iconDots as $dotMeta) {
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
                 $dotTitle = 'Port ' . (int)($dotMeta['no'] ?? 0);
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
-                    $dotColor = trim((string)($dotPort['status_color'] ?? ''));
-                    if ($dotColor === '') {
+                    $dotType = (string)($dotMeta['type'] ?? '');
+                    if ($dotType === 'sfp' || $dotType === 'sfp_plus') {
                         $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                        if ($dotColor === '') {
+                            $dotColor = trim((string)($dotPort['status_color'] ?? ''));
+                        }
+                    } else {
+                        $dotColor = trim((string)($dotPort['status_color'] ?? ''));
+                        if ($dotColor === '') {
+                            $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                        }
                     }
                     if ($dotColor !== '') {
                         $dotStyle = ' style="background:' . sanitize($dotColor) . ';"';
