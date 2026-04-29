@@ -101,6 +101,7 @@
  * Equipment switch-port-manager cable color quick-add now targets cable_colors.color_name and supports optional hex picker auto-labeling (for example: Dark Blue, Light Green).
  * Quick-add modal UX now auto-fills the cable color Name field when Color Picker changes, while still allowing manual name overrides.
  * Switch Port Manager color renderer now supports light/dark color-name variants (for example: Dark Red) and hex color tokens when painting port indicators.
+ * Switch port payload now includes cable_colors.hex_color and Equipment now prefers DB hex values for indicator paint before color-name fallback mapping.
  */
 
 declare(strict_types=1);
