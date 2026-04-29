@@ -31,6 +31,24 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
+        $hasRj45Rows = false;
+        $hasFiberRows = false;
+        foreach ($ports as $itmPortTypeScan) {
+            $itmTypeRawScan = strtolower(trim((string)($itmPortTypeScan['port_type_label'] ?? ($itmPortTypeScan['port_type'] ?? ''))));
+            if (strpos($itmTypeRawScan, 'sfp') !== false) {
+                $hasFiberRows = true;
+            } else {
+                $hasRj45Rows = true;
+            }
+        }
+        if ($hasRj45Rows && $hasFiberRows) {
+            // Why: Rack preview UX requires left block to show copper (RJ45) only when both copper and fiber are present.
+            $ports = array_values(array_filter($ports, function ($itmPortTypeFilter) {
+                $itmTypeRawFilter = strtolower(trim((string)($itmPortTypeFilter['port_type_label'] ?? ($itmPortTypeFilter['port_type'] ?? ''))));
+                return strpos($itmTypeRawFilter, 'sfp') === false;
+            }));
+        }
+
         // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
         // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
         $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
@@ -375,9 +393,25 @@ if (!function_exists('itm_render_port_visualizer')) {
             $iconTitle = empty($iconTitleParts) ? 'Ports not configured' : implode(' • ', $iconTitleParts);
 
             $iconDots = [];
-            foreach ($rj45Ports as $portNo) { $iconDots[] = ['type' => 'rj45', 'no' => (int)$portNo]; }
             foreach ($sfpPorts as $portNo) { $iconDots[] = ['type' => 'sfp', 'no' => (int)$portNo]; }
             foreach ($sfpPlusPorts as $portNo) { $iconDots[] = ['type' => 'sfp_plus', 'no' => (int)$portNo]; }
+
+            usort($iconDots, function ($a, $b) use ($layout) {
+                $aNo = (int)($a['no'] ?? 0);
+                $bNo = (int)($b['no'] ?? 0);
+                if ($layout === 'vertical') {
+                    $aPair = (int)floor(max(0, $aNo - 1) / 2);
+                    $bPair = (int)floor(max(0, $bNo - 1) / 2);
+                    if ($aPair === $bPair) {
+                        return ($aNo % 2) <=> ($bNo % 2);
+                    }
+                    return $aPair <=> $bPair;
+                }
+                if ($aNo === $bNo) {
+                    return strcmp((string)($a['type'] ?? ''), (string)($b['type'] ?? ''));
+                }
+                return $aNo <=> $bNo;
+            });
 
             if (empty($iconDots)) {
                 for ($i = 0; $i < 4; $i++) { $iconDots[] = ['type' => '', 'no' => 0]; }
@@ -386,11 +420,14 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $iconDots = array_slice($iconDots, 0, 20);
             }
 
-            $iconCols = max(2, min(10, count($iconDots)));
+            $iconCols = $layout === 'vertical'
+                ? max(2, min(10, (int)ceil(count($iconDots) / 2)))
+                : max(2, min(10, count($iconDots)));
             $html .= '<div class="itm-device-icon" title="' . sanitize($iconTitle) . '" style="grid-template-columns: repeat(' . $iconCols . ', 10px);">';
             foreach ($iconDots as $dotMeta) {
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
+                $dotTitle = 'Port ' . (int)($dotMeta['no'] ?? 0);
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
                     $dotColor = trim((string)($dotPort['status_color'] ?? ''));
@@ -400,8 +437,24 @@ if (!function_exists('itm_render_port_visualizer')) {
                     if ($dotColor !== '') {
                         $dotStyle = ' style="background:' . sanitize($dotColor) . ';"';
                     }
+                    $dotTypeLabel = trim((string)($dotPort['port_type_label'] ?? strtoupper((string)($dotMeta['type'] ?? 'SFP'))));
+                    $dotStatusLabel = trim((string)($dotPort['status_label'] ?? 'Unknown'));
+                    $dotLabel = trim((string)($dotPort['label'] ?? ''));
+                    $dotVlan = (int)($dotPort['vlan_id'] ?? 0);
+                    $dotTitleParts = ['Port ' . (int)($dotMeta['no'] ?? 0), $dotTypeLabel, 'Status: ' . $dotStatusLabel];
+                    if ($dotLabel !== '' && $dotLabel !== '0') {
+                        $dotTitleParts[] = 'Label: ' . $dotLabel;
+                    }
+                    if ($dotVlan > 0) {
+                        $dotTitleParts[] = 'VLAN: ' . $dotVlan;
+                    }
+                    $dotNotes = trim((string)($dotPort['notes'] ?? ''));
+                    if ($dotNotes !== '') {
+                        $dotTitleParts[] = 'Notes: ' . $dotNotes;
+                    }
+                    $dotTitle = implode(' • ', $dotTitleParts);
                 }
-                $html .= '<div class="itm-device-icon-dot"' . $dotStyle . '></div>';
+                $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotStyle . '></div>';
             }
             $html .= '</div>';
         }
