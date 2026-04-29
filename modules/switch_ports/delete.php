@@ -367,6 +367,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
+        if ($name === 'to_location_id') {
+            $submittedPortType = strtoupper(trim((string)($_POST['port_type'] ?? '')));
+            if ($submittedPortType !== 'RJ45') {
+                $data[$name] = 'NULL';
+                continue;
+            }
+        }
             $newKey = $name . '__new_value';
             $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
 
@@ -418,6 +425,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         $value = $_POST[$name] ?? null;
+        if ($name === 'to_location_id') {
+            $submittedPortType = strtoupper(trim((string)($_POST['port_type'] ?? '')));
+            if ($submittedPortType !== 'RJ45') {
+                $data[$name] = 'NULL';
+                continue;
+            }
+        }
         if ($value === '' || $value === null) {
             $data[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
@@ -564,7 +578,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === 'NULL') ? '' : (string)$val;
                     ?>
-                        <div class="form-group">
+                        <div class="form-group<?php echo ($name === 'to_location_id') ? ' js-to-location-field' : ''; ?>"<?php echo ($name === 'to_location_id') ? ' data-to-location-wrapper="1"' : ''; ?>>
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
@@ -637,6 +651,26 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 <script src="../../js/select-add-option.js"></script>
 
 <script>
+(function () {
+    const portTypeSelect = document.querySelector('select[name="port_type"]');
+    const toLocationWrapper = document.querySelector('[data-to-location-wrapper="1"]');
+    const toLocationSelect = toLocationWrapper ? toLocationWrapper.querySelector('select[name="to_location_id"]') : null;
+
+    function toggleToLocationField() {
+        if (!toLocationWrapper || !portTypeSelect) return;
+        const isRj45 = String(portTypeSelect.value || '').toUpperCase() === 'RJ45';
+        toLocationWrapper.style.display = isRj45 ? '' : 'none';
+        if (!isRj45 && toLocationSelect) {
+            toLocationSelect.value = '';
+        }
+    }
+
+    if (portTypeSelect && toLocationWrapper) {
+        portTypeSelect.addEventListener('change', toggleToLocationField);
+        toggleToLocationField();
+    }
+})();
+
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[data-outlook-link="1"]');
     if (!link) return;
