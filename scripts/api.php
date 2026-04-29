@@ -102,6 +102,7 @@
  * Quick-add modal UX now auto-fills the cable color Name field when Color Picker changes, while still allowing manual name overrides.
  * Switch Port Manager color renderer now supports light/dark color-name variants (for example: Dark Red) and hex color tokens when painting port indicators.
  * Switch port payload now includes cable_colors.hex_color and Equipment now prefers DB hex values for indicator paint before color-name fallback mapping.
+ * Switch Port Manager now submits selected switch rack as a hidden input and persists switch_ports.rack_id when provided; database schema/docs include rack FK to racks.id.
  */
 
 declare(strict_types=1);

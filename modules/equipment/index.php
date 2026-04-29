@@ -407,6 +407,7 @@ if (!empty($_SESSION['crud_success'])) {
                                     <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
                                 <?php endif; ?>
                                 <input type="hidden" name="spm" value="1">
+                                <input type="hidden" id="rackIdInput" value="<?php echo (int)($selectedSwitchData['rack_id'] ?? 0); ?>">
                                 <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
                                 <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
                                     <?php foreach ($switches as $switchItem): ?>
@@ -1308,6 +1309,10 @@ if (!empty($_SESSION['crud_success'])) {
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
                 payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
                 payload.idf_id = document.getElementById('idfSelect').value || null;
+            }
+            const rackIdInput = document.getElementById('rackIdInput');
+            if (rackIdInput && rackIdInput.value !== '') {
+                payload.rack_id = rackIdInput.value;
             }
 
             savePort(payload, true)
