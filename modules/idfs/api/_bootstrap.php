@@ -298,6 +298,29 @@ function idf_ensure_status_schema(mysqli $conn): void {
         mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `hex_color` varchar(7) DEFAULT NULL AFTER `cable_color` ");
     }
 
+    // Why: IDF ports can contain RJ45 and SFP rows with the same visible port number for linked switch equipment.
+    $resPosPortUnique = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'pos_port_unique'");
+    $hasLegacyPosPortUnique = false;
+    $legacyUniqueColumns = [];
+    if ($resPosPortUnique) {
+        while ($idxRow = mysqli_fetch_assoc($resPosPortUnique)) {
+            $hasLegacyPosPortUnique = true;
+            $seq = (int)($idxRow['Seq_in_index'] ?? 0);
+            $col = (string)($idxRow['Column_name'] ?? '');
+            if ($seq > 0 && $col !== '') {
+                $legacyUniqueColumns[$seq] = $col;
+            }
+        }
+    }
+    if ($hasLegacyPosPortUnique) {
+        ksort($legacyUniqueColumns);
+        $legacyUniqueSignature = implode(',', array_values($legacyUniqueColumns));
+        if ($legacyUniqueSignature !== 'company_id,position_id,port_no,port_type') {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` DROP INDEX `pos_port_unique`");
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD UNIQUE KEY `pos_port_unique` (`company_id`,`position_id`,`port_no`,`port_type`)");
+        }
+    }
+
     // Keep a denormalized cable hex color on links for historical snapshots and exports.
     $linkHexColorColRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color_hex'");
     if ($linkHexColorColRes && mysqli_num_rows($linkHexColorColRes) === 0) {
@@ -627,18 +650,60 @@ function idf_resolve_port_type_id(mysqli $conn, int $company_id, $rawPortType, s
     if (is_numeric($rawPortType) && (int)$rawPortType > 0) {
         return (int)$rawPortType;
     }
-    $portTypeName = trim((string)$rawPortType);
-    if ($portTypeName !== '') {
-        $stmtByName = mysqli_prepare($conn, 'SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1');
+    $rawCandidates = [];
+    $rawValue = trim((string)$rawPortType);
+    $fallbackValue = trim((string)$fallback);
+    if ($rawValue !== '') {
+        $rawCandidates[] = $rawValue;
+    }
+    if ($fallbackValue !== '') {
+        $rawCandidates[] = $fallbackValue;
+    }
+
+    foreach ($rawCandidates as $portTypeName) {
+        $stmtByName = mysqli_prepare(
+            $conn,
+            'SELECT id, type FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1'
+        );
         if ($stmtByName) {
             mysqli_stmt_bind_param($stmtByName, 'is', $company_id, $portTypeName);
             mysqli_stmt_execute($stmtByName);
             $resByName = mysqli_stmt_get_result($stmtByName);
             $rowByName = $resByName ? mysqli_fetch_assoc($resByName) : null;
             mysqli_stmt_close($stmtByName);
-            if ($rowByName) return (int)$rowByName['id'];
+            if ($rowByName) {
+                return (int)$rowByName['id'];
+            }
         }
     }
+
+    $stmtAllPortTypes = mysqli_prepare($conn, 'SELECT id, type FROM switch_port_types WHERE company_id = ?');
+    if ($stmtAllPortTypes) {
+        mysqli_stmt_bind_param($stmtAllPortTypes, 'i', $company_id);
+        mysqli_stmt_execute($stmtAllPortTypes);
+        $resAllPortTypes = mysqli_stmt_get_result($stmtAllPortTypes);
+        $normalizedNeedleList = [];
+        foreach ($rawCandidates as $portTypeCandidate) {
+            $normalizedNeedle = strtolower(preg_replace('/[^a-z0-9]+/', '', (string)$portTypeCandidate));
+            if ($normalizedNeedle !== '') {
+                $normalizedNeedleList[] = $normalizedNeedle;
+            }
+        }
+        while ($resAllPortTypes && ($rowPortType = mysqli_fetch_assoc($resAllPortTypes))) {
+            $candidateType = strtolower(preg_replace('/[^a-z0-9]+/', '', (string)($rowPortType['type'] ?? '')));
+            if ($candidateType === '') {
+                continue;
+            }
+            foreach ($normalizedNeedleList as $normalizedNeedle) {
+                if ($normalizedNeedle !== '' && strpos($candidateType, $normalizedNeedle) !== false) {
+                    mysqli_stmt_close($stmtAllPortTypes);
+                    return (int)($rowPortType['id'] ?? 0);
+                }
+            }
+        }
+        mysqli_stmt_close($stmtAllPortTypes);
+    }
+
     return 0;
 }
 

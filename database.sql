@@ -1145,7 +1145,7 @@ CREATE TABLE `idf_ports` (
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `pos_port_unique` (`company_id`,`position_id`,`port_no`),
+  UNIQUE KEY `pos_port_unique` (`company_id`,`position_id`,`port_no`,`port_type`),
   KEY `company_id` (`company_id`),
   KEY `position_id` (`position_id`),
   KEY `idf_ports_port_type_idx` (`port_type`),
