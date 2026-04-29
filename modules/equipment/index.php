@@ -1195,13 +1195,13 @@ if (!empty($_SESSION['crud_success'])) {
             rackOptions.forEach(function (item) {
                 toRackSelect.appendChild(new Option(item.name, item.id));
             });
-            colorSelect.appendChild(new Option('➕ Add', '__add_new__'));
-            vlanSelect.appendChild(new Option('➕ Add', '__add_new__'));
-            fiberPortsSelect.appendChild(new Option('➕ Add', '__add_new__'));
-            fiberPatchSelect.appendChild(new Option('➕ Add', '__add_new__'));
-            fiberRackSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            colorSelect.appendChild(new Option('➕', '__add_new__'));
+            vlanSelect.appendChild(new Option('➕', '__add_new__'));
+            fiberPortsSelect.appendChild(new Option('➕', '__add_new__'));
+            fiberPatchSelect.appendChild(new Option('➕', '__add_new__'));
+            fiberRackSelect.appendChild(new Option('➕', '__add_new__'));
             idfSelect.appendChild(new Option('➕', '__add_new__'));
-            toRackSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            toRackSelect.appendChild(new Option('➕', '__add_new__'));
         }
 
         function fallbackLayout() {
