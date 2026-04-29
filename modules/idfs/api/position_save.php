@@ -526,15 +526,15 @@ if ($pid > 0) {
         $insertPortSql = "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, cable_color, hex_color, notes)
                           VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)
                           ON DUPLICATE KEY UPDATE
-                            label=VALUES(label),
-                            status_id=VALUES(status_id),
-                            connected_to=VALUES(connected_to),
-                            vlan_id=VALUES(vlan_id),
-                            speed_id=VALUES(speed_id),
-                            poe_id=VALUES(poe_id),
-                            cable_color=VALUES(cable_color),
-                            hex_color=VALUES(hex_color),
-                            notes=VALUES(notes)";
+                            label=CASE WHEN VALUES(label) <> '' THEN VALUES(label) ELSE label END,
+                            status_id=CASE WHEN VALUES(status_id) > 0 THEN VALUES(status_id) ELSE status_id END,
+                            connected_to=CASE WHEN VALUES(connected_to) <> '' THEN VALUES(connected_to) ELSE connected_to END,
+                            vlan_id=COALESCE(VALUES(vlan_id), vlan_id),
+                            speed_id=COALESCE(VALUES(speed_id), speed_id),
+                            poe_id=COALESCE(VALUES(poe_id), poe_id),
+                            cable_color=CASE WHEN VALUES(cable_color) <> '' THEN VALUES(cable_color) ELSE cable_color END,
+                            hex_color=CASE WHEN VALUES(hex_color) <> '' THEN VALUES(hex_color) ELSE hex_color END,
+                            notes=CASE WHEN VALUES(notes) <> '' THEN VALUES(notes) ELSE notes END";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
             if ($portTypeByNumber) {
