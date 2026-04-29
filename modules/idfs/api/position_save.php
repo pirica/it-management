@@ -390,6 +390,7 @@ if ($pid > 0) {
             $stmtSwitchPortColors = mysqli_prepare(
                 $conn,
                 "SELECT sp.port_number, sp.port_type, sp.label, sp.status_id, sp.hostname, sp.vlan_id, sp.comments,
+                        spt.id AS switch_port_type_id,
                         LOWER(TRIM(COALESCE(spt.type, CAST(sp.port_type AS CHAR)))) AS normalized_port_type,
                         cc.color_name,
                         cc.hex_color
@@ -414,7 +415,10 @@ if ($pid > 0) {
                     }
                     $rawPortType = $switchPortColorRow['port_type'] ?? '';
                     $normalizedPortType = trim((string)($switchPortColorRow['normalized_port_type'] ?? ''));
-                    $resolvedPortTypeId = idf_resolve_port_type_id($conn, $company_id, $rawPortType, $normalizedPortType !== '' ? $normalizedPortType : 'RJ45');
+                    $resolvedPortTypeId = (int)($switchPortColorRow['switch_port_type_id'] ?? 0);
+                    if ($resolvedPortTypeId <= 0) {
+                        $resolvedPortTypeId = idf_resolve_port_type_id($conn, $company_id, $rawPortType, $normalizedPortType !== '' ? $normalizedPortType : 'RJ45');
+                    }
                     if ($resolvedPortTypeId <= 0) {
                         continue;
                     }
