@@ -394,7 +394,7 @@ if ($pid > 0) {
                         cc.color_name,
                         cc.hex_color
                  FROM switch_ports sp
-                 LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
+                 LEFT JOIN switch_port_types spt ON spt.type = sp.port_type AND spt.company_id = sp.company_id
                  LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
                  WHERE sp.company_id = ? AND sp.equipment_id = ?"
             );
@@ -428,6 +428,7 @@ if ($pid > 0) {
                     }
                     $portKey = $resolvedPortTypeId . ':' . $portNumber;
                     $portSeedByKey[$portKey] = [
+                        // Why: Seeded IDF ports must mirror switch port metadata so initial state is immediately useful in the rack workflow.
                         'label' => trim((string)($switchPortColorRow['label'] ?? '')),
                         'status_id' => (int)($switchPortColorRow['status_id'] ?? 0),
                         'connected_to' => trim((string)($switchPortColorRow['hostname'] ?? '')),
@@ -437,10 +438,6 @@ if ($pid > 0) {
                         'cable_color' => $cableColorName,
                         'hex_color' => $cableHexColor,
                         'notes' => trim((string)($switchPortColorRow['comments'] ?? '')),
-                    ];
-                    $portTypeByNumber[$portKey] = [
-                        'port_no' => $portNumber,
-                        'port_type' => $resolvedPortTypeId,
                     ];
                     $portTypeByNumber[$portKey] = [
                         'port_no' => $portNumber,
