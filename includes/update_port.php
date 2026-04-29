@@ -170,7 +170,7 @@ if ($switchId <= 0) {
 $colorId = find_lookup_id($colors, $input['color'] ?? null);
 $statusId = find_lookup_id($statuses, $input['status'] ?? null);
 $vlanId = $hasVlanId ? find_lookup_id($vlans, $input['vlan'] ?? null) : 0;
-$label = isset($input['label']) ? trim((string)$input['label']) : null;
+$toPatchPort = isset($input['to_patch_port']) ? trim((string)$input['to_patch_port']) : (isset($input['label']) ? trim((string)$input['label']) : null);
 $comments = isset($input['comments']) ? trim((string)$input['comments']) : null;
 $fiberPortId = isset($input['fiber_port_id']) && is_numeric((string)$input['fiber_port_id']) ? (int)$input['fiber_port_id'] : 0;
 $fiberPatchId = isset($input['fiber_patch_id']) && is_numeric((string)$input['fiber_patch_id']) ? (int)$input['fiber_patch_id'] : 0;
@@ -204,10 +204,10 @@ if ($hasVlanId && array_key_exists('vlan', $input)) {
         $fields[] = 'vlan_id = NULL';
     }
 }
-if ($label !== null) {
-    $fields[] = 'label = ?';
+if ($toPatchPort !== null) {
+    $fields[] = 'to_patch_port = ?';
     $types .= 's';
-    $params[] = $label;
+    $params[] = $toPatchPort;
 }
 if ($comments !== null) {
     $fields[] = 'comments = ?';

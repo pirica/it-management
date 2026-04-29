@@ -420,7 +420,7 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         }
 
         // Insert missing ports
-        $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, label, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
+        $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, to_patch_port, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
         $insertStmt = mysqli_prepare($conn, $insertSql);
         if (!$insertStmt) {
             return;
@@ -473,7 +473,7 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         return;
     }
 
-    $insertSql = 'INSERT INTO switch_ports (company_id, port_number, label, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, "")';
+    $insertSql = 'INSERT INTO switch_ports (company_id, port_number, to_patch_port, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, "")';
     $insertStmt = mysqli_prepare($conn, $insertSql);
     if (!$insertStmt) {
         return;
@@ -526,7 +526,7 @@ if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
     $portTypeJoinSql = $isNumericPortTypeColumn ? 'LEFT JOIN switch_port_types spt ON spt.id = sp.port_type' : '';
-    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
@@ -548,7 +548,7 @@ if ($hasEquipmentId && $hasPortType) {
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
@@ -577,6 +577,9 @@ if (!$result) {
 $ports = [];
 while ($row = mysqli_fetch_assoc($result)) {
     $row['port_type'] = normalize_port_type((string)($row['port_type'] ?? 'rj45'));
+    if (!array_key_exists('label', $row) && array_key_exists('to_patch_port', $row)) {
+        $row['label'] = (string)$row['to_patch_port'];
+    }
     $ports[] = $row;
 }
 if ($stmt) { mysqli_stmt_close($stmt); }
