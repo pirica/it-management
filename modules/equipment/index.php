@@ -547,7 +547,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-id-col="id"
                                         data-add-label-col="name"
                                         data-add-company-scoped="1"
-                                        data-add-extra-fields='[{"name":"status_id","label":"Status","type":"hidden","value":"Active"}]'
+                                        data-add-extra-fields='[{"name":"status_id","label":"Status","type":"hidden","value":"Active"},{"name":"location_id","label":"Location","type":"hidden","value":"<?php echo (int)($selectedSwitchData["location_id"] ?? 0); ?>"},{"name":"rack_code","label":"Rack Code","type":"hidden","value":"__USE_NAME__"},{"name":"updated_at","label":"Updated At","type":"hidden","value":"__NOW__"}]'
                                         data-add-friendly="rack">
                                         <option value=""></option>
                                     </select>
