@@ -1312,7 +1312,7 @@ if (!empty($_SESSION['crud_success'])) {
             };
             const switchMetaIdfInput = document.getElementById('switchMetaIdfInput');
             const switchMetaIdfValue = switchMetaIdfInput ? String(switchMetaIdfInput.value || '').trim() : '';
-            payload.idf_id = switchMetaIdfValue !== '' ? switchMetaIdfValue : (document.getElementById('idfSelect').value || null);
+            payload.idf_id = switchMetaIdfValue !== '' ? switchMetaIdfValue : null;
             if (isFiberPortType(selected.dataset.portType || '')) {
                 payload.fiber_port_id = document.getElementById('fiberPortsSelect').value || null;
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
