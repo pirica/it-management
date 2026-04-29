@@ -547,6 +547,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-id-col="id"
                                         data-add-label-col="name"
                                         data-add-company-scoped="1"
+                                        data-add-extra-fields='[{"name":"status_id","label":"Status","type":"hidden","value":"Active"}]'
                                         data-add-friendly="rack">
                                         <option value=""></option>
                                     </select>
