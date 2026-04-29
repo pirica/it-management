@@ -221,7 +221,7 @@ $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
 
 $projectJsonEndpoints = [
     ['method' => 'POST', 'path' => 'includes/get_ports.php', 'purpose' => 'Fetch/seed switch ports and lookup metadata.'],
-    ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update a switch port label/status/color/vlan/comments.'],
+    ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update a switch port to_patch_port/status/color/vlan/comments.'],
     ['method' => 'GET',  'path' => 'modules/idfs/index.php?refresh_select_options=rack|location', 'purpose' => 'Refresh select options for IDF forms.'],
     ['method' => 'POST', 'path' => 'modules/employee_assignment_history/index.php', 'purpose' => 'Employee Assignment History save-to-database import endpoint (JSON rows from table-tools).'],
     ['method' => 'POST', 'path' => 'scripts/test_sql_injection.php', 'purpose' => 'Security test helper endpoint used during audits.'],

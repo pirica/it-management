@@ -153,7 +153,7 @@ function cr_humanize_field($field) {
     }
 
     $map = [
-        'label' => 'Patch port',
+        'to_patch_port' => 'To patch port',
         'department_id' => 'Department Name',
         'office_key_card_department_id' => 'Office Key Card Department',
         'opera_username' => 'OPERA Username',
