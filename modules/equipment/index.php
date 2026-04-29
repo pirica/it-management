@@ -175,8 +175,10 @@ if ($enableSwitchPortManager) {
                 {$switchFiberPortLabelSelect} AS fiber_port_label,
                 COALESCE(spnl.name, 'Vertical') AS port_numbering_layout,
                 COALESCE(r.name, '') AS rack_name,
+                COALESCE(e.rack_id, 0) AS rack_id,
                 COALESCE(idf.name, '') AS idf_name,
-                COALESCE(l.name, '') AS location_name
+                COALESCE(l.name, '') AS location_name,
+                COALESCE(e.location_id, 0) AS location_id
          FROM equipment e
          INNER JOIN equipment_types et ON et.id = e.equipment_type_id
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
@@ -407,6 +409,8 @@ if (!empty($_SESSION['crud_success'])) {
                                     <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
                                 <?php endif; ?>
                                 <input type="hidden" name="spm" value="1">
+                                <input type="hidden" id="rackIdInput" value="<?php echo (int)($selectedSwitchData['rack_id'] ?? 0); ?>">
+                                <input type="hidden" id="locationIdInput" value="<?php echo (int)($selectedSwitchData['location_id'] ?? 0); ?>">
                                 <label for="switchPicker" style="margin-bottom:0;">Switch:</label>
                                 <select id="switchPicker" name="switch_id" onchange="this.form.submit()" style="min-width:240px;">
                                     <?php foreach ($switches as $switchItem): ?>
@@ -1308,6 +1312,14 @@ if (!empty($_SESSION['crud_success'])) {
                 payload.fiber_patch_id = document.getElementById('fiberPatchSelect').value || null;
                 payload.fiber_rack_id = document.getElementById('fiberRackSelect').value || null;
                 payload.idf_id = document.getElementById('idfSelect').value || null;
+            }
+            const rackIdInput = document.getElementById('rackIdInput');
+            if (rackIdInput && rackIdInput.value !== '') {
+                payload.rack_id = rackIdInput.value;
+            }
+            const locationIdInput = document.getElementById('locationIdInput');
+            if (locationIdInput && locationIdInput.value !== '') {
+                payload.location_id = locationIdInput.value;
             }
 
             savePort(payload, true)
