@@ -377,7 +377,7 @@ if ($pid > 0) {
         mysqli_stmt_close($stmtCnt);
     }
 
-    if ($port_count > 0 && $existing === 0) {
+    if ($port_count > 0 || $equipment_id > 0) {
         $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
@@ -496,7 +496,18 @@ if ($pid > 0) {
                 }
             }
         }
-        $insertPortSql = "INSERT IGNORE INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, cable_color, hex_color, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)";
+        $insertPortSql = "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, cable_color, hex_color, notes)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)
+                          ON DUPLICATE KEY UPDATE
+                            label=VALUES(label),
+                            status_id=VALUES(status_id),
+                            connected_to=VALUES(connected_to),
+                            vlan_id=VALUES(vlan_id),
+                            speed_id=VALUES(speed_id),
+                            poe_id=VALUES(poe_id),
+                            cable_color=VALUES(cable_color),
+                            hex_color=VALUES(hex_color),
+                            notes=VALUES(notes)";
         $stmtInsertPort = mysqli_prepare($conn, $insertPortSql);
         if ($stmtInsertPort) {
             if ($portTypeByNumber) {
