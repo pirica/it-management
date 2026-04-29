@@ -291,6 +291,7 @@ $vlans = fetch_company_vlans($conn, (int)$company_id);
 $fiberPorts = fetch_lookup_map($conn, 'equipment_fiber', 'name');
 $fiberPatches = fetch_lookup_map($conn, 'equipment_fiber_patch', 'name');
 $fiberRacks = fetch_lookup_map($conn, 'equipment_fiber_rack', 'name');
+$idfOptions = fetch_lookup_map($conn, 'idfs', 'idf_code');
 if (empty($statuses) || empty($colors)) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'switch_status/cable_colors lookup tables are empty']);
@@ -513,11 +514,12 @@ if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
     $portTypeJoinSql = $isNumericPortTypeColumn ? 'LEFT JOIN switch_port_types spt ON spt.id = sp.port_type' : '';
-    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
+            LEFT JOIN idfs i ON i.id = sp.idf_id
             {$portTypeJoinSql}
             WHERE sp.company_id = ?
               AND sp.equipment_id = ?
@@ -534,11 +536,12 @@ if ($hasEquipmentId && $hasPortType) {
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.comments{$vlanSelect}
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.label, ss.status, sc.color_name AS color, sp.idf_id, i.idf_code, sp.comments{$vlanSelect}
             FROM switch_ports sp
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
+            LEFT JOIN idfs i ON i.id = sp.idf_id
             WHERE sp.company_id = ?
             ORDER BY sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);
@@ -609,6 +612,7 @@ echo json_encode([
     'fiber_ports' => $fiberPorts,
     'fiber_patches' => $fiberPatches,
     'fiber_racks' => $fiberRacks,
+    'idfs' => $idfOptions,
     'layout' => [
         'rj45' => $rj45Count,
         'sfp' => $sfpCount,

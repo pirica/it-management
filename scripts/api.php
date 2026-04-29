@@ -85,6 +85,8 @@
  * IDF equipment-port API/link creation now resolves switch_ports.port_type through switch_port_types for numeric FK deployments, while preserving raw type value for uniqueness checks during switch port-number updates.
 
  * IDF link/port switch sync updates now match both port_number and port_type when mirroring to switch_ports, preventing cross-type writes on overlapping port numbers (for example RJ45 1 vs SFP 1).
+ * Switch Port Manager now persists Fiber Ports/Fiber Patch/Fiber Rack per switch_ports row via new fiber FK columns, and get_ports returns these per-port values for reliable edit reloads.
+ * Switch Port Manager now includes per-port IDF selection (`idfs.idf_code`) with quick-add support and persists it on switch_ports.idf_id.
  * IDF rack device icon now derives SFP/SFP+ dots using resilient type-label matching and paints each dot using matching SFP/SFP+ cable/status colors from rendered port metadata.
  * IDF rack device icon now includes RJ45+SFP/SFP+ dot previews (capped) and paints each dot from matching port cable/status colors so active RJ45 colors are visible in the compact card icon.
  * IDF rack card icon now honors configured RJ45/SFP/SFP+ counts from rack metadata (with rendered-port fallback) so compact previews do not over-render stale legacy ports.
