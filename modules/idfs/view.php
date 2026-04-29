@@ -175,15 +175,20 @@ if ($stmtPos) {
             $conn,
             "SELECT pr.*,
                     COALESCE(spt.type, 'RJ45') AS port_type_label,
-                    COALESCE(ss.status, 'Unknown') AS status_label,
-                    cc_ss.hex_color AS status_color,
+                    COALESCE(pr_live.status_id, pr.status_id) AS effective_status_id,
+                    COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
+                    COALESCE(cc_live.hex_color, cc_ss.hex_color) AS status_color,
+                    COALESCE(NULLIF(pr_live.label, ''), pr.label) AS label,
+                    COALESCE(NULLIF(pr_live.hostname, ''), pr.connected_to) AS connected_to,
+                    COALESCE(pr_live.vlan_id, pr.vlan_id) AS vlan_id,
+                    COALESCE(NULLIF(pr_live.comments, ''), pr.notes) AS notes,
                     p_local.position_no AS local_position_no,
                     p_local.device_name AS local_device_name,
                     p_local.equipment_id AS local_equipment_id,
                     i_local.name AS local_idf_name,
                     COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
-                    COALESCE(pr.hex_color, cc_l.hex_color) AS cable_hex_color,
-                    COALESCE(NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
+                    COALESCE(cc_live.hex_color, pr.hex_color, cc_l.hex_color) AS cable_hex_color,
+                    COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
                     l.notes AS link_notes,
                     pr_remote.port_no AS remote_port_no,
                     pr_remote.status_id AS remote_status_id,
@@ -199,6 +204,12 @@ if ($stmtPos) {
              LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id AND et_local.company_id = e_local.company_id
              LEFT JOIN idf_device_type dt_local ON dt_local.id = p_local.device_type AND dt_local.company_id = p_local.company_id
              LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
+             LEFT JOIN switch_ports pr_live ON pr_live.company_id = pr.company_id
+                 AND pr_live.equipment_id = p_local.equipment_id
+                 AND pr_live.port_number = pr.port_no
+                 AND pr_live.port_type = spt.type
+             LEFT JOIN switch_status ss_live ON ss_live.id = pr_live.status_id AND ss_live.company_id = pr_live.company_id
+             LEFT JOIN cable_colors cc_live ON cc_live.id = pr_live.color_id AND cc_live.company_id = pr_live.company_id
              LEFT JOIN switch_status ss ON ss.id = pr.status_id AND ss.company_id = pr.company_id
              LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id AND cc_ss.company_id = ss.company_id
              LEFT JOIN idf_links l ON l.id = (
