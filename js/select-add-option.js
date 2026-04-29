@@ -100,6 +100,7 @@
             addable: (field && typeof field.addable === 'object' && field.addable !== null) ? field.addable : null,
             required: field.required !== false,
             required_when: (field && typeof field.required_when === 'object' && field.required_when !== null) ? field.required_when : null,
+            value: Object.prototype.hasOwnProperty.call(field || {}, 'value') ? String(field.value) : '',
         };
     }
 
@@ -299,19 +300,27 @@
                     input.innerHTML = buildSelectOptionsHtml(field.options, !!field.addable);
                 } else {
                     input = document.createElement('input');
-                    if (field.type === 'number') {
+                    if (field.type === 'hidden') {
+                        input.type = 'hidden';
+                        input.value = field.value || '';
+                        group.style.display = 'none';
+                        label.style.display = 'none';
+                    } else if (field.type === 'number') {
                         input.type = 'number';
                         input.placeholder = 'Enter ' + field.label.toLowerCase();
                     } else if (field.type === 'color') {
                         input.type = 'color';
-                        input.value = '#000000';
+                        input.value = field.value || '#000000';
                     } else {
                         input.type = 'text';
                         input.placeholder = 'Enter ' + field.label.toLowerCase();
+                        if (field.value) {
+                            input.value = field.value;
+                        }
                     }
                 }
 
-                input.required = field.required !== false && !field.required_when;
+                input.required = field.type !== 'hidden' && field.required !== false && !field.required_when;
                 input.name = field.name;
                 input.className = 'itm-add-option-input';
                 group.appendChild(input);
