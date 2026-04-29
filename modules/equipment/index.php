@@ -230,6 +230,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
 $moduleSearchPlaceholder = (string)($equipmentSearchPlaceholder ?? 'Use SQL wildcards, e.g. %%switch%%');
+$locationTypeExtraOptions = [];
+$locationTypeSql = "SELECT id, name FROM location_types WHERE company_id = " . (int)$company_id . " ORDER BY name ASC";
+$locationTypeRes = mysqli_query($conn, $locationTypeSql);
+while ($locationTypeRes && ($locationTypeRow = mysqli_fetch_assoc($locationTypeRes))) {
+    $locationTypeExtraOptions[] = [
+        'value' => (string)(int)($locationTypeRow['id'] ?? 0),
+        'label' => (string)($locationTypeRow['name'] ?? ''),
+    ];
+}
+$locationTypeExtraOptionsJson = htmlspecialchars(json_encode($locationTypeExtraOptions), ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -577,6 +587,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         data-add-id-col="id"
                                         data-add-label-col="name"
                                         data-add-company-scoped="1"
+                                        data-add-extra-fields='[{"name":"type_id","label":"Type","type":"select","options":<?php echo $locationTypeExtraOptionsJson; ?>,"addable":{"table":"location_types","id_col":"id","label_col":"name","company_scoped":"1"}}]'
                                         data-add-friendly="location">
                                         <option value=""></option>
                                     </select>
