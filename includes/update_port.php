@@ -133,6 +133,7 @@ $hasFiberRackId = itm_table_has_column($conn, 'switch_ports', 'fiber_rack_id');
 $hasToIdfId = itm_table_has_column($conn, 'switch_ports', 'to_idf_id');
 $hasRackId = itm_table_has_column($conn, 'switch_ports', 'rack_id');
 $hasToRackId = itm_table_has_column($conn, 'switch_ports', 'to_rack_id');
+$hasToLocationId = itm_table_has_column($conn, 'switch_ports', 'to_location_id');
 $hasLocationId = itm_table_has_column($conn, 'switch_ports', 'location_id');
 $hasHostname = itm_table_has_column($conn, 'switch_ports', 'hostname');
 
@@ -179,6 +180,8 @@ $fiberRackId = isset($input['fiber_rack_id']) && is_numeric((string)$input['fibe
 $toIdfId = isset($input['to_idf_id']) && is_numeric((string)$input['to_idf_id']) ? (int)$input['to_idf_id'] : 0;
 $toRackIdRaw = $input['to_rack_id'] ?? ($input['rack_id'] ?? null);
 $toRackId = is_numeric((string)$toRackIdRaw) ? (int)$toRackIdRaw : 0;
+$toLocationIdRaw = $input['to_location_id'] ?? null;
+$toLocationId = is_numeric((string)$toLocationIdRaw) ? (int)$toLocationIdRaw : 0;
 $rackId = isset($input['rack_id']) && is_numeric((string)$input['rack_id']) ? (int)$input['rack_id'] : 0;
 $locationId = isset($input['location_id']) && is_numeric((string)$input['location_id']) ? (int)$input['location_id'] : 0;
 $hostname = isset($input['hostname']) ? trim((string)$input['hostname']) : null;
@@ -261,6 +264,15 @@ if ($hasToRackId && (array_key_exists('to_rack_id', $input) || array_key_exists(
         $params[] = $toRackId;
     } else {
         $fields[] = 'to_rack_id = NULL';
+    }
+}
+if ($hasToLocationId && array_key_exists('to_location_id', $input)) {
+    if ($toLocationId > 0) {
+        $fields[] = 'to_location_id = ?';
+        $types .= 'i';
+        $params[] = $toLocationId;
+    } else {
+        $fields[] = 'to_location_id = NULL';
     }
 }
 if ($hasRackId && array_key_exists('rack_id', $input)) {
