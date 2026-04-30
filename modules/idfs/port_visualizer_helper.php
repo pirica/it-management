@@ -32,23 +32,8 @@ if (!function_exists('itm_render_port_visualizer')) {
         }
 
         $allPortsForMeta = $ports;
-        $hasRj45Rows = false;
-        $hasFiberRows = false;
-        foreach ($ports as $itmPortTypeScan) {
-            $itmTypeRawScan = strtolower(trim((string)($itmPortTypeScan['port_type_label'] ?? ($itmPortTypeScan['port_type'] ?? ''))));
-            if (strpos($itmTypeRawScan, 'sfp') !== false) {
-                $hasFiberRows = true;
-            } else {
-                $hasRj45Rows = true;
-            }
-        }
-        if ($hasRj45Rows && $hasFiberRows) {
-            // Why: Rack preview UX requires left block to show copper (RJ45) only when both copper and fiber are present.
-            $ports = array_values(array_filter($ports, function ($itmPortTypeFilter) {
-                $itmTypeRawFilter = strtolower(trim((string)($itmPortTypeFilter['port_type_label'] ?? ($itmPortTypeFilter['port_type'] ?? ''))));
-                return strpos($itmTypeRawFilter, 'sfp') === false;
-            }));
-        }
+        // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
+        // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
 
         // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
         // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
@@ -463,7 +448,15 @@ if (!function_exists('itm_render_port_visualizer')) {
                     }
                     $dotTitle = implode(' • ', $dotTitleParts);
                 }
-                $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotStyle . '></div>';
+                $dotPortId = isset($dotPort['id']) ? (int)$dotPort['id'] : 0;
+                $dotStatusAttr = isset($dotPort['status_label']) ? sanitize((string)$dotPort['status_label']) : 'Unknown';
+                $dotPositionIdAttr = isset($dotPort['position_id']) ? (int)$dotPort['position_id'] : 0;
+                $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '"';
+                $dotOnClick = '';
+                if (!empty($options['clickable'])) {
+                    $dotOnClick = ' onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';
+                }
+                $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotDataAttrs . $dotStyle . $dotOnClick . '></div>';
             }
             $html .= '</div>';
         }

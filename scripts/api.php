@@ -118,6 +118,7 @@
  * Switch Port Manager patch-port editor now treats legacy "0" labels as empty values when loading selected ports so the Patch port input stays blank by default.
  * Switch Port Manager To Location quick-add modal now collects required it_locations.type_id via a Type selector (with location-type quick-add) so add requests no longer fail validation.
  * IDF device save flow now always seeds configured RJ45 port capacity into idf_ports (tenant-scoped) even when linked switch metadata contributes only SFP rows.
+ * IDF rack visualizer now keeps SFP/SFP+ dots rendered alongside RJ45 rows in mixed-port cards so fiber ports remain directly clickable for create/link/edit actions, with tooltips continuing to use switch_ports/equipment metadata context.
 
  * Switch Ports CRUD table/list/detail views now display every column except id and company_id to keep internal tenant keys hidden while exposing full port metadata.
  */
