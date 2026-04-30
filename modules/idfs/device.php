@@ -26,6 +26,9 @@ if ($position_id > 0 && $company_id > 0) {
     $stmt = mysqli_prepare(
         $conn,
         'SELECT p.*, i.name AS idf_name, l.name AS location_name, i.id AS idf_id, spnl.name AS layout_name,
+                COALESCE(er.name, "") AS switch_rj45_name,
+                COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
+                COALESCE(e.switch_fiber_port_label, "") AS equipment_fiber_port_label,
                 CASE
                     WHEN UPPER(COALESCE(et.code, "")) = "SWITCH" THEN 1
                     WHEN UPPER(COALESCE(et.name, "")) = "SWITCH" THEN 1
@@ -36,6 +39,7 @@ if ($position_id > 0 && $company_id > 0) {
          JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
          LEFT JOIN equipment e ON e.id = p.equipment_id
          LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+         LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = p.company_id
          LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
          WHERE p.id = ? AND i.company_id = ?
@@ -58,6 +62,9 @@ if (!$pos) {
 }
 
 $ports = [];
+$rj45PortNumbers = [];
+$sfpPortNumbers = [];
+$sfpPlusPortNumbers = [];
 
 $portSortField = (string)($_GET['sort'] ?? 'port_type');
 $portSortDir = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
@@ -189,6 +196,53 @@ if ($stmtPorts) {
         $ports[] = $row;
     }
     mysqli_stmt_close($stmtPorts);
+}
+
+foreach ($ports as $portMeta) {
+    $portNo = (int)($portMeta['port_no'] ?? 0);
+    if ($portNo <= 0) {
+        continue;
+    }
+    $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? ''))));
+    if (strpos($typeRaw, 'sfp+') !== false || strpos($typeRaw, 'sfp plus') !== false) {
+        $sfpPlusPortNumbers[] = $portNo;
+    } elseif (strpos($typeRaw, 'sfp') !== false) {
+        $sfpPortNumbers[] = $portNo;
+    } else {
+        $rj45PortNumbers[] = $portNo;
+    }
+}
+
+$rj45PortNumbers = array_values(array_unique($rj45PortNumbers));
+sort($rj45PortNumbers);
+$sfpPortNumbers = array_values(array_unique($sfpPortNumbers));
+sort($sfpPortNumbers);
+$sfpPlusPortNumbers = array_values(array_unique($sfpPlusPortNumbers));
+sort($sfpPlusPortNumbers);
+
+if (empty($rj45PortNumbers)) {
+    $rj45PortLabel = (string)($pos['switch_rj45_name'] ?? '');
+    $rj45FallbackCount = 0;
+    if ($rj45PortLabel !== '' && preg_match('/(\d+)/', $rj45PortLabel, $rj45Matches)) {
+        $rj45FallbackCount = (int)$rj45Matches[1];
+    } elseif ((int)($pos['port_count'] ?? 0) > 0) {
+        $rj45FallbackCount = (int)$pos['port_count'];
+    }
+    if ($rj45FallbackCount > 0) {
+        $rj45PortNumbers = range(1, $rj45FallbackCount);
+    }
+}
+
+if (empty($sfpPortNumbers) && empty($sfpPlusPortNumbers)) {
+    $fiberFallbackCount = (int)($pos['equipment_fiber_ports_number'] ?? 0);
+    if ($fiberFallbackCount > 0) {
+        $fiberLabel = strtolower(trim((string)($pos['equipment_fiber_port_label'] ?? '')));
+        if (strpos($fiberLabel, 'sfp+') !== false || strpos($fiberLabel, 'sfp plus') !== false) {
+            $sfpPlusPortNumbers = range(1, $fiberFallbackCount);
+        } else {
+            $sfpPortNumbers = range(1, $fiberFallbackCount);
+        }
+    }
 }
 
 $otherIds = [];
@@ -541,6 +595,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             background: rgba(9, 105, 218, .14);
             box-shadow: inset 0 0 0 1px rgba(9, 105, 218, .35);
         }
+        .idf-device-visualizer .itm-port-grid { display:none; }
         .idf-swatch {
             display:inline-block;
             width:10px;
@@ -613,13 +668,16 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
 
-            <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
+            <div class="card idf-device-visualizer" style="padding:14px; border-radius:18px; margin-bottom:14px;">
                 <h3 style="margin-top:0;">👁️ Port Visualization</h3>
                 <?php
                 echo itm_render_port_visualizer($ports, [
                     'clickable' => true,
                     'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
-                    'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1)
+                    'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
+                    'rj45_ports' => $rj45PortNumbers,
+                    'sfp_ports' => $sfpPortNumbers,
+                    'sfp_plus_ports' => $sfpPlusPortNumbers
                 ]);
                 ?>
             </div>
