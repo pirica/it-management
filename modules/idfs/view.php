@@ -160,11 +160,16 @@ $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     ? "COALESCE(e.switch_fiber_port_label, '')"
     : "''";
 $hasSwitchPortsLabelColumn = false;
+$hasSwitchPortsToPatchPortColumn = false;
 $hasSwitchPortsCommentsColumn = false;
 $hasSwitchPortsHostnameColumn = false;
 $switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
 if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
     $hasSwitchPortsLabelColumn = true;
+}
+$switchPortsToPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'to_patch_port'");
+if ($switchPortsToPatchPortColumnRes && mysqli_num_rows($switchPortsToPatchPortColumnRes) > 0) {
+    $hasSwitchPortsToPatchPortColumn = true;
 }
 $switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'comments'");
 if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
@@ -174,9 +179,12 @@ $switchPortsHostnameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_p
 if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnRes) > 0) {
     $hasSwitchPortsHostnameColumn = true;
 }
-$switchPortsLiveLabelSelect = $hasSwitchPortsLabelColumn
-    ? "NULLIF(pr_live.label, '')"
-    : "''";
+$switchPortsLiveLabelSelect = "''";
+if ($hasSwitchPortsToPatchPortColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(pr_live.to_patch_port, '')";
+} elseif ($hasSwitchPortsLabelColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(pr_live.label, '')";
+}
 $switchPortsLiveHostnameSelect = $hasSwitchPortsHostnameColumn
     ? "NULLIF(pr_live.hostname, '')"
     : "''";
@@ -323,7 +331,7 @@ if ($stmtPos) {
                 "SELECT sp.id,
                         sp.port_number AS port_no,
                         COALESCE(sp.port_type, 'RJ45') AS port_type_label,
-                        '' AS label,
+                        " . ($hasSwitchPortsToPatchPortColumn ? "COALESCE(sp.to_patch_port, '')" : "''") . " AS label,
                         {$switchPortsFallbackHostnameSelect} AS connected_to,
                         {$switchPortsFallbackCommentsSelect} AS notes,
                         COALESCE(ss.status, 'Unknown') AS status_label,
