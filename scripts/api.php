@@ -404,6 +404,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-04-30:</strong> IDF device ports page (<code>modules/idfs/device.php</code>) now defaults to sorting by <code>idf_ports.port_type ASC</code> and supports ASC/DESC sorting toggles for #, Type, Label, Status, Connected To, VLAN, Speed, PoE, Notes, and Link columns.</li>
             <li><strong>2026-04-30:</strong> IDF detail view (<code>modules/idfs/view.php</code>) now falls back to tenant-scoped live <code>switch_ports</code> data when <code>idf_ports</code> rows are not yet present.</li>
             <li>Fallback port numbering normalizes non-numeric labels into numeric slots so the visualizer grid still renders.</li>
         </ul>

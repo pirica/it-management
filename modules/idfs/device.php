@@ -58,6 +58,26 @@ if (!$pos) {
 }
 
 $ports = [];
+
+$portSortField = (string)($_GET['sort'] ?? 'port_type');
+$portSortDir = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+$portSortMap = [
+    'port_no' => 'pr.port_no',
+    'port_type' => "COALESCE(spt.type, 'RJ45')",
+    'label' => 'pr.label',
+    'status' => "COALESCE(ss.status, 'Unknown')",
+    'connected_to' => 'pr.connected_to',
+    'vlan' => 'CASE WHEN v.id IS NULL THEN "" WHEN TRIM(COALESCE(v.vlan_name, "")) = "" THEN COALESCE(v.vlan_number, "") ELSE CONCAT(COALESCE(v.vlan_number, ""), " - ", v.vlan_name) END',
+    'speed' => 'COALESCE(ef.name, "")',
+    'poe' => 'COALESCE(ep.name, "")',
+    'notes' => 'pr.notes',
+    'link' => 'l.id'
+];
+if (!isset($portSortMap[$portSortField])) {
+    $portSortField = 'port_type';
+}
+$portOrderSql = $portSortMap[$portSortField] . ' ' . $portSortDir . ', pr.port_no ASC';
+
 $stmtPorts = mysqli_prepare(
     $conn,
     "SELECT
@@ -159,7 +179,7 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
      WHERE pr.position_id=?
-     ORDER BY pr.port_no ASC"
+     ORDER BY " . $portOrderSql
 );
 if ($stmtPorts) {
     mysqli_stmt_bind_param($stmtPorts, 'i', $position_id);
@@ -615,10 +635,26 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <button class="btn btn-sm" type="button" onclick="regeneratePorts()">Regenerate Ports</button>
                 </div>
 
+
+                <?php
+                $buildPortSortLink = static function (string $field) use ($portSortField, $portSortDir): string {
+                    $query = $_GET;
+                    $query['sort'] = $field;
+                    $query['dir'] = ($portSortField === $field && $portSortDir === 'ASC') ? 'desc' : 'asc';
+                    return '?' . http_build_query($query);
+                };
+                $renderPortSortIndicator = static function (string $field) use ($portSortField, $portSortDir): string {
+                    if ($portSortField !== $field) {
+                        return '';
+                    }
+                    return $portSortDir === 'ASC' ? ' ▲' : ' ▼';
+                };
+                ?>
+
                 <table id="portsTable" class="table idf-ports-table">
                     <thead>
                     <tr>
-                        <th>#</th><th>Type</th><th>Label</th><th>Status</th><th>Connected To</th><th>VLAN</th><th>Speed</th><th>PoE</th><th>Notes</th><th>Link</th><th>Actions</th>
+                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
