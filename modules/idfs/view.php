@@ -285,7 +285,16 @@ if ($stmtPos) {
                 mysqli_stmt_bind_param($stmtLivePorts, 'iiii', $posId, $company_id, $company_id, $equipmentIdForFallback);
                 mysqli_stmt_execute($stmtLivePorts);
                 $livePortRes = mysqli_stmt_get_result($stmtLivePorts);
+                $liveFallbackPortIndex = 0;
                 while ($livePortRes && ($liveRow = mysqli_fetch_assoc($livePortRes))) {
+                    $liveFallbackPortIndex++;
+                    $rawFallbackPortNo = trim((string)($liveRow['port_no'] ?? ''));
+                    if ($rawFallbackPortNo === '' || !preg_match('/\d+/', $rawFallbackPortNo, $liveNoMatch)) {
+                        // Why: Visualizer layout needs numeric slots; legacy switch port labels may be text-only.
+                        $liveRow['port_no'] = $liveFallbackPortIndex;
+                    } else {
+                        $liveRow['port_no'] = (int)$liveNoMatch[0];
+                    }
                     $row['ports'][] = $liveRow;
                 }
                 mysqli_stmt_close($stmtLivePorts);
