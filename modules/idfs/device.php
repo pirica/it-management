@@ -595,7 +595,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             background: rgba(9, 105, 218, .14);
             box-shadow: inset 0 0 0 1px rgba(9, 105, 218, .35);
         }
-        .idf-device-visualizer .itm-port-grid { display:none; }
         .idf-swatch {
             display:inline-block;
             width:10px;
@@ -668,7 +667,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
 
-            <div class="card idf-device-visualizer" style="padding:14px; border-radius:18px; margin-bottom:14px;">
+            <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
                 <h3 style="margin-top:0;">👁️ Port Visualization</h3>
                 <?php
                 echo itm_render_port_visualizer($ports, [
