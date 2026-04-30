@@ -38,6 +38,22 @@ function idf_debug_log_line(string $message): void {
     @file_put_contents($idfDebugLogFile, $line, FILE_APPEND);
 }
 
+function idf_extract_rj45_count(string $rawLabel): int {
+    $label = strtolower(trim($rawLabel));
+    if ($label === '') {
+        return 0;
+    }
+
+    if (preg_match_all('/(\d+)\s*(?:x\s*)?(?:ports?\s*)?rj\s*45\b/i', $label, $rj45Matches) && !empty($rj45Matches[1])) {
+        return max(array_map('intval', $rj45Matches[1]));
+    }
+    if (preg_match_all('/(\d+)/', $label, $allNumberMatches) && !empty($allNumberMatches[1])) {
+        return max(array_map('intval', $allNumberMatches[1]));
+    }
+
+    return 0;
+}
+
 function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
     $raw = trim($t);
     $lookupKey = ctype_digit($raw) ? (int)$raw : strtolower($raw);
@@ -381,10 +397,7 @@ if ($stmtPos) {
         }
 
 
-        $rj45PortCount = 0;
-        if (preg_match('/(\d+)/', (string)($row['switch_rj45_name'] ?? ''), $rj45Match)) {
-            $rj45PortCount = (int)$rj45Match[1];
-        }
+        $rj45PortCount = idf_extract_rj45_count((string)($row['switch_rj45_name'] ?? ''));
         if ($rj45PortCount <= 0) {
             foreach (($row['ports'] ?? []) as $itmPortMeta) {
                 $itmTypeRaw = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? ''))));
@@ -394,6 +407,15 @@ if ($stmtPos) {
             }
         }
         $row['rj45_ports'] = $rj45PortCount > 0 ? range(1, $rj45PortCount) : [];
+        if ($idfDebugEnabled && $idf_id === 4) {
+            idf_debug_log_line(
+                '[IDF DEBUG] idf_id=4 position_id=' . $posId
+                . ' rj45_count=' . $rj45PortCount
+                . ' switch_rj45_name="' . trim((string)($row['switch_rj45_name'] ?? '')) . '"'
+                . ' derived_from_ports=' . (empty($row['switch_rj45_name']) ? '1' : '0')
+                . ' company_id=' . $company_id
+            );
+        }
 
         $fiberPortCount = 0;
         foreach (($row['ports'] ?? []) as $itmPortFiberMeta) {
