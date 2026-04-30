@@ -250,6 +250,48 @@ if ($stmtPos) {
             mysqli_stmt_close($stmtPorts);
         }
 
+        if (empty($row['ports']) && (int)($row['equipment_id'] ?? 0) > 0) {
+            // Why: Some legacy racks link switch hardware before IDF ports are synced, so render live switch ports as fallback.
+            $equipmentIdForFallback = (int)$row['equipment_id'];
+            $stmtLivePorts = mysqli_prepare(
+                $conn,
+                "SELECT sp.id,
+                        sp.port_number AS port_no,
+                        COALESCE(sp.port_type, 'RJ45') AS port_type_label,
+                        COALESCE(sp.label, '') AS label,
+                        COALESCE(sp.hostname, '') AS connected_to,
+                        COALESCE(sp.comments, '') AS notes,
+                        COALESCE(ss.status, 'Unknown') AS status_label,
+                        COALESCE(cc.hex_color, '#808080') AS status_color,
+                        COALESCE(cc.hex_color, '') AS cable_hex_color,
+                        COALESCE(cc.color_name, '') AS cable_color_name,
+                        p.position_no AS local_position_no,
+                        p.device_name AS local_device_name,
+                        p.equipment_id AS local_equipment_id,
+                        i.name AS local_idf_name,
+                        COALESCE(dt.idfdevicetype_name, et.name, '') AS local_device_type_label
+                 FROM switch_ports sp
+                 LEFT JOIN switch_status ss ON ss.id = sp.status_id AND ss.company_id = sp.company_id
+                 LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
+                 LEFT JOIN idf_positions p ON p.id = ? AND p.company_id = ?
+                 LEFT JOIN idfs i ON i.id = p.idf_id
+                 LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id
+                 LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
+                 LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
+                 WHERE sp.company_id = ? AND sp.equipment_id = ?
+                 ORDER BY sp.port_number ASC"
+            );
+            if ($stmtLivePorts) {
+                mysqli_stmt_bind_param($stmtLivePorts, 'iiii', $posId, $company_id, $company_id, $equipmentIdForFallback);
+                mysqli_stmt_execute($stmtLivePorts);
+                $livePortRes = mysqli_stmt_get_result($stmtLivePorts);
+                while ($livePortRes && ($liveRow = mysqli_fetch_assoc($livePortRes))) {
+                    $row['ports'][] = $liveRow;
+                }
+                mysqli_stmt_close($stmtLivePorts);
+            }
+        }
+
 
         $rj45PortCount = 0;
         if (preg_match('/(\d+)/', (string)($row['switch_rj45_name'] ?? ''), $rj45Match)) {
