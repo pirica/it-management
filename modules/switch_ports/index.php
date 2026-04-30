@@ -115,7 +115,7 @@ function cr_fk_metadata($conn, $table) {
 
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return !in_array($c['Field'], ['id', 'company_id'], true);
     }));
 }
 
