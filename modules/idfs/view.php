@@ -9,12 +9,33 @@ if (!isset($_SESSION['company_id'])) {
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $idf_id = (int)($_GET['id'] ?? 0);
+$idfDebugEnabled = isset($_GET['debug_ports']) && $_GET['debug_ports'] === '1';
+if ($idfDebugEnabled && $idf_id === 4) {
+    // Why: In some hosts error_log file is created lazily; ensure it exists before writing IDF debug traces.
+    $idfDebugLogFile = ROOT_PATH . 'error_log.txt';
+    if (!file_exists($idfDebugLogFile)) {
+        @file_put_contents($idfDebugLogFile, '');
+    }
+    // Why: Emit a guaranteed marker so operators can confirm the debug path is active even before port queries run.
+    @file_put_contents(
+        $idfDebugLogFile,
+        '[' . date('Y-m-d H:i:s') . '] [IDF DEBUG] bootstrap idf_id=4 debug_ports=1 root_path=' . ROOT_PATH . ' writable=' . (is_writable($idfDebugLogFile) ? '1' : '0') . PHP_EOL,
+        FILE_APPEND
+    );
+}
 
 function idf_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
     return (string)$_SESSION['csrf_token'];
+}
+
+function idf_debug_log_line(string $message): void {
+    // Why: Some hosts suppress error_log() writes for custom files; append directly so debug traces are always captured when enabled.
+    $idfDebugLogFile = ROOT_PATH . 'error_log.txt';
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
+    @file_put_contents($idfDebugLogFile, $line, FILE_APPEND);
 }
 
 function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
@@ -138,6 +159,44 @@ if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabe
 $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     ? "COALESCE(e.switch_fiber_port_label, '')"
     : "''";
+$hasSwitchPortsLabelColumn = false;
+$hasSwitchPortsToPatchPortColumn = false;
+$hasSwitchPortsCommentsColumn = false;
+$hasSwitchPortsHostnameColumn = false;
+$switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
+if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
+    $hasSwitchPortsLabelColumn = true;
+}
+$switchPortsToPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'to_patch_port'");
+if ($switchPortsToPatchPortColumnRes && mysqli_num_rows($switchPortsToPatchPortColumnRes) > 0) {
+    $hasSwitchPortsToPatchPortColumn = true;
+}
+$switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'comments'");
+if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
+    $hasSwitchPortsCommentsColumn = true;
+}
+$switchPortsHostnameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'hostname'");
+if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnRes) > 0) {
+    $hasSwitchPortsHostnameColumn = true;
+}
+$switchPortsLiveLabelSelect = "''";
+if ($hasSwitchPortsToPatchPortColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(pr_live.to_patch_port, '')";
+} elseif ($hasSwitchPortsLabelColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(pr_live.label, '')";
+}
+$switchPortsLiveHostnameSelect = $hasSwitchPortsHostnameColumn
+    ? "NULLIF(pr_live.hostname, '')"
+    : "''";
+$switchPortsLiveCommentsSelect = $hasSwitchPortsCommentsColumn
+    ? "NULLIF(pr_live.comments, '')"
+    : "''";
+$switchPortsFallbackHostnameSelect = $hasSwitchPortsHostnameColumn
+    ? "COALESCE(sp.hostname, '')"
+    : "''";
+$switchPortsFallbackCommentsSelect = $hasSwitchPortsCommentsColumn
+    ? "COALESCE(sp.comments, '')"
+    : "''";
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name,
@@ -163,7 +222,9 @@ if ($stmtPos) {
     mysqli_stmt_bind_param($stmtPos, 'ii', $idf_id, $company_id);
     mysqli_stmt_execute($stmtPos);
     $resPos = mysqli_stmt_get_result($stmtPos);
+    $idfDebugPositionCount = 0;
     while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
+        $idfDebugPositionCount++;
         $posId = (int)$row['id'];
         $posNo = (int)$row['position_no'];
         if ($posNo > $maxPosInDb) {
@@ -178,10 +239,10 @@ if ($stmtPos) {
                     COALESCE(pr_live.status_id, pr.status_id) AS effective_status_id,
                     COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
                     COALESCE(cc_live.hex_color, cc_ss.hex_color) AS status_color,
-                    COALESCE(NULLIF(pr_live.label, ''), pr.label) AS label,
-                    COALESCE(NULLIF(pr_live.hostname, ''), pr.connected_to) AS connected_to,
+                    COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
+                    COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
                     COALESCE(pr_live.vlan_id, pr.vlan_id) AS vlan_id,
-                    COALESCE(NULLIF(pr_live.comments, ''), pr.notes) AS notes,
+                    COALESCE({$switchPortsLiveCommentsSelect}, pr.notes) AS notes,
                     p_local.position_no AS local_position_no,
                     p_local.device_name AS local_device_name,
                     p_local.equipment_id AS local_equipment_id,
@@ -198,7 +259,10 @@ if ($stmtPos) {
                     p_remote.equipment_id AS remote_equipment_id,
                     COALESCE(dt_remote.idfdevicetype_name, et_remote.name, '') AS remote_device_type_label
              FROM idf_ports pr
-             JOIN idf_positions p_local ON p_local.id = pr.position_id
+             JOIN idf_positions p_local
+               ON p_local.company_id = pr.company_id
+              AND p_local.idf_id = ?
+              AND (p_local.id = pr.position_id OR p_local.position_no = pr.position_id)
              JOIN idfs i_local ON i_local.id = p_local.idf_id
              LEFT JOIN equipment e_local ON e_local.id = p_local.equipment_id AND e_local.company_id = p_local.company_id
              LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id AND et_local.company_id = e_local.company_id
@@ -231,14 +295,17 @@ if ($stmtPos) {
              LEFT JOIN equipment_types et_remote ON et_remote.id = e_remote.equipment_type_id AND et_remote.company_id = e_remote.company_id
              LEFT JOIN idf_device_type dt_remote ON dt_remote.id = p_remote.device_type AND dt_remote.company_id = p_remote.company_id
              LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id AND cc_l.company_id = l.company_id
-             WHERE pr.position_id = ?
+             WHERE pr.company_id = ?
+               AND (pr.position_id = ? OR pr.position_id = ?)
              ORDER BY pr.port_no ASC"
         );
         if ($stmtPorts) {
-            mysqli_stmt_bind_param($stmtPorts, 'i', $posId);
+            mysqli_stmt_bind_param($stmtPorts, 'iiii', $idf_id, $company_id, $posId, $posNo);
             mysqli_stmt_execute($stmtPorts);
             $portRes = mysqli_stmt_get_result($stmtPorts);
+            $idfPortsCount = 0;
             while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
+                $idfPortsCount++;
                 // Why: Newly added devices should render ports with a neutral gray color when status/link colors are missing.
                 $statusColor = trim((string)($pRow['status_color'] ?? ''));
                 $cableColor = trim((string)($pRow['cable_hex_color'] ?? ''));
@@ -248,6 +315,69 @@ if ($stmtPos) {
                 $row['ports'][] = $pRow;
             }
             mysqli_stmt_close($stmtPorts);
+
+            if ($idfDebugEnabled && $idf_id === 4) {
+                idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_count=' . $idfPortsCount . ' company_id=' . $company_id);
+            }
+        } elseif ($idfDebugEnabled && $idf_id === 4) {
+            idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_prepare_failed=' . mysqli_error($conn));
+        }
+
+        if (empty($row['ports']) && (int)($row['equipment_id'] ?? 0) > 0) {
+            // Why: Some legacy racks link switch hardware before IDF ports are synced, so render live switch ports as fallback.
+            $equipmentIdForFallback = (int)$row['equipment_id'];
+            $stmtLivePorts = mysqli_prepare(
+                $conn,
+                "SELECT sp.id,
+                        sp.port_number AS port_no,
+                        COALESCE(sp.port_type, 'RJ45') AS port_type_label,
+                        " . ($hasSwitchPortsToPatchPortColumn ? "COALESCE(sp.to_patch_port, '')" : "''") . " AS label,
+                        {$switchPortsFallbackHostnameSelect} AS connected_to,
+                        {$switchPortsFallbackCommentsSelect} AS notes,
+                        COALESCE(ss.status, 'Unknown') AS status_label,
+                        COALESCE(cc.hex_color, '#808080') AS status_color,
+                        COALESCE(cc.hex_color, '') AS cable_hex_color,
+                        COALESCE(cc.color_name, '') AS cable_color_name,
+                        p.position_no AS local_position_no,
+                        p.device_name AS local_device_name,
+                        p.equipment_id AS local_equipment_id,
+                        i.name AS local_idf_name,
+                        COALESCE(dt.idfdevicetype_name, et.name, '') AS local_device_type_label
+                 FROM switch_ports sp
+                 LEFT JOIN switch_status ss ON ss.id = sp.status_id AND ss.company_id = sp.company_id
+                 LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
+                 LEFT JOIN idf_positions p ON p.id = ? AND p.company_id = ?
+                 LEFT JOIN idfs i ON i.id = p.idf_id
+                 LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id
+                 LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
+                 LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
+                 WHERE sp.company_id = ? AND sp.equipment_id = ?
+                 ORDER BY sp.port_number ASC"
+            );
+            if ($stmtLivePorts) {
+                mysqli_stmt_bind_param($stmtLivePorts, 'iiii', $posId, $company_id, $company_id, $equipmentIdForFallback);
+                mysqli_stmt_execute($stmtLivePorts);
+                $livePortRes = mysqli_stmt_get_result($stmtLivePorts);
+                $liveFallbackPortIndex = 0;
+                $livePortsCount = 0;
+                while ($livePortRes && ($liveRow = mysqli_fetch_assoc($livePortRes))) {
+                    $livePortsCount++;
+                    $liveFallbackPortIndex++;
+                    $rawFallbackPortNo = trim((string)($liveRow['port_no'] ?? ''));
+                    if ($rawFallbackPortNo === '' || !preg_match('/\d+/', $rawFallbackPortNo, $liveNoMatch)) {
+                        // Why: Visualizer layout needs numeric slots; legacy switch port labels may be text-only.
+                        $liveRow['port_no'] = $liveFallbackPortIndex;
+                    } else {
+                        $liveRow['port_no'] = (int)$liveNoMatch[0];
+                    }
+                    $row['ports'][] = $liveRow;
+                }
+                mysqli_stmt_close($stmtLivePorts);
+
+                if ($idfDebugEnabled && $idf_id === 4) {
+                    idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' switch_ports_count=' . $livePortsCount . ' equipment_id=' . $equipmentIdForFallback . ' company_id=' . $company_id);
+                }
+            }
         }
 
 
@@ -282,7 +412,12 @@ if ($stmtPos) {
 
         $positions[$posNo] = $row;
     }
+    if ($idfDebugEnabled && $idf_id === 4) {
+        idf_debug_log_line('[IDF DEBUG] idf_id=4 positions_loaded=' . $idfDebugPositionCount . ' company_id=' . $company_id);
+    }
     mysqli_stmt_close($stmtPos);
+} elseif ($idfDebugEnabled && $idf_id === 4) {
+    idf_debug_log_line('[IDF DEBUG] idf_id=4 positions_prepare_failed=' . mysqli_error($conn));
 }
 
 $displayMaxPos = max(10, $maxPosInDb);
