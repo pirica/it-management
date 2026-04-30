@@ -448,7 +448,15 @@ if (!function_exists('itm_render_port_visualizer')) {
                     }
                     $dotTitle = implode(' • ', $dotTitleParts);
                 }
-                $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotStyle . '></div>';
+                $dotPortId = isset($dotPort['id']) ? (int)$dotPort['id'] : 0;
+                $dotStatusAttr = isset($dotPort['status_label']) ? sanitize((string)$dotPort['status_label']) : 'Unknown';
+                $dotPositionIdAttr = isset($dotPort['position_id']) ? (int)$dotPort['position_id'] : 0;
+                $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '"';
+                $dotOnClick = '';
+                if (!empty($options['clickable'])) {
+                    $dotOnClick = ' onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';
+                }
+                $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotDataAttrs . $dotStyle . $dotOnClick . '></div>';
             }
             $html .= '</div>';
         }

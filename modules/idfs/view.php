@@ -1261,6 +1261,33 @@ function onPortClick(portId, portElement) {
     window.location.href = url.toString();
 }
 
+
+function onPortDotClick(portElement) {
+    const portNode = portElement && portElement.dataset ? portElement : null;
+    if (!portNode) {
+        return;
+    }
+
+    const portId = Number(portNode.dataset.portId || 0);
+    if (portId > 0) {
+        onPortClick(portId, portElement);
+        return;
+    }
+
+    const positionId = Number(portNode.dataset.positionId || 0);
+    const portNo = Number(portNode.dataset.portNumber || 0);
+    const portType = String(portNode.dataset.portType || 'sfp').toUpperCase();
+    if (!positionId) {
+        alert('Position not found for this SFP port.');
+        return;
+    }
+
+    const url = new URL('device.php', window.location.href);
+    url.searchParams.set('position_id', String(positionId));
+    alert(`SFP port ${portNo > 0 ? portNo : ''} (${portType}) does not have an IDF port record yet. Opening device view so you can regenerate/save ports first.`);
+    window.location.href = url.toString();
+}
+
 function idfExportExcel() {
     if (typeof XLSX === 'undefined') { alert('XLSX library not loaded.'); return; }
     const table = document.getElementById('idfExportTable');
