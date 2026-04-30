@@ -396,6 +396,14 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     </div>
 
     <div class="card">
+        <h2>Recent Updates</h2>
+        <ul>
+            <li><strong>2026-04-30:</strong> IDF detail view (<code>modules/idfs/view.php</code>) now falls back to tenant-scoped live <code>switch_ports</code> data when <code>idf_ports</code> rows are not yet present.</li>
+            <li>Fallback port numbering normalizes non-numeric labels into numeric slots so the visualizer grid still renders.</li>
+        </ul>
+    </div>
+
+    <div class="card">
         <h2>Versioning</h2>
         <p>Current endpoints are file-path based and are not under a versioned prefix like <code>/api/v1</code>. If external integrations are planned, introduce a versioned gateway path before publishing public contracts.</p>
     </div>
