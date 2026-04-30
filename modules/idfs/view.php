@@ -16,6 +16,12 @@ if ($idfDebugEnabled && $idf_id === 4) {
     if (!file_exists($idfDebugLogFile)) {
         @file_put_contents($idfDebugLogFile, '');
     }
+    // Why: Emit a guaranteed marker so operators can confirm the debug path is active even before port queries run.
+    @file_put_contents(
+        $idfDebugLogFile,
+        '[' . date('Y-m-d H:i:s') . '] [IDF DEBUG] bootstrap idf_id=4 debug_ports=1 root_path=' . ROOT_PATH . ' writable=' . (is_writable($idfDebugLogFile) ? '1' : '0') . PHP_EOL,
+        FILE_APPEND
+    );
 }
 
 function idf_csrf_token(): string {
