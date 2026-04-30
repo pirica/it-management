@@ -159,6 +159,36 @@ if ($hasSwitchFiberPortLabelColumnRes && mysqli_num_rows($hasSwitchFiberPortLabe
 $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     ? "COALESCE(e.switch_fiber_port_label, '')"
     : "''";
+$hasSwitchPortsLabelColumn = false;
+$hasSwitchPortsCommentsColumn = false;
+$hasSwitchPortsHostnameColumn = false;
+$switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
+if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
+    $hasSwitchPortsLabelColumn = true;
+}
+$switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'comments'");
+if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
+    $hasSwitchPortsCommentsColumn = true;
+}
+$switchPortsHostnameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'hostname'");
+if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnRes) > 0) {
+    $hasSwitchPortsHostnameColumn = true;
+}
+$switchPortsLiveLabelSelect = $hasSwitchPortsLabelColumn
+    ? "NULLIF(pr_live.label, '')"
+    : "''";
+$switchPortsLiveHostnameSelect = $hasSwitchPortsHostnameColumn
+    ? "NULLIF(pr_live.hostname, '')"
+    : "''";
+$switchPortsLiveCommentsSelect = $hasSwitchPortsCommentsColumn
+    ? "NULLIF(pr_live.comments, '')"
+    : "''";
+$switchPortsFallbackHostnameSelect = $hasSwitchPortsHostnameColumn
+    ? "COALESCE(sp.hostname, '')"
+    : "''";
+$switchPortsFallbackCommentsSelect = $hasSwitchPortsCommentsColumn
+    ? "COALESCE(sp.comments, '')"
+    : "''";
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name,
@@ -201,10 +231,10 @@ if ($stmtPos) {
                     COALESCE(pr_live.status_id, pr.status_id) AS effective_status_id,
                     COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
                     COALESCE(cc_live.hex_color, cc_ss.hex_color) AS status_color,
-                    COALESCE(NULLIF(pr_live.label, ''), pr.label) AS label,
-                    COALESCE(NULLIF(pr_live.hostname, ''), pr.connected_to) AS connected_to,
+                    COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
+                    COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
                     COALESCE(pr_live.vlan_id, pr.vlan_id) AS vlan_id,
-                    COALESCE(NULLIF(pr_live.comments, ''), pr.notes) AS notes,
+                    COALESCE({$switchPortsLiveCommentsSelect}, pr.notes) AS notes,
                     p_local.position_no AS local_position_no,
                     p_local.device_name AS local_device_name,
                     p_local.equipment_id AS local_equipment_id,
@@ -293,9 +323,9 @@ if ($stmtPos) {
                 "SELECT sp.id,
                         sp.port_number AS port_no,
                         COALESCE(sp.port_type, 'RJ45') AS port_type_label,
-                        COALESCE(sp.label, '') AS label,
-                        COALESCE(sp.hostname, '') AS connected_to,
-                        COALESCE(sp.comments, '') AS notes,
+                        '' AS label,
+                        {$switchPortsFallbackHostnameSelect} AS connected_to,
+                        {$switchPortsFallbackCommentsSelect} AS notes,
                         COALESCE(ss.status, 'Unknown') AS status_label,
                         COALESCE(cc.hex_color, '#808080') AS status_color,
                         COALESCE(cc.hex_color, '') AS cable_hex_color,
