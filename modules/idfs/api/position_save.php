@@ -548,6 +548,35 @@ if ($pid > 0) {
                 }
             }
         }
+        if ($port_count > 0) {
+            $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
+            if ($rj45PortTypeId <= 0) {
+                idf_fail('Unable to resolve RJ45 port type for company', 500);
+            }
+            for ($rj45PortNo = 1; $rj45PortNo <= $port_count; $rj45PortNo++) {
+                $rj45Key = $rj45PortTypeId . ':' . $rj45PortNo;
+                if (!isset($portTypeByNumber[$rj45Key])) {
+                    // Why: Add-device flow must always materialize selected RJ45 capacity even when linked switch metadata only contributes fiber rows.
+                    $portTypeByNumber[$rj45Key] = [
+                        'port_no' => $rj45PortNo,
+                        'port_type' => $rj45PortTypeId,
+                    ];
+                }
+                if (!isset($portSeedByKey[$rj45Key])) {
+                    $portSeedByKey[$rj45Key] = [
+                        'label' => '',
+                        'status_id' => $unknownStatusId,
+                        'connected_to' => '',
+                        'vlan_id' => 0,
+                        'speed_id' => 0,
+                        'poe_id' => 0,
+                        'cable_color' => $defaultCableColorName,
+                        'hex_color' => $defaultCableHexColor,
+                        'notes' => '',
+                    ];
+                }
+            }
+        }
         $insertPortSql = "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, cable_color, hex_color, notes)
                           VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)
                           ON DUPLICATE KEY UPDATE

@@ -117,6 +117,7 @@
 * Switch Port Manager rack quick-add modal now sends a hidden Rack Status value of "Active" and resolves it to rack_statuses.id so racks.status_id is auto-populated during add.
  * Switch Port Manager patch-port editor now treats legacy "0" labels as empty values when loading selected ports so the Patch port input stays blank by default.
  * Switch Port Manager To Location quick-add modal now collects required it_locations.type_id via a Type selector (with location-type quick-add) so add requests no longer fail validation.
+ * IDF device save flow now always seeds configured RJ45 port capacity into idf_ports (tenant-scoped) even when linked switch metadata contributes only SFP rows.
 
  * Switch Ports CRUD table/list/detail views now display every column except id and company_id to keep internal tenant keys hidden while exposing full port metadata.
  */
