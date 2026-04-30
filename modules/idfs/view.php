@@ -198,8 +198,8 @@ if ($stmtPos) {
                     p_remote.equipment_id AS remote_equipment_id,
                     COALESCE(dt_remote.idfdevicetype_name, et_remote.name, '') AS remote_device_type_label
              FROM idf_ports pr
-             JOIN idf_positions p_local ON p_local.id = pr.position_id AND p_local.company_id = pr.company_id
-             JOIN idfs i_local ON i_local.id = p_local.idf_id AND i_local.company_id = p_local.company_id
+             JOIN idf_positions p_local ON p_local.id = pr.position_id
+             JOIN idfs i_local ON i_local.id = p_local.idf_id
              LEFT JOIN equipment e_local ON e_local.id = p_local.equipment_id AND e_local.company_id = p_local.company_id
              LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id AND et_local.company_id = e_local.company_id
              LEFT JOIN idf_device_type dt_local ON dt_local.id = p_local.device_type AND dt_local.company_id = p_local.company_id
@@ -231,11 +231,11 @@ if ($stmtPos) {
              LEFT JOIN equipment_types et_remote ON et_remote.id = e_remote.equipment_type_id AND et_remote.company_id = e_remote.company_id
              LEFT JOIN idf_device_type dt_remote ON dt_remote.id = p_remote.device_type AND dt_remote.company_id = p_remote.company_id
              LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id AND cc_l.company_id = l.company_id
-             WHERE pr.position_id = ? AND pr.company_id = ?
+             WHERE pr.position_id = ?
              ORDER BY pr.port_no ASC"
         );
         if ($stmtPorts) {
-            mysqli_stmt_bind_param($stmtPorts, 'ii', $posId, $company_id);
+            mysqli_stmt_bind_param($stmtPorts, 'i', $posId);
             mysqli_stmt_execute($stmtPorts);
             $portRes = mysqli_stmt_get_result($stmtPorts);
             while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
