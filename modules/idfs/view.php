@@ -395,7 +395,20 @@ if ($stmtPos) {
         }
         $row['rj45_ports'] = $rj45PortCount > 0 ? range(1, $rj45PortCount) : [];
 
-        $fiberPortCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
+        $fiberPortCount = 0;
+        foreach (($row['ports'] ?? []) as $itmPortFiberMeta) {
+            $itmFiberTypeRaw = strtolower(trim((string)($itmPortFiberMeta['port_type_label'] ?? ($itmPortFiberMeta['port_type'] ?? ''))));
+            if (strpos($itmFiberTypeRaw, 'sfp') !== false) {
+                $itmFiberNo = (int)($itmPortFiberMeta['port_no'] ?? 0);
+                if ($itmFiberNo > $fiberPortCount) {
+                    $fiberPortCount = $itmFiberNo;
+                }
+            }
+        }
+        if ($fiberPortCount <= 0) {
+            // Why: Keep legacy equipment-level fallback only when no explicit SFP rows are present in IDF/switch port data.
+            $fiberPortCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
+        }
         $fiberPortHint = strtolower(trim(
             (string)($row['equipment_fiber_port_label'] ?? '') . ' ' . (string)($row['equipment_fiber_name'] ?? '')
         ));
