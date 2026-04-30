@@ -121,6 +121,7 @@
  * IDF device save flow now always seeds configured RJ45 port capacity into idf_ports (tenant-scoped) even when linked switch metadata contributes only SFP rows.
  * IDF rack visualizer now keeps SFP/SFP+ dots rendered alongside RJ45 rows in mixed-port cards so fiber ports remain directly clickable for create/link/edit actions, with tooltips continuing to use switch_ports/equipment metadata context.
  * IDF device page port visualizer now mirrors rack view sizing fallback by deriving RJ45/SFP/SFP+ dot ranges from typed IDF ports and equipment metadata when port rows are sparse.
+ * IDF device visualization card now shows the same compact dot-style visual output as rack view cards by hiding the expanded grid on the dedicated device page.
 
  * Switch Ports CRUD table/list/detail views now display every column except id and company_id to keep internal tenant keys hidden while exposing full port metadata.
  */
