@@ -25,6 +25,13 @@ function idf_csrf_token(): string {
     return (string)$_SESSION['csrf_token'];
 }
 
+function idf_debug_log_line(string $message): void {
+    // Why: Some hosts suppress error_log() writes for custom files; append directly so debug traces are always captured when enabled.
+    $idfDebugLogFile = ROOT_PATH . 'error_log.txt';
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
+    @file_put_contents($idfDebugLogFile, $line, FILE_APPEND);
+}
+
 function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
     $raw = trim($t);
     $lookupKey = ctype_digit($raw) ? (int)$raw : strtolower($raw);
@@ -260,7 +267,7 @@ if ($stmtPos) {
             mysqli_stmt_close($stmtPorts);
 
             if ($idfDebugEnabled && $idf_id === 4) {
-                error_log('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_count=' . $idfPortsCount . ' company_id=' . $company_id);
+                idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_count=' . $idfPortsCount . ' company_id=' . $company_id);
             }
         }
 
@@ -316,7 +323,7 @@ if ($stmtPos) {
                 mysqli_stmt_close($stmtLivePorts);
 
                 if ($idfDebugEnabled && $idf_id === 4) {
-                    error_log('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' switch_ports_count=' . $livePortsCount . ' equipment_id=' . $equipmentIdForFallback . ' company_id=' . $company_id);
+                    idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' switch_ports_count=' . $livePortsCount . ' equipment_id=' . $equipmentIdForFallback . ' company_id=' . $company_id);
                 }
             }
         }
