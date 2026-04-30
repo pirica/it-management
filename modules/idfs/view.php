@@ -184,7 +184,9 @@ if ($stmtPos) {
     mysqli_stmt_bind_param($stmtPos, 'ii', $idf_id, $company_id);
     mysqli_stmt_execute($stmtPos);
     $resPos = mysqli_stmt_get_result($stmtPos);
+    $idfDebugPositionCount = 0;
     while ($resPos && ($row = mysqli_fetch_assoc($resPos))) {
+        $idfDebugPositionCount++;
         $posId = (int)$row['id'];
         $posNo = (int)$row['position_no'];
         if ($posNo > $maxPosInDb) {
@@ -279,6 +281,8 @@ if ($stmtPos) {
             if ($idfDebugEnabled && $idf_id === 4) {
                 idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_count=' . $idfPortsCount . ' company_id=' . $company_id);
             }
+        } elseif ($idfDebugEnabled && $idf_id === 4) {
+            idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_prepare_failed=' . mysqli_error($conn));
         }
 
         if (empty($row['ports']) && (int)($row['equipment_id'] ?? 0) > 0) {
@@ -370,7 +374,12 @@ if ($stmtPos) {
 
         $positions[$posNo] = $row;
     }
+    if ($idfDebugEnabled && $idf_id === 4) {
+        idf_debug_log_line('[IDF DEBUG] idf_id=4 positions_loaded=' . $idfDebugPositionCount . ' company_id=' . $company_id);
+    }
     mysqli_stmt_close($stmtPos);
+} elseif ($idfDebugEnabled && $idf_id === 4) {
+    idf_debug_log_line('[IDF DEBUG] idf_id=4 positions_prepare_failed=' . mysqli_error($conn));
 }
 
 $displayMaxPos = max(10, $maxPosInDb);
