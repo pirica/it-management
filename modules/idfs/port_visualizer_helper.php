@@ -414,6 +414,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
                 $dotTitle = 'Port ' . (int)($dotMeta['no'] ?? 0);
+                $dotIsClickable = !empty($options['clickable']);
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
                     $dotType = (string)($dotMeta['type'] ?? '');
@@ -428,8 +429,16 @@ if (!function_exists('itm_render_port_visualizer')) {
                             $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
                         }
                     }
+                    $dotStyleRules = [];
                     if ($dotColor !== '') {
-                        $dotStyle = ' style="background:' . sanitize($dotColor) . ';"';
+                        $dotStyleRules[] = 'background:' . sanitize($dotColor);
+                    }
+                    if ($dotIsClickable) {
+                        // Why: SFP compact icon dots were clickable but did not show the hand cursor, which made links feel inactive.
+                        $dotStyleRules[] = 'cursor:pointer';
+                    }
+                    if (!empty($dotStyleRules)) {
+                        $dotStyle = ' style="' . implode(';', $dotStyleRules) . ';"';
                     }
                     $dotTypeLabel = trim((string)($dotPort['port_type_label'] ?? strtoupper((string)($dotMeta['type'] ?? 'SFP'))));
                     $dotStatusLabel = trim((string)($dotPort['status_label'] ?? 'Unknown'));
@@ -453,7 +462,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotPositionIdAttr = isset($dotPort['position_id']) ? (int)$dotPort['position_id'] : 0;
                 $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '"';
                 $dotOnClick = '';
-                if (!empty($options['clickable'])) {
+                if ($dotIsClickable) {
                     $dotOnClick = ' onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';
                 }
                 $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotDataAttrs . $dotStyle . $dotOnClick . '></div>';

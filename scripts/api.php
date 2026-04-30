@@ -97,6 +97,7 @@
  * IDF rack view SFP count now prefers typed SFP rows from rendered port data and only falls back to equipment.switch_fiber_ports_number when SFP rows are absent, preventing duplicate RJ45+SFP totals in mixed legacy datasets.
  * IDF rack port visualizer now assigns deterministic visual slots per port type so RJ45/SFP/SFP+ entries with overlapping port numbers render on the correct dots instead of overwriting each other.
  * IDF rack device-icon dot counts now prefer actual IDF port rows; configured RJ45/SFP counts are used only as a fallback when no typed ports exist, preventing inflated 20-dot previews when only 16 IDF ports are present.
+ * IDF rack SFP/SFP+ compact icon dots now include cursor:pointer when clickable so mouse hover feedback matches the active click handler.
 
  * Inventory Items index now uses the same ✏️ glyph for non-empty comments tooltips used by other module edit affordances.
  * IDF rack view now scopes position/port visualization queries by company_id so switch card previews and switch-port details cannot mix cross-tenant rows.
