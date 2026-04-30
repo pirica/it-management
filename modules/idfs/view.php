@@ -54,6 +54,27 @@ function idf_extract_rj45_count(string $rawLabel): int {
     return 0;
 }
 
+function idf_count_switch_rj45_ports(mysqli $conn, int $companyId, int $equipmentId): int {
+    if ($companyId <= 0 || $equipmentId <= 0) {
+        return 0;
+    }
+    $stmtCount = mysqli_prepare(
+        $conn,
+        "SELECT COUNT(*) AS total
+         FROM switch_ports
+         WHERE company_id=? AND equipment_id=? AND LOWER(COALESCE(port_type, 'rj45')) LIKE 'rj45%'"
+    );
+    if (!$stmtCount) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmtCount, 'ii', $companyId, $equipmentId);
+    mysqli_stmt_execute($stmtCount);
+    $resCount = mysqli_stmt_get_result($stmtCount);
+    $rowCount = $resCount ? mysqli_fetch_assoc($resCount) : null;
+    mysqli_stmt_close($stmtCount);
+    return (int)($rowCount['total'] ?? 0);
+}
+
 function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
     $raw = trim($t);
     $lookupKey = ctype_digit($raw) ? (int)$raw : strtolower($raw);
@@ -406,6 +427,15 @@ if ($stmtPos) {
                 }
             }
         }
+        $equipmentIdForRj45 = (int)($row['equipment_id'] ?? 0);
+        $switchPortsRj45Count = 0;
+        if ($rj45PortCount <= 0 && $equipmentIdForRj45 > 0) {
+            // Why: Some deployments keep detailed RJ45 rows only in switch_ports, while idf_ports contains partial (often fiber-only) links.
+            $switchPortsRj45Count = idf_count_switch_rj45_ports($conn, $company_id, $equipmentIdForRj45);
+            if ($switchPortsRj45Count > $rj45PortCount) {
+                $rj45PortCount = $switchPortsRj45Count;
+            }
+        }
         $row['rj45_ports'] = $rj45PortCount > 0 ? range(1, $rj45PortCount) : [];
         if ($idfDebugEnabled && $idf_id === 4) {
             idf_debug_log_line(
@@ -413,6 +443,7 @@ if ($stmtPos) {
                 . ' rj45_count=' . $rj45PortCount
                 . ' switch_rj45_name="' . trim((string)($row['switch_rj45_name'] ?? '')) . '"'
                 . ' derived_from_ports=' . (empty($row['switch_rj45_name']) ? '1' : '0')
+                . ' switch_ports_rj45_count=' . $switchPortsRj45Count
                 . ' company_id=' . $company_id
             );
         }
