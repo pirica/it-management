@@ -287,6 +287,21 @@ if ($stmtPos) {
                     COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
                     COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
                     COALESCE(pr_live.vlan_id, pr.vlan_id) AS vlan_id,
+                    CASE
+                        WHEN v_live.id IS NOT NULL THEN
+                            CASE
+                                WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
+                                WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
+                                ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
+                            END
+                        WHEN v_pr.id IS NOT NULL THEN
+                            CASE
+                                WHEN TRIM(COALESCE(v_pr.vlan_name, '')) = '' THEN COALESCE(v_pr.vlan_number, '')
+                                WHEN TRIM(COALESCE(v_pr.vlan_number, '')) = '' THEN v_pr.vlan_name
+                                ELSE CONCAT(v_pr.vlan_number, ' - ', v_pr.vlan_name)
+                            END
+                        ELSE ''
+                    END AS vlan_label,
                     COALESCE({$switchPortsLiveCommentsSelect}, pr.notes) AS notes,
                     p_local.position_no AS local_position_no,
                     p_local.device_name AS local_device_name,
@@ -319,8 +334,10 @@ if ($stmtPos) {
                  AND pr_live.port_type = spt.type
              LEFT JOIN switch_status ss_live ON ss_live.id = pr_live.status_id AND ss_live.company_id = pr_live.company_id
              LEFT JOIN cable_colors cc_live ON cc_live.id = pr_live.color_id AND cc_live.company_id = pr_live.company_id
+             LEFT JOIN vlans v_live ON v_live.id = pr_live.vlan_id AND v_live.company_id = pr_live.company_id
              LEFT JOIN switch_status ss ON ss.id = pr.status_id AND ss.company_id = pr.company_id
              LEFT JOIN cable_colors cc_ss ON cc_ss.id = ss.color_id AND cc_ss.company_id = ss.company_id
+             LEFT JOIN vlans v_pr ON v_pr.id = pr.vlan_id AND v_pr.company_id = pr.company_id
              LEFT JOIN idf_links l ON l.id = (
                  SELECT l2.id
                  FROM idf_links l2
@@ -383,6 +400,13 @@ if ($stmtPos) {
                         COALESCE(cc.hex_color, '#808080') AS status_color,
                         COALESCE(cc.hex_color, '') AS cable_hex_color,
                         COALESCE(cc.color_name, '') AS cable_color_name,
+                        sp.vlan_id AS vlan_id,
+                        CASE
+                            WHEN v.id IS NULL THEN ''
+                            WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
+                            WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
+                            ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
+                        END AS vlan_label,
                         p.position_no AS local_position_no,
                         p.device_name AS local_device_name,
                         p.equipment_id AS local_equipment_id,
@@ -391,6 +415,7 @@ if ($stmtPos) {
                  FROM switch_ports sp
                  LEFT JOIN switch_status ss ON ss.id = sp.status_id AND ss.company_id = sp.company_id
                  LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
+                 LEFT JOIN vlans v ON v.id = sp.vlan_id AND v.company_id = sp.company_id
                  LEFT JOIN idf_positions p ON p.id = ? AND p.company_id = ?
                  LEFT JOIN idfs i ON i.id = p.idf_id
                  LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id

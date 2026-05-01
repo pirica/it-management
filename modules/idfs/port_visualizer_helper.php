@@ -483,6 +483,10 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $dotLabel = trim((string)($dotPort['label'] ?? ''));
                     $dotVlanLabel = trim((string)($dotPort['vlan_label'] ?? ''));
                     $dotVlan = (int)($dotPort['vlan_id'] ?? 0);
+                    $dotConnectedTo = trim((string)($dotPort['connected_to'] ?? ''));
+                    $dotCableName = trim((string)($dotPort['cable_color_name'] ?? ''));
+                    $dotCableHex = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                    $dotLinkNotes = trim((string)($dotPort['link_notes'] ?? ''));
                     $dotTitleParts = ['Port ' . (int)($dotMeta['no'] ?? 0), $dotTypeLabel, 'Status: ' . $dotStatusLabel];
                     if ($dotLabel !== '' && $dotLabel !== '0') {
                         $dotTitleParts[] = 'Label: ' . $dotLabel;
@@ -491,6 +495,18 @@ if (!function_exists('itm_render_port_visualizer')) {
                         $dotTitleParts[] = 'VLAN: ' . $dotVlanLabel;
                     } elseif ($dotVlan > 0) {
                         $dotTitleParts[] = 'VLAN: ' . $dotVlan;
+                    }
+                    if ($dotConnectedTo !== '') {
+                        $dotTitleParts[] = 'Connected To: ' . $dotConnectedTo;
+                    }
+                    if ($dotCableName !== '') {
+                        $dotTitleParts[] = 'Cable color: ' . $dotCableName;
+                    }
+                    if ($dotCableHex !== '') {
+                        $dotTitleParts[] = $dotCableHex;
+                    }
+                    if ($dotLinkNotes !== '') {
+                        $dotTitleParts[] = 'Notes: ' . $dotLinkNotes;
                     }
                     $dotNotes = trim((string)($dotPort['notes'] ?? ''));
                     if ($dotNotes !== '') {
