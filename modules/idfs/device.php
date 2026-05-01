@@ -1414,7 +1414,11 @@ function createLink() {
 }
 
 function formatSwitchPortOption(port) {
-    const hostname = port.equipment_hostname || '-';
+    const equipmentName = (port.equipment_name || '').trim();
+    const equipmentHostname = (port.equipment_hostname || '').trim();
+    const hostname = (equipmentName && equipmentHostname)
+        ? `${equipmentName} • ${equipmentHostname}`
+        : (equipmentName || equipmentHostname || '-');
     const portType = String(port.equipment_port_type || '-').toUpperCase();
     const portNumber = port.equipment_port || '-';
     const vlanText = port.equipment_vlan_name
