@@ -499,12 +499,25 @@ if (
     $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
     $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 
-    $stmtUpdatePort = mysqli_prepare($conn, "UPDATE idf_ports SET connected_to = ?, status_id = ?, cable_color = ?, hex_color = ? WHERE id = ? LIMIT 1");
+    $stmtUpdatePortSql = "UPDATE idf_ports SET connected_to = ?, status_id = ?, cable_color = ?, hex_color = ?";
+    if ($equipmentVlanId_val !== null && $equipmentVlanId_val > 0) {
+        $stmtUpdatePortSql .= ", vlan_id = ?";
+    }
+    $stmtUpdatePortSql .= " WHERE id = ? LIMIT 1";
+    $stmtUpdatePort = mysqli_prepare($conn, $stmtUpdatePortSql);
     if ($stmtUpdatePort) {
-        mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToA, $status_id, $selectedColorName, $selectedColorHex, $portA);
-        mysqli_stmt_execute($stmtUpdatePort);
-        mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToB, $status_id, $selectedColorName, $selectedColorHex, $portB);
-        mysqli_stmt_execute($stmtUpdatePort);
+        if ($equipmentVlanId_val !== null && $equipmentVlanId_val > 0) {
+            $vlanSyncId = (int)$equipmentVlanId_val;
+            mysqli_stmt_bind_param($stmtUpdatePort, 'sissii', $connectedToA, $status_id, $selectedColorName, $selectedColorHex, $vlanSyncId, $portA);
+            mysqli_stmt_execute($stmtUpdatePort);
+            mysqli_stmt_bind_param($stmtUpdatePort, 'sissii', $connectedToB, $status_id, $selectedColorName, $selectedColorHex, $vlanSyncId, $portB);
+            mysqli_stmt_execute($stmtUpdatePort);
+        } else {
+            mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToA, $status_id, $selectedColorName, $selectedColorHex, $portA);
+            mysqli_stmt_execute($stmtUpdatePort);
+            mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToB, $status_id, $selectedColorName, $selectedColorHex, $portB);
+            mysqli_stmt_execute($stmtUpdatePort);
+        }
         mysqli_stmt_close($stmtUpdatePort);
     }
 
