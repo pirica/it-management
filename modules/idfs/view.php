@@ -254,8 +254,12 @@ $stmtPos = mysqli_prepare(
      LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id
      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
      LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id AND ef.company_id = e.company_id
-     LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
-     LEFT JOIN switch_port_numbering_layout spnl_equipment ON spnl_equipment.id = e.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout spnl
+       ON spnl.id = p.switch_port_numbering_layout_id
+      AND spnl.company_id = p.company_id
+     LEFT JOIN switch_port_numbering_layout spnl_equipment
+       ON spnl_equipment.id = e.switch_port_numbering_layout_id
+      AND spnl_equipment.company_id = e.company_id
      WHERE p.idf_id=? AND p.company_id=?
      ORDER BY p.position_no ASC"
 );
