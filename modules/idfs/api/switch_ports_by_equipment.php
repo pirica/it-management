@@ -27,7 +27,8 @@ $sql = "SELECT
             sp.status_id AS equipment_status_id,
             COALESCE(ss.status, '') AS equipment_status,
             sp.color_id AS equipment_color_id,
-            COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color
+            COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color,
+            COALESCE(sc.hex_color, '') AS equipment_color_hex
         FROM switch_ports sp
         JOIN equipment e ON e.id = sp.equipment_id
         LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
@@ -69,6 +70,7 @@ while ($row = mysqli_fetch_assoc($res)) {
         'equipment_status' => (string)($row['equipment_status'] ?? ''),
         'equipment_color_id' => isset($row['equipment_color_id']) ? (int)$row['equipment_color_id'] : null,
         'equipment_color' => (string)($row['equipment_color'] ?? ''),
+        'equipment_color_hex' => (string)($row['equipment_color_hex'] ?? ''),
     ];
 }
 
