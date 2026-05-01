@@ -101,6 +101,7 @@
 
  * Inventory Items index now uses the same ✏️ glyph for non-empty comments tooltips used by other module edit affordances.
  * IDF rack view now scopes position/port visualization queries by company_id so switch card previews and switch-port details cannot mix cross-tenant rows.
+ * IDF view rack label lookup now prefers company-scoped racks and falls back by rack id for legacy/shared rows so rack names do not display as N/A on valid records.
 
  * Equipment switch-port-manager cable color quick-add now targets cable_colors.color_name and supports optional hex picker auto-labeling (for example: Dark Blue, Light Green).
  * Quick-add modal UX now auto-fills the cable color Name field when Color Picker changes, while still allowing manual name overrides.

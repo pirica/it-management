@@ -157,11 +157,13 @@ $idf = null;
 if ($idf_id > 0 && $company_id > 0) {
     $stmtIdf = mysqli_prepare(
         $conn,
-        "SELECT i.*, l.name AS location_name, c.company AS company_name, r.name AS rack_name
+        "SELECT i.*, l.name AS location_name, c.company AS company_name,
+                COALESCE(r_company.name, r_legacy.name) AS rack_name
          FROM idfs i
          LEFT JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN companies c ON c.id=i.company_id
-         LEFT JOIN racks r ON r.id=i.rack_id AND r.company_id=i.company_id
+         LEFT JOIN racks r_company ON r_company.id=i.rack_id AND r_company.company_id=i.company_id
+         LEFT JOIN racks r_legacy ON r_legacy.id=i.rack_id
          WHERE i.id=? AND i.company_id=?
          LIMIT 1"
     );
