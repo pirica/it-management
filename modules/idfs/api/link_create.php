@@ -270,8 +270,8 @@ if (
          FROM idf_links
          WHERE company_id = ?
            AND equipment_id = ?
-           AND UPPER(REPLACE(REPLACE(TRIM(COALESCE(equipment_port_type, '')), ' ', ''), '+', 'PLUS'))
-               = UPPER(REPLACE(REPLACE(TRIM(?), ' ', ''), '+', 'PLUS'))
+           AND CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(equipment_port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(UPPER(REPLACE(REPLACE(TRIM(?), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            AND equipment_port = ?
          LIMIT 1"
     );
