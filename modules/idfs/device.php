@@ -1589,6 +1589,21 @@ function populateLinkedEquipmentFields() {
     f.linked_cable_color_picker.value = normalizeColorToHex(port.equipment_color || 'Gray');
     f.linked_cable_label.value = port.equipment_label || '';
     f.linked_notes.value = port.equipment_comments || '';
+
+    // Why: Link creation payload reads cable_color_id from the default select;
+    // auto-sync it from selected equipment port color_id to avoid manual mismatch.
+    const switchPortColorId = Number(port.equipment_color_id || 0);
+    if (switchPortColorId > 0 && f.cable_color_id) {
+        const matchingColorOption = Array.from(f.cable_color_id.options).find((option) =>
+            option.value !== '__add_new__' && Number(option.value) === switchPortColorId
+        );
+        if (matchingColorOption) {
+            f.cable_color_id.value = String(switchPortColorId);
+            f.cable_color_id.dataset.previousValue = String(switchPortColorId);
+            updateCableColorSwatch('', f.cable_color_id);
+        }
+    }
+
     toggleLinkedEquipmentFields(true);
 }
 
