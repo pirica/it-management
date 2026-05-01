@@ -418,7 +418,12 @@ $stmtDestinationPorts = mysqli_prepare(
             ELSE 0
         END AS is_linked
      FROM idf_ports pr
-     JOIN idf_positions p ON p.id = pr.position_id
+     JOIN idf_positions p
+       ON p.company_id = pr.company_id
+      AND (
+           p.id = pr.position_id
+           OR p.position_no = pr.position_id
+      )
      JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
      WHERE i.company_id = ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
