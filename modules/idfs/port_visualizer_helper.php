@@ -292,8 +292,12 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $titleParts[] = implode(' • ', $connectedParts);
                 }
 
-                if (!empty($p['vlan_label'])) {
-                    $titleParts[] = 'VLAN: ' . trim((string)$p['vlan_label']);
+                $vlanLabel = trim((string)($p['vlan_label'] ?? ''));
+                $vlanId = isset($p['vlan_id']) ? (int)$p['vlan_id'] : 0;
+                if ($vlanLabel !== '') {
+                    $titleParts[] = 'VLAN: ' . $vlanLabel;
+                } elseif ($vlanId > 0) {
+                    $titleParts[] = 'VLAN: #' . $vlanId;
                 }
                 if (!empty($p['link_notes'])) {
                     $titleParts[] = 'Notes: ' . trim((string)$p['link_notes']);
@@ -423,6 +427,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 : max(2, min(10, count($iconDots)));
             $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px); opacity:1;">';
             foreach ($iconDots as $dotMeta) {
+                $dotPort = null;
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
                 $dotTitle = 'Port ' . (int)($dotMeta['no'] ?? 0);

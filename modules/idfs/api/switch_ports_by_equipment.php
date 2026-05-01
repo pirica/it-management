@@ -16,7 +16,8 @@ if ($switchPortLabelColumn === null) {
 $sql = "SELECT
             sp.id,
             sp.equipment_id,
-            COALESCE(NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
+            COALESCE(e.name, '') AS equipment_name,
+            COALESCE(NULLIF(e.hostname, ''), NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
             COALESCE(spt.type, sp.port_type) AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
@@ -26,7 +27,8 @@ $sql = "SELECT
             sp.status_id AS equipment_status_id,
             COALESCE(ss.status, '') AS equipment_status,
             sp.color_id AS equipment_color_id,
-            COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color
+            COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color,
+            COALESCE(sc.hex_color, '') AS equipment_color_hex
         FROM switch_ports sp
         JOIN equipment e ON e.id = sp.equipment_id
         LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
@@ -35,7 +37,7 @@ $sql = "SELECT
         LEFT JOIN cable_colors sc ON sc.id = sp.color_id
         WHERE sp.company_id = ?
           AND sp.equipment_id = ?
-        ORDER BY COALESCE(spt.type, sp.port_type) ASC, sp.port_number ASC, sp.id ASC";
+        ORDER BY sp.port_type ASC, sp.port_number ASC, sp.id ASC";
 
 $stmt = mysqli_prepare($conn, $sql);
 $res = null;
@@ -56,6 +58,7 @@ while ($row = mysqli_fetch_assoc($res)) {
     $ports[] = [
         'id' => (int)($row['id'] ?? 0),
         'equipment_id' => (int)($row['equipment_id'] ?? 0),
+        'equipment_name' => (string)($row['equipment_name'] ?? ''),
         'equipment_hostname' => (string)($row['equipment_hostname'] ?? ''),
         'equipment_port_type' => (string)($row['equipment_port_type'] ?? ''),
         'equipment_port' => (string)($row['equipment_port'] ?? ''),
@@ -67,6 +70,7 @@ while ($row = mysqli_fetch_assoc($res)) {
         'equipment_status' => (string)($row['equipment_status'] ?? ''),
         'equipment_color_id' => isset($row['equipment_color_id']) ? (int)$row['equipment_color_id'] : null,
         'equipment_color' => (string)($row['equipment_color'] ?? ''),
+        'equipment_color_hex' => (string)($row['equipment_color_hex'] ?? ''),
     ];
 }
 
