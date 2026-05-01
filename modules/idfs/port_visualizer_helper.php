@@ -57,7 +57,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
             $scanTypeRaw = strtolower(trim((string)($itmPortMetaScan['port_type_label'] ?? ($itmPortMetaScan['port_type'] ?? 'rj45'))));
             $scanType = 'rj45';
-            if (strpos($scanTypeRaw, 'sfp+') !== false) {
+            if (strpos($scanTypeRaw, 'sfp+') !== false || strpos($scanTypeRaw, 'sfp plus') !== false) {
                 $scanType = 'sfp_plus';
             } elseif (strpos($scanTypeRaw, 'sfp') !== false) {
                 $scanType = 'sfp';
@@ -76,7 +76,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             $rawPortNo = (int)($itmPortMeta['port_no'] ?? 0);
             $normalizedType = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? 'rj45'))));
             $visualPortNo = $rawPortNo > 0 ? $rawPortNo : 1;
-            if (strpos($normalizedType, 'sfp+') !== false) {
+            if (strpos($normalizedType, 'sfp+') !== false || strpos($normalizedType, 'sfp plus') !== false) {
                 $visualPortNo += $typeOffset['sfp_plus'];
             } elseif (strpos($normalizedType, 'sfp') !== false) {
                 $visualPortNo += $typeOffset['sfp'];
@@ -345,7 +345,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
                 $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? ''))));
                 $typeKey = 'rj45';
-                if (strpos($typeRaw, 'sfp+') !== false) {
+                if (strpos($typeRaw, 'sfp+') !== false || strpos($typeRaw, 'sfp plus') !== false) {
                     $typeKey = 'sfp_plus';
                     $sfpPlusPorts[] = $portNo;
                 } elseif (strpos($typeRaw, 'sfp') !== false) {
@@ -516,4 +516,5 @@ if (!function_exists('itm_render_port_visualizer')) {
         return $html;
     }
 }
+
 
