@@ -23,9 +23,38 @@ $csrf = idf_csrf_token();
 
 $pos = null;
 if ($position_id > 0 && $company_id > 0) {
+    $hasIdfCodeColumn = false;
+    $hasRackNameColumn = false;
+    $hasCompaniesTable = false;
+    $hasCompaniesNameColumn = false;
+
+    $hasIdfCodeColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'idf_code'");
+    if ($hasIdfCodeColumnRes && mysqli_num_rows($hasIdfCodeColumnRes) > 0) {
+        $hasIdfCodeColumn = true;
+    }
+    $hasRackNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'rack_name'");
+    if ($hasRackNameColumnRes && mysqli_num_rows($hasRackNameColumnRes) > 0) {
+        $hasRackNameColumn = true;
+    }
+    $hasCompaniesTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'companies'");
+    if ($hasCompaniesTableRes && mysqli_num_rows($hasCompaniesTableRes) > 0) {
+        $hasCompaniesTable = true;
+    }
+    if ($hasCompaniesTable) {
+        $hasCompaniesNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `companies` LIKE 'name'");
+        if ($hasCompaniesNameColumnRes && mysqli_num_rows($hasCompaniesNameColumnRes) > 0) {
+            $hasCompaniesNameColumn = true;
+        }
+    }
+
+    $idfCodeSelect = $hasIdfCodeColumn ? 'i.idf_code' : "'' AS idf_code";
+    $rackNameSelect = $hasRackNameColumn ? 'i.rack_name' : "'' AS rack_name";
+    $companyNameSelect = ($hasCompaniesTable && $hasCompaniesNameColumn) ? 'c.name AS company_name' : "'' AS company_name";
+    $companiesJoinSql = $hasCompaniesTable ? 'LEFT JOIN companies c ON c.id = i.company_id' : '';
+
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT p.*, i.name AS idf_name, i.idf_code, i.rack_name, l.name AS location_name, i.id AS idf_id, c.name AS company_name, spnl.name AS layout_name,
+        'SELECT p.*, i.name AS idf_name, ' . $idfCodeSelect . ', ' . $rackNameSelect . ', l.name AS location_name, i.id AS idf_id, ' . $companyNameSelect . ', spnl.name AS layout_name,
                 COALESCE(er.name, "") AS switch_rj45_name,
                 COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
                 COALESCE(e.switch_fiber_port_label, "") AS equipment_fiber_port_label,
@@ -34,10 +63,10 @@ if ($position_id > 0 && $company_id > 0) {
                     WHEN UPPER(COALESCE(et.name, "")) = "SWITCH" THEN 1
                     WHEN LOWER(COALESCE(dt.idfdevicetype_name, "")) LIKE "switch" THEN 1
                     ELSE 0
-                END AS equipment_is_switch
+                 END AS equipment_is_switch
          FROM idf_positions p
          JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
-         LEFT JOIN companies c ON c.id = i.company_id
+         ' . $companiesJoinSql . '
          LEFT JOIN equipment e ON e.id = p.equipment_id
          LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = p.company_id
