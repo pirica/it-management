@@ -248,9 +248,9 @@ $stmtPos = mysqli_prepare(
             END AS equipment_is_switch
      FROM idf_positions p
      LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
-     LEFT JOIN equipment e ON e.id = p.equipment_id
+     LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id
      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
-     LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+     LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id AND ef.company_id = e.company_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
      WHERE p.idf_id=? AND p.company_id=?
      ORDER BY p.position_no ASC"
@@ -493,7 +493,7 @@ $stmtEq = mysqli_prepare(
     $conn,
     "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
      FROM equipment e
-     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
+     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = e.company_id
      WHERE e.company_id=?
      ORDER BY e.name ASC
      LIMIT 500"
