@@ -113,6 +113,7 @@ $stmtSwitchSync = mysqli_prepare(
     "UPDATE switch_ports sp
      JOIN idf_ports pr ON pr.id = ?
      JOIN idf_positions p ON p.id = pr.position_id
+     LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
      SET sp.{$switchPortLabelColumn} = ?,
          sp.status_id = ?,
          sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
@@ -122,7 +123,18 @@ $stmtSwitchSync = mysqli_prepare(
        AND p.company_id = sp.company_id
        AND p.equipment_id = sp.equipment_id
        AND sp.port_number = pr.port_no
-       AND sp.port_type = pr.port_type
+       AND (
+            CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            OR (
+                sp.port_type REGEXP '^[0-9]+$'
+                AND CAST(sp.port_type AS UNSIGNED) = spt.id
+            )
+            OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+       )
      LIMIT 1"
 );
 if ($stmtSwitchSync) {
