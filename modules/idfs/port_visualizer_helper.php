@@ -143,9 +143,6 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
         }
 
-        $pixelImageB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAQAAAAnZu5uAAAADklEQVR42mNkgANGEpgAANwABiaeD7YAAAAASUVORK5CYII=';
-        $pixelImageUrl = 'data:image/png;base64,' . $pixelImageB64;
-
         $html = '<div class="itm-port-visualizer-container">';
 
         // Left side: Port Grid
@@ -302,9 +299,6 @@ if (!function_exists('itm_render_port_visualizer')) {
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';
-                    background-image: url(\'' . $pixelImageUrl . '\');
-                    background-size: cover;
-                    background-blend-mode: soft-light;
                     border-radius: 3px;
                     cursor: ' . $cursor . ';
                     ' . $glow . '
