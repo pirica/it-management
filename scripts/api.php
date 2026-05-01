@@ -4,6 +4,10 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * Switch Port Manager color quick-add now emits a post-add select event and refreshes port lookups so color selection/auto-save continues without manual reloads.
+ * Switch color quick-add now preserves the selected color label in Switch Port Manager dropdowns after lookup refresh so the field does not appear blank.
+ * Quick-add select rebuilding now preserves modules that store human-readable labels as option values (for example cable color names in Switch Port Manager).
+ * select_options_api now returns cable_colors.hex_color in quick-add option payloads so Switch Port Manager can paint ports immediately after color selection.
  * Schema note: employee access is stored via employee_system_access mapped to system_access,
  * and active system_access entries resolve per-company with legacy code/name fallback
  * when mapping matrix permissions to employee_system_access columns, with runtime
