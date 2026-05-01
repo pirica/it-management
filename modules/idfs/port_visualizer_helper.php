@@ -434,29 +434,6 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotIsClickable = !empty($options['clickable']);
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
-                } else {
-                    $dotTypeWanted = strtolower(trim((string)($dotMeta['type'] ?? '')));
-                    $dotNoWanted = (int)($dotMeta['no'] ?? 0);
-                    foreach ($allPortsForMeta as $fallbackPortMeta) {
-                        $fallbackNo = (int)($fallbackPortMeta['port_no'] ?? 0);
-                        if ($fallbackNo !== $dotNoWanted) {
-                            continue;
-                        }
-                        $fallbackTypeRaw = strtolower(trim((string)($fallbackPortMeta['port_type_label'] ?? ($fallbackPortMeta['port_type'] ?? ''))));
-                        if ($dotTypeWanted === 'sfp_plus') {
-                            if (strpos($fallbackTypeRaw, 'sfp+') !== false || strpos($fallbackTypeRaw, 'sfp plus') !== false) {
-                                $dotPort = $fallbackPortMeta;
-                                break;
-                            }
-                        } elseif ($dotTypeWanted === 'sfp') {
-                            if (strpos($fallbackTypeRaw, 'sfp') !== false && strpos($fallbackTypeRaw, 'sfp+') === false && strpos($fallbackTypeRaw, 'sfp plus') === false) {
-                                $dotPort = $fallbackPortMeta;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if ($dotPort) {
                     $dotType = (string)($dotMeta['type'] ?? '');
                     $dotCableHexColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
                     $dotStatusColor = trim((string)($dotPort['status_color'] ?? ''));
