@@ -238,7 +238,8 @@ $switchPortsFallbackCommentsSelect = $hasSwitchPortsCommentsColumn
     : "''";
 $stmtPos = mysqli_prepare(
     $conn,
-    "SELECT p.*, dt.idfdevicetype_name AS device_type_name, spnl.name AS layout_name,
+    "SELECT p.*, dt.idfdevicetype_name AS device_type_name,
+            COALESCE(spnl_equipment.name, spnl.name, 'Vertical') AS layout_name,
             COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
             COALESCE(ef.name, '') AS equipment_fiber_name,
             {$switchFiberPortLabelSelect} AS equipment_fiber_port_label,
@@ -254,6 +255,7 @@ $stmtPos = mysqli_prepare(
      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
      LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id AND ef.company_id = e.company_id
      LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout spnl_equipment ON spnl_equipment.id = e.switch_port_numbering_layout_id
      WHERE p.idf_id=? AND p.company_id=?
      ORDER BY p.position_no ASC"
 );
