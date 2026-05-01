@@ -1442,6 +1442,7 @@ if (!empty($_SESSION['crud_success'])) {
                 return String(option.id || '') === selectedColorId;
             });
             const addedColorLabel = String((addedColor && addedColor.label) || '').trim();
+            const addedColorHex = String((addedColor && addedColor.hex_color) || '').trim();
             if (!selectedPortId) {
                 return;
             }
@@ -1453,6 +1454,10 @@ if (!empty($_SESSION['crud_success'])) {
                     if (addedColorLabel !== '') {
                         refreshedPort.dataset.color = addedColorLabel;
                     }
+                    if (addedColorHex !== '') {
+                        refreshedPort.dataset.colorHex = addedColorHex;
+                    }
+                    paintPort(refreshedPort, refreshedPort.dataset.color || '', refreshedPort.dataset.colorHex || '');
                     selectPort(refreshedPort);
                     return;
                 }
