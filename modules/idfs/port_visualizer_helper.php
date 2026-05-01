@@ -170,9 +170,8 @@ if (!function_exists('itm_render_port_visualizer')) {
 
                 $statusColor = trim((string)($p['status_color'] ?? ''));
                 $cableHexColor = trim((string)($p['cable_hex_color'] ?? ''));
-                if ($statusColor === '') {
-                    $statusColor = $cableHexColor !== '' ? $cableHexColor : '#161b22';
-                }
+                // Why: rack dots should visually follow cable color when present; status color is fallback.
+                $statusColor = $cableHexColor !== '' ? $cableHexColor : ($statusColor !== '' ? $statusColor : '#161b22');
                 $isActive = false;
                 if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
                     $statusColor = '#58a6ff';
@@ -285,6 +284,10 @@ if (!function_exists('itm_render_port_visualizer')) {
                 if ($cableHexColor !== '') {
                     $connectedParts[] = $cableHexColor;
                 }
+                $cableLabel = trim((string)($p['cable_label'] ?? ''));
+                if ($cableLabel !== '') {
+                    $connectedParts[] = 'Cable label ' . $cableLabel;
+                }
                 if (count($connectedParts) > 1) {
                     $titleParts[] = implode(' • ', $connectedParts);
                 }
@@ -300,6 +303,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $titleParts[] = 'Notes: ' . trim((string)$p['link_notes']);
                 } elseif (!empty($p['notes'])) {
                     $titleParts[] = 'Notes: ' . trim((string)$p['notes']);
+                }
+                if (!empty($p['link_id'])) {
+                    $titleParts[] = 'Link ID: ' . (int)$p['link_id'];
                 }
                 $title = implode(' • ', $titleParts);
 
@@ -452,17 +458,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
                 if ($dotPort) {
                     $dotType = (string)($dotMeta['type'] ?? '');
-                    if ($dotType === 'sfp' || $dotType === 'sfp_plus') {
-                        $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
-                        if ($dotColor === '') {
-                            $dotColor = trim((string)($dotPort['status_color'] ?? ''));
-                        }
-                    } else {
-                        $dotColor = trim((string)($dotPort['status_color'] ?? ''));
-                        if ($dotColor === '') {
-                            $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
-                        }
-                    }
+                    $dotCableHexColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                    $dotStatusColor = trim((string)($dotPort['status_color'] ?? ''));
+                    $dotColor = $dotCableHexColor !== '' ? $dotCableHexColor : $dotStatusColor;
                     $dotStyleRules = [];
                     if ($dotColor !== '') {
                         $dotStyleRules[] = 'background:' . sanitize($dotColor);
@@ -486,7 +484,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $dotConnectedTo = trim((string)($dotPort['connected_to'] ?? ''));
                     $dotCableName = trim((string)($dotPort['cable_color_name'] ?? ''));
                     $dotCableHex = trim((string)($dotPort['cable_hex_color'] ?? ''));
+                    $dotCableLabel = trim((string)($dotPort['cable_label'] ?? ''));
                     $dotLinkNotes = trim((string)($dotPort['link_notes'] ?? ''));
+                    $dotLinkId = isset($dotPort['link_id']) ? (int)($dotPort['link_id']) : 0;
                     $dotTitleParts = ['Port ' . (int)($dotMeta['no'] ?? 0), $dotTypeLabel, 'Status: ' . $dotStatusLabel];
                     if ($dotLabel !== '' && $dotLabel !== '0') {
                         $dotTitleParts[] = 'Label: ' . $dotLabel;
@@ -505,12 +505,18 @@ if (!function_exists('itm_render_port_visualizer')) {
                     if ($dotCableHex !== '') {
                         $dotTitleParts[] = $dotCableHex;
                     }
+                    if ($dotCableLabel !== '') {
+                        $dotTitleParts[] = 'Cable label: ' . $dotCableLabel;
+                    }
                     if ($dotLinkNotes !== '') {
                         $dotTitleParts[] = 'Notes: ' . $dotLinkNotes;
                     }
                     $dotNotes = trim((string)($dotPort['notes'] ?? ''));
                     if ($dotNotes !== '') {
                         $dotTitleParts[] = 'Notes: ' . $dotNotes;
+                    }
+                    if ($dotLinkId > 0) {
+                        $dotTitleParts[] = 'Link ID: ' . $dotLinkId;
                     }
                     $dotTitle = implode(' • ', $dotTitleParts);
                 }
@@ -533,3 +539,4 @@ if (!function_exists('itm_render_port_visualizer')) {
         return $html;
     }
 }
+
