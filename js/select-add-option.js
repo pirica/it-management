@@ -509,12 +509,33 @@
 
             const blankOption = Array.from(selectEl.options).find((opt) => opt.value === '');
             const blankHtml = blankOption ? `<option value="">${escapeHtml(blankOption.textContent)}</option>` : '';
+            const existingOptions = Array.from(selectEl.options).filter((opt) => opt.value !== '' && opt.value !== ADD_VALUE);
+            const usesLabelAsValue = existingOptions.some((opt) => String(opt.value) === String(opt.textContent || '').trim());
             const optionHtml = (result.options || []).map((opt) => {
-                return `<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.label)}</option>`;
+                const optionLabel = String(opt.label || '');
+                const optionValue = usesLabelAsValue
+                    ? optionLabel
+                    : String(Object.prototype.hasOwnProperty.call(opt, 'value') ? opt.value : opt.id);
+                const optionHex = String(opt.hex_color || '');
+                const hexAttr = optionHex !== '' ? ` data-hex="${escapeHtml(optionHex)}"` : '';
+                return `<option value="${escapeHtml(optionValue)}"${hexAttr}>${escapeHtml(optionLabel)}</option>`;
             }).join('');
             selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
-            selectEl.value = String(result.selected_id);
-            selectEl.dataset.previousValue = String(result.selected_id);
+            if (usesLabelAsValue) {
+                const selectedOption = (result.options || []).find((opt) => String(opt.id) === String(result.selected_id));
+                selectEl.value = String((selectedOption && selectedOption.label) || '');
+            } else {
+                selectEl.value = String(result.selected_id);
+            }
+            selectEl.dataset.previousValue = selectEl.value || '';
+            selectEl.dispatchEvent(new CustomEvent('itm:add-option:added', {
+                bubbles: true,
+                detail: {
+                    selectedId: String(result.selected_id),
+                    options: Array.isArray(result.options) ? result.options : [],
+                }
+            }));
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
         } catch (error) {
             window.alert(error.message || 'Could not add the value right now.');
             selectEl.value = selectEl.dataset.previousValue || '';
