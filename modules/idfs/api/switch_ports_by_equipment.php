@@ -16,7 +16,8 @@ if ($switchPortLabelColumn === null) {
 $sql = "SELECT
             sp.id,
             sp.equipment_id,
-            COALESCE(NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
+            COALESCE(e.name, '') AS equipment_name,
+            COALESCE(NULLIF(e.hostname, ''), NULLIF(sp.hostname, ''), e.name) AS equipment_hostname,
             COALESCE(spt.type, sp.port_type) AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
@@ -35,7 +36,7 @@ $sql = "SELECT
         LEFT JOIN cable_colors sc ON sc.id = sp.color_id
         WHERE sp.company_id = ?
           AND sp.equipment_id = ?
-        ORDER BY COALESCE(spt.type, sp.port_type) ASC, sp.port_number ASC, sp.id ASC";
+        ORDER BY sp.port_type ASC, sp.port_number ASC, sp.id ASC";
 
 $stmt = mysqli_prepare($conn, $sql);
 $res = null;
@@ -56,6 +57,7 @@ while ($row = mysqli_fetch_assoc($res)) {
     $ports[] = [
         'id' => (int)($row['id'] ?? 0),
         'equipment_id' => (int)($row['equipment_id'] ?? 0),
+        'equipment_name' => (string)($row['equipment_name'] ?? ''),
         'equipment_hostname' => (string)($row['equipment_hostname'] ?? ''),
         'equipment_port_type' => (string)($row['equipment_port_type'] ?? ''),
         'equipment_port' => (string)($row['equipment_port'] ?? ''),
