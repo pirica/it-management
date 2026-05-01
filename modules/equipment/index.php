@@ -1433,6 +1433,21 @@ if (!empty($_SESSION['crud_success'])) {
                 });
         });
 
+        document.getElementById('colorSelect').addEventListener('itm:add-option:added', function () {
+            const selectedPortId = selected ? String(selected.dataset.id || '') : '';
+            loadPorts();
+            if (!selectedPortId) {
+                return;
+            }
+            window.setTimeout(function () {
+                const refreshedPort = document.querySelector('.port[data-id="' + selectedPortId.replace(/"/g, '\\"') + '"]');
+                if (refreshedPort) {
+                    selectPort(refreshedPort);
+                }
+            }, 350);
+        });
+
+
         document.getElementById('colorSelect').addEventListener('change', function () {
             if (!selected) {
                 return;

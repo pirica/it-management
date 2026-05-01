@@ -4,6 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * Switch Port Manager color quick-add now emits a post-add select event and refreshes port lookups so color selection/auto-save continues without manual reloads.
  * Schema note: employee access is stored via employee_system_access mapped to system_access,
  * and active system_access entries resolve per-company with legacy code/name fallback
  * when mapping matrix permissions to employee_system_access columns, with runtime
