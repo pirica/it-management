@@ -289,8 +289,12 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $titleParts[] = implode(' • ', $connectedParts);
                 }
 
-                if (!empty($p['vlan_label'])) {
-                    $titleParts[] = 'VLAN: ' . trim((string)$p['vlan_label']);
+                $vlanLabel = trim((string)($p['vlan_label'] ?? ''));
+                $vlanId = isset($p['vlan_id']) ? (int)$p['vlan_id'] : 0;
+                if ($vlanLabel !== '') {
+                    $titleParts[] = 'VLAN: ' . $vlanLabel;
+                } elseif ($vlanId > 0) {
+                    $titleParts[] = 'VLAN: #' . $vlanId;
                 }
                 if (!empty($p['link_notes'])) {
                     $titleParts[] = 'Notes: ' . trim((string)$p['link_notes']);
@@ -417,12 +421,36 @@ if (!function_exists('itm_render_port_visualizer')) {
                 : max(2, min(10, count($iconDots)));
             $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px); opacity:1;">';
             foreach ($iconDots as $dotMeta) {
+                $dotPort = null;
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
                 $dotTitle = 'Port ' . (int)($dotMeta['no'] ?? 0);
                 $dotIsClickable = !empty($options['clickable']);
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
+                } else {
+                    $dotTypeWanted = strtolower(trim((string)($dotMeta['type'] ?? '')));
+                    $dotNoWanted = (int)($dotMeta['no'] ?? 0);
+                    foreach ($allPortsForMeta as $fallbackPortMeta) {
+                        $fallbackNo = (int)($fallbackPortMeta['port_no'] ?? 0);
+                        if ($fallbackNo !== $dotNoWanted) {
+                            continue;
+                        }
+                        $fallbackTypeRaw = strtolower(trim((string)($fallbackPortMeta['port_type_label'] ?? ($fallbackPortMeta['port_type'] ?? ''))));
+                        if ($dotTypeWanted === 'sfp_plus') {
+                            if (strpos($fallbackTypeRaw, 'sfp+') !== false || strpos($fallbackTypeRaw, 'sfp plus') !== false) {
+                                $dotPort = $fallbackPortMeta;
+                                break;
+                            }
+                        } elseif ($dotTypeWanted === 'sfp') {
+                            if (strpos($fallbackTypeRaw, 'sfp') !== false && strpos($fallbackTypeRaw, 'sfp+') === false && strpos($fallbackTypeRaw, 'sfp plus') === false) {
+                                $dotPort = $fallbackPortMeta;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if ($dotPort) {
                     $dotType = (string)($dotMeta['type'] ?? '');
                     if ($dotType === 'sfp' || $dotType === 'sfp_plus') {
                         $dotColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
@@ -453,12 +481,15 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $dotTypeLabel = trim((string)($dotPort['port_type_label'] ?? strtoupper((string)($dotMeta['type'] ?? 'SFP'))));
                     $dotStatusLabel = trim((string)($dotPort['status_label'] ?? 'Unknown'));
                     $dotLabel = trim((string)($dotPort['label'] ?? ''));
+                    $dotVlanLabel = trim((string)($dotPort['vlan_label'] ?? ''));
                     $dotVlan = (int)($dotPort['vlan_id'] ?? 0);
                     $dotTitleParts = ['Port ' . (int)($dotMeta['no'] ?? 0), $dotTypeLabel, 'Status: ' . $dotStatusLabel];
                     if ($dotLabel !== '' && $dotLabel !== '0') {
                         $dotTitleParts[] = 'Label: ' . $dotLabel;
                     }
-                    if ($dotVlan > 0) {
+                    if ($dotVlanLabel !== '') {
+                        $dotTitleParts[] = 'VLAN: ' . $dotVlanLabel;
+                    } elseif ($dotVlan > 0) {
                         $dotTitleParts[] = 'VLAN: ' . $dotVlan;
                     }
                     $dotNotes = trim((string)($dotPort['notes'] ?? ''));
