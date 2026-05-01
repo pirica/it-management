@@ -413,7 +413,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
 
             $iconCols = $layout === 'vertical'
-                ? max(2, min(10, (int)ceil(count($iconDots) / 2)))
+                ? max(1, min(10, (int)ceil(count($iconDots) / 2)))
                 : max(2, min(10, count($iconDots)));
             $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px); opacity:1;">';
             foreach ($iconDots as $dotMeta) {
