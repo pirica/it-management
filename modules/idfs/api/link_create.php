@@ -253,6 +253,44 @@ if ($switchPortId > 0) {
     }
 }
 
+if (
+    $switchPortId > 0
+    && $equipmentId_val !== null && trim((string)$equipmentId_val) !== ''
+    && $equipmentPortType_val !== null && trim((string)$equipmentPortType_val) !== ''
+    && $equipmentPort_val !== null && trim((string)$equipmentPort_val) !== ''
+) {
+    $stmtExistingEquipmentPortLink = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_links
+         WHERE company_id = ?
+           AND equipment_id = ?
+           AND equipment_port_type = ?
+           AND equipment_port = ?
+         LIMIT 1"
+    );
+    if ($stmtExistingEquipmentPortLink) {
+        $equipmentIdCheck = trim((string)$equipmentId_val);
+        $equipmentPortTypeCheck = trim((string)$equipmentPortType_val);
+        $equipmentPortCheck = trim((string)$equipmentPort_val);
+        mysqli_stmt_bind_param(
+            $stmtExistingEquipmentPortLink,
+            'isss',
+            $company_id,
+            $equipmentIdCheck,
+            $equipmentPortTypeCheck,
+            $equipmentPortCheck
+        );
+        mysqli_stmt_execute($stmtExistingEquipmentPortLink);
+        $resExistingEquipmentPortLink = mysqli_stmt_get_result($stmtExistingEquipmentPortLink);
+        $hasExistingEquipmentPortLink = $resExistingEquipmentPortLink && mysqli_num_rows($resExistingEquipmentPortLink) > 0;
+        mysqli_stmt_close($stmtExistingEquipmentPortLink);
+        if ($hasExistingEquipmentPortLink) {
+            idf_fail('Selected equipment port is already linked to another IDF port.');
+        }
+    }
+}
+
 if ($switchPortId > 0) {
     $newPortNumber = null;
     if ($linkedDestinationPort !== '' && ctype_digit($linkedDestinationPort)) {
