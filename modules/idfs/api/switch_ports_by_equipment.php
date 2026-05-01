@@ -35,7 +35,7 @@ $sql = "SELECT
         LEFT JOIN cable_colors sc ON sc.id = sp.color_id
         WHERE sp.company_id = ?
           AND sp.equipment_id = ?
-        ORDER BY sp.equipment_id ASC, sp.port_number ASC, sp.id ASC";
+        ORDER BY COALESCE(spt.type, sp.port_type) ASC, sp.port_number ASC, sp.id ASC";
 
 $stmt = mysqli_prepare($conn, $sql);
 $res = null;

@@ -365,7 +365,7 @@ if ($stmtDestinationPorts) {
 $equipmentOptions = [];
 $resEq = mysqli_query(
     $conn,
-    "SELECT e.id, e.name, e.serial_number
+    "SELECT e.id, e.name, e.hostname, e.serial_number
      FROM equipment e
      WHERE e.company_id=$company_id
      ORDER BY e.name ASC
@@ -975,7 +975,15 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
-                            <?php echo sanitize($e['name'] . (!empty($e['serial_number']) ? (' • SN ' . $e['serial_number']) : '')); ?>
+                            <?php
+                            $equipmentName = trim((string)($e['name'] ?? ''));
+                            $equipmentHostname = trim((string)($e['hostname'] ?? ''));
+                            $equipmentLabel = $equipmentName;
+                            if ($equipmentHostname !== '') {
+                                $equipmentLabel .= ' • ' . $equipmentHostname;
+                            }
+                            echo sanitize($equipmentLabel);
+                            ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -1856,3 +1864,4 @@ async function idfDeviceExportImage() {
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>
+
