@@ -210,14 +210,16 @@ $stmtPorts = mysqli_prepare(
        AND pr_live.equipment_id = p_local.equipment_id
        AND pr_live.port_number = pr.port_no
        AND (
-            pr_live.port_type = COALESCE(spt.type, 'RJ45')
-            OR pr_live.port_type = CAST(spt.id AS CHAR)
+            CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            OR CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
             OR (
                 pr_live.port_type REGEXP '^[0-9]+$'
                 AND CAST(pr_live.port_type AS UNSIGNED) = spt.id
             )
-            OR UPPER(REPLACE(REPLACE(TRIM(COALESCE(pr_live.port_type, '')), ' ', ''), '+', 'PLUS'))
-               = UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS'))
+            OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(pr_live.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
        )
       LEFT JOIN switch_status ss
         ON ss.id = pr.status_id
