@@ -515,6 +515,14 @@
             selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
             selectEl.value = String(result.selected_id);
             selectEl.dataset.previousValue = String(result.selected_id);
+            selectEl.dispatchEvent(new CustomEvent('itm:add-option:added', {
+                bubbles: true,
+                detail: {
+                    selectedId: String(result.selected_id),
+                    options: Array.isArray(result.options) ? result.options : [],
+                }
+            }));
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
         } catch (error) {
             window.alert(error.message || 'Could not add the value right now.');
             selectEl.value = selectEl.dataset.previousValue || '';
