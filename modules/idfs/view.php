@@ -822,6 +822,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'idf_name' => (string)($idf['name'] ?? ''),
                                                         'idf_code' => (string)($idf['idf_code'] ?? ''),
                                                         'rack_name' => (string)($idf['rack_name'] ?? ''),
+                                                        'grid_port_type' => 'rj45',
                                                         'rj45_ports' => (array)($pos['rj45_ports'] ?? []),
                                                         'sfp_ports' => (array)($pos['sfp_ports'] ?? []),
                                                         'sfp_plus_ports' => (array)($pos['sfp_plus_ports'] ?? []),
