@@ -629,6 +629,7 @@ if (!empty($_SESSION['crud_success'])) {
         let idfOptions = [];
         let rackOptions = [];
         let selected = null;
+        let skipNextColorAutoSave = false;
         const tooltip = document.getElementById('switchTooltip');
         const csrfToken = window.ITM_CSRF_TOKEN
             || (document.querySelector('input[name="csrf_token"]') || {}).value
@@ -1433,15 +1434,25 @@ if (!empty($_SESSION['crud_success'])) {
                 });
         });
 
-        document.getElementById('colorSelect').addEventListener('itm:add-option:added', function () {
+        document.getElementById('colorSelect').addEventListener('itm:add-option:added', function (event) {
             const selectedPortId = selected ? String(selected.dataset.id || '') : '';
+            const selectedColorId = String((event && event.detail && event.detail.selectedId) || '');
+            const addedOptions = (event && event.detail && Array.isArray(event.detail.options)) ? event.detail.options : [];
+            const addedColor = addedOptions.find(function (option) {
+                return String(option.id || '') === selectedColorId;
+            });
+            const addedColorLabel = String((addedColor && addedColor.label) || '').trim();
+            skipNextColorAutoSave = true;
             loadPorts();
             if (!selectedPortId) {
                 return;
             }
             window.setTimeout(function () {
-                const refreshedPort = document.querySelector('.port[data-id="' + selectedPortId.replace(/"/g, '\\"') + '"]');
+                const refreshedPort = document.querySelector('.switch-port[data-id="' + selectedPortId.replace(/"/g, '\\"') + '"]');
                 if (refreshedPort) {
+                    if (addedColorLabel !== '') {
+                        refreshedPort.dataset.color = addedColorLabel;
+                    }
                     selectPort(refreshedPort);
                 }
             }, 350);
@@ -1449,6 +1460,10 @@ if (!empty($_SESSION['crud_success'])) {
 
 
         document.getElementById('colorSelect').addEventListener('change', function () {
+            if (skipNextColorAutoSave) {
+                skipNextColorAutoSave = false;
+                return;
+            }
             if (!selected) {
                 return;
             }
