@@ -1135,12 +1135,13 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 
 function refreshPortCountInputs(form) {
     const isSwitch = Number(form.device_type.value || 0) === SWITCH_DEVICE_TYPE_ID;
+    const hasLinkedEquipment = String(form.equipment_id.value || '') !== '';
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
-    if (layoutWrap) layoutWrap.style.display = 'block';
+    if (layoutWrap) layoutWrap.style.display = hasLinkedEquipment ? 'none' : 'block';
     form.switch_rj45_id.required = isSwitch;
     const isEditMode = form.dataset.isEdit === '1';
     if (isSwitch && !isEditMode && DEFAULT_SWITCH_LAYOUT_ID > 0) {

@@ -4,6 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * IDF Add/Edit Device modal now hides Numbering Layout whenever Linked to Equipment is selected, so layout is inherited from the linked equipment metadata.
  * IDF rack view SFP/SFP+ compact icon dots now render solid port colors (no sprite overlay) so configured cable/status colors no longer appear faded.
  * IDF rack compact icon container now renders at full opacity in rack view so SFP/SFP+ dot colors are not dimmed by the shared icon wrapper.
  * Equipment Switch Port Manager now applies the new cable color hex immediately after quick-add so the selected port swatch updates without reloading.
