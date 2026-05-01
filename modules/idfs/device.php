@@ -1584,9 +1584,11 @@ function populateLinkedEquipmentFields() {
     }
 
     const port = JSON.parse(selectedOption.dataset.portJson);
+    const linkedColorName = (port.equipment_color || '').trim() || 'Gray';
+    const linkedColorHex = (port.equipment_color_hex || '').trim();
     f.linked_equipment_port.value = port.equipment_port || '';
-    f.linked_cable_color.value = port.equipment_color || 'Gray';
-    f.linked_cable_color_picker.value = normalizeColorToHex(port.equipment_color || 'Gray');
+    f.linked_cable_color.value = linkedColorName;
+    f.linked_cable_color_picker.value = normalizeColorToHex(linkedColorHex || linkedColorName);
     f.linked_cable_label.value = port.equipment_label || '';
     f.linked_notes.value = port.equipment_comments || '';
 
