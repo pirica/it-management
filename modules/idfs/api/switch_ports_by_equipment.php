@@ -8,6 +8,10 @@ $equipmentId = (int)($data['equipment_id'] ?? 0);
 if ($equipmentId <= 0) {
     idf_fail('Invalid equipment id');
 }
+$switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+if ($switchPortLabelColumn === null) {
+    $switchPortLabelColumn = 'to_patch_port';
+}
 
 $sql = "SELECT
             sp.id,
@@ -17,7 +21,7 @@ $sql = "SELECT
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
             COALESCE(v.vlan_name, '') AS equipment_vlan_name,
-            sp.label AS equipment_label,
+            sp.{$switchPortLabelColumn} AS equipment_label,
             sp.comments AS equipment_comments,
             sp.status_id AS equipment_status_id,
             COALESCE(ss.status, '') AS equipment_status,
