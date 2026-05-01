@@ -98,13 +98,29 @@ $sfpPlusPortNumbers = [];
 
 $portSortField = (string)($_GET['sort'] ?? 'port_type');
 $portSortDir = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+$vlanSortExpr = "CASE
+    WHEN v_live.id IS NOT NULL THEN
+        CASE
+            WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
+            WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
+            ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
+        END
+    WHEN v.id IS NOT NULL THEN
+        CASE
+            WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
+            WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
+            ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
+        END
+    ELSE ''
+END";
+
 $portSortMap = [
     'port_no' => 'pr.port_no',
     'port_type' => "COALESCE(spt.type, 'RJ45')",
     'label' => 'pr.label',
     'status' => "COALESCE(ss.status, 'Unknown')",
     'connected_to' => 'pr.connected_to',
-    'vlan' => 'CASE WHEN v.id IS NULL THEN "" WHEN TRIM(COALESCE(v.vlan_name, "")) = "" THEN COALESCE(v.vlan_number, "") ELSE CONCAT(COALESCE(v.vlan_number, ""), " - ", v.vlan_name) END',
+    'vlan' => $vlanSortExpr,
     'speed' => 'COALESCE(ef.name, "")',
     'poe' => 'COALESCE(ep.name, "")',
     'notes' => 'pr.notes',
@@ -127,11 +143,22 @@ $stmtPorts = mysqli_prepare(
        p_local.equipment_id AS local_equipment_id,
        i_local.name AS local_idf_name,
        COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
+       COALESCE(pr_live.vlan_id, pr.vlan_id) AS effective_vlan_id,
        CASE
-         WHEN v.id IS NULL THEN ''
-         WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
-         ELSE CONCAT(COALESCE(v.vlan_number, ''), ' - ', v.vlan_name)
-       END AS vlan_label,
+          WHEN v_live.id IS NOT NULL THEN
+            CASE
+              WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
+              WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
+              ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
+            END
+          WHEN v.id IS NOT NULL THEN
+            CASE
+              WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
+              WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
+              ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
+            END
+          ELSE ''
+        END AS vlan_label,
        COALESCE(ef.name, '') AS speed_label,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
@@ -170,17 +197,25 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN idf_device_type dt_local
        ON dt_local.id = p_local.device_type
       AND dt_local.company_id = p_local.company_id
-     LEFT JOIN switch_port_types spt
-       ON spt.id = pr.port_type
-      AND spt.company_id = pr.company_id
-     LEFT JOIN switch_status ss
-       ON ss.id = pr.status_id
-      AND ss.company_id = pr.company_id
+      LEFT JOIN switch_port_types spt
+        ON spt.id = pr.port_type
+       AND spt.company_id = pr.company_id
+      LEFT JOIN switch_ports pr_live
+        ON pr_live.company_id = pr.company_id
+       AND pr_live.equipment_id = p_local.equipment_id
+       AND pr_live.port_number = pr.port_no
+       AND pr_live.port_type = COALESCE(spt.type, 'RJ45')
+      LEFT JOIN switch_status ss
+        ON ss.id = pr.status_id
+       AND ss.company_id = pr.company_id
      LEFT JOIN cable_colors cc_ss
        ON cc_ss.id = ss.color_id
-     LEFT JOIN vlans v
-       ON v.id = pr.vlan_id
-      AND v.company_id = pr.company_id
+      LEFT JOIN vlans v
+        ON v.id = pr.vlan_id
+       AND v.company_id = pr.company_id
+      LEFT JOIN vlans v_live
+        ON v_live.id = pr_live.vlan_id
+       AND v_live.company_id = pr_live.company_id
      LEFT JOIN equipment_fiber ef
        ON ef.id = pr.speed_id
       AND ef.company_id = pr.company_id
@@ -223,6 +258,9 @@ if ($stmtPorts) {
     mysqli_stmt_execute($stmtPorts);
     $resPorts = mysqli_stmt_get_result($stmtPorts);
     while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
+        if (isset($row['effective_vlan_id'])) {
+            $row['vlan_id'] = (int)$row['effective_vlan_id'];
+        }
         $ports[] = $row;
     }
     mysqli_stmt_close($stmtPorts);
