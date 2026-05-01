@@ -405,6 +405,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-01:</strong> IDF detail view joins now enforce tenant-scoped lookups across <code>equipment</code>, <code>equipment_fiber</code>, and <code>equipment_rj45</code> so rack/device rendering stays synchronized with <code>idf_ports</code> and live <code>switch_ports</code> rows for the active company.</li>
             <li><strong>2026-04-30:</strong> IDF device ports page (<code>modules/idfs/device.php</code>) now defaults to sorting by <code>idf_ports.port_type ASC</code> and supports ASC/DESC sorting toggles for #, Type, Label, Status, Connected To, VLAN, Speed, PoE, Notes, and Link columns.</li>
             <li><strong>2026-04-30:</strong> IDF detail view (<code>modules/idfs/view.php</code>) now falls back to tenant-scoped live <code>switch_ports</code> data when <code>idf_ports</code> rows are not yet present.</li>
             <li>Fallback port numbering normalizes non-numeric labels into numeric slots so the visualizer grid still renders.</li>
