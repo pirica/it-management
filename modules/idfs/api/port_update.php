@@ -33,6 +33,10 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
 
 $port_type_id = idf_resolve_port_type_id($conn, $company_id, $data['port_type_id'] ?? ($data['port_type'] ?? ''), 'RJ45');
 $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Unknown');
+$switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+if ($switchPortLabelColumn === null) {
+    $switchPortLabelColumn = 'to_patch_port';
+}
 if ($port_type_id <= 0) {
     idf_fail('Invalid port_type');
 }
@@ -109,7 +113,7 @@ $stmtSwitchSync = mysqli_prepare(
     "UPDATE switch_ports sp
      JOIN idf_ports pr ON pr.id = ?
      JOIN idf_positions p ON p.id = pr.position_id
-     SET sp.label = ?,
+     SET sp.{$switchPortLabelColumn} = ?,
          sp.status_id = ?,
          sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
          sp.vlan_id = NULLIF(?, 0),

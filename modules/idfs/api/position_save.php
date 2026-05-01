@@ -15,6 +15,10 @@ $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] 
 $layout_id = isset($data['switch_port_numbering_layout_id']) ? (int)$data['switch_port_numbering_layout_id'] : 0;
 $port_count = isset($data['port_count']) ? (int)$data['port_count'] : 0;
 $notes = trim((string)($data['notes'] ?? ''));
+$switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+if ($switchPortLabelColumn === null) {
+    $switchPortLabelColumn = 'to_patch_port';
+}
 
 if (!function_exists('idf_generate_unlinked_equipment_token')) {
     function idf_generate_unlinked_equipment_token(): string
@@ -437,7 +441,7 @@ if ($pid > 0) {
         if ($equipment_id > 0) {
             $stmtSwitchPortColors = mysqli_prepare(
                 $conn,
-                "SELECT sp.port_number, sp.port_type, sp.label, sp.status_id, sp.hostname, sp.vlan_id, sp.comments,
+                "SELECT sp.port_number, sp.port_type, sp.{$switchPortLabelColumn} AS label, sp.status_id, sp.hostname, sp.vlan_id, sp.comments,
                         spt.id AS switch_port_type_id,
                         LOWER(TRIM(COALESCE(spt.type, CAST(sp.port_type AS CHAR)))) AS normalized_port_type,
                         cc.color_name,
@@ -643,7 +647,7 @@ if ($pid > 0) {
                 LEFT JOIN cable_colors cc
                   ON cc.company_id = sp.company_id
                  AND cc.id = sp.color_id
-                SET ip.label = COALESCE(NULLIF(sp.label, ''), ip.label),
+                SET ip.label = COALESCE(NULLIF(sp.{$switchPortLabelColumn}, ''), ip.label),
                     ip.status_id = COALESCE(sp.status_id, ip.status_id),
                     ip.connected_to = COALESCE(NULLIF(sp.hostname, ''), ip.connected_to),
                     ip.vlan_id = COALESCE(sp.vlan_id, ip.vlan_id),

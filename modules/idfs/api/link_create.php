@@ -19,6 +19,10 @@ $notes = trim((string)($data['notes'] ?? ''));
 $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Used');
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
+$switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+if ($switchPortLabelColumn === null) {
+    $switchPortLabelColumn = 'to_patch_port';
+}
 
 if ($portA <= 0 || $portB <= 0) {
     idf_fail('Invalid port ids');
@@ -174,7 +178,7 @@ if ($switchPortId > 0) {
             COALESCE(spt.type, sp.port_type) AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
-            sp.label AS equipment_label,
+            sp.{$switchPortLabelColumn} AS equipment_label,
             sp.comments AS equipment_comments,
             sp.status_id AS equipment_status_id,
             sp.color_id AS equipment_color_id
@@ -263,7 +267,7 @@ if ($switchPortId > 0) {
     $switchColorId = $cableColorId > 0 ? $cableColorId : null;
 
     $updates = [
-        "label = ?",
+        "{$switchPortLabelColumn} = ?",
         "comments = ?",
     ];
     $types = 'ss';
@@ -347,7 +351,7 @@ if (
                 COALESCE(spt.type, sp.port_type) AS equipment_port_type,
                 sp.port_number AS equipment_port,
                 sp.vlan_id AS equipment_vlan_id,
-                sp.label AS equipment_label,
+                sp.{$switchPortLabelColumn} AS equipment_label,
                 sp.comments AS equipment_comments,
                 sp.status_id AS equipment_status_id,
                 sp.color_id AS equipment_color_id
@@ -465,7 +469,7 @@ if (
         "UPDATE switch_ports sp
          JOIN idf_ports pr ON pr.id = ?
          JOIN idf_positions p ON p.id = pr.position_id
-         SET sp.label = ?,
+         SET sp.{$switchPortLabelColumn} = ?,
              sp.status_id = ?,
              sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
              sp.comments = ?

@@ -739,4 +739,24 @@ function idf_resolve_named_lookup_id(mysqli $conn, int $company_id, string $tabl
     return null;
 }
 
+function idf_table_has_column(mysqli $conn, string $table, string $column): bool {
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
+}
+
+function idf_first_existing_column(mysqli $conn, string $table, array $candidates): ?string {
+    foreach ($candidates as $candidate) {
+        $name = trim((string)$candidate);
+        if ($name === '') {
+            continue;
+        }
+        if (idf_table_has_column($conn, $table, $name)) {
+            return $name;
+        }
+    }
+    return null;
+}
+
 idf_ensure_status_schema($conn);
