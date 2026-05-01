@@ -143,22 +143,28 @@ $stmtPorts = mysqli_prepare(
        p_local.equipment_id AS local_equipment_id,
        i_local.name AS local_idf_name,
        COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
-       COALESCE(pr_live.vlan_id, pr.vlan_id) AS effective_vlan_id,
+       COALESCE(pr_live.vlan_id, pr.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
        CASE
-          WHEN v_live.id IS NOT NULL THEN
-            CASE
-              WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
-              WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
-              ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
-            END
-          WHEN v.id IS NOT NULL THEN
-            CASE
-              WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
-              WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
-              ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
-            END
-          ELSE ''
-        END AS vlan_label,
+           WHEN v_live.id IS NOT NULL THEN
+             CASE
+               WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
+               WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
+               ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
+             END
+           WHEN v.id IS NOT NULL THEN
+             CASE
+               WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
+               WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
+               ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
+             END
+           WHEN v_link.id IS NOT NULL THEN
+             CASE
+               WHEN TRIM(COALESCE(v_link.vlan_name, '')) = '' THEN COALESCE(v_link.vlan_number, '')
+               WHEN TRIM(COALESCE(v_link.vlan_number, '')) = '' THEN v_link.vlan_name
+               ELSE CONCAT(v_link.vlan_number, ' - ', v_link.vlan_name)
+             END
+           ELSE ''
+         END AS vlan_label,
        COALESCE(ef.name, '') AS speed_label,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
@@ -238,17 +244,20 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN equipment_poe ep
        ON ep.id = pr.poe_id
       AND ep.company_id = pr.company_id
-     LEFT JOIN idf_links l ON l.id = (
-         SELECT l2.id
-         FROM idf_links l2
-         WHERE l2.port_id_a = pr.id OR l2.port_id_b = pr.id
-         ORDER BY l2.id ASC
-         LIMIT 1
-     )
-     LEFT JOIN idf_ports pr_remote
-       ON pr_remote.id = CASE
-           WHEN l.port_id_a = pr.id THEN l.port_id_b
-           WHEN l.port_id_b = pr.id THEN l.port_id_a
+      LEFT JOIN idf_links l ON l.id = (
+          SELECT l2.id
+          FROM idf_links l2
+          WHERE l2.port_id_a = pr.id OR l2.port_id_b = pr.id
+          ORDER BY l2.id ASC
+          LIMIT 1
+      )
+      LEFT JOIN vlans v_link
+        ON v_link.id = l.equipment_vlan_id
+       AND v_link.company_id = l.company_id
+      LEFT JOIN idf_ports pr_remote
+        ON pr_remote.id = CASE
+            WHEN l.port_id_a = pr.id THEN l.port_id_b
+            WHEN l.port_id_b = pr.id THEN l.port_id_a
            ELSE NULL
        END
      LEFT JOIN switch_status ss_remote
