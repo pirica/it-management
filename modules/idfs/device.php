@@ -185,9 +185,14 @@ $stmtPorts = mysqli_prepare(
          WHEN UPPER(COALESCE(let.name, '')) = 'SWITCH' THEN 1
          ELSE 0
        END AS linked_equipment_is_switch
-     FROM idf_ports pr
-     JOIN idf_positions p_local
-       ON p_local.id = pr.position_id
+      FROM idf_ports pr
+      JOIN idf_positions p_local
+        ON p_local.company_id = pr.company_id
+       AND p_local.idf_id = ?
+       AND (
+            p_local.id = pr.position_id
+            OR p_local.position_no = pr.position_id
+       )
      JOIN idfs i_local
        ON i_local.id = p_local.idf_id
      LEFT JOIN equipment e_local
@@ -259,11 +264,12 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
-     WHERE pr.position_id=?
-     ORDER BY " . $portOrderSql
+      WHERE p_local.id=?
+      ORDER BY " . $portOrderSql
 );
 if ($stmtPorts) {
-    mysqli_stmt_bind_param($stmtPorts, 'i', $position_id);
+    $idfIdForPorts = (int)($pos['idf_id'] ?? 0);
+    mysqli_stmt_bind_param($stmtPorts, 'ii', $idfIdForPorts, $position_id);
     mysqli_stmt_execute($stmtPorts);
     $resPorts = mysqli_stmt_get_result($stmtPorts);
     while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
