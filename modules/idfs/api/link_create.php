@@ -499,25 +499,62 @@ if (
     $connectedToA = 'Pos ' . (int)$positionNoSeen[$portB] . ' • ' . $connectedDeviceB . ' • Port ' . (int)$portNoSeen[$portB];
     $connectedToB = 'Pos ' . (int)$positionNoSeen[$portA] . ' • ' . $connectedDeviceA . ' • Port ' . (int)$portNoSeen[$portA];
 
+    $labelSync = trim((string)($equipmentLabel_val ?? ''));
+    if ($labelSync === '' || $labelSync === '0') {
+        $labelSync = trim((string)($label_val ?? ''));
+    }
+    if ($labelSync === '' || $labelSync === '0') {
+        $labelSync = null;
+    }
+
+    $notesSync = trim((string)($equipmentComments_val ?? ''));
+    if ($notesSync === '') {
+        $notesSync = trim((string)($notes_val ?? ''));
+    }
+    if ($notesSync === '') {
+        $notesSync = null;
+    }
+
     $stmtUpdatePortSql = "UPDATE idf_ports SET connected_to = ?, status_id = ?, cable_color = ?, hex_color = ?";
     if ($equipmentVlanId_val !== null && $equipmentVlanId_val > 0) {
         $stmtUpdatePortSql .= ", vlan_id = ?";
     }
+    if ($labelSync !== null) {
+        $stmtUpdatePortSql .= ", label = ?";
+    }
+    if ($notesSync !== null) {
+        $stmtUpdatePortSql .= ", notes = ?";
+    }
     $stmtUpdatePortSql .= " WHERE id = ? LIMIT 1";
     $stmtUpdatePort = mysqli_prepare($conn, $stmtUpdatePortSql);
     if ($stmtUpdatePort) {
+        $updateTypes = 'siss';
+        $updateValuesA = [$connectedToA, $status_id, $selectedColorName, $selectedColorHex];
+        $updateValuesB = [$connectedToB, $status_id, $selectedColorName, $selectedColorHex];
         if ($equipmentVlanId_val !== null && $equipmentVlanId_val > 0) {
+            $updateTypes .= 'i';
             $vlanSyncId = (int)$equipmentVlanId_val;
-            mysqli_stmt_bind_param($stmtUpdatePort, 'sissii', $connectedToA, $status_id, $selectedColorName, $selectedColorHex, $vlanSyncId, $portA);
-            mysqli_stmt_execute($stmtUpdatePort);
-            mysqli_stmt_bind_param($stmtUpdatePort, 'sissii', $connectedToB, $status_id, $selectedColorName, $selectedColorHex, $vlanSyncId, $portB);
-            mysqli_stmt_execute($stmtUpdatePort);
-        } else {
-            mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToA, $status_id, $selectedColorName, $selectedColorHex, $portA);
-            mysqli_stmt_execute($stmtUpdatePort);
-            mysqli_stmt_bind_param($stmtUpdatePort, 'sissi', $connectedToB, $status_id, $selectedColorName, $selectedColorHex, $portB);
-            mysqli_stmt_execute($stmtUpdatePort);
+            $updateValuesA[] = $vlanSyncId;
+            $updateValuesB[] = $vlanSyncId;
         }
+        if ($labelSync !== null) {
+            $updateTypes .= 's';
+            $updateValuesA[] = $labelSync;
+            $updateValuesB[] = $labelSync;
+        }
+        if ($notesSync !== null) {
+            $updateTypes .= 's';
+            $updateValuesA[] = $notesSync;
+            $updateValuesB[] = $notesSync;
+        }
+        $updateTypes .= 'i';
+        $updateValuesA[] = $portA;
+        $updateValuesB[] = $portB;
+
+        mysqli_stmt_bind_param($stmtUpdatePort, $updateTypes, ...$updateValuesA);
+        mysqli_stmt_execute($stmtUpdatePort);
+        mysqli_stmt_bind_param($stmtUpdatePort, $updateTypes, ...$updateValuesB);
+        mysqli_stmt_execute($stmtUpdatePort);
         mysqli_stmt_close($stmtUpdatePort);
     }
 
