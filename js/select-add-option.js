@@ -516,7 +516,9 @@
                 const optionValue = usesLabelAsValue
                     ? optionLabel
                     : String(Object.prototype.hasOwnProperty.call(opt, 'value') ? opt.value : opt.id);
-                return `<option value="${escapeHtml(optionValue)}">${escapeHtml(optionLabel)}</option>`;
+                const optionHex = String(opt.hex_color || '');
+                const hexAttr = optionHex !== '' ? ` data-hex="${escapeHtml(optionHex)}"` : '';
+                return `<option value="${escapeHtml(optionValue)}"${hexAttr}>${escapeHtml(optionLabel)}</option>`;
             }).join('');
             selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
             if (usesLabelAsValue) {

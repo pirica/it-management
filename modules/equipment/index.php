@@ -1442,11 +1442,11 @@ if (!empty($_SESSION['crud_success'])) {
                 return String(option.id || '') === selectedColorId;
             });
             const addedColorLabel = String((addedColor && addedColor.label) || '').trim();
-            skipNextColorAutoSave = true;
-            loadPorts();
             if (!selectedPortId) {
                 return;
             }
+            skipNextColorAutoSave = true;
+            loadPorts();
             window.setTimeout(function () {
                 const refreshedPort = document.querySelector('.switch-port[data-id="' + selectedPortId.replace(/"/g, '\\"') + '"]');
                 if (refreshedPort) {
@@ -1454,7 +1454,9 @@ if (!empty($_SESSION['crud_success'])) {
                         refreshedPort.dataset.color = addedColorLabel;
                     }
                     selectPort(refreshedPort);
+                    return;
                 }
+                skipNextColorAutoSave = false;
             }, 350);
         });
 
