@@ -4,6 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * IDF rack view SFP/SFP+ compact icon dots now render solid port colors (no sprite overlay) so configured cable/status colors no longer appear faded.
  * Equipment Switch Port Manager now applies the new cable color hex immediately after quick-add so the selected port swatch updates without reloading.
  * Switch Port Manager color quick-add now emits a post-add select event and refreshes port lookups so color selection/auto-save continues without manual reloads.
  * Switch color quick-add now preserves the selected color label in Switch Port Manager dropdowns after lookup refresh so the field does not appear blank.
