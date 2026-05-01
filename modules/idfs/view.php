@@ -286,7 +286,7 @@ if ($stmtPos) {
                     COALESCE(cc_live.hex_color, cc_ss.hex_color) AS status_color,
                     COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
                     COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
-                    COALESCE(pr_live.vlan_id, pr.vlan_id) AS vlan_id,
+                    COALESCE(pr_live.vlan_id, pr.vlan_id, l.equipment_vlan_id) AS vlan_id,
                     CASE
                         WHEN v_live.id IS NOT NULL THEN
                             CASE
@@ -299,6 +299,12 @@ if ($stmtPos) {
                                 WHEN TRIM(COALESCE(v_pr.vlan_name, '')) = '' THEN COALESCE(v_pr.vlan_number, '')
                                 WHEN TRIM(COALESCE(v_pr.vlan_number, '')) = '' THEN v_pr.vlan_name
                                 ELSE CONCAT(v_pr.vlan_number, ' - ', v_pr.vlan_name)
+                            END
+                        WHEN v_link.id IS NOT NULL THEN
+                            CASE
+                                WHEN TRIM(COALESCE(v_link.vlan_name, '')) = '' THEN COALESCE(v_link.vlan_number, '')
+                                WHEN TRIM(COALESCE(v_link.vlan_number, '')) = '' THEN v_link.vlan_name
+                                ELSE CONCAT(v_link.vlan_number, ' - ', v_link.vlan_name)
                             END
                         ELSE ''
                     END AS vlan_label,
@@ -347,10 +353,11 @@ if ($stmtPos) {
                  ORDER BY l2.id ASC
                  LIMIT 1
              )
+             LEFT JOIN vlans v_link ON v_link.id = l.equipment_vlan_id AND v_link.company_id = l.company_id
              LEFT JOIN idf_ports pr_remote
                ON pr_remote.id = CASE
-                   WHEN l.port_id_a = pr.id THEN l.port_id_b
-                   WHEN l.port_id_b = pr.id THEN l.port_id_a
+                    WHEN l.port_id_a = pr.id THEN l.port_id_b
+                    WHEN l.port_id_b = pr.id THEN l.port_id_a
                    ELSE NULL
                END
              LEFT JOIN switch_status ss_remote ON ss_remote.id = pr_remote.status_id AND ss_remote.company_id = pr_remote.company_id
