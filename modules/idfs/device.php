@@ -204,7 +204,16 @@ $stmtPorts = mysqli_prepare(
         ON pr_live.company_id = pr.company_id
        AND pr_live.equipment_id = p_local.equipment_id
        AND pr_live.port_number = pr.port_no
-       AND pr_live.port_type = COALESCE(spt.type, 'RJ45')
+       AND (
+            pr_live.port_type = COALESCE(spt.type, 'RJ45')
+            OR pr_live.port_type = CAST(spt.id AS CHAR)
+            OR (
+                pr_live.port_type REGEXP '^[0-9]+$'
+                AND CAST(pr_live.port_type AS UNSIGNED) = spt.id
+            )
+            OR UPPER(REPLACE(REPLACE(TRIM(COALESCE(pr_live.port_type, '')), ' ', ''), '+', 'PLUS'))
+               = UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS'))
+       )
       LEFT JOIN switch_status ss
         ON ss.id = pr.status_id
        AND ss.company_id = pr.company_id
