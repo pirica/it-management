@@ -439,6 +439,12 @@ if (!function_exists('itm_render_port_visualizer')) {
                     if ($dotColor !== '') {
                         $dotStyleRules[] = 'background:' . sanitize($dotColor);
                     }
+                    if ($dotType === 'sfp' || $dotType === 'sfp_plus') {
+                        // Why: SFP/SFP+ ports use a dedicated 5x5 sprite to match the rack-view visual language requested by operators.
+                        $dotStyleRules[] = 'background-image:url(' . BASE_URL . 'images/5x5-pixel.png)';
+                        $dotStyleRules[] = 'background-size:5px 5px';
+                        $dotStyleRules[] = 'background-repeat:repeat';
+                    }
                     if ($dotIsClickable) {
                         // Why: SFP compact icon dots were clickable but did not show the hand cursor, which made links feel inactive.
                         $dotStyleRules[] = 'cursor:pointer';
