@@ -32,13 +32,25 @@ if (!function_exists('itm_render_port_visualizer')) {
         }
 
         $allPortsForMeta = $ports;
+        $renderPorts = $ports;
         // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
+        $gridPortType = strtolower(trim((string)($options['grid_port_type'] ?? 'all')));
+        if ($gridPortType === 'rj45') {
+            $renderPorts = [];
+            foreach ($ports as $itmRenderablePort) {
+                $itmRenderableTypeRaw = strtolower(trim((string)($itmRenderablePort['port_type_label'] ?? ($itmRenderablePort['port_type'] ?? 'rj45'))));
+                if (strpos($itmRenderableTypeRaw, 'sfp') !== false) {
+                    continue;
+                }
+                $renderPorts[] = $itmRenderablePort;
+            }
+        }
 
         // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
         // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
         $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
-        foreach ($ports as $itmPortMetaScan) {
+        foreach ($renderPorts as $itmPortMetaScan) {
             $scanNo = (int)($itmPortMetaScan['port_no'] ?? 0);
             if ($scanNo <= 0) {
                 continue;
@@ -60,7 +72,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             'sfp_plus' => max(0, $maxByType['rj45']) + max(0, $maxByType['sfp']),
         ];
 
-        foreach ($ports as &$itmPortMeta) {
+        foreach ($renderPorts as &$itmPortMeta) {
             $rawPortNo = (int)($itmPortMeta['port_no'] ?? 0);
             $normalizedType = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? 'rj45'))));
             $visualPortNo = $rawPortNo > 0 ? $rawPortNo : 1;
@@ -74,7 +86,7 @@ if (!function_exists('itm_render_port_visualizer')) {
         unset($itmPortMeta);
 
         // Sort ports by visual slot first, then by database id to keep ties deterministic.
-        usort($ports, function($a, $b) {
+        usort($renderPorts, function($a, $b) {
             $slotA = (int)($a['_visual_port_no'] ?? ($a['port_no'] ?? 0));
             $slotB = (int)($b['_visual_port_no'] ?? ($b['port_no'] ?? 0));
             if ($slotA === $slotB) {
@@ -83,7 +95,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             return $slotA <=> $slotB;
         });
 
-        $totalPorts = count($ports);
+        $totalPorts = count($renderPorts);
         $rows = (int)($options['rows'] ?? 2);
         if ($rows < 1) $rows = 1;
         $cols = (int)($options['columns'] ?? ceil($totalPorts / $rows));
@@ -102,7 +114,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $rows = (int)max(2, ceil($pairCount / max(1, $cols)) * 2);
             }
 
-            foreach ($ports as $p) {
+            foreach ($renderPorts as $p) {
                 $num = (int)($p['_visual_port_no'] ?? ($p['port_no'] ?? 0));
                 if ($num <= 0) {
                     continue;
@@ -122,7 +134,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $rows = (int)max(1, ceil($totalPorts / max(1, $cols)));
             }
 
-            foreach ($ports as $p) {
+            foreach ($renderPorts as $p) {
                 $num = (int)($p['_visual_port_no'] ?? ($p['port_no'] ?? 0));
                 if ($num <= 0) {
                     continue;
@@ -137,7 +149,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             for ($r = 0; $r < $rows; $r++) {
                 for ($c = 0; $c < $cols; $c++) {
                     if ($curr < $totalPorts) {
-                        $grid[$r][$c] = $ports[$curr++];
+                        $grid[$r][$c] = $renderPorts[$curr++];
                     }
                 }
             }
