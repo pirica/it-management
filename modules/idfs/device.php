@@ -96,6 +96,50 @@ $rj45PortNumbers = [];
 $sfpPortNumbers = [];
 $sfpPlusPortNumbers = [];
 
+$hasSwitchPortsLabelColumn = false;
+$hasSwitchPortsToPatchPortColumn = false;
+$hasSwitchPortsPatchPortColumn = false;
+$hasSwitchPortsCommentsColumn = false;
+$switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
+if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
+    $hasSwitchPortsLabelColumn = true;
+}
+$switchPortsToPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'to_patch_port'");
+if ($switchPortsToPatchPortColumnRes && mysqli_num_rows($switchPortsToPatchPortColumnRes) > 0) {
+    $hasSwitchPortsToPatchPortColumn = true;
+}
+$switchPortsPatchPortColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'patch_port'");
+if ($switchPortsPatchPortColumnRes && mysqli_num_rows($switchPortsPatchPortColumnRes) > 0) {
+    $hasSwitchPortsPatchPortColumn = true;
+}
+$switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'comments'");
+if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
+    $hasSwitchPortsCommentsColumn = true;
+}
+
+$switchPortsLiveLabelSelect = "''";
+if ($hasSwitchPortsToPatchPortColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(NULLIF(pr_live.to_patch_port, ''), '0')";
+} elseif ($hasSwitchPortsLabelColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(NULLIF(pr_live.label, ''), '0')";
+} elseif ($hasSwitchPortsPatchPortColumn) {
+    $switchPortsLiveLabelSelect = "NULLIF(NULLIF(pr_live.patch_port, ''), '0')";
+}
+$switchPortsLiveCommentsSelect = $hasSwitchPortsCommentsColumn
+    ? "NULLIF(pr_live.comments, '')"
+    : "''";
+$switchPortsLinkedLabelSelect = "''";
+if ($hasSwitchPortsToPatchPortColumn) {
+    $switchPortsLinkedLabelSelect = "NULLIF(NULLIF(sp_link.to_patch_port, ''), '0')";
+} elseif ($hasSwitchPortsLabelColumn) {
+    $switchPortsLinkedLabelSelect = "NULLIF(NULLIF(sp_link.label, ''), '0')";
+} elseif ($hasSwitchPortsPatchPortColumn) {
+    $switchPortsLinkedLabelSelect = "NULLIF(NULLIF(sp_link.patch_port, ''), '0')";
+}
+$switchPortsLinkedCommentsSelect = $hasSwitchPortsCommentsColumn
+    ? "NULLIF(sp_link.comments, '')"
+    : "''";
+
 $portSortField = (string)($_GET['sort'] ?? 'port_type');
 $portSortDir = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 $vlanSortExpr = "CASE
@@ -111,19 +155,33 @@ $vlanSortExpr = "CASE
             WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
             ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
         END
+    WHEN v_link_sp.id IS NOT NULL THEN
+        CASE
+            WHEN TRIM(COALESCE(v_link_sp.vlan_name, '')) = '' THEN COALESCE(v_link_sp.vlan_number, '')
+            WHEN TRIM(COALESCE(v_link_sp.vlan_number, '')) = '' THEN v_link_sp.vlan_name
+            ELSE CONCAT(v_link_sp.vlan_number, ' - ', v_link_sp.vlan_name)
+        END
+    WHEN v_link.id IS NOT NULL THEN
+        CASE
+            WHEN TRIM(COALESCE(v_link.vlan_name, '')) = '' THEN COALESCE(v_link.vlan_number, '')
+            WHEN TRIM(COALESCE(v_link.vlan_number, '')) = '' THEN v_link.vlan_name
+            ELSE CONCAT(v_link.vlan_number, ' - ', v_link.vlan_name)
+        END
     ELSE ''
 END";
+$labelSortExpr = "COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
+$notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
 
 $portSortMap = [
     'port_no' => 'pr.port_no',
     'port_type' => "COALESCE(spt.type, 'RJ45')",
-    'label' => 'pr.label',
+    'label' => $labelSortExpr,
     'status' => "COALESCE(ss.status, 'Unknown')",
     'connected_to' => 'pr.connected_to',
     'vlan' => $vlanSortExpr,
     'speed' => 'COALESCE(ef.name, "")',
     'poe' => 'COALESCE(ep.name, "")',
-    'notes' => 'pr.notes',
+    'notes' => $notesSortExpr,
     'link' => 'l.id'
 ];
 if (!isset($portSortMap[$portSortField])) {
@@ -138,30 +196,38 @@ $stmtPorts = mysqli_prepare(
        COALESCE(spt.type, 'RJ45') AS port_type_label,
        COALESCE(ss.status, 'Unknown') AS status_label,
        COALESCE(cc_ss.hex_color, '#adb5bd') AS status_color,
+       COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
+       COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''), '') AS notes,
        p_local.position_no AS local_position_no,
        p_local.device_name AS local_device_name,
        p_local.equipment_id AS local_equipment_id,
        i_local.name AS local_idf_name,
        COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
-       COALESCE(pr_live.vlan_id, pr.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
+       COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
        CASE
-           WHEN v_live.id IS NOT NULL THEN
-             CASE
-               WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
-               WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
-               ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
-             END
-           WHEN v.id IS NOT NULL THEN
-             CASE
-               WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
-               WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
-               ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
-             END
-           WHEN v_link.id IS NOT NULL THEN
-             CASE
-               WHEN TRIM(COALESCE(v_link.vlan_name, '')) = '' THEN COALESCE(v_link.vlan_number, '')
-               WHEN TRIM(COALESCE(v_link.vlan_number, '')) = '' THEN v_link.vlan_name
-               ELSE CONCAT(v_link.vlan_number, ' - ', v_link.vlan_name)
+            WHEN v_live.id IS NOT NULL THEN
+              CASE
+                WHEN TRIM(COALESCE(v_live.vlan_name, '')) = '' THEN COALESCE(v_live.vlan_number, '')
+                WHEN TRIM(COALESCE(v_live.vlan_number, '')) = '' THEN v_live.vlan_name
+                ELSE CONCAT(v_live.vlan_number, ' - ', v_live.vlan_name)
+              END
+            WHEN v.id IS NOT NULL THEN
+              CASE
+                WHEN TRIM(COALESCE(v.vlan_name, '')) = '' THEN COALESCE(v.vlan_number, '')
+                WHEN TRIM(COALESCE(v.vlan_number, '')) = '' THEN v.vlan_name
+                ELSE CONCAT(v.vlan_number, ' - ', v.vlan_name)
+              END
+            WHEN v_link_sp.id IS NOT NULL THEN
+              CASE
+                WHEN TRIM(COALESCE(v_link_sp.vlan_name, '')) = '' THEN COALESCE(v_link_sp.vlan_number, '')
+                WHEN TRIM(COALESCE(v_link_sp.vlan_number, '')) = '' THEN v_link_sp.vlan_name
+                ELSE CONCAT(v_link_sp.vlan_number, ' - ', v_link_sp.vlan_name)
+              END
+            WHEN v_link.id IS NOT NULL THEN
+              CASE
+                WHEN TRIM(COALESCE(v_link.vlan_name, '')) = '' THEN COALESCE(v_link.vlan_number, '')
+                WHEN TRIM(COALESCE(v_link.vlan_number, '')) = '' THEN v_link.vlan_name
+                ELSE CONCAT(v_link.vlan_number, ' - ', v_link.vlan_name)
              END
            ELSE ''
          END AS vlan_label,
@@ -251,6 +317,17 @@ $stmtPorts = mysqli_prepare(
           ORDER BY l2.id ASC
           LIMIT 1
       )
+      LEFT JOIN switch_ports sp_link
+        ON sp_link.company_id = pr.company_id
+       AND CONVERT(CAST(sp_link.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(CAST(l.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+       AND CONVERT(CAST(sp_link.port_number AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(CAST(l.equipment_port AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+       AND CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp_link.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(l.equipment_port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+      LEFT JOIN vlans v_link_sp
+        ON v_link_sp.id = sp_link.vlan_id
+       AND v_link_sp.company_id = sp_link.company_id
       LEFT JOIN vlans v_link
         ON v_link.id = l.equipment_vlan_id
        AND v_link.company_id = l.company_id
