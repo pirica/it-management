@@ -463,7 +463,33 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $dotCableLabel = trim((string)($dotPort['cable_label'] ?? ''));
                     $dotLinkNotes = trim((string)($dotPort['link_notes'] ?? ''));
                     $dotLinkId = isset($dotPort['link_id']) ? (int)($dotPort['link_id']) : 0;
-                    $dotTitleParts = ['Port ' . (int)($dotMeta['no'] ?? 0), $dotTypeLabel, 'Status: ' . $dotStatusLabel];
+                    $dotTitleParts = [];
+                    $dotContextParts = [];
+                    $dotContextCompany = trim((string)($options['company_name'] ?? ''));
+                    if ($dotContextCompany !== '') { $dotContextParts[] = $dotContextCompany; }
+                    $dotContextLocation = trim((string)($options['location_name'] ?? ''));
+                    if ($dotContextLocation !== '') { $dotContextParts[] = 'Location: ' . $dotContextLocation; }
+                    $dotContextIdfName = trim((string)($options['idf_name'] ?? ''));
+                    if ($dotContextIdfName !== '') { $dotContextParts[] = 'Name: ' . $dotContextIdfName; }
+                    $dotContextIdfCode = trim((string)($options['idf_code'] ?? ''));
+                    if ($dotContextIdfCode !== '') { $dotContextParts[] = 'IDF Code: ' . $dotContextIdfCode; }
+                    $dotContextRack = trim((string)($options['rack_name'] ?? ''));
+                    if ($dotContextRack !== '') { $dotContextParts[] = 'Rack: ' . $dotContextRack; }
+                    if (!empty($dotContextParts)) {
+                        $dotTitleParts[] = implode(' • ', $dotContextParts);
+                    }
+                    $dotFromParts = ['From:', 'Port ' . (int)($dotMeta['no'] ?? 0) . ' (' . $dotStatusLabel . ')'];
+                    if ($dotTypeLabel !== '') { $dotFromParts[] = $dotTypeLabel; }
+                    $dotLocalType = trim((string)($dotPort['local_device_type_label'] ?? ''));
+                    if ($dotLocalType !== '') { $dotFromParts[] = $dotLocalType; }
+                    $dotLocalName = trim((string)($dotPort['local_device_name'] ?? ''));
+                    if ($dotLocalName !== '') { $dotFromParts[] = $dotLocalName; }
+                    $dotLocalAsset = itm_format_visualizer_equipment_code($dotPort['local_equipment_id'] ?? '');
+                    if ($dotLocalAsset !== '') { $dotFromParts[] = 'Asset ' . $dotLocalAsset; }
+                    if (!empty($dotPort['local_position_no'])) { $dotFromParts[] = 'Pos ' . (int)$dotPort['local_position_no']; }
+                    $dotLocalIdf = trim((string)($dotPort['local_idf_name'] ?? ''));
+                    if ($dotLocalIdf !== '') { $dotFromParts[] = 'IDF ' . $dotLocalIdf; }
+                    $dotTitleParts[] = implode(' • ', $dotFromParts);
                     if ($dotLabel !== '' && $dotLabel !== '0') {
                         $dotTitleParts[] = 'Label: ' . $dotLabel;
                     }
@@ -472,17 +498,23 @@ if (!function_exists('itm_render_port_visualizer')) {
                     } elseif ($dotVlan > 0) {
                         $dotTitleParts[] = 'VLAN: ' . $dotVlan;
                     }
-                    if ($dotConnectedTo !== '') {
-                        $dotTitleParts[] = 'Connected To: ' . $dotConnectedTo;
-                    }
-                    if ($dotCableName !== '') {
-                        $dotTitleParts[] = 'Cable color: ' . $dotCableName;
-                    }
-                    if ($dotCableHex !== '' && strcasecmp($dotCableHex, $dotCableName) !== 0) {
-                        $dotTitleParts[] = $dotCableHex;
-                    }
-                    if ($dotCableLabel !== '') {
-                        $dotTitleParts[] = 'Cable label: ' . $dotCableLabel;
+                    $dotConnectedParts = ['Connected To:'];
+                    if ($dotConnectedTo !== '') { $dotConnectedParts[] = $dotConnectedTo; }
+                    $dotRemoteStatus = trim((string)($dotPort['remote_status_label'] ?? ''));
+                    if ($dotRemoteStatus !== '') { $dotConnectedParts[] = 'Status (' . $dotRemoteStatus . ')'; }
+                    $dotRemoteType = trim((string)($dotPort['remote_device_type_label'] ?? ''));
+                    if ($dotRemoteType !== '') { $dotConnectedParts[] = $dotRemoteType; }
+                    $dotRemoteName = trim((string)($dotPort['remote_device_name'] ?? ''));
+                    if ($dotRemoteName !== '') { $dotConnectedParts[] = $dotRemoteName; }
+                    $dotRemoteAsset = itm_format_visualizer_equipment_code($dotPort['remote_equipment_id'] ?? '');
+                    if ($dotRemoteAsset !== '') { $dotConnectedParts[] = 'Asset ' . $dotRemoteAsset; }
+                    if (!empty($dotPort['remote_position_no'])) { $dotConnectedParts[] = 'Pos ' . (int)$dotPort['remote_position_no']; }
+                    if (!empty($dotPort['remote_port_no'])) { $dotConnectedParts[] = 'Port ' . (int)$dotPort['remote_port_no']; }
+                    if ($dotCableName !== '') { $dotConnectedParts[] = 'Cable color: ' . $dotCableName; }
+                    if ($dotCableHex !== '' && strcasecmp($dotCableHex, $dotCableName) !== 0) { $dotConnectedParts[] = $dotCableHex; }
+                    if ($dotCableLabel !== '') { $dotConnectedParts[] = 'Cable label: ' . $dotCableLabel; }
+                    if (count($dotConnectedParts) > 1) {
+                        $dotTitleParts[] = implode(' • ', $dotConnectedParts);
                     }
                     if ($dotLinkNotes !== '') {
                         $dotTitleParts[] = 'Notes: ' . $dotLinkNotes;
