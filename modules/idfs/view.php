@@ -295,6 +295,8 @@ if ($stmtPos) {
                     COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
                     COALESCE(cc_live.hex_color, pr.hex_color, cc_l.hex_color) AS cable_hex_color,
                     COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
+                    l.id AS link_id,
+                    COALESCE(l.cable_label, '') AS cable_label,
                     l.notes AS link_notes,
                     pr_remote.port_no AS remote_port_no,
                     pr_remote.status_id AS remote_status_id,
