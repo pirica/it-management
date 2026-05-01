@@ -415,7 +415,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             $iconCols = $layout === 'vertical'
                 ? max(2, min(10, (int)ceil(count($iconDots) / 2)))
                 : max(2, min(10, count($iconDots)));
-            $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px);">';
+            $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px); opacity:1;">';
             foreach ($iconDots as $dotMeta) {
                 $dotStyle = '';
                 $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
@@ -440,10 +440,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                         $dotStyleRules[] = 'background:' . sanitize($dotColor);
                     }
                     if ($dotType === 'sfp' || $dotType === 'sfp_plus') {
-                        // Why: SFP/SFP+ ports use a dedicated 5x5 sprite to match the rack-view visual language requested by operators.
-                        $dotStyleRules[] = 'background-image:url(' . BASE_URL . 'images/5x5-pixel.png)';
-                        $dotStyleRules[] = 'background-size:5px 5px';
-                        $dotStyleRules[] = 'background-repeat:repeat';
+                        // Why: Keep SFP/SFP+ color previews fully solid so selected cable/status colors are not visually faded.
+                        $dotStyleRules[] = 'background-image:none';
                     }
                     if ($dotIsClickable) {
                         // Why: SFP compact icon dots were clickable but did not show the hand cursor, which made links feel inactive.
