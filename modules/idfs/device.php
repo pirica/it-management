@@ -176,7 +176,7 @@ $portSortMap = [
     'port_no' => 'pr.port_no',
     'port_type' => "COALESCE(spt.type, 'RJ45')",
     'label' => $labelSortExpr,
-    'status' => "COALESCE(ss.status, 'Unknown')",
+    'status' => "COALESCE(ss_live.status, ss.status, 'Unknown')",
     'connected_to' => 'pr.connected_to',
     'vlan' => $vlanSortExpr,
     'speed' => 'COALESCE(ef.name, "")',
@@ -194,8 +194,8 @@ $stmtPorts = mysqli_prepare(
     "SELECT
        pr.*,
        COALESCE(spt.type, 'RJ45') AS port_type_label,
-       COALESCE(ss.status, 'Unknown') AS status_label,
-       COALESCE(cc_ss.hex_color, '#adb5bd') AS status_color,
+       COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
+       COALESCE(cc_live.hex_color, cc_ss.hex_color, '#adb5bd') AS status_color,
        COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
        COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''), '') AS notes,
        p_local.position_no AS local_position_no,
@@ -296,8 +296,13 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN switch_status ss
         ON ss.id = pr.status_id
        AND ss.company_id = pr.company_id
+     LEFT JOIN switch_status ss_live
+       ON ss_live.id = pr_live.status_id
+      AND ss_live.company_id = pr_live.company_id
      LEFT JOIN cable_colors cc_ss
        ON cc_ss.id = ss.color_id
+     LEFT JOIN cable_colors cc_live
+       ON cc_live.id = ss_live.color_id
       LEFT JOIN vlans v
         ON v.id = pr.vlan_id
        AND v.company_id = pr.company_id
@@ -2066,4 +2071,3 @@ async function idfDeviceExportImage() {
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>
-
