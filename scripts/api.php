@@ -103,6 +103,7 @@
  * IDF rack icon dot grid now sets columns inline per rendered dot count (up to 10) so global icon CSS remains compact while switch previews can expand without style regressions.
  * IDF SFP dot count now defaults directly from equipment.switch_fiber_ports_number when fiber labels are blank, ensuring configured fiber totals are still represented.
  * IDF rack view SFP count now prefers typed SFP rows from rendered port data and only falls back to equipment.switch_fiber_ports_number when SFP rows are absent, preventing duplicate RJ45+SFP totals in mixed legacy datasets.
+ * IDF rack view now resolves switch visualizer layout from equipment.switch_port_numbering_layout_id first (with position-level fallback) so SFP/SFP+ icons follow the linked switch layout in device cards.
  * IDF rack port visualizer now assigns deterministic visual slots per port type so RJ45/SFP/SFP+ entries with overlapping port numbers render on the correct dots instead of overwriting each other.
  * IDF rack view main RJ45 block now renders only RJ45 port rows while preserving SFP/SFP+ visibility in the compact right-side icon dots.
  * IDF rack device-icon dot counts now prefer actual IDF port rows; configured RJ45/SFP counts are used only as a fallback when no typed ports exist, preventing inflated 20-dot previews when only 16 IDF ports are present.
