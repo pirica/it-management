@@ -46,7 +46,12 @@ $stmt = mysqli_prepare(
         p.device_name,
         p.equipment_id AS position_equipment_id
      FROM idf_ports pr
-     JOIN idf_positions p ON p.id=pr.position_id
+     JOIN idf_positions p
+       ON p.company_id = pr.company_id
+      AND (
+           p.id = pr.position_id
+           OR p.position_no = pr.position_id
+      )
      JOIN idfs i ON i.id=p.idf_id
      WHERE pr.id IN (?, ?)"
 );
@@ -265,7 +270,8 @@ if (
          FROM idf_links
          WHERE company_id = ?
            AND equipment_id = ?
-           AND equipment_port_type = ?
+           AND UPPER(REPLACE(REPLACE(TRIM(COALESCE(equipment_port_type, '')), ' ', ''), '+', 'PLUS'))
+               = UPPER(REPLACE(REPLACE(TRIM(?), ' ', ''), '+', 'PLUS'))
            AND equipment_port = ?
          LIMIT 1"
     );
@@ -506,7 +512,12 @@ if (
         $conn,
         "UPDATE switch_ports sp
          JOIN idf_ports pr ON pr.id = ?
-         JOIN idf_positions p ON p.id = pr.position_id
+         JOIN idf_positions p
+           ON p.company_id = pr.company_id
+          AND (
+               p.id = pr.position_id
+               OR p.position_no = pr.position_id
+          )
          SET sp.{$switchPortLabelColumn} = ?,
              sp.status_id = ?,
              sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
@@ -515,7 +526,14 @@ if (
            AND p.company_id = sp.company_id
            AND p.equipment_id = sp.equipment_id
            AND sp.port_number = pr.port_no
-           AND sp.port_type = pr.port_type
+           AND (
+                sp.port_type = pr.port_type
+                OR sp.port_type = CAST(pr.port_type AS CHAR)
+                OR (
+                    sp.port_type REGEXP '^[0-9]+$'
+                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+                )
+           )
          LIMIT 1"
     );
     if ($stmtSwitchSync) {
