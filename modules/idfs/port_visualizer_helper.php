@@ -212,7 +212,6 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $titleParts[] = implode(' • ', $contextParts);
                 }
                 $statusLabel = trim((string)($p['status_label'] ?? 'Unknown'));
-                $statusSummary = 'Status (' . $statusLabel . ')';
 
                 $portTypeLabel = trim((string)($p['port_type_label'] ?? ''));
                 if ($portTypeLabel !== '') {
@@ -226,7 +225,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $cableName = $cableHexColor;
                 }
 
-                $fromParts = ['From:', 'Port ' . (int)$p['port_no'] . ' (' . $statusLabel . ')', $statusSummary];
+                $fromParts = ['From:', 'Port ' . (int)$p['port_no'] . ' (' . $statusLabel . ')'];
                 if ($portTypeLabel !== '') {
                     $fromParts[] = $portTypeLabel;
                 }
@@ -489,7 +488,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                         $dotTitleParts[] = 'Notes: ' . $dotLinkNotes;
                     }
                     $dotNotes = trim((string)($dotPort['notes'] ?? ''));
-                    if ($dotNotes !== '') {
+                    if ($dotNotes !== '' && strcasecmp($dotNotes, $dotLinkNotes) !== 0) {
                         $dotTitleParts[] = 'Notes: ' . $dotNotes;
                     }
                     if ($dotLinkId > 0) {
