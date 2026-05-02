@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * UI Configuration and Sidebar Management Functions
  * 
@@ -16,88 +16,89 @@ function itm_sidebar_base_structure() {
     return [
         [
             'id' => 'dashboard',
-            'title' => '📊 Dashboard',
+            'title' => 'ðŸ“Š Dashboard',
             'items' => [
-                ['id' => 'dashboard_link', 'label' => '📈 Dashboard', 'href' => 'dashboard.php', 'match_page' => 'dashboard.php'],
-                ['id' => 'settings', 'label' => '⚙️ Settings', 'href' => 'modules/settings/', 'match_dir' => 'settings'],
+                ['id' => 'dashboard_link', 'label' => 'ðŸ“ˆ Dashboard', 'href' => 'dashboard.php', 'match_page' => 'dashboard.php'],
+                ['id' => 'settings', 'label' => 'âš™ï¸ Settings', 'href' => 'modules/settings/', 'match_dir' => 'settings'],
             ],
         ],
         [
             'id' => 'management',
-            'title' => '🏢 Management',
+            'title' => 'ðŸ¢ Management',
             'items' => [
-                ['id' => 'equipment', 'label' => '🖥️ Equipment', 'href' => 'modules/equipment/', 'match_dir' => 'equipment'],
-                ['id' => 'is_workstation', 'label' => '💻 Is Workstation', 'href' => 'modules/is_workstation/', 'match_dir' => 'is_workstation'],
-                ['id' => 'is_server', 'label' => '🖥️ Is Server', 'href' => 'modules/is_server/', 'match_dir' => 'is_server'],
-                ['id' => 'is_switch', 'label' => '🔀 Is Switch', 'href' => 'modules/is_switch/', 'match_dir' => 'is_switch'],
-                ['id' => 'is_printer', 'label' => '🖨️ Is Printer', 'href' => 'modules/is_printer/', 'match_dir' => 'is_printer'],
-                ['id' => 'is_pos', 'label' => '🏧 Is POS', 'href' => 'modules/is_pos/', 'match_dir' => 'is_pos'],
-                ['id' => 'tickets', 'label' => '🎟️ Tickets', 'href' => 'modules/tickets/', 'match_dir' => 'tickets'],
+                ['id' => 'equipment', 'label' => 'ðŸ–¥ï¸ Equipment', 'href' => 'modules/equipment/', 'match_dir' => 'equipment'],
+                ['id' => 'is_workstation', 'label' => 'ðŸ’» Is Workstation', 'href' => 'modules/is_workstation/', 'match_dir' => 'is_workstation'],
+                ['id' => 'is_server', 'label' => 'ðŸ–¥ï¸ Is Server', 'href' => 'modules/is_server/', 'match_dir' => 'is_server'],
+                ['id' => 'is_switch', 'label' => 'ðŸ”€ Is Switch', 'href' => 'modules/is_switch/', 'match_dir' => 'is_switch'],
+                ['id' => 'is_printer', 'label' => 'ðŸ–¨ï¸ Is Printer', 'href' => 'modules/is_printer/', 'match_dir' => 'is_printer'],
+                ['id' => 'is_pos', 'label' => 'ðŸ§ Is POS', 'href' => 'modules/is_pos/', 'match_dir' => 'is_pos'],
+                ['id' => 'tickets', 'label' => 'ðŸŽŸï¸ Tickets', 'href' => 'modules/tickets/', 'match_dir' => 'tickets'],
             ],
         ],
         [
             'id' => 'employee',
-            'title' => '👤 Employee',
+            'title' => 'ðŸ‘¤ Employee',
             'items' => [
-                ['id' => 'employees', 'label' => '👤 Employees', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
-                ['id' => 'employee_system_access', 'label' => '🔐 Employee System Access', 'href' => 'modules/employee_system_access/', 'match_dir' => 'employee_system_access'],
-                ['id' => 'system_access', 'label' => '🛡️ System Access', 'href' => 'modules/system_access/', 'match_dir' => 'system_access'],
-                ['id' => 'departments', 'label' => '🏢 Departments', 'href' => 'modules/departments/', 'match_dir' => 'departments'],
-                ['id' => 'employee_assignment_history', 'label' => '📝 Assignment History', 'href' => 'modules/employee_assignment_history/', 'match_dir' => 'employee_assignment_history'],
+                ['id' => 'employees', 'label' => 'ðŸ‘¤ Employees', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
+                ['id' => 'employee_system_access', 'label' => 'ðŸ” Employee System Access', 'href' => 'modules/employee_system_access/', 'match_dir' => 'employee_system_access'],
+                ['id' => 'system_access', 'label' => 'ðŸ›¡ï¸ System Access', 'href' => 'modules/system_access/', 'match_dir' => 'system_access'],
+                ['id' => 'departments', 'label' => 'ðŸ¢ Departments', 'href' => 'modules/departments/', 'match_dir' => 'departments'],
+                ['id' => 'employee_assignment_history', 'label' => 'ðŸ“ Assignment History', 'href' => 'modules/employee_assignment_history/', 'match_dir' => 'employee_assignment_history'],
             ],
         ],
         [
             'id' => 'budgeting',
-            'title' => '💰 Budgeting',
+            'title' => 'ðŸ’° Budgeting',
             'items' => [
-                ['id' => 'budget_categories', 'label' => '📚 Budget Categories', 'href' => 'modules/budget_categories/', 'match_dir' => 'budget_categories'],
-                ['id' => 'cost_centers', 'label' => '🧾 Cost Centers', 'href' => 'modules/cost_centers/', 'match_dir' => 'cost_centers'],
-                ['id' => 'gl_accounts', 'label' => '📚 GL Accounts', 'href' => 'modules/gl_accounts/', 'match_dir' => 'gl_accounts'],
-                ['id' => 'annual_budgets', 'label' => '📅 Annual Budget', 'href' => 'modules/annual_budgets/', 'match_dir' => 'annual_budgets'],
-                ['id' => 'monthly_budgets', 'label' => '📆 Monthly Budget', 'href' => 'modules/monthly_budgets/', 'match_dir' => 'monthly_budgets'],
-                ['id' => 'forecast_revisions', 'label' => '📈 Forecast Revisions', 'href' => 'modules/forecast_revisions/', 'match_dir' => 'forecast_revisions'],
-                ['id' => 'forecast_revisions_status', 'label' => '📊 Forecast Revisions Status', 'href' => 'modules/forecast_revisions_status/', 'match_dir' => 'forecast_revisions_status'],
-                ['id' => 'approvals', 'label' => '✅ Forecast Approvals', 'href' => 'modules/approvals/', 'match_dir' => 'approvals'],
-                ['id' => 'approvals_stage', 'label' => '🪜 Approval Stages', 'href' => 'modules/approvals_stage/', 'match_dir' => 'approvals_stage'],
-                ['id' => 'expenses', 'label' => '💸 Expenses', 'href' => 'modules/expenses/', 'match_dir' => 'expenses'],
-                ['id' => 'budget_report', 'label' => '📑 Budget Report', 'href' => 'modules/budget_report/', 'match_dir' => 'budget_report'],
+                ['id' => 'budget_categories', 'label' => 'ðŸ“š Budget Categories', 'href' => 'modules/budget_categories/', 'match_dir' => 'budget_categories'],
+                ['id' => 'cost_centers', 'label' => 'ðŸ§¾ Cost Centers', 'href' => 'modules/cost_centers/', 'match_dir' => 'cost_centers'],
+                ['id' => 'gl_accounts', 'label' => 'ðŸ“š GL Accounts', 'href' => 'modules/gl_accounts/', 'match_dir' => 'gl_accounts'],
+                ['id' => 'annual_budgets', 'label' => 'ðŸ“… Annual Budget', 'href' => 'modules/annual_budgets/', 'match_dir' => 'annual_budgets'],
+                ['id' => 'monthly_budgets', 'label' => 'ðŸ“† Monthly Budget', 'href' => 'modules/monthly_budgets/', 'match_dir' => 'monthly_budgets'],
+                ['id' => 'forecast_revisions', 'label' => 'ðŸ“ˆ Forecast Revisions', 'href' => 'modules/forecast_revisions/', 'match_dir' => 'forecast_revisions'],
+                ['id' => 'forecast_revisions_status', 'label' => 'ðŸ“Š Forecast Revisions Status', 'href' => 'modules/forecast_revisions_status/', 'match_dir' => 'forecast_revisions_status'],
+                ['id' => 'approvals', 'label' => 'âœ… Forecast Approvals', 'href' => 'modules/approvals/', 'match_dir' => 'approvals'],
+                ['id' => 'approvals_stage', 'label' => 'ðŸªœ Approval Stages', 'href' => 'modules/approvals_stage/', 'match_dir' => 'approvals_stage'],
+                ['id' => 'expenses', 'label' => 'ðŸ’¸ Expenses', 'href' => 'modules/expenses/', 'match_dir' => 'expenses'],
+                ['id' => 'budget_report', 'label' => 'ðŸ“‘ Budget Report', 'href' => 'modules/budget_report/', 'match_dir' => 'budget_report'],
             ],
         ],
         [
             'id' => 'admin',
-            'title' => '🧰 Admin',
+            'title' => 'ðŸ§° Admin',
             'items' => [
-                ['id' => 'inventory', 'label' => '📦 Inventory', 'href' => 'modules/inventory/', 'match_dir' => 'inventory'],
-                ['id' => 'users', 'label' => '👥 Users', 'href' => 'modules/users/', 'match_dir' => 'users'],
-                ['id' => 'companies', 'label' => '🌍 Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
+                ['id' => 'inventory', 'label' => 'ðŸ“¦ Inventory', 'href' => 'modules/inventory/', 'match_dir' => 'inventory'],
+                ['id' => 'users', 'label' => 'ðŸ‘¥ Users', 'href' => 'modules/users/', 'match_dir' => 'users'],
+                ['id' => 'companies', 'label' => 'ðŸŒ Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
             ],
         ],
         [
             'id' => 'reference_data',
-            'title' => '🗂️ Reference Data',
+            'title' => 'ðŸ—‚ï¸ Reference Data',
             'items' => [
-                ['id' => 'it_locations', 'label' => '📍 IT Locations', 'href' => 'modules/it_locations/', 'match_dir' => 'it_locations'],
-                ['id' => 'location_types', 'label' => '🧭 Location Types', 'href' => 'modules/location_types/', 'match_dir' => 'location_types'],
-                ['id' => 'equipment_types', 'label' => '🖥️ Equipment Types', 'href' => 'modules/equipment_types/', 'match_dir' => 'equipment_types'],
-                ['id' => 'equipment_statuses', 'label' => '✅ Equipment Statuses', 'href' => 'modules/equipment_statuses/', 'match_dir' => 'equipment_statuses'],
-                ['id' => 'manufacturers', 'label' => '🏭 Manufacturers', 'href' => 'modules/manufacturers/', 'match_dir' => 'manufacturers'],
-                ['id' => 'catalogs', 'label' => '🗃️ Catalogs', 'href' => 'modules/catalogs/', 'match_dir' => 'catalogs'],
-                ['id' => 'suppliers', 'label' => '🚚 Suppliers', 'href' => 'modules/suppliers/', 'match_dir' => 'suppliers'],
-                ['id' => 'supplier_statuses', 'label' => '🟢 Supplier Statuses', 'href' => 'modules/supplier_statuses/', 'match_dir' => 'supplier_statuses'],
-                ['id' => 'racks', 'label' => '🗄️ Racks', 'href' => 'modules/racks/', 'match_dir' => 'racks'],
-                ['id' => 'idfs', 'label' => '🗄️ IDFs', 'href' => 'modules/idfs/', 'match_dir' => 'idfs'],
-                ['id' => 'rack_statuses', 'label' => '📶 Rack Statuses', 'href' => 'modules/rack_statuses/', 'match_dir' => 'rack_statuses'],
-                ['id' => 'switch_ports', 'label' => '🖧 Switch Ports', 'href' => 'modules/switch_ports/', 'match_dir' => 'switch_ports'],
-                ['id' => 'switch_status', 'label' => '📡 Switch Status', 'href' => 'modules/switch_status/', 'match_dir' => 'switch_status'],
-                ['id' => 'cable_colors', 'label' => '🎨 Cable Colors', 'href' => 'modules/cable_colors/', 'match_dir' => 'cable_colors'],
-                ['id' => 'ticket_categories', 'label' => '🏷️ Ticket Categories', 'href' => 'modules/ticket_categories/', 'match_dir' => 'ticket_categories'],
-                ['id' => 'ticket_statuses', 'label' => '🚦 Ticket Statuses', 'href' => 'modules/ticket_statuses/', 'match_dir' => 'ticket_statuses'],
-                ['id' => 'ticket_priorities', 'label' => '🔥 Ticket Priorities', 'href' => 'modules/ticket_priorities/', 'match_dir' => 'ticket_priorities'],
-                ['id' => 'employee_statuses', 'label' => '🧑‍💼 Employee Statuses', 'href' => 'modules/employee_statuses/', 'match_dir' => 'employee_statuses'],
-                ['id' => 'employee_positions', 'label' => '🪪 Positions Titles', 'href' => 'modules/employee_positions/', 'match_dir' => 'employee_positions'],
-                ['id' => 'approver_type', 'label' => '🧩 Approver Type', 'href' => 'modules/approver_type/', 'match_dir' => 'approver_type'],
-                ['id' => 'approvers', 'label' => '✅ Approvers', 'href' => 'modules/approvers/', 'match_dir' => 'approvers'],
-                ['id' => 'audit_logs', 'label' => '🧾 Audit Logs', 'href' => 'modules/audit_logs/', 'match_dir' => 'audit_logs'],
+                ['id' => 'it_locations', 'label' => 'ðŸ“ IT Locations', 'href' => 'modules/it_locations/', 'match_dir' => 'it_locations'],
+                ['id' => 'location_types', 'label' => 'ðŸ§­ Location Types', 'href' => 'modules/location_types/', 'match_dir' => 'location_types'],
+                ['id' => 'equipment_types', 'label' => 'ðŸ–¥ï¸ Equipment Types', 'href' => 'modules/equipment_types/', 'match_dir' => 'equipment_types'],
+                ['id' => 'equipment_statuses', 'label' => 'âœ… Equipment Statuses', 'href' => 'modules/equipment_statuses/', 'match_dir' => 'equipment_statuses'],
+                ['id' => 'manufacturers', 'label' => 'ðŸ­ Manufacturers', 'href' => 'modules/manufacturers/', 'match_dir' => 'manufacturers'],
+                ['id' => 'catalogs', 'label' => 'ðŸ—ƒï¸ Catalogs', 'href' => 'modules/catalogs/', 'match_dir' => 'catalogs'],
+                ['id' => 'suppliers', 'label' => 'ðŸšš Suppliers', 'href' => 'modules/suppliers/', 'match_dir' => 'suppliers'],
+                ['id' => 'supplier_statuses', 'label' => 'ðŸŸ¢ Supplier Statuses', 'href' => 'modules/supplier_statuses/', 'match_dir' => 'supplier_statuses'],
+                ['id' => 'racks', 'label' => 'ðŸ—„ï¸ Racks', 'href' => 'modules/racks/', 'match_dir' => 'racks'],
+                ['id' => 'rack_planner', 'label' => 'ðŸ§± Rack Planner', 'href' => 'modules/rack_planner/', 'match_dir' => 'rack_planner'],
+                ['id' => 'idfs', 'label' => 'ðŸ—„ï¸ IDFs', 'href' => 'modules/idfs/', 'match_dir' => 'idfs'],
+                ['id' => 'rack_statuses', 'label' => 'ðŸ“¶ Rack Statuses', 'href' => 'modules/rack_statuses/', 'match_dir' => 'rack_statuses'],
+                ['id' => 'switch_ports', 'label' => 'ðŸ–§ Switch Ports', 'href' => 'modules/switch_ports/', 'match_dir' => 'switch_ports'],
+                ['id' => 'switch_status', 'label' => 'ðŸ“¡ Switch Status', 'href' => 'modules/switch_status/', 'match_dir' => 'switch_status'],
+                ['id' => 'cable_colors', 'label' => 'ðŸŽ¨ Cable Colors', 'href' => 'modules/cable_colors/', 'match_dir' => 'cable_colors'],
+                ['id' => 'ticket_categories', 'label' => 'ðŸ·ï¸ Ticket Categories', 'href' => 'modules/ticket_categories/', 'match_dir' => 'ticket_categories'],
+                ['id' => 'ticket_statuses', 'label' => 'ðŸš¦ Ticket Statuses', 'href' => 'modules/ticket_statuses/', 'match_dir' => 'ticket_statuses'],
+                ['id' => 'ticket_priorities', 'label' => 'ðŸ”¥ Ticket Priorities', 'href' => 'modules/ticket_priorities/', 'match_dir' => 'ticket_priorities'],
+                ['id' => 'employee_statuses', 'label' => 'ðŸ§‘â€ðŸ’¼ Employee Statuses', 'href' => 'modules/employee_statuses/', 'match_dir' => 'employee_statuses'],
+                ['id' => 'employee_positions', 'label' => 'ðŸªª Positions Titles', 'href' => 'modules/employee_positions/', 'match_dir' => 'employee_positions'],
+                ['id' => 'approver_type', 'label' => 'ðŸ§© Approver Type', 'href' => 'modules/approver_type/', 'match_dir' => 'approver_type'],
+                ['id' => 'approvers', 'label' => 'âœ… Approvers', 'href' => 'modules/approvers/', 'match_dir' => 'approvers'],
+                ['id' => 'audit_logs', 'label' => 'ðŸ§¾ Audit Logs', 'href' => 'modules/audit_logs/', 'match_dir' => 'audit_logs'],
             ],
         ],
     ];
@@ -142,17 +143,17 @@ function itm_equipment_type_default_emoji($typeName) {
     $normalized = trim((string)$normalized, '_');
 
     $map = [
-        'access_point' => '📶',
-        'cctv' => '🎥',
-        'firewall' => '🔥',
-        'phone' => '📞',
-        'port_patch_panel' => '➰',
-        'pos' => '🏧',
-        'printer' => '🖨️',
-        'router' => '🛜',
-        'server' => '🖥️',
-        'switch' => '🔀',
-        'workstation' => '💻',
+        'access_point' => 'ðŸ“¶',
+        'cctv' => 'ðŸŽ¥',
+        'firewall' => 'ðŸ”¥',
+        'phone' => 'ðŸ“ž',
+        'port_patch_panel' => 'âž°',
+        'pos' => 'ðŸ§',
+        'printer' => 'ðŸ–¨ï¸',
+        'router' => 'ðŸ›œ',
+        'server' => 'ðŸ–¥ï¸',
+        'switch' => 'ðŸ”€',
+        'workstation' => 'ðŸ’»',
     ];
 
     return $map[$normalized] ?? '';
@@ -176,11 +177,11 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
     }
 
     $moduleTitleMap = [
-        'is_workstation' => '💻 Is Workstation',
-        'is_server' => '🖥️ Is Server',
-        'is_switch' => '🔀 Is Switch',
-        'is_printer' => '🖨️ Is Printer',
-        'is_pos' => '🏧 Is POS',
+        'is_workstation' => 'ðŸ’» Is Workstation',
+        'is_server' => 'ðŸ–¥ï¸ Is Server',
+        'is_switch' => 'ðŸ”€ Is Switch',
+        'is_printer' => 'ðŸ–¨ï¸ Is Printer',
+        'is_pos' => 'ðŸ§ Is POS',
     ];
     $searchPlaceholderMap = [
         'is_workstation' => 'Use SQL wildcards, e.g. %%desk%%',
@@ -195,7 +196,7 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
         $displayTypeName = itm_sidebar_humanize_table_name($moduleName);
     }
 
-    $moduleTitle = $moduleTitleMap[$moduleName] ?? ('🖥️ Is ' . $displayTypeName);
+    $moduleTitle = $moduleTitleMap[$moduleName] ?? ('ðŸ–¥ï¸ Is ' . $displayTypeName);
     $searchPlaceholder = $searchPlaceholderMap[$moduleName] ?? 'Use SQL wildcards, e.g. %%asset%%';
 
     $modulesRoot = dirname(__DIR__) . '/modules';
@@ -393,7 +394,7 @@ function itm_sidebar_structure($conn = null) {
     foreach ($moduleNames as $moduleName => $moduleMeta) {
         $item = [
             'id' => $moduleName,
-            'label' => '🧩 ' . itm_sidebar_humanize_table_name($moduleName),
+            'label' => 'ðŸ§© ' . itm_sidebar_humanize_table_name($moduleName),
             'href' => 'modules/' . $moduleName . '/',
             'match_dir' => $moduleName,
         ];
@@ -530,7 +531,7 @@ function itm_ui_config_defaults() {
         'enable_all_error_reporting' => 1,
         'enable_audit_logs' => 1,
         'records_per_page' => '25',
-        'app_name' => '⚙️ IT Controls',
+        'app_name' => 'âš™ï¸ IT Controls',
         'favicon_path' => '',
         'equipment_type_sidebar_visibility' => [],
         'sidebar_visibility' => itm_default_sidebar_visibility(),
@@ -544,7 +545,7 @@ function itm_ui_config_defaults() {
  */
 function itm_ui_config_app_name($uiConfig = null) {
     $defaults = itm_ui_config_defaults();
-    $fallback = (string)($defaults['app_name'] ?? '⚙️ IT Controls');
+    $fallback = (string)($defaults['app_name'] ?? 'âš™ï¸ IT Controls');
 
     if (!is_array($uiConfig)) {
         return $fallback;
@@ -621,7 +622,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1,
         `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25',
-        `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
+        `app_name` VARCHAR(191) NOT NULL DEFAULT 'âš™ï¸ IT Controls',
         `favicon_path` VARCHAR(255) NOT NULL DEFAULT '',
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -651,7 +652,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_audit_logs`",
-        'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
+        'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT 'âš™ï¸ IT Controls' AFTER `records_per_page`",
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
     ];
