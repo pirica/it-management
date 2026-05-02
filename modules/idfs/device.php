@@ -267,6 +267,7 @@ $stmtPorts = mysqli_prepare(
            ELSE ''
          END AS vlan_label,
        {$speedLabelExpr} AS speed_label,
+       {$speedValueIdExpr} AS speed_value_id,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
@@ -354,9 +355,7 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN equipment_fiber ef
        ON ef.id = pr.speed_id
       AND ef.company_id = pr.company_id
-     LEFT JOIN rj45_speed rjs
-       ON rjs.id = pr.speed_id
-      AND rjs.company_id = pr.company_id
+     {$rj45SpeedJoinSql}
      LEFT JOIN equipment_poe ep
        ON ep.id = pr.poe_id
       AND ep.company_id = pr.company_id
