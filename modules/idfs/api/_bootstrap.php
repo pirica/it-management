@@ -787,13 +787,13 @@ function idf_resolve_port_type_id(mysqli $conn, int $company_id, $rawPortType, s
         $resAllPortTypes = mysqli_stmt_get_result($stmtAllPortTypes);
         $normalizedNeedleList = [];
         foreach ($rawCandidates as $portTypeCandidate) {
-            $normalizedNeedle = strtolower(preg_replace('/[^a-z0-9]+/', '', (string)$portTypeCandidate));
+            $normalizedNeedle = preg_replace('/[^a-z0-9]+/i', '', strtolower((string)$portTypeCandidate));
             if ($normalizedNeedle !== '') {
                 $normalizedNeedleList[] = $normalizedNeedle;
             }
         }
         while ($resAllPortTypes && ($rowPortType = mysqli_fetch_assoc($resAllPortTypes))) {
-            $candidateType = strtolower(preg_replace('/[^a-z0-9]+/', '', (string)($rowPortType['type'] ?? '')));
+            $candidateType = preg_replace('/[^a-z0-9]+/i', '', strtolower((string)($rowPortType['type'] ?? '')));
             if ($candidateType === '') {
                 continue;
             }
