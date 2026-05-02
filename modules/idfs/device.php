@@ -851,6 +851,17 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             background: rgba(9, 105, 218, .14);
             box-shadow: inset 0 0 0 1px rgba(9, 105, 218, .35);
         }
+        /* Why: match rack view compact visualizer proportions (grid + SFP dots) instead of full-width stretch. */
+        .idf-device-port-visual {
+            overflow-x: auto;
+        }
+        .idf-device-port-visual .itm-port-visualizer-container {
+            display: inline-flex;
+            width: fit-content;
+            max-width: 100%;
+            justify-content: flex-start;
+            margin: 8px 0 0;
+        }
         .idf-swatch {
             display:inline-block;
             width:10px;
@@ -925,6 +936,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 
             <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
                 <h3 style="margin-top:0;">👁️ Port Visualization</h3>
+                <div class="idf-device-port-visual">
                 <?php
                 echo itm_render_port_visualizer($ports, [
                     'clickable' => true,
@@ -941,6 +953,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     'sfp_plus_ports' => $sfpPlusPortNumbers
                 ]);
                 ?>
+                </div>
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px;">
