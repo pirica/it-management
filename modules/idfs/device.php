@@ -54,7 +54,7 @@ if ($position_id > 0 && $company_id > 0) {
 
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT p.*, i.name AS idf_name, ' . $idfCodeSelect . ', ' . $rackNameSelect . ', l.name AS location_name, i.id AS idf_id, ' . $companyNameSelect . ', spnl.name AS layout_name,
+        'SELECT p.*, i.name AS idf_name, ' . $idfCodeSelect . ', ' . $rackNameSelect . ', l.name AS location_name, i.id AS idf_id, ' . $companyNameSelect . ', COALESCE(spnl_equipment.name, spnl.name, "Vertical") AS layout_name,
                 COALESCE(er.name, "") AS switch_rj45_name,
                 COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
                 COALESCE(e.switch_fiber_port_label, "") AS equipment_fiber_port_label,
@@ -72,6 +72,7 @@ if ($position_id > 0 && $company_id > 0) {
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = p.company_id
          LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
+         LEFT JOIN switch_port_numbering_layout spnl_equipment ON spnl_equipment.id = e.switch_port_numbering_layout_id
          WHERE p.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -934,6 +935,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     'idf_name' => (string)($pos['idf_name'] ?? ''),
                     'idf_code' => (string)($pos['idf_code'] ?? ''),
                     'rack_name' => (string)($pos['rack_name'] ?? ''),
+                    'grid_port_type' => 'rj45',
                     'rj45_ports' => $rj45PortNumbers,
                     'sfp_ports' => $sfpPortNumbers,
                     'sfp_plus_ports' => $sfpPlusPortNumbers
@@ -1575,6 +1577,17 @@ function savePort() {
 
 function onPortClick(portId) {
     openPortModal(portId);
+}
+
+function onPortDotClick(portElement) {
+    const portNode = portElement && portElement.dataset ? portElement : null;
+    if (!portNode) {
+        return;
+    }
+    const portId = Number(portNode.dataset.portId || 0);
+    if (portId > 0) {
+        onPortClick(portId);
+    }
 }
 
 function regeneratePorts() {
