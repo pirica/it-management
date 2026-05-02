@@ -328,7 +328,14 @@ if ($stmtPos) {
                     l.notes AS link_notes,
                     pr_remote.port_no AS remote_port_no,
                     pr_remote.status_id AS remote_status_id,
-                    COALESCE(NULLIF(ss_remote.status, ''), NULLIF(ss_link.status, ''), NULLIF(ss_link_meta.status, ''), '') AS remote_status_label,
+                    COALESCE(
+                        NULLIF(ss_remote.status, ''),
+                        NULLIF(ss_link.status, ''),
+                        NULLIF(ss_link_meta.status, ''),
+                        NULLIF(ss_live.status, ''),
+                        NULLIF(ss.status, ''),
+                        'Unknown'
+                    ) AS remote_status_label,
                     p_remote.position_no AS remote_position_no,
                     p_remote.device_name AS remote_device_name,
                     p_remote.equipment_id AS remote_equipment_id,
