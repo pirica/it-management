@@ -179,6 +179,8 @@ if (!$conn && DB_HOST === 'localhost') {
 }
 
 if (!$conn) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
     die(json_encode(['error' => 'Database connection failed: ' . mysqli_connect_error()]));
 }
 
