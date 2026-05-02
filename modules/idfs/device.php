@@ -201,10 +201,12 @@ END";
 $labelSortExpr = "COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
 $notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
 $normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'plus'))";
-$speedLabelExpr = "CASE
+$speedLabelExpr = $hasRj45SpeedTable
+    ? "CASE
     WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(ef.name, '')
-    ELSE COALESCE(rjs.cable_type, ef.name, '')
-END";
+    ELSE COALESCE(rs.cable_type, ef.name, '')
+END"
+    : "COALESCE(ef.name, '')";
 
 $portSortMap = [
     'port_no' => 'pr.port_no',
