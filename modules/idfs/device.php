@@ -274,8 +274,8 @@ $stmtPorts = mysqli_prepare(
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
-       COALESCE(NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
-       cc_l.hex_color AS cable_hex_color,
+       COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
+       COALESCE(cc_live.hex_color, pr.hex_color, cc_l.hex_color) AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
        CASE
@@ -410,7 +410,9 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN idf_device_type dt_remote
        ON dt_remote.id = p_remote.device_type
       AND dt_remote.company_id = p_remote.company_id
-     LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id
+     LEFT JOIN cable_colors cc_l
+       ON cc_l.id = l.cable_color_id
+      AND cc_l.company_id = l.company_id
      LEFT JOIN equipment le ON le.id = l.equipment_id
      LEFT JOIN equipment_types let ON let.id = le.equipment_type_id
       WHERE p_local.id=?
