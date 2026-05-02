@@ -21,8 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$itm_mirror_proxy = 'mirror.php';
-$mirrorUrl = $itm_mirror_proxy;
+$itm_mirror_relative = 'mirror/index-local.html';
+$itm_mirror_fallback_relative = 'mirror/index.html';
+$itm_mirror_file = __DIR__ . '/mirror/index-local.html';
+$mirrorUrl = is_file($itm_mirror_file) ? $itm_mirror_relative : $itm_mirror_fallback_relative;
 ?>
 <!DOCTYPE html>
 <html lang="en">
