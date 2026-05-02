@@ -140,6 +140,7 @@
  * Added modules/rj45_speed CRUD module and database.sql seed-backed import support for RJ45 cable speed reference data.
 
  * Rack Planner index now returns a JSON response for table-tools db_import requests so save-to-database imports fail gracefully instead of falling through to HTML rendering.
+ * Added rack_planner table schema and tenant-seeded sample records in database.sql to persist mirrored rack plan layouts per company.
  */
 
 declare(strict_types=1);
