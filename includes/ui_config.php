@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * UI Configuration and Sidebar Management Functions
  * 
