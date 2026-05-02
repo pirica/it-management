@@ -24,7 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $itm_mirror_relative = 'mirror/index-local.html';
 $itm_mirror_fallback_relative = 'mirror/index.html';
 $itm_mirror_file = __DIR__ . '/mirror/index-local.html';
-$mirrorUrl = is_file($itm_mirror_file) ? $itm_mirror_relative : $itm_mirror_fallback_relative;
+$itm_module_base_url = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? ''))), '/');
+if ($itm_module_base_url === '' || $itm_module_base_url === '.') {
+    $itm_module_base_url = '.';
+}
+$itm_selected_mirror = is_file($itm_mirror_file) ? $itm_mirror_relative : $itm_mirror_fallback_relative;
+$mirrorUrl = ($itm_module_base_url === '.' ? '' : $itm_module_base_url . '/') . $itm_selected_mirror;
 ?>
 <!DOCTYPE html>
 <html lang="en">
