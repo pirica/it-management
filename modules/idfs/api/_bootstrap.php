@@ -616,6 +616,51 @@ function idf_ensure_status_schema(mysqli $conn): void {
         'idf_ports_ibfk_poe',
         'poe_id'
     );
+
+    // Why: RJ45 and fiber speeds are now sourced from different lookup tables.
+    // Keep a dedicated rj45_speed_id to avoid mixing RJ45 cable categories with equipment_fiber IDs.
+    $hasRj45SpeedTable = false;
+    $rj45SpeedTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'rj45_speed'");
+    if ($rj45SpeedTableRes && mysqli_num_rows($rj45SpeedTableRes) > 0) {
+        $hasRj45SpeedTable = true;
+    }
+    if ($hasRj45SpeedTable) {
+        if (!idf_table_has_column($conn, 'idf_ports', 'rj45_speed_id')) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `rj45_speed_id` int DEFAULT NULL AFTER `speed_id`");
+        }
+
+        $rj45SpeedIndexExists = false;
+        $resRj45SpeedIndex = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_rj45_speed_idx'");
+        if ($resRj45SpeedIndex && mysqli_fetch_assoc($resRj45SpeedIndex)) {
+            $rj45SpeedIndexExists = true;
+        }
+        if (!$rj45SpeedIndexExists) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_rj45_speed_idx` (`rj45_speed_id`) ");
+        }
+
+        $rj45SpeedFkExists = false;
+        $resRj45SpeedFk = mysqli_query(
+            $conn,
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_ports'
+               AND CONSTRAINT_NAME = 'idf_ports_ibfk_rj45_speed'
+             LIMIT 1"
+        );
+        if ($resRj45SpeedFk && mysqli_fetch_assoc($resRj45SpeedFk)) {
+            $rj45SpeedFkExists = true;
+        }
+        if (!$rj45SpeedFkExists) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `idf_ports`
+                 ADD CONSTRAINT `idf_ports_ibfk_rj45_speed`
+                 FOREIGN KEY (`rj45_speed_id`) REFERENCES `rj45_speed` (`id`)
+                 ON DELETE SET NULL"
+            );
+        }
+    }
 }
 
 function idf_resolve_status_id(mysqli $conn, int $company_id, $rawStatus, string $fallback = 'Unknown'): int {
