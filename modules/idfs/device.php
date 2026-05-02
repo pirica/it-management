@@ -274,8 +274,8 @@ $stmtPorts = mysqli_prepare(
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
-       COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
-       COALESCE(cc_live.hex_color, pr.hex_color, cc_l.hex_color) AS cable_hex_color,
+       COALESCE(NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, NULLIF(cc_live.color_name, ''), cc_live.hex_color, '') AS cable_color_name,
+       COALESCE(NULLIF(pr.hex_color, ''), NULLIF(cc_l.hex_color, ''), NULLIF(cc_live.hex_color, '')) AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
        CASE
