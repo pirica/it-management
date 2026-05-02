@@ -176,7 +176,7 @@ $portSortMap = [
     'port_no' => 'pr.port_no',
     'port_type' => "COALESCE(spt.type, 'RJ45')",
     'label' => $labelSortExpr,
-    'status' => "COALESCE(ss_live.status, ss.status, 'Unknown')",
+    'status' => "COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown')",
     'connected_to' => 'pr.connected_to',
     'vlan' => $vlanSortExpr,
     'speed' => 'COALESCE(ef.name, "")',
@@ -194,8 +194,9 @@ $stmtPorts = mysqli_prepare(
     "SELECT
        pr.*,
        COALESCE(spt.type, 'RJ45') AS port_type_label,
-       COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
-       COALESCE(cc_live.hex_color, cc_ss.hex_color, '#adb5bd') AS status_color,
+       COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
+       COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown') AS status_label,
+       COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, '#adb5bd') AS status_color,
        COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
        COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''), '') AS notes,
        p_local.position_no AS local_position_no,
@@ -296,8 +297,8 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN switch_status ss
         ON ss.id = pr.status_id
        AND ss.company_id = pr.company_id
-     LEFT JOIN switch_status ss_live
-       ON ss_live.id = pr_live.status_id
+      LEFT JOIN switch_status ss_live
+        ON ss_live.id = pr_live.status_id
       AND ss_live.company_id = pr_live.company_id
      LEFT JOIN cable_colors cc_ss
        ON cc_ss.id = ss.color_id
@@ -330,6 +331,12 @@ $stmtPorts = mysqli_prepare(
            = CONVERT(CAST(l.equipment_port AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
        AND CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp_link.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(l.equipment_port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+      LEFT JOIN switch_status ss_link
+        ON ss_link.id = sp_link.status_id
+       AND ss_link.company_id = sp_link.company_id
+      LEFT JOIN cable_colors cc_ss_link
+        ON cc_ss_link.id = ss_link.color_id
+       AND cc_ss_link.company_id = ss_link.company_id
       LEFT JOIN vlans v_link_sp
         ON v_link_sp.id = sp_link.vlan_id
        AND v_link_sp.company_id = sp_link.company_id
@@ -366,6 +373,9 @@ if ($stmtPorts) {
     mysqli_stmt_execute($stmtPorts);
     $resPorts = mysqli_stmt_get_result($stmtPorts);
     while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
+        if (isset($row['effective_status_id'])) {
+            $row['status_id'] = (int)$row['effective_status_id'];
+        }
         if (isset($row['effective_vlan_id'])) {
             $row['vlan_id'] = (int)$row['effective_vlan_id'];
         }

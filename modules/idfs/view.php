@@ -281,12 +281,13 @@ if ($stmtPos) {
             $conn,
             "SELECT pr.*,
                     COALESCE(spt.type, 'RJ45') AS port_type_label,
-                    COALESCE(pr_live.status_id, pr.status_id) AS effective_status_id,
-                    COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
-                    COALESCE(cc_live.hex_color, cc_ss.hex_color) AS status_color,
+                    COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
+                    COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown') AS status_label,
+                    COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color) AS status_color,
                     COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
                     COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
-                    COALESCE(pr_live.vlan_id, pr.vlan_id, l.equipment_vlan_id) AS vlan_id,
+                    COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
+                    COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS vlan_id,
                     CASE
                         WHEN v_live.id IS NOT NULL THEN
                             CASE
@@ -299,6 +300,12 @@ if ($stmtPos) {
                                 WHEN TRIM(COALESCE(v_pr.vlan_name, '')) = '' THEN COALESCE(v_pr.vlan_number, '')
                                 WHEN TRIM(COALESCE(v_pr.vlan_number, '')) = '' THEN v_pr.vlan_name
                                 ELSE CONCAT(v_pr.vlan_number, ' - ', v_pr.vlan_name)
+                            END
+                        WHEN v_link_sp.id IS NOT NULL THEN
+                            CASE
+                                WHEN TRIM(COALESCE(v_link_sp.vlan_name, '')) = '' THEN COALESCE(v_link_sp.vlan_number, '')
+                                WHEN TRIM(COALESCE(v_link_sp.vlan_number, '')) = '' THEN v_link_sp.vlan_name
+                                ELSE CONCAT(v_link_sp.vlan_number, ' - ', v_link_sp.vlan_name)
                             END
                         WHEN v_link.id IS NOT NULL THEN
                             CASE
@@ -339,7 +346,18 @@ if ($stmtPos) {
              LEFT JOIN switch_ports pr_live ON pr_live.company_id = pr.company_id
                  AND pr_live.equipment_id = p_local.equipment_id
                  AND pr_live.port_number = pr.port_no
-                 AND pr_live.port_type = spt.type
+                 AND (
+                      CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                          = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                      OR CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                          = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                      OR (
+                          pr_live.port_type REGEXP '^[0-9]+$'
+                          AND CAST(pr_live.port_type AS UNSIGNED) = spt.id
+                      )
+                      OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(pr_live.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                         = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                 )
              LEFT JOIN switch_status ss_live ON ss_live.id = pr_live.status_id AND ss_live.company_id = pr_live.company_id
              LEFT JOIN cable_colors cc_live ON cc_live.id = pr_live.color_id AND cc_live.company_id = pr_live.company_id
              LEFT JOIN vlans v_live ON v_live.id = pr_live.vlan_id AND v_live.company_id = pr_live.company_id
@@ -353,6 +371,17 @@ if ($stmtPos) {
                  ORDER BY l2.id ASC
                  LIMIT 1
              )
+             LEFT JOIN switch_ports sp_link
+               ON sp_link.company_id = pr.company_id
+              AND CONVERT(CAST(sp_link.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  = CONVERT(CAST(l.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND CONVERT(CAST(sp_link.port_number AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  = CONVERT(CAST(l.equipment_port AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp_link.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(l.equipment_port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+             LEFT JOIN switch_status ss_link ON ss_link.id = sp_link.status_id AND ss_link.company_id = sp_link.company_id
+             LEFT JOIN cable_colors cc_ss_link ON cc_ss_link.id = ss_link.color_id AND cc_ss_link.company_id = ss_link.company_id
+             LEFT JOIN vlans v_link_sp ON v_link_sp.id = sp_link.vlan_id AND v_link_sp.company_id = sp_link.company_id
              LEFT JOIN vlans v_link ON v_link.id = l.equipment_vlan_id AND v_link.company_id = l.company_id
              LEFT JOIN idf_ports pr_remote
                ON pr_remote.id = CASE
@@ -377,11 +406,17 @@ if ($stmtPos) {
             $idfPortsCount = 0;
             while ($portRes && ($pRow = mysqli_fetch_assoc($portRes))) {
                 $idfPortsCount++;
+                if (isset($pRow['effective_status_id'])) {
+                    $pRow['status_id'] = (int)$pRow['effective_status_id'];
+                }
                 // Why: Newly added devices should render ports with a neutral gray color when status/link colors are missing.
                 $statusColor = trim((string)($pRow['status_color'] ?? ''));
                 $cableColor = trim((string)($pRow['cable_hex_color'] ?? ''));
                 if ($statusColor === '') {
                     $pRow['status_color'] = $cableColor !== '' ? $cableColor : '#808080';
+                }
+                if (isset($pRow['vlan_id']) && (int)$pRow['vlan_id'] <= 0 && !empty($pRow['effective_vlan_id'])) {
+                    $pRow['vlan_id'] = (int)$pRow['effective_vlan_id'];
                 }
                 $row['ports'][] = $pRow;
             }
