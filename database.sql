@@ -1226,6 +1226,57 @@ INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('3', '12', '8 
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('4', '16', '8 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('5', '20', '8 ports');
 
+-- Table structure for `rj45_speed`
+DROP TABLE IF EXISTS `rj45_speed`;
+CREATE TABLE `rj45_speed` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `cable_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `max_speed` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `bandwidth` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `max_distance_full_speed` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_rj45_speed_company_type` (`company_id`,`cable_type`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `rj45_speed_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `rj45_speed`
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('1', '1', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('2', '1', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('3', '1', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('4', '1', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('5', '1', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('6', '1', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('7', '2', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('8', '2', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('9', '2', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('10', '2', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('11', '2', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('12', '2', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('13', '3', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('14', '3', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('15', '3', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('16', '3', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('17', '3', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('18', '3', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('19', '4', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('20', '4', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('21', '4', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('22', '4', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('23', '4', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('24', '4', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('25', '5', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('26', '5', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('27', '5', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('28', '5', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('29', '5', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1');
+INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('30', '5', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1');
+
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
 CREATE TABLE `equipment_statuses` (
@@ -2197,6 +2248,7 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'workstation_os_types' AS entry_id, 'reference_data' AS section_id, 59 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_os_versions' AS entry_id, 'reference_data' AS section_id, 60 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_ram' AS entry_id, 'reference_data' AS section_id, 61 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'rj45_speed' AS entry_id, 'reference_data' AS section_id, 62 AS display_order
 ) AS t
 ORDER BY c.company_id, FIELD(t.entry_type, 'section', 'item'), t.display_order, t.entry_id;
 
@@ -3741,6 +3793,7 @@ INSERT IGNORE INTO `equipment_fiber_rack` (`company_id`, `name`) SELECT c.`id`, 
 INSERT IGNORE INTO `equipment_fiber_count` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_count` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_poe` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_poe` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_rj45` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_rj45` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `rj45_speed` (`company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) SELECT c.`id`, t.`cable_type`, t.`max_speed`, t.`bandwidth`, t.`max_distance_full_speed`, t.`notes`, t.`active` FROM `rj45_speed` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_types` (`company_id`, `name`, `code`, `field_edit_emoji`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`field_edit_emoji`, t.`active` FROM `equipment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `inventory_categories` (`company_id`, `name`, `code`, `active`) SELECT c.`id`, t.`name`, t.`code`, t.`active` FROM `inventory_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -4357,6 +4410,24 @@ END$$
 CREATE TRIGGER `trg_equipment_rj45_audit_delete` AFTER DELETE ON `equipment_rj45` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_rj45', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_update`;
+DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_rj45_speed_audit_insert` AFTER INSERT ON `rj45_speed` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rj45_speed', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'cable_type', NEW.`cable_type`, 'max_speed', NEW.`max_speed`, 'bandwidth', NEW.`bandwidth`, 'max_distance_full_speed', NEW.`max_distance_full_speed`, 'notes', NEW.`notes`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_rj45_speed_audit_update` AFTER UPDATE ON `rj45_speed` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rj45_speed', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cable_type', OLD.`cable_type`, 'max_speed', OLD.`max_speed`, 'bandwidth', OLD.`bandwidth`, 'max_distance_full_speed', OLD.`max_distance_full_speed`, 'notes', OLD.`notes`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'cable_type', NEW.`cable_type`, 'max_speed', NEW.`max_speed`, 'bandwidth', NEW.`bandwidth`, 'max_distance_full_speed', NEW.`max_distance_full_speed`, 'notes', NEW.`notes`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_rj45_speed_audit_delete` AFTER DELETE ON `rj45_speed` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rj45_speed', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cable_type', OLD.`cable_type`, 'max_speed', OLD.`max_speed`, 'bandwidth', OLD.`bandwidth`, 'max_distance_full_speed', OLD.`max_distance_full_speed`, 'notes', OLD.`notes`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 

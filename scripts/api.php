@@ -137,6 +137,7 @@
  * IDF device/rack live-sync now resolves switch status from synced switch_ports rows and matches port_type across numeric/text schemas when mirroring idf_ports edits, preventing stale tooltip status and wrong switch_ports updates.
 
  * Switch Ports CRUD table/list/detail views now display every column except id and company_id to keep internal tenant keys hidden while exposing full port metadata.
+ * Added modules/rj45_speed CRUD module and database.sql seed-backed import support for RJ45 cable speed reference data.
  */
 
 declare(strict_types=1);
