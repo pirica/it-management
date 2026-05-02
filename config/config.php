@@ -170,9 +170,17 @@ require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 
 // Establish Database Connection
+mysqli_report(MYSQLI_REPORT_OFF);
 $conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
+if (!$conn && DB_HOST === 'localhost') {
+    // Why: Some local stacks disable the MySQL socket path used by localhost but still accept TCP on 127.0.0.1.
+    $conn = @mysqli_connect('127.0.0.1', DB_USER, DB_PASS, DB_NAME);
+}
+
 if (!$conn) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
     die(json_encode(['error' => 'Database connection failed: ' . mysqli_connect_error()]));
 }
 

@@ -5305,4 +5305,31 @@ END$$
 DELIMITER ;
 
 
+-- Table structure for `rack_planner`
+DROP TABLE IF EXISTS `rack_planner`;
+CREATE TABLE `rack_planner` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rack_units` int NOT NULL DEFAULT '42',
+  `layout_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `rack_planner_name_company` (`company_id`,`name`),
+  KEY `rack_planner_company_id` (`company_id`),
+  CONSTRAINT `rack_planner_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `rack_planner`
+INSERT INTO `rack_planner` (`company_id`, `id`, `name`, `rack_units`, `layout_json`, `notes`, `active`) VALUES
+(1, 1, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 1.', 1),
+(2, 2, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 2.', 1),
+(3, 3, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 3.', 1),
+(4, 4, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 4.', 1),
+(5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 1);
+
+
 SET FOREIGN_KEY_CHECKS=1;
