@@ -64,14 +64,22 @@ $speedLookupColumn = $isFiberPortType ? 'name' : 'cable_type';
 $rawSpeedInput = $data['speed_id'] ?? ($data['speed'] ?? '');
 $speedInputString = trim((string)$rawSpeedInput);
 $speed_id = null;
+$rj45_speed_id = null;
 if ($speedInputString !== '' && $speedInputString !== '0') {
-    $speed_id = idf_resolve_named_lookup_id(
+    $resolvedSpeedId = idf_resolve_named_lookup_id(
         $conn,
         $company_id,
         $speedLookupTable,
         $speedLookupColumn,
         $rawSpeedInput
     );
+    if ($resolvedSpeedId !== null && $resolvedSpeedId > 0) {
+        $speed_id = (int)$resolvedSpeedId;
+        if (!$isFiberPortType) {
+            // Why: Keep compatibility with both legacy speed_id and newer rj45_speed_id schemas.
+            $rj45_speed_id = (int)$resolvedSpeedId;
+        }
+    }
 }
 $rawPoeInput = $data['poe_id'] ?? ($data['poe'] ?? '');
 $poeInputString = trim((string)$rawPoeInput);
@@ -114,8 +122,8 @@ if ($cable_color_id > 0) {
 $label_val = $label !== '' ? $label : null;
 $conn_val = $connected_to !== '' ? $connected_to : null;
 $vlan_val = $vlan_id !== null ? (int)$vlan_id : 0;
-$speed_val = $speed_id !== null ? (int)$speed_id : 0;
-$rj45SpeedVal = $rj45_speed_id !== null ? (int)$rj45_speed_id : 0;
+$speed_val = ($isFiberPortType && $speed_id !== null) ? (int)$speed_id : 0;
+$rj45SpeedVal = (!$isFiberPortType && $rj45_speed_id !== null) ? (int)$rj45_speed_id : 0;
 $poe_val = $poe_id !== null ? (int)$poe_id : 0;
 $notes_val = $notes !== '' ? $notes : null;
 

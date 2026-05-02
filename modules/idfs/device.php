@@ -54,7 +54,7 @@ if ($position_id > 0 && $company_id > 0) {
 
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT p.*, i.name AS idf_name, ' . $idfCodeSelect . ', ' . $rackNameSelect . ', l.name AS location_name, i.id AS idf_id, ' . $companyNameSelect . ', spnl.name AS layout_name,
+        'SELECT p.*, i.name AS idf_name, ' . $idfCodeSelect . ', ' . $rackNameSelect . ', l.name AS location_name, i.id AS idf_id, ' . $companyNameSelect . ', COALESCE(spnl_equipment.name, spnl.name, "Vertical") AS layout_name,
                 COALESCE(er.name, "") AS switch_rj45_name,
                 COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
                 COALESCE(e.switch_fiber_port_label, "") AS equipment_fiber_port_label,
@@ -72,6 +72,7 @@ if ($position_id > 0 && $company_id > 0) {
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = p.company_id
          LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
          LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = p.switch_port_numbering_layout_id
+         LEFT JOIN switch_port_numbering_layout spnl_equipment ON spnl_equipment.id = e.switch_port_numbering_layout_id
          WHERE p.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -201,10 +202,12 @@ END";
 $labelSortExpr = "COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
 $notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
 $normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'plus'))";
-$speedLabelExpr = "CASE
+$speedLabelExpr = $hasRj45SpeedTable
+    ? "CASE
     WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(ef.name, '')
-    ELSE COALESCE(rjs.cable_type, ef.name, '')
-END";
+    ELSE COALESCE(rs.cable_type, ef.name, '')
+END"
+    : "COALESCE(ef.name, '')";
 
 $portSortMap = [
     'port_no' => 'pr.port_no',
@@ -267,6 +270,7 @@ $stmtPorts = mysqli_prepare(
            ELSE ''
          END AS vlan_label,
        {$speedLabelExpr} AS speed_label,
+       {$speedValueIdExpr} AS speed_value_id,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
@@ -354,9 +358,7 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN equipment_fiber ef
        ON ef.id = pr.speed_id
       AND ef.company_id = pr.company_id
-     LEFT JOIN rj45_speed rjs
-       ON rjs.id = pr.speed_id
-      AND rjs.company_id = pr.company_id
+     {$rj45SpeedJoinSql}
      LEFT JOIN equipment_poe ep
        ON ep.id = pr.poe_id
       AND ep.company_id = pr.company_id
@@ -933,6 +935,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     'idf_name' => (string)($pos['idf_name'] ?? ''),
                     'idf_code' => (string)($pos['idf_code'] ?? ''),
                     'rack_name' => (string)($pos['rack_name'] ?? ''),
+                    'grid_port_type' => 'rj45',
                     'rj45_ports' => $rj45PortNumbers,
                     'sfp_ports' => $sfpPortNumbers,
                     'sfp_plus_ports' => $sfpPlusPortNumbers
@@ -1170,7 +1173,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div>
+            <div id="portPoeField">
                 <label class="label">PoE</label>
                 <select class="input" name="poe">
                     <option value="">-- None --</option>
@@ -1457,6 +1460,7 @@ function openPortModal(portId) {
     const normalizedSpeedId = (/^\d+$/.test(rawSpeedId) && Number(rawSpeedId) > 0) ? rawSpeedId : '';
     rebuildSpeedOptionsForPortType(rowData.portType || selectedPortTypeLabel, normalizedSpeedId);
     form.poe.value = rowData.poeId || '';
+    togglePoeFieldForPortType(rowData.portType || selectedPortTypeLabel);
     form.notes.value = rowData.notes || '';
     const requestedCableColorId = portMeta ? (portMeta.cable_color_id || 0) : 0;
     const requestedCableColorName = portMeta ? ((portMeta.cable_color_name || portMeta.cable_color || '').trim()) : '';
@@ -1529,6 +1533,19 @@ function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
     speedSelect.value = desiredValue;
 }
 
+function togglePoeFieldForPortType(portTypeLabel) {
+    const form = document.getElementById('portForm');
+    const poeWrap = document.getElementById('portPoeField');
+    if (!form || !form.poe || !poeWrap) return;
+    const normalizedType = normalizePortTypeLabel(portTypeLabel);
+    const showPoeField = normalizedType === 'rj45';
+    poeWrap.style.display = showPoeField ? '' : 'none';
+    form.poe.disabled = !showPoeField;
+    if (!showPoeField) {
+        form.poe.value = '';
+    }
+}
+
 function closePortModal() {
     document.getElementById('portBackdrop').style.display = 'none';
 }
@@ -1540,6 +1557,10 @@ function savePort() {
         alert('Please enter a status value.');
         return;
     }
+    const selectedPortTypeLabel = (f.port_type.selectedOptions && f.port_type.selectedOptions[0])
+        ? f.port_type.selectedOptions[0].textContent
+        : '';
+    const normalizedPortType = normalizePortTypeLabel(selectedPortTypeLabel);
     const payload = {
         csrf_token: CSRF,
         port_id: Number(f.port_id.value),
@@ -1549,7 +1570,7 @@ function savePort() {
         connected_to: f.connected_to.value.trim(),
         vlan_id: f.vlan.value ? Number(f.vlan.value) : null,
         speed_id: f.speed.value ? Number(f.speed.value) : null,
-        poe_id: f.poe.value ? Number(f.poe.value) : null,
+        poe_id: normalizedPortType === 'rj45' && f.poe.value ? Number(f.poe.value) : null,
         notes: f.notes.value.trim(),
         cable_color_id: (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
             ? Number(f.cable_color_id.value)
@@ -1562,6 +1583,17 @@ function savePort() {
 
 function onPortClick(portId) {
     openPortModal(portId);
+}
+
+function onPortDotClick(portElement) {
+    const portNode = portElement && portElement.dataset ? portElement : null;
+    if (!portNode) {
+        return;
+    }
+    const portId = Number(portNode.dataset.portId || 0);
+    if (portId > 0) {
+        onPortClick(portId);
+    }
 }
 
 function regeneratePorts() {
@@ -2019,6 +2051,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? portForm.port_type.options[portForm.port_type.selectedIndex].textContent
                 : '';
             rebuildSpeedOptionsForPortType(selectedTypeLabel, '');
+            togglePoeFieldForPortType(selectedTypeLabel);
         });
     }
 

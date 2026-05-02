@@ -617,8 +617,89 @@ function idf_ensure_status_schema(mysqli $conn): void {
         'poe_id'
     );
 
+    $hasRj45SpeedTable = false;
+    $rj45SpeedTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'rj45_speed'");
+    if ($rj45SpeedTableRes && mysqli_num_rows($rj45SpeedTableRes) > 0) {
+        $hasRj45SpeedTable = true;
+    }
+    if ($hasRj45SpeedTable) {
+        if (!idf_table_has_column($conn, 'idf_ports', 'rj45_speed_id')) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `rj45_speed_id` int DEFAULT NULL AFTER `speed_id`");
+        }
+
+        // Why: Recover legacy rows where RJ45 speed values were temporarily persisted in speed_id.
+        mysqli_query(
+            $conn,
+            "UPDATE idf_ports p
+             LEFT JOIN switch_port_types spt
+               ON spt.id = p.port_type
+              AND spt.company_id = p.company_id
+             LEFT JOIN equipment_fiber ef
+               ON ef.id = p.speed_id
+              AND ef.company_id = p.company_id
+             LEFT JOIN rj45_speed rs
+               ON rs.id = p.speed_id
+              AND rs.company_id = p.company_id
+             SET p.rj45_speed_id = COALESCE(p.rj45_speed_id, rs.id),
+                 p.speed_id = CASE
+                    WHEN UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) = 'RJ45'
+                     AND rs.id IS NOT NULL
+                     AND ef.id IS NULL
+                    THEN NULL
+                    ELSE p.speed_id
+                 END
+             WHERE p.speed_id IS NOT NULL"
+        );
+
+        // Why: Keep columns mutually exclusive by port type to prevent mixed FK writes.
+        mysqli_query(
+            $conn,
+            "UPDATE idf_ports p
+             LEFT JOIN switch_port_types spt
+               ON spt.id = p.port_type
+              AND spt.company_id = p.company_id
+             SET p.rj45_speed_id = CASE
+                    WHEN UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) = 'RJ45'
+                    THEN p.rj45_speed_id
+                    ELSE NULL
+                 END"
+        );
+
+        $hasRj45SpeedIndex = false;
+        $rj45SpeedIndexRes = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_rj45_speed_idx'");
+        if ($rj45SpeedIndexRes && mysqli_fetch_assoc($rj45SpeedIndexRes)) {
+            $hasRj45SpeedIndex = true;
+        }
+        if (!$hasRj45SpeedIndex) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_rj45_speed_idx` (`rj45_speed_id`) ");
+        }
+
+        $hasRj45SpeedFk = false;
+        $rj45SpeedFkRes = mysqli_query(
+            $conn,
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_ports'
+               AND CONSTRAINT_NAME = 'idf_ports_ibfk_rj45_speed'
+             LIMIT 1"
+        );
+        if ($rj45SpeedFkRes && mysqli_fetch_assoc($rj45SpeedFkRes)) {
+            $hasRj45SpeedFk = true;
+        }
+        if (!$hasRj45SpeedFk) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `idf_ports`
+                 ADD CONSTRAINT `idf_ports_ibfk_rj45_speed`
+                 FOREIGN KEY (`rj45_speed_id`) REFERENCES `rj45_speed` (`id`)
+                 ON DELETE SET NULL"
+            );
+        }
+    }
+
     // Why: "None" selections in the UI should persist as SQL NULL (never 0 sentinel values).
-    foreach (['vlan_id', 'speed_id', 'poe_id'] as $nullableFkColumn) {
+    foreach (['vlan_id', 'speed_id', 'poe_id', 'rj45_speed_id'] as $nullableFkColumn) {
         if (!idf_table_has_column($conn, 'idf_ports', $nullableFkColumn)) {
             continue;
         }
