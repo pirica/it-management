@@ -142,6 +142,8 @@
  * Rack Planner module now supports table-tools JSON db_import payloads through itm_handle_json_table_import for rack_planner records.
  * Rack Planner mirror iframe/open-link now prefer module-relative mirror/index-local.html with automatic fallback to mirror/index.html when local mirror file is missing.
  * Rack Planner mirror links now build from the current module script base path so iframe/open-link requests consistently resolve to /modules/rack_planner/mirror/* instead of 404ing on nested routes.
+ * Rack Planner module now features a custom CSS-based rack visualizer that dynamically renders based on configured rack units, matching the system's hardware-accurate visualization style.
+ * Rack Planner now supports full CRUD operations (create, edit, view, delete, list) with multi-tenancy scoping, search, pagination, and bulk actions.
  * Added rack_planner table schema and tenant-seeded sample records in database.sql to persist mirrored rack plan layouts per company.
  * Config DB bootstrap now retries localhost connection via 127.0.0.1 TCP fallback when socket-based localhost fails in local environments.
  * Config DB bootstrap now responds with HTTP 500 JSON on connection failure to avoid silent 200 responses for broken environments.
