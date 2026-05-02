@@ -73,10 +73,11 @@ if ($speedInputString !== '' && $speedInputString !== '0') {
         $speedLookupColumn,
         $rawSpeedInput
     );
-    if ($resolvedSpeedId !== null && $resolvedSpeedId > 0) {
-        $speed_id = (int)$resolvedSpeedId;
-        if (!$isFiberPortType) {
-            // Why: Keep compatibility with both legacy speed_id and newer rj45_speed_id schemas.
+    if ($resolvedSpeedId !== null && (int)$resolvedSpeedId > 0) {
+        if ($isFiberPortType) {
+            $speed_id = (int)$resolvedSpeedId;
+        } else {
+            // Why: RJ45 and fiber speeds use different FK domains in idf_ports.
             $rj45_speed_id = (int)$resolvedSpeedId;
         }
     }
