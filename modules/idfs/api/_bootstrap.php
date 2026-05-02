@@ -616,6 +616,28 @@ function idf_ensure_status_schema(mysqli $conn): void {
         'idf_ports_ibfk_poe',
         'poe_id'
     );
+
+    // Why: "None" selections in the UI should persist as SQL NULL (never 0 sentinel values).
+    foreach (['vlan_id', 'speed_id', 'poe_id'] as $nullableFkColumn) {
+        if (!idf_table_has_column($conn, 'idf_ports', $nullableFkColumn)) {
+            continue;
+        }
+        $nullableFkColumnEscaped = mysqli_real_escape_string($conn, $nullableFkColumn);
+        $nullableRes = mysqli_query(
+            $conn,
+            "SELECT IS_NULLABLE
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_ports'
+               AND COLUMN_NAME = '{$nullableFkColumnEscaped}'
+             LIMIT 1"
+        );
+        $nullableRow = $nullableRes ? mysqli_fetch_assoc($nullableRes) : null;
+        $isNullable = strtoupper((string)($nullableRow['IS_NULLABLE'] ?? 'YES')) === 'YES';
+        if (!$isNullable) {
+            mysqli_query($conn, "ALTER TABLE `idf_ports` MODIFY `{$nullableFkColumnEscaped}` int DEFAULT NULL");
+        }
+    }
 }
 
 function idf_resolve_status_id(mysqli $conn, int $company_id, $rawStatus, string $fallback = 'Unknown'): int {
