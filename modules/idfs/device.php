@@ -1169,7 +1169,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div>
+            <div id="portPoeField">
                 <label class="label">PoE</label>
                 <select class="input" name="poe">
                     <option value="">-- None --</option>
@@ -1454,6 +1454,7 @@ function openPortModal(portId) {
         : 'RJ45';
     rebuildSpeedOptionsForPortType(rowData.portType || selectedPortTypeLabel, rowData.speedId || '');
     form.poe.value = rowData.poeId || '';
+    togglePoeFieldForPortType(rowData.portType || selectedPortTypeLabel);
     form.notes.value = rowData.notes || '';
     const requestedCableColorId = portMeta ? (portMeta.cable_color_id || 0) : 0;
     const requestedCableColorName = portMeta ? ((portMeta.cable_color_name || portMeta.cable_color || '').trim()) : '';
@@ -1522,6 +1523,19 @@ function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
     speedSelect.value = desiredValue;
 }
 
+function togglePoeFieldForPortType(portTypeLabel) {
+    const form = document.getElementById('portForm');
+    const poeWrap = document.getElementById('portPoeField');
+    if (!form || !form.poe || !poeWrap) return;
+    const normalizedType = normalizePortTypeLabel(portTypeLabel);
+    const showPoeField = normalizedType === 'rj45';
+    poeWrap.style.display = showPoeField ? '' : 'none';
+    form.poe.disabled = !showPoeField;
+    if (!showPoeField) {
+        form.poe.value = '';
+    }
+}
+
 function closePortModal() {
     document.getElementById('portBackdrop').style.display = 'none';
 }
@@ -1533,6 +1547,10 @@ function savePort() {
         alert('Please enter a status value.');
         return;
     }
+    const selectedPortTypeLabel = (f.port_type.selectedOptions && f.port_type.selectedOptions[0])
+        ? f.port_type.selectedOptions[0].textContent
+        : '';
+    const normalizedPortType = normalizePortTypeLabel(selectedPortTypeLabel);
     const payload = {
         csrf_token: CSRF,
         port_id: Number(f.port_id.value),
@@ -1542,7 +1560,7 @@ function savePort() {
         connected_to: f.connected_to.value.trim(),
         vlan_id: f.vlan.value ? Number(f.vlan.value) : null,
         speed_id: f.speed.value ? Number(f.speed.value) : null,
-        poe_id: f.poe.value ? Number(f.poe.value) : null,
+        poe_id: normalizedPortType === 'rj45' && f.poe.value ? Number(f.poe.value) : null,
         notes: f.notes.value.trim(),
         cable_color_id: (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
             ? Number(f.cable_color_id.value)
@@ -2012,6 +2030,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? portForm.port_type.options[portForm.port_type.selectedIndex].textContent
                 : '';
             rebuildSpeedOptionsForPortType(selectedTypeLabel, '');
+            togglePoeFieldForPortType(selectedTypeLabel);
         });
     }
 
