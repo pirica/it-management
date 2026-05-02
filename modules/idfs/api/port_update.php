@@ -31,7 +31,9 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
 
-$port_type_id = idf_resolve_port_type_id($conn, $company_id, $data['port_type_id'] ?? ($data['port_type'] ?? ''), 'RJ45');
+$rawPortTypeInput = $data['port_type_id'] ?? ($data['port_type'] ?? '');
+$requestedPortTypeLabel = trim((string)($data['port_type_label'] ?? ''));
+$port_type_id = idf_resolve_port_type_id($conn, $company_id, $rawPortTypeInput, 'RJ45');
 $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Unknown');
 $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
 if ($switchPortLabelColumn === null) {
@@ -41,7 +43,7 @@ if ($port_type_id <= 0) {
     idf_fail('Invalid port_type');
 }
 
-$portTypeName = 'RJ45';
+$portTypeName = '';
 $stmtPortTypeName = mysqli_prepare($conn, 'SELECT type FROM switch_port_types WHERE company_id = ? AND id = ? LIMIT 1');
 if ($stmtPortTypeName) {
     mysqli_stmt_bind_param($stmtPortTypeName, 'ii', $company_id, $port_type_id);
@@ -52,6 +54,16 @@ if ($stmtPortTypeName) {
     if ($rowPortTypeName && trim((string)($rowPortTypeName['type'] ?? '')) !== '') {
         $portTypeName = (string)$rowPortTypeName['type'];
     }
+}
+if ($portTypeName === '' && $requestedPortTypeLabel !== '') {
+    // Why: Keep SFP/RJ45 speed routing correct even when legacy port_type_id rows are out of company scope.
+    $portTypeName = $requestedPortTypeLabel;
+}
+if ($portTypeName === '' && !is_numeric($rawPortTypeInput)) {
+    $portTypeName = trim((string)$rawPortTypeInput);
+}
+if ($portTypeName === '') {
+    $portTypeName = 'RJ45';
 }
 $normalizedPortTypeName = strtolower(preg_replace('/[^a-z0-9]+/', '', $portTypeName));
 $isFiberPortType = strpos($normalizedPortTypeName, 'sfp') !== false;
