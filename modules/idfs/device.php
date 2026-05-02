@@ -139,6 +139,35 @@ if ($hasSwitchPortsToPatchPortColumn) {
 $switchPortsLinkedCommentsSelect = $hasSwitchPortsCommentsColumn
     ? "NULLIF(sp_link.comments, '')"
     : "''";
+$hasRj45SpeedTable = false;
+$hasRj45SpeedTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'rj45_speed'");
+if ($hasRj45SpeedTableRes && mysqli_num_rows($hasRj45SpeedTableRes) > 0) {
+    $hasRj45SpeedTable = true;
+}
+$hasIdfPortsRj45SpeedColumn = false;
+$idfPortsRj45SpeedColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_ports` LIKE 'rj45_speed_id'");
+if ($idfPortsRj45SpeedColumnRes && mysqli_num_rows($idfPortsRj45SpeedColumnRes) > 0) {
+    $hasIdfPortsRj45SpeedColumn = true;
+}
+$rj45SpeedIdExpr = $hasIdfPortsRj45SpeedColumn ? 'pr.rj45_speed_id' : 'NULL';
+$normalizedPortTypeExpr = "UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS'))";
+$speedLabelExpr = $hasRj45SpeedTable
+    ? "CASE
+          WHEN {$normalizedPortTypeExpr} = 'RJ45' THEN COALESCE(rs.cable_type, '')
+          ELSE COALESCE(ef.name, '')
+       END"
+    : "COALESCE(ef.name, '')";
+$speedValueIdExpr = $hasRj45SpeedTable
+    ? "CASE
+          WHEN {$normalizedPortTypeExpr} = 'RJ45' THEN COALESCE({$rj45SpeedIdExpr}, pr.speed_id, 0)
+          ELSE COALESCE(pr.speed_id, 0)
+       END"
+    : "COALESCE(pr.speed_id, 0)";
+$rj45SpeedJoinSql = $hasRj45SpeedTable
+    ? "LEFT JOIN rj45_speed rs
+       ON rs.id = COALESCE({$rj45SpeedIdExpr}, pr.speed_id)
+      AND rs.company_id = pr.company_id"
+    : "";
 
 $portSortField = (string)($_GET['sort'] ?? 'port_type');
 $portSortDir = strtolower((string)($_GET['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
@@ -984,7 +1013,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
                             data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
                             data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
-                            data-speed-id="<?php echo (int)($p['speed_id'] ?? 0); ?>"
+                            data-speed-id="<?php echo (int)($p['speed_value_id'] ?? ($p['speed_id'] ?? 0)); ?>"
                             data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
                             data-poe-id="<?php echo (int)($p['poe_id'] ?? 0); ?>"
                             data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
@@ -1138,9 +1167,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label">Speed</label>
                 <select class="input" name="speed">
                     <option value="">-- None --</option>
-                    <?php foreach ($fiberSpeedOptions as $fiberId => $fiberLabel): ?>
-                        <option value="<?php echo (int)$fiberId; ?>"><?php echo sanitize($fiberLabel); ?></option>
-                    <?php endforeach; ?>
                 </select>
             </div>
             <div>
@@ -1362,6 +1388,30 @@ $portsMeta = array_map(static function (array $port): array {
 echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>;
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const FIBER_SPEED_OPTIONS = <?php
+echo json_encode(
+    array_map(
+        static function ($id, $label): array {
+            return ['id' => (int)$id, 'label' => (string)$label];
+        },
+        array_keys($fiberSpeedOptions),
+        array_values($fiberSpeedOptions)
+    ),
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+);
+?>;
+const RJ45_SPEED_OPTIONS = <?php
+echo json_encode(
+    array_map(
+        static function ($id, $label): array {
+            return ['id' => (int)$id, 'label' => (string)$label];
+        },
+        array_keys($rj45SpeedOptions),
+        array_values($rj45SpeedOptions)
+    ),
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+);
+?>;
 let activeStatusSelect = null;
 let activeCableColorSelect = null;
 
@@ -1974,6 +2024,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('select[name="cable_color_id"]').forEach((cableColorSelect) => {
         initializeCableColorSelect(cableColorSelect);
     });
+
+    const portForm = document.getElementById('portForm');
+    if (portForm?.port_type) {
+        portForm.port_type.addEventListener('change', () => {
+            const selectedTypeLabel = portForm.port_type.options[portForm.port_type.selectedIndex]?.textContent || '';
+            refreshSpeedOptions(portForm, selectedTypeLabel, '');
+        });
+    }
 
     // Why: Once the deep-link modal is consumed, removing query flags prevents a stale auto-open after save/reload.
     if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0) {
