@@ -430,6 +430,11 @@ if (
     }
 }
 
+$statusSyncId = $status_id;
+if ($equipmentStatusId_val !== null && (int)$equipmentStatusId_val > 0) {
+    $statusSyncId = (int)$equipmentStatusId_val;
+}
+
 $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
@@ -529,8 +534,8 @@ if (
     $stmtUpdatePort = mysqli_prepare($conn, $stmtUpdatePortSql);
     if ($stmtUpdatePort) {
         $updateTypes = 'siss';
-        $updateValuesA = [$connectedToA, $status_id, $selectedColorName, $selectedColorHex];
-        $updateValuesB = [$connectedToB, $status_id, $selectedColorName, $selectedColorHex];
+        $updateValuesA = [$connectedToA, $statusSyncId, $selectedColorName, $selectedColorHex];
+        $updateValuesB = [$connectedToB, $statusSyncId, $selectedColorName, $selectedColorHex];
         if ($equipmentVlanId_val !== null && $equipmentVlanId_val > 0) {
             $updateTypes .= 'i';
             $vlanSyncId = (int)$equipmentVlanId_val;
@@ -589,9 +594,9 @@ if (
     if ($stmtSwitchSync) {
         $switchColorSyncId = $cableColorId > 0 ? $cableColorId : 0;
         $linkNoteSync = $notes_val;
-        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $label_val, $status_id, $switchColorSyncId, $linkNoteSync, $company_id);
+        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $label_val, $statusSyncId, $switchColorSyncId, $linkNoteSync, $company_id);
         mysqli_stmt_execute($stmtSwitchSync);
-        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $label_val, $status_id, $switchColorSyncId, $linkNoteSync, $company_id);
+        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $label_val, $statusSyncId, $switchColorSyncId, $linkNoteSync, $company_id);
         mysqli_stmt_execute($stmtSwitchSync);
         mysqli_stmt_close($stmtSwitchSync);
     }
