@@ -1631,6 +1631,7 @@ function savePort() {
         csrf_token: CSRF,
         port_id: Number(f.port_id.value),
         port_type_id: Number(f.port_type.value),
+        port_type_label: selectedPortTypeLabel.trim(),
         label: f.label.value.trim(),
         status_id: Number(normalizedStatus),
         connected_to: f.connected_to.value.trim(),
