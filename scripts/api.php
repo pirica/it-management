@@ -140,7 +140,7 @@
  * Added modules/rj45_speed CRUD module and database.sql seed-backed import support for RJ45 cable speed reference data.
 
  * Rack Planner module now supports table-tools JSON db_import payloads through itm_handle_json_table_import for rack_planner records.
- * Rack Planner mirror iframe/open-link now prefer module-relative mirror/index-local.html with automatic fallback to mirror/index.html when local mirror file is missing.
+ * Rack Planner mirror iframe/open-link now route through modules/rack_planner/mirror.php, which streams mirror/index-local.html (fallback mirror/index.html) to avoid nested HTML 404s on restrictive Apache setups.
  * Added rack_planner table schema and tenant-seeded sample records in database.sql to persist mirrored rack plan layouts per company.
  * Config DB bootstrap now retries localhost connection via 127.0.0.1 TCP fallback when socket-based localhost fails in local environments.
  * Config DB bootstrap now responds with HTTP 500 JSON on connection failure to avoid silent 200 responses for broken environments.
