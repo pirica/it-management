@@ -136,7 +136,6 @@ if ($equipment_id > 0) {
         }
 
         $device_name = trim((string)($equipment['name'] ?? ''));
-        $notes = trim((string)($equipment['notes'] ?? ''));
 
         if ($switch_rj45_id <= 0) {
             $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
@@ -152,12 +151,13 @@ if ($equipment_id > 0) {
         $stmtUpdateEq = mysqli_prepare(
             $conn,
             "UPDATE equipment
-             SET switch_rj45_id=?, switch_port_numbering_layout_id=?
+             SET switch_rj45_id=?, switch_port_numbering_layout_id=?, notes=?
              WHERE id=? AND company_id=?
              LIMIT 1"
         );
         if ($stmtUpdateEq) {
-            mysqli_stmt_bind_param($stmtUpdateEq, 'iiii', $switch_rj45_id, $layout_id, $equipment_id, $company_id);
+            $notesForEquipment = $notes;
+            mysqli_stmt_bind_param($stmtUpdateEq, 'iisii', $switch_rj45_id, $layout_id, $notesForEquipment, $equipment_id, $company_id);
             mysqli_stmt_execute($stmtUpdateEq);
             mysqli_stmt_close($stmtUpdateEq);
         }
