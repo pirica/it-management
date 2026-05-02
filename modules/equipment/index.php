@@ -1030,9 +1030,9 @@ if (!empty($_SESSION['crud_success'])) {
             const selectedPatchPortLabel = String(el.dataset.label || '').trim();
             document.getElementById('labelInput').value = selectedPatchPortLabel === '0' ? '' : selectedPatchPortLabel;
             document.getElementById('vlanSelect').value = el.dataset.vlanId || '';
-            document.getElementById('fiberPortsSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_id) || '');
-            document.getElementById('fiberPatchSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || '');
-            document.getElementById('fiberRackSelect').value = String((selectedSwitchMeta && selectedSwitchMeta.fiber_rack_id) || '');
+            document.getElementById('fiberPortsSelect').value = String(el.dataset.fiberPortId || ((selectedSwitchMeta && selectedSwitchMeta.fiber_id) || ''));
+            document.getElementById('fiberPatchSelect').value = String(el.dataset.fiberPatchId || ((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || ''));
+            document.getElementById('fiberRackSelect').value = String(el.dataset.fiberRackId || ((selectedSwitchMeta && selectedSwitchMeta.fiber_rack_id) || ''));
             document.getElementById('idfSelect').value = String(el.dataset.idfId || '');
             document.getElementById('toRackSelect').value = String(el.dataset.toRackId || '');
             document.getElementById('toLocationSelect').value = String(el.dataset.toLocationId || '');
@@ -1053,9 +1053,12 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.vlanColor = p.vlan_color || '';
             el.dataset.color = p.color || 'black';
             el.dataset.colorHex = p.color_hex || '';
-            el.dataset.fiberPorts = readSwitchMeta('fiber_name');
-            el.dataset.fiberPatch = readSwitchMeta('fiber_patch_name');
-            el.dataset.fiberRack = readSwitchMeta('fiber_rack_name');
+            el.dataset.fiberPortId = p.fiber_port_id || '';
+            el.dataset.fiberPatchId = p.fiber_patch_id || '';
+            el.dataset.fiberRackId = p.fiber_rack_id || '';
+            el.dataset.fiberPorts = p.fiber_port_name || readSwitchMeta('fiber_name');
+            el.dataset.fiberPatch = p.fiber_patch_name || readSwitchMeta('fiber_patch_name');
+            el.dataset.fiberRack = p.fiber_rack_name || readSwitchMeta('fiber_rack_name');
             el.dataset.idfId = p.to_idf_id || p.idf_id || '';
             el.dataset.idfCode = p.idf_code || '';
             el.dataset.toRackId = p.to_rack_id || '';
@@ -1419,6 +1422,9 @@ if (!empty($_SESSION['crud_success'])) {
                         const selectedFiberPatchOption = document.getElementById('fiberPatchSelect').selectedOptions[0] || null;
                         const selectedFiberRackOption = document.getElementById('fiberRackSelect').selectedOptions[0] || null;
                         const selectedIdfOption = document.getElementById('idfSelect').selectedOptions[0] || null;
+                        selected.dataset.fiberPortId = payload.fiber_port_id || '';
+                        selected.dataset.fiberPatchId = payload.fiber_patch_id || '';
+                        selected.dataset.fiberRackId = payload.fiber_rack_id || '';
                         selected.dataset.fiberPorts = selectedFiberPortOption ? (selectedFiberPortOption.text || '') : '';
                         selected.dataset.fiberPatch = selectedFiberPatchOption ? (selectedFiberPatchOption.text || '') : '';
                         selected.dataset.fiberRack = selectedFiberRackOption ? (selectedFiberRackOption.text || '') : '';

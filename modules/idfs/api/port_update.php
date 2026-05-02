@@ -115,8 +115,11 @@ $label_val = $label !== '' ? $label : null;
 $conn_val = $connected_to !== '' ? $connected_to : null;
 $vlan_val = $vlan_id !== null ? (int)$vlan_id : 0;
 $speed_val = $speed_id !== null ? (int)$speed_id : 0;
+$rj45SpeedVal = $rj45_speed_id !== null ? (int)$rj45_speed_id : 0;
 $poe_val = $poe_id !== null ? (int)$poe_id : 0;
 $notes_val = $notes !== '' ? $notes : null;
+
+$hasRj45SpeedIdColumn = idf_table_has_column($conn, 'idf_ports', 'rj45_speed_id');
 
 $sql = "UPDATE idf_ports
         SET port_type=?,
@@ -124,7 +127,12 @@ $sql = "UPDATE idf_ports
             status_id=?,
             connected_to=?,
             vlan_id=NULLIF(?, 0),
-            speed_id=NULLIF(?, 0),
+            speed_id=NULLIF(?, 0),";
+if ($hasRj45SpeedIdColumn) {
+    $sql .= "
+            rj45_speed_id=NULLIF(?, 0),";
+}
+$sql .= "
             poe_id=NULLIF(?, 0),
             cable_color=?,
             hex_color=?,
@@ -134,7 +142,11 @@ $sql = "UPDATE idf_ports
 
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
-    mysqli_stmt_bind_param($stmtUpd, 'isisiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+    if ($hasRj45SpeedIdColumn) {
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+    } else {
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+    }
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }
