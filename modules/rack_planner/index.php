@@ -315,6 +315,43 @@ $offset = ($page - 1) * $perPage;
             align-items: center;
             margin-bottom: 20px;
         }
+        .rack-unit-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 15px;
+        }
+        .rack-unit-modal-overlay.is-open { display: flex; }
+        .rack-unit-modal {
+            width: min(520px, 100%);
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+        }
+        .rack-unit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid #e5e5e5;
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        .rack-unit-modal-close {
+            border: 0;
+            background: transparent;
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .rack-unit-modal-body { padding: 14px 16px 18px; }
+        .rack-unit-modal-row { display: flex; align-items: center; gap: 10px; }
+        .rack-unit-modal-row label { font-weight: 600; min-width: 52px; }
     </style>
 </head>
 <body>
@@ -553,6 +590,48 @@ $offset = ($page - 1) * $perPage;
                         <div class="rack-visualizer-foot"></div>
                     </div>
                 </div>
+                <div class="rack-unit-modal-overlay" id="rackUnitModal" aria-hidden="true">
+                    <div class="rack-unit-modal" role="dialog" aria-modal="true" aria-labelledby="rackUnitModalTitle">
+                        <div class="rack-unit-modal-header">
+                            <p id="rackUnitModalTitle">Component</p>
+                            <button type="button" class="rack-unit-modal-close" id="rackUnitModalClose" aria-label="Close">&times;</button>
+                        </div>
+                        <div class="rack-unit-modal-body">
+                            <div class="rack-unit-modal-row">
+                                <label for="unitTypeSelect">Type</label>
+                                <select name="unitTypeSelect" id="unitTypeSelect" class="block w-full rounded-md bg-full-white border-0 py-1.5 ring-1 ring-gray-300 ring-inset focus:ring-1 focus:ring-brand-blue text-sm">
+                                    <option value="">- Empty -</option>
+                                    <optgroup label="PATCHBOX®">
+                                        <option value="pb">PATCHBOX® Cat.6a</option>
+                                        <option value="pbfo">PATCHBOX® Fiber Optic</option>
+                                        <option value="pbcyo">Configure Your Own</option>
+                                    </optgroup>
+                                    <optgroup label="Patchpanel">
+                                        <option value="pp24">24-Port Patchpanel Cat.6a</option>
+                                        <option value="pp48">48-Port Patchpanel Cat.6a</option>
+                                        <option value="ppfo24">24-Port Patchpanel Fiber Optic</option>
+                                        <option value="ppfo48">48-Port Patchpanel Fiber Optic</option>
+                                    </optgroup>
+                                    <optgroup label="Switch">
+                                        <option value="sw24">24-Port Switch</option>
+                                        <option value="sw48">48-Port Switch</option>
+                                    </optgroup>
+                                    <optgroup label="Server">
+                                        <option value="bs">1-RU Blade Server</option>
+                                        <option value="bs_2">2-RU Blade Server</option>
+                                    </optgroup>
+                                    <optgroup label="Other devices">
+                                        <option value="ds">1-RU Data Storage</option>
+                                        <option value="rt">1-RU Router</option>
+                                        <option value="tr_2">2-RU Rack Tray</option>
+                                        <option value="ph">1-RU Placeholder</option>
+                                        <option value="ph_2">2-RU Placeholder</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             <?php elseif ($crud_action === 'view'): ?>
                 <div class="rack-planner-header">
@@ -657,6 +736,35 @@ $offset = ($page - 1) * $perPage;
 
             if (!confirm('Delete selected records?')) {
                 event.preventDefault();
+            }
+        });
+    }
+
+    const rackUnitModal = document.getElementById('rackUnitModal');
+    const rackUnitModalClose = document.getElementById('rackUnitModalClose');
+    const rackUnitModalTitle = document.getElementById('rackUnitModalTitle');
+    const rackUnitCells = document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u');
+
+    if (rackUnitModal && rackUnitModalClose && rackUnitCells.length > 0) {
+        rackUnitCells.forEach(function (cell) {
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', function () {
+                const currentUnit = cell.getAttribute('data-u') || '';
+                rackUnitModalTitle.textContent = currentUnit !== '' ? ('Component ' + currentUnit) : 'Component';
+                rackUnitModal.classList.add('is-open');
+                rackUnitModal.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        rackUnitModalClose.addEventListener('click', function () {
+            rackUnitModal.classList.remove('is-open');
+            rackUnitModal.setAttribute('aria-hidden', 'true');
+        });
+
+        rackUnitModal.addEventListener('click', function (event) {
+            if (event.target === rackUnitModal) {
+                rackUnitModal.classList.remove('is-open');
+                rackUnitModal.setAttribute('aria-hidden', 'true');
             }
         });
     }
