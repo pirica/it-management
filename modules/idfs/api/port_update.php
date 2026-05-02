@@ -61,14 +61,24 @@ $connected_to = trim((string)($data['connected_to'] ?? ''));
 $vlan_id = idf_resolve_vlan_id($conn, $company_id, $data['vlan_id'] ?? ($data['vlan'] ?? ''));
 $speedLookupTable = $isFiberPortType ? 'equipment_fiber' : 'rj45_speed';
 $speedLookupColumn = $isFiberPortType ? 'name' : 'cable_type';
-$speed_id = idf_resolve_named_lookup_id(
-    $conn,
-    $company_id,
-    $speedLookupTable,
-    $speedLookupColumn,
-    $data['speed_id'] ?? ($data['speed'] ?? '')
-);
-$poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $data['poe_id'] ?? ($data['poe'] ?? ''));
+$rawSpeedInput = $data['speed_id'] ?? ($data['speed'] ?? '');
+$speedInputString = trim((string)$rawSpeedInput);
+$speed_id = null;
+if ($speedInputString !== '' && $speedInputString !== '0') {
+    $speed_id = idf_resolve_named_lookup_id(
+        $conn,
+        $company_id,
+        $speedLookupTable,
+        $speedLookupColumn,
+        $rawSpeedInput
+    );
+}
+$rawPoeInput = $data['poe_id'] ?? ($data['poe'] ?? '');
+$poeInputString = trim((string)$rawPoeInput);
+$poe_id = null;
+if ($poeInputString !== '' && $poeInputString !== '0') {
+    $poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $rawPoeInput);
+}
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color_id = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 $cable_color_name = null;
