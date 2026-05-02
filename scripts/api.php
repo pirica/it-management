@@ -141,6 +141,7 @@
 
  * Rack Planner module now supports table-tools JSON db_import payloads through itm_handle_json_table_import for rack_planner records.
  * Added rack_planner table schema and tenant-seeded sample records in database.sql to persist mirrored rack plan layouts per company.
+ * Config DB bootstrap now retries localhost connection via 127.0.0.1 TCP fallback when socket-based localhost fails in local environments.
  */
 
 declare(strict_types=1);
