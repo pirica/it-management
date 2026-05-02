@@ -138,6 +138,8 @@
 
  * Switch Ports CRUD table/list/detail views now display every column except id and company_id to keep internal tenant keys hidden while exposing full port metadata.
  * Added modules/rj45_speed CRUD module and database.sql seed-backed import support for RJ45 cable speed reference data.
+
+ * Rack Planner index now returns a JSON response for table-tools db_import requests so save-to-database imports fail gracefully instead of falling through to HTML rendering.
  */
 
 declare(strict_types=1);
