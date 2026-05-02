@@ -1497,7 +1497,8 @@ function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
     const speedSelect = form.speed;
     const normalizedType = normalizePortTypeLabel(portTypeLabel);
     const sourceMap = normalizedType === 'rj45' ? RJ45_SPEED_OPTIONS : FIBER_SPEED_OPTIONS;
-    const desiredValue = String(selectedValue || '');
+    const desiredValueRaw = String(selectedValue || '').trim();
+    const desiredValue = desiredValueRaw === '0' ? '' : desiredValueRaw;
 
     speedSelect.innerHTML = '';
     const noneOption = document.createElement('option');
