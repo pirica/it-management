@@ -25,8 +25,12 @@ $pos = null;
 if ($position_id > 0 && $company_id > 0) {
     $hasIdfCodeColumn = false;
     $hasRackNameColumn = false;
+    $hasIdfsRackIdColumn = false;
     $hasCompaniesTable = false;
+    $hasCompaniesCompanyColumn = false;
     $hasCompaniesNameColumn = false;
+    $hasRacksTable = false;
+    $hasRacksNameColumn = false;
 
     $hasIdfCodeColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'idf_code'");
     if ($hasIdfCodeColumnRes && mysqli_num_rows($hasIdfCodeColumnRes) > 0) {
@@ -36,21 +40,57 @@ if ($position_id > 0 && $company_id > 0) {
     if ($hasRackNameColumnRes && mysqli_num_rows($hasRackNameColumnRes) > 0) {
         $hasRackNameColumn = true;
     }
+    $hasIdfsRackIdColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `idfs` LIKE 'rack_id'");
+    if ($hasIdfsRackIdColumnRes && mysqli_num_rows($hasIdfsRackIdColumnRes) > 0) {
+        $hasIdfsRackIdColumn = true;
+    }
     $hasCompaniesTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'companies'");
     if ($hasCompaniesTableRes && mysqli_num_rows($hasCompaniesTableRes) > 0) {
         $hasCompaniesTable = true;
     }
     if ($hasCompaniesTable) {
+        $hasCompaniesCompanyColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `companies` LIKE 'company'");
+        if ($hasCompaniesCompanyColumnRes && mysqli_num_rows($hasCompaniesCompanyColumnRes) > 0) {
+            $hasCompaniesCompanyColumn = true;
+        }
         $hasCompaniesNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `companies` LIKE 'name'");
         if ($hasCompaniesNameColumnRes && mysqli_num_rows($hasCompaniesNameColumnRes) > 0) {
             $hasCompaniesNameColumn = true;
         }
     }
+    $hasRacksTableRes = mysqli_query($conn, "SHOW TABLES LIKE 'racks'");
+    if ($hasRacksTableRes && mysqli_num_rows($hasRacksTableRes) > 0) {
+        $hasRacksTable = true;
+    }
+    if ($hasRacksTable) {
+        $hasRacksNameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `racks` LIKE 'name'");
+        if ($hasRacksNameColumnRes && mysqli_num_rows($hasRacksNameColumnRes) > 0) {
+            $hasRacksNameColumn = true;
+        }
+    }
 
     $idfCodeSelect = $hasIdfCodeColumn ? 'i.idf_code' : "'' AS idf_code";
-    $rackNameSelect = $hasRackNameColumn ? 'i.rack_name' : "'' AS rack_name";
-    $companyNameSelect = ($hasCompaniesTable && $hasCompaniesNameColumn) ? 'c.name AS company_name' : "'' AS company_name";
+    if ($hasRacksTable && $hasRacksNameColumn && $hasIdfsRackIdColumn) {
+        $rackNameSelect = $hasRackNameColumn
+            ? "COALESCE(NULLIF(r_company.name, ''), NULLIF(r_legacy.name, ''), NULLIF(i.rack_name, ''), '') AS rack_name"
+            : "COALESCE(NULLIF(r_company.name, ''), NULLIF(r_legacy.name, ''), '') AS rack_name";
+    } else {
+        $rackNameSelect = $hasRackNameColumn ? "COALESCE(i.rack_name, '') AS rack_name" : "'' AS rack_name";
+    }
+    if ($hasCompaniesTable && $hasCompaniesCompanyColumn && $hasCompaniesNameColumn) {
+        $companyNameSelect = "COALESCE(NULLIF(c.company, ''), NULLIF(c.name, ''), '') AS company_name";
+    } elseif ($hasCompaniesTable && $hasCompaniesCompanyColumn) {
+        $companyNameSelect = "COALESCE(c.company, '') AS company_name";
+    } elseif ($hasCompaniesTable && $hasCompaniesNameColumn) {
+        $companyNameSelect = "COALESCE(c.name, '') AS company_name";
+    } else {
+        $companyNameSelect = "'' AS company_name";
+    }
     $companiesJoinSql = $hasCompaniesTable ? 'LEFT JOIN companies c ON c.id = i.company_id' : '';
+    $racksJoinSql = ($hasRacksTable && $hasRacksNameColumn && $hasIdfsRackIdColumn)
+        ? 'LEFT JOIN racks r_company ON r_company.id = i.rack_id AND r_company.company_id = i.company_id
+           LEFT JOIN racks r_legacy ON r_legacy.id = i.rack_id'
+        : '';
 
     $stmt = mysqli_prepare(
         $conn,
@@ -67,6 +107,7 @@ if ($position_id > 0 && $company_id > 0) {
          FROM idf_positions p
          JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
          ' . $companiesJoinSql . '
+         ' . $racksJoinSql . '
          LEFT JOIN equipment e ON e.id = p.equipment_id
          LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = p.company_id
