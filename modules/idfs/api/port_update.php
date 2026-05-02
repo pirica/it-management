@@ -65,7 +65,7 @@ if ($portTypeName === '' && !is_numeric($rawPortTypeInput)) {
 if ($portTypeName === '') {
     $portTypeName = 'RJ45';
 }
-$normalizedPortTypeName = strtolower(preg_replace('/[^a-z0-9]+/', '', $portTypeName));
+$normalizedPortTypeName = preg_replace('/[^a-z0-9]+/i', '', strtolower((string)$portTypeName));
 $isFiberPortType = strpos($normalizedPortTypeName, 'sfp') !== false;
 
 $label = trim((string)($data['label'] ?? ''));
