@@ -14,19 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itm_raw_body = file_get_contents('php://input');
         $itm_payload = json_decode($itm_raw_body, true);
 
-        if (is_array($itm_payload) && isset($itm_payload['action']) && $itm_payload['action'] === 'db_import') {
-            header('Content-Type: application/json; charset=utf-8');
-            http_response_code(200);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database import is not available for Rack Planner.',
-            ]);
+        if (is_array($itm_payload) && isset($itm_payload['import_excel_rows'])) {
+            itm_handle_json_table_import($conn, 'rack_planner', (int)($company_id ?? 0));
             exit;
         }
     }
 }
 
-$mirrorUrl = BASE_URL . 'modules/rack_planner/mirror/index-local.html';
+$mirrorUrl = 'mirror/index-local.html';
 ?>
 <!DOCTYPE html>
 <html lang="en">
