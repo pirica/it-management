@@ -246,13 +246,13 @@ $normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')
 $speedLabelExpr = $hasRj45SpeedTable
     ? "CASE
     WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(ef.name, '')
-    ELSE COALESCE(rs.cable_type, ef.name, '')
+    ELSE ''
 END"
     : "COALESCE(ef.name, '')";
 $rj45SpeedLabelExpr = $hasRj45SpeedTable
     ? "CASE
-    WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN ''
-    ELSE COALESCE(rs.cable_type, '')
+    WHEN {$normalizedPortTypeExpr} = 'rj45' THEN COALESCE(rs.cable_type, '')
+    ELSE ''
 END"
     : "''";
 
