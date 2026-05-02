@@ -350,7 +350,7 @@ if ($position_id > 0) {
            notes=VALUES(notes)"
     );
     if ($stmtInsertPos) {
-        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissisi', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $port_count, $layout_val, $notes_val);
+        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissiis', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $port_count, $layout_val, $notes_val);
         if (!mysqli_stmt_execute($stmtInsertPos)) {
             idf_fail('DB error saving position: ' . mysqli_stmt_error($stmtInsertPos), 500);
         }
