@@ -7,7 +7,7 @@
 
 require '../../config/config.php';
 
-$mirrorUrl = BASE_URL . 'assets/rack-planner-mirror/index-local.html';
+$mirrorUrl = BASE_URL . 'modules/rack_planner/mirror/index-local.html';
 ?>
 <!DOCTYPE html>
 <html lang="en">
