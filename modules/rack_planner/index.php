@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$mirrorUrl = BASE_URL . 'modules/rack_planner/mirror/index-local.html';
+$mirrorUrl = 'mirror/index-local.html';
 ?>
 <!DOCTYPE html>
 <html lang="en">
