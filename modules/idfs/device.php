@@ -249,6 +249,12 @@ $speedLabelExpr = $hasRj45SpeedTable
     ELSE COALESCE(rs.cable_type, ef.name, '')
 END"
     : "COALESCE(ef.name, '')";
+$rj45SpeedLabelExpr = $hasRj45SpeedTable
+    ? "CASE
+    WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN ''
+    ELSE COALESCE(rs.cable_type, '')
+END"
+    : "''";
 
 $portSortMap = [
     'port_no' => 'pr.port_no',
@@ -258,6 +264,7 @@ $portSortMap = [
     'connected_to' => 'pr.connected_to',
     'vlan' => $vlanSortExpr,
     'speed' => $speedLabelExpr,
+    'rj45_speed' => $rj45SpeedLabelExpr,
     'poe' => 'COALESCE(ep.name, "")',
     'notes' => $notesSortExpr,
     'link' => 'l.id'
@@ -311,6 +318,7 @@ $stmtPorts = mysqli_prepare(
            ELSE ''
          END AS vlan_label,
        {$speedLabelExpr} AS speed_label,
+       {$rj45SpeedLabelExpr} AS rj45_speed_label,
        {$speedValueIdExpr} AS speed_value_id,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
@@ -1029,12 +1037,12 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <table id="portsTable" class="table idf-ports-table">
                     <thead>
                     <tr>
-                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
+                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('rj45_speed')); ?>">RJ45 Speed<?php echo $renderPortSortIndicator('rj45_speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php if (!$ports): ?>
-                        <tr><td colspan="11" style="opacity:.8;">No ports yet.</td></tr>
+                        <tr><td colspan="12" style="opacity:.8;">No ports yet.</td></tr>
                     <?php endif; ?>
 
                     <?php foreach ($ports as $p): ?>
@@ -1086,6 +1094,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize($connectedToText); ?></td>
                             <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
                             <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
@@ -1156,7 +1165,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <table id="portsExportTable" class="table" style="display:none;">
                 <thead>
                 <tr>
-                    <th>Port No</th><th>Type</th><th>Label</th><th>Status</th><th>Connected To</th><th>VLAN</th><th>Speed</th><th>PoE</th><th>Notes</th>
+                    <th>Port No</th><th>Type</th><th>Label</th><th>Status</th><th>Connected To</th><th>VLAN</th><th>Speed</th><th>RJ45 Speed</th><th>PoE</th><th>Notes</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -1169,6 +1178,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <td><?php echo sanitize((string)($p['connected_to'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
+                        <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
                     </tr>
