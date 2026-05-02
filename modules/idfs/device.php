@@ -1005,6 +1005,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             }
                             $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                         }
+                        $speedValueId = isset($p['speed_value_id']) ? (int)$p['speed_value_id'] : (isset($p['speed_id']) ? (int)$p['speed_id'] : 0);
                         ?>
                         <tr
                             data-port-id="<?php echo (int)$p['id']; ?>"
@@ -1016,7 +1017,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
                             data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
                             data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
-                            data-speed-id="<?php echo (int)($p['speed_value_id'] ?? ($p['speed_id'] ?? 0)); ?>"
+                            data-speed-id="<?php echo $speedValueId > 0 ? (string)$speedValueId : ''; ?>"
                             data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
                             data-poe-id="<?php echo (int)($p['poe_id'] ?? 0); ?>"
                             data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
@@ -1455,7 +1456,9 @@ function openPortModal(portId) {
     const selectedPortTypeLabel = (form.port_type.selectedOptions && form.port_type.selectedOptions[0])
         ? form.port_type.selectedOptions[0].textContent
         : 'RJ45';
-    rebuildSpeedOptionsForPortType(rowData.portType || selectedPortTypeLabel, rowData.speedId || '');
+    const rawSpeedId = String(rowData.speedId || '').trim();
+    const normalizedSpeedId = (/^\d+$/.test(rawSpeedId) && Number(rawSpeedId) > 0) ? rawSpeedId : '';
+    rebuildSpeedOptionsForPortType(rowData.portType || selectedPortTypeLabel, normalizedSpeedId);
     form.poe.value = rowData.poeId || '';
     togglePoeFieldForPortType(rowData.portType || selectedPortTypeLabel);
     form.notes.value = rowData.notes || '';
@@ -1502,7 +1505,10 @@ function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
     const normalizedType = normalizePortTypeLabel(portTypeLabel);
     const sourceMap = normalizedType === 'rj45' ? RJ45_SPEED_OPTIONS : FIBER_SPEED_OPTIONS;
     const desiredValueRaw = String(selectedValue || '').trim();
-    const desiredValue = desiredValueRaw === '0' ? '' : desiredValueRaw;
+    const desiredValueNumber = Number(desiredValueRaw);
+    const desiredValue = Number.isFinite(desiredValueNumber) && desiredValueNumber > 0
+        ? String(Math.trunc(desiredValueNumber))
+        : '';
 
     speedSelect.innerHTML = '';
     const noneOption = document.createElement('option');
