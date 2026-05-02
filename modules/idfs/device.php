@@ -200,6 +200,11 @@ $vlanSortExpr = "CASE
 END";
 $labelSortExpr = "COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
 $notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
+$normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'plus'))";
+$speedLabelExpr = "CASE
+    WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(ef.name, '')
+    ELSE COALESCE(rjs.cable_type, ef.name, '')
+END";
 
 $portSortMap = [
     'port_no' => 'pr.port_no',
@@ -262,7 +267,6 @@ $stmtPorts = mysqli_prepare(
            ELSE ''
          END AS vlan_label,
        {$speedLabelExpr} AS speed_label,
-       {$speedValueIdExpr} AS speed_value_id,
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
@@ -350,7 +354,9 @@ $stmtPorts = mysqli_prepare(
      LEFT JOIN equipment_fiber ef
        ON ef.id = pr.speed_id
       AND ef.company_id = pr.company_id
-     {$rj45SpeedJoinSql}
+     LEFT JOIN rj45_speed rjs
+       ON rjs.id = pr.speed_id
+      AND rjs.company_id = pr.company_id
      LEFT JOIN equipment_poe ep
        ON ep.id = pr.poe_id
       AND ep.company_id = pr.company_id
@@ -721,20 +727,18 @@ while ($resFiberSpeeds && ($row = mysqli_fetch_assoc($resFiberSpeeds))) {
 }
 
 $rj45SpeedOptions = [];
-if ($hasRj45SpeedTable) {
-    $resRj45Speeds = mysqli_query(
-        $conn,
-        "SELECT id, cable_type
-         FROM rj45_speed
-         WHERE company_id = $company_id
-         ORDER BY cable_type ASC"
-    );
-    while ($resRj45Speeds && ($row = mysqli_fetch_assoc($resRj45Speeds))) {
-        $rj45SpeedId = (int)($row['id'] ?? 0);
-        $rj45CableType = trim((string)($row['cable_type'] ?? ''));
-        if ($rj45SpeedId > 0 && $rj45CableType !== '') {
-            $rj45SpeedOptions[$rj45SpeedId] = $rj45CableType;
-        }
+$resRj45Speeds = mysqli_query(
+    $conn,
+    "SELECT id, cable_type
+     FROM rj45_speed
+     WHERE company_id = $company_id
+     ORDER BY cable_type ASC"
+);
+while ($resRj45Speeds && ($row = mysqli_fetch_assoc($resRj45Speeds))) {
+    $speedId = (int)($row['id'] ?? 0);
+    $cableType = trim((string)($row['cable_type'] ?? ''));
+    if ($speedId > 0 && $cableType !== '') {
+        $rj45SpeedOptions[$speedId] = $cableType;
     }
 }
 
@@ -1366,6 +1370,8 @@ const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
+const FIBER_SPEED_OPTIONS = <?php echo json_encode($fiberSpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const RJ45_SPEED_OPTIONS = <?php echo json_encode($rj45SpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const PORTS = <?php
 $portsMeta = array_map(static function (array $port): array {
     return [
@@ -1467,7 +1473,7 @@ function openPortModal(portId) {
     }
     form.connected_to.value = rowData.connectedTo || '';
     form.vlan.value = rowData.vlanId || '';
-    refreshSpeedOptions(form, form.port_type.options[form.port_type.selectedIndex]?.textContent || '', rowData.speedId || '');
+    rebuildSpeedOptionsForPortType(rowData.portType || (form.port_type.selectedOptions[0]?.textContent || 'RJ45'), rowData.speedId || '');
     form.poe.value = rowData.poeId || '';
     form.notes.value = rowData.notes || '';
     const requestedCableColorId = (portMeta?.cable_color_id || 0);
@@ -1494,26 +1500,46 @@ function openPortModal(portId) {
     document.getElementById('portBackdrop').style.display = 'flex';
 }
 
-function refreshSpeedOptions(form, portTypeLabel, selectedSpeedId) {
-    if (!form || !form.speed) return;
-    const normalizedType = String(portTypeLabel || '').trim().toLowerCase();
-    const isRj45 = normalizedType === '' || normalizedType === 'rj45';
-    const options = isRj45 ? RJ45_SPEED_OPTIONS : FIBER_SPEED_OPTIONS;
-    const previousValue = String(selectedSpeedId || form.speed.value || '');
+function normalizePortTypeLabel(value) {
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/\+/g, 'plus');
+    if (normalized.indexOf('sfp') !== -1) {
+        return normalized.indexOf('plus') !== -1 ? 'sfp_plus' : 'sfp';
+    }
+    return 'rj45';
+}
 
-    form.speed.innerHTML = '<option value="">-- None --</option>';
-    options.forEach((option) => {
-        const optionEl = document.createElement('option');
-        optionEl.value = String(option.id || 0);
-        optionEl.textContent = String(option.label || '');
-        form.speed.appendChild(optionEl);
+function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
+    const form = document.getElementById('portForm');
+    const speedSelect = form.speed;
+    const normalizedType = normalizePortTypeLabel(portTypeLabel);
+    const sourceMap = normalizedType === 'rj45' ? RJ45_SPEED_OPTIONS : FIBER_SPEED_OPTIONS;
+    const desiredValue = String(selectedValue || '');
+
+    speedSelect.innerHTML = '';
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = '-- None --';
+    speedSelect.appendChild(noneOption);
+
+    Object.keys(sourceMap || {}).forEach((id) => {
+        const option = document.createElement('option');
+        option.value = String(id);
+        option.textContent = String(sourceMap[id] || '').trim();
+        speedSelect.appendChild(option);
     });
 
-    if (previousValue && Array.from(form.speed.options).some((option) => option.value === previousValue)) {
-        form.speed.value = previousValue;
-    } else {
-        form.speed.value = '';
+    if (desiredValue !== '' && !Array.from(speedSelect.options).some((option) => option.value === desiredValue)) {
+        const fallbackOption = document.createElement('option');
+        fallbackOption.value = desiredValue;
+        fallbackOption.textContent = `Saved speed #${desiredValue}`;
+        speedSelect.appendChild(fallbackOption);
     }
+
+    speedSelect.value = desiredValue;
 }
 
 function closePortModal() {
@@ -1546,6 +1572,13 @@ function savePort() {
         .then(() => location.reload())
         .catch(err => alert(err.message));
 }
+
+document.getElementById('portForm').port_type.addEventListener('change', function () {
+    const selectedTypeLabel = this.selectedOptions && this.selectedOptions[0]
+        ? this.selectedOptions[0].textContent
+        : 'RJ45';
+    rebuildSpeedOptionsForPortType(selectedTypeLabel, '');
+});
 
 function onPortClick(portId) {
     openPortModal(portId);

@@ -41,37 +41,33 @@ if ($port_type_id <= 0) {
     idf_fail('Invalid port_type');
 }
 
+$portTypeName = 'RJ45';
+$stmtPortTypeName = mysqli_prepare($conn, 'SELECT type FROM switch_port_types WHERE company_id = ? AND id = ? LIMIT 1');
+if ($stmtPortTypeName) {
+    mysqli_stmt_bind_param($stmtPortTypeName, 'ii', $company_id, $port_type_id);
+    mysqli_stmt_execute($stmtPortTypeName);
+    $resPortTypeName = mysqli_stmt_get_result($stmtPortTypeName);
+    $rowPortTypeName = $resPortTypeName ? mysqli_fetch_assoc($resPortTypeName) : null;
+    mysqli_stmt_close($stmtPortTypeName);
+    if ($rowPortTypeName && trim((string)($rowPortTypeName['type'] ?? '')) !== '') {
+        $portTypeName = (string)$rowPortTypeName['type'];
+    }
+}
+$normalizedPortTypeName = strtolower(preg_replace('/[^a-z0-9]+/', '', $portTypeName));
+$isFiberPortType = strpos($normalizedPortTypeName, 'sfp') !== false;
+
 $label = trim((string)($data['label'] ?? ''));
 $connected_to = trim((string)($data['connected_to'] ?? ''));
 $vlan_id = idf_resolve_vlan_id($conn, $company_id, $data['vlan_id'] ?? ($data['vlan'] ?? ''));
-$rawSpeed = $data['speed_id'] ?? ($data['speed'] ?? '');
-$portTypeName = 'RJ45';
-$stmtPortType = mysqli_prepare(
+$speedLookupTable = $isFiberPortType ? 'equipment_fiber' : 'rj45_speed';
+$speedLookupColumn = $isFiberPortType ? 'name' : 'cable_type';
+$speed_id = idf_resolve_named_lookup_id(
     $conn,
-    "SELECT type
-     FROM switch_port_types
-     WHERE company_id = ? AND id = ?
-     LIMIT 1"
+    $company_id,
+    $speedLookupTable,
+    $speedLookupColumn,
+    $data['speed_id'] ?? ($data['speed'] ?? '')
 );
-if ($stmtPortType) {
-    mysqli_stmt_bind_param($stmtPortType, 'ii', $company_id, $port_type_id);
-    mysqli_stmt_execute($stmtPortType);
-    $resPortType = mysqli_stmt_get_result($stmtPortType);
-    $portTypeRow = $resPortType ? mysqli_fetch_assoc($resPortType) : null;
-    mysqli_stmt_close($stmtPortType);
-    if ($portTypeRow) {
-        $portTypeName = trim((string)($portTypeRow['type'] ?? 'RJ45'));
-    }
-}
-$normalizedPortType = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $portTypeName));
-$isRj45Port = ($normalizedPortType === 'RJ45');
-$speed_id = null;
-$rj45_speed_id = null;
-if ($isRj45Port) {
-    $rj45_speed_id = idf_resolve_named_lookup_id($conn, $company_id, 'rj45_speed', 'cable_type', $rawSpeed);
-} else {
-    $speed_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_fiber', 'name', $rawSpeed);
-}
 $poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $data['poe_id'] ?? ($data['poe'] ?? ''));
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color_id = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
