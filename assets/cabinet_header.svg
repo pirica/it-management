@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="640px" height="58px" viewBox="0 0 640 58" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Slice</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="5.5" height="2187"></rect>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Network-Cabinet" transform="translate(-415.000000, -611.000000)">
+            <g id="Body" transform="translate(415.000000, 610.851000)">
+                <g id="Rechteck_332">
+                    <rect id="Rectangle" fill="#EFEFEF" fill-rule="nonzero" x="0" y="0" width="640" height="31"></rect>
+                    <rect id="Rectangle" stroke="#CCCCCC" x="0.499219969" y="0.5" width="639.00156" height="30"></rect>
+                </g>
+                <g id="Rechteck_334" transform="translate(0.000000, 36.000000)">
+                    <rect id="Rectangle" fill="#EFEFEF" fill-rule="nonzero" x="0" y="0" width="640" height="2253"></rect>
+                    <rect id="Rectangle" stroke="#CCCCCC" x="0.499219969" y="0.5" width="639.00156" height="2252"></rect>
+                </g>
+                <g id="Rechteck_339" transform="translate(5.000000, 30.000000)">
+                    <rect id="Rectangle" fill="#EFEFEF" fill-rule="nonzero" x="0" y="0" width="632" height="7"></rect>
+                    <rect id="Rectangle" stroke="#CCCCCC" x="0.499210111" y="0.5" width="631.00158" height="6"></rect>
+                </g>
+                <rect id="Rechteck_340" fill="#FFFFFF" fill-rule="nonzero" x="21" y="58" width="600" height="2212"></rect>
+            </g>
+            <g id="Schiene_Rechts" transform="translate(510.000000, 0.000000)">
+                <rect id="Rechteck_353-2" fill="#CCCCCC" fill-rule="nonzero" x="479" y="668.851" width="10" height="2212"></rect>
+                <g id="Wiederholungsraster_24-2-Clipped">
+                    <mask id="mask-2" fill="white">
+                        <use xlink:href="#path-1"></use>
+                    </mask>
+                    <g id="Rectangle"></g>
+                </g>
+            </g>
+            <g id="Schiene_Links" fill="#CCCCCC" fill-rule="nonzero">
+                <rect id="Rechteck_353" x="479" y="668.851" width="10" height="2212"></rect>
+            </g>
+        </g>
+    </g>
+</svg>
