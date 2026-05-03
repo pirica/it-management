@@ -245,9 +245,8 @@ $offset = ($page - 1) * $perPage;
         .rack-visualizer-hole {
             width: 8px;
             height: 8px;
-            background: #bfbfbf;
+            background: url('../../assets/unit_empty.svg') center center / contain no-repeat;
             border-radius: 1px;
-            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1);
         }
         .rack-visualizer-content {
             border: 1px solid #f0f0f0;
@@ -262,6 +261,7 @@ $offset = ($page - 1) * $perPage;
             position: relative;
             color: #ccc;
             font-size: 10px;
+            background: url('../../assets/unit_empty.svg') center center / 28px 28px no-repeat;
         }
         .rack-visualizer-u:last-child {
             border-bottom: none;

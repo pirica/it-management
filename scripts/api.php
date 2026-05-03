@@ -434,6 +434,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
             <li><strong>2026-04-30:</strong> IDF device ports page (<code>modules/idfs/device.php</code>) now defaults to sorting by <code>idf_ports.port_type ASC</code> and supports ASC/DESC sorting toggles for #, Type, Label, Status, Connected To, VLAN, Speed, PoE, Notes, and Link columns.</li>
             <li><strong>2026-04-30:</strong> IDF detail view (<code>modules/idfs/view.php</code>) now falls back to tenant-scoped live <code>switch_ports</code> data when <code>idf_ports</code> rows are not yet present.</li>
             <li>Fallback port numbering normalizes non-numeric labels into numeric slots so the visualizer grid still renders.</li>
+            <li><strong>2026-05-03:</strong> Rack planner visualizer rails and empty U-slots now render the shared <code>/assets/unit_empty.svg</code> placeholder for consistent empty-unit previews in edit/view screens.</li>
         </ul>
     </div>
 
@@ -456,3 +457,4 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
 </div>
 </body>
 </html>
+
