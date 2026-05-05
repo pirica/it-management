@@ -231,23 +231,21 @@ $offset = ($page - 1) * $perPage;
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 18px;
+            width: 24px;
             background: #e6e6e6;
             border: 1px solid #d0d0d0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px 0;
-            gap: 4px;
+            padding: 10px 2px;
+            gap: 0;
         }
         .rack-visualizer-rail-left { left: 55px; }
         .rack-visualizer-rail-right { right: 55px; }
-        .rack-visualizer-hole {
-            width: 8px;
-            height: 8px;
-            background: #bfbfbf;
-            border-radius: 1px;
-            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1);
+        .rack-visualizer-rail-unit {
+            width: 100%;
+            height: 40px;
+            background: url('../../assets/unit_empty.svg') center / contain no-repeat;
         }
         .rack-visualizer-content {
             border: 1px solid #f0f0f0;
@@ -262,6 +260,7 @@ $offset = ($page - 1) * $perPage;
             position: relative;
             color: #ccc;
             font-size: 10px;
+            background: url('../../assets/unit_empty.svg') center / contain no-repeat;
         }
         .rack-visualizer-u:last-child {
             border-bottom: none;
@@ -563,13 +562,13 @@ $offset = ($page - 1) * $perPage;
                     <div class="rack-visualizer-top"></div>
                     <div class="rack-visualizer-frame">
                         <div class="rack-visualizer-rail rack-visualizer-rail-left">
-                            <?php for($i=0; $i<$data['rack_units']*3; $i++): ?>
-                                <div class="rack-visualizer-hole"></div>
+                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
                             <?php endfor; ?>
                         </div>
                         <div class="rack-visualizer-rail rack-visualizer-rail-right">
-                            <?php for($i=0; $i<$data['rack_units']*3; $i++): ?>
-                                <div class="rack-visualizer-hole"></div>
+                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
                             <?php endfor; ?>
                         </div>
                         <div class="rack-visualizer-content">
@@ -651,13 +650,13 @@ $offset = ($page - 1) * $perPage;
                     <div class="rack-visualizer-top"></div>
                     <div class="rack-visualizer-frame">
                         <div class="rack-visualizer-rail rack-visualizer-rail-left">
-                            <?php for($i=0; $i<$data['rack_units']*3; $i++): ?>
-                                <div class="rack-visualizer-hole"></div>
+                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
                             <?php endfor; ?>
                         </div>
                         <div class="rack-visualizer-rail rack-visualizer-rail-right">
-                            <?php for($i=0; $i<$data['rack_units']*3; $i++): ?>
-                                <div class="rack-visualizer-hole"></div>
+                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
                             <?php endfor; ?>
                         </div>
                         <div class="rack-visualizer-content">
