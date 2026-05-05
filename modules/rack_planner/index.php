@@ -44,7 +44,95 @@ function rack_planner_component_groups(): array
     ];
 }
 
-function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits): array
+function rack_planner_is_two_ru_name(string $name): bool
+{
+    return (bool)preg_match('/\b2\s*-\s*ru\b|\b2\s*ru\b/i', $name);
+}
+
+function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
+{
+    $options = [];
+    if ($companyId <= 0) {
+        return $options;
+    }
+
+    $sql = "SELECT c.id, c.model, c.price, et.name AS equipment_type_name
+            FROM catalogs c
+            LEFT JOIN equipment_types et ON et.id = c.equipment_type_id
+            WHERE c.company_id = ? AND c.active = 1
+            ORDER BY c.model ASC";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $options;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $model = trim((string)($row['model'] ?? ''));
+        if ($model === '') {
+            continue;
+        }
+
+        $equipmentType = trim((string)($row['equipment_type_name'] ?? ''));
+        if ($equipmentType === '') {
+            $equipmentType = 'Other';
+        }
+
+        $priceText = 'N/A';
+        if (isset($row['price']) && $row['price'] !== null && $row['price'] !== '') {
+            $priceText = number_format((float)$row['price'], 2, '.', ',');
+        }
+
+        $size = rack_planner_is_two_ru_name($model) ? 2 : 1;
+        $code = 'catalog:' . (int)$row['id'];
+        $selectText = $model . ' - ' . $equipmentType . ' - ' . $priceText;
+
+        $options[] = [
+            'code' => $code,
+            'label' => $model,
+            'select_text' => $selectText,
+            'size' => $size,
+            'model' => $model,
+            'equipment_type' => $equipmentType,
+            'price' => $priceText,
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return $options;
+}
+
+function rack_planner_catalog_code_meta_map(array $catalogOptions): array
+{
+    $map = [];
+    foreach ($catalogOptions as $catalogOption) {
+        if (!is_array($catalogOption)) {
+            continue;
+        }
+
+        $code = trim((string)($catalogOption['code'] ?? ''));
+        if ($code === '') {
+            continue;
+        }
+
+        $size = ((int)($catalogOption['size'] ?? 1) === 2) ? 2 : 1;
+        $label = trim((string)($catalogOption['label'] ?? ''));
+        if ($label === '') {
+            $label = $code;
+        }
+
+        $map[$code] = [
+            'label' => $label,
+            'size' => $size,
+        ];
+    }
+
+    return $map;
+}
+
+function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, array $catalogCodeMeta = []): array
 {
     $units = max(1, min(100, $rackUnits));
     $catalog = rack_planner_component_catalog();
@@ -64,11 +152,25 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits):
         }
 
         $code = trim((string)($rawDevice['code'] ?? ''));
-        if ($code === '' || !isset($catalog[$code])) {
+        if ($code === '') {
             continue;
         }
 
-        $size = (int)($catalog[$code]['size'] ?? 1);
+        $meta = null;
+        if (isset($catalog[$code])) {
+            $meta = $catalog[$code];
+        } elseif (isset($catalogCodeMeta[$code])) {
+            $meta = $catalogCodeMeta[$code];
+        } elseif (strpos($code, 'catalog:') === 0) {
+            $meta = [
+                'label' => trim((string)($rawDevice['label'] ?? $code)),
+                'size' => (int)($rawDevice['size'] ?? 1),
+            ];
+        } else {
+            continue;
+        }
+
+        $size = (int)($meta['size'] ?? 1);
         if ($size !== 2) {
             $size = 1;
         }
@@ -95,7 +197,10 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits):
 
         $label = trim((string)($rawDevice['label'] ?? ''));
         if ($label === '') {
-            $label = $catalog[$code]['label'];
+            $label = trim((string)($meta['label'] ?? ''));
+        }
+        if ($label === '') {
+            $label = $code;
         }
 
         $devices[] = [
@@ -177,6 +282,9 @@ if (isset($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 
+$catalogOptions = rack_planner_fetch_catalog_options($conn, $company_id);
+$catalogCodeMeta = rack_planner_catalog_code_meta_map($catalogOptions);
+
 // Handle Delete
 if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
@@ -242,7 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
     $layout_raw = (string)($_POST['layout_json'] ?? '');
-    $layout_json = rack_planner_encode_layout(rack_planner_normalize_layout_json($layout_raw, $rack_units));
+    $layout_json = rack_planner_encode_layout(rack_planner_normalize_layout_json($layout_raw, $rack_units, $catalogCodeMeta));
 
     if ($name === '') {
         $errors[] = 'Name is required.';
@@ -306,7 +414,7 @@ if (in_array($crud_action, ['edit', 'view'])) {
 
 $componentCatalog = rack_planner_component_catalog();
 $componentGroups = rack_planner_component_groups();
-$normalizedLayout = rack_planner_normalize_layout_json((string)($data['layout_json'] ?? ''), (int)($data['rack_units'] ?? 42));
+$normalizedLayout = rack_planner_normalize_layout_json((string)($data['layout_json'] ?? ''), (int)($data['rack_units'] ?? 42), $catalogCodeMeta);
 $data['layout_json'] = rack_planner_encode_layout($normalizedLayout);
 $rackAssignmentsByUnit = rack_planner_assignments_by_unit($normalizedLayout);
 
@@ -515,6 +623,7 @@ $offset = ($page - 1) * $perPage;
         .rack-unit-modal-body { padding: 14px 16px 18px; }
         .rack-unit-modal-row { display: flex; align-items: center; gap: 10px; }
         .rack-unit-modal-row label { font-weight: 600; min-width: 52px; }
+        .rack-unit-modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
     </style>
 </head>
 <body>
@@ -780,13 +889,20 @@ $offset = ($page - 1) * $perPage;
                                             <?php foreach ($groupCodes as $groupCode): ?>
                                                 <?php if (!isset($componentCatalog[$groupCode])) { continue; } ?>
                                                 <?php $meta = $componentCatalog[$groupCode]; ?>
-                                                <option value="<?php echo sanitize($groupCode); ?>" data-size="<?php echo (int)$meta['size']; ?>">
+                                                <option
+                                                    value="<?php echo sanitize($groupCode); ?>"
+                                                    data-size="<?php echo (int)$meta['size']; ?>"
+                                                    data-label="<?php echo sanitize($meta['label']); ?>"
+                                                >
                                                     <?php echo sanitize($meta['label']); ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </optgroup>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                            <div class="rack-unit-modal-actions">
+                                <button type="button" class="btn btn-sm" id="insertFromCatalogsBtn">Insert from Catalogs</button>
                             </div>
                         </div>
                     </div>
@@ -855,6 +971,7 @@ $offset = ($page - 1) * $perPage;
 <script src="../../js/table-tools.js"></script>
 <script>
 const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
 (function () {
     const selectAllRows = document.getElementById('select-all-rows');
@@ -916,6 +1033,7 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
     const rackUnitModalTitle = document.getElementById('rackUnitModalTitle');
     const rackUnitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
     const unitTypeSelect = document.getElementById('unitTypeSelect');
+    const insertFromCatalogsBtn = document.getElementById('insertFromCatalogsBtn');
     const layoutJsonInput = document.getElementById('layoutJsonInput');
     const rackPlanForm = document.querySelector('form.form-grid');
     const rackUnitsInput = rackPlanForm ? rackPlanForm.querySelector('input[name="rack_units"]') : null;
@@ -946,6 +1064,60 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
         return rackComponentCatalog[code];
     }
 
+    function inferCatalogSizeFromName(name) {
+        return /\b2\s*-\s*ru\b|\b2\s*ru\b/i.test(String(name || '')) ? 2 : 1;
+    }
+
+    function getCatalogMeta(code) {
+        if (!code || !Array.isArray(rackCatalogOptions)) {
+            return null;
+        }
+
+        for (let i = 0; i < rackCatalogOptions.length; i++) {
+            const option = rackCatalogOptions[i];
+            if (!option || typeof option !== 'object') {
+                continue;
+            }
+            if (String(option.code || '') !== code) {
+                continue;
+            }
+
+            const size = Number(option.size) === 2 ? 2 : inferCatalogSizeFromName(option.label || option.model || '');
+            return {
+                label: String(option.label || option.model || code),
+                size: size
+            };
+        }
+
+        return null;
+    }
+
+    function getAnyComponentMeta(code, rawDevice) {
+        const staticMeta = getComponentMeta(code);
+        if (staticMeta) {
+            return {
+                label: String(staticMeta.label || code),
+                size: Number(staticMeta.size) === 2 ? 2 : 1
+            };
+        }
+
+        if (String(code || '').indexOf('catalog:') === 0) {
+            const catalogMeta = getCatalogMeta(code);
+            if (catalogMeta) {
+                return catalogMeta;
+            }
+
+            const fallbackLabel = String((rawDevice && rawDevice.label) || code).trim();
+            const fallbackSize = Number((rawDevice && rawDevice.size) || inferCatalogSizeFromName(fallbackLabel)) === 2 ? 2 : 1;
+            return {
+                label: fallbackLabel === '' ? code : fallbackLabel,
+                size: fallbackSize
+            };
+        }
+
+        return null;
+    }
+
     function normalizeLayout(layout) {
         const units = getRackUnitsLimit();
         const occupied = {};
@@ -958,7 +1130,7 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
             }
 
             const code = String(rawDevice.code || '').trim();
-            const meta = getComponentMeta(code);
+            const meta = getAnyComponentMeta(code, rawDevice);
             if (!meta) {
                 return;
             }
@@ -1049,6 +1221,100 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
         layoutJsonInput.value = JSON.stringify(layout);
     }
 
+    function hasSelectOptionValue(selectEl, value) {
+        if (!selectEl) {
+            return false;
+        }
+        for (let i = 0; i < selectEl.options.length; i++) {
+            if (String(selectEl.options[i].value || '') === String(value || '')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function ensureOptionExists(value, label, size) {
+        if (!unitTypeSelect || !value || hasSelectOptionValue(unitTypeSelect, value)) {
+            return;
+        }
+
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = String(label || value);
+        option.setAttribute('data-label', String(label || value));
+        option.setAttribute('data-size', String(Number(size) === 2 ? 2 : 1));
+        option.setAttribute('data-source', 'layout');
+        unitTypeSelect.appendChild(option);
+    }
+
+    function appendCatalogOptionsToSelect() {
+        if (!unitTypeSelect || !Array.isArray(rackCatalogOptions) || rackCatalogOptions.length === 0) {
+            return;
+        }
+
+        let catalogsGroup = unitTypeSelect.querySelector('optgroup[label="Catalogs"]');
+        if (!catalogsGroup) {
+            catalogsGroup = document.createElement('optgroup');
+            catalogsGroup.label = 'Catalogs';
+            unitTypeSelect.appendChild(catalogsGroup);
+        }
+
+        rackCatalogOptions.forEach(function (catalogOption) {
+            if (!catalogOption || typeof catalogOption !== 'object') {
+                return;
+            }
+
+            const optionValue = String(catalogOption.code || '');
+            if (optionValue === '' || hasSelectOptionValue(unitTypeSelect, optionValue)) {
+                return;
+            }
+
+            const optionLabel = String(catalogOption.label || catalogOption.model || optionValue);
+            const optionSize = Number(catalogOption.size) === 2 ? 2 : inferCatalogSizeFromName(optionLabel);
+            const optionText = '+ ' + String(catalogOption.select_text || optionLabel);
+
+            const optionEl = document.createElement('option');
+            optionEl.value = optionValue;
+            optionEl.textContent = optionText;
+            optionEl.setAttribute('data-label', optionLabel);
+            optionEl.setAttribute('data-size', String(optionSize));
+            optionEl.setAttribute('data-source', 'catalog');
+            catalogsGroup.appendChild(optionEl);
+        });
+    }
+
+    function getSelectedOptionMeta() {
+        if (!unitTypeSelect) {
+            return null;
+        }
+
+        const selectedOption = unitTypeSelect.options[unitTypeSelect.selectedIndex];
+        if (!selectedOption) {
+            return null;
+        }
+
+        const selectedCode = String(selectedOption.value || '');
+        if (selectedCode === '') {
+            return null;
+        }
+
+        const optionSize = parseInt(String(selectedOption.getAttribute('data-size') || ''), 10);
+        const size = optionSize === 2 ? 2 : 1;
+        let label = String(selectedOption.getAttribute('data-label') || '').trim();
+        if (label === '') {
+            label = String(selectedOption.textContent || selectedCode).trim();
+        }
+        if (label.indexOf('+ ') === 0) {
+            label = label.substring(2).trim();
+        }
+
+        return {
+            code: selectedCode,
+            label: label === '' ? selectedCode : label,
+            size: size
+        };
+    }
+
     function renderLayout(layout) {
         const assignmentByUnit = buildAssignments(layout);
 
@@ -1110,12 +1376,25 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
             if (rackUnitModalTitle) {
                 rackUnitModalTitle.textContent = 'Component ' + String(activeUnit);
             }
+            if (assignment && String(assignment.code || '').indexOf('catalog:') === 0) {
+                appendCatalogOptionsToSelect();
+            }
+            if (assignment) {
+                ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1));
+            }
             unitTypeSelect.value = assignment ? assignment.code : '';
             rackUnitModal.classList.add('is-open');
             rackUnitModal.setAttribute('aria-hidden', 'false');
         }
 
         renderLayout(layoutState);
+
+        if (insertFromCatalogsBtn) {
+            insertFromCatalogsBtn.addEventListener('click', function () {
+                appendCatalogOptionsToSelect();
+                unitTypeSelect.focus();
+            });
+        }
 
         rackUnitCells.forEach(function (cell) {
             cell.style.cursor = 'pointer';
@@ -1134,21 +1413,11 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
                 return;
             }
 
-            const selectedCode = String(unitTypeSelect.value || '');
+            const selectedMeta = getSelectedOptionMeta();
             removeDeviceCoveringUnit(activeUnit);
 
-            if (selectedCode !== '') {
-                const meta = getComponentMeta(selectedCode);
-                if (!meta) {
-                    alert('Invalid component type.');
-                    unitTypeSelect.value = '';
-                    layoutState = normalizeLayout(layoutState);
-                    renderLayout(layoutState);
-                    closeRackModal();
-                    return;
-                }
-
-                const size = Number(meta.size) === 2 ? 2 : 1;
+            if (selectedMeta) {
+                const size = Number(selectedMeta.size) === 2 ? 2 : 1;
                 const rackLimit = getRackUnitsLimit();
                 if ((activeUnit + size - 1) > rackLimit) {
                     alert('Not enough space for this ' + String(size) + '-RU component.');
@@ -1169,8 +1438,8 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
                 }
 
                 layoutState.devices.push({
-                    code: selectedCode,
-                    label: String(meta.label || selectedCode),
+                    code: String(selectedMeta.code),
+                    label: String(selectedMeta.label),
                     start_u: activeUnit,
                     size: size
                 });
