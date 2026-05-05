@@ -739,6 +739,8 @@ $offset = ($page - 1) * $perPage;
         .rack-unit-modal-body { padding: 14px 16px 18px; }
         .rack-unit-modal-row { display: flex; align-items: center; gap: 10px; }
         .rack-unit-modal-row label { font-weight: 600; min-width: 52px; }
+        .rack-unit-modal-row.is-hidden { display: none; }
+        .rack-unit-modal-row input[type="text"] { flex: 1; min-width: 0; }
         .rack-unit-modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
         .rack-visualizer-total {
             margin-top: 12px;
@@ -1047,6 +1049,11 @@ $offset = ($page - 1) * $perPage;
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <div class="rack-unit-modal-row is-hidden" id="placeholderMessageRow">
+                                <label for="placeholderMessageInput">Message</label>
+                                <input type="text" id="placeholderMessageInput" placeholder="Write placeholder text">
+                                <button type="button" class="btn btn-sm" id="placeholderApplyBtn">Apply</button>
+                            </div>
                             <div class="rack-unit-modal-actions">
                                 <button type="button" class="btn btn-sm" id="insertFromCatalogsBtn">Insert from Catalogs</button>
                             </div>
@@ -1314,6 +1321,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackUnitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
     const unitTypeSelect = document.getElementById('unitTypeSelect');
     const insertFromCatalogsBtn = document.getElementById('insertFromCatalogsBtn');
+    const placeholderMessageRow = document.getElementById('placeholderMessageRow');
+    const placeholderMessageInput = document.getElementById('placeholderMessageInput');
+    const placeholderApplyBtn = document.getElementById('placeholderApplyBtn');
     const layoutJsonInput = document.getElementById('layoutJsonInput');
     const rackPlanForm = document.querySelector('form.form-grid');
     const rackUnitsInput = rackPlanForm ? rackPlanForm.querySelector('input[name="rack_units"]') : null;
@@ -1327,10 +1337,28 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return rackUnitCells.length;
     }
 
+    function isPlaceholderCode(code) {
+        const c = String(code || '');
+        return c === 'ph' || c === 'ph_2';
+    }
+
+    function showPlaceholderMessageControls(show) {
+        if (!placeholderMessageRow || !placeholderMessageInput || !placeholderApplyBtn) {
+            return;
+        }
+        if (show) {
+            placeholderMessageRow.classList.remove('is-hidden');
+        } else {
+            placeholderMessageRow.classList.add('is-hidden');
+            placeholderMessageInput.value = '';
+        }
+    }
+
     function closeRackModal() {
         if (!rackUnitModal) {
             return;
         }
+        showPlaceholderMessageControls(false);
         rackUnitModal.classList.remove('is-open');
         rackUnitModal.setAttribute('aria-hidden', 'true');
     }
@@ -1770,6 +1798,52 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         let activeUnit = null;
         let dragState = null;
         let ignoreNextClick = false;
+        let pendingPlaceholderMeta = null;
+
+        function applySelectedMeta(selectedMeta, customLabel) {
+            const previousLayoutJson = JSON.stringify(layoutState);
+            const normalizedCustomLabel = String(customLabel || '').trim();
+
+            if (!Number.isInteger(activeUnit) || activeUnit < 1) {
+                closeRackModal();
+                return;
+            }
+
+            removeDeviceCoveringUnit(activeUnit);
+
+            if (selectedMeta) {
+                const size = Number(selectedMeta.size) === 2 ? 2 : 1;
+                const rackLimit = getRackUnitsLimit();
+                if ((activeUnit + size - 1) > rackLimit) {
+                    alert('Not enough space for this ' + String(size) + '-RU component.');
+                    unitTypeSelect.value = '';
+                    layoutState = normalizeLayout(previousLayoutJson ? JSON.parse(previousLayoutJson) : { version: 1, units: rackLimit, devices: [] });
+                    renderLayout(layoutState);
+                    return;
+                }
+
+                if (!isRangeAvailable(activeUnit, size)) {
+                    alert('Selected space overlaps another component.');
+                    unitTypeSelect.value = '';
+                    layoutState = normalizeLayout(previousLayoutJson ? JSON.parse(previousLayoutJson) : { version: 1, units: rackLimit, devices: [] });
+                    renderLayout(layoutState);
+                    return;
+                }
+
+                layoutState.devices.push({
+                    code: String(selectedMeta.code),
+                    label: normalizedCustomLabel !== '' ? normalizedCustomLabel : String(selectedMeta.label),
+                    start_u: activeUnit,
+                    size: size,
+                    price: selectedMeta.price
+                });
+            }
+
+            layoutState = normalizeLayout(layoutState);
+            renderLayout(layoutState);
+            autoSaveLayoutToDatabase(layoutState);
+            closeRackModal();
+        }
 
         function clearDragTargets() {
             rackUnitCells.forEach(function (cell) {
@@ -1847,6 +1921,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             const assignments = buildAssignments(layoutState);
             const assignment = assignments[unit] || null;
             activeUnit = assignment ? assignment.start_u : unit;
+            pendingPlaceholderMeta = null;
             if (rackUnitModalTitle) {
                 rackUnitModalTitle.textContent = 'Component ' + String(activeUnit);
             }
@@ -1857,6 +1932,22 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1), assignment.price);
             }
             unitTypeSelect.value = assignment ? assignment.code : '';
+            if (assignment && isPlaceholderCode(assignment.code)) {
+                showPlaceholderMessageControls(true);
+                pendingPlaceholderMeta = {
+                    code: String(assignment.code),
+                    label: String(assignment.label),
+                    size: Number(assignment.size) === 2 ? 2 : 1,
+                    price: assignment.price
+                };
+                if (placeholderMessageInput) {
+                    placeholderMessageInput.value = String(assignment.label || '');
+                    placeholderMessageInput.focus();
+                    placeholderMessageInput.select();
+                }
+            } else {
+                showPlaceholderMessageControls(false);
+            }
             rackUnitModal.classList.add('is-open');
             rackUnitModal.setAttribute('aria-hidden', 'false');
         }
@@ -1955,43 +2046,64 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             }
 
             const selectedMeta = getSelectedOptionMeta();
-            removeDeviceCoveringUnit(activeUnit);
-
-            if (selectedMeta) {
-                const size = Number(selectedMeta.size) === 2 ? 2 : 1;
-                const rackLimit = getRackUnitsLimit();
-                if ((activeUnit + size - 1) > rackLimit) {
-                    alert('Not enough space for this ' + String(size) + '-RU component.');
-                    unitTypeSelect.value = '';
-                    layoutState = normalizeLayout(layoutState);
-                    renderLayout(layoutState);
-                    closeRackModal();
-                    return;
-                }
-
-                if (!isRangeAvailable(activeUnit, size)) {
-                    alert('Selected space overlaps another component.');
-                    unitTypeSelect.value = '';
-                    layoutState = normalizeLayout(layoutState);
-                    renderLayout(layoutState);
-                    closeRackModal();
-                    return;
-                }
-
-                layoutState.devices.push({
+            if (selectedMeta && isPlaceholderCode(selectedMeta.code)) {
+                pendingPlaceholderMeta = {
                     code: String(selectedMeta.code),
-                    label: String(selectedMeta.label),
-                    start_u: activeUnit,
-                    size: size,
+                    label: String(selectedMeta.label || ''),
+                    size: Number(selectedMeta.size) === 2 ? 2 : 1,
                     price: selectedMeta.price
-                });
+                };
+                showPlaceholderMessageControls(true);
+                if (placeholderMessageInput) {
+                    if (String(placeholderMessageInput.value || '').trim() === '') {
+                        placeholderMessageInput.value = String(selectedMeta.label || '');
+                    }
+                    placeholderMessageInput.focus();
+                    placeholderMessageInput.select();
+                }
+                return;
             }
 
-            layoutState = normalizeLayout(layoutState);
-            renderLayout(layoutState);
-            autoSaveLayoutToDatabase(layoutState);
-            closeRackModal();
+            pendingPlaceholderMeta = null;
+            showPlaceholderMessageControls(false);
+            applySelectedMeta(selectedMeta, '');
         });
+
+        function applyPendingPlaceholderSelection() {
+            const selectedMeta = pendingPlaceholderMeta && isPlaceholderCode(pendingPlaceholderMeta.code)
+                ? pendingPlaceholderMeta
+                : getSelectedOptionMeta();
+            if (!selectedMeta || !isPlaceholderCode(selectedMeta.code)) {
+                return;
+            }
+
+            const typedMessage = String(placeholderMessageInput ? placeholderMessageInput.value : '').trim();
+            if (typedMessage === '') {
+                alert('Please write a placeholder message.');
+                if (placeholderMessageInput) {
+                    placeholderMessageInput.focus();
+                }
+                return;
+            }
+
+            applySelectedMeta(selectedMeta, typedMessage);
+            pendingPlaceholderMeta = null;
+        }
+
+        if (placeholderApplyBtn) {
+            placeholderApplyBtn.addEventListener('click', function () {
+                applyPendingPlaceholderSelection();
+            });
+        }
+
+        if (placeholderMessageInput) {
+            placeholderMessageInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applyPendingPlaceholderSelection();
+                }
+            });
+        }
 
         rackUnitModalClose.addEventListener('click', function () {
             closeRackModal();
