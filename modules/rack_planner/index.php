@@ -245,7 +245,10 @@ $offset = ($page - 1) * $perPage;
         .rack-visualizer-rail-unit {
             width: 100%;
             height: 40px;
-            background: url('../../assets/unit_empty.svg') center / contain no-repeat;
+            background-image: url('../../assets/unit_empty.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 100% 100%;
         }
         .rack-visualizer-content {
             border: 1px solid #f0f0f0;
@@ -260,7 +263,10 @@ $offset = ($page - 1) * $perPage;
             position: relative;
             color: #ccc;
             font-size: 10px;
-            background: url('../../assets/unit_empty.svg') center / contain no-repeat;
+            background-image: url('../../assets/unit_empty.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 100% 100%;
         }
         .rack-visualizer-u:last-child {
             border-bottom: none;
