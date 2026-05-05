@@ -133,7 +133,7 @@ function rack_planner_catalog_code_meta_map(array $catalogOptions): array
         }
 
         $map[$code] = [
-            'label' => $label,
+            'label' => trim((string)($catalogOption['select_text'] ?? $label)),
             'size' => $size,
             'price' => isset($catalogOption['price_value']) && is_numeric($catalogOption['price_value']) ? (float)$catalogOption['price_value'] : null,
         ];
@@ -208,6 +208,10 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
         $label = trim((string)($rawDevice['label'] ?? ''));
         if ($label === '') {
             $label = trim((string)($meta['label'] ?? ''));
+        }
+        if (strpos($code, 'catalog:') === 0 && trim((string)($meta['label'] ?? '')) !== '') {
+            // Keep catalog labels standardized as "Model - Equipment Type - Price".
+            $label = trim((string)$meta['label']);
         }
         if ($label === '') {
             $label = $code;
@@ -615,6 +619,7 @@ $offset = ($page - 1) * $perPage;
         }
         .rack-visualizer-u.has-device-anchor {
             z-index: 2;
+            cursor: move;
         }
         .rack-visualizer-u-label {
             display: none;
@@ -745,6 +750,10 @@ $offset = ($page - 1) * $perPage;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             padding: 8px 12px;
+        }
+        .rack-visualizer-u.rack-drop-target {
+            outline: 2px solid #2563eb;
+            outline-offset: -2px;
         }
     </style>
 </head>
@@ -1211,8 +1220,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
             const size = Number(option.size) === 2 ? 2 : inferCatalogSizeFromName(option.label || option.model || '');
             const priceValue = (option.price_value !== null && option.price_value !== undefined && option.price_value !== '') ? Number(option.price_value) : null;
+            const displayLabel = String(option.select_text || option.label || option.model || code);
             return {
-                label: String(option.label || option.model || code),
+                label: displayLabel,
                 size: size,
                 price: Number.isFinite(priceValue) ? priceValue : null
             };
@@ -1435,7 +1445,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             const optionEl = document.createElement('option');
             optionEl.value = optionValue;
             optionEl.textContent = optionText;
-            optionEl.setAttribute('data-label', optionLabel);
+            optionEl.setAttribute('data-label', optionText);
             optionEl.setAttribute('data-size', String(optionSize));
             optionEl.setAttribute('data-price', Number.isFinite(optionPrice) ? optionPrice.toFixed(2) : '');
             optionEl.setAttribute('data-source', 'catalog');
@@ -1482,6 +1492,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             const unit = parseInt(cell.getAttribute('data-u'), 10);
             const assignment = assignmentByUnit[unit];
             const labelEl = cell.querySelector('.rack-visualizer-u-label');
+            cell.classList.remove('rack-drop-target');
+            cell.setAttribute('draggable', 'false');
 
             if (assignment) {
                 cell.classList.add('has-device');
@@ -1493,6 +1505,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 const anchorUnit = Number(assignment.start_u) + Number(assignment.size) - 1;
                 if (unit === anchorUnit) {
                     cell.classList.add('has-device-anchor');
+                    cell.setAttribute('draggable', 'true');
                     if (labelEl) {
                         labelEl.textContent = assignment.label;
                     }
@@ -1593,6 +1606,62 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     if (rackUnitModal && rackUnitModalClose && unitTypeSelect && layoutJsonInput && rackUnitCells.length > 0) {
         let layoutState = parseLayoutFromInput();
         let activeUnit = null;
+        let dragState = null;
+        let ignoreNextClick = false;
+
+        function clearDragTargets() {
+            rackUnitCells.forEach(function (cell) {
+                cell.classList.remove('rack-drop-target');
+            });
+        }
+
+        function rangesOverlap(startA, sizeA, startB, sizeB) {
+            const endA = startA + sizeA - 1;
+            const endB = startB + sizeB - 1;
+            return startA <= endB && startB <= endA;
+        }
+
+        function moveDeviceToUnit(sourceStartU, targetStartU) {
+            const sourceIndex = layoutState.devices.findIndex(function (device) {
+                return Number(device.start_u) === Number(sourceStartU);
+            });
+            if (sourceIndex === -1) {
+                return;
+            }
+
+            const sourceDevice = layoutState.devices[sourceIndex];
+            const sourceSize = Number(sourceDevice.size) === 2 ? 2 : 1;
+            if (!Number.isInteger(targetStartU) || targetStartU < 1) {
+                return;
+            }
+            if (Number(sourceDevice.start_u) === targetStartU) {
+                return;
+            }
+
+            const rackLimit = getRackUnitsLimit();
+            if ((targetStartU + sourceSize - 1) > rackLimit) {
+                alert('Not enough space for this ' + String(sourceSize) + '-RU component.');
+                return;
+            }
+
+            for (let i = 0; i < layoutState.devices.length; i++) {
+                if (i === sourceIndex) {
+                    continue;
+                }
+                const other = layoutState.devices[i];
+                const otherStart = Number(other.start_u);
+                const otherSize = Number(other.size) === 2 ? 2 : 1;
+                if (rangesOverlap(targetStartU, sourceSize, otherStart, otherSize)) {
+                    alert('Selected space overlaps another component.');
+                    return;
+                }
+            }
+
+            sourceDevice.start_u = targetStartU;
+            layoutState = normalizeLayout(layoutState);
+            renderLayout(layoutState);
+            autoSaveLayoutToDatabase(layoutState);
+        }
 
         function removeDeviceCoveringUnit(unit) {
             layoutState.devices = layoutState.devices.filter(function (device) {
@@ -1642,11 +1711,72 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         rackUnitCells.forEach(function (cell) {
             cell.style.cursor = 'pointer';
             cell.addEventListener('click', function () {
+                if (ignoreNextClick) {
+                    ignoreNextClick = false;
+                    return;
+                }
                 const clickedUnit = parseInt(cell.getAttribute('data-u'), 10);
                 if (!Number.isInteger(clickedUnit) || clickedUnit < 1) {
                     return;
                 }
                 openRackModalForUnit(clickedUnit);
+            });
+
+            cell.addEventListener('dragstart', function (event) {
+                if (!cell.classList.contains('has-device-anchor')) {
+                    event.preventDefault();
+                    return;
+                }
+
+                const sourceStartU = parseInt(String(cell.getAttribute('data-device-start-u') || ''), 10);
+                const sourceSize = parseInt(String(cell.getAttribute('data-device-size') || ''), 10);
+                if (!Number.isInteger(sourceStartU) || sourceStartU < 1) {
+                    event.preventDefault();
+                    return;
+                }
+
+                dragState = {
+                    sourceStartU: sourceStartU,
+                    sourceSize: sourceSize === 2 ? 2 : 1
+                };
+
+                if (event.dataTransfer) {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', String(sourceStartU));
+                }
+            });
+
+            cell.addEventListener('dragover', function (event) {
+                if (!dragState) {
+                    return;
+                }
+                event.preventDefault();
+                cell.classList.add('rack-drop-target');
+                if (event.dataTransfer) {
+                    event.dataTransfer.dropEffect = 'move';
+                }
+            });
+
+            cell.addEventListener('dragleave', function () {
+                cell.classList.remove('rack-drop-target');
+            });
+
+            cell.addEventListener('drop', function (event) {
+                if (!dragState) {
+                    return;
+                }
+                event.preventDefault();
+                const targetUnit = parseInt(String(cell.getAttribute('data-u') || ''), 10);
+                clearDragTargets();
+                moveDeviceToUnit(dragState.sourceStartU, targetUnit);
+                dragState = null;
+                ignoreNextClick = true;
+                setTimeout(function () { ignoreNextClick = false; }, 50);
+            });
+
+            cell.addEventListener('dragend', function () {
+                dragState = null;
+                clearDragTargets();
             });
         });
 
