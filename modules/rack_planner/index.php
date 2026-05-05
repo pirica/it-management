@@ -52,6 +52,7 @@ function rack_planner_is_two_ru_name(string $name): bool
 function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
 {
     $options = [];
+    $seen = [];
     if ($companyId <= 0) {
         return $options;
     }
@@ -81,13 +82,20 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
         }
 
         $priceText = 'N/A';
+        $priceValue = null;
         if (isset($row['price']) && $row['price'] !== null && $row['price'] !== '') {
-            $priceText = number_format((float)$row['price'], 2, '.', ',');
+            $priceValue = (float)$row['price'];
+            $priceText = number_format($priceValue, 2, '.', ',');
         }
 
         $size = rack_planner_is_two_ru_name($model) ? 2 : 1;
         $code = 'catalog:' . (int)$row['id'];
         $selectText = $model . ' - ' . $equipmentType . ' - ' . $priceText;
+        $dedupeKey = strtolower($model . '|' . $equipmentType . '|' . $priceText);
+        if (isset($seen[$dedupeKey])) {
+            continue;
+        }
+        $seen[$dedupeKey] = true;
 
         $options[] = [
             'code' => $code,
@@ -97,6 +105,7 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
             'model' => $model,
             'equipment_type' => $equipmentType,
             'price' => $priceText,
+            'price_value' => $priceValue,
         ];
     }
     mysqli_stmt_close($stmt);
@@ -126,6 +135,7 @@ function rack_planner_catalog_code_meta_map(array $catalogOptions): array
         $map[$code] = [
             'label' => $label,
             'size' => $size,
+            'price' => isset($catalogOption['price_value']) && is_numeric($catalogOption['price_value']) ? (float)$catalogOption['price_value'] : null,
         ];
     }
 
@@ -203,11 +213,19 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
             $label = $code;
         }
 
+        $price = null;
+        if (isset($meta['price']) && is_numeric($meta['price'])) {
+            $price = (float)$meta['price'];
+        } elseif (isset($rawDevice['price']) && is_numeric($rawDevice['price'])) {
+            $price = (float)$rawDevice['price'];
+        }
+
         $devices[] = [
             'code' => $code,
             'label' => $label,
             'start_u' => $startU,
             'size' => $size,
+            'price' => $price,
         ];
     }
 
@@ -220,6 +238,26 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
         'units' => $units,
         'devices' => $devices,
     ];
+}
+
+function rack_planner_layout_total(array $layout): float
+{
+    $total = 0.0;
+    if (!isset($layout['devices']) || !is_array($layout['devices'])) {
+        return $total;
+    }
+
+    foreach ($layout['devices'] as $device) {
+        if (!is_array($device)) {
+            continue;
+        }
+        if (!isset($device['price']) || !is_numeric($device['price'])) {
+            continue;
+        }
+        $total += (float)$device['price'];
+    }
+
+    return $total;
 }
 
 function rack_planner_encode_layout(array $layout): string
@@ -341,6 +379,61 @@ if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Handle Save (Create/Edit)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true) && isset($_POST['ajax_update_layout'])) {
+    itm_require_post_csrf();
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $id = (int)($_POST['id'] ?? 0);
+    $rackUnits = max(1, min(100, (int)($_POST['rack_units'] ?? 42)));
+    $layoutRaw = (string)($_POST['layout_json'] ?? '');
+    $normalizedLayout = rack_planner_normalize_layout_json($layoutRaw, $rackUnits, $catalogCodeMeta);
+    $layoutJson = rack_planner_encode_layout($normalizedLayout);
+    $totalAmount = rack_planner_layout_total($normalizedLayout);
+
+    if ($id <= 0) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Create mode requires Save before auto-save.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET layout_json = ? WHERE id = ? AND company_id = ?");
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Unable to prepare auto-save.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'sii', $layoutJson, $id, $company_id);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    if (!$ok) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Auto-save failed.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Auto-saved.',
+        'layout_json' => $layoutJson,
+        'total_amount' => number_format($totalAmount, 2, '.', ''),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'])) {
     itm_require_post_csrf();
 
@@ -417,6 +510,7 @@ $componentGroups = rack_planner_component_groups();
 $normalizedLayout = rack_planner_normalize_layout_json((string)($data['layout_json'] ?? ''), (int)($data['rack_units'] ?? 42), $catalogCodeMeta);
 $data['layout_json'] = rack_planner_encode_layout($normalizedLayout);
 $rackAssignmentsByUnit = rack_planner_assignments_by_unit($normalizedLayout);
+$layoutTotalAmount = rack_planner_layout_total($normalizedLayout);
 
 $search = trim((string)($_GET['search'] ?? ''));
 $sort = $_GET['sort'] ?? 'id';
@@ -519,6 +613,9 @@ $offset = ($page - 1) * $perPage;
         .rack-visualizer-u.has-device {
             color: #1f2937;
         }
+        .rack-visualizer-u.has-device-anchor {
+            z-index: 2;
+        }
         .rack-visualizer-u-label {
             display: none;
             max-width: 88%;
@@ -533,9 +630,25 @@ $offset = ($page - 1) * $perPage;
             text-overflow: ellipsis;
             white-space: nowrap;
             box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+            pointer-events: none;
         }
         .rack-visualizer-u.has-device .rack-visualizer-u-label {
             display: inline-block;
+        }
+        .rack-visualizer-u.has-device-anchor[data-device-size="2"] .rack-visualizer-u-label {
+            position: absolute;
+            left: 6%;
+            width: 88%;
+            max-width: none;
+            height: calc(80px - 2px);
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: normal;
+            text-align: center;
+            border-radius: 10px;
+            z-index: 3;
         }
         .rack-visualizer-u::before {
             content: attr(data-u);
@@ -624,6 +737,15 @@ $offset = ($page - 1) * $perPage;
         .rack-unit-modal-row { display: flex; align-items: center; gap: 10px; }
         .rack-unit-modal-row label { font-weight: 600; min-width: 52px; }
         .rack-unit-modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+        .rack-visualizer-total {
+            margin-top: 12px;
+            font-weight: 700;
+            color: #111827;
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
     </style>
 </head>
 <body>
@@ -873,6 +995,7 @@ $offset = ($page - 1) * $perPage;
                         <div class="rack-visualizer-foot"></div>
                     </div>
                 </div>
+                <div class="rack-visualizer-total">TOTAL: <span id="rackTotalAmount"><?php echo number_format($layoutTotalAmount, 2, '.', ','); ?></span></div>
                 <div class="rack-unit-modal-overlay" id="rackUnitModal" aria-hidden="true">
                     <div class="rack-unit-modal" role="dialog" aria-modal="true" aria-labelledby="rackUnitModalTitle">
                         <div class="rack-unit-modal-header">
@@ -884,6 +1007,7 @@ $offset = ($page - 1) * $perPage;
                                 <label for="unitTypeSelect">Type</label>
                                 <select name="unitTypeSelect" id="unitTypeSelect" class="block w-full rounded-md bg-full-white border-0 py-1.5 ring-1 ring-gray-300 ring-inset focus:ring-1 focus:ring-brand-blue text-sm">
                                     <option value="">- Empty -</option>
+                                    <option value="__add_new__">➕</option>
                                     <?php foreach ($componentGroups as $groupLabel => $groupCodes): ?>
                                         <optgroup label="<?php echo sanitize($groupLabel); ?>">
                                             <?php foreach ($groupCodes as $groupCode): ?>
@@ -893,6 +1017,7 @@ $offset = ($page - 1) * $perPage;
                                                     value="<?php echo sanitize($groupCode); ?>"
                                                     data-size="<?php echo (int)$meta['size']; ?>"
                                                     data-label="<?php echo sanitize($meta['label']); ?>"
+                                                    data-price=""
                                                 >
                                                     <?php echo sanitize($meta['label']); ?>
                                                 </option>
@@ -963,6 +1088,7 @@ $offset = ($page - 1) * $perPage;
                         <div class="rack-visualizer-foot"></div>
                     </div>
                 </div>
+                <div class="rack-visualizer-total">TOTAL: <span><?php echo number_format($layoutTotalAmount, 2, '.', ','); ?></span></div>
             <?php endif; ?>
         </div>
     </div>
@@ -1037,6 +1163,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const layoutJsonInput = document.getElementById('layoutJsonInput');
     const rackPlanForm = document.querySelector('form.form-grid');
     const rackUnitsInput = rackPlanForm ? rackPlanForm.querySelector('input[name="rack_units"]') : null;
+    const rackTotalAmount = document.getElementById('rackTotalAmount');
 
     function getRackUnitsLimit() {
         const inputUnits = rackUnitsInput ? parseInt(rackUnitsInput.value, 10) : NaN;
@@ -1083,9 +1210,11 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             }
 
             const size = Number(option.size) === 2 ? 2 : inferCatalogSizeFromName(option.label || option.model || '');
+            const priceValue = (option.price_value !== null && option.price_value !== undefined && option.price_value !== '') ? Number(option.price_value) : null;
             return {
                 label: String(option.label || option.model || code),
-                size: size
+                size: size,
+                price: Number.isFinite(priceValue) ? priceValue : null
             };
         }
 
@@ -1109,9 +1238,11 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
             const fallbackLabel = String((rawDevice && rawDevice.label) || code).trim();
             const fallbackSize = Number((rawDevice && rawDevice.size) || inferCatalogSizeFromName(fallbackLabel)) === 2 ? 2 : 1;
+            const fallbackPrice = (rawDevice && rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price))) ? Number(rawDevice.price) : null;
             return {
                 label: fallbackLabel === '' ? code : fallbackLabel,
-                size: fallbackSize
+                size: fallbackSize,
+                price: fallbackPrice
             };
         }
 
@@ -1160,7 +1291,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 code: code,
                 label: label,
                 start_u: startU,
-                size: size
+                size: size,
+                price: (meta.price !== null && meta.price !== undefined && !Number.isNaN(Number(meta.price))) ? Number(meta.price) : ((rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price)))) ? Number(rawDevice.price) : null
             });
         });
 
@@ -1173,6 +1305,30 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             units: units,
             devices: devices
         };
+    }
+
+    function computeLayoutTotal(layout) {
+        if (!layout || !Array.isArray(layout.devices)) {
+            return 0;
+        }
+        let total = 0;
+        layout.devices.forEach(function (device) {
+            if (!device || device.price === undefined || device.price === null || device.price === '') {
+                return;
+            }
+            const n = Number(device.price);
+            if (Number.isFinite(n)) {
+                total += n;
+            }
+        });
+        return total;
+    }
+
+    function updateTotalAmount(layout) {
+        if (!rackTotalAmount) {
+            return;
+        }
+        rackTotalAmount.textContent = computeLayoutTotal(layout).toFixed(2);
     }
 
     function parseLayoutFromInput() {
@@ -1206,7 +1362,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     code: String(device.code || ''),
                     label: String(device.label || ''),
                     start_u: startU,
-                    size: size
+                    size: size,
+                    price: (device.price !== undefined && device.price !== null && device.price !== '' && !Number.isNaN(Number(device.price))) ? Number(device.price) : null
                 };
             }
         });
@@ -1233,7 +1390,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return false;
     }
 
-    function ensureOptionExists(value, label, size) {
+    function ensureOptionExists(value, label, size, price) {
         if (!unitTypeSelect || !value || hasSelectOptionValue(unitTypeSelect, value)) {
             return;
         }
@@ -1243,6 +1400,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         option.textContent = String(label || value);
         option.setAttribute('data-label', String(label || value));
         option.setAttribute('data-size', String(Number(size) === 2 ? 2 : 1));
+        option.setAttribute('data-price', (price !== undefined && price !== null && !Number.isNaN(Number(price))) ? Number(price).toFixed(2) : '');
         option.setAttribute('data-source', 'layout');
         unitTypeSelect.appendChild(option);
     }
@@ -1271,13 +1429,15 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
             const optionLabel = String(catalogOption.label || catalogOption.model || optionValue);
             const optionSize = Number(catalogOption.size) === 2 ? 2 : inferCatalogSizeFromName(optionLabel);
-            const optionText = '+ ' + String(catalogOption.select_text || optionLabel);
+            const optionText = String(catalogOption.select_text || optionLabel);
+            const optionPrice = (catalogOption.price_value !== null && catalogOption.price_value !== undefined && catalogOption.price_value !== '') ? Number(catalogOption.price_value) : NaN;
 
             const optionEl = document.createElement('option');
             optionEl.value = optionValue;
             optionEl.textContent = optionText;
             optionEl.setAttribute('data-label', optionLabel);
             optionEl.setAttribute('data-size', String(optionSize));
+            optionEl.setAttribute('data-price', Number.isFinite(optionPrice) ? optionPrice.toFixed(2) : '');
             optionEl.setAttribute('data-source', 'catalog');
             catalogsGroup.appendChild(optionEl);
         });
@@ -1304,14 +1464,14 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         if (label === '') {
             label = String(selectedOption.textContent || selectedCode).trim();
         }
-        if (label.indexOf('+ ') === 0) {
-            label = label.substring(2).trim();
-        }
+        const optionPriceRaw = String(selectedOption.getAttribute('data-price') || '').trim();
+        const optionPriceNum = optionPriceRaw === '' ? null : Number(optionPriceRaw);
 
         return {
             code: selectedCode,
             label: label === '' ? selectedCode : label,
-            size: size
+            size: size,
+            price: Number.isFinite(optionPriceNum) ? optionPriceNum : null
         };
     }
 
@@ -1325,15 +1485,23 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
             if (assignment) {
                 cell.classList.add('has-device');
+                cell.classList.remove('has-device-anchor');
                 cell.setAttribute('data-device-code', assignment.code);
                 cell.setAttribute('data-device-label', assignment.label);
                 cell.setAttribute('data-device-size', String(assignment.size));
                 cell.setAttribute('data-device-start-u', String(assignment.start_u));
-                if (labelEl) {
-                    labelEl.textContent = assignment.label;
+                const anchorUnit = Number(assignment.start_u) + Number(assignment.size) - 1;
+                if (unit === anchorUnit) {
+                    cell.classList.add('has-device-anchor');
+                    if (labelEl) {
+                        labelEl.textContent = assignment.label;
+                    }
+                } else if (labelEl) {
+                    labelEl.textContent = '';
                 }
             } else {
                 cell.classList.remove('has-device');
+                cell.classList.remove('has-device-anchor');
                 cell.setAttribute('data-device-code', '');
                 cell.setAttribute('data-device-label', '');
                 cell.setAttribute('data-device-size', '');
@@ -1345,6 +1513,81 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         });
 
         saveLayoutToInput(layout);
+        updateTotalAmount(layout);
+    }
+
+    let autoSaveInFlight = false;
+    let autoSavePending = false;
+    let lastAutoSavePayload = '';
+
+    function autoSaveLayoutToDatabase(layout) {
+        if (!rackPlanForm || !layoutJsonInput) {
+            return;
+        }
+
+        const idInput = rackPlanForm.querySelector('input[name="id"]');
+        const csrfInput = rackPlanForm.querySelector('input[name="csrf_token"]');
+        const recordId = idInput ? parseInt(String(idInput.value || ''), 10) : 0;
+        if (!Number.isInteger(recordId) || recordId <= 0) {
+            return;
+        }
+
+        const payload = JSON.stringify(layout);
+        if (payload === lastAutoSavePayload && !autoSavePending && !autoSaveInFlight) {
+            return;
+        }
+        lastAutoSavePayload = payload;
+
+        const submitOnce = function () {
+            autoSaveInFlight = true;
+            const formData = new FormData();
+            formData.set('ajax_update_layout', '1');
+            formData.set('id', String(recordId));
+            formData.set('rack_units', String(getRackUnitsLimit()));
+            formData.set('layout_json', layoutJsonInput.value);
+            if (csrfInput) {
+                formData.set('csrf_token', String(csrfInput.value || ''));
+            }
+
+            fetch(window.location.pathname + window.location.search, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(function (response) {
+                return response.json();
+            }).then(function (result) {
+                if (!result || typeof result !== 'object') {
+                    return;
+                }
+                if (result.layout_json && layoutJsonInput) {
+                    layoutJsonInput.value = String(result.layout_json);
+                }
+                if (result.total_amount !== undefined && result.total_amount !== null && rackTotalAmount) {
+                    const totalNum = Number(result.total_amount);
+                    if (Number.isFinite(totalNum)) {
+                        rackTotalAmount.textContent = totalNum.toFixed(2);
+                    }
+                }
+            }).catch(function () {
+                // Keep the UI responsive even if auto-save fails; manual Save still works.
+            }).finally(function () {
+                autoSaveInFlight = false;
+                if (autoSavePending) {
+                    autoSavePending = false;
+                    submitOnce();
+                }
+            });
+        };
+
+        if (autoSaveInFlight) {
+            autoSavePending = true;
+            return;
+        }
+
+        submitOnce();
     }
 
     if (rackUnitModal && rackUnitModalClose && unitTypeSelect && layoutJsonInput && rackUnitCells.length > 0) {
@@ -1380,7 +1623,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 appendCatalogOptionsToSelect();
             }
             if (assignment) {
-                ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1));
+                ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1), assignment.price);
             }
             unitTypeSelect.value = assignment ? assignment.code : '';
             rackUnitModal.classList.add('is-open');
@@ -1413,6 +1656,12 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 return;
             }
 
+            if (String(unitTypeSelect.value || '') === '__add_new__') {
+                unitTypeSelect.value = '';
+                window.open('../catalogs/create.php', '_blank');
+                return;
+            }
+
             const selectedMeta = getSelectedOptionMeta();
             removeDeviceCoveringUnit(activeUnit);
 
@@ -1441,12 +1690,14 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     code: String(selectedMeta.code),
                     label: String(selectedMeta.label),
                     start_u: activeUnit,
-                    size: size
+                    size: size,
+                    price: selectedMeta.price
                 });
             }
 
             layoutState = normalizeLayout(layoutState);
             renderLayout(layoutState);
+            autoSaveLayoutToDatabase(layoutState);
             closeRackModal();
         });
 
