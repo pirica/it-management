@@ -268,9 +268,6 @@ $offset = ($page - 1) * $perPage;
             background-position: center;
             background-size: 100% 100%;
         }
-        .rack-visualizer-u:last-child {
-            border-bottom: none;
-        }
         .rack-visualizer-u::before {
             content: attr(data-u);
             position: absolute;
