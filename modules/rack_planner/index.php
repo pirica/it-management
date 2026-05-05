@@ -603,12 +603,7 @@ $offset = ($page - 1) * $perPage;
                                 <label for="unitTypeSelect">Type</label>
                                 <select name="unitTypeSelect" id="unitTypeSelect" class="block w-full rounded-md bg-full-white border-0 py-1.5 ring-1 ring-gray-300 ring-inset focus:ring-1 focus:ring-brand-blue text-sm">
                                     <option value="">- Empty -</option>
-                                    <optgroup label="Patch Box">
-                                        <option value="pb"> Cat.6a</option>
-                                        <option value="pbfo">Fiber Optic</option>
-                                        <option value="pbcyo">Configure Your Own</option>
-                                    </optgroup>
-                                    <optgroup label="Patchpanel">
+                                      <optgroup label="Patchpanel">
                                         <option value="pp24">24-Port Patchpanel Cat.6a</option>
                                         <option value="pp48">48-Port Patchpanel Cat.6a</option>
                                         <option value="ppfo24">24-Port Patchpanel Fiber Optic</option>
