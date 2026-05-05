@@ -11,6 +11,139 @@ $crud_table = 'rack_planner';
 $crud_title = 'Rack Planner';
 $crud_action = $crud_action ?? 'index';
 
+function rack_planner_component_catalog(): array
+{
+    return [
+        'pb' => ['label' => 'Cat.6a Patch Box', 'size' => 1],
+        'pbfo' => ['label' => 'Fiber Optic Patch Box', 'size' => 1],
+        'pbcyo' => ['label' => 'Configure Your Own Patch Box', 'size' => 1],
+        'pp24' => ['label' => '24-Port Patchpanel Cat.6a', 'size' => 1],
+        'pp48' => ['label' => '48-Port Patchpanel Cat.6a', 'size' => 1],
+        'ppfo24' => ['label' => '24-Port Patchpanel Fiber Optic', 'size' => 1],
+        'ppfo48' => ['label' => '48-Port Patchpanel Fiber Optic', 'size' => 1],
+        'sw24' => ['label' => '24-Port Switch', 'size' => 1],
+        'sw48' => ['label' => '48-Port Switch', 'size' => 1],
+        'bs' => ['label' => '1-RU Blade Server', 'size' => 1],
+        'bs_2' => ['label' => '2-RU Blade Server', 'size' => 2],
+        'ds' => ['label' => '1-RU Data Storage', 'size' => 1],
+        'rt' => ['label' => '1-RU Router', 'size' => 1],
+        'tr_2' => ['label' => '2-RU Rack Tray', 'size' => 2],
+        'ph' => ['label' => '1-RU Placeholder', 'size' => 1],
+        'ph_2' => ['label' => '2-RU Placeholder', 'size' => 2],
+    ];
+}
+
+function rack_planner_component_groups(): array
+{
+    return [
+        'Patch Box' => ['pb', 'pbfo', 'pbcyo'],
+        'Patchpanel' => ['pp24', 'pp48', 'ppfo24', 'ppfo48'],
+        'Switch' => ['sw24', 'sw48'],
+        'Server' => ['bs', 'bs_2'],
+        'Other devices' => ['ds', 'rt', 'tr_2', 'ph', 'ph_2'],
+    ];
+}
+
+function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits): array
+{
+    $units = max(1, min(100, $rackUnits));
+    $catalog = rack_planner_component_catalog();
+
+    $decoded = json_decode($layoutJson, true);
+    $rawDevices = [];
+    if (is_array($decoded) && isset($decoded['devices']) && is_array($decoded['devices'])) {
+        $rawDevices = $decoded['devices'];
+    }
+
+    $devices = [];
+    $occupied = [];
+
+    foreach ($rawDevices as $rawDevice) {
+        if (!is_array($rawDevice)) {
+            continue;
+        }
+
+        $code = trim((string)($rawDevice['code'] ?? ''));
+        if ($code === '' || !isset($catalog[$code])) {
+            continue;
+        }
+
+        $size = (int)($catalog[$code]['size'] ?? 1);
+        if ($size !== 2) {
+            $size = 1;
+        }
+
+        $startU = (int)($rawDevice['start_u'] ?? ($rawDevice['unit'] ?? 0));
+        if ($startU < 1 || ($startU + $size - 1) > $units) {
+            continue;
+        }
+
+        $canPlace = true;
+        for ($u = $startU; $u < $startU + $size; $u++) {
+            if (isset($occupied[$u])) {
+                $canPlace = false;
+                break;
+            }
+        }
+        if (!$canPlace) {
+            continue;
+        }
+
+        for ($u = $startU; $u < $startU + $size; $u++) {
+            $occupied[$u] = true;
+        }
+
+        $label = trim((string)($rawDevice['label'] ?? ''));
+        if ($label === '') {
+            $label = $catalog[$code]['label'];
+        }
+
+        $devices[] = [
+            'code' => $code,
+            'label' => $label,
+            'start_u' => $startU,
+            'size' => $size,
+        ];
+    }
+
+    usort($devices, static function (array $a, array $b): int {
+        return $b['start_u'] <=> $a['start_u'];
+    });
+
+    return [
+        'version' => 1,
+        'units' => $units,
+        'devices' => $devices,
+    ];
+}
+
+function rack_planner_encode_layout(array $layout): string
+{
+    $json = json_encode($layout, JSON_UNESCAPED_UNICODE);
+    if (!is_string($json) || $json === '') {
+        return '{"version":1,"units":42,"devices":[]}';
+    }
+    return $json;
+}
+
+function rack_planner_assignments_by_unit(array $layout): array
+{
+    $assignments = [];
+    foreach ($layout['devices'] as $device) {
+        $startU = (int)$device['start_u'];
+        $size = (int)$device['size'];
+        for ($u = $startU; $u < $startU + $size; $u++) {
+            $assignments[$u] = [
+                'code' => (string)$device['code'],
+                'label' => (string)$device['label'],
+                'start_u' => $startU,
+                'size' => $size,
+            ];
+        }
+    }
+    return $assignments;
+}
+
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true)) {
     $itm_content_type = isset($_SERVER['CONTENT_TYPE']) ? strtolower(trim((string) $_SERVER['CONTENT_TYPE'])) : '';
@@ -105,10 +238,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     $id = (int)($_POST['id'] ?? 0);
     $name = trim((string)($_POST['name'] ?? ''));
-    $rack_units = (int)($_POST['rack_units'] ?? 42);
+    $rack_units = max(1, min(100, (int)($_POST['rack_units'] ?? 42)));
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
-    $layout_json = $_POST['layout_json'] ?? '{"version":1,"units":42,"devices":[]}';
+    $layout_raw = (string)($_POST['layout_json'] ?? '');
+    $layout_json = rack_planner_encode_layout(rack_planner_normalize_layout_json($layout_raw, $rack_units));
 
     if ($name === '') {
         $errors[] = 'Name is required.';
@@ -169,6 +303,12 @@ if (in_array($crud_action, ['edit', 'view'])) {
         mysqli_stmt_close($stmt);
     }
 }
+
+$componentCatalog = rack_planner_component_catalog();
+$componentGroups = rack_planner_component_groups();
+$normalizedLayout = rack_planner_normalize_layout_json((string)($data['layout_json'] ?? ''), (int)($data['rack_units'] ?? 42));
+$data['layout_json'] = rack_planner_encode_layout($normalizedLayout);
+$rackAssignmentsByUnit = rack_planner_assignments_by_unit($normalizedLayout);
 
 $search = trim((string)($_GET['search'] ?? ''));
 $sort = $_GET['sort'] ?? 'id';
@@ -267,6 +407,27 @@ $offset = ($page - 1) * $perPage;
             background-repeat: no-repeat;
             background-position: center;
             background-size: 100% 100%;
+        }
+        .rack-visualizer-u.has-device {
+            color: #1f2937;
+        }
+        .rack-visualizer-u-label {
+            display: none;
+            max-width: 88%;
+            font-size: 11px;
+            line-height: 1.2;
+            color: #1f2937;
+            background: rgba(255,255,255,0.85);
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 3px 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+        .rack-visualizer-u.has-device .rack-visualizer-u-label {
+            display: inline-block;
         }
         .rack-visualizer-u::before {
             content: attr(data-u);
@@ -532,6 +693,7 @@ $offset = ($page - 1) * $perPage;
                 <form method="POST" class="form-grid">
                     <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                     <input type="hidden" name="id" value="<?php echo (int)$data['id']; ?>">
+                    <input type="hidden" name="layout_json" id="layoutJsonInput" value="<?php echo sanitize($data['layout_json']); ?>">
 
                     <div class="form-group">
                         <label>Name</label>
@@ -576,7 +738,17 @@ $offset = ($page - 1) * $perPage;
                         </div>
                         <div class="rack-visualizer-content">
                             <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <div class="rack-visualizer-u" data-u="<?php echo $u; ?>"></div>
+                                <?php $assignment = $rackAssignmentsByUnit[$u] ?? null; ?>
+                                <div
+                                    class="rack-visualizer-u<?php echo $assignment ? ' has-device' : ''; ?>"
+                                    data-u="<?php echo $u; ?>"
+                                    data-device-code="<?php echo $assignment ? sanitize($assignment['code']) : ''; ?>"
+                                    data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
+                                    data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
+                                    data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
+                                >
+                                    <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
+                                </div>
                             <?php endfor; ?>
                         </div>
                     </div>
@@ -603,27 +775,17 @@ $offset = ($page - 1) * $perPage;
                                 <label for="unitTypeSelect">Type</label>
                                 <select name="unitTypeSelect" id="unitTypeSelect" class="block w-full rounded-md bg-full-white border-0 py-1.5 ring-1 ring-gray-300 ring-inset focus:ring-1 focus:ring-brand-blue text-sm">
                                     <option value="">- Empty -</option>
-                                      <optgroup label="Patchpanel">
-                                        <option value="pp24">24-Port Patchpanel Cat.6a</option>
-                                        <option value="pp48">48-Port Patchpanel Cat.6a</option>
-                                        <option value="ppfo24">24-Port Patchpanel Fiber Optic</option>
-                                        <option value="ppfo48">48-Port Patchpanel Fiber Optic</option>
-                                    </optgroup>
-                                    <optgroup label="Switch">
-                                        <option value="sw24">24-Port Switch</option>
-                                        <option value="sw48">48-Port Switch</option>
-                                    </optgroup>
-                                    <optgroup label="Server">
-                                        <option value="bs">1-RU Blade Server</option>
-                                        <option value="bs_2">2-RU Blade Server</option>
-                                    </optgroup>
-                                    <optgroup label="Other devices">
-                                        <option value="ds">1-RU Data Storage</option>
-                                        <option value="rt">1-RU Router</option>
-                                        <option value="tr_2">2-RU Rack Tray</option>
-                                        <option value="ph">1-RU Placeholder</option>
-                                        <option value="ph_2">2-RU Placeholder</option>
-                                    </optgroup>
+                                    <?php foreach ($componentGroups as $groupLabel => $groupCodes): ?>
+                                        <optgroup label="<?php echo sanitize($groupLabel); ?>">
+                                            <?php foreach ($groupCodes as $groupCode): ?>
+                                                <?php if (!isset($componentCatalog[$groupCode])) { continue; } ?>
+                                                <?php $meta = $componentCatalog[$groupCode]; ?>
+                                                <option value="<?php echo sanitize($groupCode); ?>" data-size="<?php echo (int)$meta['size']; ?>">
+                                                    <?php echo sanitize($meta['label']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
@@ -659,7 +821,17 @@ $offset = ($page - 1) * $perPage;
                         </div>
                         <div class="rack-visualizer-content">
                             <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <div class="rack-visualizer-u" data-u="<?php echo $u; ?>"></div>
+                                <?php $assignment = $rackAssignmentsByUnit[$u] ?? null; ?>
+                                <div
+                                    class="rack-visualizer-u<?php echo $assignment ? ' has-device' : ''; ?>"
+                                    data-u="<?php echo $u; ?>"
+                                    data-device-code="<?php echo $assignment ? sanitize($assignment['code']) : ''; ?>"
+                                    data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
+                                    data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
+                                    data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
+                                >
+                                    <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
+                                </div>
                             <?php endfor; ?>
                         </div>
                     </div>
@@ -682,6 +854,8 @@ $offset = ($page - 1) * $perPage;
 <script src="../../js/theme.js"></script>
 <script src="../../js/table-tools.js"></script>
 <script>
+const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
 (function () {
     const selectAllRows = document.getElementById('select-all-rows');
     const bulkDeleteForm = document.getElementById('bulk-delete-form');
@@ -740,30 +914,289 @@ $offset = ($page - 1) * $perPage;
     const rackUnitModal = document.getElementById('rackUnitModal');
     const rackUnitModalClose = document.getElementById('rackUnitModalClose');
     const rackUnitModalTitle = document.getElementById('rackUnitModalTitle');
-    const rackUnitCells = document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u');
+    const rackUnitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
+    const unitTypeSelect = document.getElementById('unitTypeSelect');
+    const layoutJsonInput = document.getElementById('layoutJsonInput');
+    const rackPlanForm = document.querySelector('form.form-grid');
+    const rackUnitsInput = rackPlanForm ? rackPlanForm.querySelector('input[name="rack_units"]') : null;
 
-    if (rackUnitModal && rackUnitModalClose && rackUnitCells.length > 0) {
-        rackUnitCells.forEach(function (cell) {
-            cell.style.cursor = 'pointer';
-            cell.addEventListener('click', function () {
-                const currentUnit = cell.getAttribute('data-u') || '';
-                rackUnitModalTitle.textContent = currentUnit !== '' ? ('Component ' + currentUnit) : 'Component';
-                rackUnitModal.classList.add('is-open');
-                rackUnitModal.setAttribute('aria-hidden', 'false');
+    function getRackUnitsLimit() {
+        const inputUnits = rackUnitsInput ? parseInt(rackUnitsInput.value, 10) : NaN;
+        if (Number.isInteger(inputUnits) && inputUnits > 0) {
+            return inputUnits;
+        }
+        return rackUnitCells.length;
+    }
+
+    function closeRackModal() {
+        if (!rackUnitModal) {
+            return;
+        }
+        rackUnitModal.classList.remove('is-open');
+        rackUnitModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function getComponentMeta(code) {
+        if (!code || typeof rackComponentCatalog !== 'object' || rackComponentCatalog === null) {
+            return null;
+        }
+        if (!Object.prototype.hasOwnProperty.call(rackComponentCatalog, code)) {
+            return null;
+        }
+        return rackComponentCatalog[code];
+    }
+
+    function normalizeLayout(layout) {
+        const units = getRackUnitsLimit();
+        const occupied = {};
+        const devices = [];
+        const rawDevices = layout && Array.isArray(layout.devices) ? layout.devices : [];
+
+        rawDevices.forEach(function (rawDevice) {
+            if (!rawDevice || typeof rawDevice !== 'object') {
+                return;
+            }
+
+            const code = String(rawDevice.code || '').trim();
+            const meta = getComponentMeta(code);
+            if (!meta) {
+                return;
+            }
+
+            const size = Number(meta.size) === 2 ? 2 : 1;
+            const startU = parseInt(rawDevice.start_u, 10);
+            if (!Number.isInteger(startU) || startU < 1 || (startU + size - 1) > units) {
+                return;
+            }
+
+            for (let u = startU; u < (startU + size); u++) {
+                if (occupied[u]) {
+                    return;
+                }
+            }
+
+            for (let u = startU; u < (startU + size); u++) {
+                occupied[u] = true;
+            }
+
+            let label = String(rawDevice.label || '').trim();
+            if (label === '') {
+                label = String(meta.label || code);
+            }
+
+            devices.push({
+                code: code,
+                label: label,
+                start_u: startU,
+                size: size
             });
         });
 
+        devices.sort(function (a, b) {
+            return b.start_u - a.start_u;
+        });
+
+        return {
+            version: 1,
+            units: units,
+            devices: devices
+        };
+    }
+
+    function parseLayoutFromInput() {
+        const fallback = { version: 1, units: getRackUnitsLimit(), devices: [] };
+        if (!layoutJsonInput || String(layoutJsonInput.value || '').trim() === '') {
+            return normalizeLayout(fallback);
+        }
+
+        try {
+            const parsed = JSON.parse(layoutJsonInput.value);
+            if (!parsed || typeof parsed !== 'object') {
+                return normalizeLayout(fallback);
+            }
+            return normalizeLayout(parsed);
+        } catch (error) {
+            return normalizeLayout(fallback);
+        }
+    }
+
+    function buildAssignments(layout) {
+        const assignmentByUnit = {};
+        if (!layout || !Array.isArray(layout.devices)) {
+            return assignmentByUnit;
+        }
+
+        layout.devices.forEach(function (device) {
+            const startU = Number(device.start_u);
+            const size = Number(device.size) === 2 ? 2 : 1;
+            for (let u = startU; u < (startU + size); u++) {
+                assignmentByUnit[u] = {
+                    code: String(device.code || ''),
+                    label: String(device.label || ''),
+                    start_u: startU,
+                    size: size
+                };
+            }
+        });
+
+        return assignmentByUnit;
+    }
+
+    function saveLayoutToInput(layout) {
+        if (!layoutJsonInput) {
+            return;
+        }
+        layoutJsonInput.value = JSON.stringify(layout);
+    }
+
+    function renderLayout(layout) {
+        const assignmentByUnit = buildAssignments(layout);
+
+        rackUnitCells.forEach(function (cell) {
+            const unit = parseInt(cell.getAttribute('data-u'), 10);
+            const assignment = assignmentByUnit[unit];
+            const labelEl = cell.querySelector('.rack-visualizer-u-label');
+
+            if (assignment) {
+                cell.classList.add('has-device');
+                cell.setAttribute('data-device-code', assignment.code);
+                cell.setAttribute('data-device-label', assignment.label);
+                cell.setAttribute('data-device-size', String(assignment.size));
+                cell.setAttribute('data-device-start-u', String(assignment.start_u));
+                if (labelEl) {
+                    labelEl.textContent = assignment.label;
+                }
+            } else {
+                cell.classList.remove('has-device');
+                cell.setAttribute('data-device-code', '');
+                cell.setAttribute('data-device-label', '');
+                cell.setAttribute('data-device-size', '');
+                cell.setAttribute('data-device-start-u', '');
+                if (labelEl) {
+                    labelEl.textContent = '';
+                }
+            }
+        });
+
+        saveLayoutToInput(layout);
+    }
+
+    if (rackUnitModal && rackUnitModalClose && unitTypeSelect && layoutJsonInput && rackUnitCells.length > 0) {
+        let layoutState = parseLayoutFromInput();
+        let activeUnit = null;
+
+        function removeDeviceCoveringUnit(unit) {
+            layoutState.devices = layoutState.devices.filter(function (device) {
+                const startU = Number(device.start_u);
+                const size = Number(device.size) === 2 ? 2 : 1;
+                return !(unit >= startU && unit < (startU + size));
+            });
+        }
+
+        function isRangeAvailable(startU, size) {
+            const assignments = buildAssignments(layoutState);
+            for (let u = startU; u < (startU + size); u++) {
+                if (assignments[u]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function openRackModalForUnit(unit) {
+            const assignments = buildAssignments(layoutState);
+            const assignment = assignments[unit] || null;
+            activeUnit = assignment ? assignment.start_u : unit;
+            if (rackUnitModalTitle) {
+                rackUnitModalTitle.textContent = 'Component ' + String(activeUnit);
+            }
+            unitTypeSelect.value = assignment ? assignment.code : '';
+            rackUnitModal.classList.add('is-open');
+            rackUnitModal.setAttribute('aria-hidden', 'false');
+        }
+
+        renderLayout(layoutState);
+
+        rackUnitCells.forEach(function (cell) {
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', function () {
+                const clickedUnit = parseInt(cell.getAttribute('data-u'), 10);
+                if (!Number.isInteger(clickedUnit) || clickedUnit < 1) {
+                    return;
+                }
+                openRackModalForUnit(clickedUnit);
+            });
+        });
+
+        unitTypeSelect.addEventListener('change', function () {
+            if (!Number.isInteger(activeUnit) || activeUnit < 1) {
+                closeRackModal();
+                return;
+            }
+
+            const selectedCode = String(unitTypeSelect.value || '');
+            removeDeviceCoveringUnit(activeUnit);
+
+            if (selectedCode !== '') {
+                const meta = getComponentMeta(selectedCode);
+                if (!meta) {
+                    alert('Invalid component type.');
+                    unitTypeSelect.value = '';
+                    layoutState = normalizeLayout(layoutState);
+                    renderLayout(layoutState);
+                    closeRackModal();
+                    return;
+                }
+
+                const size = Number(meta.size) === 2 ? 2 : 1;
+                const rackLimit = getRackUnitsLimit();
+                if ((activeUnit + size - 1) > rackLimit) {
+                    alert('Not enough space for this ' + String(size) + '-RU component.');
+                    unitTypeSelect.value = '';
+                    layoutState = normalizeLayout(layoutState);
+                    renderLayout(layoutState);
+                    closeRackModal();
+                    return;
+                }
+
+                if (!isRangeAvailable(activeUnit, size)) {
+                    alert('Selected space overlaps another component.');
+                    unitTypeSelect.value = '';
+                    layoutState = normalizeLayout(layoutState);
+                    renderLayout(layoutState);
+                    closeRackModal();
+                    return;
+                }
+
+                layoutState.devices.push({
+                    code: selectedCode,
+                    label: String(meta.label || selectedCode),
+                    start_u: activeUnit,
+                    size: size
+                });
+            }
+
+            layoutState = normalizeLayout(layoutState);
+            renderLayout(layoutState);
+            closeRackModal();
+        });
+
         rackUnitModalClose.addEventListener('click', function () {
-            rackUnitModal.classList.remove('is-open');
-            rackUnitModal.setAttribute('aria-hidden', 'true');
+            closeRackModal();
         });
 
         rackUnitModal.addEventListener('click', function (event) {
             if (event.target === rackUnitModal) {
-                rackUnitModal.classList.remove('is-open');
-                rackUnitModal.setAttribute('aria-hidden', 'true');
+                closeRackModal();
             }
         });
+
+        if (rackPlanForm) {
+            rackPlanForm.addEventListener('submit', function () {
+                layoutState = normalizeLayout(layoutState);
+                saveLayoutToInput(layoutState);
+            });
+        }
     }
 })();
 </script>
