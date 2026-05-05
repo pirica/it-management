@@ -749,6 +749,12 @@ $offset = ($page - 1) * $perPage;
             border-radius: 8px;
             padding: 8px 12px;
         }
+        .rack-visualizer-export-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
         .rack-visualizer-u.rack-drop-target {
             outline: 2px solid #2563eb;
             outline-offset: -2px;
@@ -961,48 +967,57 @@ $offset = ($page - 1) * $perPage;
                     </div>
                 </form>
 
-                <div class="rack-visualizer-container">
-                    <div class="rack-visualizer-top"></div>
-                    <div class="rack-visualizer-frame">
-                        <div class="rack-visualizer-rail rack-visualizer-rail-left">
-                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
-                            <?php endfor; ?>
+                <div class="rack-visualizer-export-scope" id="rackExportScope">
+                    <div class="rack-visualizer-container">
+                        <div class="rack-visualizer-top"></div>
+                        <div class="rack-visualizer-frame">
+                            <div class="rack-visualizer-rail rack-visualizer-rail-left">
+                                <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                    <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
+                                <?php endfor; ?>
+                            </div>
+                            <div class="rack-visualizer-rail rack-visualizer-rail-right">
+                                <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                    <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
+                                <?php endfor; ?>
+                            </div>
+                            <div class="rack-visualizer-content">
+                                <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                    <?php $assignment = $rackAssignmentsByUnit[$u] ?? null; ?>
+                                    <div
+                                        class="rack-visualizer-u<?php echo $assignment ? ' has-device' : ''; ?>"
+                                        data-u="<?php echo $u; ?>"
+                                        data-device-code="<?php echo $assignment ? sanitize($assignment['code']) : ''; ?>"
+                                        data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
+                                        data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
+                                        data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
+                                    >
+                                        <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
                         </div>
-                        <div class="rack-visualizer-rail rack-visualizer-rail-right">
-                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
-                            <?php endfor; ?>
+                        <div class="rack-visualizer-base">
+                            <div class="rack-visualizer-vents">
+                                <?php for($i=0; $i<30; $i++): ?>
+                                    <div class="rack-visualizer-vent"></div>
+                                <?php endfor; ?>
+                            </div>
                         </div>
-                        <div class="rack-visualizer-content">
-                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <?php $assignment = $rackAssignmentsByUnit[$u] ?? null; ?>
-                                <div
-                                    class="rack-visualizer-u<?php echo $assignment ? ' has-device' : ''; ?>"
-                                    data-u="<?php echo $u; ?>"
-                                    data-device-code="<?php echo $assignment ? sanitize($assignment['code']) : ''; ?>"
-                                    data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
-                                    data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
-                                    data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
-                                >
-                                    <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
-                                </div>
-                            <?php endfor; ?>
+                        <div class="rack-visualizer-feet">
+                            <div class="rack-visualizer-foot"></div>
+                            <div class="rack-visualizer-foot"></div>
                         </div>
                     </div>
-                    <div class="rack-visualizer-base">
-                        <div class="rack-visualizer-vents">
-                            <?php for($i=0; $i<30; $i++): ?>
-                                <div class="rack-visualizer-vent"></div>
-                            <?php endfor; ?>
+                    <div class="rack-visualizer-total">
+                        TOTAL: <span id="rackTotalAmount"><?php echo number_format($layoutTotalAmount, 2, '.', ','); ?></span>
+                        <div class="rack-visualizer-export-actions">
+                            <button type="button" class="btn btn-sm" id="rackSaveImageBtn">Save as Image</button>
+                            <button type="button" class="btn btn-sm" id="rackExportPdfBtn">PDF Export</button>
+                            <button type="button" class="btn btn-sm" id="rackExportExcelBtn">Excel Export</button>
                         </div>
-                    </div>
-                    <div class="rack-visualizer-feet">
-                        <div class="rack-visualizer-foot"></div>
-                        <div class="rack-visualizer-foot"></div>
                     </div>
                 </div>
-                <div class="rack-visualizer-total">TOTAL: <span id="rackTotalAmount"><?php echo number_format($layoutTotalAmount, 2, '.', ','); ?></span></div>
                 <div class="rack-unit-modal-overlay" id="rackUnitModal" aria-hidden="true">
                     <div class="rack-unit-modal" role="dialog" aria-modal="true" aria-labelledby="rackUnitModalTitle">
                         <div class="rack-unit-modal-header">
@@ -1054,54 +1069,65 @@ $offset = ($page - 1) * $perPage;
                     <p><strong>Notes:</strong> <?php echo sanitize($data['notes']); ?></p>
                 </div>
 
-                <div class="rack-visualizer-container">
-                    <div class="rack-visualizer-top"></div>
-                    <div class="rack-visualizer-frame">
-                        <div class="rack-visualizer-rail rack-visualizer-rail-left">
-                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
-                            <?php endfor; ?>
+                <div class="rack-visualizer-export-scope" id="rackExportScope">
+                    <div class="rack-visualizer-container">
+                        <div class="rack-visualizer-top"></div>
+                        <div class="rack-visualizer-frame">
+                            <div class="rack-visualizer-rail rack-visualizer-rail-left">
+                                <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                    <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
+                                <?php endfor; ?>
+                            </div>
+                            <div class="rack-visualizer-rail rack-visualizer-rail-right">
+                                <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                    <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
+                                <?php endfor; ?>
+                            </div>
+                            <div class="rack-visualizer-content">
+                                <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
+                                    <?php $assignment = $rackAssignmentsByUnit[$u] ?? null; ?>
+                                    <div
+                                        class="rack-visualizer-u<?php echo $assignment ? ' has-device' : ''; ?>"
+                                        data-u="<?php echo $u; ?>"
+                                        data-device-code="<?php echo $assignment ? sanitize($assignment['code']) : ''; ?>"
+                                        data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
+                                        data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
+                                        data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
+                                    >
+                                        <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
                         </div>
-                        <div class="rack-visualizer-rail rack-visualizer-rail-right">
-                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <div class="rack-visualizer-rail-unit" aria-hidden="true"></div>
-                            <?php endfor; ?>
+                        <div class="rack-visualizer-base">
+                            <div class="rack-visualizer-vents">
+                                <?php for($i=0; $i<30; $i++): ?>
+                                    <div class="rack-visualizer-vent"></div>
+                                <?php endfor; ?>
+                            </div>
                         </div>
-                        <div class="rack-visualizer-content">
-                            <?php for($u=$data['rack_units']; $u>=1; $u--): ?>
-                                <?php $assignment = $rackAssignmentsByUnit[$u] ?? null; ?>
-                                <div
-                                    class="rack-visualizer-u<?php echo $assignment ? ' has-device' : ''; ?>"
-                                    data-u="<?php echo $u; ?>"
-                                    data-device-code="<?php echo $assignment ? sanitize($assignment['code']) : ''; ?>"
-                                    data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
-                                    data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
-                                    data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
-                                >
-                                    <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
-                                </div>
-                            <?php endfor; ?>
+                        <div class="rack-visualizer-feet">
+                            <div class="rack-visualizer-foot"></div>
+                            <div class="rack-visualizer-foot"></div>
                         </div>
                     </div>
-                    <div class="rack-visualizer-base">
-                        <div class="rack-visualizer-vents">
-                            <?php for($i=0; $i<30; $i++): ?>
-                                <div class="rack-visualizer-vent"></div>
-                            <?php endfor; ?>
+                    <div class="rack-visualizer-total">
+                        TOTAL: <span id="rackTotalAmount"><?php echo number_format($layoutTotalAmount, 2, '.', ','); ?></span>
+                        <div class="rack-visualizer-export-actions">
+                            <button type="button" class="btn btn-sm" id="rackSaveImageBtn">Save as Image</button>
+                            <button type="button" class="btn btn-sm" id="rackExportPdfBtn">PDF Export</button>
+                            <button type="button" class="btn btn-sm" id="rackExportExcelBtn">Excel Export</button>
                         </div>
-                    </div>
-                    <div class="rack-visualizer-feet">
-                        <div class="rack-visualizer-foot"></div>
-                        <div class="rack-visualizer-foot"></div>
                     </div>
                 </div>
-                <div class="rack-visualizer-total">TOTAL: <span><?php echo number_format($layoutTotalAmount, 2, '.', ','); ?></span></div>
             <?php endif; ?>
         </div>
     </div>
 </div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/table-tools.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
@@ -1113,7 +1139,129 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rowCheckboxes = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]');
     const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); });
     const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    const rackExportScope = document.getElementById('rackExportScope');
+    const rackSaveImageBtn = document.getElementById('rackSaveImageBtn');
+    const rackExportPdfBtn = document.getElementById('rackExportPdfBtn');
+    const rackExportExcelBtn = document.getElementById('rackExportExcelBtn');
     let selectionMode = false;
+    let rackExportBusy = false;
+
+    function rackExportTimestamp() {
+        const d = new Date();
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+    }
+
+    function rackDownloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () {
+            URL.revokeObjectURL(url);
+        }, 3000);
+    }
+
+    async function rackCaptureScopeCanvas() {
+        if (!rackExportScope) {
+            throw new Error('Rack export scope not found.');
+        }
+        if (typeof window.html2canvas !== 'function') {
+            throw new Error('html2canvas not available.');
+        }
+        return window.html2canvas(rackExportScope, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true
+        });
+    }
+
+    async function rackExportAsImage() {
+        const canvas = await rackCaptureScopeCanvas();
+        const fileName = 'rack_view_' + rackExportTimestamp() + '.png';
+        if (canvas.toBlob) {
+            await new Promise(function (resolve, reject) {
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        reject(new Error('Could not create image blob.'));
+                        return;
+                    }
+                    rackDownloadBlob(blob, fileName);
+                    resolve();
+                }, 'image/png');
+            });
+            return;
+        }
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
+    async function rackExportAsPdf() {
+        const canvas = await rackCaptureScopeCanvas();
+        if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+            throw new Error('jsPDF not available.');
+        }
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = 297;
+        const pdfHeight = 210;
+        const ratio = canvas.width / canvas.height;
+        let renderWidth = pdfWidth - 20;
+        let renderHeight = renderWidth / ratio;
+        if (renderHeight > (pdfHeight - 20)) {
+            renderHeight = pdfHeight - 20;
+            renderWidth = renderHeight * ratio;
+        }
+        const x = (pdfWidth - renderWidth) / 2;
+        const y = (pdfHeight - renderHeight) / 2;
+        const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        doc.addImage(imgData, 'PNG', x, y, renderWidth, renderHeight);
+        doc.save('rack_view_' + rackExportTimestamp() + '.pdf');
+    }
+
+    async function rackExportAsExcel() {
+        const canvas = await rackCaptureScopeCanvas();
+        const imageData = canvas.toDataURL('image/png');
+        const html = '<html><head><meta charset=\"utf-8\"></head><body>'
+            + '<h3>Rack Export</h3>'
+            + '<img src=\"' + imageData + '\" style=\"max-width:100%;height:auto;\" />'
+            + '</body></html>';
+        const blob = new Blob(['\uFEFF', html], { type: 'application/vnd.ms-excel' });
+        rackDownloadBlob(blob, 'rack_view_' + rackExportTimestamp() + '.xls');
+    }
+
+    async function runRackExport(handlerFn) {
+        if (rackExportBusy) {
+            return;
+        }
+        rackExportBusy = true;
+        try {
+            await handlerFn();
+        } catch (error) {
+            alert(error && error.message ? error.message : 'Export failed.');
+        } finally {
+            rackExportBusy = false;
+        }
+    }
+
+    if (rackSaveImageBtn && rackExportPdfBtn && rackExportExcelBtn && rackExportScope) {
+        rackSaveImageBtn.addEventListener('click', function () {
+            runRackExport(rackExportAsImage);
+        });
+        rackExportPdfBtn.addEventListener('click', function () {
+            runRackExport(rackExportAsPdf);
+        });
+        rackExportExcelBtn.addEventListener('click', function () {
+            runRackExport(rackExportAsExcel);
+        });
+    }
 
     function setSelectionVisibility(visible) {
         if (selectAllHeaderCell) {
