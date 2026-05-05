@@ -1015,8 +1015,7 @@ $offset = ($page - 1) * $perPage;
                             <div class="rack-unit-modal-row">
                                 <label for="unitTypeSelect">Type</label>
                                 <select name="unitTypeSelect" id="unitTypeSelect" class="block w-full rounded-md bg-full-white border-0 py-1.5 ring-1 ring-gray-300 ring-inset focus:ring-1 focus:ring-brand-blue text-sm">
-                                    <option value="">- Empty -</option>
-                                    <option value="__add_new__">➕</option>
+                                    <option value="">- Choose -</option>
                                     <?php foreach ($componentGroups as $groupLabel => $groupCodes): ?>
                                         <optgroup label="<?php echo sanitize($groupLabel); ?>">
                                             <?php foreach ($groupCodes as $groupCode): ?>
@@ -1033,6 +1032,7 @@ $offset = ($page - 1) * $perPage;
                                             <?php endforeach; ?>
                                         </optgroup>
                                     <?php endforeach; ?>
+                                    <option value="__add_new__">➕</option>
                                 </select>
                             </div>
                             <div class="rack-unit-modal-actions">
