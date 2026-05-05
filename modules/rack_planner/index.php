@@ -1030,7 +1030,6 @@ $offset = ($page - 1) * $perPage;
                                             <?php endforeach; ?>
                                         </optgroup>
                                     <?php endforeach; ?>
-                                    <option value="__add_new__">➕</option>
                                 </select>
                             </div>
                             <div class="rack-unit-modal-actions">
@@ -1418,11 +1417,22 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             return;
         }
 
+        Array.from(unitTypeSelect.children).forEach(function (child) {
+            if (child && child.tagName === 'OPTION' && String(child.value || '') === '__add_new__') {
+                unitTypeSelect.removeChild(child);
+            }
+        });
+
         let catalogsGroup = unitTypeSelect.querySelector('optgroup[label="Catalogs"]');
         if (!catalogsGroup) {
             catalogsGroup = document.createElement('optgroup');
             catalogsGroup.label = 'Catalogs';
             unitTypeSelect.appendChild(catalogsGroup);
+        }
+
+        const existingCatalogQuickAdd = catalogsGroup.querySelector('option[value="__add_new__"]');
+        if (existingCatalogQuickAdd) {
+            existingCatalogQuickAdd.remove();
         }
 
         rackCatalogOptions.forEach(function (catalogOption) {
@@ -1449,6 +1459,12 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             optionEl.setAttribute('data-source', 'catalog');
             catalogsGroup.appendChild(optionEl);
         });
+
+        const quickAddOption = document.createElement('option');
+        quickAddOption.value = '__add_new__';
+        quickAddOption.textContent = '\u2795';
+        quickAddOption.setAttribute('data-source', 'catalog_add');
+        catalogsGroup.appendChild(quickAddOption);
     }
 
     function getSelectedOptionMeta() {
@@ -1850,3 +1866,5 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 </script>
 </body>
 </html>
+
+
