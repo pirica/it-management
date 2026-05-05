@@ -14,9 +14,7 @@ $crud_action = $crud_action ?? 'index';
 function rack_planner_component_catalog(): array
 {
     return [
-        'pb' => ['label' => 'Cat.6a Patch Box', 'size' => 1],
-        'pbfo' => ['label' => 'Fiber Optic Patch Box', 'size' => 1],
-        'pbcyo' => ['label' => 'Configure Your Own Patch Box', 'size' => 1],
+        'empty' => ['label' => ' - Empty - ', 'size' => 1],
         'pp24' => ['label' => '24-Port Patchpanel Cat.6a', 'size' => 1],
         'pp48' => ['label' => '48-Port Patchpanel Cat.6a', 'size' => 1],
         'ppfo24' => ['label' => '24-Port Patchpanel Fiber Optic', 'size' => 1],
@@ -36,7 +34,7 @@ function rack_planner_component_catalog(): array
 function rack_planner_component_groups(): array
 {
     return [
-        'Patch Box' => ['pb', 'pbfo', 'pbcyo'],
+        'Empty' => ['empty'],
         'Patchpanel' => ['pp24', 'pp48', 'ppfo24', 'ppfo48'],
         'Switch' => ['sw24', 'sw48'],
         'Server' => ['bs', 'bs_2'],
@@ -1015,7 +1013,7 @@ $offset = ($page - 1) * $perPage;
                             <div class="rack-unit-modal-row">
                                 <label for="unitTypeSelect">Type</label>
                                 <select name="unitTypeSelect" id="unitTypeSelect" class="block w-full rounded-md bg-full-white border-0 py-1.5 ring-1 ring-gray-300 ring-inset focus:ring-1 focus:ring-brand-blue text-sm">
-                                    <option value="">- Choose -</option>
+                                    <option value="">- Empty -</option>
                                     <?php foreach ($componentGroups as $groupLabel => $groupCodes): ?>
                                         <optgroup label="<?php echo sanitize($groupLabel); ?>">
                                             <?php foreach ($groupCodes as $groupCode): ?>
