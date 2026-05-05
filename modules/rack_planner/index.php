@@ -47,6 +47,51 @@ function rack_planner_is_two_ru_name(string $name): bool
     return (bool)preg_match('/\b2\s*-\s*ru\b|\b2\s*ru\b/i', $name);
 }
 
+function rack_planner_extract_price_from_text(string $text)
+{
+    $input = trim($text);
+    if ($input === '') {
+        return null;
+    }
+
+    if (!preg_match('/(-?\d[\d.,]*)\s*(?:€|\$|usd|eur)?\s*$/i', $input, $matches)) {
+        return null;
+    }
+
+    $candidate = trim((string)($matches[1] ?? ''));
+    if ($candidate === '') {
+        return null;
+    }
+
+    $normalized = str_replace(' ', '', $candidate);
+    $hasComma = strpos($normalized, ',') !== false;
+    $hasDot = strpos($normalized, '.') !== false;
+
+    if ($hasComma && $hasDot) {
+        if (strrpos($normalized, ',') > strrpos($normalized, '.')) {
+            $normalized = str_replace('.', '', $normalized);
+            $normalized = str_replace(',', '.', $normalized);
+        } else {
+            $normalized = str_replace(',', '', $normalized);
+        }
+    } elseif ($hasComma) {
+        $parts = explode(',', $normalized);
+        if (count($parts) === 2 && strlen((string)$parts[1]) <= 2) {
+            $normalized = str_replace('.', '', (string)$parts[0]) . '.' . (string)$parts[1];
+        } else {
+            $normalized = str_replace(',', '', $normalized);
+        }
+    } else {
+        $normalized = str_replace(',', '', $normalized);
+    }
+
+    if (!is_numeric($normalized)) {
+        return null;
+    }
+
+    return (float)$normalized;
+}
+
 function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
 {
     $options = [];
@@ -220,6 +265,9 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
             $price = (float)$meta['price'];
         } elseif (isset($rawDevice['price']) && is_numeric($rawDevice['price'])) {
             $price = (float)$rawDevice['price'];
+        } elseif ($code === 'ph' || $code === 'ph_2') {
+            // Placeholder labels can embed a custom price (for example: "2-RU Placeholder 21.21").
+            $price = rack_planner_extract_price_from_text($label);
         }
 
         $devices[] = [
@@ -283,6 +331,7 @@ function rack_planner_assignments_by_unit(array $layout): array
                 'label' => (string)$device['label'],
                 'start_u' => $startU,
                 'size' => $size,
+                'price' => (isset($device['price']) && is_numeric($device['price'])) ? (float)$device['price'] : null,
             ];
         }
     }
@@ -993,6 +1042,7 @@ $offset = ($page - 1) * $perPage;
                                         data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
                                         data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
                                         data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
+                                        data-device-price="<?php echo ($assignment && isset($assignment['price']) && is_numeric($assignment['price'])) ? number_format((float)$assignment['price'], 2, '.', '') : ''; ?>"
                                     >
                                         <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
                                     </div>
@@ -1099,6 +1149,7 @@ $offset = ($page - 1) * $perPage;
                                         data-device-label="<?php echo $assignment ? sanitize($assignment['label']) : ''; ?>"
                                         data-device-size="<?php echo $assignment ? (int)$assignment['size'] : ''; ?>"
                                         data-device-start-u="<?php echo $assignment ? (int)$assignment['start_u'] : ''; ?>"
+                                        data-device-price="<?php echo ($assignment && isset($assignment['price']) && is_numeric($assignment['price'])) ? number_format((float)$assignment['price'], 2, '.', '') : ''; ?>"
                                     >
                                         <span class="rack-visualizer-u-label"><?php echo $assignment ? sanitize($assignment['label']) : ''; ?></span>
                                     </div>
@@ -1151,6 +1202,45 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackExportExcelBtn = document.getElementById('rackExportExcelBtn');
     let selectionMode = false;
     let rackExportBusy = false;
+
+    function rackExtractPriceFromText(text) {
+        const input = String(text || '').trim();
+        if (input === '') {
+            return null;
+        }
+
+        const endMatch = input.match(/(-?\d[\d.,]*)\s*(?:€|\$|usd|eur)?\s*$/i);
+        if (!endMatch || endMatch.length < 2) {
+            return null;
+        }
+
+        let normalized = String(endMatch[1] || '').replace(/\s+/g, '');
+        if (normalized === '') {
+            return null;
+        }
+
+        const hasComma = normalized.indexOf(',') !== -1;
+        const hasDot = normalized.indexOf('.') !== -1;
+        if (hasComma && hasDot) {
+            if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+                normalized = normalized.replace(/\./g, '').replace(',', '.');
+            } else {
+                normalized = normalized.replace(/,/g, '');
+            }
+        } else if (hasComma) {
+            const parts = normalized.split(',');
+            if (parts.length === 2 && parts[1].length <= 2) {
+                normalized = parts[0].replace(/\./g, '') + '.' + parts[1];
+            } else {
+                normalized = normalized.replace(/,/g, '');
+            }
+        } else {
+            normalized = normalized.replace(/,/g, '');
+        }
+
+        const value = Number(normalized);
+        return Number.isFinite(value) ? value : null;
+    }
 
     function rackExportTimestamp() {
         const d = new Date();
@@ -1233,11 +1323,77 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     }
 
     async function rackExportAsExcel() {
-        const canvas = await rackCaptureScopeCanvas();
-        const imageData = canvas.toDataURL('image/png');
+        const escapeHtml = function (value) {
+            return String(value === undefined || value === null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        };
+
+        const rowMap = {};
+        const rackRows = [];
+        const unitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
+        unitCells.forEach(function (cell) {
+            const code = String(cell.getAttribute('data-device-code') || '').trim();
+            if (code === '') {
+                return;
+            }
+
+            const startU = parseInt(String(cell.getAttribute('data-device-start-u') || ''), 10);
+            const size = parseInt(String(cell.getAttribute('data-device-size') || ''), 10) === 2 ? 2 : 1;
+            if (!Number.isInteger(startU) || startU < 1) {
+                return;
+            }
+
+            const key = String(startU) + '|' + code;
+            if (rowMap[key]) {
+                return;
+            }
+            rowMap[key] = true;
+
+            const label = String(cell.getAttribute('data-device-label') || '').trim();
+            const rawPriceAttr = String(cell.getAttribute('data-device-price') || '').trim();
+            const priceValue = rawPriceAttr !== '' && !Number.isNaN(Number(rawPriceAttr))
+                ? Number(rawPriceAttr)
+                : rackExtractPriceFromText(label);
+
+            rackRows.push({
+                start_u: startU,
+                size: size,
+                code: code,
+                label: label,
+                price: Number.isFinite(priceValue) ? priceValue : null
+            });
+        });
+
+        rackRows.sort(function (a, b) { return b.start_u - a.start_u; });
+
+        const rackTitleNode = document.querySelector('h1');
+        const rackTitle = rackTitleNode ? String(rackTitleNode.textContent || '').trim() : 'Rack Export';
+        const totalText = (document.getElementById('rackTotalAmount') || { textContent: '0.00' }).textContent || '0.00';
+        const generatedAt = new Date().toLocaleString();
+
+        const tableRowsHtml = rackRows.map(function (row) {
+            const priceText = row.price !== null ? row.price.toFixed(2) : '';
+            return '<tr>'
+                + '<td>' + escapeHtml(row.start_u) + '</td>'
+                + '<td>' + escapeHtml(row.size) + '</td>'
+                + '<td>' + escapeHtml(row.label || row.code) + '</td>'
+                + '<td>' + escapeHtml(row.code) + '</td>'
+                + '<td style="text-align:right;">' + escapeHtml(priceText) + '</td>'
+                + '</tr>';
+        }).join('');
+
         const html = '<html><head><meta charset=\"utf-8\"></head><body>'
-            + '<h3>Rack Export</h3>'
-            + '<img src=\"' + imageData + '\" style=\"max-width:100%;height:auto;\" />'
+            + '<h3>' + escapeHtml(rackTitle) + '</h3>'
+            + '<p><strong>Generated:</strong> ' + escapeHtml(generatedAt) + '</p>'
+            + '<table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">'
+            + '<thead><tr><th>Start U</th><th>Size (RU)</th><th>Label</th><th>Code</th><th>Price</th></tr></thead>'
+            + '<tbody>' + tableRowsHtml + '</tbody>'
+            + '</table>'
+            + '<p><strong>TOTAL:</strong> ' + escapeHtml(totalText) + '</p>'
             + '</body></html>';
         const blob = new Blob(['\uFEFF', html], { type: 'application/vnd.ms-excel' });
         rackDownloadBlob(blob, 'rack_view_' + rackExportTimestamp() + '.xls');
@@ -1470,12 +1626,22 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 label = String(meta.label || code);
             }
 
+            let normalizedPrice = (meta.price !== null && meta.price !== undefined && !Number.isNaN(Number(meta.price)))
+                ? Number(meta.price)
+                : ((rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price))))
+                    ? Number(rawDevice.price)
+                    : null;
+            if (normalizedPrice === null && isPlaceholderCode(code)) {
+                const parsedPlaceholderPrice = rackExtractPriceFromText(label);
+                normalizedPrice = Number.isFinite(parsedPlaceholderPrice) ? parsedPlaceholderPrice : null;
+            }
+
             devices.push({
                 code: code,
                 label: label,
                 start_u: startU,
                 size: size,
-                price: (meta.price !== null && meta.price !== undefined && !Number.isNaN(Number(meta.price))) ? Number(meta.price) : ((rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price)))) ? Number(rawDevice.price) : null
+                price: normalizedPrice
             });
         });
 
@@ -1692,6 +1858,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 cell.setAttribute('data-device-label', assignment.label);
                 cell.setAttribute('data-device-size', String(assignment.size));
                 cell.setAttribute('data-device-start-u', String(assignment.start_u));
+                cell.setAttribute('data-device-price', (assignment.price !== undefined && assignment.price !== null && !Number.isNaN(Number(assignment.price))) ? Number(assignment.price).toFixed(2) : '');
                 const anchorUnit = Number(assignment.start_u) + Number(assignment.size) - 1;
                 if (unit === anchorUnit) {
                     cell.classList.add('has-device-anchor');
@@ -1709,6 +1876,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 cell.setAttribute('data-device-label', '');
                 cell.setAttribute('data-device-size', '');
                 cell.setAttribute('data-device-start-u', '');
+                cell.setAttribute('data-device-price', '');
                 if (labelEl) {
                     labelEl.textContent = '';
                 }
@@ -1835,7 +2003,14 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     label: normalizedCustomLabel !== '' ? normalizedCustomLabel : String(selectedMeta.label),
                     start_u: activeUnit,
                     size: size,
-                    price: selectedMeta.price
+                    price: (function () {
+                        if (!isPlaceholderCode(selectedMeta.code)) {
+                            return selectedMeta.price;
+                        }
+                        const placeholderLabel = normalizedCustomLabel !== '' ? normalizedCustomLabel : String(selectedMeta.label || '');
+                        const parsedPlaceholderPrice = rackExtractPriceFromText(placeholderLabel);
+                        return Number.isFinite(parsedPlaceholderPrice) ? parsedPlaceholderPrice : null;
+                    })()
                 });
             }
 
