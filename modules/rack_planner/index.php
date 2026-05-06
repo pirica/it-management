@@ -54,7 +54,7 @@ function rack_planner_extract_price_from_text(string $text)
         return null;
     }
 
-    if (!preg_match('/(-?\d[\d.,]*)\s*(?:€|\$|usd|eur)?\s*$/i', $input, $matches)) {
+    if (!preg_match('/(?:^|[\\s:;,\\-])([+-]?\\d[\\d.,]*)\\s*(?:\\$|usd|eur)?\\s*$/i', $input, $matches)) {
         return null;
     }
 
@@ -261,13 +261,13 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
         }
 
         $price = null;
-        if (isset($meta['price']) && is_numeric($meta['price'])) {
+        if ($code === 'ph' || $code === 'ph_2') {
+            // Placeholder prices are valid only when a numeric amount is explicitly at the end of the label.
+            $price = rack_planner_extract_price_from_text($label);
+        } elseif (isset($meta['price']) && is_numeric($meta['price'])) {
             $price = (float)$meta['price'];
         } elseif (isset($rawDevice['price']) && is_numeric($rawDevice['price'])) {
             $price = (float)$rawDevice['price'];
-        } elseif ($code === 'ph' || $code === 'ph_2') {
-            // Placeholder labels can embed a custom price (for example: "2-RU Placeholder 21.21").
-            $price = rack_planner_extract_price_from_text($label);
         }
 
         $devices[] = [
@@ -1210,7 +1210,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             return null;
         }
 
-        const endMatch = input.match(/(-?\d[\d.,]*)\s*(?:\$|usd|eur)?\s*$/i);
+        const endMatch = input.match(/(?:^|[\\s:;,\\-])([+-]?\\d[\\d.,]*)\\s*(?:\\$|usd|eur)?\\s*$/i);
         if (!endMatch || endMatch.length < 2) {
             return null;
         }
@@ -1659,14 +1659,16 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 label = String(meta.label || code);
             }
 
-            let normalizedPrice = (meta.price !== null && meta.price !== undefined && !Number.isNaN(Number(meta.price)))
-                ? Number(meta.price)
-                : ((rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price))))
-                    ? Number(rawDevice.price)
-                    : null;
-            if (normalizedPrice === null && isPlaceholderCode(code)) {
+            let normalizedPrice = null;
+            if (isPlaceholderCode(code)) {
                 const parsedPlaceholderPrice = rackExtractPriceFromText(label);
                 normalizedPrice = Number.isFinite(parsedPlaceholderPrice) ? parsedPlaceholderPrice : null;
+            } else {
+                normalizedPrice = (meta.price !== null && meta.price !== undefined && !Number.isNaN(Number(meta.price)))
+                    ? Number(meta.price)
+                    : ((rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price))))
+                        ? Number(rawDevice.price)
+                        : null;
             }
 
             devices.push({
