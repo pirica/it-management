@@ -1415,7 +1415,6 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 + '<td>' + escapeHtml(row.start_u) + '</td>'
                 + '<td>' + escapeHtml(row.size) + '</td>'
                 + '<td>' + escapeHtml(row.label || row.code) + '</td>'
-                + '<td>' + escapeHtml(row.code) + '</td>'
                 + '<td style="text-align:right;">' + escapeHtml(priceText) + '</td>'
                 + '</tr>';
         }).join('');
@@ -1424,7 +1423,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             + '<h3>' + escapeHtml(rackTitle) + '</h3>'
             + '<p><strong>Generated:</strong> ' + escapeHtml(generatedAt) + '</p>'
             + '<table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">'
-            + '<thead><tr><th>Start U</th><th>Size (RU)</th><th>Label</th><th>Code</th><th>Price</th></tr></thead>'
+            + '<thead><tr><th>Start U</th><th>Size (RU)</th><th>Label</th><th>Price</th></tr></thead>'
             + '<tbody>' + tableRowsHtml + '</tbody>'
             + '</table>'
             + '<p><strong>TOTAL:</strong> ' + escapeHtml(totalText) + '</p>'
