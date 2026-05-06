@@ -836,6 +836,32 @@ $offset = ($page - 1) * $perPage;
             outline: 2px solid #2563eb;
             outline-offset: -2px;
         }
+        .rack-drag-trash {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            min-width: 120px;
+            height: 46px;
+            border-radius: 12px;
+            border: 1px solid #ef4444;
+            background: #fef2f2;
+            color: #991b1b;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+            z-index: 10001;
+            user-select: none;
+        }
+        .rack-drag-trash.is-visible {
+            display: flex;
+        }
+        .rack-drag-trash.is-active {
+            background: #dc2626;
+            color: #fff;
+            border-color: #b91c1c;
+        }
     </style>
 </head>
 <body>
@@ -1155,6 +1181,7 @@ $offset = ($page - 1) * $perPage;
                         </div>
                     </div>
                 </div>
+                <div id="rackDragTrash" class="rack-drag-trash" aria-hidden="true">Delete</div>
 
             <?php elseif ($crud_action === 'view'): ?>
                 <div class="rack-planner-header">
@@ -1563,6 +1590,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackPriceInput = document.getElementById('rackPriceInput');
     const rackPriceSkipBtn = document.getElementById('rackPriceSkipBtn');
     const rackPriceSaveBtn = document.getElementById('rackPriceSaveBtn');
+    const rackDragTrash = document.getElementById('rackDragTrash');
     const layoutJsonInput = document.getElementById('layoutJsonInput');
     const rackPlanForm = document.querySelector('form.form-grid');
     const rackUnitsInput = rackPlanForm ? rackPlanForm.querySelector('input[name="rack_units"]') : null;
@@ -2261,6 +2289,31 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             });
         }
 
+        function setTrashVisibility(visible) {
+            if (!rackDragTrash) {
+                return;
+            }
+            if (visible) {
+                rackDragTrash.classList.add('is-visible');
+                rackDragTrash.setAttribute('aria-hidden', 'false');
+            } else {
+                rackDragTrash.classList.remove('is-visible');
+                rackDragTrash.classList.remove('is-active');
+                rackDragTrash.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function setTrashActive(active) {
+            if (!rackDragTrash) {
+                return;
+            }
+            if (active) {
+                rackDragTrash.classList.add('is-active');
+            } else {
+                rackDragTrash.classList.remove('is-active');
+            }
+        }
+
         function rangesOverlap(startA, sizeA, startB, sizeB) {
             const endA = startA + sizeA - 1;
             const endB = startB + sizeB - 1;
@@ -2287,6 +2340,54 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             const rackLimit = getRackUnitsLimit();
             if ((targetStartU + sourceSize - 1) > rackLimit) {
                 alert('Not enough space for this ' + String(sourceSize) + '-RU component.');
+                return;
+            }
+            const assignments = buildAssignments(layoutState);
+            const targetAssignment = assignments[targetStartU] || null;
+
+            if (targetAssignment && Number(targetAssignment.start_u) !== Number(sourceDevice.start_u)) {
+                const targetDeviceStart = Number(targetAssignment.start_u);
+                const targetIndex = layoutState.devices.findIndex(function (device) {
+                    return Number(device.start_u) === targetDeviceStart;
+                });
+                if (targetIndex === -1 || targetIndex === sourceIndex) {
+                    return;
+                }
+
+                const targetDevice = layoutState.devices[targetIndex];
+                const targetSize = Number(targetDevice.size) === 2 ? 2 : 1;
+                const swappedSourceStart = targetStartU;
+                const swappedTargetStart = Number(sourceDevice.start_u);
+
+                if ((swappedTargetStart + targetSize - 1) > rackLimit) {
+                    alert('Not enough space to exchange these components.');
+                    return;
+                }
+
+                if (rangesOverlap(swappedSourceStart, sourceSize, swappedTargetStart, targetSize)) {
+                    alert('Cannot exchange components due to overlap.');
+                    return;
+                }
+
+                for (let i = 0; i < layoutState.devices.length; i++) {
+                    if (i === sourceIndex || i === targetIndex) {
+                        continue;
+                    }
+                    const other = layoutState.devices[i];
+                    const otherStart = Number(other.start_u);
+                    const otherSize = Number(other.size) === 2 ? 2 : 1;
+                    if (rangesOverlap(swappedSourceStart, sourceSize, otherStart, otherSize)
+                        || rangesOverlap(swappedTargetStart, targetSize, otherStart, otherSize)) {
+                        alert('Cannot exchange components due to space constraints.');
+                        return;
+                    }
+                }
+
+                sourceDevice.start_u = swappedSourceStart;
+                targetDevice.start_u = swappedTargetStart;
+                layoutState = normalizeLayout(layoutState);
+                renderLayout(layoutState);
+                autoSaveLayoutToDatabase(layoutState);
                 return;
             }
 
@@ -2410,6 +2511,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     sourceStartU: sourceStartU,
                     sourceSize: sourceSize === 2 ? 2 : 1
                 };
+                setTrashVisibility(true);
+                setTrashActive(false);
 
                 if (event.dataTransfer) {
                     event.dataTransfer.effectAllowed = 'move';
@@ -2448,8 +2551,42 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             cell.addEventListener('dragend', function () {
                 dragState = null;
                 clearDragTargets();
+                setTrashVisibility(false);
             });
         });
+
+        if (rackDragTrash) {
+            rackDragTrash.addEventListener('dragover', function (event) {
+                if (!dragState) {
+                    return;
+                }
+                event.preventDefault();
+                setTrashActive(true);
+                if (event.dataTransfer) {
+                    event.dataTransfer.dropEffect = 'move';
+                }
+            });
+
+            rackDragTrash.addEventListener('dragleave', function () {
+                setTrashActive(false);
+            });
+
+            rackDragTrash.addEventListener('drop', function (event) {
+                if (!dragState) {
+                    return;
+                }
+                event.preventDefault();
+                removeDeviceCoveringUnit(dragState.sourceStartU);
+                layoutState = normalizeLayout(layoutState);
+                renderLayout(layoutState);
+                autoSaveLayoutToDatabase(layoutState);
+                dragState = null;
+                clearDragTargets();
+                setTrashVisibility(false);
+                ignoreNextClick = true;
+                setTimeout(function () { ignoreNextClick = false; }, 50);
+            });
+        }
 
         unitTypeSelect.addEventListener('change', function () {
             if (!Number.isInteger(activeUnit) || activeUnit < 1) {
