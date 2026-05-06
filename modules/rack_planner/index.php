@@ -714,17 +714,16 @@ $offset = ($page - 1) * $perPage;
         }
         .rack-visualizer-u.has-device-anchor[data-device-size="2"] .rack-visualizer-u-label {
             position: absolute;
-            left: 6%;
-            width: 88%;
-            max-width: none;
-            height: calc(80px - 2px);
-            top: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            white-space: normal;
+            left: 50%;
+            top: calc(40px - 1px);
+            transform: translate(-50%, -50%);
+            width: auto;
+            max-width: 88%;
+            height: auto;
+            display: inline-block;
+            white-space: nowrap;
             text-align: center;
-            border-radius: 10px;
+            border-radius: 999px;
             z-index: 4;
         }
         .rack-visualizer-u::before {
