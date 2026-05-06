@@ -674,6 +674,23 @@ $offset = ($page - 1) * $perPage;
             z-index: 2;
             cursor: move;
         }
+        .rack-visualizer-u.has-device-anchor.has-device-image::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: calc(40px - 1px);
+            background-image: var(--rack-device-image);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 100% 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .rack-visualizer-u.has-device-anchor.has-device-image[data-device-size="2"]::after {
+            height: calc(80px - 2px);
+        }
         .rack-visualizer-u-label {
             display: none;
             max-width: 88%;
@@ -689,6 +706,8 @@ $offset = ($page - 1) * $perPage;
             white-space: nowrap;
             box-shadow: 0 1px 2px rgba(0,0,0,0.08);
             pointer-events: none;
+            position: relative;
+            z-index: 4;
         }
         .rack-visualizer-u.has-device .rack-visualizer-u-label {
             display: inline-block;
@@ -706,7 +725,7 @@ $offset = ($page - 1) * $perPage;
             white-space: normal;
             text-align: center;
             border-radius: 10px;
-            z-index: 3;
+            z-index: 4;
         }
         .rack-visualizer-u::before {
             content: attr(data-u);
@@ -1572,6 +1591,33 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return String(code || '').indexOf('catalog:') === 0;
     }
 
+    function getRackDeviceImagePath(code) {
+        const normalizedCode = String(code || '').trim();
+        if (normalizedCode === '' || normalizedCode === 'empty' || isCatalogCode(normalizedCode)) {
+            return '';
+        }
+
+        const explicitMap = {
+            pp24: 'pp24.svg',
+            pp48: 'pp48.svg',
+            ppfo24: 'ppfo24.svg',
+            ppfo48: 'ppfo48.svg',
+            sw24: 'sw24.svg',
+            sw48: 'sw48.svg',
+            bs: 'bs.svg',
+            bs_2: 'bs_2.svg',
+            ds: 'ds.svg',
+            rt: 'rt.svg',
+            tr_2: 'tr_2.svg',
+            ph: 'ph.svg',
+            ph_2: 'ph2.svg'
+        };
+        if (!Object.prototype.hasOwnProperty.call(explicitMap, normalizedCode)) {
+            return '';
+        }
+        return '../../assets/' + explicitMap[normalizedCode];
+    }
+
     function showPlaceholderMessageControls(show) {
         if (!placeholderMessageRow || !placeholderMessageInput || !placeholderApplyBtn) {
             return;
@@ -1945,6 +1991,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             const labelEl = cell.querySelector('.rack-visualizer-u-label');
             cell.classList.remove('rack-drop-target');
             cell.setAttribute('draggable', 'false');
+            cell.classList.remove('has-device-image');
+            cell.style.removeProperty('--rack-device-image');
 
             if (assignment) {
                 cell.classList.add('has-device');
@@ -1958,6 +2006,11 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 if (unit === anchorUnit) {
                     cell.classList.add('has-device-anchor');
                     cell.setAttribute('draggable', 'true');
+                    const deviceImagePath = getRackDeviceImagePath(assignment.code);
+                    if (deviceImagePath !== '') {
+                        cell.classList.add('has-device-image');
+                        cell.style.setProperty('--rack-device-image', 'url("' + deviceImagePath + '")');
+                    }
                     if (labelEl) {
                         labelEl.textContent = assignment.label;
                     }
