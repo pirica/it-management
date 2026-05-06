@@ -54,7 +54,7 @@ function rack_planner_extract_price_from_text(string $text)
         return null;
     }
 
-    if (!preg_match('/(?:^|[\\s:;,\\-])([+-]?\\d[\\d.,]*)\\s*(?:\\$|usd|eur)?\\s*$/i', $input, $matches)) {
+    if (!preg_match('/(?:^|[\s:;,\-])([+-]?\d[\d.,]*)\s*(?:\x{20AC}|\$|usd|eur)?\s*$/iu', $input, $matches)) {
         return null;
     }
 
@@ -1210,7 +1210,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             return null;
         }
 
-        const endMatch = input.match(/(?:^|[\\s:;,\\-])([+-]?\\d[\\d.,]*)\\s*(?:\\$|usd|eur)?\\s*$/i);
+        const endMatch = input.match(/(?:^|[\s:;,\-])([+-]?\d[\d.,]*)\s*(?:\u20AC|\$|usd|eur)?\s*$/i);
         if (!endMatch || endMatch.length < 2) {
             return null;
         }
