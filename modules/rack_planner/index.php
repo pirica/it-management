@@ -23,7 +23,7 @@ function rack_planner_component_catalog(): array
         'sw48' => ['label' => '48-Port Switch', 'size' => 1],
         'bs' => ['label' => '1-RU Blade Server', 'size' => 1],
         'bs_2' => ['label' => '2-RU Blade Server', 'size' => 2],
-        'ds' => ['label' => '1-RU Data Storage', 'size' => 1],
+        'ds' => ['label' => '2-RU Data Storage', 'size' => 2],
         'rt' => ['label' => '1-RU Router', 'size' => 1],
         'tr_2' => ['label' => '2-RU Rack Tray', 'size' => 2],
         'ph' => ['label' => '1-RU Placeholder', 'size' => 1],
