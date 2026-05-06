@@ -261,13 +261,19 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
         }
 
         $price = null;
-        if ($code === 'ph' || $code === 'ph_2') {
-            // Placeholder prices are valid only when a numeric amount is explicitly at the end of the label.
-            $price = rack_planner_extract_price_from_text($label);
-        } elseif (isset($meta['price']) && is_numeric($meta['price'])) {
-            $price = (float)$meta['price'];
-        } elseif (isset($rawDevice['price']) && is_numeric($rawDevice['price'])) {
-            $price = (float)$rawDevice['price'];
+        if ($code !== 'empty' && strpos($code, 'catalog:') !== 0) {
+            // Keep non-catalog component prices parsed from the trailing label amount.
+            $parsedLabelPrice = rack_planner_extract_price_from_text($label);
+            if ($parsedLabelPrice !== null && is_numeric($parsedLabelPrice)) {
+                $price = (float)$parsedLabelPrice;
+            }
+        }
+        if ($price === null) {
+            if (isset($meta['price']) && is_numeric($meta['price'])) {
+                $price = (float)$meta['price'];
+            } elseif (isset($rawDevice['price']) && is_numeric($rawDevice['price'])) {
+                $price = (float)$rawDevice['price'];
+            }
         }
 
         $devices[] = [
@@ -790,6 +796,7 @@ $offset = ($page - 1) * $perPage;
         .rack-unit-modal-row label { font-weight: 600; min-width: 52px; }
         .rack-unit-modal-row.is-hidden { display: none; }
         .rack-unit-modal-row input[type="text"] { flex: 1; min-width: 0; }
+        .rack-unit-modal-note { margin: 8px 0 0; font-size: 12px; color: #6b7280; }
         .rack-unit-modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
         .rack-visualizer-total {
             margin-top: 12px;
@@ -1106,6 +1113,25 @@ $offset = ($page - 1) * $perPage;
                             </div>
                             <div class="rack-unit-modal-actions">
                                 <button type="button" class="btn btn-sm" id="insertFromCatalogsBtn">Insert from Catalogs</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="rack-unit-modal-overlay" id="rackPriceModal" aria-hidden="true">
+                    <div class="rack-unit-modal" role="dialog" aria-modal="true" aria-labelledby="rackPriceModalTitle">
+                        <div class="rack-unit-modal-header">
+                            <p id="rackPriceModalTitle">Insert Price (optional)</p>
+                            <button type="button" class="rack-unit-modal-close" id="rackPriceModalClose" aria-label="Close">&times;</button>
+                        </div>
+                        <div class="rack-unit-modal-body">
+                            <div class="rack-unit-modal-row">
+                                <label for="rackPriceInput">Price</label>
+                                <input type="text" id="rackPriceInput" placeholder="e.g. 21.21">
+                            </div>
+                            <p class="rack-unit-modal-note">Leave empty to skip. Empty component cannot have a price.</p>
+                            <div class="rack-unit-modal-actions">
+                                <button type="button" class="btn btn-sm" id="rackPriceSkipBtn">Skip</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="rackPriceSaveBtn">Save</button>
                             </div>
                         </div>
                     </div>
@@ -1513,10 +1539,17 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const placeholderMessageRow = document.getElementById('placeholderMessageRow');
     const placeholderMessageInput = document.getElementById('placeholderMessageInput');
     const placeholderApplyBtn = document.getElementById('placeholderApplyBtn');
+    const rackPriceModal = document.getElementById('rackPriceModal');
+    const rackPriceModalClose = document.getElementById('rackPriceModalClose');
+    const rackPriceInput = document.getElementById('rackPriceInput');
+    const rackPriceSkipBtn = document.getElementById('rackPriceSkipBtn');
+    const rackPriceSaveBtn = document.getElementById('rackPriceSaveBtn');
     const layoutJsonInput = document.getElementById('layoutJsonInput');
     const rackPlanForm = document.querySelector('form.form-grid');
     const rackUnitsInput = rackPlanForm ? rackPlanForm.querySelector('input[name="rack_units"]') : null;
     const rackTotalAmount = document.getElementById('rackTotalAmount');
+    let pendingPriceMeta = null;
+    let activeAssignment = null;
 
     function getRackUnitsLimit() {
         const inputUnits = rackUnitsInput ? parseInt(rackUnitsInput.value, 10) : NaN;
@@ -1531,6 +1564,14 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return c === 'ph' || c === 'ph_2';
     }
 
+    function isEmptyCode(code) {
+        return String(code || '') === 'empty';
+    }
+
+    function isCatalogCode(code) {
+        return String(code || '').indexOf('catalog:') === 0;
+    }
+
     function showPlaceholderMessageControls(show) {
         if (!placeholderMessageRow || !placeholderMessageInput || !placeholderApplyBtn) {
             return;
@@ -1543,10 +1584,28 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         }
     }
 
+    function closeRackPriceModal(resetState) {
+        if (!rackPriceModal) {
+            return;
+        }
+        rackPriceModal.classList.remove('is-open');
+        rackPriceModal.setAttribute('aria-hidden', 'true');
+        if (rackPriceInput) {
+            rackPriceInput.value = '';
+        }
+        if (resetState !== false) {
+            pendingPriceMeta = null;
+            if (unitTypeSelect) {
+                unitTypeSelect.value = activeAssignment ? String(activeAssignment.code || '') : '';
+            }
+        }
+    }
+
     function closeRackModal() {
         if (!rackUnitModal) {
             return;
         }
+        closeRackPriceModal(true);
         showPlaceholderMessageControls(false);
         rackUnitModal.classList.remove('is-open');
         rackUnitModal.setAttribute('aria-hidden', 'true');
@@ -1660,10 +1719,11 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             }
 
             let normalizedPrice = null;
-            if (isPlaceholderCode(code)) {
-                const parsedPlaceholderPrice = rackExtractPriceFromText(label);
-                normalizedPrice = Number.isFinite(parsedPlaceholderPrice) ? parsedPlaceholderPrice : null;
-            } else {
+            if (!isEmptyCode(code) && !isCatalogCode(code)) {
+                const parsedLabelPrice = rackExtractPriceFromText(label);
+                normalizedPrice = Number.isFinite(parsedLabelPrice) ? parsedLabelPrice : null;
+            }
+            if (normalizedPrice === null) {
                 normalizedPrice = (meta.price !== null && meta.price !== undefined && !Number.isNaN(Number(meta.price)))
                     ? Number(meta.price)
                     : ((rawDevice.price !== undefined && rawDevice.price !== null && rawDevice.price !== '' && !Number.isNaN(Number(rawDevice.price))))
@@ -2039,12 +2099,20 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     start_u: activeUnit,
                     size: size,
                     price: (function () {
-                        if (!isPlaceholderCode(selectedMeta.code)) {
+                        const resolvedLabel = normalizedCustomLabel !== '' ? normalizedCustomLabel : String(selectedMeta.label || '');
+                        if (isEmptyCode(selectedMeta.code)) {
+                            return null;
+                        }
+                        if (isCatalogCode(selectedMeta.code)) {
                             return selectedMeta.price;
                         }
-                        const placeholderLabel = normalizedCustomLabel !== '' ? normalizedCustomLabel : String(selectedMeta.label || '');
-                        const parsedPlaceholderPrice = rackExtractPriceFromText(placeholderLabel);
-                        return Number.isFinite(parsedPlaceholderPrice) ? parsedPlaceholderPrice : null;
+                        const parsedLabelPrice = rackExtractPriceFromText(resolvedLabel);
+                        if (Number.isFinite(parsedLabelPrice)) {
+                            return parsedLabelPrice;
+                        }
+                        return (selectedMeta.price !== undefined && selectedMeta.price !== null && !Number.isNaN(Number(selectedMeta.price)))
+                            ? Number(selectedMeta.price)
+                            : null;
                     })()
                 });
             }
@@ -2053,6 +2121,85 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             renderLayout(layoutState);
             autoSaveLayoutToDatabase(layoutState);
             closeRackModal();
+        }
+
+        function parsePriceFromPriceModalInput() {
+            const rawInput = String(rackPriceInput ? rackPriceInput.value : '').trim();
+            if (rawInput === '') {
+                return { ok: true, value: null };
+            }
+
+            let normalized = rawInput
+                .replace(/^(?:\u20AC|\$)\s*/i, '')
+                .replace(/^(?:eur|usd)\s*/i, '')
+                .trim();
+            if (normalized === '') {
+                return { ok: false, value: null };
+            }
+
+            const parsed = rackExtractPriceFromText(' ' + normalized);
+            if (!Number.isFinite(parsed)) {
+                return { ok: false, value: null };
+            }
+            if (parsed < 0) {
+                return { ok: false, value: null };
+            }
+
+            return { ok: true, value: parsed };
+        }
+
+        function openRackPriceModalForMeta(selectedMeta) {
+            if (!selectedMeta || !rackPriceModal) {
+                return;
+            }
+            pendingPriceMeta = {
+                code: String(selectedMeta.code || ''),
+                label: String(selectedMeta.label || ''),
+                size: Number(selectedMeta.size) === 2 ? 2 : 1,
+                price: selectedMeta.price
+            };
+
+            if (rackPriceInput) {
+                let initialValue = '';
+                if (activeAssignment && String(activeAssignment.code || '') === String(selectedMeta.code || '')) {
+                    const parsedFromCurrentLabel = rackExtractPriceFromText(String(activeAssignment.label || ''));
+                    if (Number.isFinite(parsedFromCurrentLabel)) {
+                        initialValue = parsedFromCurrentLabel.toFixed(2);
+                    }
+                }
+                rackPriceInput.value = initialValue;
+                rackPriceInput.focus();
+                rackPriceInput.select();
+            }
+
+            rackPriceModal.classList.add('is-open');
+            rackPriceModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function applyPendingPriceSelection(skipPrice) {
+            if (!pendingPriceMeta) {
+                return;
+            }
+
+            const selectedMeta = pendingPriceMeta;
+            let customLabel = String(selectedMeta.label || '');
+            if (!skipPrice) {
+                const parsedPrice = parsePriceFromPriceModalInput();
+                if (!parsedPrice.ok) {
+                    alert('Please enter a valid price, or leave it empty.');
+                    if (rackPriceInput) {
+                        rackPriceInput.focus();
+                    }
+                    return;
+                }
+                if (parsedPrice.value !== null) {
+                    customLabel = customLabel + ' - ' + parsedPrice.value.toFixed(2);
+                }
+            }
+
+            closeRackPriceModal(false);
+            applySelectedMeta(selectedMeta, customLabel);
+            pendingPriceMeta = null;
         }
 
         function clearDragTargets() {
@@ -2131,7 +2278,15 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             const assignments = buildAssignments(layoutState);
             const assignment = assignments[unit] || null;
             activeUnit = assignment ? assignment.start_u : unit;
+            activeAssignment = assignment ? {
+                code: String(assignment.code || ''),
+                label: String(assignment.label || ''),
+                size: Number(assignment.size) === 2 ? 2 : 1,
+                price: assignment.price
+            } : null;
             pendingPlaceholderMeta = null;
+            pendingPriceMeta = null;
+            closeRackPriceModal(false);
             if (rackUnitModalTitle) {
                 rackUnitModalTitle.textContent = 'Component ' + String(activeUnit);
             }
@@ -2274,6 +2429,13 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 return;
             }
 
+            if (selectedMeta && !isCatalogCode(selectedMeta.code) && !isEmptyCode(selectedMeta.code)) {
+                pendingPlaceholderMeta = null;
+                showPlaceholderMessageControls(false);
+                openRackPriceModalForMeta(selectedMeta);
+                return;
+            }
+
             pendingPlaceholderMeta = null;
             showPlaceholderMessageControls(false);
             applySelectedMeta(selectedMeta, '');
@@ -2311,6 +2473,41 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     applyPendingPlaceholderSelection();
+                }
+            });
+        }
+
+        if (rackPriceSkipBtn) {
+            rackPriceSkipBtn.addEventListener('click', function () {
+                applyPendingPriceSelection(true);
+            });
+        }
+
+        if (rackPriceSaveBtn) {
+            rackPriceSaveBtn.addEventListener('click', function () {
+                applyPendingPriceSelection(false);
+            });
+        }
+
+        if (rackPriceInput) {
+            rackPriceInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applyPendingPriceSelection(false);
+                }
+            });
+        }
+
+        if (rackPriceModalClose) {
+            rackPriceModalClose.addEventListener('click', function () {
+                closeRackPriceModal(true);
+            });
+        }
+
+        if (rackPriceModal) {
+            rackPriceModal.addEventListener('click', function (event) {
+                if (event.target === rackPriceModal) {
+                    closeRackPriceModal(true);
                 }
             });
         }
