@@ -104,7 +104,7 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
             FROM catalogs c
             LEFT JOIN equipment_types et ON et.id = c.equipment_type_id
             WHERE c.company_id = ? AND c.active = 1
-            ORDER BY c.model ASC";
+            ORDER BY c.equipment_type_id ASC, c.model ASC";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $options;
@@ -1200,6 +1200,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackSaveImageBtn = document.getElementById('rackSaveImageBtn');
     const rackExportPdfBtn = document.getElementById('rackExportPdfBtn');
     const rackExportExcelBtn = document.getElementById('rackExportExcelBtn');
+    const rackPlanNameInput = document.querySelector('form.form-grid input[name="name"]');
     let selectionMode = false;
     let rackExportBusy = false;
 
@@ -1248,6 +1249,39 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
     }
 
+    function rackSanitizeFilePart(value) {
+        const normalized = String(value || '').trim().replace(/\s+/g, '_');
+        const cleaned = normalized.replace(/[^A-Za-z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+        return cleaned !== '' ? cleaned : 'rack_planner';
+    }
+
+    function rackGetCurrentPlanName() {
+        if (rackPlanNameInput && String(rackPlanNameInput.value || '').trim() !== '') {
+            return String(rackPlanNameInput.value || '').trim();
+        }
+        const heading = document.querySelector('h1');
+        if (!heading) {
+            return 'rack_planner';
+        }
+        const headingText = String(heading.textContent || '').trim();
+        if (headingText === '') {
+            return 'rack_planner';
+        }
+        const separatorIndex = headingText.indexOf(':');
+        if (separatorIndex >= 0) {
+            const afterColon = headingText.slice(separatorIndex + 1).trim();
+            if (afterColon !== '') {
+                return afterColon;
+            }
+        }
+        return headingText;
+    }
+
+    function rackBuildExportFilename(extension) {
+        const safeName = rackSanitizeFilePart(rackGetCurrentPlanName());
+        return safeName + '_' + rackExportTimestamp() + '.' + extension;
+    }
+
     function rackDownloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1277,7 +1311,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
     async function rackExportAsImage() {
         const canvas = await rackCaptureScopeCanvas();
-        const fileName = 'rack_view_' + rackExportTimestamp() + '.png';
+        const fileName = rackBuildExportFilename('png');
         if (canvas.toBlob) {
             await new Promise(function (resolve, reject) {
                 canvas.toBlob(function (blob) {
@@ -1319,7 +1353,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         const y = (pdfHeight - renderHeight) / 2;
         const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         doc.addImage(imgData, 'PNG', x, y, renderWidth, renderHeight);
-        doc.save('rack_view_' + rackExportTimestamp() + '.pdf');
+        doc.save(rackBuildExportFilename('pdf'));
     }
 
     async function rackExportAsExcel() {
@@ -1381,7 +1415,6 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 + '<td>' + escapeHtml(row.start_u) + '</td>'
                 + '<td>' + escapeHtml(row.size) + '</td>'
                 + '<td>' + escapeHtml(row.label || row.code) + '</td>'
-                + '<td>' + escapeHtml(row.code) + '</td>'
                 + '<td style="text-align:right;">' + escapeHtml(priceText) + '</td>'
                 + '</tr>';
         }).join('');
@@ -1390,13 +1423,13 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             + '<h3>' + escapeHtml(rackTitle) + '</h3>'
             + '<p><strong>Generated:</strong> ' + escapeHtml(generatedAt) + '</p>'
             + '<table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">'
-            + '<thead><tr><th>Start U</th><th>Size (RU)</th><th>Label</th><th>Code</th><th>Price</th></tr></thead>'
+            + '<thead><tr><th>Start U</th><th>Size (RU)</th><th>Label</th><th>Price</th></tr></thead>'
             + '<tbody>' + tableRowsHtml + '</tbody>'
             + '</table>'
             + '<p><strong>TOTAL:</strong> ' + escapeHtml(totalText) + '</p>'
             + '</body></html>';
         const blob = new Blob(['\uFEFF', html], { type: 'application/vnd.ms-excel' });
-        rackDownloadBlob(blob, 'rack_view_' + rackExportTimestamp() + '.xls');
+        rackDownloadBlob(blob, rackBuildExportFilename('xls'));
     }
 
     async function runRackExport(handlerFn) {
