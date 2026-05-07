@@ -816,6 +816,7 @@ $offset = ($page - 1) * $perPage;
         .rack-unit-modal-row input[type="text"] { flex: 1; min-width: 0; }
         .rack-unit-modal-note { margin: 8px 0 0; font-size: 12px; color: #6b7280; }
         .rack-unit-modal-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
+        .rack-unit-modal-actions .btn[hidden] { display: none !important; }
         .rack-visualizer-total {
             margin-top: 12px;
             font-weight: 700;
