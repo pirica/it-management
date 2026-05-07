@@ -1440,9 +1440,25 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         };
 
         const rowMap = {};
-        const rackRows = [];
+        const rackRowsByUnit = {};
         const unitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
+        let maxUnit = 0;
+
         unitCells.forEach(function (cell) {
+            const unit = parseInt(String(cell.getAttribute('data-u') || ''), 10);
+            if (Number.isInteger(unit) && unit > 0) {
+                maxUnit = Math.max(maxUnit, unit);
+                if (!rackRowsByUnit[unit]) {
+                    rackRowsByUnit[unit] = {
+                        start_u: unit,
+                        size: 1,
+                        code: '',
+                        label: '',
+                        price: null
+                    };
+                }
+            }
+
             const code = String(cell.getAttribute('data-device-code') || '').trim();
             if (code === '') {
                 return;
@@ -1466,16 +1482,25 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ? Number(rawPriceAttr)
                 : rackExtractPriceFromText(label);
 
-            rackRows.push({
+            rackRowsByUnit[startU] = {
                 start_u: startU,
                 size: size,
                 code: code,
                 label: label,
                 price: Number.isFinite(priceValue) ? priceValue : null
-            });
+            };
         });
 
-        rackRows.sort(function (a, b) { return b.start_u - a.start_u; });
+        const rackRows = [];
+        for (let unit = maxUnit; unit >= 1; unit--) {
+            rackRows.push(rackRowsByUnit[unit] || {
+                start_u: unit,
+                size: 1,
+                code: '',
+                label: '',
+                price: null
+            });
+        }
 
         const rackTitleNode = document.querySelector('h1');
         const rackTitle = rackTitleNode ? String(rackTitleNode.textContent || '').trim() : 'Rack Export';
