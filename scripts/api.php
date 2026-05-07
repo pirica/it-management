@@ -4,7 +4,6 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
- * Rack Planner Excel export now includes every rack unit from top-to-bottom, preserving blank units so output matches physical RU numbering even when slots are empty.
  * IDF Add/Edit Device modal now hides Numbering Layout whenever Linked to Equipment is selected, so layout is inherited from the linked equipment metadata.
  * IDF rack view SFP/SFP+ compact icon dots now render solid port colors (no sprite overlay) so configured cable/status colors no longer appear faded.
  * IDF rack compact icon container now renders at full opacity in rack view so SFP/SFP+ dot colors are not dimmed by the shared icon wrapper.
