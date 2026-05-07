@@ -5332,4 +5332,10 @@ INSERT INTO `rack_planner` (`company_id`, `id`, `name`, `rack_units`, `layout_js
 (5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 1);
 
 
+-- Repair known mojibake for UI app name caused by non-utf8 import paths.
+UPDATE `ui_configuration`
+SET `app_name` = '⚙️ IT Controls'
+WHERE `app_name` LIKE '%?%IT Controls%'
+   OR `app_name` = '?????? IT Controls';
+
 SET FOREIGN_KEY_CHECKS=1;
