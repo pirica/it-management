@@ -1689,6 +1689,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             if (unitTypeSelect) {
                 unitTypeSelect.value = activeAssignment ? String(activeAssignment.code || '') : '';
             }
+            updateModalActionButtons(getSelectedOptionMeta());
         }
     }
 
