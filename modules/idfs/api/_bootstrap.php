@@ -24,7 +24,7 @@ function idf_read_json(): array {
     return is_array($data) ? $data : [];
 }
 
-function idf_require_csrf(array $data): void {
+function idf_require_csrf(array $data) {
     $token = (string)($data['csrf_token'] ?? ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')));
     if (!itm_validate_csrf_token($token)) {
         http_response_code(403);
@@ -33,25 +33,25 @@ function idf_require_csrf(array $data): void {
     }
 }
 
-function idf_ok(array $payload = []): void {
+function idf_ok(array $payload = []) {
     echo json_encode(array_merge(['ok' => true], $payload));
     exit;
 }
 
-function idf_fail(string $msg, int $code = 400): void {
+function idf_fail(string $msg, int $code = 400) {
     http_response_code($code);
     echo json_encode(['ok' => false, 'error' => $msg]);
     exit;
 }
 
-function idf_escape(mysqli $conn, ?string $s): string {
+function idf_escape(mysqli $conn, $s) {
     return mysqli_real_escape_string($conn, (string)($s ?? ''));
 }
 
 /**
  * Why: Refactor database schema to use ID-based relations for colors and statuses.
  */
-function idf_ensure_status_schema(mysqli $conn): void {
+function idf_ensure_status_schema(mysqli $conn) {
     static $alreadyChecked = false;
     if ($alreadyChecked) {
         return;
@@ -66,7 +66,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
     }
     $databaseNameEscaped = mysqli_real_escape_string($conn, $databaseName);
 
-    $readStatusColumn = static function (string $tableName) use ($conn, $databaseNameEscaped): ?array {
+    $readStatusColumn = static function (string $tableName) use ($conn, $databaseNameEscaped) {
         $tableNameEscaped = mysqli_real_escape_string($conn, $tableName);
         $sql = "SELECT COLUMN_TYPE, CHARACTER_MAXIMUM_LENGTH
                 FROM information_schema.COLUMNS
@@ -208,7 +208,7 @@ function idf_ensure_status_schema(mysqli $conn): void {
         }
     }
 
-    $readPortTypeColumn = static function () use ($conn, $databaseNameEscaped): ?array {
+    $readPortTypeColumn = static function () use ($conn, $databaseNameEscaped) {
         $sql = "SELECT COLUMN_TYPE
                 FROM information_schema.COLUMNS
                 WHERE TABLE_SCHEMA = '{$databaseNameEscaped}'
@@ -526,8 +526,8 @@ function idf_ensure_status_schema(mysqli $conn): void {
         string $refMatchSql,
         string $indexName,
         string $fkName,
-        ?string $newColumnName = null
-    ) use ($conn, $databaseNameEscaped): void {
+        $newColumnName = null
+    ) use ($conn, $databaseNameEscaped) {
         $finalColumnName = $newColumnName ?? $columnName;
         $columnSql = "SELECT COLUMN_TYPE
                       FROM information_schema.COLUMNS
@@ -810,7 +810,7 @@ function idf_resolve_port_type_id(mysqli $conn, int $company_id, $rawPortType, s
     return 0;
 }
 
-function idf_resolve_vlan_id(mysqli $conn, int $company_id, $rawVlan): ?int {
+function idf_resolve_vlan_id(mysqli $conn, int $company_id, $rawVlan) {
     if ($rawVlan === null || $rawVlan === '') return null;
     if (is_numeric($rawVlan)) return (int)$rawVlan;
     $value = trim((string)$rawVlan);
@@ -826,7 +826,7 @@ function idf_resolve_vlan_id(mysqli $conn, int $company_id, $rawVlan): ?int {
     return null;
 }
 
-function idf_resolve_named_lookup_id(mysqli $conn, int $company_id, string $table, string $column, $raw): ?int {
+function idf_resolve_named_lookup_id(mysqli $conn, int $company_id, string $table, string $column, $raw) {
     if ($raw === null || $raw === '') return null;
     if (is_numeric($raw)) return (int)$raw;
     $value = trim((string)$raw);
@@ -849,7 +849,7 @@ function idf_table_has_column(mysqli $conn, string $table, string $column): bool
     return $res && mysqli_num_rows($res) > 0;
 }
 
-function idf_first_existing_column(mysqli $conn, string $table, array $candidates): ?string {
+function idf_first_existing_column(mysqli $conn, string $table, array $candidates) {
     foreach ($candidates as $candidate) {
         $name = trim((string)$candidate);
         if ($name === '') {
