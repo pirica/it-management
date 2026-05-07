@@ -911,6 +911,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                                                         'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
                                                         'clickable' => true,
+                                                        'position_id' => (int)($pos['id'] ?? 0),
                                                         'company_name' => (string)($idf['company_name'] ?? ''),
                                                         'location_name' => $locationNameLabel,
                                                         'idf_name' => (string)($idf['name'] ?? ''),
