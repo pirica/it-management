@@ -5335,26 +5335,4 @@ INSERT INTO `rack_planner` (`company_id`, `id`, `name`, `rack_units`, `layout_js
 (5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 1);
 
 
--- Repair broken switch_status color_id references when they do not exist for the same tenant.
--- Why: Some replicated dumps can keep legacy color IDs that belong to another company.
-UPDATE `switch_status` ss
-LEFT JOIN `cable_colors` cc_current
-  ON cc_current.`id` = ss.`color_id`
- AND cc_current.`company_id` = ss.`company_id`
-JOIN `cable_colors` cc_target
-  ON cc_target.`company_id` = ss.`company_id`
- AND LOWER(cc_target.`color_name`) = CASE LOWER(TRIM(ss.`status`))
-    WHEN 'up' THEN 'blue'
-    WHEN 'testing' THEN 'blue'
-    WHEN 'down' THEN 'red'
-    WHEN 'free' THEN 'green'
-    WHEN 'disabled' THEN 'gray'
-    WHEN 'unknown' THEN 'gray'
-    WHEN 'err-disabled' THEN 'dark pink'
-    WHEN 'faulty' THEN 'orange'
-    WHEN 'reserved' THEN 'yellow'
-    ELSE NULL
- END
-SET ss.`color_id` = cc_target.`id`
-WHERE cc_current.`id` IS NULL;
 SET FOREIGN_KEY_CHECKS=1;
