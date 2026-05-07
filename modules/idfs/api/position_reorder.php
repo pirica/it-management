@@ -43,7 +43,11 @@ foreach ($order as $item) {
     $map[] = ['no' => $posNo, 'id' => $posId];
 }
 
-$ids = array_values(array_filter(array_map(static fn($x) => $x['id'], $map), static fn($v) => $v !== null));
+$ids = array_values(array_filter(array_map(function ($x) {
+    return $x['id'];
+}, $map), function ($v) {
+    return $v !== null;
+}));
 $ids = array_values(array_unique($ids));
 
 if ($ids) {
