@@ -1444,23 +1444,14 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         const rackRows = [];
         const unitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
         unitCells.forEach(function (cell) {
-            const code = String(cell.getAttribute('data-device-code') || '').trim();
-            if (code === '') {
+            const unitNumber = parseInt(String(cell.getAttribute('data-u') || ''), 10);
+            if (!Number.isInteger(unitNumber) || unitNumber < 1) {
                 return;
             }
 
+            const code = String(cell.getAttribute('data-device-code') || '').trim();
             const startU = parseInt(String(cell.getAttribute('data-device-start-u') || ''), 10);
             const size = parseInt(String(cell.getAttribute('data-device-size') || ''), 10) === 2 ? 2 : 1;
-            if (!Number.isInteger(startU) || startU < 1) {
-                return;
-            }
-
-            const key = String(startU) + '|' + code;
-            if (rowMap[key]) {
-                return;
-            }
-            rowMap[key] = true;
-
             const label = String(cell.getAttribute('data-device-label') || '').trim();
             const rawPriceAttr = String(cell.getAttribute('data-device-price') || '').trim();
             const priceValue = rawPriceAttr !== '' && !Number.isNaN(Number(rawPriceAttr))
