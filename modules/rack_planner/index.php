@@ -1155,9 +1155,6 @@ $offset = ($page - 1) * $perPage;
                                 <input type="text" id="placeholderMessageInput" placeholder="Write placeholder text">
                                 <button type="button" class="btn btn-sm" id="placeholderApplyBtn">Apply</button>
                             </div>
-                            <div class="rack-unit-modal-actions">
-                                <button type="button" class="btn btn-sm" id="insertFromCatalogsBtn">Insert from Catalogs</button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1580,7 +1577,6 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackUnitModalTitle = document.getElementById('rackUnitModalTitle');
     const rackUnitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
     const unitTypeSelect = document.getElementById('unitTypeSelect');
-    const insertFromCatalogsBtn = document.getElementById('insertFromCatalogsBtn');
     const placeholderMessageRow = document.getElementById('placeholderMessageRow');
     const placeholderMessageInput = document.getElementById('placeholderMessageInput');
     const placeholderApplyBtn = document.getElementById('placeholderApplyBtn');
@@ -1933,10 +1929,10 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             }
         });
 
-        let catalogsGroup = unitTypeSelect.querySelector('optgroup[label="Catalogs"]');
+        let catalogsGroup = unitTypeSelect.querySelector('optgroup[label="Catalog"]');
         if (!catalogsGroup) {
             catalogsGroup = document.createElement('optgroup');
-            catalogsGroup.label = 'Catalogs';
+            catalogsGroup.label = 'Catalog';
             unitTypeSelect.appendChild(catalogsGroup);
         }
 
@@ -2471,13 +2467,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         }
 
         renderLayout(layoutState);
-
-        if (insertFromCatalogsBtn) {
-            insertFromCatalogsBtn.addEventListener('click', function () {
-                appendCatalogOptionsToSelect();
-                unitTypeSelect.focus();
-            });
-        }
+        appendCatalogOptionsToSelect();
 
         rackUnitCells.forEach(function (cell) {
             cell.style.cursor = 'pointer';
