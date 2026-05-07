@@ -1440,6 +1440,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         };
 
         const rowMap = {};
+        const placedByStartU = {};
         const rackRows = [];
         const unitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
         unitCells.forEach(function (cell) {
@@ -1466,16 +1467,28 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ? Number(rawPriceAttr)
                 : rackExtractPriceFromText(label);
 
-            rackRows.push({
+            placedByStartU[startU] = {
                 start_u: startU,
                 size: size,
                 code: code,
                 label: label,
                 price: Number.isFinite(priceValue) ? priceValue : null
-            });
+            };
         });
 
-        rackRows.sort(function (a, b) { return b.start_u - a.start_u; });
+        const rackUnitCount = parseInt(String(rackUnitsInput && rackUnitsInput.value ? rackUnitsInput.value : ''), 10);
+        const maxRackUnits = Number.isInteger(rackUnitCount) && rackUnitCount > 0 ? rackUnitCount : 42;
+
+        for (let unit = maxRackUnits; unit >= 1; unit--) {
+            const placedRow = placedByStartU[unit] || null;
+            rackRows.push({
+                start_u: unit,
+                size: placedRow ? placedRow.size : '',
+                code: placedRow ? placedRow.code : '',
+                label: placedRow ? placedRow.label : '',
+                price: placedRow ? placedRow.price : null
+            });
+        }
 
         const rackTitleNode = document.querySelector('h1');
         const rackTitle = rackTitleNode ? String(rackTitleNode.textContent || '').trim() : 'Rack Export';
