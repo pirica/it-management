@@ -1152,6 +1152,7 @@ $offset = ($page - 1) * $perPage;
                             </div>
                             <div class="rack-unit-modal-actions">
                                 <button type="button" class="btn btn-sm" id="rackEditPriceBtn" hidden>Edit Price</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="rackSaveCatalogBtn" hidden>Save</button>
                             </div>
                             <div class="rack-unit-modal-row is-hidden" id="placeholderMessageRow">
                                 <label for="placeholderMessageInput">Message</label>
@@ -1581,6 +1582,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackUnitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
     const unitTypeSelect = document.getElementById('unitTypeSelect');
     const rackEditPriceBtn = document.getElementById('rackEditPriceBtn');
+    const rackSaveCatalogBtn = document.getElementById('rackSaveCatalogBtn');
     const placeholderMessageRow = document.getElementById('placeholderMessageRow');
     const placeholderMessageInput = document.getElementById('placeholderMessageInput');
     const placeholderApplyBtn = document.getElementById('placeholderApplyBtn');
@@ -1625,15 +1627,13 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return !isCatalogCode(meta.code) && !isEmptyCode(meta.code) && !isPlaceholderCode(meta.code);
     }
 
-    function updateEditPriceButtonVisibility(meta) {
-        if (!rackEditPriceBtn) {
-            return;
+    function updateModalActionButtons(meta) {
+        if (rackEditPriceBtn) {
+            rackEditPriceBtn.hidden = !canEditPriceForMeta(meta);
         }
-        if (canEditPriceForMeta(meta)) {
-            rackEditPriceBtn.hidden = false;
-            return;
+        if (rackSaveCatalogBtn) {
+            rackSaveCatalogBtn.hidden = !(meta && isCatalogCode(meta.code));
         }
-        rackEditPriceBtn.hidden = true;
     }
 
     function getRackDeviceImagePath(code) {
@@ -1698,7 +1698,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         }
         closeRackPriceModal(true);
         showPlaceholderMessageControls(false);
-        updateEditPriceButtonVisibility(null);
+        updateModalActionButtons(null);
         rackUnitModal.classList.remove('is-open');
         rackUnitModal.setAttribute('aria-hidden', 'true');
     }
@@ -2474,7 +2474,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1), assignment.price);
             }
             unitTypeSelect.value = assignment ? assignment.code : '';
-            updateEditPriceButtonVisibility(getSelectedOptionMeta());
+            updateModalActionButtons(getSelectedOptionMeta());
             if (assignment && isPlaceholderCode(assignment.code)) {
                 showPlaceholderMessageControls(true);
                 pendingPlaceholderMeta = {
@@ -2619,7 +2619,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             }
 
             const selectedMeta = getSelectedOptionMeta();
-            updateEditPriceButtonVisibility(selectedMeta);
+            updateModalActionButtons(selectedMeta);
             if (selectedMeta && isPlaceholderCode(selectedMeta.code)) {
                 pendingPlaceholderMeta = {
                     code: String(selectedMeta.code),
@@ -2645,6 +2645,12 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 return;
             }
 
+            if (selectedMeta && isCatalogCode(selectedMeta.code)) {
+                pendingPlaceholderMeta = null;
+                showPlaceholderMessageControls(false);
+                return;
+            }
+
             pendingPlaceholderMeta = null;
             showPlaceholderMessageControls(false);
             applySelectedMeta(selectedMeta, '');
@@ -2659,6 +2665,18 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 pendingPlaceholderMeta = null;
                 showPlaceholderMessageControls(false);
                 openRackPriceModalForMeta(selectedMeta);
+            });
+        }
+
+        if (rackSaveCatalogBtn) {
+            rackSaveCatalogBtn.addEventListener('click', function () {
+                const selectedMeta = getSelectedOptionMeta();
+                if (!selectedMeta || !isCatalogCode(selectedMeta.code)) {
+                    return;
+                }
+                pendingPlaceholderMeta = null;
+                showPlaceholderMessageControls(false);
+                applySelectedMeta(selectedMeta, '');
             });
         }
 
