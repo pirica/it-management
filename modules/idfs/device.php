@@ -394,10 +394,12 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN switch_status ss_live
         ON ss_live.id = pr_live.status_id
       AND ss_live.company_id = pr_live.company_id
-     LEFT JOIN cable_colors cc_ss
-       ON cc_ss.id = ss.color_id
-     LEFT JOIN cable_colors cc_live
-       ON cc_live.id = ss_live.color_id
+      LEFT JOIN cable_colors cc_ss
+        ON cc_ss.id = ss.color_id
+       AND cc_ss.company_id = ss.company_id
+      LEFT JOIN cable_colors cc_live
+        ON cc_live.id = ss_live.color_id
+       AND cc_live.company_id = ss_live.company_id
       LEFT JOIN vlans v
         ON v.id = pr.vlan_id
        AND v.company_id = pr.company_id
@@ -1684,7 +1686,9 @@ function openLinkModal(portId) {
         return;
     }
     if (source.is_linked) {
-        alert('This port is already linked. Unlink it first.');
+        // Why: when a link already exists users should land in the edit flow directly instead of a dead-end alert.
+        alert('This port is already linked. Opening edit modal.');
+        openPortModal(source.id);
         return;
     }
     const f = document.getElementById('linkForm');
@@ -1820,7 +1824,16 @@ function createLink() {
 
     apiPost('link_create.php', payload)
         .then(() => location.reload())
-        .catch(err => alert(err.message));
+        .catch(err => {
+            const message = String(err.message || '');
+            if (message.toLowerCase().includes('already linked')) {
+                closeLinkModal();
+                alert('This port is already linked. Opening edit modal.');
+                openPortModal(payload.port_id_a);
+                return;
+            }
+            alert(message);
+        });
 }
 
 function formatSwitchPortOption(port) {
