@@ -1643,7 +1643,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             return '';
         }
         if (isCatalogCode(normalizedCode)) {
-            return '../../assets/unit_pbcyo.svg';
+            return '../../assets/catalog.svg';
         }
 
         const explicitMap = {
