@@ -1150,6 +1150,9 @@ $offset = ($page - 1) * $perPage;
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <div class="rack-unit-modal-actions">
+                                <button type="button" class="btn btn-sm" id="rackEditPriceBtn" hidden>Edit Price</button>
+                            </div>
                             <div class="rack-unit-modal-row is-hidden" id="placeholderMessageRow">
                                 <label for="placeholderMessageInput">Message</label>
                                 <input type="text" id="placeholderMessageInput" placeholder="Write placeholder text">
@@ -1577,6 +1580,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
     const rackUnitModalTitle = document.getElementById('rackUnitModalTitle');
     const rackUnitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
     const unitTypeSelect = document.getElementById('unitTypeSelect');
+    const rackEditPriceBtn = document.getElementById('rackEditPriceBtn');
     const placeholderMessageRow = document.getElementById('placeholderMessageRow');
     const placeholderMessageInput = document.getElementById('placeholderMessageInput');
     const placeholderApplyBtn = document.getElementById('placeholderApplyBtn');
@@ -1612,6 +1616,24 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
     function isCatalogCode(code) {
         return String(code || '').indexOf('catalog:') === 0;
+    }
+
+    function canEditPriceForMeta(meta) {
+        if (!meta) {
+            return false;
+        }
+        return !isCatalogCode(meta.code) && !isEmptyCode(meta.code) && !isPlaceholderCode(meta.code);
+    }
+
+    function updateEditPriceButtonVisibility(meta) {
+        if (!rackEditPriceBtn) {
+            return;
+        }
+        if (canEditPriceForMeta(meta)) {
+            rackEditPriceBtn.hidden = false;
+            return;
+        }
+        rackEditPriceBtn.hidden = true;
     }
 
     function getRackDeviceImagePath(code) {
@@ -1676,6 +1698,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         }
         closeRackPriceModal(true);
         showPlaceholderMessageControls(false);
+        updateEditPriceButtonVisibility(null);
         rackUnitModal.classList.remove('is-open');
         rackUnitModal.setAttribute('aria-hidden', 'true');
     }
@@ -2221,6 +2244,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 return { ok: false, value: null };
             }
 
+            if (rackPriceInput) {
+                rackPriceInput.value = parsed.toFixed(2);
+            }
             return { ok: true, value: parsed };
         }
 
@@ -2241,6 +2267,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     const parsedFromCurrentLabel = rackExtractPriceFromText(String(activeAssignment.label || ''));
                     if (Number.isFinite(parsedFromCurrentLabel)) {
                         initialValue = parsedFromCurrentLabel.toFixed(2);
+                    } else if (activeAssignment.price !== undefined && activeAssignment.price !== null && !Number.isNaN(Number(activeAssignment.price))) {
+                        initialValue = Number(activeAssignment.price).toFixed(2);
                     }
                 }
                 rackPriceInput.value = initialValue;
@@ -2446,6 +2474,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1), assignment.price);
             }
             unitTypeSelect.value = assignment ? assignment.code : '';
+            updateEditPriceButtonVisibility(getSelectedOptionMeta());
             if (assignment && isPlaceholderCode(assignment.code)) {
                 showPlaceholderMessageControls(true);
                 pendingPlaceholderMeta = {
@@ -2590,6 +2619,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             }
 
             const selectedMeta = getSelectedOptionMeta();
+            updateEditPriceButtonVisibility(selectedMeta);
             if (selectedMeta && isPlaceholderCode(selectedMeta.code)) {
                 pendingPlaceholderMeta = {
                     code: String(selectedMeta.code),
@@ -2619,6 +2649,18 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             showPlaceholderMessageControls(false);
             applySelectedMeta(selectedMeta, '');
         });
+
+        if (rackEditPriceBtn) {
+            rackEditPriceBtn.addEventListener('click', function () {
+                const selectedMeta = getSelectedOptionMeta();
+                if (!canEditPriceForMeta(selectedMeta)) {
+                    return;
+                }
+                pendingPlaceholderMeta = null;
+                showPlaceholderMessageControls(false);
+                openRackPriceModalForMeta(selectedMeta);
+            });
+        }
 
         function applyPendingPlaceholderSelection() {
             const selectedMeta = pendingPlaceholderMeta && isPlaceholderCode(pendingPlaceholderMeta.code)
@@ -2669,6 +2711,15 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         }
 
         if (rackPriceInput) {
+            rackPriceInput.addEventListener('blur', function () {
+                const parsedPrice = parsePriceFromPriceModalInput();
+                if (parsedPrice.ok && parsedPrice.value !== null) {
+                    rackPriceInput.value = parsedPrice.value.toFixed(2);
+                    return;
+                }
+                rackPriceInput.value = String(rackPriceInput.value || '').replace(/,/g, '.');
+            });
+
             rackPriceInput.addEventListener('keydown', function (event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
