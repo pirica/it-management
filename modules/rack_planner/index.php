@@ -2046,6 +2046,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             cell.style.removeProperty('--rack-device-image');
 
             if (assignment) {
+                cell.style.cursor = 'move';
                 cell.classList.add('has-device');
                 cell.classList.remove('has-device-anchor');
                 cell.setAttribute('data-device-code', assignment.code);
@@ -2053,10 +2054,10 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 cell.setAttribute('data-device-size', String(assignment.size));
                 cell.setAttribute('data-device-start-u', String(assignment.start_u));
                 cell.setAttribute('data-device-price', (assignment.price !== undefined && assignment.price !== null && !Number.isNaN(Number(assignment.price))) ? Number(assignment.price).toFixed(2) : '');
+                cell.setAttribute('draggable', 'true');
                 const anchorUnit = Number(assignment.start_u) + Number(assignment.size) - 1;
                 if (unit === anchorUnit) {
                     cell.classList.add('has-device-anchor');
-                    cell.setAttribute('draggable', 'true');
                     const deviceImagePath = getRackDeviceImagePath(assignment.code);
                     if (deviceImagePath !== '') {
                         cell.classList.add('has-device-image');
@@ -2069,6 +2070,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     labelEl.textContent = '';
                 }
             } else {
+                cell.style.cursor = 'pointer';
                 cell.classList.remove('has-device');
                 cell.classList.remove('has-device-anchor');
                 cell.setAttribute('data-device-code', '');
@@ -2518,7 +2520,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             });
 
             cell.addEventListener('dragstart', function (event) {
-                if (!cell.classList.contains('has-device-anchor')) {
+                if (!cell.classList.contains('has-device')) {
                     event.preventDefault();
                     return;
                 }
