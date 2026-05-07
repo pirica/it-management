@@ -1376,6 +1376,9 @@ function onPortDotClick(portElement) {
     const positionId = Number(portNode.dataset.positionId || 0);
     const portNo = Number(portNode.dataset.portNumber || 0);
     const portType = String(portNode.dataset.portType || 'sfp').toUpperCase();
+    if (portNo <= 0) {
+        return;
+    }
     if (!positionId) {
         alert('Position not found for this SFP port.');
         return;

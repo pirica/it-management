@@ -430,12 +430,15 @@ if (!function_exists('itm_render_port_visualizer')) {
             foreach ($iconDots as $dotMeta) {
                 $dotPort = null;
                 $dotStyle = '';
-                $dotKey = (string)($dotMeta['type'] ?? '') . ':' . (int)($dotMeta['no'] ?? 0);
-                $dotTitle = 'Port ' . (int)($dotMeta['no'] ?? 0);
-                $dotIsClickable = !empty($options['clickable']);
+                $dotNo = (int)($dotMeta['no'] ?? 0);
+                $dotTypeRaw = (string)($dotMeta['type'] ?? '');
+                $dotKey = $dotTypeRaw . ':' . $dotNo;
+                $dotTitle = 'Port ' . $dotNo;
+                // Why: Placeholder icon dots (port 0) are visual fillers only and should never route users to SFP edit flows.
+                $dotIsClickable = !empty($options['clickable']) && $dotNo > 0 && $dotTypeRaw !== '';
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
-                    $dotType = (string)($dotMeta['type'] ?? '');
+                    $dotType = $dotTypeRaw;
                     $dotCableHexColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
                     $dotStatusColor = trim((string)($dotPort['status_color'] ?? ''));
                     $dotColor = $dotCableHexColor !== '' ? $dotCableHexColor : $dotStatusColor;
