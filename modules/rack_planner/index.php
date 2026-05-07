@@ -1639,8 +1639,11 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
     function getRackDeviceImagePath(code) {
         const normalizedCode = String(code || '').trim();
-        if (normalizedCode === '' || normalizedCode === 'empty' || isCatalogCode(normalizedCode)) {
+        if (normalizedCode === '' || normalizedCode === 'empty') {
             return '';
+        }
+        if (isCatalogCode(normalizedCode)) {
+            return '../../assets/unit_pbcyo.svg';
         }
 
         const explicitMap = {
