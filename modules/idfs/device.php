@@ -1687,7 +1687,6 @@ function openLinkModal(portId) {
     }
     if (source.is_linked) {
         // Why: when a link already exists users should land in the edit flow directly instead of a dead-end alert.
-        alert('This port is already linked. Opening edit modal.');
         openPortModal(source.id);
         return;
     }
@@ -1828,7 +1827,6 @@ function createLink() {
             const message = String(err.message || '');
             if (message.toLowerCase().includes('already linked')) {
                 closeLinkModal();
-                alert('This port is already linked. Opening edit modal.');
                 openPortModal(payload.port_id_a);
                 return;
             }
