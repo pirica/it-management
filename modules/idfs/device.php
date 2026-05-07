@@ -995,6 +995,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     'clickable' => true,
                     'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                     'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
+                    'position_id' => (int)($pos['id'] ?? 0),
                     'company_name' => (string)($pos['company_name'] ?? ''),
                     'location_name' => (string)($pos['location_name'] ?? ''),
                     'idf_name' => (string)($pos['idf_name'] ?? ''),
