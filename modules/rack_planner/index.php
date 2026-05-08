@@ -1439,6 +1439,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 .replace(/'/g, '&#39;');
         };
 
+        const rowMap = {};
+        const deviceMap = {};
         const rackRows = [];
         const unitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
         unitCells.forEach(function (cell) {
@@ -1446,9 +1448,23 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             if (!Number.isInteger(unit) || unit < 1) {
                 return;
             }
+            rowMap[unit] = {
+                unit: unit,
+                size: '',
+                label: '',
+                price: null
+            };
 
             const code = String(cell.getAttribute('data-device-code') || '').trim();
+            if (code === '' || code === 'empty') {
+                return;
+            }
+
             const startU = parseInt(String(cell.getAttribute('data-device-start-u') || ''), 10);
+            if (!Number.isInteger(startU) || startU < 1) {
+                return;
+            }
+
             const size = parseInt(String(cell.getAttribute('data-device-size') || ''), 10) === 2 ? 2 : 1;
             const label = String(cell.getAttribute('data-device-label') || '').trim();
             const rawPriceAttr = String(cell.getAttribute('data-device-price') || '').trim();
@@ -1456,16 +1472,40 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ? Number(rawPriceAttr)
                 : rackExtractPriceFromText(label);
 
-            const hasAssignment = code !== '' && code !== 'empty' && Number.isInteger(startU) && startU >= 1;
-            const anchorUnit = hasAssignment ? (startU + size - 1) : null;
-            const showDeviceData = hasAssignment && unit === anchorUnit;
+            const deviceKey = String(startU) + '|' + code;
+            if (Object.prototype.hasOwnProperty.call(deviceMap, deviceKey)) {
+                return;
+            }
 
-            rackRows.push({
-                unit: unit,
-                size: showDeviceData ? size : '',
-                label: showDeviceData ? (label || code) : '',
-                price: showDeviceData && Number.isFinite(priceValue) ? priceValue : null
-            });
+            deviceMap[deviceKey] = {
+                code: code,
+                start_u: startU,
+                size: size,
+                label: label,
+                price: Number.isFinite(priceValue) ? priceValue : null
+            };
+        });
+
+        Object.keys(deviceMap).forEach(function (deviceKey) {
+            const device = deviceMap[deviceKey];
+            if (!device) {
+                return;
+            }
+
+            const anchorUnit = Number(device.start_u) + Number(device.size) - 1;
+            if (!Object.prototype.hasOwnProperty.call(rowMap, anchorUnit)) {
+                return;
+            }
+
+            rowMap[anchorUnit].size = Number(device.size) === 2 ? 2 : 1;
+            rowMap[anchorUnit].label = String(device.label || device.code || '');
+            rowMap[anchorUnit].price = (device.price !== undefined && device.price !== null && Number.isFinite(Number(device.price)))
+                ? Number(device.price)
+                : null;
+        });
+
+        Object.keys(rowMap).forEach(function (unitKey) {
+            rackRows.push(rowMap[unitKey]);
         });
 
         rackRows.sort(function (a, b) { return b.unit - a.unit; });
