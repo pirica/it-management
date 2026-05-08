@@ -430,6 +430,8 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-08:</strong> IDF port regeneration now rebuilds both <code>idf_ports</code> and linked-equipment <code>switch_ports</code> in one transaction (RJ45 + SFP/SFP+), resetting stale switch rows during Regenerate Ports (<code>modules/idfs/api/ports_regen.php</code>).</li>
+            <li><strong>2026-05-08:</strong> IDF device ports page now keeps the <code>Label</code> column tenant-local to <code>idf_ports</code>/<code>idf_links</code> metadata and no longer backfills it from live <code>switch_ports</code>, so <code>Regenerate Ports</code> clears stale labels as expected (<code>modules/idfs/device.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF cable link creation now persists linked-mode custom cable color name/hex from the modal inputs (<code>linked_cable_color</code> and color picker) into IDF port/link metadata instead of silently reverting to default cable color selection (<code>modules/idfs/device.php</code>, <code>modules/idfs/api/link_create.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF device modal now hides <code>Numbering Layout</code> when <code>Device Type</code> is <code>UPS</code>, and clears saved layout selection for UPS flows (<code>modules/idfs/view.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF position save endpoint now enforces <code>UPS</code> entries with <code>port_count=0</code> and only auto-derives port counts from linked RJ45 profiles for <code>Switch</code> device type (<code>modules/idfs/api/position_save.php</code>).</li>
