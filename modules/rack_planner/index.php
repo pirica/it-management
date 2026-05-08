@@ -1439,43 +1439,36 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 .replace(/'/g, '&#39;');
         };
 
-        const rowMap = {};
         const rackRows = [];
         const unitCells = Array.from(document.querySelectorAll('.rack-visualizer-content .rack-visualizer-u'));
         unitCells.forEach(function (cell) {
-            const code = String(cell.getAttribute('data-device-code') || '').trim();
-            if (code === '') {
+            const unit = parseInt(String(cell.getAttribute('data-u') || ''), 10);
+            if (!Number.isInteger(unit) || unit < 1) {
                 return;
             }
 
+            const code = String(cell.getAttribute('data-device-code') || '').trim();
             const startU = parseInt(String(cell.getAttribute('data-device-start-u') || ''), 10);
             const size = parseInt(String(cell.getAttribute('data-device-size') || ''), 10) === 2 ? 2 : 1;
-            if (!Number.isInteger(startU) || startU < 1) {
-                return;
-            }
-
-            const key = String(startU) + '|' + code;
-            if (rowMap[key]) {
-                return;
-            }
-            rowMap[key] = true;
-
             const label = String(cell.getAttribute('data-device-label') || '').trim();
             const rawPriceAttr = String(cell.getAttribute('data-device-price') || '').trim();
             const priceValue = rawPriceAttr !== '' && !Number.isNaN(Number(rawPriceAttr))
                 ? Number(rawPriceAttr)
                 : rackExtractPriceFromText(label);
 
+            const hasAssignment = code !== '' && Number.isInteger(startU) && startU >= 1;
+            const anchorUnit = hasAssignment ? (startU + size - 1) : null;
+            const showDeviceData = hasAssignment && unit === anchorUnit;
+
             rackRows.push({
-                start_u: startU,
-                size: size,
-                code: code,
-                label: label,
-                price: Number.isFinite(priceValue) ? priceValue : null
+                unit: unit,
+                size: showDeviceData ? size : '',
+                label: showDeviceData ? (label || code) : '',
+                price: showDeviceData && Number.isFinite(priceValue) ? priceValue : null
             });
         });
 
-        rackRows.sort(function (a, b) { return b.start_u - a.start_u; });
+        rackRows.sort(function (a, b) { return b.unit - a.unit; });
 
         const rackTitleNode = document.querySelector('h1');
         const rackTitle = rackTitleNode ? String(rackTitleNode.textContent || '').trim() : 'Rack Export';
@@ -1485,9 +1478,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         const tableRowsHtml = rackRows.map(function (row) {
             const priceText = row.price !== null ? row.price.toFixed(2) : '';
             return '<tr>'
-                + '<td>' + escapeHtml(row.start_u) + '</td>'
+                + '<td>' + escapeHtml(row.unit) + '</td>'
                 + '<td>' + escapeHtml(row.size) + '</td>'
-                + '<td>' + escapeHtml(row.label || row.code) + '</td>'
+                + '<td>' + escapeHtml(row.label) + '</td>'
                 + '<td style="text-align:right;">' + escapeHtml(priceText) + '</td>'
                 + '</tr>';
         }).join('');
