@@ -430,6 +430,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-08:</strong> IDF cable link creation now persists linked-mode custom cable color name/hex from the modal inputs (<code>linked_cable_color</code> and color picker) into IDF port/link metadata instead of silently reverting to default cable color selection (<code>modules/idfs/device.php</code>, <code>modules/idfs/api/link_create.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF device modal now hides <code>Numbering Layout</code> when <code>Device Type</code> is <code>UPS</code>, and clears saved layout selection for UPS flows (<code>modules/idfs/view.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF position save endpoint now enforces <code>UPS</code> entries with <code>port_count=0</code> and only auto-derives port counts from linked RJ45 profiles for <code>Switch</code> device type (<code>modules/idfs/api/position_save.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF device modal now hides <code>Port Count</code> when the selected device type is <code>UPS</code> in add/edit flows (<code>modules/idfs/view.php</code>).</li>
