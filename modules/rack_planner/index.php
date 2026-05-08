@@ -1452,7 +1452,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 unit: unit,
                 size: '',
                 label: '',
-                price: null
+                price: null,
+                u_rowspan: 1,
+                u_hide: false
             };
 
             const code = String(cell.getAttribute('data-device-code') || '').trim();
@@ -1502,6 +1504,15 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             rowMap[anchorUnit].price = (device.price !== undefined && device.price !== null && Number.isFinite(Number(device.price)))
                 ? Number(device.price)
                 : null;
+            rowMap[anchorUnit].u_rowspan = Number(device.size) === 2 ? 2 : 1;
+
+            if (Number(device.size) === 2) {
+                for (let u = Number(device.start_u); u < anchorUnit; u++) {
+                    if (Object.prototype.hasOwnProperty.call(rowMap, u)) {
+                        rowMap[u].u_hide = true;
+                    }
+                }
+            }
         });
 
         Object.keys(rowMap).forEach(function (unitKey) {
@@ -1517,8 +1528,11 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
         const tableRowsHtml = rackRows.map(function (row) {
             const priceText = row.price !== null ? row.price.toFixed(2) : '';
+            const uCellHtml = row.u_hide
+                ? ''
+                : '<td' + (Number(row.u_rowspan) > 1 ? ' rowspan=\"' + escapeHtml(row.u_rowspan) + '\"' : '') + '>' + escapeHtml(row.unit) + '</td>';
             return '<tr>'
-                + '<td>' + escapeHtml(row.unit) + '</td>'
+                + uCellHtml
                 + '<td>' + escapeHtml(row.size) + '</td>'
                 + '<td>' + escapeHtml(row.label) + '</td>'
                 + '<td style="text-align:right;">' + escapeHtml(priceText) + '</td>'
