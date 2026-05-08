@@ -19,8 +19,6 @@
 $crud_table = $crud_table ?? 'catalogs';
 $crud_title = $crud_title ?? 'Catalogs';
 $crud_action = $crud_action ?? 'index';
-$catalogDefaultImageUrl = 'https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg';
-$catalogDefaultWeblinkUrl = 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe';
 ?>
 <?php
 require '../../config/config.php';
@@ -1650,15 +1648,6 @@ if (!empty($_SESSION['crud_error'])) {
 $data = [];
 foreach ($fieldColumns as $col) { $data[$col['Field']] = ''; }
 
-if ($crud_table === 'catalogs' && $crud_action === 'create') {
-    if (array_key_exists('image_url', $data) && trim((string)$data['image_url']) === '') {
-        $data['image_url'] = $catalogDefaultImageUrl;
-    }
-    if (array_key_exists('product_url', $data) && trim((string)$data['product_url']) === '') {
-        $data['product_url'] = $catalogDefaultWeblinkUrl;
-    }
-}
-
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -2186,9 +2175,9 @@ if (!empty($_SESSION['crud_success'])) {
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php elseif ($crud_table === 'catalogs' && in_array($name, ['image', 'image_url'], true)): ?>
-                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg" inputmode="url">
+                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" inputmode="url">
                             <?php elseif ($crud_table === 'catalogs' && in_array($name, ['weblink', 'source_url', 'product_url'], true)): ?>
-                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" placeholder="https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe" inputmode="url">
+                                <input type="url" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" inputmode="url">
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
