@@ -1528,14 +1528,16 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
         const tableRowsHtml = rackRows.map(function (row) {
             const priceText = row.price !== null ? row.price.toFixed(2) : '';
-            const uCellHtml = row.u_hide
-                ? ''
-                : '<td' + (Number(row.u_rowspan) > 1 ? ' rowspan=\"' + escapeHtml(row.u_rowspan) + '\"' : '') + '>' + escapeHtml(row.unit) + '</td>';
+            const rowSpanAttr = Number(row.u_rowspan) > 1 ? ' rowspan=\"' + escapeHtml(row.u_rowspan) + '\"' : '';
+            const uCellHtml = row.u_hide ? '' : '<td' + rowSpanAttr + '>' + escapeHtml(row.unit) + '</td>';
+            const sizeCellHtml = row.u_hide ? '' : '<td' + rowSpanAttr + '>' + escapeHtml(row.size) + '</td>';
+            const labelCellHtml = row.u_hide ? '' : '<td' + rowSpanAttr + '>' + escapeHtml(row.label) + '</td>';
+            const priceCellHtml = row.u_hide ? '' : '<td' + rowSpanAttr + ' style=\"text-align:right;\">' + escapeHtml(priceText) + '</td>';
             return '<tr>'
                 + uCellHtml
-                + '<td>' + escapeHtml(row.size) + '</td>'
-                + '<td>' + escapeHtml(row.label) + '</td>'
-                + '<td style="text-align:right;">' + escapeHtml(priceText) + '</td>'
+                + sizeCellHtml
+                + labelCellHtml
+                + priceCellHtml
                 + '</tr>';
         }).join('');
 
