@@ -430,6 +430,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-08:</strong> IDF position save endpoint now enforces <code>UPS</code> entries with <code>port_count=0</code> and only auto-derives port counts from linked RJ45 profiles for <code>Switch</code> device type (<code>modules/idfs/api/position_save.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF device modal now hides <code>Port Count</code> when the selected device type is <code>UPS</code> in add/edit flows (<code>modules/idfs/view.php</code>).</li>
             <li><strong>2026-05-08:</strong> IDF position save endpoint (<code>modules/idfs/api/position_save.php</code>) now enforces duplicate linked-equipment blocking only for <code>Switch</code> device type, allowing non-switch rack entries (for example UPS/server placeholders) to reuse the same linked equipment across positions.</li>
             <li><strong>2026-05-08:</strong> IDF position save endpoint (<code>modules/idfs/api/position_save.php</code>) now allows linked equipment entries with the same <code>device_name</code>; duplicate prevention is enforced by <code>equipment_id</code> for linked assets.</li>

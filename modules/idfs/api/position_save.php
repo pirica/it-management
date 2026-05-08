@@ -137,11 +137,16 @@ if ($equipment_id > 0) {
 
         $device_name = trim((string)($equipment['name'] ?? ''));
 
-        if ($switch_rj45_id <= 0) {
-            $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
-            if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
-                $port_count = (int)$matches[1];
+        if ($device_type_name === 'switch') {
+            if ($switch_rj45_id <= 0) {
+                $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
+                if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
+                    $port_count = (int)$matches[1];
+                }
             }
+        } elseif ($switch_rj45_id <= 0) {
+            // Why: preserve linked equipment metadata in sync updates without forcing switch port presets into non-switch IDF entries.
+            $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
         }
         if ($layout_id <= 0) {
             $layout_id = (int)($equipment['switch_port_numbering_layout_id'] ?? 0);
@@ -198,6 +203,11 @@ if ($equipment_id <= 0 && $device_type_name === 'switch' && $device_name !== '')
             }
         }
     }
+}
+
+if ($device_type_name === 'ups') {
+    // Why: UPS entries are not network switch panels and must not carry RJ45 port-count presets.
+    $port_count = 0;
 }
 
 $stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
