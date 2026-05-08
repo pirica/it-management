@@ -1456,7 +1456,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 ? Number(rawPriceAttr)
                 : rackExtractPriceFromText(label);
 
-            const hasAssignment = code !== '' && Number.isInteger(startU) && startU >= 1;
+            const hasAssignment = code !== '' && code !== 'empty' && Number.isInteger(startU) && startU >= 1;
             const anchorUnit = hasAssignment ? (startU + size - 1) : null;
             const showDeviceData = hasAssignment && unit === anchorUnit;
 
@@ -1489,7 +1489,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             + '<h3>' + escapeHtml(rackTitle) + '</h3>'
             + '<p><strong>Generated:</strong> ' + escapeHtml(generatedAt) + '</p>'
             + '<table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">'
-            + '<thead><tr><th>Start U</th><th>Size (RU)</th><th>Label</th><th>Price</th></tr></thead>'
+            + '<thead><tr><th>U</th><th>Size (RU)</th><th>Label</th><th>Price</th></tr></thead>'
             + '<tbody>' + tableRowsHtml + '</tbody>'
             + '</table>'
             + '<p><strong>TOTAL:</strong> ' + escapeHtml(totalText) + '</p>'
