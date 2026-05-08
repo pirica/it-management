@@ -95,7 +95,6 @@ function rack_planner_extract_price_from_text(string $text)
 function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
 {
     $options = [];
-    $seen = [];
     if ($companyId <= 0) {
         return $options;
     }
@@ -134,11 +133,6 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
         $size = rack_planner_is_two_ru_name($model) ? 2 : 1;
         $code = 'catalog:' . (int)$row['id'];
         $selectText = $model . ' - ' . $equipmentType . ' - ' . $priceText;
-        $dedupeKey = strtolower($model . '|' . $equipmentType . '|' . $priceText);
-        if (isset($seen[$dedupeKey])) {
-            continue;
-        }
-        $seen[$dedupeKey] = true;
 
         $options[] = [
             'code' => $code,
