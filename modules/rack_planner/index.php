@@ -95,6 +95,7 @@ function rack_planner_extract_price_from_text(string $text)
 function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
 {
     $options = [];
+    $seenModelKeys = [];
     if ($companyId <= 0) {
         return $options;
     }
@@ -103,7 +104,7 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
             FROM catalogs c
             LEFT JOIN equipment_types et ON et.id = c.equipment_type_id
             WHERE c.company_id = ? AND c.active = 1
-            ORDER BY c.equipment_type_id ASC, c.model ASC";
+            ORDER BY c.equipment_type_id ASC, c.model ASC, c.id DESC";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $options;
@@ -117,6 +118,11 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
         if ($model === '') {
             continue;
         }
+        $modelKey = strtolower($model);
+        if (isset($seenModelKeys[$modelKey])) {
+            continue;
+        }
+        $seenModelKeys[$modelKey] = true;
 
         $equipmentType = trim((string)($row['equipment_type_name'] ?? ''));
         if ($equipmentType === '') {
