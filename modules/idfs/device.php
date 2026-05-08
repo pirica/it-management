@@ -1805,6 +1805,8 @@ function createLink() {
         : null;
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
+    const linkedCableColorName = linkedMode ? f.linked_cable_color.value.trim() : '';
+    const linkedCableColorHex = linkedMode ? f.linked_cable_color_picker.value.trim() : '';
     const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
     const linkedDestinationPort = selectedDestinationPort ? String(selectedDestinationPort.port_no || '') : '';
 
@@ -1820,6 +1822,8 @@ function createLink() {
         status_id: Number(getNormalizedStatusValue(f) || 0),
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
+        linked_cable_color: linkedCableColorName,
+        linked_cable_color_hex: linkedCableColorHex,
     };
 
     apiPost('link_create.php', payload)

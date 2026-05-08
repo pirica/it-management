@@ -19,6 +19,9 @@ $notes = trim((string)($data['notes'] ?? ''));
 $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Used');
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
+$linkedCableColorName = trim((string)($data['linked_cable_color'] ?? ''));
+$linkedCableColorHexRaw = strtoupper(trim((string)($data['linked_cable_color_hex'] ?? '')));
+$linkedCableColorHex = preg_match('/^#[0-9A-F]{6}$/', $linkedCableColorHexRaw) ? $linkedCableColorHexRaw : '';
 $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
 if ($switchPortLabelColumn === null) {
     $switchPortLabelColumn = 'to_patch_port';
@@ -170,6 +173,15 @@ if ($cableColorId > 0) {
         }
         mysqli_stmt_close($stmtColor);
     }
+}
+
+if ($linkedCableColorName !== '') {
+    // Why: linked equipment flow exposes a dedicated cable color text input that must be preserved in idf_ports.
+    $selectedColorName = $linkedCableColorName;
+}
+if ($linkedCableColorHex !== '') {
+    // Why: linked equipment flow exposes a dedicated color picker and should persist the chosen hex even without a matching cable_colors row.
+    $selectedColorHex = $linkedCableColorHex;
 }
 
 if ($switchPortId > 0) {
