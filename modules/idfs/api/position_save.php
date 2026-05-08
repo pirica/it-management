@@ -252,7 +252,9 @@ if ($device_name !== '' && $equipment_id <= 0) {
     }
 }
 
-if ($equipment_id > 0) {
+if ($equipment_id > 0 && $device_type_name === 'switch') {
+    // Why: For non-switch rack entries (UPS/server/other), the same linked equipment can legitimately appear in multiple positions.
+    // Keep strict uniqueness for switches to avoid ambiguous switch-port synchronization targets.
     $equipmentIdString = (string)$equipment_id;
     $stmtDuplicateEquipment = null;
     if ($position_id > 0) {

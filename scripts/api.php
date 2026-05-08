@@ -430,6 +430,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-08:</strong> IDF position save endpoint (<code>modules/idfs/api/position_save.php</code>) now enforces duplicate linked-equipment blocking only for <code>Switch</code> device type, allowing non-switch rack entries (for example UPS/server placeholders) to reuse the same linked equipment across positions.</li>
             <li><strong>2026-05-08:</strong> IDF position save endpoint (<code>modules/idfs/api/position_save.php</code>) now allows linked equipment entries with the same <code>device_name</code>; duplicate prevention is enforced by <code>equipment_id</code> for linked assets.</li>
             <li><strong>2026-05-07:</strong> IDF port regeneration endpoint (<code>modules/idfs/api/ports_regen.php</code>) now recreates both RJ45 and SFP/SFP+ rows from tenant-scoped equipment metadata instead of RJ45-only regeneration.</li>
             <li><strong>2026-05-01:</strong> IDF detail view joins now enforce tenant-scoped lookups across <code>equipment</code>, <code>equipment_fiber</code>, and <code>equipment_rj45</code> so rack/device rendering stays synchronized with <code>idf_ports</code> and live <code>switch_ports</code> rows for the active company.</li>
