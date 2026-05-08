@@ -97,6 +97,7 @@ $csrf = idf_csrf_token();
 $idfDeviceTypeOptions = [];
 $idfDeviceTypeMap = [];
 $switchDeviceTypeId = 0;
+$upsDeviceTypeId = 0;
 $stmtDeviceTypes = mysqli_prepare(
     $conn,
     "SELECT id, idfdevicetype_name, field_edit_emoji
@@ -131,6 +132,9 @@ if ($stmtDeviceTypes) {
         if ($switchDeviceTypeId === 0 && $typeName === 'switch') {
             $switchDeviceTypeId = $typeId;
         }
+        if ($upsDeviceTypeId === 0 && $typeName === 'ups') {
+            $upsDeviceTypeId = $typeId;
+        }
     }
     mysqli_stmt_close($stmtDeviceTypes);
 }
@@ -151,6 +155,7 @@ if (!$idfDeviceTypeOptions) {
         5 => ['emoji' => '📦', 'label' => 'Other', 'key' => 'other'],
     ];
     $switchDeviceTypeId = 1;
+    $upsDeviceTypeId = 3;
 }
 
 $idf = null;
@@ -1096,6 +1101,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const SWITCH_DEVICE_TYPE_ID = <?php echo (int)$switchDeviceTypeId; ?>;
+const UPS_DEVICE_TYPE_ID = <?php echo (int)$upsDeviceTypeId; ?>;
 const DEFAULT_NON_SWITCH_LAYOUT_ID = <?php echo (int)$defaultHorizontalLayoutId; ?>;
 const DEFAULT_SWITCH_LAYOUT_ID = <?php echo (int)$defaultVerticalLayoutId; ?>;
 const equipmentMetaById = <?php
@@ -1227,12 +1233,14 @@ function syncFieldsFromEquipment(form, shouldAlert) {
 }
 
 function refreshPortCountInputs(form) {
-    const isSwitch = Number(form.device_type.value || 0) === SWITCH_DEVICE_TYPE_ID;
+    const selectedDeviceTypeId = Number(form.device_type.value || 0);
+    const isSwitch = selectedDeviceTypeId === SWITCH_DEVICE_TYPE_ID;
+    const isUps = selectedDeviceTypeId === UPS_DEVICE_TYPE_ID;
     const hasLinkedEquipment = String(form.equipment_id.value || '') !== '';
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
-    if (portCountWrap) portCountWrap.style.display = isSwitch ? 'none' : 'block';
+    if (portCountWrap) portCountWrap.style.display = (isSwitch || isUps) ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
     if (layoutWrap) layoutWrap.style.display = hasLinkedEquipment ? 'none' : 'block';
     form.switch_rj45_id.required = isSwitch;
@@ -1245,6 +1253,9 @@ function refreshPortCountInputs(form) {
     }
     if (!isSwitch) {
         form.switch_rj45_id.value = '';
+    }
+    if (isUps) {
+        form.port_count.value = '0';
     }
 }
 
