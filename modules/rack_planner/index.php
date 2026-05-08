@@ -2306,20 +2306,45 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             return { ok: true, value: parsed };
         }
 
-        function openRackPriceModalForMeta(selectedMeta) {
+        function stripTrailingPriceFromLabel(text) {
+            const label = String(text || '').trim();
+            if (label === '') {
+                return '';
+            }
+
+            const match = label.match(/^(.*?)(?:\s*[-:]\s*)([+-]?\d[\d.,]*)\s*(?:\u20AC|\$|usd|eur)?\s*$/i);
+            if (!match || match.length < 3) {
+                return label;
+            }
+
+            const parsed = rackExtractPriceFromText(' ' + String(match[2] || ''));
+            if (!Number.isFinite(parsed)) {
+                return label;
+            }
+
+            return String(match[1] || '').trim();
+        }
+
+        function openRackPriceModalForMeta(selectedMeta, customLabelBase) {
             if (!selectedMeta || !rackPriceModal) {
                 return;
             }
+
+            const explicitBaseLabel = String(customLabelBase === undefined || customLabelBase === null ? '' : customLabelBase).trim();
+            const resolvedBaseLabel = explicitBaseLabel !== '' ? explicitBaseLabel : String(selectedMeta.label || '');
             pendingPriceMeta = {
                 code: String(selectedMeta.code || ''),
-                label: String(selectedMeta.label || ''),
+                label: resolvedBaseLabel,
                 size: Number(selectedMeta.size) === 2 ? 2 : 1,
                 price: selectedMeta.price
             };
 
             if (rackPriceInput) {
                 let initialValue = '';
-                if (activeAssignment && String(activeAssignment.code || '') === String(selectedMeta.code || '')) {
+                const parsedFromBaseLabel = rackExtractPriceFromText(resolvedBaseLabel);
+                if (Number.isFinite(parsedFromBaseLabel)) {
+                    initialValue = parsedFromBaseLabel.toFixed(2);
+                } else if (activeAssignment && String(activeAssignment.code || '') === String(selectedMeta.code || '')) {
                     const parsedFromCurrentLabel = rackExtractPriceFromText(String(activeAssignment.label || ''));
                     if (Number.isFinite(parsedFromCurrentLabel)) {
                         initialValue = parsedFromCurrentLabel.toFixed(2);
@@ -2353,6 +2378,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     return;
                 }
                 if (parsedPrice.value !== null) {
+                    customLabel = stripTrailingPriceFromLabel(customLabel);
                     customLabel = customLabel + ' - ' + parsedPrice.value.toFixed(2);
                 }
             }
@@ -2753,7 +2779,8 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                 return;
             }
 
-            applySelectedMeta(selectedMeta, typedMessage);
+            showPlaceholderMessageControls(false);
+            openRackPriceModalForMeta(selectedMeta, typedMessage);
             pendingPlaceholderMeta = null;
         }
 
