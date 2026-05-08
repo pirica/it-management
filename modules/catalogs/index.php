@@ -459,14 +459,14 @@ function cr_render_cell_value($table, $field, $value) {
         if ($safeUrl === '') {
             return sanitize($text);
         }
-        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;" title="🔗 🖼️"><span>🖼️</span></a>';
+        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:inherit;" title="🔗 🖼️"><span>🖼️</span></a>';
     }
     if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url', 'product_url'], true) && $text !== '') {
         $safeUrl = cr_normalize_external_url($text);
         if ($safeUrl === '') {
             return sanitize($text);
         }
-        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🔗 Open</a>';
+        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">🔗 Open</a>';
     }
 
     // Interactive email links with Outlook deep-link support.
@@ -1294,7 +1294,7 @@ function cr_catalog_image_preview_html($value, $maxWidth = 120, $maxHeight = 80)
 
     $width = max(40, (int)$maxWidth);
     $height = max(40, (int)$maxHeight);
-    return '<a href="' . sanitize($normalizedUrl) . '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;">'
+    return '<a href="' . sanitize($normalizedUrl) . '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
         . '<img src="' . sanitize($normalizedUrl) . '" alt="Catalog image" loading="lazy" style="max-width:' . $width . 'px;max-height:' . $height . 'px;width:auto;height:auto;object-fit:contain;border:1px solid #d5d9e2;border-radius:6px;background:#fff;">'
         . '<span>🖼️</span>'
         . '</a>';
