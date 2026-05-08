@@ -240,7 +240,7 @@ $vlanSortExpr = "CASE
         END
     ELSE ''
 END";
-$labelSortExpr = "COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
+$labelSortExpr = "COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
 $notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
 $normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'plus'))";
 $speedLabelExpr = $hasRj45SpeedTable
@@ -282,7 +282,7 @@ $stmtPorts = mysqli_prepare(
        COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
        COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown') AS status_label,
        COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, '#adb5bd') AS status_color,
-       COALESCE({$switchPortsLiveLabelSelect}, NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLinkedLabelSelect}, NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
+       COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
        COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''), '') AS notes,
        p_local.position_no AS local_position_no,
        p_local.device_name AS local_device_name,

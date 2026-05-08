@@ -11,9 +11,13 @@ if ($position_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT p.port_count, p.id, p.equipment_id, i.company_id
+    "SELECT p.port_count, p.id, p.equipment_id, i.company_id, i.id AS idf_id,
+            COALESCE(e.hostname, '') AS equipment_hostname
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
+     LEFT JOIN equipment e
+       ON e.id = p.equipment_id
+      AND e.company_id = i.company_id
      WHERE p.id=?
      LIMIT 1"
 );
@@ -33,6 +37,8 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
 $count = (int)$row['port_count'];
 $equipmentIdRaw = trim((string)($row['equipment_id'] ?? ''));
 $equipmentId = ctype_digit($equipmentIdRaw) ? (int)$equipmentIdRaw : 0;
+$idfId = (int)($row['idf_id'] ?? 0);
+$equipmentHostname = trim((string)($row['equipment_hostname'] ?? ''));
 
 $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
 if ($unknownStatusId <= 0) {
@@ -41,6 +47,17 @@ if ($unknownStatusId <= 0) {
 $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
 if ($rj45PortTypeId <= 0) {
     idf_fail('Unable to resolve default port type for company', 500);
+}
+
+$portRowsToInsert = [];
+if ($count > 0) {
+    for ($n = 1; $n <= $count; $n++) {
+        $rj45PortKey = $rj45PortTypeId . ':' . $n;
+        $portRowsToInsert[$rj45PortKey] = [
+            'port_no' => $n,
+            'port_type' => $rj45PortTypeId,
+        ];
+    }
 }
 
 $fiberPortsToInsert = [];
@@ -136,7 +153,13 @@ if ($equipmentId > 0) {
     }
 }
 
-if ($count <= 0 && empty($fiberPortsToInsert)) {
+if (!empty($fiberPortsToInsert)) {
+    foreach ($fiberPortsToInsert as $fiberPortKey => $fiberPortMeta) {
+        $portRowsToInsert[$fiberPortKey] = $fiberPortMeta;
+    }
+}
+
+if (empty($portRowsToInsert)) {
     idf_fail('This device has port_count=0 and no SFP/SFP+ ports configured');
 }
 
@@ -151,26 +174,124 @@ try {
 
     $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id) VALUES (?, ?, ?, ?, ?)");
     if ($stmtIns) {
-        if ($count > 0) {
-            for ($n = 1; $n <= $count; $n++) {
-                mysqli_stmt_bind_param($stmtIns, 'iiiii', $company_id, $position_id, $n, $rj45PortTypeId, $unknownStatusId);
-                mysqli_stmt_execute($stmtIns);
-            }
-        }
-
-        if (!empty($fiberPortsToInsert)) {
-            ksort($fiberPortsToInsert, SORT_NATURAL);
-            foreach ($fiberPortsToInsert as $fiberPortMeta) {
-                $fiberPortNo = (int)($fiberPortMeta['port_no'] ?? 0);
-                $fiberPortTypeId = (int)($fiberPortMeta['port_type'] ?? 0);
-                if ($fiberPortNo <= 0 || $fiberPortTypeId <= 0) {
+        if (!empty($portRowsToInsert)) {
+            ksort($portRowsToInsert, SORT_NATURAL);
+            foreach ($portRowsToInsert as $portMeta) {
+                $portNo = (int)($portMeta['port_no'] ?? 0);
+                $portTypeId = (int)($portMeta['port_type'] ?? 0);
+                if ($portNo <= 0 || $portTypeId <= 0) {
                     continue;
                 }
-                mysqli_stmt_bind_param($stmtIns, 'iiiii', $company_id, $position_id, $fiberPortNo, $fiberPortTypeId, $unknownStatusId);
+                mysqli_stmt_bind_param($stmtIns, 'iiiii', $company_id, $position_id, $portNo, $portTypeId, $unknownStatusId);
                 mysqli_stmt_execute($stmtIns);
             }
         }
         mysqli_stmt_close($stmtIns);
+    }
+
+    if ($equipmentId > 0) {
+        $stmtDeleteSwitchPorts = mysqli_prepare($conn, "DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ?");
+        if ($stmtDeleteSwitchPorts) {
+            mysqli_stmt_bind_param($stmtDeleteSwitchPorts, 'ii', $company_id, $equipmentId);
+            mysqli_stmt_execute($stmtDeleteSwitchPorts);
+            mysqli_stmt_close($stmtDeleteSwitchPorts);
+        }
+
+        $portTypeNameById = [];
+        $stmtPortTypes = mysqli_prepare($conn, "SELECT id, type FROM switch_port_types WHERE company_id = ?");
+        if ($stmtPortTypes) {
+            mysqli_stmt_bind_param($stmtPortTypes, 'i', $company_id);
+            mysqli_stmt_execute($stmtPortTypes);
+            $resPortTypes = mysqli_stmt_get_result($stmtPortTypes);
+            while ($resPortTypes && ($portTypeRow = mysqli_fetch_assoc($resPortTypes))) {
+                $resolvedPortTypeId = (int)($portTypeRow['id'] ?? 0);
+                $resolvedPortTypeName = trim((string)($portTypeRow['type'] ?? ''));
+                if ($resolvedPortTypeId > 0 && $resolvedPortTypeName !== '') {
+                    $portTypeNameById[$resolvedPortTypeId] = $resolvedPortTypeName;
+                }
+            }
+            mysqli_stmt_close($stmtPortTypes);
+        }
+
+        $defaultColorId = 0;
+        $stmtGrayColor = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM cable_colors
+             WHERE company_id = ?
+               AND LOWER(color_name) = 'gray'
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        if ($stmtGrayColor) {
+            mysqli_stmt_bind_param($stmtGrayColor, 'i', $company_id);
+            mysqli_stmt_execute($stmtGrayColor);
+            $resGrayColor = mysqli_stmt_get_result($stmtGrayColor);
+            $grayColorRow = $resGrayColor ? mysqli_fetch_assoc($resGrayColor) : null;
+            mysqli_stmt_close($stmtGrayColor);
+            if ($grayColorRow) {
+                $defaultColorId = (int)($grayColorRow['id'] ?? 0);
+            }
+        }
+        if ($defaultColorId <= 0) {
+            $stmtAnyColor = mysqli_prepare(
+                $conn,
+                "SELECT id
+                 FROM cable_colors
+                 WHERE company_id = ?
+                 ORDER BY id ASC
+                 LIMIT 1"
+            );
+            if ($stmtAnyColor) {
+                mysqli_stmt_bind_param($stmtAnyColor, 'i', $company_id);
+                mysqli_stmt_execute($stmtAnyColor);
+                $resAnyColor = mysqli_stmt_get_result($stmtAnyColor);
+                $anyColorRow = $resAnyColor ? mysqli_fetch_assoc($resAnyColor) : null;
+                mysqli_stmt_close($stmtAnyColor);
+                if ($anyColorRow) {
+                    $defaultColorId = (int)($anyColorRow['id'] ?? 0);
+                }
+            }
+        }
+        if ($defaultColorId <= 0) {
+            throw new RuntimeException('Unable to resolve default cable color for switch port regeneration');
+        }
+
+        $stmtInsertSwitchPort = mysqli_prepare(
+            $conn,
+            "INSERT INTO switch_ports
+                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, comments)
+             VALUES
+                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), ?)"
+        );
+        if ($stmtInsertSwitchPort) {
+            $switchPatchPortDefault = '0';
+            $switchCommentsDefault = '';
+            foreach ($portRowsToInsert as $portMeta) {
+                $portNo = (int)($portMeta['port_no'] ?? 0);
+                $portTypeId = (int)($portMeta['port_type'] ?? 0);
+                $portTypeName = trim((string)($portTypeNameById[$portTypeId] ?? ''));
+                if ($portNo <= 0 || $portTypeName === '') {
+                    continue;
+                }
+                mysqli_stmt_bind_param(
+                    $stmtInsertSwitchPort,
+                    'iissisiiis',
+                    $company_id,
+                    $equipmentId,
+                    $equipmentHostname,
+                    $portTypeName,
+                    $portNo,
+                    $switchPatchPortDefault,
+                    $unknownStatusId,
+                    $defaultColorId,
+                    $idfId,
+                    $switchCommentsDefault
+                );
+                mysqli_stmt_execute($stmtInsertSwitchPort);
+            }
+            mysqli_stmt_close($stmtInsertSwitchPort);
+        }
     }
 
     mysqli_commit($conn);
