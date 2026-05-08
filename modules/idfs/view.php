@@ -1242,13 +1242,13 @@ function refreshPortCountInputs(form) {
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = (isSwitch || isUps) ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
-    if (layoutWrap) layoutWrap.style.display = hasLinkedEquipment ? 'none' : 'block';
+    if (layoutWrap) layoutWrap.style.display = (hasLinkedEquipment || isUps) ? 'none' : 'block';
     form.switch_rj45_id.required = isSwitch;
     const isEditMode = form.dataset.isEdit === '1';
     if (isSwitch && !isEditMode && DEFAULT_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_SWITCH_LAYOUT_ID);
     }
-    if (!isSwitch && !isEditMode && DEFAULT_NON_SWITCH_LAYOUT_ID > 0) {
+    if (!isSwitch && !isUps && !isEditMode && DEFAULT_NON_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_NON_SWITCH_LAYOUT_ID);
     }
     if (!isSwitch) {
@@ -1256,6 +1256,7 @@ function refreshPortCountInputs(form) {
     }
     if (isUps) {
         form.port_count.value = '0';
+        form.switch_port_numbering_layout_id.value = '';
     }
 }
 
