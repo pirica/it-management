@@ -1803,10 +1803,19 @@ function createLink() {
     const cableColorId = (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
         ? Number(f.cable_color_id.value)
         : null;
+    const selectedCableColorOption = (f.cable_color_id.selectedOptions && f.cable_color_id.selectedOptions[0])
+        ? f.cable_color_id.selectedOptions[0]
+        : null;
+    const selectedCableColorName = selectedCableColorOption
+        ? String(selectedCableColorOption.textContent || '').trim()
+        : '';
+    const selectedCableColorHex = selectedCableColorOption
+        ? String((selectedCableColorOption.dataset && selectedCableColorOption.dataset.hex) || '').trim()
+        : '';
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
-    const linkedCableColorName = linkedMode ? f.linked_cable_color.value.trim() : '';
-    const linkedCableColorHex = linkedMode ? f.linked_cable_color_picker.value.trim() : '';
+    const linkedCableColorName = linkedMode ? f.linked_cable_color.value.trim() : selectedCableColorName;
+    const linkedCableColorHex = linkedMode ? f.linked_cable_color_picker.value.trim() : selectedCableColorHex;
     const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
     const linkedDestinationPort = selectedDestinationPort ? String(selectedDestinationPort.port_no || '') : '';
 
@@ -1817,6 +1826,8 @@ function createLink() {
         equipment_id: f.equipment_id.value ? Number(f.equipment_id.value) : null,
         switch_port_id: f.switch_port_id.value ? Number(f.switch_port_id.value) : null,
         cable_color_id: cableColorId,
+        cable_color_name: linkedCableColorName,
+        cable_color_hex: linkedCableColorHex,
         cable_label: cableLabel,
         notes,
         status_id: Number(getNormalizedStatusValue(f) || 0),

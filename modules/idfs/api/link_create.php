@@ -20,8 +20,15 @@ $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($d
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 $linkedCableColorName = trim((string)($data['linked_cable_color'] ?? ''));
-$linkedCableColorHexRaw = strtoupper(trim((string)($data['linked_cable_color_hex'] ?? '')));
-$linkedCableColorHex = preg_match('/^#[0-9A-F]{6}$/', $linkedCableColorHexRaw) ? $linkedCableColorHexRaw : '';
+$linkedCableColorHexRaw = trim((string)($data['linked_cable_color_hex'] ?? ''));
+$requestCableColorName = trim((string)($data['cable_color_name'] ?? ''));
+$requestCableColorHexRaw = trim((string)($data['cable_color_hex'] ?? ''));
+$resolvedColorNameInput = $linkedCableColorName !== '' ? $linkedCableColorName : $requestCableColorName;
+$resolvedColorHexInputRaw = $linkedCableColorHexRaw !== '' ? $linkedCableColorHexRaw : $requestCableColorHexRaw;
+$resolvedColorHexInput = '';
+if (preg_match('/^#[0-9A-Fa-f]{6}$/', $resolvedColorHexInputRaw)) {
+    $resolvedColorHexInput = strtoupper($resolvedColorHexInputRaw);
+}
 $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
 if ($switchPortLabelColumn === null) {
     $switchPortLabelColumn = 'to_patch_port';
@@ -175,13 +182,115 @@ if ($cableColorId > 0) {
     }
 }
 
-if ($linkedCableColorName !== '') {
-    // Why: linked equipment flow exposes a dedicated cable color text input that must be preserved in idf_ports.
-    $selectedColorName = $linkedCableColorName;
+if (($selectedColorName === null || $selectedColorName === '') && $resolvedColorNameInput !== '') {
+    $stmtColorByName = mysqli_prepare(
+        $conn,
+        "SELECT id, color_name, hex_color
+         FROM cable_colors
+         WHERE company_id = ?
+           AND LOWER(color_name) = LOWER(?)
+         LIMIT 1"
+    );
+    if ($stmtColorByName) {
+        mysqli_stmt_bind_param($stmtColorByName, 'is', $company_id, $resolvedColorNameInput);
+        mysqli_stmt_execute($stmtColorByName);
+        $resColorByName = mysqli_stmt_get_result($stmtColorByName);
+        $colorByName = $resColorByName ? mysqli_fetch_assoc($resColorByName) : null;
+        mysqli_stmt_close($stmtColorByName);
+        if ($colorByName) {
+            $cableColorId = (int)($colorByName['id'] ?? 0);
+            $selectedColorName = trim((string)($colorByName['color_name'] ?? ''));
+            $selectedColorHex = trim((string)($colorByName['hex_color'] ?? ''));
+        }
+    }
 }
-if ($linkedCableColorHex !== '') {
-    // Why: linked equipment flow exposes a dedicated color picker and should persist the chosen hex even without a matching cable_colors row.
-    $selectedColorHex = $linkedCableColorHex;
+
+if (($selectedColorName === null || $selectedColorName === '') && $resolvedColorHexInput !== '') {
+    $stmtColorByHex = mysqli_prepare(
+        $conn,
+        "SELECT id, color_name, hex_color
+         FROM cable_colors
+         WHERE company_id = ?
+           AND UPPER(hex_color) = ?
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if ($stmtColorByHex) {
+        mysqli_stmt_bind_param($stmtColorByHex, 'is', $company_id, $resolvedColorHexInput);
+        mysqli_stmt_execute($stmtColorByHex);
+        $resColorByHex = mysqli_stmt_get_result($stmtColorByHex);
+        $colorByHex = $resColorByHex ? mysqli_fetch_assoc($resColorByHex) : null;
+        mysqli_stmt_close($stmtColorByHex);
+        if ($colorByHex) {
+            $cableColorId = (int)($colorByHex['id'] ?? 0);
+            $selectedColorName = trim((string)($colorByHex['color_name'] ?? ''));
+            $selectedColorHex = trim((string)($colorByHex['hex_color'] ?? ''));
+        }
+    }
+}
+
+if (($selectedColorName === null || $selectedColorName === '') && ($resolvedColorNameInput !== '' || $resolvedColorHexInput !== '')) {
+    $colorNameForCreate = $resolvedColorNameInput !== '' ? $resolvedColorNameInput : $resolvedColorHexInput;
+    $colorHexForCreate = $resolvedColorHexInput;
+
+    $stmtCreateColor = mysqli_prepare(
+        $conn,
+        "INSERT IGNORE INTO cable_colors (company_id, color_name, hex_color)
+         VALUES (?, ?, NULLIF(?, ''))"
+    );
+    if ($stmtCreateColor) {
+        mysqli_stmt_bind_param($stmtCreateColor, 'iss', $company_id, $colorNameForCreate, $colorHexForCreate);
+        mysqli_stmt_execute($stmtCreateColor);
+        mysqli_stmt_close($stmtCreateColor);
+    }
+
+    $stmtReloadColor = mysqli_prepare(
+        $conn,
+        "SELECT id, color_name, hex_color
+         FROM cable_colors
+         WHERE company_id = ?
+           AND LOWER(color_name) = LOWER(?)
+         LIMIT 1"
+    );
+    if ($stmtReloadColor) {
+        mysqli_stmt_bind_param($stmtReloadColor, 'is', $company_id, $colorNameForCreate);
+        mysqli_stmt_execute($stmtReloadColor);
+        $resReloadColor = mysqli_stmt_get_result($stmtReloadColor);
+        $reloadColor = $resReloadColor ? mysqli_fetch_assoc($resReloadColor) : null;
+        mysqli_stmt_close($stmtReloadColor);
+        if ($reloadColor) {
+            $cableColorId = (int)($reloadColor['id'] ?? 0);
+            $selectedColorName = trim((string)($reloadColor['color_name'] ?? ''));
+            $selectedColorHex = trim((string)($reloadColor['hex_color'] ?? ''));
+        }
+    }
+}
+
+if ($selectedColorName === null || $selectedColorName === '') {
+    $selectedColorName = $resolvedColorNameInput !== '' ? $resolvedColorNameInput : 'Gray';
+}
+if ($selectedColorHex === null || $selectedColorHex === '') {
+    $selectedColorHex = $resolvedColorHexInput !== '' ? $resolvedColorHexInput : '#808080';
+}
+if ($cableColorId <= 0) {
+    $stmtFallbackColor = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM cable_colors
+         WHERE company_id = ?
+           AND LOWER(color_name) = LOWER(?)
+         LIMIT 1"
+    );
+    if ($stmtFallbackColor) {
+        mysqli_stmt_bind_param($stmtFallbackColor, 'is', $company_id, $selectedColorName);
+        mysqli_stmt_execute($stmtFallbackColor);
+        $resFallbackColor = mysqli_stmt_get_result($stmtFallbackColor);
+        $fallbackColor = $resFallbackColor ? mysqli_fetch_assoc($resFallbackColor) : null;
+        mysqli_stmt_close($stmtFallbackColor);
+        if ($fallbackColor) {
+            $cableColorId = (int)($fallbackColor['id'] ?? 0);
+        }
+    }
 }
 
 if ($switchPortId > 0) {
@@ -454,7 +563,7 @@ $stmtFinal = mysqli_prepare(
         equipment_port_type, equipment_port, equipment_vlan_id, equipment_label,
         equipment_comments, equipment_status_id, equipment_color_id, cable_color_id,
         cable_color_hex, cable_label, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)"
 );
 
 $insertedLinkIds = [];
@@ -475,7 +584,7 @@ if ($stmtFinal) {
             $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
         }
         mysqli_stmt_bind_param(
-            $stmtFinal, 'iiissssiissiisss',
+            $stmtFinal, 'iiissssissiiisss',
             $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
             $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
             $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $cableColorId,
