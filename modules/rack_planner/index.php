@@ -691,6 +691,12 @@ $offset = ($page - 1) * $perPage;
         .rack-visualizer-u.has-device-anchor.has-device-image[data-device-size="2"]::after {
             height: calc(80px - 2px);
         }
+        .rack-visualizer-u.has-device-anchor.has-device-image.has-device-image-catalog[data-device-size="2"]::after {
+            background-image: var(--rack-device-image), var(--rack-device-image);
+            background-repeat: no-repeat, no-repeat;
+            background-position: center top, center bottom;
+            background-size: 100% 50%, 100% 50%;
+        }
         .rack-visualizer-u-label {
             display: none;
             max-width: 88%;
@@ -2092,6 +2098,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             cell.classList.remove('rack-drop-target');
             cell.setAttribute('draggable', 'false');
             cell.classList.remove('has-device-image');
+            cell.classList.remove('has-device-image-catalog');
             cell.style.removeProperty('--rack-device-image');
 
             if (assignment) {
@@ -2110,6 +2117,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                     const deviceImagePath = getRackDeviceImagePath(assignment.code);
                     if (deviceImagePath !== '') {
                         cell.classList.add('has-device-image');
+                        if (isCatalogCode(assignment.code)) {
+                            cell.classList.add('has-device-image-catalog');
+                        }
                         cell.style.setProperty('--rack-device-image', 'url("' + deviceImagePath + '")');
                     }
                     if (labelEl) {
