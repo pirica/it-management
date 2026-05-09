@@ -558,20 +558,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (mysqli_query($conn, $sql)) {
-            if ($equipment_type_id === $switchTypeId && equipment_table_has_column($conn, 'switch_ports', 'management_id')) {
-                $switchEnvironmentUpdateSql = "UPDATE switch_ports
-                                               SET management_id = $switch_environment_id
-                                               WHERE company_id = $company_id
-                                                 AND equipment_id = $id";
-                mysqli_query($conn, $switchEnvironmentUpdateSql);
+            if (!$isEdit) {
+                $id = (int)mysqli_insert_id($conn);
             }
-            if ($equipment_type_id === $switchTypeId && equipment_table_has_column($conn, 'idf_ports', 'management_id')) {
-                $idfEnvironmentUpdateSql = "UPDATE idf_ports ip
-                                            JOIN idf_positions p ON p.id = ip.position_id
-                                            SET ip.management_id = $switch_environment_id
-                                            WHERE p.company_id = $company_id
-                                              AND p.equipment_id = '$id'";
-                mysqli_query($conn, $idfEnvironmentUpdateSql);
+            if ($equipment_type_id === $switchTypeId) {
+                if (equipment_table_has_column($conn, 'switch_ports', 'management_id')) {
+                    $switchPortsSyncSql = "UPDATE switch_ports
+                                           SET hostname = $hostname,
+                                               idf_id = $idf_id,
+                                               rack_id = $rack_id,
+                                               location_id = $location_id,
+                                               fiber_port_id = $switch_fiber_id,
+                                               fiber_patch_id = $switch_fiber_patch_id,
+                                               fiber_rack_id = $switch_fiber_rack_id,
+                                               management_id = $switch_environment_id
+                                           WHERE company_id = $company_id
+                                             AND equipment_id = $id";
+                    mysqli_query($conn, $switchPortsSyncSql);
+                }
+                if (equipment_table_has_column($conn, 'idf_ports', 'management_id')) {
+                    $idfPortsSyncSql = "UPDATE idf_ports ip
+                                        JOIN idf_positions p ON p.id = ip.position_id
+                                        SET ip.speed_id = $switch_fiber_id,
+                                            ip.rj45_speed_id = $switch_rj45_id,
+                                            ip.fiber_ports_number = $switch_fiber_ports_number,
+                                            ip.switch_port_numbering_layout_id = $switch_port_numbering_layout_id,
+                                            ip.management_id = $switch_environment_id,
+                                            ip.poe_id = $switch_poe_id
+                                        WHERE p.company_id = $company_id
+                                          AND p.equipment_id = '$id'";
+                    mysqli_query($conn, $idfPortsSyncSql);
+                }
             }
             foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
                 $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
