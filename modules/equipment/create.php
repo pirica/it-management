@@ -1571,6 +1571,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 </script>
 </body>
 </html>
+    $equipmentIdEscaped = mysqli_real_escape_string($conn, (string)$equipmentId);
     $stmtDuplicateDeviceName = mysqli_prepare(
         $conn,
         "SELECT id
@@ -1578,12 +1579,11 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
          WHERE company_id = ?
            AND device_name = ?
            AND id <> ?
-           AND (equipment_id IS NULL OR equipment_id <> ?)
+           AND (equipment_id IS NULL OR equipment_id <> '{$equipmentIdEscaped}')
          LIMIT 1"
     );
     if ($stmtDuplicateDeviceName) {
-        $equipmentIdStr = (string)$equipmentId;
-        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isis', $companyId, $equipmentName, $targetPositionId, $equipmentIdStr);
+        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $companyId, $equipmentName, $targetPositionId);
         mysqli_stmt_execute($stmtDuplicateDeviceName);
         $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
         $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
