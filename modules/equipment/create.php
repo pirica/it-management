@@ -260,6 +260,7 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
                 mysqli_query($conn, "DELETE FROM idf_positions WHERE id = " . $positionId . " LIMIT 1");
             }
         }
+        mysqli_query($conn, "UPDATE switch_ports SET idf_id = NULL WHERE company_id = " . $companyId . " AND equipment_id = " . $equipmentId);
         return '';
     }
 
@@ -293,10 +294,65 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             mysqli_stmt_close($stmtEmpty);
         }
         if (!$emptyRow) {
-            return 'There is none Empty positions, add more positions on IDF.';
+            $stmtIdfPositionCount = mysqli_prepare(
+                $conn,
+                "SELECT COUNT(*) AS c
+                 FROM idf_positions
+                 WHERE company_id = ?
+                   AND idf_id = ?"
+            );
+            $idfPositionCount = 0;
+            if ($stmtIdfPositionCount) {
+                mysqli_stmt_bind_param($stmtIdfPositionCount, 'ii', $companyId, $idfId);
+                mysqli_stmt_execute($stmtIdfPositionCount);
+                $resIdfPositionCount = mysqli_stmt_get_result($stmtIdfPositionCount);
+                $idfPositionCountRow = $resIdfPositionCount ? mysqli_fetch_assoc($resIdfPositionCount) : null;
+                mysqli_stmt_close($stmtIdfPositionCount);
+                $idfPositionCount = (int)($idfPositionCountRow['c'] ?? 0);
+            }
+
+            if ($idfPositionCount <= 0) {
+                $bootstrapDeviceTypeId = equipment_resolve_idf_device_type_id($conn, $companyId, $equipmentTypeId);
+                if ($bootstrapDeviceTypeId <= 0) {
+                    return 'A database error occurred. Please try again.';
+                }
+                $targetPositionNo = 1;
+                $stmtInsertBootstrapPosition = mysqli_prepare(
+                    $conn,
+                    "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
+                     VALUES (?, ?, ?, ?, ?, ?, 0, NULLIF(?, 0), ?)"
+                );
+                if ($stmtInsertBootstrapPosition) {
+                    $equipmentIdStr = (string)$equipmentId;
+                    $notesForInsert = $notes !== '' ? $notes : null;
+                    mysqli_stmt_bind_param(
+                        $stmtInsertBootstrapPosition,
+                        'iiiissis',
+                        $companyId,
+                        $idfId,
+                        $targetPositionNo,
+                        $bootstrapDeviceTypeId,
+                        $equipmentName,
+                        $equipmentIdStr,
+                        $layoutId,
+                        $notesForInsert
+                    );
+                    if (!mysqli_stmt_execute($stmtInsertBootstrapPosition)) {
+                        $bootstrapError = mysqli_stmt_error($stmtInsertBootstrapPosition);
+                        mysqli_stmt_close($stmtInsertBootstrapPosition);
+                        return $bootstrapError !== '' ? $bootstrapError : 'A database error occurred. Please try again.';
+                    }
+                    $targetPositionId = (int)mysqli_insert_id($conn);
+                    mysqli_stmt_close($stmtInsertBootstrapPosition);
+                }
+            } else {
+                return 'There is none Empty positions, add more positions on IDF.';
+            }
         }
-        $targetPositionId = (int)($emptyRow['id'] ?? 0);
-        $targetPositionNo = (int)($emptyRow['position_no'] ?? 0);
+        if ($targetPositionId <= 0) {
+            $targetPositionId = (int)($emptyRow['id'] ?? 0);
+            $targetPositionNo = (int)($emptyRow['position_no'] ?? 0);
+        }
     }
 
     $idfDeviceTypeId = equipment_resolve_idf_device_type_id($conn, $companyId, $equipmentTypeId);
@@ -412,6 +468,57 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
         }
     }
 
+    $stmtMirrorSwitchPorts = mysqli_prepare(
+        $conn,
+        "INSERT INTO idf_ports (
+            company_id, position_id, port_no, port_type, label, status_id, vlan_id, notes,
+            switch_port_numbering_layout_id, management_id
+         )
+         SELECT
+            ?, ?, sp.port_number,
+            CASE
+                WHEN sp.port_type REGEXP '^[0-9]+$' THEN CAST(sp.port_type AS UNSIGNED)
+                ELSE COALESCE(spt.id, 0)
+            END AS resolved_port_type,
+            COALESCE(sp.to_patch_port, ''),
+            COALESCE(NULLIF(sp.status_id, 0), 1),
+            sp.vlan_id,
+            COALESCE(sp.comments, ''),
+            NULLIF(?, 0),
+            NULLIF(?, 0)
+         FROM switch_ports sp
+         LEFT JOIN switch_port_types spt
+           ON spt.company_id = sp.company_id
+          AND LOWER(TRIM(spt.type)) = LOWER(TRIM(sp.port_type))
+         WHERE sp.company_id = ?
+           AND sp.equipment_id = ?
+           AND sp.port_number > 0
+         HAVING resolved_port_type > 0
+         ON DUPLICATE KEY UPDATE
+            label = VALUES(label),
+            status_id = VALUES(status_id),
+            vlan_id = VALUES(vlan_id),
+            notes = VALUES(notes),
+            switch_port_numbering_layout_id = COALESCE(VALUES(switch_port_numbering_layout_id), switch_port_numbering_layout_id),
+            management_id = COALESCE(VALUES(management_id), management_id)"
+    );
+    if ($stmtMirrorSwitchPorts) {
+        mysqli_stmt_bind_param(
+            $stmtMirrorSwitchPorts,
+            'iiiiii',
+            $companyId,
+            $targetPositionId,
+            $layoutId,
+            $switchEnvironmentId,
+            $companyId,
+            $equipmentId
+        );
+        mysqli_stmt_execute($stmtMirrorSwitchPorts);
+        mysqli_stmt_close($stmtMirrorSwitchPorts);
+    }
+
+    mysqli_query($conn, "UPDATE switch_ports SET idf_id = " . (int)$idfId . " WHERE company_id = " . (int)$companyId . " AND equipment_id = " . (int)$equipmentId);
+
     return '';
 }
 
@@ -440,6 +547,26 @@ function equipment_validate_idf_assignment(mysqli $conn, int $companyId, int $eq
     }
 
     if ($currentRow && (int)($currentRow['idf_id'] ?? 0) === $idfId) {
+        return '';
+    }
+
+    $stmtIdfPositionCount = mysqli_prepare(
+        $conn,
+        "SELECT COUNT(*) AS c
+         FROM idf_positions
+         WHERE company_id = ?
+           AND idf_id = ?"
+    );
+    $idfPositionCount = 0;
+    if ($stmtIdfPositionCount) {
+        mysqli_stmt_bind_param($stmtIdfPositionCount, 'ii', $companyId, $idfId);
+        mysqli_stmt_execute($stmtIdfPositionCount);
+        $resIdfPositionCount = mysqli_stmt_get_result($stmtIdfPositionCount);
+        $idfPositionCountRow = $resIdfPositionCount ? mysqli_fetch_assoc($resIdfPositionCount) : null;
+        mysqli_stmt_close($stmtIdfPositionCount);
+        $idfPositionCount = (int)($idfPositionCountRow['c'] ?? 0);
+    }
+    if ($idfPositionCount <= 0) {
         return '';
     }
 
