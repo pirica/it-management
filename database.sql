@@ -2489,6 +2489,7 @@ CREATE TABLE `switch_ports` (
   `rack_id` int DEFAULT NULL,
   `location_id` int DEFAULT NULL,
   `to_location_id` int DEFAULT NULL,
+  `management_id` int DEFAULT NULL,
   `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2509,6 +2510,7 @@ CREATE TABLE `switch_ports` (
   KEY `idx_switch_ports_rack` (`rack_id`),
   KEY `idx_switch_ports_location` (`location_id`),
   KEY `idx_switch_ports_to_location` (`to_location_id`),
+  KEY `idx_switch_ports_management` (`management_id`),
   CONSTRAINT `switch_ports_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_ports_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
@@ -2523,7 +2525,8 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_13` FOREIGN KEY (`to_idf_id`) REFERENCES `idfs` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_14` FOREIGN KEY (`to_rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_11` FOREIGN KEY (`rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `switch_ports_ibfk_12` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `switch_ports_ibfk_12` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `switch_ports_ibfk_management` FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `switch_ports`
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`) VALUES ('1', '1', '1', NULL, 'RJ45', '1', '0', '17', '1', NULL, NULL, NULL, NULL, NULL, '', '2026-03-31 00:39:19');

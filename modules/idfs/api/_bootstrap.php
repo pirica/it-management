@@ -766,6 +766,60 @@ function idf_ensure_status_schema(mysqli $conn) {
     $ensureIdfPortsFk('idf_ports_ibfk_layout', 'switch_port_numbering_layout_id', 'switch_port_numbering_layout');
     $ensureIdfPortsFk('idf_ports_ibfk_management', 'management_id', 'equipment_environment');
 
+    if (!idf_table_has_column($conn, 'switch_ports', 'management_id')) {
+        mysqli_query($conn, "ALTER TABLE `switch_ports` ADD COLUMN `management_id` int DEFAULT NULL AFTER `to_location_id`");
+    }
+    $hasSwitchPortsManagementIndex = false;
+    $switchPortsManagementIndexRes = mysqli_query($conn, "SHOW INDEX FROM `switch_ports` WHERE Key_name = 'idx_switch_ports_management'");
+    if ($switchPortsManagementIndexRes && mysqli_fetch_assoc($switchPortsManagementIndexRes)) {
+        $hasSwitchPortsManagementIndex = true;
+    }
+    if (!$hasSwitchPortsManagementIndex) {
+        mysqli_query($conn, "ALTER TABLE `switch_ports` ADD KEY `idx_switch_ports_management` (`management_id`)");
+    }
+    $hasSwitchPortsManagementFk = false;
+    $switchPortsManagementFkRes = mysqli_query(
+        $conn,
+        "SELECT CONSTRAINT_NAME
+         FROM information_schema.REFERENTIAL_CONSTRAINTS
+         WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+           AND TABLE_NAME = 'switch_ports'
+           AND CONSTRAINT_NAME = 'switch_ports_ibfk_management'
+         LIMIT 1"
+    );
+    if ($switchPortsManagementFkRes && mysqli_fetch_assoc($switchPortsManagementFkRes)) {
+        $hasSwitchPortsManagementFk = true;
+    }
+    if (!$hasSwitchPortsManagementFk) {
+        mysqli_query(
+            $conn,
+            "ALTER TABLE `switch_ports`
+             ADD CONSTRAINT `switch_ports_ibfk_management`
+             FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`)
+             ON DELETE SET NULL"
+        );
+    }
+
+    // Why: "Unmanaged" is the safe default when no management environment has been selected.
+    mysqli_query(
+        $conn,
+        "UPDATE idf_ports p
+         JOIN equipment_environment ee
+           ON ee.company_id = p.company_id
+          AND LOWER(ee.name) = 'unmanaged'
+         SET p.management_id = ee.id
+         WHERE (p.management_id IS NULL OR p.management_id = 0)"
+    );
+    mysqli_query(
+        $conn,
+        "UPDATE switch_ports sp
+         JOIN equipment_environment ee
+           ON ee.company_id = sp.company_id
+          AND LOWER(ee.name) = 'unmanaged'
+         SET sp.management_id = ee.id
+         WHERE (sp.management_id IS NULL OR sp.management_id = 0)"
+    );
+
     // Why: "None" selections in the UI should persist as SQL NULL (never 0 sentinel values).
     foreach (['vlan_id', 'speed_id', 'poe_id', 'rj45_speed_id', 'fiber_ports_number', 'switch_port_numbering_layout_id', 'management_id'] as $nullableFkColumn) {
         if (!idf_table_has_column($conn, 'idf_ports', $nullableFkColumn)) {

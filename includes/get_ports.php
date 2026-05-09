@@ -385,10 +385,39 @@ $sfpPlusCount = $hasSfpPlusLabel ? $fiberCount : 0;
 if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
 if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
 
+$hasManagementIdColumn = false;
+$managementIdColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'management_id'");
+if ($managementIdColumnRes && mysqli_num_rows($managementIdColumnRes) > 0) {
+    $hasManagementIdColumn = true;
+}
+$defaultManagementId = 0;
+if ($hasManagementIdColumn) {
+    $stmtUnmanaged = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM equipment_environment
+         WHERE company_id = ?
+           AND LOWER(name) = 'unmanaged'
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if ($stmtUnmanaged) {
+        $companyId = (int)$company_id;
+        mysqli_stmt_bind_param($stmtUnmanaged, 'i', $companyId);
+        mysqli_stmt_execute($stmtUnmanaged);
+        $resUnmanaged = mysqli_stmt_get_result($stmtUnmanaged);
+        $unmanagedRow = $resUnmanaged ? mysqli_fetch_assoc($resUnmanaged) : null;
+        mysqli_stmt_close($stmtUnmanaged);
+        if ($unmanagedRow) {
+            $defaultManagementId = (int)($unmanagedRow['id'] ?? 0);
+        }
+    }
+}
+
 /**
  * Automatically creates missing port records or removes excess port records
  */
-function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, bool $isNumericPortTypeColumn, array $portTypeIdMap, int $defaultStatusId, int $defaultColorId): void
+function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portType, int $count, bool $hasEquipmentId, bool $hasPortType, bool $isNumericPortTypeColumn, array $portTypeIdMap, int $defaultStatusId, int $defaultColorId, bool $hasManagementIdColumn, int $defaultManagementId): void
 {
     if ($count <= 0) {
         return;
@@ -422,7 +451,9 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         }
 
         // Insert missing ports
-        $insertSql = 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, to_patch_port, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
+        $insertSql = $hasManagementIdColumn
+            ? 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, to_patch_port, status_id, color_id, management_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?, 0), "")'
+            : 'INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, to_patch_port, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, ?, ?, "")';
         $insertStmt = mysqli_prepare($conn, $insertSql);
         if (!$insertStmt) {
             return;
@@ -433,9 +464,17 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
             }
             $label = strtoupper(str_replace('_', '+', $portType)) . ' ' . $n;
             if ($isNumericPortTypeColumn) {
-                mysqli_stmt_bind_param($insertStmt, 'iiiiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId);
+                if ($hasManagementIdColumn) {
+                    mysqli_stmt_bind_param($insertStmt, 'iiiiiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId, $defaultManagementId);
+                } else {
+                    mysqli_stmt_bind_param($insertStmt, 'iiiiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId);
+                }
             } else {
-                mysqli_stmt_bind_param($insertStmt, 'iisiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId);
+                if ($hasManagementIdColumn) {
+                    mysqli_stmt_bind_param($insertStmt, 'iisiiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId, $defaultManagementId);
+                } else {
+                    mysqli_stmt_bind_param($insertStmt, 'iisiiii', $companyId, $switchId, $portTypeFilter, $n, $label, $defaultStatusId, $defaultColorId);
+                }
             }
             mysqli_stmt_execute($insertStmt);
         }
@@ -475,14 +514,20 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
         return;
     }
 
-    $insertSql = 'INSERT INTO switch_ports (company_id, port_number, to_patch_port, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, "")';
+    $insertSql = $hasManagementIdColumn
+        ? 'INSERT INTO switch_ports (company_id, port_number, to_patch_port, status_id, color_id, management_id, comments) VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), "")'
+        : 'INSERT INTO switch_ports (company_id, port_number, to_patch_port, status_id, color_id, comments) VALUES (?, ?, ?, ?, ?, "")';
     $insertStmt = mysqli_prepare($conn, $insertSql);
     if (!$insertStmt) {
         return;
     }
     for ($n = $existingCount + 1; $n <= $count; $n++) {
         $label = 'RJ45 ' . $n;
-        mysqli_stmt_bind_param($insertStmt, 'iisii', $companyId, $n, $label, $defaultStatusId, $defaultColorId);
+        if ($hasManagementIdColumn) {
+            mysqli_stmt_bind_param($insertStmt, 'iisiii', $companyId, $n, $label, $defaultStatusId, $defaultColorId, $defaultManagementId);
+        } else {
+            mysqli_stmt_bind_param($insertStmt, 'iisii', $companyId, $n, $label, $defaultStatusId, $defaultColorId);
+        }
         mysqli_stmt_execute($insertStmt);
     }
     mysqli_stmt_close($insertStmt);
@@ -518,9 +563,9 @@ function remove_duplicate_ports(mysqli $conn, int $companyId, int $switchId, boo
 
 // Synchronize port records
 $portTypeIdMap = $isNumericPortTypeColumn ? fetch_port_type_id_map($conn, (int)$company_id) : [];
-seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId);
+seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId, $hasManagementIdColumn, $defaultManagementId);
+seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId, $hasManagementIdColumn, $defaultManagementId);
+seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId, $hasManagementIdColumn, $defaultManagementId);
 remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
 // Fetch all port details including status, color, and VLAN

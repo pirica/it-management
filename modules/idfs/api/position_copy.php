@@ -120,6 +120,27 @@ try {
     }
 
     if ($ports) {
+        $defaultManagementId = 0;
+        $stmtUnmanaged = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM equipment_environment
+             WHERE company_id = ?
+               AND LOWER(name) = 'unmanaged'
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        if ($stmtUnmanaged) {
+            mysqli_stmt_bind_param($stmtUnmanaged, 'i', $company_id);
+            mysqli_stmt_execute($stmtUnmanaged);
+            $resUnmanaged = mysqli_stmt_get_result($stmtUnmanaged);
+            $unmanagedRow = $resUnmanaged ? mysqli_fetch_assoc($resUnmanaged) : null;
+            mysqli_stmt_close($stmtUnmanaged);
+            if ($unmanagedRow) {
+                $defaultManagementId = (int)($unmanagedRow['id'] ?? 0);
+            }
+        }
+
         $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, fiber_ports_number, switch_port_numbering_layout_id, management_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?)';
         $stmtInsPort = mysqli_prepare($conn, $sqlInsPort);
         if ($stmtInsPort) {
@@ -135,6 +156,9 @@ try {
                 $p_fiber_ports_number = (int)($p['fiber_ports_number'] ?? 0);
                 $p_layout_id = (int)($p['switch_port_numbering_layout_id'] ?? 0);
                 $p_management_id = (int)($p['management_id'] ?? 0);
+                if ($p_management_id <= 0) {
+                    $p_management_id = $defaultManagementId;
+                }
                 $p_notes = (string)$p['notes'];
 
                 mysqli_stmt_bind_param($stmtInsPort, 'iiiisisiiiiiis',

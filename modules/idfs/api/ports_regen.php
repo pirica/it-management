@@ -185,6 +185,27 @@ if ($equipmentId > 0) {
         }
     }
 }
+if ($managementId <= 0) {
+    $stmtUnmanaged = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM equipment_environment
+         WHERE company_id = ?
+           AND LOWER(name) = 'unmanaged'
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if ($stmtUnmanaged) {
+        mysqli_stmt_bind_param($stmtUnmanaged, 'i', $company_id);
+        mysqli_stmt_execute($stmtUnmanaged);
+        $resUnmanaged = mysqli_stmt_get_result($stmtUnmanaged);
+        $unmanagedRow = $resUnmanaged ? mysqli_fetch_assoc($resUnmanaged) : null;
+        mysqli_stmt_close($stmtUnmanaged);
+        if ($unmanagedRow) {
+            $managementId = (int)($unmanagedRow['id'] ?? 0);
+        }
+    }
+}
 
 if (!empty($fiberPortsToInsert)) {
     foreach ($fiberPortsToInsert as $fiberPortKey => $fiberPortMeta) {
@@ -293,9 +314,9 @@ try {
         $stmtInsertSwitchPort = mysqli_prepare(
             $conn,
             "INSERT INTO switch_ports
-                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, comments)
+                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, management_id, comments)
              VALUES
-                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), ?)"
+                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?)"
         );
         if ($stmtInsertSwitchPort) {
             $switchPatchPortDefault = '0';
@@ -309,7 +330,7 @@ try {
                 }
                 mysqli_stmt_bind_param(
                     $stmtInsertSwitchPort,
-                    'iissisiiis',
+                    'iissisiiiis',
                     $company_id,
                     $equipmentId,
                     $equipmentHostname,
@@ -319,6 +340,7 @@ try {
                     $unknownStatusId,
                     $defaultColorId,
                     $idfId,
+                    $managementId,
                     $switchCommentsDefault
                 );
                 mysqli_stmt_execute($stmtInsertSwitchPort);

@@ -337,6 +337,27 @@ if ($equipment_id > 0) {
         }
     }
 }
+if ($portManagementId <= 0) {
+    $stmtUnmanaged = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM equipment_environment
+         WHERE company_id = ?
+           AND LOWER(name) = 'unmanaged'
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if ($stmtUnmanaged) {
+        mysqli_stmt_bind_param($stmtUnmanaged, 'i', $company_id);
+        mysqli_stmt_execute($stmtUnmanaged);
+        $resUnmanaged = mysqli_stmt_get_result($stmtUnmanaged);
+        $unmanagedRow = $resUnmanaged ? mysqli_fetch_assoc($resUnmanaged) : null;
+        mysqli_stmt_close($stmtUnmanaged);
+        if ($unmanagedRow) {
+            $portManagementId = (int)($unmanagedRow['id'] ?? 0);
+        }
+    }
+}
 
 if ($position_id > 0) {
     $stmtPos = mysqli_prepare(
