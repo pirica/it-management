@@ -952,7 +952,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <a class="btn btn-sm idf-mini" href="../equipment/index.php?switch_id=<?php echo (int)$idfEquipmentIdRaw; ?>&spm=1#switch-port-manager">Edit Linked</a>
                                             <?php endif; ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
-                                            <button class="btn btn-sm idf-mini" type="button" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>)">Delete</button>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, <?php echo json_encode((string)($pos['device_name'] ?? ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>)">Delete</button>
                                         <?php else: ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
                                         <?php endif; ?>
@@ -1429,8 +1429,10 @@ function idfMove(idfId, positionNo, dir) {
         .catch(err => alert(err.message));
 }
 
-function idfDeleteDevice(positionId) {
-    if (!confirm('Are you sure you want to delete this device from the rack position?\n\nThis will permanently delete all related data, including ports, cable links, and synchronization records. This action cannot be undone.')) return;
+function idfDeleteDevice(positionId, deviceName) {
+    const safeDeviceName = String(deviceName || '').trim();
+    const deviceLabel = safeDeviceName !== '' ? ` (${safeDeviceName})` : '';
+    if (!confirm(`Are you sure you want to delete this device${deviceLabel} from rack position?\n\nThis will permanently delete all related data, including ports, cable links, and synchronization records. This action cannot be undone.`)) return;
     apiPost('position_delete.php', {csrf_token: CSRF, position_id: positionId})
         .then(() => location.reload())
         .catch(err => alert(err.message));
