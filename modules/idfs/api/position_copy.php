@@ -4,6 +4,45 @@ require_once __DIR__ . '/_bootstrap.php';
 $data = idf_read_json();
 idf_require_csrf($data);
 
+function idf_copy_next_unique_device_name(mysqli $conn, int $companyId, string $sourceName): string
+{
+    $baseName = trim($sourceName);
+    if ($baseName === '') {
+        return '';
+    }
+
+    $candidate = $baseName;
+    $suffix = 2;
+    while (true) {
+        $stmtExists = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_positions
+             WHERE company_id = ? AND device_name = ?
+             LIMIT 1"
+        );
+        if (!$stmtExists) {
+            return $candidate;
+        }
+
+        mysqli_stmt_bind_param($stmtExists, 'is', $companyId, $candidate);
+        mysqli_stmt_execute($stmtExists);
+        $resExists = mysqli_stmt_get_result($stmtExists);
+        $exists = $resExists && mysqli_num_rows($resExists) > 0;
+        mysqli_stmt_close($stmtExists);
+
+        if (!$exists) {
+            return $candidate;
+        }
+
+        $candidate = $baseName . ' (' . $suffix . ')';
+        $suffix++;
+        if ($suffix > 999) {
+            return $candidate;
+        }
+    }
+}
+
 $position_id = (int)($data['position_id'] ?? 0);
 $target_position = (int)($data['target_position'] ?? 0);
 $overwrite = (int)($data['overwrite'] ?? 0);
@@ -38,26 +77,7 @@ if (!$src || (int)$src['company_id'] !== $company_id) {
 
 $idf_id = (int)$src['idf_id'];
 $device_name = trim((string)($src['device_name'] ?? ''));
-
-if ($device_name !== '') {
-    $stmtDuplicateDeviceName = mysqli_prepare(
-        $conn,
-        "SELECT id
-         FROM idf_positions
-         WHERE company_id=? AND device_name=? AND id<>?
-         LIMIT 1"
-    );
-    if ($stmtDuplicateDeviceName) {
-        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $company_id, $device_name, $position_id);
-        mysqli_stmt_execute($stmtDuplicateDeviceName);
-        $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
-        $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
-        mysqli_stmt_close($stmtDuplicateDeviceName);
-        if ($duplicateDeviceNameRow) {
-            idf_fail('Device name already exists. Please choose a unique device name.');
-        }
-    }
-}
+$device_name = idf_copy_next_unique_device_name($conn, $company_id, $device_name);
 
 $existing = null;
 $stmtEx = mysqli_prepare($conn, "SELECT id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");
@@ -90,7 +110,7 @@ try {
     $notes_val = !empty($src['notes']) ? (string)$src['notes'] : null;
     $equip_val = !empty($src['equipment_id']) ? (string)$src['equipment_id'] : null;
     $device_type = (int)$src['device_type'];
-    $device_name = (string)$src['device_name'];
+    $device_name = (string)$device_name;
     $port_count = (int)$src['port_count'];
 
     $stmtIns = mysqli_prepare(
