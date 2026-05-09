@@ -376,27 +376,216 @@ $updated = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
 
 if ($hasManagementId) {
-    $idfPortSyncSql = "UPDATE idf_ports ip
-                       JOIN idf_positions p ON p.id = ip.position_id
-                       JOIN switch_ports sp ON sp.company_id = p.company_id
-                                           AND sp.equipment_id = p.equipment_id
-                                           AND sp.port_number = ip.port_no
-                       LEFT JOIN switch_port_types spt ON spt.company_id = sp.company_id
-                                                     AND (
-                                                          LOWER(TRIM(spt.type)) = LOWER(TRIM(sp.port_type))
-                                                          OR CAST(spt.id AS CHAR) = sp.port_type
-                                                     )
-                       SET ip.label = sp.to_patch_port,
-                           ip.status_id = sp.status_id,
-                           ip.vlan_id = sp.vlan_id,
-                           ip.speed_id = sp.fiber_port_id,
-                           ip.management_id = sp.management_id,
-                           ip.notes = sp.comments
-                       WHERE p.company_id = " . (int)$company_id . "
-                         AND p.equipment_id = '" . mysqli_real_escape_string($conn, (string)$switchId) . "'
-                         AND sp.id = " . (int)$id . "
-                         AND (spt.id IS NULL OR ip.port_type = spt.id)";
-    mysqli_query($conn, $idfPortSyncSql);
+    $autoSyncMarker = '[SPM-AUTO-TO-IDF]';
+    $switchPortRow = null;
+    $switchPortSql = "SELECT id, company_id, equipment_id, port_type, port_number, to_patch_port, status_id, vlan_id,
+                             fiber_port_id, management_id, comments, to_idf_id
+                      FROM switch_ports
+                      WHERE id = ? AND company_id = ? AND equipment_id = ?
+                      LIMIT 1";
+    $stmtSwitchPort = mysqli_prepare($conn, $switchPortSql);
+    if ($stmtSwitchPort) {
+        $companyIdParam = (int)$company_id;
+        mysqli_stmt_bind_param($stmtSwitchPort, 'iii', $id, $companyIdParam, $switchId);
+        mysqli_stmt_execute($stmtSwitchPort);
+        $resSwitchPort = mysqli_stmt_get_result($stmtSwitchPort);
+        $switchPortRow = $resSwitchPort ? mysqli_fetch_assoc($resSwitchPort) : null;
+        mysqli_stmt_close($stmtSwitchPort);
+    }
+
+    if ($switchPortRow) {
+        $portTypeId = 0;
+        $portTypeRaw = trim((string)($switchPortRow['port_type'] ?? ''));
+        if ($portTypeRaw !== '') {
+            if (ctype_digit($portTypeRaw)) {
+                $portTypeId = (int)$portTypeRaw;
+            } else {
+                $stmtPortType = mysqli_prepare(
+                    $conn,
+                    "SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = LOWER(?) LIMIT 1"
+                );
+                if ($stmtPortType) {
+                    $companyIdParam = (int)$company_id;
+                    mysqli_stmt_bind_param($stmtPortType, 'is', $companyIdParam, $portTypeRaw);
+                    mysqli_stmt_execute($stmtPortType);
+                    $resPortType = mysqli_stmt_get_result($stmtPortType);
+                    $portTypeRow = $resPortType ? mysqli_fetch_assoc($resPortType) : null;
+                    mysqli_stmt_close($stmtPortType);
+                    if ($portTypeRow) {
+                        $portTypeId = (int)($portTypeRow['id'] ?? 0);
+                    }
+                }
+            }
+        }
+
+        $positionId = 0;
+        $stmtPosition = mysqli_prepare(
+            $conn,
+            "SELECT p.id
+             FROM idf_positions p
+             JOIN equipment e ON e.company_id = p.company_id
+             WHERE p.company_id = ?
+               AND p.equipment_id = CAST(e.id AS CHAR)
+               AND e.id = ?
+             ORDER BY p.id ASC
+             LIMIT 1"
+        );
+        if ($stmtPosition) {
+            $companyIdParam = (int)$company_id;
+            mysqli_stmt_bind_param($stmtPosition, 'ii', $companyIdParam, $switchId);
+            mysqli_stmt_execute($stmtPosition);
+            $resPosition = mysqli_stmt_get_result($stmtPosition);
+            $positionRow = $resPosition ? mysqli_fetch_assoc($resPosition) : null;
+            mysqli_stmt_close($stmtPosition);
+            if ($positionRow) {
+                $positionId = (int)($positionRow['id'] ?? 0);
+            }
+        }
+
+        if ($positionId > 0 && $portTypeId > 0) {
+            $existingIdfPortId = 0;
+            $existingIdfPortNotes = '';
+            $stmtExistingIdfPort = mysqli_prepare(
+                $conn,
+                "SELECT id, notes
+                 FROM idf_ports
+                 WHERE company_id = ? AND position_id = ? AND port_no = ? AND port_type = ?
+                 LIMIT 1"
+            );
+            if ($stmtExistingIdfPort) {
+                $companyIdParam = (int)$company_id;
+                $portNoParam = (int)($switchPortRow['port_number'] ?? 0);
+                mysqli_stmt_bind_param($stmtExistingIdfPort, 'iiii', $companyIdParam, $positionId, $portNoParam, $portTypeId);
+                mysqli_stmt_execute($stmtExistingIdfPort);
+                $resExistingIdfPort = mysqli_stmt_get_result($stmtExistingIdfPort);
+                $existingIdfPortRow = $resExistingIdfPort ? mysqli_fetch_assoc($resExistingIdfPort) : null;
+                mysqli_stmt_close($stmtExistingIdfPort);
+                if ($existingIdfPortRow) {
+                    $existingIdfPortId = (int)($existingIdfPortRow['id'] ?? 0);
+                    $existingIdfPortNotes = (string)($existingIdfPortRow['notes'] ?? '');
+                }
+            }
+
+            $destinationIdfId = (int)($switchPortRow['to_idf_id'] ?? 0);
+            $connectedToValue = null;
+            if ($destinationIdfId > 0) {
+                $stmtToIdf = mysqli_prepare($conn, "SELECT idf_code, name FROM idfs WHERE id = ? AND company_id = ? LIMIT 1");
+                if ($stmtToIdf) {
+                    $companyIdParam = (int)$company_id;
+                    mysqli_stmt_bind_param($stmtToIdf, 'ii', $destinationIdfId, $companyIdParam);
+                    mysqli_stmt_execute($stmtToIdf);
+                    $resToIdf = mysqli_stmt_get_result($stmtToIdf);
+                    $toIdfRow = $resToIdf ? mysqli_fetch_assoc($resToIdf) : null;
+                    mysqli_stmt_close($stmtToIdf);
+                    if ($toIdfRow) {
+                        $idfCode = trim((string)($toIdfRow['idf_code'] ?? ''));
+                        $idfName = trim((string)($toIdfRow['name'] ?? ''));
+                        $connectedToValue = $idfCode !== '' ? $idfCode : $idfName;
+                    }
+                }
+            }
+
+            if ($existingIdfPortId > 0) {
+                $stmtUpdateIdfPort = mysqli_prepare(
+                    $conn,
+                    "UPDATE idf_ports
+                     SET label = ?,
+                         status_id = ?,
+                         vlan_id = NULLIF(?, 0),
+                         speed_id = NULLIF(?, 0),
+                         management_id = NULLIF(?, 0),
+                         connected_to = ?,
+                         notes = ?
+                     WHERE id = ? AND company_id = ?
+                     LIMIT 1"
+                );
+                if ($stmtUpdateIdfPort) {
+                    $idfLabel = (string)($switchPortRow['to_patch_port'] ?? '');
+                    $idfStatusId = (int)($switchPortRow['status_id'] ?? 0);
+                    $idfVlanId = (int)($switchPortRow['vlan_id'] ?? 0);
+                    $idfSpeedId = (int)($switchPortRow['fiber_port_id'] ?? 0);
+                    $idfManagementId = (int)($switchPortRow['management_id'] ?? 0);
+                    $idfNotes = trim((string)($switchPortRow['comments'] ?? ''));
+                    if ($idfNotes === '') {
+                        $idfNotes = $autoSyncMarker;
+                    } elseif (strpos($idfNotes, $autoSyncMarker) === false) {
+                        $idfNotes .= ' ' . $autoSyncMarker;
+                    }
+                    $companyIdParam = (int)$company_id;
+                    mysqli_stmt_bind_param(
+                        $stmtUpdateIdfPort,
+                        'siiiissii',
+                        $idfLabel,
+                        $idfStatusId,
+                        $idfVlanId,
+                        $idfSpeedId,
+                        $idfManagementId,
+                        $connectedToValue,
+                        $idfNotes,
+                        $existingIdfPortId,
+                        $companyIdParam
+                    );
+                    mysqli_stmt_execute($stmtUpdateIdfPort);
+                    mysqli_stmt_close($stmtUpdateIdfPort);
+                }
+
+                if ($destinationIdfId <= 0 && strpos($existingIdfPortNotes, $autoSyncMarker) !== false) {
+                    $stmtDeleteAutoIdfPort = mysqli_prepare(
+                        $conn,
+                        "DELETE FROM idf_ports WHERE id = ? AND company_id = ? LIMIT 1"
+                    );
+                    if ($stmtDeleteAutoIdfPort) {
+                        $companyIdParam = (int)$company_id;
+                        mysqli_stmt_bind_param($stmtDeleteAutoIdfPort, 'ii', $existingIdfPortId, $companyIdParam);
+                        mysqli_stmt_execute($stmtDeleteAutoIdfPort);
+                        mysqli_stmt_close($stmtDeleteAutoIdfPort);
+                    }
+                }
+            } elseif ($destinationIdfId > 0) {
+                $stmtInsertIdfPort = mysqli_prepare(
+                    $conn,
+                    "INSERT INTO idf_ports (
+                        company_id, position_id, port_no, port_type, label, status_id, connected_to,
+                        vlan_id, speed_id, management_id, notes
+                     ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?
+                     )"
+                );
+                if ($stmtInsertIdfPort) {
+                    $companyIdParam = (int)$company_id;
+                    $portNoParam = (int)($switchPortRow['port_number'] ?? 0);
+                    $idfLabel = (string)($switchPortRow['to_patch_port'] ?? '');
+                    $idfStatusId = (int)($switchPortRow['status_id'] ?? 0);
+                    $idfVlanId = (int)($switchPortRow['vlan_id'] ?? 0);
+                    $idfSpeedId = (int)($switchPortRow['fiber_port_id'] ?? 0);
+                    $idfManagementId = (int)($switchPortRow['management_id'] ?? 0);
+                    $idfNotes = trim((string)($switchPortRow['comments'] ?? ''));
+                    if ($idfNotes === '') {
+                        $idfNotes = $autoSyncMarker;
+                    } elseif (strpos($idfNotes, $autoSyncMarker) === false) {
+                        $idfNotes .= ' ' . $autoSyncMarker;
+                    }
+                    mysqli_stmt_bind_param(
+                        $stmtInsertIdfPort,
+                        'iiiisisiiis',
+                        $companyIdParam,
+                        $positionId,
+                        $portNoParam,
+                        $portTypeId,
+                        $idfLabel,
+                        $idfStatusId,
+                        $connectedToValue,
+                        $idfVlanId,
+                        $idfSpeedId,
+                        $idfManagementId,
+                        $idfNotes
+                    );
+                    mysqli_stmt_execute($stmtInsertIdfPort);
+                    mysqli_stmt_close($stmtInsertIdfPort);
+                }
+            }
+        }
+    }
 }
 
 

@@ -261,7 +261,7 @@ $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
 
 $projectJsonEndpoints = [
     ['method' => 'POST', 'path' => 'includes/get_ports.php', 'purpose' => 'Fetch/seed switch ports and lookup metadata.'],
-    ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update a switch port to_patch_port/status/color/vlan/comments.'],
+    ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update switch port fields and sync matching idf_ports rows; To IDF saves now auto-create/update/delete auto-synced idf_ports records.'],
     ['method' => 'GET',  'path' => 'modules/idfs/index.php?refresh_select_options=rack|location', 'purpose' => 'Refresh select options for IDF forms.'],
     ['method' => 'POST', 'path' => 'modules/employee_assignment_history/index.php', 'purpose' => 'Employee Assignment History save-to-database import endpoint (JSON rows from table-tools).'],
     ['method' => 'POST', 'path' => 'scripts/test_sql_injection.php', 'purpose' => 'Security test helper endpoint used during audits.'],
@@ -430,6 +430,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-09:</strong> Switch Port Manager <code>To IDF</code> saves now synchronize both tables by creating/updating matching <code>idf_ports</code> rows from <code>switch_ports</code> metadata (label/status/vlan/speed/management/notes + connected destination), and removing only auto-synced IDF rows when destination is cleared (<code>includes/update_port.php</code>).</li>
             <li><strong>2026-05-09:</strong> Switch Port Manager add/edit now enforces <code>switch_ports.management_id</code> from <code>equipment.switch_environment_id</code> on save, and equipment create/edit also backfills existing switch port rows for the same equipment to keep management values synchronized (<code>includes/update_port.php</code>, <code>modules/equipment/create.php</code>).</li>
             <li><strong>2026-05-09:</strong> Switch/IDF port schemas now include <code>management_id</code> (FK to <code>equipment_environment</code>) and runtime migrations backfill missing values to tenant <code>Unmanaged</code>; switch/IDF port seeding and regeneration now persist this default when no explicit management value is provided (<code>database.sql</code>, <code>modules/idfs/api/_bootstrap.php</code>, <code>includes/get_ports.php</code>, <code>modules/idfs/api/ports_regen.php</code>, <code>modules/idfs/api/position_save.php</code>, <code>modules/idfs/api/position_copy.php</code>).</li>
             <li><strong>2026-05-09:</strong> IDF ports schema/runtime now includes <code>fiber_ports_number</code> (FK to <code>equipment_fiber_count</code>), <code>switch_port_numbering_layout_id</code> (FK to <code>switch_port_numbering_layout</code>), and <code>management_id</code> (FK to <code>equipment_environment</code>), and IDF port create/copy/regenerate flows now persist these values (<code>database.sql</code>, <code>modules/idfs/api/_bootstrap.php</code>, <code>modules/idfs/api/position_save.php</code>, <code>modules/idfs/api/position_copy.php</code>, <code>modules/idfs/api/ports_regen.php</code>).</li>
