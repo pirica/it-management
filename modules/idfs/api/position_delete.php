@@ -11,7 +11,7 @@ if ($position_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT p.id
+    "SELECT p.id, p.idf_id, p.equipment_id
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
      WHERE p.id=? AND i.company_id=?
@@ -21,7 +21,8 @@ if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'ii', $position_id, $company_id);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
-    $found = $res && mysqli_num_rows($res) === 1;
+    $positionRow = $res ? mysqli_fetch_assoc($res) : null;
+    $found = $positionRow !== null;
     mysqli_stmt_close($stmt);
 
     if (!$found) {
@@ -36,6 +37,24 @@ if ($stmtDel) {
         idf_fail('DB error deleting: ' . mysqli_stmt_error($stmtDel), 500);
     }
     mysqli_stmt_close($stmtDel);
+}
+
+$linkedEquipmentId = isset($positionRow['equipment_id']) ? trim((string)$positionRow['equipment_id']) : '';
+$linkedIdfId = isset($positionRow['idf_id']) ? (int)$positionRow['idf_id'] : 0;
+if ($linkedEquipmentId !== '' && ctype_digit($linkedEquipmentId) && $linkedIdfId > 0) {
+    $linkedEquipmentIdInt = (int)$linkedEquipmentId;
+    $stmtEquipment = mysqli_prepare(
+        $conn,
+        "UPDATE equipment
+         SET idf_id = NULL
+         WHERE id=? AND company_id=? AND idf_id=?
+         LIMIT 1"
+    );
+    if ($stmtEquipment) {
+        mysqli_stmt_bind_param($stmtEquipment, 'iii', $linkedEquipmentIdInt, $company_id, $linkedIdfId);
+        mysqli_stmt_execute($stmtEquipment);
+        mysqli_stmt_close($stmtEquipment);
+    }
 }
 
 idf_ok();
