@@ -434,9 +434,10 @@ if ($switchPortId > 0) {
     $updates = [
         "{$switchPortLabelColumn} = ?",
         "comments = ?",
+        "status_id = NULLIF(?, 0)",
     ];
-    $types = 'ss';
-    $params = [$switchLabel, $switchComments];
+    $types = 'ssi';
+    $params = [$switchLabel, $switchComments, $status_id];
 
     if ($switchColorId !== null) {
         $updates[] = "color_id = ?";
@@ -551,9 +552,12 @@ if (
     }
 }
 
-$statusSyncId = $status_id;
-if ($equipmentStatusId_val !== null && (int)$equipmentStatusId_val > 0) {
+$statusSyncId = (int)$status_id;
+if ($statusSyncId <= 0 && $equipmentStatusId_val !== null && (int)$equipmentStatusId_val > 0) {
     $statusSyncId = (int)$equipmentStatusId_val;
+}
+if ($statusSyncId <= 0) {
+    $statusSyncId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
 }
 
 $stmtFinal = mysqli_prepare(
@@ -587,7 +591,7 @@ if ($stmtFinal) {
             $stmtFinal, 'iiissssissiiisss',
             $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
             $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
-            $equipmentComments_val, $equipmentStatusId_val, $equipmentColorId_val, $cableColorId,
+            $equipmentComments_val, $statusSyncId, $equipmentColorId_val, $cableColorId,
             $selectedColorHex, $label_val, $notes_val
         );
         if (!mysqli_stmt_execute($stmtFinal)) {
@@ -694,8 +698,11 @@ if (
                p.id = pr.position_id
                OR p.position_no = pr.position_id
           )
+         LEFT JOIN switch_port_types spt
+           ON spt.id = pr.port_type
+          AND spt.company_id = pr.company_id
          SET sp.{$switchPortLabelColumn} = ?,
-             sp.status_id = ?,
+             sp.status_id = NULLIF(?, 0),
              sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
              sp.comments = ?
          WHERE sp.company_id = ?
@@ -703,12 +710,16 @@ if (
            AND p.equipment_id = sp.equipment_id
            AND sp.port_number = pr.port_no
            AND (
-                sp.port_type = pr.port_type
-                OR sp.port_type = CAST(pr.port_type AS CHAR)
+                CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 OR (
                     sp.port_type REGEXP '^[0-9]+$'
-                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+                    AND CAST(sp.port_type AS UNSIGNED) = spt.id
                 )
+                OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                   = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            )
          LIMIT 1"
     );
