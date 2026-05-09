@@ -43,6 +43,48 @@ function idf_copy_next_unique_device_name(mysqli $conn, int $companyId, string $
     }
 }
 
+function idf_copy_next_unique_name_in_table(mysqli $conn, int $companyId, string $table, string $column, string $sourceName): string
+{
+    $baseName = trim($sourceName);
+    if ($baseName === '') {
+        return '';
+    }
+
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $candidate = $baseName;
+    $suffix = 2;
+
+    while (true) {
+        $stmtExists = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM `{$tableEsc}`
+             WHERE company_id = ? AND `{$columnEsc}` = ?
+             LIMIT 1"
+        );
+        if (!$stmtExists) {
+            return $candidate;
+        }
+
+        mysqli_stmt_bind_param($stmtExists, 'is', $companyId, $candidate);
+        mysqli_stmt_execute($stmtExists);
+        $resExists = mysqli_stmt_get_result($stmtExists);
+        $exists = $resExists && mysqli_num_rows($resExists) > 0;
+        mysqli_stmt_close($stmtExists);
+
+        if (!$exists) {
+            return $candidate;
+        }
+
+        $candidate = $baseName . ' (' . $suffix . ')';
+        $suffix++;
+        if ($suffix > 999) {
+            return $candidate;
+        }
+    }
+}
+
 $position_id = (int)($data['position_id'] ?? 0);
 $target_position = (int)($data['target_position'] ?? 0);
 $overwrite = (int)($data['overwrite'] ?? 0);
@@ -112,6 +154,89 @@ try {
     $device_type = (int)$src['device_type'];
     $device_name = (string)$device_name;
     $port_count = (int)$src['port_count'];
+
+    // If this is a linked equipment row, clone equipment + switch ports so copied position gets a new Asset ID.
+    if ($equip_val !== null && ctype_digit($equip_val) && (int)$equip_val > 0) {
+        $sourceEquipmentId = (int)$equip_val;
+        $stmtEq = mysqli_prepare(
+            $conn,
+            "SELECT *
+             FROM equipment
+             WHERE id=? AND company_id=?
+             LIMIT 1"
+        );
+        $sourceEquipment = null;
+        if ($stmtEq) {
+            mysqli_stmt_bind_param($stmtEq, 'ii', $sourceEquipmentId, $company_id);
+            mysqli_stmt_execute($stmtEq);
+            $resEq = mysqli_stmt_get_result($stmtEq);
+            $sourceEquipment = $resEq ? mysqli_fetch_assoc($resEq) : null;
+            mysqli_stmt_close($stmtEq);
+        }
+
+        if ($sourceEquipment) {
+            $newEquipment = $sourceEquipment;
+            unset($newEquipment['id']);
+            unset($newEquipment['created_at']);
+            unset($newEquipment['updated_at']);
+
+            $newEquipment['name'] = idf_copy_next_unique_name_in_table(
+                $conn,
+                $company_id,
+                'equipment',
+                'name',
+                $device_name
+            );
+            if ($newEquipment['name'] === '') {
+                $newEquipment['name'] = $device_name;
+            }
+            $newEquipment['idf_id'] = $idf_id;
+            // Keep nullable-unique fields safe for cloned records.
+            $newEquipment['serial_number'] = null;
+            $newEquipment['hostname'] = null;
+            $newEquipment['ip_address'] = null;
+
+            $columns = [];
+            $valuesSql = [];
+            foreach ($newEquipment as $col => $val) {
+                $colEsc = '`' . mysqli_real_escape_string($conn, (string)$col) . '`';
+                $columns[] = $colEsc;
+                if ($val === null || (is_string($val) && strtoupper($val) === 'NULL')) {
+                    $valuesSql[] = 'NULL';
+                } elseif (is_numeric($val) && !is_string($val)) {
+                    $valuesSql[] = (string)$val;
+                } else {
+                    $valuesSql[] = "'" . mysqli_real_escape_string($conn, (string)$val) . "'";
+                }
+            }
+
+            $insertEquipmentSql = "INSERT INTO equipment (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $valuesSql) . ")";
+            if (!mysqli_query($conn, $insertEquipmentSql)) {
+                throw new Exception('Unable to clone linked equipment: ' . mysqli_error($conn));
+            }
+
+            $newEquipmentId = (int)mysqli_insert_id($conn);
+            if ($newEquipmentId <= 0) {
+                throw new Exception('Unable to clone linked equipment.');
+            }
+
+            $stmtClonePorts = mysqli_prepare(
+                $conn,
+                "INSERT INTO switch_ports
+                 (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, vlan_id, fiber_port_id, fiber_patch_id, fiber_rack_id, idf_id, to_idf_id, to_rack_id, rack_id, location_id, to_location_id, management_id, comments)
+                 SELECT company_id, ?, hostname, port_type, port_number, to_patch_port, status_id, color_id, vlan_id, fiber_port_id, fiber_patch_id, fiber_rack_id, ?, to_idf_id, to_rack_id, rack_id, location_id, to_location_id, management_id, comments
+                 FROM switch_ports
+                 WHERE company_id = ? AND equipment_id = ?"
+            );
+            if ($stmtClonePorts) {
+                mysqli_stmt_bind_param($stmtClonePorts, 'iiii', $newEquipmentId, $idf_id, $company_id, $sourceEquipmentId);
+                mysqli_stmt_execute($stmtClonePorts);
+                mysqli_stmt_close($stmtClonePorts);
+            }
+
+            $equip_val = (string)$newEquipmentId;
+        }
+    }
 
     $stmtIns = mysqli_prepare(
         $conn,
