@@ -1672,6 +1672,30 @@ function onPortClick(portId) {
     openPortModal(portId);
 }
 
+function sortDestinationPorts(ports) {
+    const items = Array.isArray(ports) ? ports.slice() : [];
+    items.sort((a, b) => {
+        const idfA = String((a && a.idf_name) || '').toLowerCase();
+        const idfB = String((b && b.idf_name) || '').toLowerCase();
+        if (idfA !== idfB) return idfA < idfB ? -1 : 1;
+
+        const posA = Number((a && a.position_no) || 0);
+        const posB = Number((b && b.position_no) || 0);
+        if (posA !== posB) return posA - posB;
+
+        const devA = String((a && a.device_name) || '').toLowerCase();
+        const devB = String((b && b.device_name) || '').toLowerCase();
+        if (devA !== devB) return devA < devB ? -1 : 1;
+
+        const portA = Number((a && a.port_no) || 0);
+        const portB = Number((b && b.port_no) || 0);
+        if (portA !== portB) return portA - portB;
+
+        return Number((a && a.id) || 0) - Number((b && b.id) || 0);
+    });
+    return items;
+}
+
 function onPortDotClick(portElement) {
     const portNode = portElement && portElement.dataset ? portElement : null;
     if (!portNode) {
@@ -1710,9 +1734,9 @@ function openLinkModal(portId) {
     }
     const f = document.getElementById('linkForm');
     const destinationSelect = f.port_id_b;
-    const destinations = DESTINATION_PORTS.filter((p) =>
+    const destinations = sortDestinationPorts(DESTINATION_PORTS.filter((p) =>
         Number(p.id) !== Number(source.id) && !p.is_linked
-    );
+    ));
 
     destinationSelect.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
