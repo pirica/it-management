@@ -565,6 +565,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                  AND equipment_id = $id";
                 mysqli_query($conn, $switchEnvironmentUpdateSql);
             }
+            if ($equipment_type_id === $switchTypeId && equipment_table_has_column($conn, 'idf_ports', 'management_id')) {
+                $idfEnvironmentUpdateSql = "UPDATE idf_ports ip
+                                            JOIN idf_positions p ON p.id = ip.position_id
+                                            SET ip.management_id = $switch_environment_id
+                                            WHERE p.company_id = $company_id
+                                              AND p.equipment_id = '$id'";
+                mysqli_query($conn, $idfEnvironmentUpdateSql);
+            }
             foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
                 $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
                 if (is_file($existingPhotoPath)) {
