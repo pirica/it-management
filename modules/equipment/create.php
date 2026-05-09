@@ -1312,7 +1312,13 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
             <div class="card">
-                <form id="equipmentForm" method="POST" enctype="multipart/form-data" data-original-idf-id="<?php echo sanitize((string)($originalData['idf_id'] ?? '')); ?>">
+                <form id="equipmentForm" method="POST" enctype="multipart/form-data"
+                      data-original-idf-id="<?php echo sanitize((string)($originalData['idf_id'] ?? '')); ?>"
+                      data-original-switch-rj45-id="<?php echo sanitize((string)($originalData['switch_rj45_id'] ?? '')); ?>"
+                      data-original-switch-layout-id="<?php echo sanitize((string)($originalData['switch_port_numbering_layout_id'] ?? '')); ?>"
+                      data-original-switch-fiber-ports-number="<?php echo sanitize((string)($originalData['switch_fiber_ports_number'] ?? '')); ?>"
+                      data-original-switch-poe-id="<?php echo sanitize((string)($originalData['switch_poe_id'] ?? '')); ?>"
+                      data-original-switch-environment-id="<?php echo sanitize((string)($originalData['switch_environment_id'] ?? '')); ?>">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
@@ -1795,6 +1801,30 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             if (originalIdfId !== '' && nextIdfId === '') {
                 var message = 'Changing IDF to NULL will remove this equipment from the current IDF and delete related IDF position, ports, links, and synchronization data. This action cannot be undone.\n\nDo you want to continue saving?';
                 if (!confirm(message)) {
+                    event.preventDefault();
+                    return;
+                }
+            }
+
+            var normalizeValue = function (value) {
+                return String(value === null || value === undefined ? '' : value).trim();
+            };
+            var switchRj45Select = equipmentForm.querySelector('select[name="switch_rj45_id"]');
+            var switchLayoutSelect = equipmentForm.querySelector('select[name="switch_port_numbering_layout_id"]');
+            var switchFiberPortsSelect = equipmentForm.querySelector('select[name="switch_fiber_ports_number"]');
+            var switchPoeSelect = equipmentForm.querySelector('select[name="switch_poe_id"]');
+            var switchEnvironmentSelect = equipmentForm.querySelector('select[name="switch_environment_id"]');
+
+            var switchDetailsChanged =
+                normalizeValue(equipmentForm.getAttribute('data-original-switch-rj45-id')) !== normalizeValue(switchRj45Select ? switchRj45Select.value : '') ||
+                normalizeValue(equipmentForm.getAttribute('data-original-switch-layout-id')) !== normalizeValue(switchLayoutSelect ? switchLayoutSelect.value : '') ||
+                normalizeValue(equipmentForm.getAttribute('data-original-switch-fiber-ports-number')) !== normalizeValue(switchFiberPortsSelect ? switchFiberPortsSelect.value : '') ||
+                normalizeValue(equipmentForm.getAttribute('data-original-switch-poe-id')) !== normalizeValue(switchPoeSelect ? switchPoeSelect.value : '') ||
+                normalizeValue(equipmentForm.getAttribute('data-original-switch-environment-id')) !== normalizeValue(switchEnvironmentSelect ? switchEnvironmentSelect.value : '');
+
+            if (switchDetailsChanged) {
+                var switchMessage = 'Changing Switch Details will regenerate and overwrite existing switch/IDF port synchronization data. Existing related port/link information may be deleted. This action cannot be undone.\n\nDo you want to continue saving?';
+                if (!confirm(switchMessage)) {
                     event.preventDefault();
                 }
             }
