@@ -375,6 +375,15 @@ if (!$ok) {
 $updated = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
 
+if ($hasManagementId) {
+    $idfPortManagementSql = "UPDATE idf_ports ip
+                             JOIN idf_positions p ON p.id = ip.position_id
+                             SET ip.management_id = " . ($equipmentManagementId > 0 ? (string)$equipmentManagementId : 'NULL') . "
+                             WHERE p.company_id = " . (int)$company_id . "
+                               AND p.equipment_id = '" . mysqli_real_escape_string($conn, (string)$switchId) . "'";
+    mysqli_query($conn, $idfPortManagementSql);
+}
+
 
 
 echo json_encode(['success' => true, 'updated' => $updated]);

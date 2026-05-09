@@ -11,7 +11,7 @@ if ($port_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT pr.id, i.company_id
+    "SELECT pr.id, i.company_id, pr.management_id, p.equipment_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
@@ -29,6 +29,29 @@ if ($stmt) {
 
 if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
+}
+
+$linkedEquipmentIdRaw = trim((string)($row['equipment_id'] ?? ''));
+$linkedEquipmentId = ctype_digit($linkedEquipmentIdRaw) ? (int)$linkedEquipmentIdRaw : 0;
+$portManagementId = (int)($row['management_id'] ?? 0);
+if ($linkedEquipmentId > 0) {
+    $stmtEquipmentManagement = mysqli_prepare(
+        $conn,
+        "SELECT COALESCE(switch_environment_id, 0) AS switch_environment_id
+         FROM equipment
+         WHERE id = ? AND company_id = ?
+         LIMIT 1"
+    );
+    if ($stmtEquipmentManagement) {
+        mysqli_stmt_bind_param($stmtEquipmentManagement, 'ii', $linkedEquipmentId, $company_id);
+        mysqli_stmt_execute($stmtEquipmentManagement);
+        $resEquipmentManagement = mysqli_stmt_get_result($stmtEquipmentManagement);
+        $equipmentManagementRow = $resEquipmentManagement ? mysqli_fetch_assoc($resEquipmentManagement) : null;
+        mysqli_stmt_close($stmtEquipmentManagement);
+        if ($equipmentManagementRow && (int)($equipmentManagementRow['switch_environment_id'] ?? 0) > 0) {
+            $portManagementId = (int)$equipmentManagementRow['switch_environment_id'];
+        }
+    }
 }
 
 $rawPortTypeInput = $data['port_type_id'] ?? ($data['port_type'] ?? '');
@@ -155,6 +178,7 @@ if ($hasRj45SpeedIdColumn) {
 }
 $sql .= "
             poe_id=NULLIF(?, 0),
+            management_id=NULLIF(?, 0),
             cable_color=?,
             hex_color=?,
             notes=?
@@ -164,14 +188,41 @@ $sql .= "
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
     if ($hasRj45SpeedIdColumn) {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     } else {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     }
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }
     mysqli_stmt_close($stmtUpd);
+}
+
+if ($linkedEquipmentId > 0) {
+    $stmtEquipmentSync = mysqli_prepare(
+        $conn,
+        "UPDATE equipment
+         SET switch_environment_id = NULLIF(?, 0)
+         WHERE id = ? AND company_id = ?
+         LIMIT 1"
+    );
+    if ($stmtEquipmentSync) {
+        mysqli_stmt_bind_param($stmtEquipmentSync, 'iii', $portManagementId, $linkedEquipmentId, $company_id);
+        mysqli_stmt_execute($stmtEquipmentSync);
+        mysqli_stmt_close($stmtEquipmentSync);
+    }
+
+    $stmtSwitchManagementSync = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports
+         SET management_id = NULLIF(?, 0)
+         WHERE company_id = ? AND equipment_id = ?"
+    );
+    if ($stmtSwitchManagementSync) {
+        mysqli_stmt_bind_param($stmtSwitchManagementSync, 'iii', $portManagementId, $company_id, $linkedEquipmentId);
+        mysqli_stmt_execute($stmtSwitchManagementSync);
+        mysqli_stmt_close($stmtSwitchManagementSync);
+    }
 }
 
 $stmtSwitchSync = mysqli_prepare(
