@@ -952,7 +952,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <a class="btn btn-sm idf-mini" href="../equipment/index.php?switch_id=<?php echo (int)$idfEquipmentIdRaw; ?>&spm=1#switch-port-manager">Edit Linked</a>
                                             <?php endif; ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
-                                            <button class="btn btn-sm idf-mini" type="button" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, <?php echo json_encode((string)($pos['device_name'] ?? ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>)">Delete</button>
+                                            <button class="btn btn-sm idf-mini" type="button" data-device-name="<?php echo htmlspecialchars((string)($pos['device_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, this.dataset.deviceName)">Delete</button>
                                         <?php else: ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
                                         <?php endif; ?>
