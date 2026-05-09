@@ -1104,6 +1104,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 <script>
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
+const IDF_ID = <?php echo (int)$idf_id; ?>;
 const SWITCH_DEVICE_TYPE_ID = <?php echo (int)$switchDeviceTypeId; ?>;
 const UPS_DEVICE_TYPE_ID = <?php echo (int)$upsDeviceTypeId; ?>;
 const DEFAULT_NON_SWITCH_LAYOUT_ID = <?php echo (int)$defaultHorizontalLayoutId; ?>;
@@ -1132,6 +1133,30 @@ echo json_encode($equipmentMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
 const INITIAL_VISIBLE_POSITIONS = <?php echo (int)$displayMaxPos; ?>;
 let currentVisiblePositions = INITIAL_VISIBLE_POSITIONS;
 
+function createEmptySlot(positionNo) {
+    const slot = document.createElement('div');
+    slot.className = 'idf-slot';
+    slot.dataset.position = String(positionNo);
+    slot.dataset.hasDevice = '0';
+    slot.innerHTML = `
+        <div class="idf-slot-left">
+            <div class="idf-slot-no">${positionNo}</div>
+            <div class="idf-slot-meta">
+                <div class="idf-slot-name idf-empty">Empty position</div>
+                <div class="idf-slot-sub">
+                    <span class="idf-badge">No device</span>
+                </div>
+            </div>
+        </div>
+        <div class="idf-slot-actions">
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">↑</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">↓</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(${positionNo}, null)">Add device</button>
+        </div>
+    `;
+    return slot;
+}
+
 function renderVisiblePositions() {
     const slots = document.querySelectorAll('#idfSlots .idf-slot');
     slots.forEach((slot) => {
@@ -1146,6 +1171,14 @@ function renderVisiblePositions() {
 
 function idfAddPosition() {
     currentVisiblePositions += 1;
+    const slotContainer = document.getElementById('idfSlots');
+    if (slotContainer) {
+        const targetSelector = `.idf-slot[data-position="${currentVisiblePositions}"]`;
+        const existingSlot = slotContainer.querySelector(targetSelector);
+        if (!existingSlot) {
+            slotContainer.appendChild(createEmptySlot(currentVisiblePositions));
+        }
+    }
     renderVisiblePositions();
 }
 
