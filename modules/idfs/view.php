@@ -1189,21 +1189,25 @@ function idfRemovePosition(positionNo) {
     }
 
     const clickedPosition = Number(positionNo || 0);
-    if (clickedPosition !== currentVisiblePositions) {
-        alert('Only the last visible position can be removed. Move devices first or remove positions from the bottom up.');
+    if (clickedPosition <= 0) {
         return;
     }
 
-    const lastSlot = document.querySelector(`#idfSlots .idf-slot[data-position="${currentVisiblePositions}"]`);
-    if (lastSlot && String(lastSlot.dataset.hasDevice || '0') === '1') {
-        alert('Delete or move the device in the last position first.');
+    const targetSlot = document.querySelector(`#idfSlots .idf-slot[data-position="${clickedPosition}"]`);
+    if (targetSlot && String(targetSlot.dataset.hasDevice || '0') === '1') {
+        alert('This position contains a device. Delete or move the device first.');
         return;
     }
-    if (!confirm('Remove this empty rack position from view?\n\nThis only removes the visible slot from this page right now. It does not delete equipment records.')) {
+    if (!confirm('Delete this empty rack position?\n\nThis will permanently remove the selected position and shift all positions above it down by 1. This action cannot be undone.')) {
         return;
     }
-    currentVisiblePositions -= 1;
-    renderVisiblePositions();
+    apiPost('position_remove_slot.php', {
+        csrf_token: CSRF,
+        idf_id: IDF_ID,
+        position_no: clickedPosition
+    })
+        .then(() => location.reload())
+        .catch(err => alert(err.message));
 }
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
