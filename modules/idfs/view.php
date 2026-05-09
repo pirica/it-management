@@ -937,7 +937,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                     </div>
 
                                     <div class="idf-slot-actions">
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition()">&#10134;</button>
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition(<?php echo $i; ?>)">&#10134;</button>
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">↑</button>
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
 
@@ -1149,7 +1149,7 @@ function createEmptySlot(positionNo) {
             </div>
         </div>
         <div class="idf-slot-actions">
-            <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition()">&#10134;</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition(${positionNo})">&#10134;</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">↑</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">↓</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(${positionNo}, null)">Add device</button>
@@ -1183,13 +1183,23 @@ function idfAddPosition() {
     renderVisiblePositions();
 }
 
-function idfRemovePosition() {
+function idfRemovePosition(positionNo) {
     if (currentVisiblePositions <= 1) {
         return;
     }
+
+    const clickedPosition = Number(positionNo || 0);
+    if (clickedPosition !== currentVisiblePositions) {
+        alert('Only the last visible position can be removed. Move devices first or remove positions from the bottom up.');
+        return;
+    }
+
     const lastSlot = document.querySelector(`#idfSlots .idf-slot[data-position="${currentVisiblePositions}"]`);
     if (lastSlot && String(lastSlot.dataset.hasDevice || '0') === '1') {
         alert('Delete or move the device in the last position first.');
+        return;
+    }
+    if (!confirm('Remove this empty rack position from view?\n\nThis only removes the visible slot from this page right now. It does not delete equipment records.')) {
         return;
     }
     currentVisiblePositions -= 1;
