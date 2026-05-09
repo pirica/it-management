@@ -443,30 +443,11 @@ if ($hasManagementId) {
         }
 
         if ($positionId > 0 && $portTypeId > 0) {
+            $destinationIdfId = (int)($switchPortRow['to_idf_id'] ?? 0);
             $existingIdfPortId = 0;
             $existingIdfPortNotes = '';
-            $stmtExistingIdfPort = mysqli_prepare(
-                $conn,
-                "SELECT id, notes
-                 FROM idf_ports
-                 WHERE company_id = ? AND position_id = ? AND port_no = ? AND port_type = ?
-                 LIMIT 1"
-            );
-            if ($stmtExistingIdfPort) {
-                $companyIdParam = (int)$company_id;
-                $portNoParam = (int)($switchPortRow['port_number'] ?? 0);
-                mysqli_stmt_bind_param($stmtExistingIdfPort, 'iiii', $companyIdParam, $positionId, $portNoParam, $portTypeId);
-                mysqli_stmt_execute($stmtExistingIdfPort);
-                $resExistingIdfPort = mysqli_stmt_get_result($stmtExistingIdfPort);
-                $existingIdfPortRow = $resExistingIdfPort ? mysqli_fetch_assoc($resExistingIdfPort) : null;
-                mysqli_stmt_close($stmtExistingIdfPort);
-                if ($existingIdfPortRow) {
-                    $existingIdfPortId = (int)($existingIdfPortRow['id'] ?? 0);
-                    $existingIdfPortNotes = (string)($existingIdfPortRow['notes'] ?? '');
-                }
-            }
-
-            $destinationIdfId = (int)($switchPortRow['to_idf_id'] ?? 0);
+            $portNoParam = (int)($switchPortRow['port_number'] ?? 0);
+            $targetInsertPositionId = $positionId;
             $connectedToValue = null;
             if ($destinationIdfId > 0) {
                 $stmtToIdf = mysqli_prepare($conn, "SELECT idf_code, name FROM idfs WHERE id = ? AND company_id = ? LIMIT 1");
@@ -483,6 +464,79 @@ if ($hasManagementId) {
                         $connectedToValue = $idfCode !== '' ? $idfCode : $idfName;
                     }
                 }
+            }
+            $stmtExistingIdfPort = null;
+            if ($destinationIdfId > 0) {
+                $stmtExistingIdfPort = mysqli_prepare(
+                    $conn,
+                    "SELECT ip.id, ip.notes
+                     FROM idf_ports ip
+                     JOIN idf_positions p ON p.id = ip.position_id
+                     WHERE ip.company_id = ?
+                       AND p.idf_id = ?
+                       AND ip.port_no = ?
+                       AND ip.port_type = ?
+                       AND ip.notes LIKE ?
+                     ORDER BY ip.id ASC
+                     LIMIT 1"
+                );
+                if ($stmtExistingIdfPort) {
+                    $companyIdParam = (int)$company_id;
+                    $notesMarkerLike = '%' . $autoSyncMarker . '%';
+                    mysqli_stmt_bind_param($stmtExistingIdfPort, 'iiiis', $companyIdParam, $destinationIdfId, $portNoParam, $portTypeId, $notesMarkerLike);
+                }
+            } else {
+                $stmtExistingIdfPort = mysqli_prepare(
+                    $conn,
+                    "SELECT id, notes
+                     FROM idf_ports
+                     WHERE company_id = ? AND position_id = ? AND port_no = ? AND port_type = ?
+                     LIMIT 1"
+                );
+                if ($stmtExistingIdfPort) {
+                    $companyIdParam = (int)$company_id;
+                    mysqli_stmt_bind_param($stmtExistingIdfPort, 'iiii', $companyIdParam, $positionId, $portNoParam, $portTypeId);
+                }
+            }
+            if ($stmtExistingIdfPort) {
+                mysqli_stmt_execute($stmtExistingIdfPort);
+                $resExistingIdfPort = mysqli_stmt_get_result($stmtExistingIdfPort);
+                $existingIdfPortRow = $resExistingIdfPort ? mysqli_fetch_assoc($resExistingIdfPort) : null;
+                mysqli_stmt_close($stmtExistingIdfPort);
+                if ($existingIdfPortRow) {
+                    $existingIdfPortId = (int)($existingIdfPortRow['id'] ?? 0);
+                    $existingIdfPortNotes = (string)($existingIdfPortRow['notes'] ?? '');
+                }
+            }
+            if ($destinationIdfId > 0 && $existingIdfPortId <= 0) {
+                $stmtEmptyPosition = mysqli_prepare(
+                    $conn,
+                    "SELECT id
+                     FROM idf_positions
+                     WHERE company_id = ?
+                       AND idf_id = ?
+                       AND (equipment_id IS NULL OR TRIM(equipment_id) = '' OR equipment_id = '0')
+                     ORDER BY position_no ASC
+                     LIMIT 1"
+                );
+                $emptyPositionId = 0;
+                if ($stmtEmptyPosition) {
+                    $companyIdParam = (int)$company_id;
+                    mysqli_stmt_bind_param($stmtEmptyPosition, 'ii', $companyIdParam, $destinationIdfId);
+                    mysqli_stmt_execute($stmtEmptyPosition);
+                    $resEmptyPosition = mysqli_stmt_get_result($stmtEmptyPosition);
+                    $emptyPositionRow = $resEmptyPosition ? mysqli_fetch_assoc($resEmptyPosition) : null;
+                    mysqli_stmt_close($stmtEmptyPosition);
+                    if ($emptyPositionRow) {
+                        $emptyPositionId = (int)($emptyPositionRow['id'] ?? 0);
+                    }
+                }
+                if ($emptyPositionId <= 0) {
+                    http_response_code(422);
+                    echo json_encode(['success' => false, 'error' => 'There is none Empty positions, add more positions on IDF.']);
+                    exit;
+                }
+                $targetInsertPositionId = $emptyPositionId;
             }
 
             if ($existingIdfPortId > 0) {
@@ -553,7 +607,6 @@ if ($hasManagementId) {
                 );
                 if ($stmtInsertIdfPort) {
                     $companyIdParam = (int)$company_id;
-                    $portNoParam = (int)($switchPortRow['port_number'] ?? 0);
                     $idfLabel = (string)($switchPortRow['to_patch_port'] ?? '');
                     $idfStatusId = (int)($switchPortRow['status_id'] ?? 0);
                     $idfVlanId = (int)($switchPortRow['vlan_id'] ?? 0);
@@ -569,7 +622,7 @@ if ($hasManagementId) {
                         $stmtInsertIdfPort,
                         'iiiisisiiis',
                         $companyIdParam,
-                        $positionId,
+                        $targetInsertPositionId,
                         $portNoParam,
                         $portTypeId,
                         $idfLabel,
