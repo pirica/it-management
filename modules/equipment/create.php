@@ -415,6 +415,62 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
     return '';
 }
 
+function equipment_validate_idf_assignment(mysqli $conn, int $companyId, int $equipmentId, int $idfId): string
+{
+    if ($companyId <= 0 || $idfId <= 0) {
+        return '';
+    }
+
+    $stmtCurrent = mysqli_prepare(
+        $conn,
+        "SELECT id, idf_id
+         FROM idf_positions
+         WHERE company_id = ? AND equipment_id = ?
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    $currentRow = null;
+    if ($stmtCurrent) {
+        $equipmentIdStr = (string)$equipmentId;
+        mysqli_stmt_bind_param($stmtCurrent, 'is', $companyId, $equipmentIdStr);
+        mysqli_stmt_execute($stmtCurrent);
+        $resCurrent = mysqli_stmt_get_result($stmtCurrent);
+        $currentRow = $resCurrent ? mysqli_fetch_assoc($resCurrent) : null;
+        mysqli_stmt_close($stmtCurrent);
+    }
+
+    if ($currentRow && (int)($currentRow['idf_id'] ?? 0) === $idfId) {
+        return '';
+    }
+
+    $stmtEmpty = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ?
+           AND idf_id = ?
+           AND (
+               equipment_id IS NULL
+               OR TRIM(equipment_id) = ''
+               OR equipment_id = '0'
+               OR equipment_id NOT REGEXP '^[0-9]+$'
+           )
+         ORDER BY position_no ASC
+         LIMIT 1"
+    );
+    $hasEmptyPosition = false;
+    if ($stmtEmpty) {
+        mysqli_stmt_bind_param($stmtEmpty, 'ii', $companyId, $idfId);
+        mysqli_stmt_execute($stmtEmpty);
+        $resEmpty = mysqli_stmt_get_result($stmtEmpty);
+        $emptyRow = $resEmpty ? mysqli_fetch_assoc($resEmpty) : null;
+        mysqli_stmt_close($stmtEmpty);
+        $hasEmptyPosition = (bool)$emptyRow;
+    }
+
+    return $hasEmptyPosition ? '' : 'There is none Empty positions, add more positions on IDF.';
+}
+
 function equipment_detect_upload_mime(array $file): string
 {
     $tmpName = (string)($file['tmp_name'] ?? '');
@@ -628,6 +684,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $isSwitchEquipment = $switchTypeId > 0 && (int)$data['equipment_type_id'] === $switchTypeId;
     $isServerEquipment = $serverTypeId > 0 && (int)$data['equipment_type_id'] === $serverTypeId;
+    $requestedIdfId = (int)($data['idf_id'] ?? 0);
 
     if ($data['name'] === '' || (int)$data['equipment_type_id'] <= 0) {
         $error = 'Please fill required fields: Name, Type.';
@@ -641,6 +698,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'IP Address already exists for this company.';
     } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
         $error = 'Please fill required field: RJ45 Ports for switch equipment.';
+    } elseif ($requestedIdfId > 0) {
+        $assignmentCheckEquipmentId = $isEdit ? (int)$id : 0;
+        $idfAssignmentError = equipment_validate_idf_assignment($conn, (int)$company_id, $assignmentCheckEquipmentId, $requestedIdfId);
+        if ($idfAssignmentError !== '') {
+            $error = $idfAssignmentError;
+        }
     }
 
     if (!$error && $data['mac_address'] !== '') {
