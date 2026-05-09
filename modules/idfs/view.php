@@ -886,7 +886,6 @@ foreach ($equipmentOptions as $equipmentOption) {
                             </div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm idf-mini" type="button" onclick="idfAddPosition()">&#10133;</button>
-                                <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition()">&#10134;</button>
                                 <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
                             </div>
                         </div>
@@ -938,6 +937,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                     </div>
 
                                     <div class="idf-slot-actions">
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition()">&#10134;</button>
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">↑</button>
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
 
@@ -1149,6 +1149,7 @@ function createEmptySlot(positionNo) {
             </div>
         </div>
         <div class="idf-slot-actions">
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition()">&#10134;</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">↑</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">↓</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(${positionNo}, null)">Add device</button>
