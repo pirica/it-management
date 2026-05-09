@@ -1376,8 +1376,25 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     </div>
                     <div>
                         <label class="label">Cable color</label>
-                        <input class="input" type="color" name="linked_cable_color_picker" value="#808080" style="height:40px; padding:4px;">
-                        <input class="input" name="linked_cable_color" placeholder="e.g. gray, blue, #808080" value="Gray" style="margin-top:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="linkedCableColorSwatch" class="idf-swatch" style="width:16px; height:16px; border:1px solid #d9d9d9; background:Gray; flex:0 0 auto;"></span>
+                            <select class="input" name="linked_cable_color_id" data-add-table="cable_colors" data-swatch-id="linkedCableColorSwatch" style="flex:1 1 auto;">
+                                <?php
+                                $resLinkedColors = mysqli_query($conn, "SELECT id, color_name, hex_color FROM cable_colors WHERE company_id=$company_id ORDER BY color_name");
+                                while($lc = mysqli_fetch_assoc($resLinkedColors)): ?>
+                                    <option value="<?php echo (int)$lc['id']; ?>" data-hex="<?php echo sanitize($lc['hex_color']); ?>">
+                                        <?php
+                                        $linkedColorLabel = trim((string)($lc['color_name'] ?? ''));
+                                        if ($linkedColorLabel === '') {
+                                            $linkedColorLabel = trim((string)($lc['hex_color'] ?? ''));
+                                        }
+                                        echo sanitize($linkedColorLabel);
+                                        ?>
+                                    </option>
+                                <?php endwhile; ?>
+                                <option value="__add_new__">➕</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label class="label">Cable label</label>
@@ -1718,6 +1735,14 @@ function openLinkModal(portId) {
         option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
     );
     f.cable_color_id.value = grayCableColorOption ? grayCableColorOption.value : '';
+    if (f.linked_cable_color_id) {
+        const grayLinkedCableColorOption = Array.from(f.linked_cable_color_id.options).find((option) =>
+            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
+        );
+        f.linked_cable_color_id.value = grayLinkedCableColorOption ? grayLinkedCableColorOption.value : '';
+        f.linked_cable_color_id.dataset.previousValue = f.linked_cable_color_id.value || '';
+        updateCableColorSwatch('', f.linked_cable_color_id);
+    }
     f.cable_label.value = '';
     f.notes.value = '';
     const unknownStatusOption = Array.from(f.status.options).find((option) =>
@@ -1800,11 +1825,14 @@ function createLink() {
         return;
     }
 
-    const cableColorId = (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
-        ? Number(f.cable_color_id.value)
+    const activeCableColorSelect = (linkedMode && f.linked_cable_color_id)
+        ? f.linked_cable_color_id
+        : f.cable_color_id;
+    const cableColorId = (activeCableColorSelect && activeCableColorSelect.value && activeCableColorSelect.value !== '__add_new__')
+        ? Number(activeCableColorSelect.value)
         : null;
-    const selectedCableColorOption = (f.cable_color_id.selectedOptions && f.cable_color_id.selectedOptions[0])
-        ? f.cable_color_id.selectedOptions[0]
+    const selectedCableColorOption = (activeCableColorSelect && activeCableColorSelect.selectedOptions && activeCableColorSelect.selectedOptions[0])
+        ? activeCableColorSelect.selectedOptions[0]
         : null;
     const selectedCableColorName = selectedCableColorOption
         ? String(selectedCableColorOption.textContent || '').trim()
@@ -1814,8 +1842,8 @@ function createLink() {
         : '';
     const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
-    const linkedCableColorName = linkedMode ? f.linked_cable_color.value.trim() : selectedCableColorName;
-    const linkedCableColorHex = linkedMode ? f.linked_cable_color_picker.value.trim() : selectedCableColorHex;
+    const linkedCableColorName = selectedCableColorName;
+    const linkedCableColorHex = selectedCableColorHex;
     const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
     const linkedDestinationPort = selectedDestinationPort ? String(selectedDestinationPort.port_no || '') : '';
 
@@ -2031,24 +2059,44 @@ function populateLinkedEquipmentFields() {
     const linkedColorName = (port.equipment_color || '').trim() || 'Gray';
     const linkedColorHex = (port.equipment_color_hex || '').trim();
     f.linked_equipment_port.value = port.equipment_port || '';
-    f.linked_cable_color.value = linkedColorName;
-    f.linked_cable_color_picker.value = normalizeColorToHex(linkedColorHex || linkedColorName);
     f.linked_cable_label.value = port.equipment_label || '';
     f.linked_notes.value = port.equipment_comments || '';
 
-    // Why: Link creation payload reads cable_color_id from the default select;
-    // auto-sync it from selected equipment port color_id to avoid manual mismatch.
     const switchPortColorId = Number(port.equipment_color_id || 0);
-    if (switchPortColorId > 0 && f.cable_color_id) {
-        const matchingColorOption = Array.from(f.cable_color_id.options).find((option) =>
-            option.value !== '__add_new__' && Number(option.value) === switchPortColorId
-        );
-        if (matchingColorOption) {
-            f.cable_color_id.value = String(switchPortColorId);
-            f.cable_color_id.dataset.previousValue = String(switchPortColorId);
-            updateCableColorSwatch('', f.cable_color_id);
+    const trySelectLinkedColor = (colorSelect) => {
+        if (!colorSelect) return;
+
+        let targetOption = null;
+        if (switchPortColorId > 0) {
+            targetOption = Array.from(colorSelect.options).find((option) =>
+                option.value !== '__add_new__' && Number(option.value) === switchPortColorId
+            );
         }
-    }
+        if (!targetOption && linkedColorName !== '') {
+            targetOption = Array.from(colorSelect.options).find((option) =>
+                option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === linkedColorName.toLowerCase()
+            );
+        }
+        if (!targetOption && linkedColorHex !== '') {
+            targetOption = Array.from(colorSelect.options).find((option) =>
+                option.value !== '__add_new__' && String((option.dataset && option.dataset.hex) || '').trim().toLowerCase() === linkedColorHex.toLowerCase()
+            );
+        }
+        if (!targetOption) {
+            targetOption = Array.from(colorSelect.options).find((option) =>
+                option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
+            );
+        }
+
+        if (targetOption) {
+            colorSelect.value = targetOption.value;
+            colorSelect.dataset.previousValue = targetOption.value;
+        }
+        updateCableColorSwatch(linkedColorHex || linkedColorName || 'Gray', colorSelect);
+    };
+
+    trySelectLinkedColor(f.linked_cable_color_id);
+    trySelectLinkedColor(f.cable_color_id);
 
     toggleLinkedEquipmentFields(true);
 }
@@ -2108,12 +2156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         f.switch_port_id.addEventListener('change', () => {
             populateLinkedEquipmentFields();
         });
-        f.linked_cable_color_picker.addEventListener('input', (event) => {
-            f.linked_cable_color.value = event.target.value;
-        });
-        f.linked_cable_color.addEventListener('input', (event) => {
-            f.linked_cable_color_picker.value = normalizeColorToHex(event.target.value || 'Gray');
-        });
     }
     const initializeCableColorSelect = (cableColorSelect) => {
         if (!cableColorSelect) return;
@@ -2134,7 +2176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cableColorSelect.dataset.previousValue = selected || '';
         });
     };
-    document.querySelectorAll('select[name="cable_color_id"]').forEach((cableColorSelect) => {
+    document.querySelectorAll('select[name="cable_color_id"], select[name="linked_cable_color_id"]').forEach((cableColorSelect) => {
         initializeCableColorSelect(cableColorSelect);
     });
 
@@ -2254,7 +2296,7 @@ function saveCableColorFromModal() {
         if (!colorId || !cableColorName) {
             throw new Error('Invalid cable color returned from server.');
         }
-        document.querySelectorAll('select[name="cable_color_id"]').forEach((selectEl) => {
+        document.querySelectorAll('select[name="cable_color_id"], select[name="linked_cable_color_id"]').forEach((selectEl) => {
             const existingOption = Array.from(selectEl.options).find((option) =>
                 option.value !== '__add_new__' && Number(option.value) === colorId
             );
