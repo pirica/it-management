@@ -275,7 +275,12 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
              FROM idf_positions
              WHERE company_id = ?
                AND idf_id = ?
-               AND (equipment_id IS NULL OR TRIM(equipment_id) = '' OR equipment_id = '0')
+               AND (
+                   equipment_id IS NULL
+                   OR TRIM(equipment_id) = ''
+                   OR equipment_id = '0'
+                   OR equipment_id NOT REGEXP '^[0-9]+$'
+               )
              ORDER BY position_no ASC
              LIMIT 1"
         );
@@ -1566,3 +1571,22 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 </script>
 </body>
 </html>
+    $stmtDuplicateDeviceName = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ?
+           AND device_name = ?
+           AND id <> ?
+         LIMIT 1"
+    );
+    if ($stmtDuplicateDeviceName) {
+        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $companyId, $equipmentName, $targetPositionId);
+        mysqli_stmt_execute($stmtDuplicateDeviceName);
+        $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
+        $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
+        mysqli_stmt_close($stmtDuplicateDeviceName);
+        if ($duplicateDeviceNameRow) {
+            return 'Device name already exists. Please choose a unique device name.';
+        }
+    }
