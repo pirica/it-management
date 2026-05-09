@@ -843,9 +843,84 @@ function idf_ensure_status_schema(mysqli $conn) {
     }
 }
 
+function idf_ensure_unknown_status_id(mysqli $conn, int $company_id): int {
+    $unknownLabel = 'Unknown';
+    $stmtUnknown = mysqli_prepare(
+        $conn,
+        'SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = LOWER(?) ORDER BY id ASC LIMIT 1'
+    );
+    if ($stmtUnknown) {
+        mysqli_stmt_bind_param($stmtUnknown, 'is', $company_id, $unknownLabel);
+        mysqli_stmt_execute($stmtUnknown);
+        $resUnknown = mysqli_stmt_get_result($stmtUnknown);
+        $rowUnknown = $resUnknown ? mysqli_fetch_assoc($resUnknown) : null;
+        mysqli_stmt_close($stmtUnknown);
+        if ($rowUnknown) {
+            return (int)($rowUnknown['id'] ?? 0);
+        }
+    }
+
+    $grayColorId = 0;
+    $grayLabel = 'Gray';
+    $stmtGray = mysqli_prepare(
+        $conn,
+        'SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = LOWER(?) ORDER BY id ASC LIMIT 1'
+    );
+    if ($stmtGray) {
+        mysqli_stmt_bind_param($stmtGray, 'is', $company_id, $grayLabel);
+        mysqli_stmt_execute($stmtGray);
+        $resGray = mysqli_stmt_get_result($stmtGray);
+        $rowGray = $resGray ? mysqli_fetch_assoc($resGray) : null;
+        mysqli_stmt_close($stmtGray);
+        if ($rowGray) {
+            $grayColorId = (int)($rowGray['id'] ?? 0);
+        }
+    }
+
+    $stmtInsertUnknown = mysqli_prepare(
+        $conn,
+        "INSERT INTO switch_status (company_id, status, color_id)
+         VALUES (?, 'Unknown', NULLIF(?, 0))"
+    );
+    if ($stmtInsertUnknown) {
+        mysqli_stmt_bind_param($stmtInsertUnknown, 'ii', $company_id, $grayColorId);
+        mysqli_stmt_execute($stmtInsertUnknown);
+        mysqli_stmt_close($stmtInsertUnknown);
+        $insertedId = (int)mysqli_insert_id($conn);
+        if ($insertedId > 0) {
+            return $insertedId;
+        }
+    }
+
+    $stmtAny = mysqli_prepare($conn, 'SELECT id FROM switch_status WHERE company_id = ? ORDER BY id ASC LIMIT 1');
+    if ($stmtAny) {
+        mysqli_stmt_bind_param($stmtAny, 'i', $company_id);
+        mysqli_stmt_execute($stmtAny);
+        $resAny = mysqli_stmt_get_result($stmtAny);
+        $rowAny = $resAny ? mysqli_fetch_assoc($resAny) : null;
+        mysqli_stmt_close($stmtAny);
+        if ($rowAny) {
+            return (int)($rowAny['id'] ?? 0);
+        }
+    }
+
+    return 0;
+}
+
 function idf_resolve_status_id(mysqli $conn, int $company_id, $rawStatus, string $fallback = 'Unknown'): int {
     if (is_numeric($rawStatus) && (int)$rawStatus > 0) {
-        return (int)$rawStatus;
+        $requestedId = (int)$rawStatus;
+        $stmtById = mysqli_prepare($conn, 'SELECT id FROM switch_status WHERE company_id = ? AND id = ? LIMIT 1');
+        if ($stmtById) {
+            mysqli_stmt_bind_param($stmtById, 'ii', $company_id, $requestedId);
+            mysqli_stmt_execute($stmtById);
+            $resById = mysqli_stmt_get_result($stmtById);
+            $rowById = $resById ? mysqli_fetch_assoc($resById) : null;
+            mysqli_stmt_close($stmtById);
+            if ($rowById) {
+                return (int)$rowById['id'];
+            }
+        }
     }
     $statusName = trim((string)$rawStatus);
     if ($statusName !== '') {
@@ -868,7 +943,8 @@ function idf_resolve_status_id(mysqli $conn, int $company_id, $rawStatus, string
         mysqli_stmt_close($stmtFallback);
         if ($rowFallback) return (int)$rowFallback['id'];
     }
-    return 0;
+
+    return idf_ensure_unknown_status_id($conn, $company_id);
 }
 
 function idf_resolve_port_type_id(mysqli $conn, int $company_id, $rawPortType, string $fallback = 'RJ45'): int {
