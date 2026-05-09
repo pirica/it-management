@@ -875,7 +875,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <div class="idf-rack">
                         <div class="idf-rack-header">
                             <div>
-                                <div class="idf-rack-title">Rack Face (<?php echo $displayMaxPos; ?> positions)</div>
+                                <div class="idf-rack-title">Rack Face (<span id="idfVisibleCount"><?php echo $displayMaxPos; ?></span> positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
                                     · Location: <?php echo sanitize($locationNameLabel); ?>
@@ -884,12 +884,16 @@ foreach ($equipmentOptions as $equipmentOption) {
                                     · Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
                                 </div>
                             </div>
-                            <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <button class="btn btn-sm idf-mini" type="button" onclick="idfAddPosition()">&#10133;</button>
+                                <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition()">&#10134;</button>
+                                <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
+                            </div>
                         </div>
 
                         <div class="idf-slots" id="idfSlots">
                             <?php for ($i = 1; $i <= $displayMaxPos; $i++): $pos = $positions[$i] ?? null; ?>
-                                <div class="idf-slot" data-position="<?php echo $i; ?>">
+                                <div class="idf-slot" data-position="<?php echo $i; ?>" data-has-device="<?php echo $pos ? '1' : '0'; ?>">
                                     <div class="idf-slot-left">
                                         <div class="idf-slot-no"><?php echo $i; ?></div>
 
@@ -1125,6 +1129,38 @@ echo json_encode($equipmentMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     acc[String(item.id)] = item;
     return acc;
 }, {});
+const INITIAL_VISIBLE_POSITIONS = <?php echo (int)$displayMaxPos; ?>;
+let currentVisiblePositions = INITIAL_VISIBLE_POSITIONS;
+
+function renderVisiblePositions() {
+    const slots = document.querySelectorAll('#idfSlots .idf-slot');
+    slots.forEach((slot) => {
+        const posNo = Number(slot.dataset.position || 0);
+        slot.style.display = (posNo > 0 && posNo <= currentVisiblePositions) ? '' : 'none';
+    });
+    const counter = document.getElementById('idfVisibleCount');
+    if (counter) {
+        counter.textContent = String(currentVisiblePositions);
+    }
+}
+
+function idfAddPosition() {
+    currentVisiblePositions += 1;
+    renderVisiblePositions();
+}
+
+function idfRemovePosition() {
+    if (currentVisiblePositions <= 1) {
+        return;
+    }
+    const lastSlot = document.querySelector(`#idfSlots .idf-slot[data-position="${currentVisiblePositions}"]`);
+    if (lastSlot && String(lastSlot.dataset.hasDevice || '0') === '1') {
+        alert('Delete or move the device in the last position first.');
+        return;
+    }
+    currentVisiblePositions -= 1;
+    renderVisiblePositions();
+}
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
 function closeModal(){ document.getElementById('idfModalBackdrop').style.display = 'none'; }
@@ -1299,9 +1335,10 @@ function openCopyModal(positionNo, positionId) {
 
 function ensureCopyModalOptions() {
     const targetSelect = document.getElementById('idfCopyTarget');
-    if (targetSelect && targetSelect.options.length === 0) {
-        const currentMax = <?php echo (int)$displayMaxPos; ?>;
-        for (let i = 1; i <= currentMax + 10; i++) {
+    if (targetSelect) {
+        const currentMax = Math.max(currentVisiblePositions, INITIAL_VISIBLE_POSITIONS);
+        const requiredMax = currentMax + 10;
+        for (let i = targetSelect.options.length + 1; i <= requiredMax; i++) {
             const option = document.createElement('option');
             option.value = String(i);
             option.textContent = String(i);
@@ -1477,6 +1514,8 @@ async function idfExportPdf() {
         },
     });
 })();
+
+renderVisiblePositions();
 </script>
 <script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
 </body>
