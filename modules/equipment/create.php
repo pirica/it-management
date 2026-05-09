@@ -1312,7 +1312,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
             <?php endif; ?>
             <div class="card">
-                <form id="equipmentForm" method="POST" enctype="multipart/form-data">
+                <form id="equipmentForm" method="POST" enctype="multipart/form-data" data-original-idf-id="<?php echo sanitize((string)($originalData['idf_id'] ?? '')); ?>">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
@@ -1776,6 +1776,28 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             }
             isAutoSubmitting = true;
             equipmentForm.requestSubmit();
+        });
+    }
+
+    if (equipmentForm && isEditMode) {
+        equipmentForm.addEventListener('submit', function (event) {
+            if (isAutoSubmitting) {
+                return;
+            }
+
+            var idfSelect = equipmentForm.querySelector('select[name="idf_id"]');
+            if (!idfSelect) {
+                return;
+            }
+
+            var originalIdfId = String(equipmentForm.getAttribute('data-original-idf-id') || '').trim();
+            var nextIdfId = String(idfSelect.value || '').trim();
+            if (originalIdfId !== '' && nextIdfId === '') {
+                var message = 'Changing IDF to NULL will remove this equipment from the current IDF and delete related IDF position, ports, links, and synchronization data. This action cannot be undone.\n\nDo you want to continue saving?';
+                if (!confirm(message)) {
+                    event.preventDefault();
+                }
+            }
         });
     }
 })();
