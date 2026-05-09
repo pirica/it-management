@@ -118,7 +118,7 @@ if ($device_type_id <= 0) {
 if ($equipment_id > 0) {
     $stmtEquipment = mysqli_prepare(
         $conn,
-        "SELECT e.name, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
+        "SELECT e.name, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, e.switch_environment_id, e.switch_fiber_ports_number, er.name AS switch_rj45_name
          FROM equipment e
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
          WHERE e.id=? AND e.company_id=?
@@ -305,6 +305,38 @@ if ($equipment_id > 0 && $device_type_name === 'switch') {
 
 $notes_val = $notes !== '' ? $notes : null;
 $equipmentId_val = $equipment_id > 0 ? (string)$equipment_id : idf_generate_unlinked_equipment_token();
+$portFiberPortsNumberId = 0;
+$portSwitchLayoutId = $layout_id > 0 ? $layout_id : 0;
+$portManagementId = 0;
+if ($equipment_id > 0) {
+    $stmtPortMeta = mysqli_prepare(
+        $conn,
+        "SELECT
+            COALESCE(e.switch_port_numbering_layout_id, 0) AS switch_port_numbering_layout_id,
+            COALESCE(e.switch_environment_id, 0) AS switch_environment_id,
+            efc.id AS fiber_ports_number_id
+         FROM equipment e
+         LEFT JOIN equipment_fiber_count efc
+           ON efc.company_id = e.company_id
+          AND efc.name = e.switch_fiber_ports_number
+         WHERE e.company_id = ? AND e.id = ?
+         LIMIT 1"
+    );
+    if ($stmtPortMeta) {
+        mysqli_stmt_bind_param($stmtPortMeta, 'ii', $company_id, $equipment_id);
+        mysqli_stmt_execute($stmtPortMeta);
+        $resPortMeta = mysqli_stmt_get_result($stmtPortMeta);
+        $portMetaRow = $resPortMeta ? mysqli_fetch_assoc($resPortMeta) : null;
+        mysqli_stmt_close($stmtPortMeta);
+        if ($portMetaRow) {
+            $portFiberPortsNumberId = (int)($portMetaRow['fiber_ports_number_id'] ?? 0);
+            if ($portSwitchLayoutId <= 0) {
+                $portSwitchLayoutId = (int)($portMetaRow['switch_port_numbering_layout_id'] ?? 0);
+            }
+            $portManagementId = (int)($portMetaRow['switch_environment_id'] ?? 0);
+        }
+    }
+}
 
 if ($position_id > 0) {
     $stmtPos = mysqli_prepare(
@@ -594,8 +626,8 @@ if ($pid > 0) {
                 }
             }
         }
-        $insertPortSql = "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, cable_color, hex_color, notes)
-                          VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)
+        $insertPortSql = "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, fiber_ports_number, switch_port_numbering_layout_id, management_id, cable_color, hex_color, notes)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)
                           ON DUPLICATE KEY UPDATE
                             label=CASE WHEN VALUES(label) <> '' THEN VALUES(label) ELSE label END,
                             status_id=CASE WHEN VALUES(status_id) > 0 THEN VALUES(status_id) ELSE status_id END,
@@ -603,6 +635,9 @@ if ($pid > 0) {
                             vlan_id=COALESCE(VALUES(vlan_id), vlan_id),
                             speed_id=COALESCE(VALUES(speed_id), speed_id),
                             poe_id=COALESCE(VALUES(poe_id), poe_id),
+                            fiber_ports_number=COALESCE(VALUES(fiber_ports_number), fiber_ports_number),
+                            switch_port_numbering_layout_id=COALESCE(VALUES(switch_port_numbering_layout_id), switch_port_numbering_layout_id),
+                            management_id=COALESCE(VALUES(management_id), management_id),
                             cable_color=CASE WHEN VALUES(cable_color) <> '' THEN VALUES(cable_color) ELSE cable_color END,
                             hex_color=CASE WHEN VALUES(hex_color) <> '' THEN VALUES(hex_color) ELSE hex_color END,
                             notes=CASE WHEN VALUES(notes) <> '' THEN VALUES(notes) ELSE notes END";
@@ -626,7 +661,7 @@ if ($pid > 0) {
                     $portHex = (string)($portSeed['hex_color'] ?? $defaultCableHexColor);
                     $portNotes = (string)($portSeed['notes'] ?? '');
                     $portStatus = $portStatus > 0 ? $portStatus : $unknownStatusId;
-                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiisisiiisss', $company_id, $pid, $portNo, $portTypeId, $portLabel, $portStatus, $portConn, $portVlan, $portSpeed, $portPoe, $portColor, $portHex, $portNotes);
+                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiisisiiiiiisss', $company_id, $pid, $portNo, $portTypeId, $portLabel, $portStatus, $portConn, $portVlan, $portSpeed, $portPoe, $portFiberPortsNumberId, $portSwitchLayoutId, $portManagementId, $portColor, $portHex, $portNotes);
                     mysqli_stmt_execute($stmtInsertPort);
                 }
             } else {
@@ -639,7 +674,7 @@ if ($pid > 0) {
                     $emptyConn = '';
                     $emptyNotes = '';
                     $zeroVal = 0;
-                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiisisiiisss', $company_id, $pid, $n, $rj45PortTypeId, $emptyLabel, $unknownStatusId, $emptyConn, $zeroVal, $zeroVal, $zeroVal, $defaultCableColorName, $defaultCableHexColor, $emptyNotes);
+                    mysqli_stmt_bind_param($stmtInsertPort, 'iiiisisiiiiiisss', $company_id, $pid, $n, $rj45PortTypeId, $emptyLabel, $unknownStatusId, $emptyConn, $zeroVal, $zeroVal, $zeroVal, $portFiberPortsNumberId, $portSwitchLayoutId, $portManagementId, $defaultCableColorName, $defaultCableHexColor, $emptyNotes);
                     mysqli_stmt_execute($stmtInsertPort);
                 }
             }

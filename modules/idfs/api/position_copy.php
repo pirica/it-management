@@ -120,7 +120,7 @@ try {
     }
 
     if ($ports) {
-        $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?)';
+        $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, fiber_ports_number, switch_port_numbering_layout_id, management_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?)';
         $stmtInsPort = mysqli_prepare($conn, $sqlInsPort);
         if ($stmtInsPort) {
             foreach ($ports as $p) {
@@ -132,10 +132,13 @@ try {
                 $p_vlan = (int)($p['vlan_id'] ?? 0);
                 $p_speed = (int)($p['speed_id'] ?? 0);
                 $p_poe = (int)($p['poe_id'] ?? 0);
+                $p_fiber_ports_number = (int)($p['fiber_ports_number'] ?? 0);
+                $p_layout_id = (int)($p['switch_port_numbering_layout_id'] ?? 0);
+                $p_management_id = (int)($p['management_id'] ?? 0);
                 $p_notes = (string)$p['notes'];
 
-                mysqli_stmt_bind_param($stmtInsPort, 'iiiisisiiis',
-                    $company_id, $newPosId, $p_no, $p_type, $p_label, $p_status, $p_conn, $p_vlan, $p_speed, $p_poe, $p_notes
+                mysqli_stmt_bind_param($stmtInsPort, 'iiiisisiiiiiis',
+                    $company_id, $newPosId, $p_no, $p_type, $p_label, $p_status, $p_conn, $p_vlan, $p_speed, $p_poe, $p_fiber_ports_number, $p_layout_id, $p_management_id, $p_notes
                 );
                 mysqli_stmt_execute($stmtInsPort);
             }

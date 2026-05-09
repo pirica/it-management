@@ -698,8 +698,76 @@ function idf_ensure_status_schema(mysqli $conn) {
         }
     }
 
+    if (!idf_table_has_column($conn, 'idf_ports', 'fiber_ports_number')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `fiber_ports_number` int DEFAULT NULL AFTER `rj45_speed_id`");
+    }
+    if (!idf_table_has_column($conn, 'idf_ports', 'switch_port_numbering_layout_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `switch_port_numbering_layout_id` int DEFAULT NULL AFTER `fiber_ports_number`");
+    }
+    if (!idf_table_has_column($conn, 'idf_ports', 'management_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `management_id` int DEFAULT NULL AFTER `switch_port_numbering_layout_id`");
+    }
+
+    $hasFiberCountIndex = false;
+    $fiberCountIndexRes = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_fiber_ports_number_idx'");
+    if ($fiberCountIndexRes && mysqli_fetch_assoc($fiberCountIndexRes)) {
+        $hasFiberCountIndex = true;
+    }
+    if (!$hasFiberCountIndex) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_fiber_ports_number_idx` (`fiber_ports_number`)");
+    }
+
+    $hasLayoutIndex = false;
+    $layoutIndexRes = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_layout_idx'");
+    if ($layoutIndexRes && mysqli_fetch_assoc($layoutIndexRes)) {
+        $hasLayoutIndex = true;
+    }
+    if (!$hasLayoutIndex) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_layout_idx` (`switch_port_numbering_layout_id`)");
+    }
+
+    $hasManagementIndex = false;
+    $managementIndexRes = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_management_idx'");
+    if ($managementIndexRes && mysqli_fetch_assoc($managementIndexRes)) {
+        $hasManagementIndex = true;
+    }
+    if (!$hasManagementIndex) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD KEY `idf_ports_management_idx` (`management_id`)");
+    }
+
+    $ensureIdfPortsFk = static function (string $fkName, string $columnName, string $refTable) use ($conn, $databaseNameEscaped): void {
+        if (!idf_table_has_column($conn, 'idf_ports', $columnName)) {
+            return;
+        }
+        $hasFk = false;
+        $fkRes = mysqli_query(
+            $conn,
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_ports'
+               AND CONSTRAINT_NAME = '{$fkName}'
+             LIMIT 1"
+        );
+        if ($fkRes && mysqli_fetch_assoc($fkRes)) {
+            $hasFk = true;
+        }
+        if (!$hasFk) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `idf_ports`
+                 ADD CONSTRAINT `{$fkName}`
+                 FOREIGN KEY (`{$columnName}`) REFERENCES `{$refTable}` (`id`)
+                 ON DELETE SET NULL"
+            );
+        }
+    };
+    $ensureIdfPortsFk('idf_ports_ibfk_fiber_ports_number', 'fiber_ports_number', 'equipment_fiber_count');
+    $ensureIdfPortsFk('idf_ports_ibfk_layout', 'switch_port_numbering_layout_id', 'switch_port_numbering_layout');
+    $ensureIdfPortsFk('idf_ports_ibfk_management', 'management_id', 'equipment_environment');
+
     // Why: "None" selections in the UI should persist as SQL NULL (never 0 sentinel values).
-    foreach (['vlan_id', 'speed_id', 'poe_id', 'rj45_speed_id'] as $nullableFkColumn) {
+    foreach (['vlan_id', 'speed_id', 'poe_id', 'rj45_speed_id', 'fiber_ports_number', 'switch_port_numbering_layout_id', 'management_id'] as $nullableFkColumn) {
         if (!idf_table_has_column($conn, 'idf_ports', $nullableFkColumn)) {
             continue;
         }

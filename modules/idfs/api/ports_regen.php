@@ -11,7 +11,7 @@ if ($position_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT p.port_count, p.id, p.equipment_id, i.company_id, i.id AS idf_id,
+    "SELECT p.port_count, p.id, p.equipment_id, p.switch_port_numbering_layout_id, i.company_id, i.id AS idf_id,
             COALESCE(e.hostname, '') AS equipment_hostname
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
@@ -39,6 +39,10 @@ $equipmentIdRaw = trim((string)($row['equipment_id'] ?? ''));
 $equipmentId = ctype_digit($equipmentIdRaw) ? (int)$equipmentIdRaw : 0;
 $idfId = (int)($row['idf_id'] ?? 0);
 $equipmentHostname = trim((string)($row['equipment_hostname'] ?? ''));
+$positionLayoutId = (int)($row['switch_port_numbering_layout_id'] ?? 0);
+$fiberPortsNumberId = 0;
+$switchPortNumberingLayoutId = $positionLayoutId > 0 ? $positionLayoutId : 0;
+$managementId = 0;
 
 $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
 if ($unknownStatusId <= 0) {
@@ -62,6 +66,35 @@ if ($count > 0) {
 
 $fiberPortsToInsert = [];
 if ($equipmentId > 0) {
+    $stmtPortMeta = mysqli_prepare(
+        $conn,
+        "SELECT
+            COALESCE(e.switch_fiber_ports_number, '') AS switch_fiber_ports_number,
+            COALESCE(e.switch_port_numbering_layout_id, 0) AS equipment_layout_id,
+            COALESCE(e.switch_environment_id, 0) AS switch_environment_id,
+            efc.id AS fiber_ports_number_id
+         FROM equipment e
+         LEFT JOIN equipment_fiber_count efc
+           ON efc.company_id = e.company_id
+          AND efc.name = e.switch_fiber_ports_number
+         WHERE e.company_id = ? AND e.id = ?
+         LIMIT 1"
+    );
+    if ($stmtPortMeta) {
+        mysqli_stmt_bind_param($stmtPortMeta, 'ii', $company_id, $equipmentId);
+        mysqli_stmt_execute($stmtPortMeta);
+        $resPortMeta = mysqli_stmt_get_result($stmtPortMeta);
+        $portMetaRow = $resPortMeta ? mysqli_fetch_assoc($resPortMeta) : null;
+        mysqli_stmt_close($stmtPortMeta);
+        if ($portMetaRow) {
+            $fiberPortsNumberId = (int)($portMetaRow['fiber_ports_number_id'] ?? 0);
+            if ($switchPortNumberingLayoutId <= 0) {
+                $switchPortNumberingLayoutId = (int)($portMetaRow['equipment_layout_id'] ?? 0);
+            }
+            $managementId = (int)($portMetaRow['switch_environment_id'] ?? 0);
+        }
+    }
+
     $stmtFiberSwitchPorts = mysqli_prepare(
         $conn,
         "SELECT sp.port_number,
@@ -172,7 +205,7 @@ try {
         mysqli_stmt_close($stmtDel);
     }
 
-    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id) VALUES (?, ?, ?, ?, ?)");
+    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id, fiber_ports_number, switch_port_numbering_layout_id, management_id) VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0))");
     if ($stmtIns) {
         if (!empty($portRowsToInsert)) {
             ksort($portRowsToInsert, SORT_NATURAL);
@@ -182,7 +215,7 @@ try {
                 if ($portNo <= 0 || $portTypeId <= 0) {
                     continue;
                 }
-                mysqli_stmt_bind_param($stmtIns, 'iiiii', $company_id, $position_id, $portNo, $portTypeId, $unknownStatusId);
+                mysqli_stmt_bind_param($stmtIns, 'iiiiiiii', $company_id, $position_id, $portNo, $portTypeId, $unknownStatusId, $fiberPortsNumberId, $switchPortNumberingLayoutId, $managementId);
                 mysqli_stmt_execute($stmtIns);
             }
         }
