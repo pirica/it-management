@@ -309,6 +309,27 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
     $escapedEquipmentId = "'" . mysqli_real_escape_string($conn, $equipmentIdStr) . "'";
     $escapedNotes = $notes === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $notes) . "'";
     $layoutSql = $layoutId > 0 ? (string)$layoutId : 'NULL';
+    $equipmentIdEscaped = mysqli_real_escape_string($conn, (string)$equipmentId);
+    $stmtDuplicateDeviceName = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ?
+           AND device_name = ?
+           AND id <> ?
+           AND (equipment_id IS NULL OR equipment_id <> '{$equipmentIdEscaped}')
+         LIMIT 1"
+    );
+    if ($stmtDuplicateDeviceName) {
+        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $companyId, $equipmentName, $targetPositionId);
+        mysqli_stmt_execute($stmtDuplicateDeviceName);
+        $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
+        $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
+        mysqli_stmt_close($stmtDuplicateDeviceName);
+        if ($duplicateDeviceNameRow) {
+            return 'Device name already exists. Please choose a unique device name.';
+        }
+    }
 
     mysqli_query(
         $conn,
@@ -1571,24 +1592,3 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 </script>
 </body>
 </html>
-    $equipmentIdEscaped = mysqli_real_escape_string($conn, (string)$equipmentId);
-    $stmtDuplicateDeviceName = mysqli_prepare(
-        $conn,
-        "SELECT id
-         FROM idf_positions
-         WHERE company_id = ?
-           AND device_name = ?
-           AND id <> ?
-           AND (equipment_id IS NULL OR equipment_id <> '{$equipmentIdEscaped}')
-         LIMIT 1"
-    );
-    if ($stmtDuplicateDeviceName) {
-        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $companyId, $equipmentName, $targetPositionId);
-        mysqli_stmt_execute($stmtDuplicateDeviceName);
-        $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
-        $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
-        mysqli_stmt_close($stmtDuplicateDeviceName);
-        if ($duplicateDeviceNameRow) {
-            return 'Device name already exists. Please choose a unique device name.';
-        }
-    }
