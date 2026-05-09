@@ -124,6 +124,43 @@ function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $
     return $exists;
 }
 
+function equipment_optional_unique_field_exists(mysqli $conn, int $companyId, string $fieldName, string $value, int $excludeId = 0): bool
+{
+    $fieldName = trim($fieldName);
+    $value = trim($value);
+    if ($companyId <= 0 || $fieldName === '' || $value === '' || !equipment_table_has_column($conn, 'equipment', $fieldName)) {
+        return false;
+    }
+
+    $allowedFields = ['serial_number', 'hostname', 'ip_address'];
+    if (!in_array($fieldName, $allowedFields, true)) {
+        return false;
+    }
+
+    $sql = "SELECT id FROM equipment WHERE company_id = ? AND {$fieldName} = ?";
+    $types = 'is';
+    $params = [$companyId, $value];
+
+    if ($excludeId > 0) {
+        $sql .= ' AND id <> ?';
+        $types .= 'i';
+        $params[] = $excludeId;
+    }
+
+    $sql .= ' LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $exists = $result && mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+    return $exists;
+}
+
 function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentId): void
 {
     if ($equipmentId <= 0 || $companyId <= 0) {
@@ -359,6 +396,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill required fields: Name, Type.';
     } elseif (equipment_name_exists($conn, (int)$company_id, $data['name'], $isEdit ? (int)$id : 0)) {
         $error = 'Equipment name already exists for this company.';
+    } elseif (equipment_optional_unique_field_exists($conn, (int)$company_id, 'serial_number', (string)$data['serial_number'], $isEdit ? (int)$id : 0)) {
+        $error = 'Serial Number already exists for this company.';
+    } elseif (equipment_optional_unique_field_exists($conn, (int)$company_id, 'hostname', (string)$data['hostname'], $isEdit ? (int)$id : 0)) {
+        $error = 'Hostname already exists for this company.';
+    } elseif (equipment_optional_unique_field_exists($conn, (int)$company_id, 'ip_address', (string)$data['ip_address'], $isEdit ? (int)$id : 0)) {
+        $error = 'IP Address already exists for this company.';
     } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
         $error = 'Please fill required field: RJ45 Ports for switch equipment.';
     }
