@@ -85,6 +85,33 @@ function idf_copy_next_unique_name_in_table(mysqli $conn, int $companyId, string
     }
 }
 
+function idf_copy_generate_unique_asset_id(mysqli $conn, int $companyId): string
+{
+    for ($i = 0; $i < 500; $i++) {
+        $candidate = (string)random_int(1000, 9999) . '-' . (string)random_int(1000, 9999);
+        $stmtExists = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_positions
+             WHERE company_id = ? AND equipment_id = ?
+             LIMIT 1"
+        );
+        if (!$stmtExists) {
+            return $candidate;
+        }
+        mysqli_stmt_bind_param($stmtExists, 'is', $companyId, $candidate);
+        mysqli_stmt_execute($stmtExists);
+        $resExists = mysqli_stmt_get_result($stmtExists);
+        $exists = $resExists && mysqli_num_rows($resExists) > 0;
+        mysqli_stmt_close($stmtExists);
+        if (!$exists) {
+            return $candidate;
+        }
+    }
+
+    return (string)time() . '-' . (string)random_int(1000, 9999);
+}
+
 $position_id = (int)($data['position_id'] ?? 0);
 $target_position = (int)($data['target_position'] ?? 0);
 $overwrite = (int)($data['overwrite'] ?? 0);
@@ -154,8 +181,10 @@ try {
     $device_type = (int)$src['device_type'];
     $device_name = (string)$device_name;
     $port_count = (int)$src['port_count'];
+    $layout_val = (int)($src['switch_port_numbering_layout_id'] ?? 0);
 
     // If this is a linked equipment row, clone equipment + switch ports so copied position gets a new Asset ID.
+    $didCloneLinkedEquipment = false;
     if ($equip_val !== null && ctype_digit($equip_val) && (int)$equip_val > 0) {
         $sourceEquipmentId = (int)$equip_val;
         $stmtEq = mysqli_prepare(
@@ -235,16 +264,20 @@ try {
             }
 
             $equip_val = (string)$newEquipmentId;
+            $didCloneLinkedEquipment = true;
         }
+    }
+    if (!$didCloneLinkedEquipment) {
+        $equip_val = idf_copy_generate_unique_asset_id($conn, $company_id);
     }
 
     $stmtIns = mysqli_prepare(
         $conn,
-        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?)"
     );
     if ($stmtIns) {
-        mysqli_stmt_bind_param($stmtIns, 'iiiissis', $company_id, $idf_id, $target_position, $device_type, $device_name, $equip_val, $port_count, $notes_val);
+        mysqli_stmt_bind_param($stmtIns, 'iiiissiis', $company_id, $idf_id, $target_position, $device_type, $device_name, $equip_val, $port_count, $layout_val, $notes_val);
         mysqli_stmt_execute($stmtIns);
         mysqli_stmt_close($stmtIns);
     }
