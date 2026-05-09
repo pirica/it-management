@@ -1198,7 +1198,7 @@ function idfRemovePosition(positionNo) {
         alert('Remove position: This position contains a device. Delete or move the device first.');
         return;
     }
-    if (!confirm('Delete this empty rack position?\n\nThis will permanently remove the selected position and shift all positions above it down by 1. This action cannot be undone.')) {
+    if (!confirm(`Delete this empty rack (${clickedPosition}) position?\n\nThis will permanently remove the selected position and shift all positions above it down by 1. This action cannot be undone.`)) {
         return;
     }
     apiPost('position_remove_slot.php', {
