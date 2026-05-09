@@ -1416,7 +1416,7 @@ function idfMove(idfId, positionNo, dir) {
 }
 
 function idfDeleteDevice(positionId) {
-    if (!confirm('Delete this device from the rack position? Ports and links will be deleted too.')) return;
+    if (!confirm('Are you sure you want to delete this device from the rack position?\n\nThis will permanently delete all related data, including ports, cable links, and synchronization records. This action cannot be undone.')) return;
     apiPost('position_delete.php', {csrf_token: CSRF, position_id: positionId})
         .then(() => location.reload())
         .catch(err => alert(err.message));
