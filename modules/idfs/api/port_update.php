@@ -194,7 +194,7 @@ $hasRj45SpeedIdColumn = idf_table_has_column($conn, 'idf_ports', 'rj45_speed_id'
 $sql = "UPDATE idf_ports
         SET port_type=?,
             label=?,
-            status_id=?,
+            status_id=NULLIF(?, 0),
             connected_to=?,
             vlan_id=NULLIF(?, 0),
             speed_id=NULLIF(?, 0),";
@@ -272,7 +272,7 @@ $stmtSwitchSync = mysqli_prepare(
      JOIN idf_positions p ON p.id = pr.position_id
      LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
      SET sp.{$switchPortLabelColumn} = ?,
-         sp.status_id = ?,
+         sp.status_id = NULLIF(?, 0),
          sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
          sp.vlan_id = NULLIF(?, 0),
          sp.comments = ?
@@ -332,7 +332,7 @@ $stmtLinkMetaSync = mysqli_prepare(
     $conn,
     "UPDATE idf_links l
      SET l.equipment_label = ?,
-         l.equipment_status_id = ?,
+         l.equipment_status_id = NULLIF(?, 0),
          l.equipment_vlan_id = NULLIF(?, 0),
          l.equipment_comments = ?,
          l.equipment_color_id = NULLIF(?, 0)
