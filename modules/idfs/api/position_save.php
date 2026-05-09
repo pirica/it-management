@@ -223,30 +223,30 @@ if ($stmtIdf) {
     }
 }
 
-if ($device_name !== '' && $equipment_id <= 0) {
-    // Why: Linked equipment uniqueness is enforced by equipment_id below; do not block distinct assets that share the same display name.
+if ($device_name !== '') {
+    // Why: device_name must remain unique per company across all IDFs to avoid ambiguous references in link/device pickers.
     $stmtDuplicateDeviceName = null;
     if ($position_id > 0) {
         $stmtDuplicateDeviceName = mysqli_prepare(
             $conn,
             "SELECT id
              FROM idf_positions
-             WHERE idf_id=? AND company_id=? AND device_name=? AND id<>?
+             WHERE company_id=? AND device_name=? AND id<>?
              LIMIT 1"
         );
         if ($stmtDuplicateDeviceName) {
-            mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'iisi', $idf_id, $company_id, $device_name, $position_id);
+            mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $company_id, $device_name, $position_id);
         }
     } else {
         $stmtDuplicateDeviceName = mysqli_prepare(
             $conn,
             "SELECT id
              FROM idf_positions
-             WHERE idf_id=? AND company_id=? AND device_name=?
+             WHERE company_id=? AND device_name=?
              LIMIT 1"
         );
         if ($stmtDuplicateDeviceName) {
-            mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'iis', $idf_id, $company_id, $device_name);
+            mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'is', $company_id, $device_name);
         }
     }
 
@@ -257,7 +257,7 @@ if ($device_name !== '' && $equipment_id <= 0) {
         mysqli_stmt_close($stmtDuplicateDeviceName);
 
         if ($duplicateDeviceNameExists) {
-            idf_fail('Equipment with the same device name is already on the list.');
+            idf_fail('Device name already exists. Please choose a unique device name.');
         }
     }
 }
