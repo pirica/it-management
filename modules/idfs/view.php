@@ -1195,7 +1195,7 @@ function idfRemovePosition(positionNo) {
 
     const targetSlot = document.querySelector(`#idfSlots .idf-slot[data-position="${clickedPosition}"]`);
     if (targetSlot && String(targetSlot.dataset.hasDevice || '0') === '1') {
-        alert('This position contains a device. Delete or move the device first.');
+        alert('Remove position: This position contains a device. Delete or move the device first.');
         return;
     }
     if (!confirm('Delete this empty rack position?\n\nThis will permanently remove the selected position and shift all positions above it down by 1. This action cannot be undone.')) {
