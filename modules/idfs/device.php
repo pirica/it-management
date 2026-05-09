@@ -605,7 +605,10 @@ $stmtDestinationPorts = mysqli_prepare(
     "SELECT
         pr.id,
         pr.port_no,
-        pr.label,
+        NULLIF(NULLIF(pr.label, ''), '0') AS label,
+        COALESCE(ss.status, 'Unknown') AS status_label,
+        COALESCE(NULLIF(NULLIF(pr.cable_color, ''), '0'), NULLIF(cc_status.color_name, ''), 'Gray') AS color_name,
+        COALESCE(NULLIF(NULLIF(pr.hex_color, ''), '0'), NULLIF(cc_status.hex_color, ''), '#808080') AS color_hex,
         i.id AS idf_id,
         i.name AS idf_name,
         p.id AS position_id,
@@ -630,6 +633,12 @@ $stmtDestinationPorts = mysqli_prepare(
            OR p.position_no = pr.position_id
       )
      JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
+     LEFT JOIN switch_status ss
+       ON ss.id = pr.status_id
+      AND ss.company_id = pr.company_id
+     LEFT JOIN cable_colors cc_status
+       ON cc_status.id = ss.color_id
+      AND cc_status.company_id = ss.company_id
      WHERE i.company_id = ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
@@ -649,6 +658,9 @@ if ($stmtDestinationPorts) {
             'device_name' => (string)($row['device_name'] ?? ''),
             'device_type' => (string)($row['device_type'] ?? ''),
             'equipment_id' => isset($row['equipment_id']) ? (int)$row['equipment_id'] : 0,
+            'status_label' => (string)($row['status_label'] ?? 'Unknown'),
+            'color_name' => (string)($row['color_name'] ?? 'Gray'),
+            'color_hex' => (string)($row['color_hex'] ?? '#808080'),
             'is_linked' => !empty($row['is_linked']),
         ];
     }
@@ -1743,9 +1755,19 @@ function openLinkModal(portId) {
         const option = document.createElement('option');
         option.value = String(port.id);
         const idfName = port.idf_name ? `IDF ${port.idf_name}` : (port.idf_id ? `IDF #${port.idf_id}` : 'IDF');
-        const rawLabel = String(port.label || '').trim();
-        const showLabel = rawLabel !== '' && rawLabel !== '0' && rawLabel.toLowerCase() !== 'null';
-        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${showLabel ? ` • ${rawLabel}` : ''}`;
+        const rawStatus = String(port.status_label || '').trim();
+        const statusText = rawStatus !== '' && rawStatus.toLowerCase() !== 'null'
+            ? rawStatus.toUpperCase()
+            : 'UNKNOWN';
+        const rawColorName = String(port.color_name || '').trim();
+        const colorNameText = rawColorName !== '' && rawColorName.toLowerCase() !== 'null'
+            ? rawColorName
+            : 'Gray';
+        const rawColorHex = String(port.color_hex || '').trim();
+        const colorHexText = /^#?[0-9a-f]{6}$/i.test(rawColorHex)
+            ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
+            : '#808080';
+        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no} • Status (${statusText}) • ${colorNameText} (${colorHexText})`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
