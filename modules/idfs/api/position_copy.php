@@ -37,6 +37,27 @@ if (!$src || (int)$src['company_id'] !== $company_id) {
 }
 
 $idf_id = (int)$src['idf_id'];
+$device_name = trim((string)($src['device_name'] ?? ''));
+
+if ($device_name !== '') {
+    $stmtDuplicateDeviceName = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id=? AND device_name=? AND id<>?
+         LIMIT 1"
+    );
+    if ($stmtDuplicateDeviceName) {
+        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $company_id, $device_name, $position_id);
+        mysqli_stmt_execute($stmtDuplicateDeviceName);
+        $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
+        $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
+        mysqli_stmt_close($stmtDuplicateDeviceName);
+        if ($duplicateDeviceNameRow) {
+            idf_fail('Device name already exists. Please choose a unique device name.');
+        }
+    }
+}
 
 $existing = null;
 $stmtEx = mysqli_prepare($conn, "SELECT id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");

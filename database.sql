@@ -1513,6 +1513,7 @@ CREATE TABLE `idf_positions` (
   `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idf_pos_unique` (`company_id`,`idf_id`,`position_no`),
+  UNIQUE KEY `uq_idf_positions_company_device_name` (`company_id`,`device_name`),
   KEY `company_id` (`company_id`),
   KEY `idf_id` (`idf_id`),
   KEY `device_type` (`device_type`),
