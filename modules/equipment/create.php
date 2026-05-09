@@ -178,6 +178,217 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
     );
 }
 
+function equipment_resolve_idf_device_type_id(mysqli $conn, int $companyId, int $equipmentTypeId): int
+{
+    $equipmentTypeName = '';
+    $stmtEquipmentType = mysqli_prepare($conn, 'SELECT name FROM equipment_types WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmtEquipmentType) {
+        mysqli_stmt_bind_param($stmtEquipmentType, 'ii', $equipmentTypeId, $companyId);
+        mysqli_stmt_execute($stmtEquipmentType);
+        $resEquipmentType = mysqli_stmt_get_result($stmtEquipmentType);
+        $equipmentTypeRow = $resEquipmentType ? mysqli_fetch_assoc($resEquipmentType) : null;
+        mysqli_stmt_close($stmtEquipmentType);
+        $equipmentTypeName = strtolower(trim((string)($equipmentTypeRow['name'] ?? '')));
+    }
+
+    $idfTypeName = 'other';
+    if (strpos($equipmentTypeName, 'switch') !== false) {
+        $idfTypeName = 'switch';
+    } elseif (strpos($equipmentTypeName, 'patch') !== false) {
+        $idfTypeName = 'patch_panel';
+    } elseif (strpos($equipmentTypeName, 'ups') !== false) {
+        $idfTypeName = 'ups';
+    } elseif (strpos($equipmentTypeName, 'server') !== false) {
+        $idfTypeName = 'server';
+    }
+
+    $stmtIdfType = mysqli_prepare(
+        $conn,
+        'SELECT id FROM idf_device_type WHERE company_id = ? AND LOWER(idfdevicetype_name) = ? ORDER BY id ASC LIMIT 1'
+    );
+    if ($stmtIdfType) {
+        mysqli_stmt_bind_param($stmtIdfType, 'is', $companyId, $idfTypeName);
+        mysqli_stmt_execute($stmtIdfType);
+        $resIdfType = mysqli_stmt_get_result($stmtIdfType);
+        $idfTypeRow = $resIdfType ? mysqli_fetch_assoc($resIdfType) : null;
+        mysqli_stmt_close($stmtIdfType);
+        if ($idfTypeRow) {
+            return (int)($idfTypeRow['id'] ?? 0);
+        }
+    }
+    return 0;
+}
+
+function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, array $equipmentData): string
+{
+    $equipmentId = (int)($equipmentData['id'] ?? 0);
+    $idfId = (int)($equipmentData['idf_id'] ?? 0);
+    $equipmentName = trim((string)($equipmentData['name'] ?? ''));
+    $equipmentTypeId = (int)($equipmentData['equipment_type_id'] ?? 0);
+    $switchRj45Id = (int)($equipmentData['switch_rj45_id'] ?? 0);
+    $layoutId = (int)($equipmentData['switch_port_numbering_layout_id'] ?? 0);
+    $notes = trim((string)($equipmentData['notes'] ?? ''));
+    $switchEnvironmentId = (int)($equipmentData['switch_environment_id'] ?? 0);
+
+    if ($equipmentId <= 0) {
+        return '';
+    }
+
+    $stmtCurrent = mysqli_prepare(
+        $conn,
+        "SELECT id, idf_id, position_no
+         FROM idf_positions
+         WHERE company_id = ? AND equipment_id = ?
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    $currentPosition = null;
+    if ($stmtCurrent) {
+        $equipmentIdStr = (string)$equipmentId;
+        mysqli_stmt_bind_param($stmtCurrent, 'is', $companyId, $equipmentIdStr);
+        mysqli_stmt_execute($stmtCurrent);
+        $resCurrent = mysqli_stmt_get_result($stmtCurrent);
+        $currentPosition = $resCurrent ? mysqli_fetch_assoc($resCurrent) : null;
+        mysqli_stmt_close($stmtCurrent);
+    }
+
+    if ($idfId <= 0) {
+        if ($currentPosition) {
+            $positionId = (int)($currentPosition['id'] ?? 0);
+            if ($positionId > 0) {
+                mysqli_query($conn, "DELETE FROM idf_ports WHERE position_id = " . $positionId . " AND company_id = " . $companyId);
+                mysqli_query($conn, "DELETE FROM idf_positions WHERE id = " . $positionId . " LIMIT 1");
+            }
+        }
+        return '';
+    }
+
+    $targetPositionId = 0;
+    $targetPositionNo = 0;
+    if ($currentPosition && (int)($currentPosition['idf_id'] ?? 0) === $idfId) {
+        $targetPositionId = (int)($currentPosition['id'] ?? 0);
+        $targetPositionNo = (int)($currentPosition['position_no'] ?? 0);
+    } else {
+        $stmtEmpty = mysqli_prepare(
+            $conn,
+            "SELECT id, position_no
+             FROM idf_positions
+             WHERE company_id = ?
+               AND idf_id = ?
+               AND (equipment_id IS NULL OR TRIM(equipment_id) = '' OR equipment_id = '0')
+             ORDER BY position_no ASC
+             LIMIT 1"
+        );
+        $emptyRow = null;
+        if ($stmtEmpty) {
+            mysqli_stmt_bind_param($stmtEmpty, 'ii', $companyId, $idfId);
+            mysqli_stmt_execute($stmtEmpty);
+            $resEmpty = mysqli_stmt_get_result($stmtEmpty);
+            $emptyRow = $resEmpty ? mysqli_fetch_assoc($resEmpty) : null;
+            mysqli_stmt_close($stmtEmpty);
+        }
+        if (!$emptyRow) {
+            return 'There is none Empty positions, add more positions on IDF.';
+        }
+        $targetPositionId = (int)($emptyRow['id'] ?? 0);
+        $targetPositionNo = (int)($emptyRow['position_no'] ?? 0);
+    }
+
+    $idfDeviceTypeId = equipment_resolve_idf_device_type_id($conn, $companyId, $equipmentTypeId);
+    if ($idfDeviceTypeId <= 0) {
+        return '';
+    }
+
+    $equipmentIdStr = (string)$equipmentId;
+    $escapedName = "'" . mysqli_real_escape_string($conn, $equipmentName) . "'";
+    $escapedEquipmentId = "'" . mysqli_real_escape_string($conn, $equipmentIdStr) . "'";
+    $escapedNotes = $notes === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $notes) . "'";
+    $layoutSql = $layoutId > 0 ? (string)$layoutId : 'NULL';
+
+    mysqli_query(
+        $conn,
+        "UPDATE idf_positions
+         SET idf_id = {$idfId},
+             position_no = {$targetPositionNo},
+             device_type = {$idfDeviceTypeId},
+             device_name = {$escapedName},
+             equipment_id = {$escapedEquipmentId},
+             switch_port_numbering_layout_id = {$layoutSql},
+             notes = {$escapedNotes}
+         WHERE id = {$targetPositionId}
+         LIMIT 1"
+    );
+
+    if ($currentPosition && (int)($currentPosition['idf_id'] ?? 0) !== $idfId) {
+        $oldPositionId = (int)($currentPosition['id'] ?? 0);
+        if ($oldPositionId > 0 && $oldPositionId !== $targetPositionId) {
+            mysqli_query($conn, "DELETE FROM idf_ports WHERE position_id = {$oldPositionId} AND company_id = {$companyId}");
+            mysqli_query(
+                $conn,
+                "UPDATE idf_positions
+                 SET equipment_id = NULL, device_name = CONCAT('Empty Position ', position_no), port_count = 0, notes = NULL
+                 WHERE id = {$oldPositionId}
+                 LIMIT 1"
+            );
+        }
+    }
+
+    $portCount = 0;
+    if ($switchRj45Id > 0) {
+        $stmtRj45 = mysqli_prepare($conn, "SELECT name FROM equipment_rj45 WHERE id = ? AND company_id = ? LIMIT 1");
+        if ($stmtRj45) {
+            mysqli_stmt_bind_param($stmtRj45, 'ii', $switchRj45Id, $companyId);
+            mysqli_stmt_execute($stmtRj45);
+            $resRj45 = mysqli_stmt_get_result($stmtRj45);
+            $rj45Row = $resRj45 ? mysqli_fetch_assoc($resRj45) : null;
+            mysqli_stmt_close($stmtRj45);
+            if ($rj45Row && preg_match('/(\d+)/', (string)($rj45Row['name'] ?? ''), $matches)) {
+                $portCount = (int)$matches[1];
+            }
+        }
+    }
+    mysqli_query($conn, "UPDATE idf_positions SET port_count = {$portCount} WHERE id = {$targetPositionId} LIMIT 1");
+
+    if ($portCount > 0) {
+        $unknownStatusId = 0;
+        $stmtStatus = mysqli_prepare($conn, "SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = 'unknown' LIMIT 1");
+        if ($stmtStatus) {
+            mysqli_stmt_bind_param($stmtStatus, 'i', $companyId);
+            mysqli_stmt_execute($stmtStatus);
+            $resStatus = mysqli_stmt_get_result($stmtStatus);
+            $statusRow = $resStatus ? mysqli_fetch_assoc($resStatus) : null;
+            mysqli_stmt_close($stmtStatus);
+            $unknownStatusId = (int)($statusRow['id'] ?? 0);
+        }
+        $rj45PortTypeId = 0;
+        $stmtPortType = mysqli_prepare($conn, "SELECT id FROM switch_port_types WHERE company_id = ? AND LOWER(type) = 'rj45' LIMIT 1");
+        if ($stmtPortType) {
+            mysqli_stmt_bind_param($stmtPortType, 'i', $companyId);
+            mysqli_stmt_execute($stmtPortType);
+            $resPortType = mysqli_stmt_get_result($stmtPortType);
+            $portTypeRow = $resPortType ? mysqli_fetch_assoc($resPortType) : null;
+            mysqli_stmt_close($stmtPortType);
+            $rj45PortTypeId = (int)($portTypeRow['id'] ?? 0);
+        }
+        if ($unknownStatusId > 0 && $rj45PortTypeId > 0) {
+            $managementSql = $switchEnvironmentId > 0 ? (string)$switchEnvironmentId : 'NULL';
+            for ($n = 1; $n <= $portCount; $n++) {
+                mysqli_query(
+                    $conn,
+                    "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id, switch_port_numbering_layout_id, management_id)
+                     VALUES ({$companyId}, {$targetPositionId}, {$n}, {$rj45PortTypeId}, {$unknownStatusId}, NULLIF({$layoutSql}, 0), {$managementSql})
+                     ON DUPLICATE KEY UPDATE
+                        status_id = VALUES(status_id),
+                        switch_port_numbering_layout_id = COALESCE(VALUES(switch_port_numbering_layout_id), switch_port_numbering_layout_id),
+                        management_id = COALESCE(VALUES(management_id), management_id)"
+                );
+            }
+        }
+    }
+
+    return '';
+}
+
 function equipment_detect_upload_mime(array $file): string
 {
     $tmpName = (string)($file['tmp_name'] ?? '');
@@ -604,7 +815,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$isEdit) {
                 $id = (int)mysqli_insert_id($conn);
             }
-            if ($equipment_type_id === $switchTypeId) {
+            $idfSyncError = equipment_sync_idf_position_and_ports($conn, (int)$company_id, [
+                'id' => $id,
+                'idf_id' => (int)$data['idf_id'],
+                'name' => (string)$data['name'],
+                'equipment_type_id' => (int)$data['equipment_type_id'],
+                'switch_rj45_id' => (int)$data['switch_rj45_id'],
+                'switch_port_numbering_layout_id' => (int)$data['switch_port_numbering_layout_id'],
+                'switch_environment_id' => (int)$data['switch_environment_id'],
+                'notes' => (string)$data['notes'],
+            ]);
+            if ($idfSyncError !== '') {
+                $error = $idfSyncError;
+            }
+            if ($error !== '') {
+                if (!$isEdit && $id > 0) {
+                    mysqli_query($conn, "DELETE FROM equipment WHERE id = " . (int)$id . " AND company_id = " . (int)$company_id . " LIMIT 1");
+                }
+            }
+            if ($error === '' && $equipment_type_id === $switchTypeId) {
                 if (equipment_table_has_column($conn, 'switch_ports', 'management_id')) {
                     $switchPortsSyncSql = "UPDATE switch_ports
                                            SET hostname = $hostname,
@@ -633,13 +862,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mysqli_query($conn, $idfPortsSyncSql);
                 }
             }
-            foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
-                $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
-                if (is_file($existingPhotoPath)) {
-                    @unlink($existingPhotoPath);
+            if ($error === '') {
+                foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
+                    $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
+                    if (is_file($existingPhotoPath)) {
+                        @unlink($existingPhotoPath);
+                    }
                 }
             }
-            if ($isEdit && $originalData) {
+            if ($error === '' && $isEdit && $originalData) {
                 $switchConfigChanged = (int)$originalData['switch_rj45_id'] !== (int)$data['switch_rj45_id']
                     || (int)$originalData['switch_fiber_id'] !== (int)$data['switch_fiber_id']
                     || (int)$originalData['switch_fiber_patch_id'] !== (int)$data['switch_fiber_patch_id']
@@ -668,7 +899,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            if ($isEdit) {
+            if ($error === '' && $isEdit) {
                 if ($equipment_type_id === $switchTypeId) {
                     header('Location: index.php?switch_id=' . $id . '&saved=1&spm=1#switch-port-manager');
                     exit;
@@ -676,8 +907,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: edit.php?id=' . $id . '&saved=1');
                 exit;
             }
-            header('Location: index.php');
-            exit;
+            if ($error === '') {
+                header('Location: index.php');
+                exit;
+            }
         }
         $dbErrorCode = (int)mysqli_errno($conn);
         $dbErrorMessage = (string)mysqli_error($conn);
