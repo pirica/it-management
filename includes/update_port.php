@@ -376,12 +376,27 @@ $updated = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
 
 if ($hasManagementId) {
-    $idfPortManagementSql = "UPDATE idf_ports ip
-                             JOIN idf_positions p ON p.id = ip.position_id
-                             SET ip.management_id = " . ($equipmentManagementId > 0 ? (string)$equipmentManagementId : 'NULL') . "
-                             WHERE p.company_id = " . (int)$company_id . "
-                               AND p.equipment_id = '" . mysqli_real_escape_string($conn, (string)$switchId) . "'";
-    mysqli_query($conn, $idfPortManagementSql);
+    $idfPortSyncSql = "UPDATE idf_ports ip
+                       JOIN idf_positions p ON p.id = ip.position_id
+                       JOIN switch_ports sp ON sp.company_id = p.company_id
+                                           AND sp.equipment_id = p.equipment_id
+                                           AND sp.port_number = ip.port_no
+                       LEFT JOIN switch_port_types spt ON spt.company_id = sp.company_id
+                                                     AND (
+                                                          LOWER(TRIM(spt.type)) = LOWER(TRIM(sp.port_type))
+                                                          OR CAST(spt.id AS CHAR) = sp.port_type
+                                                     )
+                       SET ip.label = sp.to_patch_port,
+                           ip.status_id = sp.status_id,
+                           ip.vlan_id = sp.vlan_id,
+                           ip.speed_id = sp.fiber_port_id,
+                           ip.management_id = sp.management_id,
+                           ip.notes = sp.comments
+                       WHERE p.company_id = " . (int)$company_id . "
+                         AND p.equipment_id = '" . mysqli_real_escape_string($conn, (string)$switchId) . "'
+                         AND sp.id = " . (int)$id . "
+                         AND (spt.id IS NULL OR ip.port_type = spt.id)";
+    mysqli_query($conn, $idfPortSyncSql);
 }
 
 

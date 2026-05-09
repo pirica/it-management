@@ -11,7 +11,8 @@ if ($port_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT pr.id, i.company_id, pr.management_id, p.equipment_id
+    "SELECT pr.id, i.company_id, pr.management_id, p.equipment_id,
+            pr.speed_id, pr.rj45_speed_id, pr.fiber_ports_number, pr.switch_port_numbering_layout_id, pr.poe_id
      FROM idf_ports pr
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
@@ -34,6 +35,11 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
 $linkedEquipmentIdRaw = trim((string)($row['equipment_id'] ?? ''));
 $linkedEquipmentId = ctype_digit($linkedEquipmentIdRaw) ? (int)$linkedEquipmentIdRaw : 0;
 $portManagementId = (int)($row['management_id'] ?? 0);
+$portFiberSpeedId = (int)($row['speed_id'] ?? 0);
+$portRj45SpeedId = (int)($row['rj45_speed_id'] ?? 0);
+$portFiberPortsNumberId = (int)($row['fiber_ports_number'] ?? 0);
+$portLayoutId = (int)($row['switch_port_numbering_layout_id'] ?? 0);
+$portPoeId = (int)($row['poe_id'] ?? 0);
 if ($linkedEquipmentId > 0) {
     $stmtEquipmentManagement = mysqli_prepare(
         $conn,
@@ -123,6 +129,24 @@ $poe_id = null;
 if ($poeInputString !== '' && $poeInputString !== '0') {
     $poe_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_poe', 'name', $rawPoeInput);
 }
+$rawFiberPortsNumberInput = $data['fiber_ports_number'] ?? '';
+$fiberPortsNumberInputString = trim((string)$rawFiberPortsNumberInput);
+$fiber_ports_number_id = null;
+if ($fiberPortsNumberInputString !== '' && $fiberPortsNumberInputString !== '0') {
+    $fiber_ports_number_id = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_fiber_count', 'name', $rawFiberPortsNumberInput);
+}
+$rawLayoutInput = $data['switch_port_numbering_layout_id'] ?? ($data['switch_port_numbering_layout'] ?? '');
+$layoutInputString = trim((string)$rawLayoutInput);
+$switch_port_numbering_layout_id = null;
+if ($layoutInputString !== '' && $layoutInputString !== '0') {
+    $switch_port_numbering_layout_id = idf_resolve_named_lookup_id($conn, $company_id, 'switch_port_numbering_layout', 'name', $rawLayoutInput);
+}
+$rawManagementInput = $data['management_id'] ?? ($data['management'] ?? '');
+$managementInputString = trim((string)$rawManagementInput);
+if ($managementInputString !== '') {
+    $resolvedManagementId = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_environment', 'name', $rawManagementInput);
+    $portManagementId = $resolvedManagementId !== null ? (int)$resolvedManagementId : 0;
+}
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color_id = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 $cable_color_name = null;
@@ -161,6 +185,8 @@ $vlan_val = $vlan_id !== null ? (int)$vlan_id : 0;
 $speed_val = ($isFiberPortType && $speed_id !== null) ? (int)$speed_id : 0;
 $rj45SpeedVal = (!$isFiberPortType && $rj45_speed_id !== null) ? (int)$rj45_speed_id : 0;
 $poe_val = $poe_id !== null ? (int)$poe_id : 0;
+$fiberPortsNumberVal = $fiber_ports_number_id !== null ? (int)$fiber_ports_number_id : 0;
+$layoutVal = $switch_port_numbering_layout_id !== null ? (int)$switch_port_numbering_layout_id : 0;
 $notes_val = $notes !== '' ? $notes : null;
 
 $hasRj45SpeedIdColumn = idf_table_has_column($conn, 'idf_ports', 'rj45_speed_id');
@@ -178,6 +204,8 @@ if ($hasRj45SpeedIdColumn) {
 }
 $sql .= "
             poe_id=NULLIF(?, 0),
+            fiber_ports_number=NULLIF(?, 0),
+            switch_port_numbering_layout_id=NULLIF(?, 0),
             management_id=NULLIF(?, 0),
             cable_color=?,
             hex_color=?,
@@ -188,9 +216,9 @@ $sql .= "
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
     if ($hasRj45SpeedIdColumn) {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     } else {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     }
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
@@ -202,12 +230,22 @@ if ($linkedEquipmentId > 0) {
     $stmtEquipmentSync = mysqli_prepare(
         $conn,
         "UPDATE equipment
-         SET switch_environment_id = NULLIF(?, 0)
+         SET switch_fiber_id = NULLIF(?, 0),
+             switch_rj45_id = NULLIF(?, 0),
+             switch_fiber_ports_number = NULLIF(?, 0),
+             switch_port_numbering_layout_id = NULLIF(?, 0),
+             switch_poe_id = NULLIF(?, 0),
+             switch_environment_id = NULLIF(?, 0)
          WHERE id = ? AND company_id = ?
          LIMIT 1"
     );
     if ($stmtEquipmentSync) {
-        mysqli_stmt_bind_param($stmtEquipmentSync, 'iii', $portManagementId, $linkedEquipmentId, $company_id);
+        $equipmentFiberSpeedId = $speed_val > 0 ? $speed_val : $portFiberSpeedId;
+        $equipmentRj45SpeedId = $rj45SpeedVal > 0 ? $rj45SpeedVal : $portRj45SpeedId;
+        $equipmentFiberPortsNumberId = $fiberPortsNumberVal > 0 ? $fiberPortsNumberVal : $portFiberPortsNumberId;
+        $equipmentLayoutId = $layoutVal > 0 ? $layoutVal : $portLayoutId;
+        $equipmentPoeId = $poe_val > 0 ? $poe_val : $portPoeId;
+        mysqli_stmt_bind_param($stmtEquipmentSync, 'iiiiiiii', $equipmentFiberSpeedId, $equipmentRj45SpeedId, $equipmentFiberPortsNumberId, $equipmentLayoutId, $equipmentPoeId, $portManagementId, $linkedEquipmentId, $company_id);
         mysqli_stmt_execute($stmtEquipmentSync);
         mysqli_stmt_close($stmtEquipmentSync);
     }
@@ -215,11 +253,13 @@ if ($linkedEquipmentId > 0) {
     $stmtSwitchManagementSync = mysqli_prepare(
         $conn,
         "UPDATE switch_ports
-         SET management_id = NULLIF(?, 0)
+         SET fiber_port_id = NULLIF(?, 0),
+             management_id = NULLIF(?, 0)
          WHERE company_id = ? AND equipment_id = ?"
     );
     if ($stmtSwitchManagementSync) {
-        mysqli_stmt_bind_param($stmtSwitchManagementSync, 'iii', $portManagementId, $company_id, $linkedEquipmentId);
+        $switchFiberPortId = $speed_val > 0 ? $speed_val : $portFiberSpeedId;
+        mysqli_stmt_bind_param($stmtSwitchManagementSync, 'iiii', $switchFiberPortId, $portManagementId, $company_id, $linkedEquipmentId);
         mysqli_stmt_execute($stmtSwitchManagementSync);
         mysqli_stmt_close($stmtSwitchManagementSync);
     }
