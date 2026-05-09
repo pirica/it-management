@@ -269,7 +269,12 @@ $stmtSwitchSync = mysqli_prepare(
     $conn,
     "UPDATE switch_ports sp
      JOIN idf_ports pr ON pr.id = ?
-     JOIN idf_positions p ON p.id = pr.position_id
+     JOIN idf_positions p
+       ON p.company_id = pr.company_id
+      AND (
+           p.id = pr.position_id
+           OR p.position_no = pr.position_id
+      )
      LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
      SET sp.{$switchPortLabelColumn} = ?,
          sp.status_id = ?,
@@ -281,6 +286,13 @@ $stmtSwitchSync = mysqli_prepare(
        AND p.equipment_id = sp.equipment_id
        AND sp.port_number = pr.port_no
        AND (
+            sp.port_type = pr.port_type
+            OR sp.port_type = CAST(pr.port_type AS CHAR)
+            OR (
+                sp.port_type REGEXP '^[0-9]+$'
+                AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+            )
+            OR
             CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
             OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -311,6 +323,100 @@ if ($stmtSwitchSync) {
         idf_fail('DB error syncing switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
     }
     mysqli_stmt_close($stmtSwitchSync);
+}
+
+// Why: Editing one side of a linked port must propagate color/status to the paired side and its switch mirror too.
+$linkedPeerPortIds = [];
+$stmtPeerPorts = mysqli_prepare(
+    $conn,
+    "SELECT DISTINCT
+        CASE
+            WHEN l.port_id_a = ? THEN l.port_id_b
+            WHEN l.port_id_b = ? THEN l.port_id_a
+            ELSE NULL
+        END AS peer_port_id
+     FROM idf_links l
+     WHERE l.company_id = ?
+       AND (l.port_id_a = ? OR l.port_id_b = ?)"
+);
+if ($stmtPeerPorts) {
+    mysqli_stmt_bind_param($stmtPeerPorts, 'iiiii', $port_id, $port_id, $company_id, $port_id, $port_id);
+    mysqli_stmt_execute($stmtPeerPorts);
+    $resPeerPorts = mysqli_stmt_get_result($stmtPeerPorts);
+    while ($resPeerPorts && ($peerRow = mysqli_fetch_assoc($resPeerPorts))) {
+        $peerPortId = (int)($peerRow['peer_port_id'] ?? 0);
+        if ($peerPortId > 0) {
+            $linkedPeerPortIds[] = $peerPortId;
+        }
+    }
+    mysqli_stmt_close($stmtPeerPorts);
+}
+$linkedPeerPortIds = array_values(array_unique($linkedPeerPortIds));
+
+if ($linkedPeerPortIds) {
+    $stmtPeerPortUpdate = mysqli_prepare(
+        $conn,
+        "UPDATE idf_ports
+         SET status_id = ?,
+             cable_color = ?,
+             hex_color = ?
+         WHERE id = ?
+         LIMIT 1"
+    );
+    if ($stmtPeerPortUpdate) {
+        foreach ($linkedPeerPortIds as $peerPortId) {
+            mysqli_stmt_bind_param($stmtPeerPortUpdate, 'issi', $status_id, $cable_color_name, $cable_hex_color, $peerPortId);
+            mysqli_stmt_execute($stmtPeerPortUpdate);
+        }
+        mysqli_stmt_close($stmtPeerPortUpdate);
+    }
+
+    $stmtPeerSwitchSync = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports sp
+         JOIN idf_ports pr ON pr.id = ?
+         JOIN idf_positions p
+           ON p.company_id = pr.company_id
+          AND (
+               p.id = pr.position_id
+               OR p.position_no = pr.position_id
+          )
+         LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
+         SET sp.status_id = ?,
+             sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id)
+         WHERE sp.company_id = ?
+           AND p.company_id = sp.company_id
+           AND p.equipment_id = sp.equipment_id
+           AND sp.port_number = pr.port_no
+           AND (
+                sp.port_type = pr.port_type
+                OR sp.port_type = CAST(pr.port_type AS CHAR)
+                OR (
+                    sp.port_type REGEXP '^[0-9]+$'
+                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+                )
+                OR
+                CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR (
+                    sp.port_type REGEXP '^[0-9]+$'
+                    AND CAST(sp.port_type AS UNSIGNED) = spt.id
+                )
+                OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                   = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           )
+         LIMIT 1"
+    );
+    if ($stmtPeerSwitchSync) {
+        $peerSwitchColorId = $cable_color_id > 0 ? $cable_color_id : 0;
+        foreach ($linkedPeerPortIds as $peerPortId) {
+            mysqli_stmt_bind_param($stmtPeerSwitchSync, 'iiii', $peerPortId, $status_id, $peerSwitchColorId, $company_id);
+            mysqli_stmt_execute($stmtPeerSwitchSync);
+        }
+        mysqli_stmt_close($stmtPeerSwitchSync);
+    }
 }
 
 $stmtLinkUpdate = mysqli_prepare(
