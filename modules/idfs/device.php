@@ -1743,7 +1743,9 @@ function openLinkModal(portId) {
         const option = document.createElement('option');
         option.value = String(port.id);
         const idfName = port.idf_name ? `IDF ${port.idf_name}` : (port.idf_id ? `IDF #${port.idf_id}` : 'IDF');
-        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${port.label ? ` • ${port.label}` : ''}`;
+        const rawLabel = String(port.label || '').trim();
+        const showLabel = rawLabel !== '' && rawLabel !== '0' && rawLabel.toLowerCase() !== 'null';
+        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no}${showLabel ? ` • ${rawLabel}` : ''}`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
@@ -1754,7 +1756,9 @@ function openLinkModal(portId) {
     }
 
     f.port_id_a.value = String(source.id);
-    f.source_display.value = `Port ${source.port_no}${source.label ? ` • ${source.label}` : ''}`;
+    const rawSourceLabel = String(source.label || '').trim();
+    const showSourceLabel = rawSourceLabel !== '' && rawSourceLabel !== '0' && rawSourceLabel.toLowerCase() !== 'null';
+    f.source_display.value = `Port ${source.port_no}${showSourceLabel ? ` • ${rawSourceLabel}` : ''}`;
     const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
         option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
     );
