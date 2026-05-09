@@ -1142,6 +1142,9 @@ CREATE TABLE `idf_ports` (
   `vlan_id` int DEFAULT NULL,
   `speed_id` int DEFAULT NULL,
   `rj45_speed_id` int DEFAULT NULL,
+  `fiber_ports_number` int DEFAULT NULL,
+  `switch_port_numbering_layout_id` int DEFAULT NULL,
+  `management_id` int DEFAULT NULL,
   `poe_id` int DEFAULT NULL,
   `cable_color` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `hex_color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1157,6 +1160,9 @@ CREATE TABLE `idf_ports` (
   KEY `idf_ports_vlan_idx` (`vlan_id`),
   KEY `idf_ports_speed_idx` (`speed_id`),
   KEY `idf_ports_rj45_speed_idx` (`rj45_speed_id`),
+  KEY `idf_ports_fiber_ports_number_idx` (`fiber_ports_number`),
+  KEY `idf_ports_layout_idx` (`switch_port_numbering_layout_id`),
+  KEY `idf_ports_management_idx` (`management_id`),
   KEY `idf_ports_poe_idx` (`poe_id`),
   CONSTRAINT `idf_ports_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1194,6 +1200,9 @@ INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '12', 'PoE
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '15', 'PoE++ (802.3bt) - up to 60-90W');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed_id`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `idf_ports_ibfk_fiber_ports_number` FOREIGN KEY (`fiber_ports_number`) REFERENCES `equipment_fiber_count` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `idf_ports_ibfk_layout` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `idf_ports_ibfk_management` FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe_id`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL;
 
 -- Table structure for `equipment_rj45`
