@@ -136,6 +136,7 @@ $hasToRackId = itm_table_has_column($conn, 'switch_ports', 'to_rack_id');
 $hasToLocationId = itm_table_has_column($conn, 'switch_ports', 'to_location_id');
 $hasLocationId = itm_table_has_column($conn, 'switch_ports', 'location_id');
 $hasHostname = itm_table_has_column($conn, 'switch_ports', 'hostname');
+$hasManagementId = itm_table_has_column($conn, 'switch_ports', 'management_id');
 
 if (!$hasStatusId || !$hasColorId) {
     http_response_code(500);
@@ -185,6 +186,28 @@ $toLocationId = is_numeric((string)$toLocationIdRaw) ? (int)$toLocationIdRaw : 0
 $rackId = isset($input['rack_id']) && is_numeric((string)$input['rack_id']) ? (int)$input['rack_id'] : 0;
 $locationId = isset($input['location_id']) && is_numeric((string)$input['location_id']) ? (int)$input['location_id'] : 0;
 $hostname = isset($input['hostname']) ? trim((string)$input['hostname']) : null;
+
+$equipmentManagementId = 0;
+if ($hasManagementId) {
+    $stmtEquipmentManagement = mysqli_prepare(
+        $conn,
+        "SELECT COALESCE(switch_environment_id, 0) AS switch_environment_id
+         FROM equipment
+         WHERE id = ? AND company_id = ?
+         LIMIT 1"
+    );
+    if ($stmtEquipmentManagement) {
+        $companyId = (int)$company_id;
+        mysqli_stmt_bind_param($stmtEquipmentManagement, 'ii', $switchId, $companyId);
+        mysqli_stmt_execute($stmtEquipmentManagement);
+        $resEquipmentManagement = mysqli_stmt_get_result($stmtEquipmentManagement);
+        $equipmentManagementRow = $resEquipmentManagement ? mysqli_fetch_assoc($resEquipmentManagement) : null;
+        mysqli_stmt_close($stmtEquipmentManagement);
+        if ($equipmentManagementRow) {
+            $equipmentManagementId = (int)($equipmentManagementRow['switch_environment_id'] ?? 0);
+        }
+    }
+}
 
 // Build dynamic UPDATE query based on provided fields
 $fields = [];
@@ -302,6 +325,16 @@ if ($hasLocationId && array_key_exists('location_id', $input)) {
         $params[] = $locationId;
     } else {
         $fields[] = 'location_id = NULL';
+    }
+}
+
+if ($hasManagementId) {
+    if ($equipmentManagementId > 0) {
+        $fields[] = 'management_id = ?';
+        $types .= 'i';
+        $params[] = $equipmentManagementId;
+    } else {
+        $fields[] = 'management_id = NULL';
     }
 }
 

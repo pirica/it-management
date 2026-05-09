@@ -558,6 +558,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (mysqli_query($conn, $sql)) {
+            if ($equipment_type_id === $switchTypeId && equipment_table_has_column($conn, 'switch_ports', 'management_id')) {
+                $switchEnvironmentUpdateSql = "UPDATE switch_ports
+                                               SET management_id = $switch_environment_id
+                                               WHERE company_id = $company_id
+                                                 AND equipment_id = $id";
+                mysqli_query($conn, $switchEnvironmentUpdateSql);
+            }
             foreach ($photoFilenamesToDeleteAfterSave as $deletedFilename) {
                 $existingPhotoPath = UPLOAD_PATH . $deletedFilename;
                 if (is_file($existingPhotoPath)) {
