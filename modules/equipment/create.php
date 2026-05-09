@@ -499,8 +499,8 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             status_id = VALUES(status_id),
             vlan_id = VALUES(vlan_id),
             notes = VALUES(notes),
-            switch_port_numbering_layout_id = COALESCE(VALUES(switch_port_numbering_layout_id), switch_port_numbering_layout_id),
-            management_id = COALESCE(VALUES(management_id), management_id)"
+            switch_port_numbering_layout_id = COALESCE(VALUES(switch_port_numbering_layout_id), idf_ports.switch_port_numbering_layout_id),
+            management_id = COALESCE(VALUES(management_id), idf_ports.management_id)"
     );
     if ($stmtMirrorSwitchPorts) {
         mysqli_stmt_bind_param(
