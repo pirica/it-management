@@ -1578,10 +1578,12 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
          WHERE company_id = ?
            AND device_name = ?
            AND id <> ?
+           AND (equipment_id IS NULL OR equipment_id <> ?)
          LIMIT 1"
     );
     if ($stmtDuplicateDeviceName) {
-        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isi', $companyId, $equipmentName, $targetPositionId);
+        $equipmentIdStr = (string)$equipmentId;
+        mysqli_stmt_bind_param($stmtDuplicateDeviceName, 'isis', $companyId, $equipmentName, $targetPositionId, $equipmentIdStr);
         mysqli_stmt_execute($stmtDuplicateDeviceName);
         $resDuplicateDeviceName = mysqli_stmt_get_result($stmtDuplicateDeviceName);
         $duplicateDeviceNameRow = $resDuplicateDeviceName ? mysqli_fetch_assoc($resDuplicateDeviceName) : null;
