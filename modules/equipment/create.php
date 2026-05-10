@@ -219,6 +219,81 @@ function equipment_resolve_idf_device_type_id(mysqli $conn, int $companyId, int 
     return 0;
 }
 
+function equipment_find_available_idf_slot(mysqli $conn, int $companyId, int $idfId): array
+{
+    $slot = ['position_id' => 0, 'position_no' => 0, 'requires_insert' => false];
+    if ($companyId <= 0 || $idfId <= 0) {
+        return $slot;
+    }
+
+    $stmtEmpty = mysqli_prepare(
+        $conn,
+        "SELECT id, position_no
+         FROM idf_positions
+         WHERE company_id = ?
+           AND idf_id = ?
+           AND (
+               equipment_id IS NULL
+               OR TRIM(equipment_id) = ''
+               OR equipment_id = '0'
+               OR equipment_id NOT REGEXP '^[0-9]+$'
+           )
+         ORDER BY position_no ASC
+         LIMIT 1"
+    );
+    if ($stmtEmpty) {
+        mysqli_stmt_bind_param($stmtEmpty, 'ii', $companyId, $idfId);
+        mysqli_stmt_execute($stmtEmpty);
+        $resEmpty = mysqli_stmt_get_result($stmtEmpty);
+        $emptyRow = $resEmpty ? mysqli_fetch_assoc($resEmpty) : null;
+        mysqli_stmt_close($stmtEmpty);
+        if ($emptyRow) {
+            $slot['position_id'] = (int)($emptyRow['id'] ?? 0);
+            $slot['position_no'] = (int)($emptyRow['position_no'] ?? 0);
+            return $slot;
+        }
+    }
+
+    $occupiedPositions = [];
+    $maxPosInDb = 0;
+    $stmtUsed = mysqli_prepare(
+        $conn,
+        "SELECT position_no
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ?"
+    );
+    if ($stmtUsed) {
+        mysqli_stmt_bind_param($stmtUsed, 'ii', $companyId, $idfId);
+        mysqli_stmt_execute($stmtUsed);
+        $resUsed = mysqli_stmt_get_result($stmtUsed);
+        while ($resUsed && ($usedRow = mysqli_fetch_assoc($resUsed))) {
+            $usedPositionNo = (int)($usedRow['position_no'] ?? 0);
+            if ($usedPositionNo <= 0) {
+                continue;
+            }
+            $occupiedPositions[$usedPositionNo] = true;
+            if ($usedPositionNo > $maxPosInDb) {
+                $maxPosInDb = $usedPositionNo;
+            }
+        }
+        mysqli_stmt_close($stmtUsed);
+    }
+
+    // Why: Rack view always shows at least 10 slots, so missing rows in that range should behave as free positions.
+    $scanLimit = max(10, $maxPosInDb);
+    for ($positionNo = 1; $positionNo <= $scanLimit; $positionNo++) {
+        if (!isset($occupiedPositions[$positionNo])) {
+            $slot['position_no'] = $positionNo;
+            $slot['requires_insert'] = true;
+            return $slot;
+        }
+    }
+
+    $slot['position_no'] = $maxPosInDb > 0 ? ($maxPosInDb + 1) : 1;
+    $slot['requires_insert'] = true;
+    return $slot;
+}
+
 function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, array $equipmentData): string
 {
     $equipmentId = (int)($equipmentData['id'] ?? 0);
@@ -270,88 +345,52 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
         $targetPositionId = (int)($currentPosition['id'] ?? 0);
         $targetPositionNo = (int)($currentPosition['position_no'] ?? 0);
     } else {
-        $stmtEmpty = mysqli_prepare(
-            $conn,
-            "SELECT id, position_no
-             FROM idf_positions
-             WHERE company_id = ?
-               AND idf_id = ?
-               AND (
-                   equipment_id IS NULL
-                   OR TRIM(equipment_id) = ''
-                   OR equipment_id = '0'
-                   OR equipment_id NOT REGEXP '^[0-9]+$'
-               )
-             ORDER BY position_no ASC
-             LIMIT 1"
-        );
-        $emptyRow = null;
-        if ($stmtEmpty) {
-            mysqli_stmt_bind_param($stmtEmpty, 'ii', $companyId, $idfId);
-            mysqli_stmt_execute($stmtEmpty);
-            $resEmpty = mysqli_stmt_get_result($stmtEmpty);
-            $emptyRow = $resEmpty ? mysqli_fetch_assoc($resEmpty) : null;
-            mysqli_stmt_close($stmtEmpty);
-        }
-        if (!$emptyRow) {
-            $stmtIdfPositionCount = mysqli_prepare(
-                $conn,
-                "SELECT COUNT(*) AS c
-                 FROM idf_positions
-                 WHERE company_id = ?
-                   AND idf_id = ?"
-            );
-            $idfPositionCount = 0;
-            if ($stmtIdfPositionCount) {
-                mysqli_stmt_bind_param($stmtIdfPositionCount, 'ii', $companyId, $idfId);
-                mysqli_stmt_execute($stmtIdfPositionCount);
-                $resIdfPositionCount = mysqli_stmt_get_result($stmtIdfPositionCount);
-                $idfPositionCountRow = $resIdfPositionCount ? mysqli_fetch_assoc($resIdfPositionCount) : null;
-                mysqli_stmt_close($stmtIdfPositionCount);
-                $idfPositionCount = (int)($idfPositionCountRow['c'] ?? 0);
-            }
+        $availableSlot = equipment_find_available_idf_slot($conn, $companyId, $idfId);
+        $targetPositionId = (int)($availableSlot['position_id'] ?? 0);
+        $targetPositionNo = (int)($availableSlot['position_no'] ?? 0);
+        $requiresInsert = !empty($availableSlot['requires_insert']);
 
-            if ($idfPositionCount <= 0) {
-                $bootstrapDeviceTypeId = equipment_resolve_idf_device_type_id($conn, $companyId, $equipmentTypeId);
-                if ($bootstrapDeviceTypeId <= 0) {
-                    return 'A database error occurred. Please try again.';
-                }
-                $targetPositionNo = 1;
-                $stmtInsertBootstrapPosition = mysqli_prepare(
-                    $conn,
-                    "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
-                     VALUES (?, ?, ?, ?, ?, ?, 0, NULLIF(?, 0), ?)"
+        if ($targetPositionNo <= 0) {
+            return 'Unable to assign an IDF position. Please verify IDF settings.';
+        }
+
+        if ($targetPositionId <= 0 && $requiresInsert) {
+            $bootstrapDeviceTypeId = equipment_resolve_idf_device_type_id($conn, $companyId, $equipmentTypeId);
+            if ($bootstrapDeviceTypeId <= 0) {
+                return 'A database error occurred. Please try again.';
+            }
+            $stmtInsertBootstrapPosition = mysqli_prepare(
+                $conn,
+                "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, 0, NULLIF(?, 0), ?)"
+            );
+            if ($stmtInsertBootstrapPosition) {
+                $equipmentIdStr = (string)$equipmentId;
+                $notesForInsert = $notes !== '' ? $notes : null;
+                mysqli_stmt_bind_param(
+                    $stmtInsertBootstrapPosition,
+                    'iiiissis',
+                    $companyId,
+                    $idfId,
+                    $targetPositionNo,
+                    $bootstrapDeviceTypeId,
+                    $equipmentName,
+                    $equipmentIdStr,
+                    $layoutId,
+                    $notesForInsert
                 );
-                if ($stmtInsertBootstrapPosition) {
-                    $equipmentIdStr = (string)$equipmentId;
-                    $notesForInsert = $notes !== '' ? $notes : null;
-                    mysqli_stmt_bind_param(
-                        $stmtInsertBootstrapPosition,
-                        'iiiissis',
-                        $companyId,
-                        $idfId,
-                        $targetPositionNo,
-                        $bootstrapDeviceTypeId,
-                        $equipmentName,
-                        $equipmentIdStr,
-                        $layoutId,
-                        $notesForInsert
-                    );
-                    if (!mysqli_stmt_execute($stmtInsertBootstrapPosition)) {
-                        $bootstrapError = mysqli_stmt_error($stmtInsertBootstrapPosition);
-                        mysqli_stmt_close($stmtInsertBootstrapPosition);
-                        return $bootstrapError !== '' ? $bootstrapError : 'A database error occurred. Please try again.';
-                    }
-                    $targetPositionId = (int)mysqli_insert_id($conn);
+                if (!mysqli_stmt_execute($stmtInsertBootstrapPosition)) {
+                    $bootstrapError = mysqli_stmt_error($stmtInsertBootstrapPosition);
                     mysqli_stmt_close($stmtInsertBootstrapPosition);
+                    return $bootstrapError !== '' ? $bootstrapError : 'A database error occurred. Please try again.';
                 }
-            } else {
-                return 'There is none Empty positions, add more positions on IDF.';
+                $targetPositionId = (int)mysqli_insert_id($conn);
+                mysqli_stmt_close($stmtInsertBootstrapPosition);
             }
         }
+
         if ($targetPositionId <= 0) {
-            $targetPositionId = (int)($emptyRow['id'] ?? 0);
-            $targetPositionNo = (int)($emptyRow['position_no'] ?? 0);
+            return 'Unable to assign an IDF position. Please verify IDF settings.';
         }
     }
 
@@ -550,52 +589,15 @@ function equipment_validate_idf_assignment(mysqli $conn, int $companyId, int $eq
         return '';
     }
 
-    $stmtIdfPositionCount = mysqli_prepare(
-        $conn,
-        "SELECT COUNT(*) AS c
-         FROM idf_positions
-         WHERE company_id = ?
-           AND idf_id = ?"
-    );
-    $idfPositionCount = 0;
-    if ($stmtIdfPositionCount) {
-        mysqli_stmt_bind_param($stmtIdfPositionCount, 'ii', $companyId, $idfId);
-        mysqli_stmt_execute($stmtIdfPositionCount);
-        $resIdfPositionCount = mysqli_stmt_get_result($stmtIdfPositionCount);
-        $idfPositionCountRow = $resIdfPositionCount ? mysqli_fetch_assoc($resIdfPositionCount) : null;
-        mysqli_stmt_close($stmtIdfPositionCount);
-        $idfPositionCount = (int)($idfPositionCountRow['c'] ?? 0);
-    }
-    if ($idfPositionCount <= 0) {
+    $availableSlot = equipment_find_available_idf_slot($conn, $companyId, $idfId);
+    $availablePositionId = (int)($availableSlot['position_id'] ?? 0);
+    $availablePositionNo = (int)($availableSlot['position_no'] ?? 0);
+
+    if ($availablePositionId > 0 || $availablePositionNo > 0) {
         return '';
     }
 
-    $stmtEmpty = mysqli_prepare(
-        $conn,
-        "SELECT id
-         FROM idf_positions
-         WHERE company_id = ?
-           AND idf_id = ?
-           AND (
-               equipment_id IS NULL
-               OR TRIM(equipment_id) = ''
-               OR equipment_id = '0'
-               OR equipment_id NOT REGEXP '^[0-9]+$'
-           )
-         ORDER BY position_no ASC
-         LIMIT 1"
-    );
-    $hasEmptyPosition = false;
-    if ($stmtEmpty) {
-        mysqli_stmt_bind_param($stmtEmpty, 'ii', $companyId, $idfId);
-        mysqli_stmt_execute($stmtEmpty);
-        $resEmpty = mysqli_stmt_get_result($stmtEmpty);
-        $emptyRow = $resEmpty ? mysqli_fetch_assoc($resEmpty) : null;
-        mysqli_stmt_close($stmtEmpty);
-        $hasEmptyPosition = (bool)$emptyRow;
-    }
-
-    return $hasEmptyPosition ? '' : 'There is none Empty positions, add more positions on IDF.';
+    return 'Unable to assign an IDF position. Please verify IDF settings.';
 }
 
 function equipment_detect_upload_mime(array $file): string
