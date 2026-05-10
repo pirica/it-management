@@ -149,7 +149,7 @@ $device_name = trim((string)($src['device_name'] ?? ''));
 $device_name = idf_copy_next_unique_device_name($conn, $company_id, $device_name);
 
 $existing = null;
-$stmtEx = mysqli_prepare($conn, "SELECT id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");
+$stmtEx = mysqli_prepare($conn, "SELECT id, idf_id, equipment_id FROM idf_positions WHERE idf_id=? AND position_no=? LIMIT 1");
 if ($stmtEx) {
     mysqli_stmt_bind_param($stmtEx, 'ii', $idf_id, $target_position);
     mysqli_stmt_execute($stmtEx);
@@ -167,12 +167,63 @@ if ($existing && !$overwrite) {
 mysqli_begin_transaction($conn);
 try {
     if ($existing && $overwrite) {
+        $overwrittenEquipmentRaw = trim((string)($existing['equipment_id'] ?? ''));
+        $overwrittenIdfId = (int)($existing['idf_id'] ?? 0);
+
         $stmtDel = mysqli_prepare($conn, 'DELETE FROM idf_positions WHERE id=? LIMIT 1');
         if ($stmtDel) {
             $exId = (int)$existing['id'];
             mysqli_stmt_bind_param($stmtDel, 'i', $exId);
             mysqli_stmt_execute($stmtDel);
             mysqli_stmt_close($stmtDel);
+        }
+
+        if ($overwrittenEquipmentRaw !== '' && ctype_digit($overwrittenEquipmentRaw) && $overwrittenIdfId > 0) {
+            $overwrittenEquipmentId = (int)$overwrittenEquipmentRaw;
+            $overwrittenEquipmentIdString = (string)$overwrittenEquipmentId;
+            $stillLinkedCount = 0;
+
+            $stmtStillLinked = mysqli_prepare(
+                $conn,
+                "SELECT COUNT(*) AS c
+                 FROM idf_positions
+                 WHERE company_id = ? AND equipment_id = ?"
+            );
+            if ($stmtStillLinked) {
+                mysqli_stmt_bind_param($stmtStillLinked, 'is', $company_id, $overwrittenEquipmentIdString);
+                mysqli_stmt_execute($stmtStillLinked);
+                $resStillLinked = mysqli_stmt_get_result($stmtStillLinked);
+                $stillLinkedRow = $resStillLinked ? mysqli_fetch_assoc($resStillLinked) : null;
+                $stillLinkedCount = (int)($stillLinkedRow['c'] ?? 0);
+                mysqli_stmt_close($stmtStillLinked);
+            }
+
+            if ($stillLinkedCount <= 0) {
+                $stmtDetachEquipment = mysqli_prepare(
+                    $conn,
+                    "UPDATE equipment
+                     SET idf_id = NULL
+                     WHERE id = ? AND company_id = ? AND idf_id = ?
+                     LIMIT 1"
+                );
+                if ($stmtDetachEquipment) {
+                    mysqli_stmt_bind_param($stmtDetachEquipment, 'iii', $overwrittenEquipmentId, $company_id, $overwrittenIdfId);
+                    mysqli_stmt_execute($stmtDetachEquipment);
+                    mysqli_stmt_close($stmtDetachEquipment);
+                }
+
+                $stmtDetachSwitchPorts = mysqli_prepare(
+                    $conn,
+                    "UPDATE switch_ports
+                     SET idf_id = NULL
+                     WHERE company_id = ? AND equipment_id = ? AND idf_id = ?"
+                );
+                if ($stmtDetachSwitchPorts) {
+                    mysqli_stmt_bind_param($stmtDetachSwitchPorts, 'iii', $company_id, $overwrittenEquipmentId, $overwrittenIdfId);
+                    mysqli_stmt_execute($stmtDetachSwitchPorts);
+                    mysqli_stmt_close($stmtDetachSwitchPorts);
+                }
+            }
         }
     }
 
