@@ -1413,11 +1413,19 @@ function ensureCopyModalOptions() {
 
 function copyDevice() {
     const form = document.getElementById('idfCopyForm');
+    const overwriteMode = Number(form.overwrite.value || 0);
+    const targetPosition = Number(form.target_position.value || 0);
+    if (overwriteMode === 1) {
+        const confirmMessage = `Overwrite target position ${targetPosition}?\n\nThis will replace the current target device, and if it is linked equipment, its IDF will be set to NULL. This action cannot be undone.`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+    }
     const payload = {
         csrf_token: CSRF,
         position_id: Number(form.position_id.value),
-        target_position: Number(form.target_position.value),
-        overwrite: Number(form.overwrite.value),
+        target_position: targetPosition,
+        overwrite: overwriteMode,
     };
     apiPost('position_copy.php', payload)
         .then(() => location.reload())
