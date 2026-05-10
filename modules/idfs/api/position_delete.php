@@ -55,6 +55,18 @@ if ($linkedEquipmentId !== '' && ctype_digit($linkedEquipmentId) && $linkedIdfId
         mysqli_stmt_execute($stmtEquipment);
         mysqli_stmt_close($stmtEquipment);
     }
+
+    $stmtSwitchPorts = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports
+         SET idf_id = NULL
+         WHERE company_id = ? AND equipment_id = ? AND idf_id = ?"
+    );
+    if ($stmtSwitchPorts) {
+        mysqli_stmt_bind_param($stmtSwitchPorts, 'iii', $company_id, $linkedEquipmentIdInt, $linkedIdfId);
+        mysqli_stmt_execute($stmtSwitchPorts);
+        mysqli_stmt_close($stmtSwitchPorts);
+    }
 }
 
 idf_ok();
