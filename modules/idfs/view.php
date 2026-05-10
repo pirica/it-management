@@ -988,7 +988,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="idfModalBackdrop" onclick="closeModalIfBackdrop(event)">
+<div class="idf-modal-backdrop" id="idfModalBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title" id="idfModalTitle">Device</div>
@@ -1060,13 +1060,14 @@ foreach ($equipmentOptions as $equipmentOption) {
             </div>
 
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn" type="button" onclick="closeModal()">Cancel</button>
                 <button class="btn" type="button" onclick="saveDevice()">Save</button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="idfCopyBackdrop" onclick="closeCopyIfBackdrop(event)">
+<div class="idf-modal-backdrop" id="idfCopyBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Copy device to position</div>
@@ -1092,6 +1093,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </select>
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn" type="button" onclick="closeCopy()">Cancel</button>
                 <button class="btn" type="button" onclick="copyDevice()">Copy</button>
             </div>
         </form>

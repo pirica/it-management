@@ -1204,7 +1204,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="portBackdrop" onclick="if(event.target.id==='portBackdrop') closePortModal()">
+<div class="idf-modal-backdrop" id="portBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Edit Port</div>
@@ -1290,13 +1290,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <input class="input" name="notes">
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn" type="button" onclick="closePortModal()">Cancel</button>
                 <button class="btn" type="button" onclick="savePort()">Save</button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="linkBackdrop" onclick="if(event.target.id==='linkBackdrop') closeLinkModal()">
+<div class="idf-modal-backdrop" id="linkBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Create Cable Link</div>
@@ -1419,13 +1420,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn" type="button" onclick="closeLinkModal()">Cancel</button>
                 <button class="btn" type="button" onclick="createLink()">Create link</button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="cableColorBackdrop" onclick="if(event.target.id==='cableColorBackdrop') closeCableColorModal(false)">
+<div class="idf-modal-backdrop" id="cableColorBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Add Cable Color</div>
@@ -1449,7 +1451,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="statusBackdrop" onclick="if(event.target.id==='statusBackdrop') closeStatusModal(false)">
+<div class="idf-modal-backdrop" id="statusBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Add Status</div>
