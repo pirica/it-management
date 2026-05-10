@@ -174,6 +174,9 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
   * PR descriptions must list the exact commands that were run and their outcomes.
+* **NEW PR always (mandatory):**
+  * Package every requested implementation in a fresh branch and open a new PR.
+  * Do not reuse a previously opened PR for a new request, even if the files overlap.
 * **IDF sync guardrail (mandatory for `modules/idfs/view.php` and `modules/idfs/device.php`):**
   * Edit/Create/Update/Delete flows must keep `idf_ports`, `switch_ports`, `equipment`, and `idf_links` synchronized.
   * `link_create` and `port_update` must propagate status/color/label/notes to matching `switch_ports` rows and linked peer `idf_ports`.
