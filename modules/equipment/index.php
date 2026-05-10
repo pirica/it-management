@@ -92,6 +92,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
                l.name AS location_name,
                r.name AS rack_name,
                idf.name AS idf_name,
+               COALESCE(e.idf_id, 0) AS idf_id,
                es.name AS status_name
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
@@ -338,7 +339,13 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td><?php echo sanitize($row['equipment_type_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['hostname'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['ip_address'] ?? '-'); ?></td>
-                                <td><?php echo sanitize($row['idf_name'] ?? '-'); ?></td>
+                                <td>
+                                    <?php if ((int)($row['idf_id'] ?? 0) > 0 && trim((string)($row['idf_name'] ?? '')) !== ''): ?>
+                                        <a href="../idfs/view.php?id=<?php echo (int)$row['idf_id']; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize((string)$row['idf_name']); ?></a>
+                                    <?php else: ?>
+                                        <?php echo sanitize($row['idf_name'] ?? '-'); ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo sanitize($row['rack_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['location_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['manufacturer_name'] ?? '-'); ?></td>
