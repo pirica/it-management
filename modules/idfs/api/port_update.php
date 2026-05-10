@@ -287,6 +287,13 @@ $stmtSwitchSync = mysqli_prepare(
            = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
        AND sp.port_number = pr.port_no
        AND (
+            CONVERT(CAST(sp.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                = CONVERT(CAST(pr.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            OR (
+                sp.port_type REGEXP '^[0-9]+$'
+                AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+            )
+            OR
             CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
             OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -387,6 +394,13 @@ if ($linkedPeerPortIds) {
                = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            AND sp.port_number = pr.port_no
            AND (
+                CONVERT(CAST(sp.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(CAST(pr.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR (
+                    sp.port_type REGEXP '^[0-9]+$'
+                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+                )
+                OR
                 CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
