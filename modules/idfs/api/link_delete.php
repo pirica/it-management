@@ -128,16 +128,10 @@ if ($portA > 0 && $portB > 0) {
              sp.comments = NULL
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
-           AND p.equipment_id = sp.equipment_id
+           AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            AND sp.port_number = pr.port_no
            AND (
-                sp.port_type = pr.port_type
-                OR sp.port_type = CAST(pr.port_type AS CHAR)
-                OR (
-                    sp.port_type REGEXP '^[0-9]+$'
-                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
-                )
-                OR
                 CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -149,13 +143,17 @@ if ($portA > 0 && $portB > 0) {
                 OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                    = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            )
-         LIMIT 1"
+        "
     );
     if ($stmtSwitchClear) {
         mysqli_stmt_bind_param($stmtSwitchClear, 'iiii', $portA, $unknownStatusId, $grayColorId, $company_id);
-        mysqli_stmt_execute($stmtSwitchClear);
+        if (!mysqli_stmt_execute($stmtSwitchClear)) {
+            idf_fail('DB error clearing source switch port link state: ' . mysqli_stmt_error($stmtSwitchClear), 500);
+        }
         mysqli_stmt_bind_param($stmtSwitchClear, 'iiii', $portB, $unknownStatusId, $grayColorId, $company_id);
-        mysqli_stmt_execute($stmtSwitchClear);
+        if (!mysqli_stmt_execute($stmtSwitchClear)) {
+            idf_fail('DB error clearing destination switch port link state: ' . mysqli_stmt_error($stmtSwitchClear), 500);
+        }
         mysqli_stmt_close($stmtSwitchClear);
     }
 }

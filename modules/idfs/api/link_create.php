@@ -707,7 +707,8 @@ if (
              sp.comments = ?
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
-           AND p.equipment_id = sp.equipment_id
+           AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            AND sp.port_number = pr.port_no
            AND (
                 CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -721,15 +722,19 @@ if (
                 OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                    = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            )
-         LIMIT 1"
+        "
     );
     if ($stmtSwitchSync) {
         $switchColorSyncId = $cableColorId > 0 ? $cableColorId : 0;
         $linkNoteSync = $notes_val;
         mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $label_val, $statusSyncId, $switchColorSyncId, $linkNoteSync, $company_id);
-        mysqli_stmt_execute($stmtSwitchSync);
+        if (!mysqli_stmt_execute($stmtSwitchSync)) {
+            idf_fail('DB error syncing source switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
+        }
         mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $label_val, $statusSyncId, $switchColorSyncId, $linkNoteSync, $company_id);
-        mysqli_stmt_execute($stmtSwitchSync);
+        if (!mysqli_stmt_execute($stmtSwitchSync)) {
+            idf_fail('DB error syncing destination switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
+        }
         mysqli_stmt_close($stmtSwitchSync);
     }
 }

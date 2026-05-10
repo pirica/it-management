@@ -174,6 +174,14 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
   * PR descriptions must list the exact commands that were run and their outcomes.
+* **IDF sync guardrail (mandatory for `modules/idfs/view.php` and `modules/idfs/device.php`):**
+  * Edit/Create/Update/Delete flows must keep `idf_ports`, `switch_ports`, `equipment`, and `idf_links` synchronized.
+  * `link_create` and `port_update` must propagate status/color/label/notes to matching `switch_ports` rows and linked peer `idf_ports`.
+  * `link_delete` must reset both `idf_ports` and matching `switch_ports` rows to tenant `Unknown` + Gray (`#808080`) defaults.
+  * `position_save` must sync `equipment.idf_id` + `switch_ports.idf_id` to the selected IDF, and `position_delete` must clear them to `NULL` when unlinked.
+  * Mandatory human-flow regression command before PR when touching these paths:
+    * `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
+  * If the command reports any `[FAIL]`, the task is not complete.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
 * **API:**

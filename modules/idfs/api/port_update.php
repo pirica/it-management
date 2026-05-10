@@ -17,7 +17,7 @@ $stmt = mysqli_prepare(
      JOIN idf_positions p ON p.id=pr.position_id
      JOIN idfs i ON i.id=p.idf_id
      WHERE pr.id=?
-     LIMIT 1"
+    "
 );
 $row = null;
 if ($stmt) {
@@ -46,7 +46,7 @@ if ($linkedEquipmentId > 0) {
         "SELECT COALESCE(switch_environment_id, 0) AS switch_environment_id
          FROM equipment
          WHERE id = ? AND company_id = ?
-         LIMIT 1"
+        "
     );
     if ($stmtEquipmentManagement) {
         mysqli_stmt_bind_param($stmtEquipmentManagement, 'ii', $linkedEquipmentId, $company_id);
@@ -216,7 +216,7 @@ $sql .= "
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
     if ($hasRj45SpeedIdColumn) {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     } else {
         mysqli_stmt_bind_param($stmtUpd, 'isisiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
     }
@@ -283,16 +283,10 @@ $stmtSwitchSync = mysqli_prepare(
          sp.comments = ?
      WHERE sp.company_id = ?
        AND p.company_id = sp.company_id
-       AND p.equipment_id = sp.equipment_id
+       AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
        AND sp.port_number = pr.port_no
        AND (
-            sp.port_type = pr.port_type
-            OR sp.port_type = CAST(pr.port_type AS CHAR)
-            OR (
-                sp.port_type REGEXP '^[0-9]+$'
-                AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
-            )
-            OR
             CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
             OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -304,8 +298,11 @@ $stmtSwitchSync = mysqli_prepare(
             OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
        )
-     LIMIT 1"
+    "
 );
+if (!$stmtSwitchSync) {
+    idf_fail('DB error preparing switch port sync: ' . mysqli_error($conn), 500);
+}
 if ($stmtSwitchSync) {
     $switchColorId = $cable_color_id > 0 ? $cable_color_id : 0;
     mysqli_stmt_bind_param(
@@ -386,16 +383,10 @@ if ($linkedPeerPortIds) {
              sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id)
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
-           AND p.equipment_id = sp.equipment_id
+           AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            AND sp.port_number = pr.port_no
            AND (
-                sp.port_type = pr.port_type
-                OR sp.port_type = CAST(pr.port_type AS CHAR)
-                OR (
-                    sp.port_type REGEXP '^[0-9]+$'
-                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
-                )
-                OR
                 CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -407,8 +398,11 @@ if ($linkedPeerPortIds) {
                 OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                    = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            )
-         LIMIT 1"
+        "
     );
+    if (!$stmtPeerSwitchSync) {
+        idf_fail('DB error preparing peer switch sync: ' . mysqli_error($conn), 500);
+    }
     if ($stmtPeerSwitchSync) {
         $peerSwitchColorId = $cable_color_id > 0 ? $cable_color_id : 0;
         foreach ($linkedPeerPortIds as $peerPortId) {

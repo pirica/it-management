@@ -223,6 +223,38 @@ if ($stmtIdf) {
     }
 }
 
+$previousLinkedEquipmentIds = [];
+$registerPreviousLinkedEquipment = static function ($rawEquipmentId) use (&$previousLinkedEquipmentIds): void {
+    $equipmentIdRaw = trim((string)$rawEquipmentId);
+    if ($equipmentIdRaw !== '' && ctype_digit($equipmentIdRaw)) {
+        $equipmentIdInt = (int)$equipmentIdRaw;
+        if ($equipmentIdInt > 0) {
+            $previousLinkedEquipmentIds[$equipmentIdInt] = true;
+        }
+    }
+};
+
+$stmtTargetSlotBeforeSave = mysqli_prepare(
+    $conn,
+    "SELECT id, equipment_id
+     FROM idf_positions
+     WHERE company_id = ? AND idf_id = ? AND position_no = ?
+     LIMIT 1"
+);
+if ($stmtTargetSlotBeforeSave) {
+    mysqli_stmt_bind_param($stmtTargetSlotBeforeSave, 'iii', $company_id, $idf_id, $position_no);
+    mysqli_stmt_execute($stmtTargetSlotBeforeSave);
+    $resTargetSlotBeforeSave = mysqli_stmt_get_result($stmtTargetSlotBeforeSave);
+    $targetSlotBeforeSave = $resTargetSlotBeforeSave ? mysqli_fetch_assoc($resTargetSlotBeforeSave) : null;
+    mysqli_stmt_close($stmtTargetSlotBeforeSave);
+    if ($targetSlotBeforeSave) {
+        $targetSlotBeforeSaveId = (int)($targetSlotBeforeSave['id'] ?? 0);
+        if ($position_id <= 0 || $targetSlotBeforeSaveId !== $position_id) {
+            $registerPreviousLinkedEquipment($targetSlotBeforeSave['equipment_id'] ?? null);
+        }
+    }
+}
+
 if ($device_name !== '') {
     // Why: device_name must remain unique per company across all IDFs to avoid ambiguous references in link/device pickers.
     $stmtDuplicateDeviceName = null;
@@ -362,7 +394,7 @@ if ($portManagementId <= 0) {
 if ($position_id > 0) {
     $stmtPos = mysqli_prepare(
         $conn,
-        "SELECT p.id
+        "SELECT p.id, p.equipment_id
          FROM idf_positions p
          JOIN idfs i ON i.id=p.idf_id
          WHERE p.id=? AND i.company_id=?
@@ -372,12 +404,15 @@ if ($position_id > 0) {
         mysqli_stmt_bind_param($stmtPos, 'ii', $position_id, $company_id);
         mysqli_stmt_execute($stmtPos);
         $resPos = mysqli_stmt_get_result($stmtPos);
-        $foundPos = $resPos && mysqli_num_rows($resPos) === 1;
+        $posRow = $resPos ? mysqli_fetch_assoc($resPos) : null;
+        $foundPos = $posRow !== null;
         mysqli_stmt_close($stmtPos);
 
         if (!$foundPos) {
             idf_fail('Position not found', 404);
         }
+
+        $registerPreviousLinkedEquipment($posRow['equipment_id'] ?? null);
     }
 
     $layout_val = $layout_id > 0 ? $layout_id : null;
@@ -732,6 +767,118 @@ if ($pid > 0) {
                 mysqli_stmt_bind_param($stmtForceSync, 'iii', $equipment_id, $company_id, $pid);
                 mysqli_stmt_execute($stmtForceSync);
                 mysqli_stmt_close($stmtForceSync);
+            }
+        }
+
+        $resolvedLinkedEquipmentId = 0;
+        $stmtResolvedPosition = mysqli_prepare(
+            $conn,
+            "SELECT equipment_id
+             FROM idf_positions
+             WHERE id = ? AND company_id = ?
+             LIMIT 1"
+        );
+        if ($stmtResolvedPosition) {
+            mysqli_stmt_bind_param($stmtResolvedPosition, 'ii', $pid, $company_id);
+            mysqli_stmt_execute($stmtResolvedPosition);
+            $resResolvedPosition = mysqli_stmt_get_result($stmtResolvedPosition);
+            $resolvedPositionRow = $resResolvedPosition ? mysqli_fetch_assoc($resResolvedPosition) : null;
+            mysqli_stmt_close($stmtResolvedPosition);
+            if ($resolvedPositionRow) {
+                $resolvedEquipmentRaw = trim((string)($resolvedPositionRow['equipment_id'] ?? ''));
+                if ($resolvedEquipmentRaw !== '' && ctype_digit($resolvedEquipmentRaw)) {
+                    $resolvedLinkedEquipmentId = (int)$resolvedEquipmentRaw;
+                }
+            }
+        }
+
+        if ($resolvedLinkedEquipmentId > 0) {
+            // Why: rack-side saves must keep the canonical equipment->idf and switch_ports->idf references in lock-step.
+            $stmtSyncEquipmentIdf = mysqli_prepare(
+                $conn,
+                "UPDATE equipment
+                 SET idf_id = ?
+                 WHERE id = ? AND company_id = ?
+                 LIMIT 1"
+            );
+            if ($stmtSyncEquipmentIdf) {
+                mysqli_stmt_bind_param($stmtSyncEquipmentIdf, 'iii', $idf_id, $resolvedLinkedEquipmentId, $company_id);
+                mysqli_stmt_execute($stmtSyncEquipmentIdf);
+                mysqli_stmt_close($stmtSyncEquipmentIdf);
+            }
+
+            $stmtSyncSwitchPortsIdf = mysqli_prepare(
+                $conn,
+                "UPDATE switch_ports
+                 SET idf_id = ?
+                 WHERE company_id = ? AND equipment_id = ?"
+            );
+            if ($stmtSyncSwitchPortsIdf) {
+                mysqli_stmt_bind_param($stmtSyncSwitchPortsIdf, 'iii', $idf_id, $company_id, $resolvedLinkedEquipmentId);
+                mysqli_stmt_execute($stmtSyncSwitchPortsIdf);
+                mysqli_stmt_close($stmtSyncSwitchPortsIdf);
+            }
+
+            unset($previousLinkedEquipmentIds[$resolvedLinkedEquipmentId]);
+        }
+
+        if ($previousLinkedEquipmentIds) {
+            $stmtStillLinked = mysqli_prepare(
+                $conn,
+                "SELECT COUNT(*) AS c
+                 FROM idf_positions
+                 WHERE company_id = ? AND equipment_id = ?"
+            );
+            $stmtDetachEquipmentIdf = mysqli_prepare(
+                $conn,
+                "UPDATE equipment
+                 SET idf_id = NULL
+                 WHERE id = ? AND company_id = ?
+                 LIMIT 1"
+            );
+            $stmtDetachSwitchPortsIdf = mysqli_prepare(
+                $conn,
+                "UPDATE switch_ports
+                 SET idf_id = NULL
+                 WHERE company_id = ? AND equipment_id = ?"
+            );
+
+            foreach (array_keys($previousLinkedEquipmentIds) as $previousEquipmentId) {
+                $previousEquipmentId = (int)$previousEquipmentId;
+                if ($previousEquipmentId <= 0 || $previousEquipmentId === $resolvedLinkedEquipmentId) {
+                    continue;
+                }
+
+                $stillLinkedCount = 0;
+                if ($stmtStillLinked) {
+                    $previousEquipmentIdString = (string)$previousEquipmentId;
+                    mysqli_stmt_bind_param($stmtStillLinked, 'is', $company_id, $previousEquipmentIdString);
+                    mysqli_stmt_execute($stmtStillLinked);
+                    $resStillLinked = mysqli_stmt_get_result($stmtStillLinked);
+                    $stillLinkedRow = $resStillLinked ? mysqli_fetch_assoc($resStillLinked) : null;
+                    $stillLinkedCount = (int)($stillLinkedRow['c'] ?? 0);
+                }
+
+                if ($stillLinkedCount <= 0) {
+                    if ($stmtDetachEquipmentIdf) {
+                        mysqli_stmt_bind_param($stmtDetachEquipmentIdf, 'ii', $previousEquipmentId, $company_id);
+                        mysqli_stmt_execute($stmtDetachEquipmentIdf);
+                    }
+                    if ($stmtDetachSwitchPortsIdf) {
+                        mysqli_stmt_bind_param($stmtDetachSwitchPortsIdf, 'ii', $company_id, $previousEquipmentId);
+                        mysqli_stmt_execute($stmtDetachSwitchPortsIdf);
+                    }
+                }
+            }
+
+            if ($stmtStillLinked) {
+                mysqli_stmt_close($stmtStillLinked);
+            }
+            if ($stmtDetachEquipmentIdf) {
+                mysqli_stmt_close($stmtDetachEquipmentIdf);
+            }
+            if ($stmtDetachSwitchPortsIdf) {
+                mysqli_stmt_close($stmtDetachSwitchPortsIdf);
             }
         }
     }
