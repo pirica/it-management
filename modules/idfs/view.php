@@ -287,8 +287,8 @@ if ($stmtPos) {
             "SELECT pr.*,
                     COALESCE(spt.type, 'RJ45') AS port_type_label,
                     COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
-                    COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown') AS status_label,
-                    COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color) AS status_color,
+                    COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
+                    COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
                     COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
                     COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
                     COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
@@ -326,8 +326,8 @@ if ($stmtPos) {
                     p_local.equipment_id AS local_equipment_id,
                     i_local.name AS local_idf_name,
                     COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
-                    COALESCE(cc_live.hex_color, pr.hex_color, cc_l.hex_color) AS cable_hex_color,
-                    COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, '') AS cable_color_name,
+                    COALESCE(cc_live.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
+                    COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
                     l.id AS link_id,
                     COALESCE(l.cable_label, '') AS cable_label,
                     l.notes AS link_notes,
@@ -403,6 +403,7 @@ if ($stmtPos) {
                END
              LEFT JOIN switch_status ss_remote ON ss_remote.id = pr_remote.status_id AND ss_remote.company_id = pr_remote.company_id
              LEFT JOIN switch_status ss_link_meta ON ss_link_meta.id = l.equipment_status_id AND ss_link_meta.company_id = l.company_id
+             LEFT JOIN cable_colors cc_ss_link_meta ON cc_ss_link_meta.id = ss_link_meta.color_id AND cc_ss_link_meta.company_id = ss_link_meta.company_id
              LEFT JOIN idf_positions p_remote ON p_remote.id = pr_remote.position_id AND p_remote.company_id = pr_remote.company_id
              LEFT JOIN equipment e_remote ON e_remote.id = p_remote.equipment_id AND e_remote.company_id = p_remote.company_id
              LEFT JOIN equipment_types et_remote ON et_remote.id = e_remote.equipment_type_id AND et_remote.company_id = e_remote.company_id
