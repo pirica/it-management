@@ -7,7 +7,7 @@ idf_require_csrf($data);
 $idf_id = (int)($data['idf_id'] ?? 0);
 $position_no = (int)($data['position_no'] ?? 0);
 
-if ($idf_id <= 0 || $position_no <= 0 || $position_no > 100) {
+if ($idf_id <= 0 || $position_no <= 0 || $position_no > 250) {
     idf_fail('Invalid idf_id/position_no');
 }
 

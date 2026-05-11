@@ -278,7 +278,7 @@ $stmtSwitchSync = mysqli_prepare(
      LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
      SET sp.{$switchPortLabelColumn} = ?,
          sp.status_id = ?,
-         sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
+         sp.color_id = NULLIF(?, 0),
          sp.vlan_id = NULLIF(?, 0),
          sp.comments = ?
      WHERE sp.company_id = ?
@@ -387,7 +387,9 @@ if ($linkedPeerPortIds) {
           )
          LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
          SET sp.status_id = ?,
-             sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id)
+             sp.color_id = NULLIF(?, 0),
+             sp.comments = ?,
+             sp.{$switchPortLabelColumn} = ?
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
            AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -420,7 +422,7 @@ if ($linkedPeerPortIds) {
     if ($stmtPeerSwitchSync) {
         $peerSwitchColorId = $cable_color_id > 0 ? $cable_color_id : 0;
         foreach ($linkedPeerPortIds as $peerPortId) {
-            mysqli_stmt_bind_param($stmtPeerSwitchSync, 'iiii', $peerPortId, $status_id, $peerSwitchColorId, $company_id);
+            mysqli_stmt_bind_param($stmtPeerSwitchSync, 'iiissi', $peerPortId, $status_id, $peerSwitchColorId, $notes_val, $label_val, $company_id);
             mysqli_stmt_execute($stmtPeerSwitchSync);
         }
         mysqli_stmt_close($stmtPeerSwitchSync);

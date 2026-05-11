@@ -183,6 +183,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * `link_create` and `port_update` must propagate status/color/label/notes to matching `switch_ports` rows and linked peer `idf_ports`.
   * `link_delete` must reset both `idf_ports` and matching `switch_ports` rows to tenant `Unknown` + Gray (`#808080`) defaults.
   * `position_save` must sync `equipment.idf_id` + `switch_ports.idf_id` to the selected IDF, and `position_delete` must clear them to `NULL` when unlinked.
+  * **High-Density Support:** Rack position validation supports up to **250** positions. Batch updates (move/reorder) use temporary offsets (1000) to avoid unique constraint collisions.
   * Mandatory human-flow regression command before PR when touching these paths:
     * `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
   * If the command reports any `[FAIL]`, the task is not complete.

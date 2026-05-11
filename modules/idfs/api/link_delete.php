@@ -124,8 +124,9 @@ if ($portA > 0 && $portB > 0) {
            ON spt.id = pr.port_type
           AND spt.company_id = pr.company_id
          SET sp.status_id = NULLIF(?, 0),
-             sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
-             sp.comments = NULL
+             sp.color_id = NULLIF(?, 0),
+             sp.comments = NULL,
+             sp.{$switchPortLabelColumn} = NULL
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
            AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci

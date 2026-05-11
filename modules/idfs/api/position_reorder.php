@@ -10,7 +10,7 @@ $order = $data['order'] ?? null;
 if ($idf_id <= 0) {
     idf_fail('Invalid idf_id');
 }
-if (!is_array($order) || count($order) !== 10) {
+if (!is_array($order) || count($order) === 0 || count($order) > 250) {
     idf_fail('Invalid order payload');
 }
 
@@ -34,7 +34,7 @@ foreach ($order as $item) {
     }
     $posNo = (int)($item['position_no'] ?? 0);
     $posId = isset($item['position_id']) && $item['position_id'] !== null ? (int)$item['position_id'] : null;
-    if ($posNo < 1 || $posNo > 10) {
+    if ($posNo < 1 || $posNo > 250) {
         idf_fail('Invalid position_no');
     }
     if ($posId !== null && $posId <= 0) {
@@ -79,12 +79,14 @@ mysqli_begin_transaction($conn);
 try {
     if ($ids) {
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmtUpd1 = mysqli_prepare($conn, "UPDATE idf_positions SET position_no=position_no+100 WHERE id IN ($placeholders) AND idf_id=?");
+        $stmtUpd1 = mysqli_prepare($conn, "UPDATE idf_positions SET position_no=position_no+1000 WHERE id IN ($placeholders) AND idf_id=?");
         if ($stmtUpd1) {
             $types = str_repeat('i', count($ids)) . 'i';
             $params = array_merge($ids, [$idf_id]);
             mysqli_stmt_bind_param($stmtUpd1, $types, ...$params);
-            mysqli_stmt_execute($stmtUpd1);
+            if (!mysqli_stmt_execute($stmtUpd1)) {
+                throw new Exception("Error during reorder staging: " . mysqli_stmt_error($stmtUpd1));
+            }
             mysqli_stmt_close($stmtUpd1);
         }
     }
@@ -98,7 +100,9 @@ try {
             $pid = (int)$item['id'];
             $pno = (int)$item['no'];
             mysqli_stmt_bind_param($stmtUpd2, 'iii', $pno, $pid, $idf_id);
-            mysqli_stmt_execute($stmtUpd2);
+            if (!mysqli_stmt_execute($stmtUpd2)) {
+                throw new Exception("Error during reorder finalization: " . mysqli_stmt_error($stmtUpd2));
+            }
         }
         mysqli_stmt_close($stmtUpd2);
     }
