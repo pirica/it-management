@@ -51,7 +51,7 @@ if ($switch_rj45_id > 0) {
     }
 }
 
-if ($idf_id <= 0 || $position_no < 1 || $position_no > 100) {
+if ($idf_id <= 0 || $position_no < 1 || $position_no > 250) {
     idf_fail('Invalid idf_id/position_no');
 }
 if ($device_name === '') {

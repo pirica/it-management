@@ -703,7 +703,7 @@ if (
           AND spt.company_id = pr.company_id
          SET sp.{$switchPortLabelColumn} = ?,
              sp.status_id = NULLIF(?, 0),
-             sp.color_id = COALESCE(NULLIF(?, 0), sp.color_id),
+             sp.color_id = NULLIF(?, 0),
              sp.comments = ?
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
@@ -726,12 +726,13 @@ if (
     );
     if ($stmtSwitchSync) {
         $switchColorSyncId = $cableColorId > 0 ? $cableColorId : 0;
-        $linkNoteSync = $notes_val;
-        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $label_val, $statusSyncId, $switchColorSyncId, $linkNoteSync, $company_id);
+        $switchLabelSync = $labelSync ?? $label_val;
+        $switchNoteSync = $notesSync ?? $notes_val;
+        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $switchLabelSync, $statusSyncId, $switchColorSyncId, $switchNoteSync, $company_id);
         if (!mysqli_stmt_execute($stmtSwitchSync)) {
             idf_fail('DB error syncing source switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
         }
-        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $label_val, $statusSyncId, $switchColorSyncId, $linkNoteSync, $company_id);
+        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $switchLabelSync, $statusSyncId, $switchColorSyncId, $switchNoteSync, $company_id);
         if (!mysqli_stmt_execute($stmtSwitchSync)) {
             idf_fail('DB error syncing destination switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
         }
