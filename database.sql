@@ -1514,7 +1514,7 @@ CREATE TABLE `idf_positions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `idf_id` int NOT NULL,
-  `position_no` tinyint NOT NULL,
+  `position_no` smallint NOT NULL,
   `device_type` int NOT NULL,
   `device_name` varchar(140) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `equipment_id` varchar(9) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,

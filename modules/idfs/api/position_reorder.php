@@ -84,7 +84,9 @@ try {
             $types = str_repeat('i', count($ids)) . 'i';
             $params = array_merge($ids, [$idf_id]);
             mysqli_stmt_bind_param($stmtUpd1, $types, ...$params);
-            mysqli_stmt_execute($stmtUpd1);
+            if (!mysqli_stmt_execute($stmtUpd1)) {
+                throw new Exception("Error during reorder staging: " . mysqli_stmt_error($stmtUpd1));
+            }
             mysqli_stmt_close($stmtUpd1);
         }
     }
@@ -98,7 +100,9 @@ try {
             $pid = (int)$item['id'];
             $pno = (int)$item['no'];
             mysqli_stmt_bind_param($stmtUpd2, 'iii', $pno, $pid, $idf_id);
-            mysqli_stmt_execute($stmtUpd2);
+            if (!mysqli_stmt_execute($stmtUpd2)) {
+                throw new Exception("Error during reorder finalization: " . mysqli_stmt_error($stmtUpd2));
+            }
         }
         mysqli_stmt_close($stmtUpd2);
     }

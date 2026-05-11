@@ -39,21 +39,27 @@ try {
     $stmt1 = mysqli_prepare($conn, "UPDATE idf_positions SET position_no=? WHERE idf_id=? AND position_no=? LIMIT 1");
     if ($stmt1) {
         mysqli_stmt_bind_param($stmt1, 'iii', $tmp, $idf_id, $position_no);
-        mysqli_stmt_execute($stmt1);
+        if (!mysqli_stmt_execute($stmt1)) {
+            throw new Exception("Error during move staging: " . mysqli_stmt_error($stmt1));
+        }
         mysqli_stmt_close($stmt1);
     }
 
     $stmt2 = mysqli_prepare($conn, "UPDATE idf_positions SET position_no=? WHERE idf_id=? AND position_no=? LIMIT 1");
     if ($stmt2) {
         mysqli_stmt_bind_param($stmt2, 'iii', $position_no, $idf_id, $target);
-        mysqli_stmt_execute($stmt2);
+        if (!mysqli_stmt_execute($stmt2)) {
+            throw new Exception("Error during move swap: " . mysqli_stmt_error($stmt2));
+        }
         mysqli_stmt_close($stmt2);
     }
 
     $stmt3 = mysqli_prepare($conn, "UPDATE idf_positions SET position_no=? WHERE idf_id=? AND position_no=? LIMIT 1");
     if ($stmt3) {
         mysqli_stmt_bind_param($stmt3, 'iii', $target, $idf_id, $tmp);
-        mysqli_stmt_execute($stmt3);
+        if (!mysqli_stmt_execute($stmt3)) {
+            throw new Exception("Error during move finalization: " . mysqli_stmt_error($stmt3));
+        }
         mysqli_stmt_close($stmt3);
     }
 
