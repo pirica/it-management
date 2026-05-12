@@ -165,6 +165,57 @@ function cr_is_hidden_display_field($field) {
     return cr_is_hidden_employee_field($field);
 }
 
+function cr_fk_label_lookup($conn, $table, $idCol, $labelCol, $value, $companyId, $hasCompanyScope) {
+    static $cache = [];
+
+    $rawValue = trim((string)$value);
+    if ($rawValue === '') {
+        return null;
+    }
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($idCol) || !itm_is_safe_identifier($labelCol)) {
+        return null;
+    }
+
+    $cacheKey = $table . '|' . $idCol . '|' . $labelCol . '|' . $rawValue . '|' . (int)$companyId . '|' . (int)$hasCompanyScope;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    $label = null;
+    $lookup = function ($withCompany) use ($conn, $table, $idCol, $labelCol, $rawValue, $companyId, &$label) {
+        $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($idCol) . ' = ?';
+        if ($withCompany && $companyId > 0) {
+            $sql .= ' AND company_id = ?';
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return;
+        }
+        if ($withCompany && $companyId > 0) {
+            mysqli_stmt_bind_param($stmt, 'si', $rawValue, $companyId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 's', $rawValue);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && ($row = mysqli_fetch_assoc($res)) && isset($row['label']) && trim((string)$row['label']) !== '') {
+            $label = (string)$row['label'];
+        }
+        mysqli_stmt_close($stmt);
+    };
+
+    $lookup($hasCompanyScope);
+    if ($label === null && $hasCompanyScope && $companyId > 0) {
+        $lookup(false);
+    }
+
+    $cache[$cacheKey] = $label;
+    return $label;
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if (isset($GLOBALS['fkMap'][$field]) && (string)$value !== '') {
         $fk = $GLOBALS['fkMap'][$field];
@@ -172,18 +223,10 @@ function cr_render_cell_value($table, $field, $value) {
         $fkCol = $fk['REFERENCED_COLUMN_NAME'];
         $fkMeta = cr_fk_metadata($GLOBALS['conn'], $fkTable);
         $labelCol = $fkMeta['label_col'];
-
-        $lookupValue = mysqli_real_escape_string($GLOBALS['conn'], (string)$value);
-        $lookupSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($fkTable)
-            . " WHERE " . cr_escape_identifier($fkCol) . "='" . $lookupValue . "'";
-        if (in_array('company_id', $fkMeta['available'], true) && (int)$GLOBALS['company_id'] > 0) {
-            $lookupSql .= ' AND company_id=' . (int)$GLOBALS['company_id'];
-        }
-        $lookupSql .= ' LIMIT 1';
-
-        $lookupRes = mysqli_query($GLOBALS['conn'], $lookupSql);
-        if ($lookupRes && ($lookupRow = mysqli_fetch_assoc($lookupRes)) && isset($lookupRow['label'])) {
-            $label = sanitize((string)$lookupRow['label']);
+        $hasCompanyScope = in_array('company_id', $fkMeta['available'], true);
+        $label = cr_fk_label_lookup($GLOBALS['conn'], $fkTable, $fkCol, $labelCol, (string)$value, (int)$GLOBALS['company_id'], $hasCompanyScope);
+        if ($label !== null) {
+            $label = sanitize((string)$label);
             if (($GLOBALS['crud_table'] ?? '') === 'switch_ports' && $field === 'equipment_id') {
                 $equipmentId = (int)$value;
                 return '<a href="../equipment/index.php?switch_id=' . $equipmentId . '&spm=1#switch-port-manager">' . $label . '</a>';
