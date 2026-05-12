@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'switch_ports';
-$crud_title = 'Switch Ports';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'switch_ports';
+$crud_title = $crud_title ?? 'Switch Ports';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
@@ -333,6 +333,467 @@ function cr_switch_port_fill_idf_from_equipment($conn, &$data, $company_id) {
     mysqli_stmt_close($stmt);
 }
 
+function cr_switch_port_label_column($conn)
+{
+    static $column = null;
+
+    if ($column !== null) {
+        return $column;
+    }
+
+    foreach (['to_patch_port', 'label', 'patch_port'] as $candidate) {
+        if (itm_table_has_column($conn, 'switch_ports', $candidate)) {
+            $column = $candidate;
+            return $column;
+        }
+    }
+
+    $column = 'to_patch_port';
+    return $column;
+}
+
+function cr_switch_port_fetch_snapshot_by_id($conn, $companyId, $switchPortId)
+{
+    if ($companyId <= 0 || $switchPortId <= 0) {
+        return null;
+    }
+
+    $labelColumn = cr_escape_identifier(cr_switch_port_label_column($conn));
+    $sql = "SELECT id, company_id, equipment_id, port_type, port_number,
+                   {$labelColumn} AS sync_label, status_id, color_id, vlan_id,
+                   fiber_port_id, management_id, comments, hostname
+            FROM switch_ports
+            WHERE id = ? AND company_id = ?
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ii', $switchPortId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ?: null;
+}
+
+function cr_switch_port_fetch_snapshots_by_ids($conn, $companyId, $ids)
+{
+    $idList = [];
+    foreach ($ids as $rawId) {
+        $id = (int)$rawId;
+        if ($id > 0) {
+            $idList[$id] = $id;
+        }
+    }
+    if ($companyId <= 0 || empty($idList)) {
+        return [];
+    }
+
+    $labelColumn = cr_escape_identifier(cr_switch_port_label_column($conn));
+    $placeholders = implode(',', array_fill(0, count($idList), '?'));
+    $sql = "SELECT id, company_id, equipment_id, port_type, port_number,
+                   {$labelColumn} AS sync_label, status_id, color_id, vlan_id,
+                   fiber_port_id, management_id, comments, hostname
+            FROM switch_ports
+            WHERE company_id = ? AND id IN ({$placeholders})";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+
+    $types = 'i' . str_repeat('i', count($idList));
+    $params = array_merge([$companyId], array_values($idList));
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    return $rows;
+}
+
+function cr_switch_port_fetch_snapshots_for_company($conn, $companyId)
+{
+    if ($companyId <= 0) {
+        return [];
+    }
+
+    $labelColumn = cr_escape_identifier(cr_switch_port_label_column($conn));
+    $sql = "SELECT id, company_id, equipment_id, port_type, port_number,
+                   {$labelColumn} AS sync_label, status_id, color_id, vlan_id,
+                   fiber_port_id, management_id, comments, hostname
+            FROM switch_ports
+            WHERE company_id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    return $rows;
+}
+
+function cr_switch_port_resolve_port_type_id($conn, $companyId, $rawPortType)
+{
+    $portTypeRaw = trim((string)$rawPortType);
+    if ($portTypeRaw === '') {
+        return 0;
+    }
+    if (ctype_digit($portTypeRaw)) {
+        return (int)$portTypeRaw;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM switch_port_types
+         WHERE company_id = ? AND LOWER(type) = LOWER(?)
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $portTypeRaw);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return (int)($row['id'] ?? 0);
+}
+
+function cr_switch_port_find_position_id($conn, $companyId, $equipmentId)
+{
+    if ($companyId <= 0 || $equipmentId <= 0) {
+        return 0;
+    }
+
+    $equipmentIdStr = (string)$equipmentId;
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ? AND equipment_id = ?
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $equipmentIdStr);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return (int)($row['id'] ?? 0);
+}
+
+function cr_switch_port_sync_snapshot($conn, $companyId, $snapshot, &$syncError = null)
+{
+    $syncError = null;
+    $equipmentId = (int)($snapshot['equipment_id'] ?? 0);
+    $portNo = (int)($snapshot['port_number'] ?? 0);
+    if ($companyId <= 0 || $equipmentId <= 0 || $portNo <= 0) {
+        return true;
+    }
+
+    $positionId = cr_switch_port_find_position_id($conn, $companyId, $equipmentId);
+    if ($positionId <= 0) {
+        return true;
+    }
+
+    $portTypeId = cr_switch_port_resolve_port_type_id($conn, $companyId, $snapshot['port_type'] ?? '');
+    if ($portTypeId <= 0) {
+        return true;
+    }
+
+    $colorId = (int)($snapshot['color_id'] ?? 0);
+    $colorName = null;
+    $hexColor = null;
+    if ($colorId > 0) {
+        $stmtColor = mysqli_prepare(
+            $conn,
+            "SELECT color_name, hex_color
+             FROM cable_colors
+             WHERE company_id = ? AND id = ?
+             LIMIT 1"
+        );
+        if ($stmtColor) {
+            mysqli_stmt_bind_param($stmtColor, 'ii', $companyId, $colorId);
+            mysqli_stmt_execute($stmtColor);
+            $resColor = mysqli_stmt_get_result($stmtColor);
+            $rowColor = $resColor ? mysqli_fetch_assoc($resColor) : null;
+            mysqli_stmt_close($stmtColor);
+            if ($rowColor) {
+                $colorName = trim((string)($rowColor['color_name'] ?? ''));
+                $hexColor = trim((string)($rowColor['hex_color'] ?? ''));
+                $colorName = $colorName !== '' ? $colorName : null;
+                $hexColor = $hexColor !== '' ? $hexColor : null;
+            }
+        }
+    }
+
+    $label = trim((string)($snapshot['sync_label'] ?? ''));
+    $comments = trim((string)($snapshot['comments'] ?? ''));
+    $statusId = (int)($snapshot['status_id'] ?? 0);
+    $vlanId = (int)($snapshot['vlan_id'] ?? 0);
+    $speedId = (int)($snapshot['fiber_port_id'] ?? 0);
+    $managementId = (int)($snapshot['management_id'] ?? 0);
+    $connectedTo = trim((string)($snapshot['hostname'] ?? ''));
+    $labelValue = $label !== '' ? $label : null;
+    $commentsValue = $comments !== '' ? $comments : null;
+    $connectedToValue = $connectedTo !== '' ? $connectedTo : null;
+
+    $idfPortId = 0;
+    $stmtExisting = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_ports
+         WHERE company_id = ? AND position_id = ? AND port_no = ? AND port_type = ?
+         LIMIT 1"
+    );
+    if ($stmtExisting) {
+        mysqli_stmt_bind_param($stmtExisting, 'iiii', $companyId, $positionId, $portNo, $portTypeId);
+        mysqli_stmt_execute($stmtExisting);
+        $resExisting = mysqli_stmt_get_result($stmtExisting);
+        $existingRow = $resExisting ? mysqli_fetch_assoc($resExisting) : null;
+        mysqli_stmt_close($stmtExisting);
+        $idfPortId = (int)($existingRow['id'] ?? 0);
+    }
+
+    if ($idfPortId > 0) {
+        $stmtUpdate = mysqli_prepare(
+            $conn,
+            "UPDATE idf_ports
+             SET label = ?,
+                 status_id = NULLIF(?, 0),
+                 vlan_id = NULLIF(?, 0),
+                 speed_id = NULLIF(?, 0),
+                 management_id = NULLIF(?, 0),
+                 connected_to = ?,
+                 cable_color = ?,
+                 hex_color = ?,
+                 notes = ?
+             WHERE id = ? AND company_id = ?
+             LIMIT 1"
+        );
+        if (!$stmtUpdate) {
+            $syncError = 'Unable to prepare IDF port update sync query.';
+            return false;
+        }
+        mysqli_stmt_bind_param(
+            $stmtUpdate,
+            'siiiissssii',
+            $labelValue,
+            $statusId,
+            $vlanId,
+            $speedId,
+            $managementId,
+            $connectedToValue,
+            $colorName,
+            $hexColor,
+            $commentsValue,
+            $idfPortId,
+            $companyId
+        );
+        if (!mysqli_stmt_execute($stmtUpdate)) {
+            $syncError = 'Unable to sync IDF port update: ' . mysqli_stmt_error($stmtUpdate);
+            mysqli_stmt_close($stmtUpdate);
+            return false;
+        }
+        mysqli_stmt_close($stmtUpdate);
+    } else {
+        $stmtInsert = mysqli_prepare(
+            $conn,
+            "INSERT INTO idf_ports
+                (company_id, position_id, port_no, port_type, label, status_id, vlan_id, speed_id, management_id, connected_to, cable_color, hex_color, notes)
+             VALUES
+                (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?, ?, ?, ?)"
+        );
+        if (!$stmtInsert) {
+            $syncError = 'Unable to prepare IDF port insert sync query.';
+            return false;
+        }
+        mysqli_stmt_bind_param(
+            $stmtInsert,
+            'iiiisiiiissss',
+            $companyId,
+            $positionId,
+            $portNo,
+            $portTypeId,
+            $labelValue,
+            $statusId,
+            $vlanId,
+            $speedId,
+            $managementId,
+            $connectedToValue,
+            $colorName,
+            $hexColor,
+            $commentsValue
+        );
+        if (!mysqli_stmt_execute($stmtInsert)) {
+            $syncError = 'Unable to sync IDF port insert: ' . mysqli_stmt_error($stmtInsert);
+            mysqli_stmt_close($stmtInsert);
+            return false;
+        }
+        $idfPortId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmtInsert);
+    }
+
+    if ($idfPortId > 0) {
+        $stmtLinkMeta = mysqli_prepare(
+            $conn,
+            "UPDATE idf_links
+             SET equipment_label = ?,
+                 equipment_status_id = NULLIF(?, 0),
+                 equipment_vlan_id = NULLIF(?, 0),
+                 equipment_comments = ?,
+                 equipment_color_id = NULLIF(?, 0)
+             WHERE company_id = ?
+               AND (port_id_a = ? OR port_id_b = ?)"
+        );
+        if ($stmtLinkMeta) {
+            mysqli_stmt_bind_param(
+                $stmtLinkMeta,
+                'siisiiii',
+                $labelValue,
+                $statusId,
+                $vlanId,
+                $commentsValue,
+                $colorId,
+                $companyId,
+                $idfPortId,
+                $idfPortId
+            );
+            if (!mysqli_stmt_execute($stmtLinkMeta)) {
+                $syncError = 'Unable to sync IDF link metadata: ' . mysqli_stmt_error($stmtLinkMeta);
+                mysqli_stmt_close($stmtLinkMeta);
+                return false;
+            }
+            mysqli_stmt_close($stmtLinkMeta);
+        }
+
+        $stmtLinkColor = mysqli_prepare(
+            $conn,
+            "UPDATE idf_links
+             SET cable_color_id = NULLIF(?, 0),
+                 cable_color_hex = ?
+             WHERE company_id = ?
+               AND (port_id_a = ? OR port_id_b = ?)"
+        );
+        if ($stmtLinkColor) {
+            mysqli_stmt_bind_param($stmtLinkColor, 'isiii', $colorId, $hexColor, $companyId, $idfPortId, $idfPortId);
+            if (!mysqli_stmt_execute($stmtLinkColor)) {
+                $syncError = 'Unable to sync IDF link color: ' . mysqli_stmt_error($stmtLinkColor);
+                mysqli_stmt_close($stmtLinkColor);
+                return false;
+            }
+            mysqli_stmt_close($stmtLinkColor);
+        }
+    }
+
+    return true;
+}
+
+function cr_switch_port_delete_synced_snapshots($conn, $companyId, $snapshots, &$syncError = null)
+{
+    $syncError = null;
+    if ($companyId <= 0 || empty($snapshots)) {
+        return true;
+    }
+
+    $idfPortIds = [];
+    foreach ($snapshots as $snapshot) {
+        $equipmentId = (int)($snapshot['equipment_id'] ?? 0);
+        $portNo = (int)($snapshot['port_number'] ?? 0);
+        if ($equipmentId <= 0 || $portNo <= 0) {
+            continue;
+        }
+
+        $positionId = cr_switch_port_find_position_id($conn, $companyId, $equipmentId);
+        if ($positionId <= 0) {
+            continue;
+        }
+
+        $portTypeId = cr_switch_port_resolve_port_type_id($conn, $companyId, $snapshot['port_type'] ?? '');
+        if ($portTypeId <= 0) {
+            continue;
+        }
+
+        $stmtFind = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM idf_ports
+             WHERE company_id = ? AND position_id = ? AND port_no = ? AND port_type = ?"
+        );
+        if (!$stmtFind) {
+            continue;
+        }
+        mysqli_stmt_bind_param($stmtFind, 'iiii', $companyId, $positionId, $portNo, $portTypeId);
+        mysqli_stmt_execute($stmtFind);
+        $resFind = mysqli_stmt_get_result($stmtFind);
+        while ($resFind && ($row = mysqli_fetch_assoc($resFind))) {
+            $portId = (int)($row['id'] ?? 0);
+            if ($portId > 0) {
+                $idfPortIds[$portId] = $portId;
+            }
+        }
+        mysqli_stmt_close($stmtFind);
+    }
+
+    foreach (array_values($idfPortIds) as $idfPortId) {
+        $stmtDeleteLinks = mysqli_prepare(
+            $conn,
+            "DELETE FROM idf_links
+             WHERE company_id = ?
+               AND (port_id_a = ? OR port_id_b = ?)"
+        );
+        if ($stmtDeleteLinks) {
+            mysqli_stmt_bind_param($stmtDeleteLinks, 'iii', $companyId, $idfPortId, $idfPortId);
+            if (!mysqli_stmt_execute($stmtDeleteLinks)) {
+                $syncError = 'Unable to delete synced IDF links: ' . mysqli_stmt_error($stmtDeleteLinks);
+                mysqli_stmt_close($stmtDeleteLinks);
+                return false;
+            }
+            mysqli_stmt_close($stmtDeleteLinks);
+        }
+
+        $stmtDeletePort = mysqli_prepare(
+            $conn,
+            "DELETE FROM idf_ports
+             WHERE company_id = ? AND id = ?
+             LIMIT 1"
+        );
+        if ($stmtDeletePort) {
+            mysqli_stmt_bind_param($stmtDeletePort, 'ii', $companyId, $idfPortId);
+            if (!mysqli_stmt_execute($stmtDeletePort)) {
+                $syncError = 'Unable to delete synced IDF port: ' . mysqli_stmt_error($stmtDeletePort);
+                mysqli_stmt_close($stmtDeletePort);
+                return false;
+            }
+            mysqli_stmt_close($stmtDeletePort);
+        }
+    }
+
+    return true;
+}
+
 function cr_get_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -586,6 +1047,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+                $newSwitchPortId = (int)mysqli_insert_id($conn);
+                if ($newSwitchPortId > 0) {
+                    $snapshot = cr_switch_port_fetch_snapshot_by_id($conn, (int)$company_id, $newSwitchPortId);
+                    $syncError = null;
+                    if ($snapshot && !cr_switch_port_sync_snapshot($conn, (int)$company_id, $snapshot, $syncError)) {
+                        $stmtRollbackImport = mysqli_prepare(
+                            $conn,
+                            "DELETE FROM switch_ports
+                             WHERE id = ? AND company_id = ?
+                             LIMIT 1"
+                        );
+                        if ($stmtRollbackImport) {
+                            $companyIdParam = (int)$company_id;
+                            mysqli_stmt_bind_param($stmtRollbackImport, 'ii', $newSwitchPortId, $companyIdParam);
+                            mysqli_stmt_execute($stmtRollbackImport);
+                            mysqli_stmt_close($stmtRollbackImport);
+                        }
+                        http_response_code(500);
+                        echo json_encode([
+                            'ok' => false,
+                            'error' => $syncError !== null && $syncError !== '' ? $syncError : 'Import sync failed.'
+                        ]);
+                        exit;
+                    }
+                }
                 $insertedRows++;
             }
         }
@@ -608,15 +1094,31 @@ if ($crud_action === 'delete') {
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
     $dbErrorCode = 0;
     $dbErrorMessage = '';
+    $syncError = null;
 
     if ($bulkAction === 'clear_table') {
+        $snapshots = $hasCompany && $company_id > 0
+            ? cr_switch_port_fetch_snapshots_for_company($conn, (int)$company_id)
+            : [];
+
+        mysqli_begin_transaction($conn);
         $where = '';
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        $deleteOk = itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage);
+        $syncOk = $deleteOk
+            ? cr_switch_port_delete_synced_snapshots($conn, (int)$company_id, $snapshots, $syncError)
+            : false;
+
+        if ($deleteOk && $syncOk) {
+            mysqli_commit($conn);
+        } else {
+            mysqli_rollback($conn);
+            $_SESSION['crud_error'] = $deleteOk
+                ? ($syncError !== null && $syncError !== '' ? $syncError : 'Delete sync failed.')
+                : itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
         header('Location: ' . $listUrl);
         exit;
@@ -636,13 +1138,26 @@ if ($crud_action === 'delete') {
         }
 
         if (!empty($idList)) {
+            $snapshots = cr_switch_port_fetch_snapshots_by_ids($conn, (int)$company_id, array_values($idList));
+
+            mysqli_begin_transaction($conn);
             $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            $deleteOk = itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage);
+            $syncOk = $deleteOk
+                ? cr_switch_port_delete_synced_snapshots($conn, (int)$company_id, $snapshots, $syncError)
+                : false;
+
+            if ($deleteOk && $syncOk) {
+                mysqli_commit($conn);
+            } else {
+                mysqli_rollback($conn);
+                $_SESSION['crud_error'] = $deleteOk
+                    ? ($syncError !== null && $syncError !== '' ? $syncError : 'Delete sync failed.')
+                    : itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -653,13 +1168,26 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        $snapshot = cr_switch_port_fetch_snapshot_by_id($conn, (int)$company_id, $id);
+
+        mysqli_begin_transaction($conn);
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        $deleteOk = itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage);
+        $syncOk = $deleteOk
+            ? cr_switch_port_delete_synced_snapshots($conn, (int)$company_id, $snapshot ? [$snapshot] : [], $syncError)
+            : false;
+
+        if ($deleteOk && $syncOk) {
+            mysqli_commit($conn);
+        } else {
+            mysqli_rollback($conn);
+            $_SESSION['crud_error'] = $deleteOk
+                ? ($syncError !== null && $syncError !== '' ? $syncError : 'Delete sync failed.')
+                : itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     }
     header('Location: ' . $listUrl);
@@ -719,6 +1247,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
     if ($insertedRows <= 0 && $seedError !== '') {
         $_SESSION['crud_error'] = $seedError;
+    } elseif ($insertedRows > 0) {
+        $syncError = null;
+        $snapshots = cr_switch_port_fetch_snapshots_for_company($conn, (int)$company_id);
+        foreach ($snapshots as $snapshot) {
+            if (!cr_switch_port_sync_snapshot($conn, (int)$company_id, $snapshot, $syncError)) {
+                $_SESSION['crud_error'] = $syncError !== null && $syncError !== '' ? $syncError : 'Sample data sync failed.';
+                break;
+            }
+        }
     }
 
     header('Location: ' . $listUrl);
@@ -827,6 +1364,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     if (empty($errors)) {
         cr_switch_port_fill_hostname_from_equipment($conn, $data, $company_id);
         cr_switch_port_fill_idf_from_equipment($conn, $data, $company_id);
+
+        mysqli_begin_transaction($conn);
+        $syncError = null;
+        $savedSwitchPortId = 0;
+
         if ($crud_action === 'create') {
             $fields = [];
             $values = [];
@@ -852,10 +1394,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: ' . $listUrl);
-            exit;
+            $savedSwitchPortId = $crud_action === 'create' ? (int)mysqli_insert_id($conn) : (int)$editId;
+            $snapshot = $savedSwitchPortId > 0
+                ? cr_switch_port_fetch_snapshot_by_id($conn, (int)$company_id, $savedSwitchPortId)
+                : null;
+            $syncOk = $snapshot
+                ? cr_switch_port_sync_snapshot($conn, (int)$company_id, $snapshot, $syncError)
+                : true;
+
+            if ($syncOk) {
+                mysqli_commit($conn);
+                header('Location: ' . $listUrl);
+                exit;
+            }
+
+            mysqli_rollback($conn);
+            $errors[] = $syncError !== null && $syncError !== '' ? $syncError : 'Save sync failed.';
+        } else {
+            mysqli_rollback($conn);
+            $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
-        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 

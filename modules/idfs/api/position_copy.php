@@ -169,10 +169,38 @@ try {
     if ($existing && $overwrite) {
         $overwrittenEquipmentRaw = trim((string)($existing['equipment_id'] ?? ''));
         $overwrittenIdfId = (int)($existing['idf_id'] ?? 0);
+        $overwrittenPositionId = (int)($existing['id'] ?? 0);
+
+        if ($overwrittenPositionId > 0) {
+            mysqli_query(
+                $conn,
+                "DELETE FROM idf_links
+                 WHERE company_id = " . (int)$company_id . "
+                   AND (
+                        port_id_a IN (
+                            SELECT id FROM idf_ports
+                            WHERE company_id = " . (int)$company_id . "
+                              AND position_id = " . $overwrittenPositionId . "
+                        )
+                        OR
+                        port_id_b IN (
+                            SELECT id FROM idf_ports
+                            WHERE company_id = " . (int)$company_id . "
+                              AND position_id = " . $overwrittenPositionId . "
+                        )
+                   )"
+            );
+            mysqli_query(
+                $conn,
+                "DELETE FROM idf_ports
+                 WHERE company_id = " . (int)$company_id . "
+                   AND position_id = " . $overwrittenPositionId
+            );
+        }
 
         $stmtDel = mysqli_prepare($conn, 'DELETE FROM idf_positions WHERE id=? LIMIT 1');
         if ($stmtDel) {
-            $exId = (int)$existing['id'];
+            $exId = $overwrittenPositionId;
             mysqli_stmt_bind_param($stmtDel, 'i', $exId);
             mysqli_stmt_execute($stmtDel);
             mysqli_stmt_close($stmtDel);

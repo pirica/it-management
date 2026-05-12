@@ -167,14 +167,59 @@ function equipment_delete_idf_data(mysqli $conn, int $companyId, int $equipmentI
         return;
     }
 
+    $positionIds = [];
+    $equipmentIdString = (string)$equipmentId;
+    $stmtPositions = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ? AND equipment_id = ?"
+    );
+    if ($stmtPositions) {
+        mysqli_stmt_bind_param($stmtPositions, 'is', $companyId, $equipmentIdString);
+        mysqli_stmt_execute($stmtPositions);
+        $resPositions = mysqli_stmt_get_result($stmtPositions);
+        while ($resPositions && ($row = mysqli_fetch_assoc($resPositions))) {
+            $positionId = (int)($row['id'] ?? 0);
+            if ($positionId > 0) {
+                $positionIds[$positionId] = $positionId;
+            }
+        }
+        mysqli_stmt_close($stmtPositions);
+    }
+
+    if ($positionIds) {
+        $positionIdList = implode(',', array_values($positionIds));
+        mysqli_query(
+            $conn,
+            "DELETE FROM idf_links
+             WHERE company_id = " . (int)$companyId . "
+               AND (
+                    port_id_a IN (
+                        SELECT id FROM idf_ports
+                        WHERE company_id = " . (int)$companyId . " AND position_id IN ({$positionIdList})
+                    )
+                    OR
+                    port_id_b IN (
+                        SELECT id FROM idf_ports
+                        WHERE company_id = " . (int)$companyId . " AND position_id IN ({$positionIdList})
+                    )
+               )"
+        );
+        mysqli_query(
+            $conn,
+            "DELETE FROM idf_ports
+             WHERE company_id = " . (int)$companyId . "
+               AND position_id IN ({$positionIdList})"
+        );
+    }
+
     $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
-    $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
-    $companyFilter = $hasCompanyColumn
-        ? " AND company_id = '" . mysqli_real_escape_string($conn, (string)$companyId) . "'"
-        : '';
     mysqli_query(
         $conn,
-        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
+        "DELETE FROM idf_positions
+         WHERE company_id = " . (int)$companyId . "
+           AND equipment_id = {$equipmentIdValue}"
     );
 }
 
@@ -396,7 +441,7 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
 
     $idfDeviceTypeId = equipment_resolve_idf_device_type_id($conn, $companyId, $equipmentTypeId);
     if ($idfDeviceTypeId <= 0) {
-        return '';
+        return 'Unable to resolve IDF device type for the selected equipment.';
     }
 
     $equipmentIdStr = (string)$equipmentId;
@@ -1029,6 +1074,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
+        mysqli_begin_transaction($conn);
         if (mysqli_query($conn, $sql)) {
             if (!$isEdit) {
                 $id = (int)mysqli_insert_id($conn);
@@ -1045,11 +1091,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             if ($idfSyncError !== '') {
                 $error = $idfSyncError;
-            }
-            if ($error !== '') {
-                if (!$isEdit && $id > 0) {
-                    mysqli_query($conn, "DELETE FROM equipment WHERE id = " . (int)$id . " AND company_id = " . (int)$company_id . " LIMIT 1");
-                }
             }
             if ($error === '' && $equipment_type_id === $switchTypeId) {
                 if (equipment_table_has_column($conn, 'switch_ports', 'management_id')) {
@@ -1117,6 +1158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            if ($error === '') {
+                mysqli_commit($conn);
+            } else {
+                mysqli_rollback($conn);
+            }
+
             if ($error === '' && $isEdit) {
                 if ($equipment_type_id === $switchTypeId) {
                     header('Location: index.php?switch_id=' . $id . '&saved=1&spm=1#switch-port-manager');
@@ -1129,10 +1176,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: index.php');
                 exit;
             }
+        } else {
+            mysqli_rollback($conn);
+            $dbErrorCode = (int)mysqli_errno($conn);
+            $dbErrorMessage = (string)mysqli_error($conn);
+            $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
-        $dbErrorCode = (int)mysqli_errno($conn);
-        $dbErrorMessage = (string)mysqli_error($conn);
-        $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 

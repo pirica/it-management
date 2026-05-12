@@ -18,14 +18,64 @@ function equipment_delete_idf_data(mysqli $conn, string $companyId, int $equipme
         return;
     }
 
+    $companyIdInt = (int)$companyId;
+    if ($companyIdInt <= 0) {
+        return;
+    }
+
+    $positionIds = [];
+    $equipmentIdString = (string)$equipmentId;
+    $stmtPositions = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ? AND equipment_id = ?"
+    );
+    if ($stmtPositions) {
+        mysqli_stmt_bind_param($stmtPositions, 'is', $companyIdInt, $equipmentIdString);
+        mysqli_stmt_execute($stmtPositions);
+        $resPositions = mysqli_stmt_get_result($stmtPositions);
+        while ($resPositions && ($row = mysqli_fetch_assoc($resPositions))) {
+            $positionId = (int)($row['id'] ?? 0);
+            if ($positionId > 0) {
+                $positionIds[$positionId] = $positionId;
+            }
+        }
+        mysqli_stmt_close($stmtPositions);
+    }
+
+    if ($positionIds) {
+        $positionIdList = implode(',', array_values($positionIds));
+        mysqli_query(
+            $conn,
+            "DELETE FROM idf_links
+             WHERE company_id = " . $companyIdInt . "
+               AND (
+                    port_id_a IN (
+                        SELECT id FROM idf_ports
+                        WHERE company_id = " . $companyIdInt . " AND position_id IN ({$positionIdList})
+                    )
+                    OR
+                    port_id_b IN (
+                        SELECT id FROM idf_ports
+                        WHERE company_id = " . $companyIdInt . " AND position_id IN ({$positionIdList})
+                    )
+               )"
+        );
+        mysqli_query(
+            $conn,
+            "DELETE FROM idf_ports
+             WHERE company_id = " . $companyIdInt . "
+               AND position_id IN ({$positionIdList})"
+        );
+    }
+
     $equipmentIdValue = "'" . mysqli_real_escape_string($conn, (string)$equipmentId) . "'";
-    $hasCompanyColumn = equipment_table_has_column($conn, 'idf_positions', 'company_id');
-    $companyFilter = $hasCompanyColumn
-        ? " AND company_id = '" . mysqli_real_escape_string($conn, $companyId) . "'"
-        : '';
     mysqli_query(
         $conn,
-        "DELETE FROM idf_positions WHERE equipment_id = {$equipmentIdValue}{$companyFilter}"
+        "DELETE FROM idf_positions
+         WHERE company_id = " . $companyIdInt . "
+           AND equipment_id = {$equipmentIdValue}"
     );
 }
 

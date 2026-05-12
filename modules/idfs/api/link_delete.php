@@ -9,6 +9,11 @@ if ($link_id <= 0) {
     idf_fail('Invalid link_id');
 }
 
+$switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+if ($switchPortLabelColumn === null) {
+    $switchPortLabelColumn = 'to_patch_port';
+}
+
 $stmt = mysqli_prepare(
     $conn,
     "SELECT l.id, l.port_id_a, l.port_id_b, i.company_id
