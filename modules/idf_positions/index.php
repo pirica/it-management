@@ -1,7 +1,7 @@
 <?php
-$crud_table = 'idf_positions';
-$crud_title = 'Idf Positions';
-$crud_action = 'index';
+$crud_table = $crud_table ?? 'idf_positions';
+$crud_title = $crud_title ?? 'Idf Positions';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
@@ -39,6 +39,15 @@ function cr_fk_map($conn, $table) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $map[$row['COLUMN_NAME']] = $row;
     }
+
+    if ($table === 'idf_positions' && !isset($map['equipment_id'])) {
+        $map['equipment_id'] = [
+            'COLUMN_NAME' => 'equipment_id',
+            'REFERENCED_TABLE_NAME' => 'equipment',
+            'REFERENCED_COLUMN_NAME' => 'id',
+        ];
+    }
+
     return $map;
 }
 
@@ -71,7 +80,19 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+
+    $tableLabelCandidates = [
+        'equipment' => ['hostname', 'name'],
+        'switch_status' => ['status', 'name'],
+        'cable_colors' => ['color_name', 'name'],
+        'vlans' => ['vlan_name', 'name', 'vlan_number'],
+        'idf_device_type' => ['idfdevicetype_name', 'name'],
+        'idf_positions' => ['device_name', 'position_no'],
+        'idf_ports' => ['label', 'port_no'],
+    ];
+
+    $candidates = $tableLabelCandidates[$table] ?? ['name', 'title', 'hostname', 'device_name', 'idfdevicetype_name', 'vlan_name', 'status', 'position_no', 'username', 'code', 'mode_name', 'cable_type'];
+    foreach ($candidates as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
             break;
@@ -81,6 +102,103 @@ function cr_fk_metadata($conn, $table) {
         'label_col' => $labelCol,
         'available' => $available,
     ];
+}
+
+function cr_fk_label_lookup($conn, $table, $idCol, $labelCol, $value, $companyId, $hasCompanyScope) {
+    static $cache = [];
+
+    $rawValue = trim((string)$value);
+    if ($rawValue === '') {
+        return null;
+    }
+    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($idCol) || !itm_is_safe_identifier($labelCol)) {
+        return null;
+    }
+
+    $cacheKey = $table . '|' . $idCol . '|' . $labelCol . '|' . $rawValue . '|' . (int)$companyId . '|' . (int)$hasCompanyScope;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    $label = null;
+    $lookup = function ($withCompany) use ($conn, $table, $idCol, $labelCol, $rawValue, $companyId, &$label) {
+        $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($idCol) . ' = ?';
+        if ($withCompany && $companyId > 0) {
+            $sql .= ' AND company_id = ?';
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return;
+        }
+        if ($withCompany && $companyId > 0) {
+            mysqli_stmt_bind_param($stmt, 'si', $rawValue, $companyId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 's', $rawValue);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && ($row = mysqli_fetch_assoc($res)) && isset($row['label']) && trim((string)$row['label']) !== '') {
+            $label = (string)$row['label'];
+        }
+        mysqli_stmt_close($stmt);
+    };
+
+    $lookup($hasCompanyScope);
+    if ($label === null && $hasCompanyScope && $companyId > 0) {
+        $lookup(false);
+    }
+
+    $cache[$cacheKey] = $label;
+    return $label;
+}
+
+function cr_equipment_display_label($conn, $equipmentId, $companyId) {
+    $equipmentId = (int)$equipmentId;
+    if ($equipmentId <= 0) {
+        return '';
+    }
+
+    static $cache = [];
+    $cacheKey = $equipmentId . '|' . (int)$companyId;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    $sql = 'SELECT hostname FROM `equipment` WHERE id = ?';
+    $query = function ($withCompany) use ($conn, $sql, $equipmentId, $companyId) {
+        $localSql = $sql;
+        if ($withCompany && $companyId > 0) {
+            $localSql .= ' AND company_id = ?';
+        }
+        $localSql .= ' LIMIT 1';
+        $stmt = mysqli_prepare($conn, $localSql);
+        if (!$stmt) {
+            return null;
+        }
+        if ($withCompany && $companyId > 0) {
+            mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $equipmentId);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row ?: null;
+    };
+
+    $row = $query(true);
+    if (!$row && $companyId > 0) {
+        $row = $query(false);
+    }
+
+    $hostname = trim((string)($row['hostname'] ?? ''));
+    $display = $hostname !== '' ? $hostname : ('Equipment #' . $equipmentId);
+    $cache[$cacheKey] = $display;
+    return $display;
 }
 
 function cr_manageable_columns($columns) {
@@ -126,6 +244,26 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    $companyId = (int)($GLOBALS['company_id'] ?? 0);
+    $rawValue = trim((string)($value ?? ''));
+
+    if (($GLOBALS['crud_table'] ?? '') === 'idf_positions' && $field === 'equipment_id' && ctype_digit($rawValue)) {
+        return sanitize(cr_equipment_display_label($GLOBALS['conn'], (int)$rawValue, $companyId));
+    }
+
+    if (isset($GLOBALS['fkMap'][$field]) && $rawValue !== '') {
+        $fk = $GLOBALS['fkMap'][$field];
+        $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
+        $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
+        $fkMeta = cr_fk_metadata($GLOBALS['conn'], $fkTable);
+        $labelCol = (string)$fkMeta['label_col'];
+        $hasCompanyScope = in_array('company_id', (array)$fkMeta['available'], true);
+        $label = cr_fk_label_lookup($GLOBALS['conn'], $fkTable, $fkCol, $labelCol, $rawValue, $companyId, $hasCompanyScope);
+        if ($label !== null) {
+            return sanitize($label);
+        }
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
