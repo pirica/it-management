@@ -178,15 +178,18 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Package every requested implementation in a fresh branch and open a new PR.
   * Do not reuse a previously opened PR for a new request, even if the files overlap.
   * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your ‘NEW PR always’ rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
-* **IDF sync guardrail (mandatory for `modules/idfs/view.php` and `modules/idfs/device.php`):**
-  * Edit/Create/Update/Delete flows must keep `idf_ports`, `switch_ports`, `equipment`, and `idf_links` synchronized.
-  * `link_create` and `port_update` must propagate status/color/label/notes to matching `switch_ports` rows and linked peer `idf_ports`.
-  * `link_delete` must reset both `idf_ports` and matching `switch_ports` rows to tenant `Unknown` + Gray (`#808080`) defaults.
-  * `position_save` must sync `equipment.idf_id` + `switch_ports.idf_id` to the selected IDF, and `position_delete` must clear them to `NULL` when unlinked.
+* **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
+  * All **Create, Edit, Update, Delete, Copy, and Move** operations must keep the following tables fully synchronized at all times: `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links`.
+  * **Hard-fail policy:** partial cross-table updates are not allowed. When a workflow touches multiple IDF-related tables, use transaction boundaries and rollback on any synchronization failure.
+  * **Delete/overwrite/move safety:** cleanup/update dependent `idf_links` and `idf_ports` rows before deleting or replacing `idf_positions`, and always keep `equipment.idf_id` and `switch_ports.idf_id` aligned with the active IDF link state.
+  * `link_create`, `port_update`, `link_delete`, `position_save`, `position_delete`, `position_copy`, and move/reorder actions must preserve status/color/label/notes parity across linked `idf_ports` and mirrored `switch_ports` rows.
+  * **Unknown reset rule:** unlink/delete flows must reset synchronized ports to tenant `Unknown` + Gray (`#808080`) defaults where applicable.
+  * **Wrapper consistency finding (switch_ports):** if `create.php`, `edit.php`, `view.php`, `delete.php`, or `list_all.php` are wrappers that route to `index.php`, `index.php` must not overwrite wrapper-provided `$crud_action` values.
   * **High-Density Support:** Rack position validation supports up to **250** positions. Batch updates (move/reorder) use temporary offsets (1000) to avoid unique constraint collisions.
-  * Mandatory human-flow regression command before PR when touching these paths:
-    * `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
-  * If the command reports any `[FAIL]`, the task is not complete.
+  * **Mandatory human-flow testing for every affected workflow:** execute human-flow regression for each changed Create/Edit/Update/Delete/Copy/Move path before PR.
+    * Required regression command:
+      * `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
+    * If any workflow or command run reports `[FAIL]`, the task is not complete.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
 * **API:**
