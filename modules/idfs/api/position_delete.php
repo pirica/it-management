@@ -41,6 +41,43 @@ if ($stmtDel) {
 
 $linkedEquipmentId = isset($positionRow['equipment_id']) ? trim((string)$positionRow['equipment_id']) : '';
 $linkedIdfId = isset($positionRow['idf_id']) ? (int)$positionRow['idf_id'] : 0;
+
+$positionPortIds = [];
+$stmtPorts = mysqli_prepare(
+    $conn,
+    "SELECT id
+     FROM idf_ports
+     WHERE company_id = ? AND position_id = ?"
+);
+if ($stmtPorts) {
+    mysqli_stmt_bind_param($stmtPorts, 'ii', $company_id, $position_id);
+    mysqli_stmt_execute($stmtPorts);
+    $resPorts = mysqli_stmt_get_result($stmtPorts);
+    while ($resPorts && ($portRow = mysqli_fetch_assoc($resPorts))) {
+        $portId = (int)($portRow['id'] ?? 0);
+        if ($portId > 0) {
+            $positionPortIds[$portId] = $portId;
+        }
+    }
+    mysqli_stmt_close($stmtPorts);
+}
+
+if ($positionPortIds) {
+    $portIdList = implode(',', array_values($positionPortIds));
+    mysqli_query(
+        $conn,
+        "DELETE FROM idf_links
+         WHERE company_id = " . (int)$company_id . "
+           AND (port_id_a IN ({$portIdList}) OR port_id_b IN ({$portIdList}))"
+    );
+}
+mysqli_query(
+    $conn,
+    "DELETE FROM idf_ports
+     WHERE company_id = " . (int)$company_id . "
+       AND position_id = " . (int)$position_id
+);
+
 if ($linkedEquipmentId !== '' && ctype_digit($linkedEquipmentId) && $linkedIdfId > 0) {
     $linkedEquipmentIdInt = (int)$linkedEquipmentId;
 
