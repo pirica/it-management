@@ -226,7 +226,9 @@ try {
         mysqli_stmt_close($stmtDel);
     }
 
-    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id, fiber_ports_number, switch_port_numbering_layout_id, management_id) VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0))");
+    $defaultColorName = 'Gray';
+    $defaultColorHex = '#808080';
+    $stmtIns = mysqli_prepare($conn, "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id, fiber_ports_number, switch_port_numbering_layout_id, management_id, cable_color, hex_color) VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?, ?)");
     if ($stmtIns) {
         if (!empty($portRowsToInsert)) {
             ksort($portRowsToInsert, SORT_NATURAL);
@@ -236,7 +238,7 @@ try {
                 if ($portNo <= 0 || $portTypeId <= 0) {
                     continue;
                 }
-                mysqli_stmt_bind_param($stmtIns, 'iiiiiiii', $company_id, $position_id, $portNo, $portTypeId, $unknownStatusId, $fiberPortsNumberId, $switchPortNumberingLayoutId, $managementId);
+                mysqli_stmt_bind_param($stmtIns, 'iiiiiiiiss', $company_id, $position_id, $portNo, $portTypeId, $unknownStatusId, $fiberPortsNumberId, $switchPortNumberingLayoutId, $managementId, $defaultColorName, $defaultColorHex);
                 mysqli_stmt_execute($stmtIns);
             }
         }
@@ -249,6 +251,21 @@ try {
             mysqli_stmt_bind_param($stmtDeleteSwitchPorts, 'ii', $company_id, $equipmentId);
             mysqli_stmt_execute($stmtDeleteSwitchPorts);
             mysqli_stmt_close($stmtDeleteSwitchPorts);
+        }
+
+        $idf_location_id = 0;
+        $idf_rack_id = 0;
+        $stmtIdf = mysqli_prepare($conn, "SELECT location_id, rack_id FROM idfs WHERE id = ? AND company_id = ? LIMIT 1");
+        if ($stmtIdf) {
+            mysqli_stmt_bind_param($stmtIdf, 'ii', $idfId, $company_id);
+            mysqli_stmt_execute($stmtIdf);
+            $resIdf = mysqli_stmt_get_result($stmtIdf);
+            $idfRow = $resIdf ? mysqli_fetch_assoc($resIdf) : null;
+            mysqli_stmt_close($stmtIdf);
+            if ($idfRow) {
+                $idf_location_id = (int)($idfRow['location_id'] ?? 0);
+                $idf_rack_id = (int)($idfRow['rack_id'] ?? 0);
+            }
         }
 
         $portTypeNameById = [];
@@ -314,9 +331,9 @@ try {
         $stmtInsertSwitchPort = mysqli_prepare(
             $conn,
             "INSERT INTO switch_ports
-                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, management_id, comments)
+                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, location_id, rack_id, management_id, comments)
              VALUES
-                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?)"
+                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?)"
         );
         if ($stmtInsertSwitchPort) {
             $switchPatchPortDefault = '0';
@@ -330,7 +347,7 @@ try {
                 }
                 mysqli_stmt_bind_param(
                     $stmtInsertSwitchPort,
-                    'iissisiiiis',
+                    'iissisiiiiiis',
                     $company_id,
                     $equipmentId,
                     $equipmentHostname,
@@ -340,6 +357,8 @@ try {
                     $unknownStatusId,
                     $defaultColorId,
                     $idfId,
+                    $idf_location_id,
+                    $idf_rack_id,
                     $managementId,
                     $switchCommentsDefault
                 );

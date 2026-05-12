@@ -210,17 +210,22 @@ if ($device_type_name === 'ups') {
     $port_count = 0;
 }
 
-$stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
+$idf_location_id = 0;
+$idf_rack_id = 0;
+$stmtIdf = mysqli_prepare($conn, "SELECT id, location_id, rack_id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
 if ($stmtIdf) {
     mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);
     mysqli_stmt_execute($stmtIdf);
     $resIdf = mysqli_stmt_get_result($stmtIdf);
-    $foundIdf = $resIdf && mysqli_num_rows($resIdf) === 1;
+    $idfRow = $resIdf ? mysqli_fetch_assoc($resIdf) : null;
+    $foundIdf = $idfRow !== null;
     mysqli_stmt_close($stmtIdf);
 
     if (!$foundIdf) {
         idf_fail('IDF not found', 404);
     }
+    $idf_location_id = (int)($idfRow['location_id'] ?? 0);
+    $idf_rack_id = (int)($idfRow['rack_id'] ?? 0);
 }
 
 $previousLinkedEquipmentIds = [];
@@ -797,12 +802,14 @@ if ($pid > 0) {
             $stmtSyncEquipmentIdf = mysqli_prepare(
                 $conn,
                 "UPDATE equipment
-                 SET idf_id = ?
+                 SET idf_id = ?,
+                     location_id = COALESCE(NULLIF(?, 0), location_id),
+                     rack_id = COALESCE(NULLIF(?, 0), rack_id)
                  WHERE id = ? AND company_id = ?
                  LIMIT 1"
             );
             if ($stmtSyncEquipmentIdf) {
-                mysqli_stmt_bind_param($stmtSyncEquipmentIdf, 'iii', $idf_id, $resolvedLinkedEquipmentId, $company_id);
+                mysqli_stmt_bind_param($stmtSyncEquipmentIdf, 'iiiiii', $idf_id, $idf_location_id, $idf_rack_id, $resolvedLinkedEquipmentId, $company_id);
                 mysqli_stmt_execute($stmtSyncEquipmentIdf);
                 mysqli_stmt_close($stmtSyncEquipmentIdf);
             }
@@ -810,11 +817,13 @@ if ($pid > 0) {
             $stmtSyncSwitchPortsIdf = mysqli_prepare(
                 $conn,
                 "UPDATE switch_ports
-                 SET idf_id = ?
+                 SET idf_id = ?,
+                     location_id = COALESCE(NULLIF(?, 0), location_id),
+                     rack_id = COALESCE(NULLIF(?, 0), rack_id)
                  WHERE company_id = ? AND equipment_id = ?"
             );
             if ($stmtSyncSwitchPortsIdf) {
-                mysqli_stmt_bind_param($stmtSyncSwitchPortsIdf, 'iii', $idf_id, $company_id, $resolvedLinkedEquipmentId);
+                mysqli_stmt_bind_param($stmtSyncSwitchPortsIdf, 'iiiiii', $idf_id, $idf_location_id, $idf_rack_id, $company_id, $resolvedLinkedEquipmentId);
                 mysqli_stmt_execute($stmtSyncSwitchPortsIdf);
                 mysqli_stmt_close($stmtSyncSwitchPortsIdf);
             }

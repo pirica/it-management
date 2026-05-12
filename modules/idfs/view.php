@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
+require_once __DIR__ . '/api/_bootstrap.php';
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');

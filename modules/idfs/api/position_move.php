@@ -35,7 +35,7 @@ if ($target < 1 || $target > 250) {
 
 mysqli_begin_transaction($conn);
 try {
-    $tmp = 999;
+    $tmp = 1000;
     $stmt1 = mysqli_prepare($conn, "UPDATE idf_positions SET position_no=? WHERE idf_id=? AND position_no=? LIMIT 1");
     if ($stmt1) {
         mysqli_stmt_bind_param($stmt1, 'iii', $tmp, $idf_id, $position_no);
