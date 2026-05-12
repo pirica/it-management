@@ -16,44 +16,130 @@ function toggleTheme() {
 function updateThemeButton() {
     const buttons = document.querySelectorAll('[onclick="toggleTheme()"]');
     const theme = document.documentElement.getAttribute('data-theme');
-    buttons.forEach(btn => {
-        btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    buttons.forEach((btn) => {
+        btn.textContent = theme === 'dark' ? '\u2600\ufe0f' : '\ud83c\udf19';
     });
 }
 
+function isMobileViewport() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function getSidebarContainer() {
+    return document.querySelector('.container');
+}
+
+function getSavedSidebarState() {
+    return localStorage.getItem('sidebar') === 'collapsed';
+}
+
+function updateSidebarAccessibility(isCollapsed) {
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+    if (sidebarToggleBtn) {
+        sidebarToggleBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    }
+}
+
+function ensureSidebarBackdrop() {
+    let backdrop = document.querySelector('.sidebar-backdrop');
+    if (backdrop) {
+        return backdrop;
+    }
+
+    backdrop = document.createElement('button');
+    backdrop.type = 'button';
+    backdrop.className = 'sidebar-backdrop';
+    backdrop.setAttribute('aria-label', 'Close navigation menu');
+    backdrop.addEventListener('click', () => {
+        applySidebarState(true, { persist: false });
+    });
+    document.body.appendChild(backdrop);
+    return backdrop;
+}
+
+function applySidebarState(isCollapsed, options) {
+    const config = options || {};
+    const mobileView = isMobileViewport();
+
+    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    document.body.classList.toggle('sidebar-mobile-open', mobileView && !isCollapsed);
+
+    const container = getSidebarContainer();
+    if (container) {
+        container.classList.toggle('sidebar-collapsed', isCollapsed);
+    }
+
+    if (config.persist === true && !mobileView) {
+        localStorage.setItem('sidebar', isCollapsed ? 'collapsed' : 'open');
+    }
+
+    updateSidebarAccessibility(isCollapsed);
+    ensureSidebarBackdrop();
+}
+
+function closeSidebarForMobile() {
+    if (isMobileViewport()) {
+        applySidebarState(true, { persist: false });
+    }
+}
+
+function handleSidebarViewportResize() {
+    const mobileView = isMobileViewport();
+    if (mobileView) {
+        applySidebarState(true, { persist: false });
+        return;
+    }
+
+    applySidebarState(getSavedSidebarState(), { persist: false });
+}
+
 function initSidebar() {
-    const savedSidebar = localStorage.getItem('sidebar');
-    const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
-    // Why: A desktop "open" preference should not force the sidebar visible on phones.
-    // Mobile viewports always start collapsed to keep the content area unobstructed.
-    const fallbackState = isMobileViewport ? 'collapsed' : 'open';
-    const sidebarState = isMobileViewport ? 'collapsed' : (savedSidebar || fallbackState);
-    applySidebarState(sidebarState === 'collapsed');
+    const mobileView = isMobileViewport();
+    const initialCollapsed = mobileView ? true : getSavedSidebarState();
+    applySidebarState(initialCollapsed, { persist: false });
+    ensureSidebarBackdrop();
+
+    if (window.ITM_SIDEBAR_EVENTS_BOUND === true) {
+        return;
+    }
+    window.ITM_SIDEBAR_EVENTS_BOUND = true;
+
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+    if (sidebarToggleBtn && sidebarToggleBtn.dataset.sidebarBound !== 'true') {
+        sidebarToggleBtn.addEventListener('click', toggleSidebar);
+        sidebarToggleBtn.dataset.sidebarBound = 'true';
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeSidebarForMobile();
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        const sidebarLink = event.target.closest('.sidebar a[href]');
+        if (sidebarLink) {
+            closeSidebarForMobile();
+        }
+    });
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+        if (resizeTimer) {
+            window.clearTimeout(resizeTimer);
+        }
+        resizeTimer = window.setTimeout(handleSidebarViewportResize, 120);
+    });
 }
 
 function toggleSidebar() {
     const isCollapsed = !document.body.classList.contains('sidebar-collapsed');
-    applySidebarState(isCollapsed);
-    localStorage.setItem('sidebar', isCollapsed ? 'collapsed' : 'open');
-}
-
-function applySidebarState(isCollapsed) {
-    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
-    const container = document.querySelector('.container');
-    if (container) {
-        container.classList.toggle('sidebar-collapsed', isCollapsed);
-    }
+    applySidebarState(isCollapsed, { persist: true });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initSidebar();
-    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-    if (sidebarToggleBtn && sidebarToggleBtn.dataset.sidebarBound !== 'true') {
-        // Use a click handler once and mark it as bound to avoid duplicate toggles.
-        sidebarToggleBtn.addEventListener('click', toggleSidebar);
-        sidebarToggleBtn.dataset.sidebarBound = 'true';
-    }
 });
 
 window.toggleSidebar = toggleSidebar;
