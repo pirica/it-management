@@ -165,6 +165,13 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Open `index.php` and `view.php` and confirm FK columns render labels (not numeric IDs).
   * Open `edit.php` and confirm persisted FK values remain selected even when company-scoped options are incomplete.
   * Confirm fallback lookup is tenant-safe (company scoped first, then id-only fallback only for preserving legacy/shared references).
+* **Mandatory column + SQL relation audit (hard fail):**
+  * For mandatory review requests, audit **all columns and SQL relations** for each requested module folder before code changes are finalized.
+  * Validate visible-column rendering in `index.php`, `view.php`, and `list_all.php` against `database.sql`/`information_schema` relationships.
+  * Replace raw foreign keys with meaningful related display values whenever possible (for example hostname, status, color name, VLAN name, device/position labels).
+  * Include both declared FK constraints and relation-like `*_id` columns that may be stored without an explicit FK constraint.
+  * Keep tenant-safe lookup order: `company_id` scoped lookup first, then id-only fallback only for legacy/shared references when scoped rows are missing.
+  * If a related human-readable label exists but any visible screen still shows raw FK IDs, the task is not complete.
 * **Created-by UX guardrail (hard fail):**
   * For fields such as `created_by`, `updated_by`, `approved_by`, and `*_by_user_id`, list/detail screens must never show raw numeric IDs when a user row exists.
   * In `create.php`/`edit.php`, these fields must render as user dropdowns (human-readable labels), not free-text numeric inputs.
