@@ -11,17 +11,17 @@ if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
 $csrfToken = itm_get_csrf_token();
 ?>
 <div class="header">
-    <div>
-        <h4 style="margin: 0; display: flex; gap: 10px; align-items: center;">
+    <div class="header-left">
+        <h4 class="header-title">
             <!-- Mobile-friendly sidebar toggle -->
-            <button type="button" id="sidebarToggleBtn" class="btn btn-sm sidebar-toggle-btn" title="Hide/Show Dashboard Menu" data-sidebar-bound="false">☰</button>
+            <button type="button" id="sidebarToggleBtn" class="btn btn-sm sidebar-toggle-btn" title="Hide/Show Dashboard Menu" data-sidebar-bound="false" aria-controls="appSidebar" aria-expanded="false">☰</button>
             ⚙️ <strong><?php echo sanitize($_SESSION['company_name'] ?? 'System'); ?></strong>
         </h4>
     </div>
-    <div style="display: flex; gap: 15px; align-items: center;">
+    <div class="header-right">
         <!-- Global UI Action Buttons -->
         <button onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙</button>
-        <form method="POST" action="<?php echo BASE_URL; ?>logout.php" style="display:inline; margin:0;">
+        <form method="POST" action="<?php echo BASE_URL; ?>logout.php" class="header-logout-form">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <button type="submit" class="btn btn-sm">🚪 Logout</button>
         </form>

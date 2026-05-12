@@ -39,7 +39,7 @@ foreach ($sectionsById as $section) {
     $orderedSections[] = $section;
 }
 ?>
-<div class="sidebar">
+<div class="sidebar" id="appSidebar" role="navigation" aria-label="Main navigation">
     <div class="sidebar-header">
         <h3><?php echo sanitize($app_name ?? itm_ui_config_app_name($sidebarConfig)); ?></h3>
         <p><?php echo sanitize($_SESSION['company_name'] ?? 'Company'); ?></p>
@@ -106,11 +106,11 @@ foreach ($sectionsById as $section) {
     <?php endforeach; ?>
 
     <!-- Secondary Sidebar Actions -->
-    <ul class="sidebar-nav" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
+    <ul class="sidebar-nav sidebar-footer-nav">
         <li>
-            <form method="POST" action="<?php echo BASE_URL; ?>logout.php" style="margin:0;">
+            <form method="POST" action="<?php echo BASE_URL; ?>logout.php" class="sidebar-logout-form">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                <button type="submit" class="btn btn-sm" style="width:100%;">🚪 Logout</button>
+                <button type="submit" class="btn btn-sm sidebar-logout-btn">🚪 Logout</button>
             </form>
         </li>
     </ul>
