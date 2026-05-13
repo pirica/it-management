@@ -174,10 +174,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $statusColor = $cableHexColor !== '' ? $cableHexColor : ($statusColor !== '' ? $statusColor : '#161b22');
                 $isActive = false;
                 if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
-                    $statusColor = '#58a6ff';
                     $isActive = true;
                 } elseif ($statusColor === '#28a745' || $statusColor === '#3fb950' || strtolower($statusColor) === 'green') {
-                    $statusColor = '#3fb950';
                     $isActive = true;
                 }
 

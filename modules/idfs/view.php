@@ -288,7 +288,7 @@ if ($stmtPos) {
                     COALESCE(spt.type, 'RJ45') AS port_type_label,
                     COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
                     COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
-                    COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
+                    COALESCE(cc_live.hex_color, cc_sp_link_direct.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
                     COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
                     COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
                     COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
@@ -326,8 +326,8 @@ if ($stmtPos) {
                     p_local.equipment_id AS local_equipment_id,
                     i_local.name AS local_idf_name,
                     COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
-                    COALESCE(cc_live.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
-                    COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
+                    COALESCE(cc_live.hex_color, cc_sp_link_direct.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
+                    COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(cc_sp_link_direct.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
                     l.id AS link_id,
                     COALESCE(l.cable_label, '') AS cable_label,
                     l.notes AS link_notes,
@@ -393,6 +393,7 @@ if ($stmtPos) {
                   = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(l.equipment_port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
              LEFT JOIN switch_status ss_link ON ss_link.id = sp_link.status_id AND ss_link.company_id = sp_link.company_id
              LEFT JOIN cable_colors cc_ss_link ON cc_ss_link.id = ss_link.color_id AND cc_ss_link.company_id = ss_link.company_id
+             LEFT JOIN cable_colors cc_sp_link_direct ON cc_sp_link_direct.id = sp_link.color_id AND cc_sp_link_direct.company_id = sp_link.company_id
              LEFT JOIN vlans v_link_sp ON v_link_sp.id = sp_link.vlan_id AND v_link_sp.company_id = sp_link.company_id
              LEFT JOIN vlans v_link ON v_link.id = l.equipment_vlan_id AND v_link.company_id = l.company_id
              LEFT JOIN idf_ports pr_remote
