@@ -11,6 +11,7 @@ $company_id = (int)($_SESSION['company_id'] ?? 0);
 $position_id = (int)($_GET['position_id'] ?? 0);
 $open_edit_port_id = (int)($_GET['open_edit_port_id'] ?? 0);
 $open_link_port_id = (int)($_GET['open_link_port_id'] ?? 0);
+$embed_mode = isset($_GET['embed']) && (string)$_GET['embed'] === '1';
 
 function idf_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
@@ -986,18 +987,36 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             .idf-modal { width:100%; margin:10px auto; }
             .idf-grid-2 { grid-template-columns:1fr; }
         }
+        body.idf-embed-mode {
+            margin:0;
+            padding:0;
+            background:var(--bg-primary);
+        }
+        body.idf-embed-mode .content {
+            padding:12px;
+        }
+        body.idf-embed-mode .idf-modal-backdrop {
+            left:0;
+            z-index:2200;
+        }
     </style>
 </head>
-<body>
+<body class="<?php echo $embed_mode ? 'idf-embed-mode' : ''; ?>">
+<?php if (!$embed_mode): ?>
 <div class="container">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
     <div class="main-content">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
+<?php endif; ?>
 
         <div class="content" id="idfDeviceCaptureRoot">
             <div class="idf-toolbar">
                 <div class="left">
-                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
+                    <?php if ($embed_mode): ?>
+                        <button class="btn btn-sm" type="button" onclick="closeEmbeddedDeviceView()">Close</button>
+                    <?php else: ?>
+                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
+                    <?php endif; ?>
                     <div style="display:flex; flex-direction:column;">
                         <div style="opacity:.85; font-size:13px; font-weight:600; margin-bottom:2px;">
                             🗄️ IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
@@ -1220,8 +1239,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </tbody>
             </table>
         </div>
+<?php if (!$embed_mode): ?>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="idf-modal-backdrop" id="portBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
@@ -1493,6 +1514,7 @@ const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
+const EMBED_MODE = <?php echo $embed_mode ? 'true' : 'false'; ?>;
 const FIBER_SPEED_OPTIONS = <?php echo json_encode($fiberSpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const RJ45_SPEED_OPTIONS = <?php echo json_encode($rj45SpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const PORTS = <?php
@@ -1510,6 +1532,17 @@ $portsMeta = array_map(static function (array $port): array {
 }, $ports);
 echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>;
+function closeEmbeddedDeviceView() {
+    if (window.parent && window.parent !== window && EMBED_MODE) {
+        try {
+            window.parent.postMessage({type: 'idf_device_embed_close'}, '*');
+            return;
+        } catch (e) {
+            // fall through to same-window redirect fallback
+        }
+    }
+    window.location.href = 'view.php?id=<?php echo (int)$pos['idf_id']; ?>';
+}
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 let activeStatusSelect = null;
 let activeCableColorSelect = null;

@@ -1265,7 +1265,9 @@ function openInlineDevice(url) {
         window.location.href = url;
         return;
     }
-    frame.src = url;
+    const frameUrl = new URL(url, window.location.href);
+    frameUrl.searchParams.set('embed', '1');
+    frame.src = frameUrl.toString();
     backdrop.style.display = 'flex';
 }
 function refreshInlineDeviceFrame() {
@@ -1285,6 +1287,12 @@ function closeInlineDevice() {
     }
     location.reload();
 }
+window.addEventListener('message', (event) => {
+    if (!event || !event.data || event.data.type !== 'idf_device_embed_close') {
+        return;
+    }
+    closeInlineDevice();
+});
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
