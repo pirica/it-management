@@ -103,7 +103,9 @@ if ($portA > 0 && $portB > 0) {
          SET connected_to = ?,
              status_id = NULLIF(?, 0),
              cable_color = ?,
-             hex_color = ?
+             hex_color = ?,
+             label = NULL,
+             notes = NULL
          WHERE id = ?
          LIMIT 1"
     );
