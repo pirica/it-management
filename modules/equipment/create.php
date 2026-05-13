@@ -612,6 +612,22 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
         return '';
     }
 
+    $hasSwitchFiberPortsNumberColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_ports_number');
+    $hasSwitchFiberPortLabelColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_port_label');
+    $hasSwitchLayoutColumn = equipment_table_has_column($conn, 'equipment', 'switch_port_numbering_layout_id');
+    $hasSwitchEnvironmentColumn = equipment_table_has_column($conn, 'equipment', 'switch_environment_id');
+    $hasSwitchFiberIdColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_id');
+    $hasEquipmentFiberTable = equipment_table_exists($conn, 'equipment_fiber');
+
+    $switchFiberPortsNumberSelect = $hasSwitchFiberPortsNumberColumn ? "COALESCE(e.switch_fiber_ports_number, '')" : "''";
+    $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn ? "COALESCE(e.switch_fiber_port_label, '')" : "''";
+    $equipmentLayoutSelect = $hasSwitchLayoutColumn ? "COALESCE(e.switch_port_numbering_layout_id, 0)" : "0";
+    $switchEnvironmentSelect = $hasSwitchEnvironmentColumn ? "COALESCE(e.switch_environment_id, 0)" : "0";
+    $switchFiberNameSelect = ($hasSwitchFiberIdColumn && $hasEquipmentFiberTable) ? "COALESCE(ef.name, '')" : "''";
+    $switchFiberJoinSql = ($hasSwitchFiberIdColumn && $hasEquipmentFiberTable)
+        ? "LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id"
+        : "";
+
     $stmtMeta = mysqli_prepare(
         $conn,
         "SELECT
@@ -620,16 +636,16 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
             p.port_count,
             COALESCE(p.switch_port_numbering_layout_id, 0) AS position_layout_id,
             COALESCE(e.hostname, '') AS equipment_hostname,
-            COALESCE(e.switch_fiber_ports_number, '') AS switch_fiber_ports_number,
-            COALESCE(e.switch_fiber_port_label, '') AS switch_fiber_port_label,
-            COALESCE(ef.name, '') AS switch_fiber_name,
-            COALESCE(e.switch_port_numbering_layout_id, 0) AS equipment_layout_id,
-            COALESCE(e.switch_environment_id, 0) AS switch_environment_id
+            {$switchFiberPortsNumberSelect} AS switch_fiber_ports_number,
+            {$switchFiberPortLabelSelect} AS switch_fiber_port_label,
+            {$switchFiberNameSelect} AS switch_fiber_name,
+            {$equipmentLayoutSelect} AS equipment_layout_id,
+            {$switchEnvironmentSelect} AS switch_environment_id
          FROM equipment e
          LEFT JOIN idf_positions p
            ON p.company_id = e.company_id
           AND p.equipment_id = CAST(e.id AS CHAR)
-         LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+         {$switchFiberJoinSql}
          WHERE e.company_id = ? AND e.id = ?
          LIMIT 1"
     );
