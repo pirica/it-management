@@ -1331,6 +1331,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $switch_fiber_port_label = $data['switch_fiber_port_label'] === ''
             ? 'NULL'
             : "'" . escape_sql($data['switch_fiber_port_label'], $conn) . "'";
+        $switch_fiber_ports_number_fk_sql = 'NULL';
+        if ($data['switch_fiber_ports_number'] !== '' && equipment_table_exists($conn, 'equipment_fiber_count')) {
+            $stmtFiberCountFk = mysqli_prepare(
+                $conn,
+                "SELECT id
+                 FROM equipment_fiber_count
+                 WHERE company_id = ? AND name = ?
+                 ORDER BY id ASC
+                 LIMIT 1"
+            );
+            if ($stmtFiberCountFk) {
+                $switchFiberCountName = (string)$data['switch_fiber_ports_number'];
+                mysqli_stmt_bind_param($stmtFiberCountFk, 'is', $company_id, $switchFiberCountName);
+                mysqli_stmt_execute($stmtFiberCountFk);
+                $resFiberCountFk = mysqli_stmt_get_result($stmtFiberCountFk);
+                $fiberCountFkRow = $resFiberCountFk ? mysqli_fetch_assoc($resFiberCountFk) : null;
+                mysqli_stmt_close($stmtFiberCountFk);
+                $resolvedFiberCountId = (int)($fiberCountFkRow['id'] ?? 0);
+                if ($resolvedFiberCountId > 0) {
+                    $switch_fiber_ports_number_fk_sql = (string)$resolvedFiberCountId;
+                }
+            }
+        }
         $switch_poe_id = (int)$data['switch_poe_id'] ?: 'NULL';
         $switch_environment_id = (int)$data['switch_environment_id'] ?: 'NULL';
         $notes = $data['notes'] === '' ? 'NULL' : "'" . escape_sql($data['notes'], $conn) . "'";
@@ -1411,22 +1434,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                fiber_patch_id = $switch_fiber_patch_id,
                                                fiber_rack_id = $switch_fiber_rack_id,
                                                management_id = $switch_environment_id
-                                           WHERE company_id = $company_id
-                                             AND equipment_id = $id";
-                    mysqli_query($conn, $switchPortsSyncSql);
+                                            WHERE company_id = $company_id
+                                              AND equipment_id = $id";
+                    if (!mysqli_query($conn, $switchPortsSyncSql)) {
+                        $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                    }
                 }
-                if (equipment_table_has_column($conn, 'idf_ports', 'management_id')) {
+                if ($error === '' && equipment_table_has_column($conn, 'idf_ports', 'management_id')) {
                     $idfPortsSyncSql = "UPDATE idf_ports ip
                                         JOIN idf_positions p ON p.id = ip.position_id
                                         SET ip.speed_id = $switch_fiber_id,
                                             ip.rj45_speed_id = $switch_rj45_id,
-                                            ip.fiber_ports_number = $switch_fiber_ports_number,
+                                            ip.fiber_ports_number = $switch_fiber_ports_number_fk_sql,
                                             ip.switch_port_numbering_layout_id = $switch_port_numbering_layout_id,
                                             ip.management_id = $switch_environment_id,
                                             ip.poe_id = $switch_poe_id
                                         WHERE p.company_id = $company_id
                                           AND p.equipment_id = '$id'";
-                    mysqli_query($conn, $idfPortsSyncSql);
+                    if (!mysqli_query($conn, $idfPortsSyncSql)) {
+                        $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
+                    }
                 }
             }
             if ($error === '') {
