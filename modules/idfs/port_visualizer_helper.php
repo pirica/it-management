@@ -416,25 +416,23 @@ if (!function_exists('itm_render_port_visualizer')) {
                 return $aNo <=> $bNo;
             });
 
-            if (empty($iconDots)) {
-                for ($i = 0; $i < 4; $i++) { $iconDots[] = ['type' => '', 'no' => 0]; }
-            }
-            if (count($iconDots) > 20) {
-                $iconDots = array_slice($iconDots, 0, 20);
-            }
+            if (!empty($iconDots)) {
+                if (count($iconDots) > 20) {
+                    $iconDots = array_slice($iconDots, 0, 20);
+                }
 
-            $iconCols = $layout === 'vertical'
-                ? max(1, min(10, (int)ceil(count($iconDots) / 2)))
-                : max(2, min(10, count($iconDots)));
-            $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px); opacity:1;">';
-            foreach ($iconDots as $dotMeta) {
+                $iconCols = $layout === 'vertical'
+                    ? max(1, min(10, (int)ceil(count($iconDots) / 2)))
+                    : max(2, min(10, count($iconDots)));
+                $html .= '<div class="itm-device-icon" style="grid-template-columns: repeat(' . $iconCols . ', 10px); opacity:1;">';
+                foreach ($iconDots as $dotMeta) {
                 $dotPort = null;
                 $dotStyle = '';
                 $dotNo = (int)($dotMeta['no'] ?? 0);
                 $dotTypeRaw = (string)($dotMeta['type'] ?? '');
                 $dotKey = $dotTypeRaw . ':' . $dotNo;
                 $dotTitle = 'Port ' . $dotNo;
-                // Why: Placeholder icon dots (port 0) are visual fillers only and should never route users to SFP edit flows.
+                // Why: Virtual SFP dots without persisted rows should not route users to edit flows.
                 $dotIsClickable = !empty($options['clickable']) && $dotNo > 0 && $dotTypeRaw !== '';
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
@@ -546,8 +544,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $dotOnClick = ' onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';
                 }
                 $html .= '<div class="itm-device-icon-dot" title="' . sanitize($dotTitle) . '"' . $dotDataAttrs . $dotStyle . $dotOnClick . '></div>';
+                }
+                $html .= '</div>';
             }
-            $html .= '</div>';
         }
 
 
