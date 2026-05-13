@@ -1067,6 +1067,26 @@ if ($pid > 0) {
             mysqli_stmt_close($stmtInsertPort);
         }
 
+        $layoutSyncValue = $layout_id > 0 ? $layout_id : 0;
+        $stmtSyncPortLayout = mysqli_prepare(
+            $conn,
+            "UPDATE idf_ports
+             SET switch_port_numbering_layout_id = NULLIF(?, 0)
+             WHERE company_id = ?
+               AND position_id = ?"
+        );
+        if ($stmtSyncPortLayout) {
+            mysqli_stmt_bind_param($stmtSyncPortLayout, 'iii', $layoutSyncValue, $company_id, $pid);
+            if (!mysqli_stmt_execute($stmtSyncPortLayout)) {
+                $err = mysqli_stmt_error($stmtSyncPortLayout);
+                mysqli_stmt_close($stmtSyncPortLayout);
+                idf_fail('DB error syncing IDF port numbering layout: ' . $err, 500);
+            }
+            mysqli_stmt_close($stmtSyncPortLayout);
+        } else {
+            idf_fail('DB error preparing IDF port layout sync', 500);
+        }
+
         if ($equipment_id > 0) {
             // Why: enforce linked-equipment metadata parity even if seed arrays missed rows due legacy naming/lookup drift.
             $sqlForceSync = "

@@ -125,9 +125,35 @@ if ($target_position < 1 || $target_position > 250) {
 
 $stmtSrc = mysqli_prepare(
     $conn,
-    "SELECT p.*, i.company_id
+    "SELECT p.*, i.company_id,
+            COALESCE(e.switch_rj45_id, er_count.id, 0) AS effective_switch_rj45_id,
+            COALESCE(NULLIF(p.switch_port_numbering_layout_id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), NULLIF(port_layout.switch_port_numbering_layout_id, 0), 0) AS effective_switch_port_numbering_layout_id,
+            COALESCE(rj45_count.rj45_port_count, 0) AS actual_rj45_port_count
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
+     LEFT JOIN equipment e
+       ON e.id = p.equipment_id
+      AND e.company_id = p.company_id
+     LEFT JOIN equipment_rj45 er_count
+       ON er_count.company_id = p.company_id
+      AND p.port_count > 0
+      AND er_count.name REGEXP CONCAT('(^|[^0-9])', p.port_count, '([^0-9]|$)')
+     LEFT JOIN (
+        SELECT position_id, MIN(switch_port_numbering_layout_id) AS switch_port_numbering_layout_id
+        FROM idf_ports
+        WHERE switch_port_numbering_layout_id IS NOT NULL
+          AND switch_port_numbering_layout_id <> 0
+        GROUP BY position_id
+     ) port_layout ON port_layout.position_id = p.id
+     LEFT JOIN (
+        SELECT ip.position_id, COUNT(*) AS rj45_port_count
+        FROM idf_ports ip
+        LEFT JOIN switch_port_types spt
+          ON spt.company_id = ip.company_id
+         AND spt.id = ip.port_type
+        WHERE LOWER(TRIM(COALESCE(spt.type, ''))) = 'rj45'
+        GROUP BY ip.position_id
+     ) rj45_count ON rj45_count.position_id = p.id
      WHERE p.id=?
      LIMIT 1"
 );
@@ -260,7 +286,15 @@ try {
     $device_type = (int)$src['device_type'];
     $device_name = (string)$device_name;
     $port_count = (int)$src['port_count'];
-    $layout_val = (int)($src['switch_port_numbering_layout_id'] ?? 0);
+    $actualRj45PortCount = (int)($src['actual_rj45_port_count'] ?? 0);
+    if ($actualRj45PortCount > 0) {
+        $port_count = $actualRj45PortCount;
+    }
+    $layout_val = (int)($src['effective_switch_port_numbering_layout_id'] ?? 0);
+    if ($layout_val <= 0) {
+        $layout_val = (int)($src['switch_port_numbering_layout_id'] ?? 0);
+    }
+    $effectiveSwitchRj45Id = (int)($src['effective_switch_rj45_id'] ?? 0);
 
     // If this is a linked equipment row, clone equipment + switch ports so copied position gets a new Asset ID.
     $didCloneLinkedEquipment = false;
@@ -299,6 +333,12 @@ try {
                 $newEquipment['name'] = $device_name;
             }
             $newEquipment['idf_id'] = $idf_id;
+            if ($effectiveSwitchRj45Id > 0) {
+                $newEquipment['switch_rj45_id'] = $effectiveSwitchRj45Id;
+            }
+            if ($layout_val > 0) {
+                $newEquipment['switch_port_numbering_layout_id'] = $layout_val;
+            }
             // Keep nullable-unique fields safe for cloned records.
             $newEquipment['serial_number'] = null;
             $newEquipment['hostname'] = null;
@@ -412,7 +452,7 @@ try {
                 $p_rj45_speed = (int)($p['rj45_speed_id'] ?? 0);
                 $p_poe = (int)($p['poe_id'] ?? 0);
                 $p_fiber_ports_number = (int)($p['fiber_ports_number'] ?? 0);
-                $p_layout_id = (int)($p['switch_port_numbering_layout_id'] ?? 0);
+                $p_layout_id = $layout_val > 0 ? $layout_val : (int)($p['switch_port_numbering_layout_id'] ?? 0);
                 $p_management_id = (int)($p['management_id'] ?? 0);
                 if ($p_management_id <= 0) {
                     $p_management_id = $defaultManagementId;
