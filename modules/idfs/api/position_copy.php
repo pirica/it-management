@@ -398,17 +398,18 @@ try {
             }
         }
 
-        $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, poe_id, fiber_ports_number, switch_port_numbering_layout_id, management_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?)';
+        $sqlInsPort = 'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, connected_to, vlan_id, speed_id, rj45_speed_id, poe_id, fiber_ports_number, switch_port_numbering_layout_id, management_id, cable_color, hex_color, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)';
         $stmtInsPort = mysqli_prepare($conn, $sqlInsPort);
         if ($stmtInsPort) {
             foreach ($ports as $p) {
                 $p_no = (int)$p['port_no'];
                 $p_type = (int)($p['port_type'] ?? 0);
-                $p_label = (string)$p['label'];
+                $p_label = (string)($p['label'] ?? '');
                 $p_status = (int)($p['status_id'] ?? 0);
-                $p_conn = (string)$p['connected_to'];
+                $p_conn = (string)($p['connected_to'] ?? '');
                 $p_vlan = (int)($p['vlan_id'] ?? 0);
                 $p_speed = (int)($p['speed_id'] ?? 0);
+                $p_rj45_speed = (int)($p['rj45_speed_id'] ?? 0);
                 $p_poe = (int)($p['poe_id'] ?? 0);
                 $p_fiber_ports_number = (int)($p['fiber_ports_number'] ?? 0);
                 $p_layout_id = (int)($p['switch_port_numbering_layout_id'] ?? 0);
@@ -416,10 +417,12 @@ try {
                 if ($p_management_id <= 0) {
                     $p_management_id = $defaultManagementId;
                 }
-                $p_notes = (string)$p['notes'];
+                $p_color = (string)($p['cable_color'] ?? '');
+                $p_hex = (string)($p['hex_color'] ?? '');
+                $p_notes = (string)($p['notes'] ?? '');
 
-                mysqli_stmt_bind_param($stmtInsPort, 'iiiisisiiiiiis',
-                    $company_id, $newPosId, $p_no, $p_type, $p_label, $p_status, $p_conn, $p_vlan, $p_speed, $p_poe, $p_fiber_ports_number, $p_layout_id, $p_management_id, $p_notes
+                mysqli_stmt_bind_param($stmtInsPort, 'iiiisisiiiiiiisss',
+                    $company_id, $newPosId, $p_no, $p_type, $p_label, $p_status, $p_conn, $p_vlan, $p_speed, $p_rj45_speed, $p_poe, $p_fiber_ports_number, $p_layout_id, $p_management_id, $p_color, $p_hex, $p_notes
                 );
                 mysqli_stmt_execute($stmtInsPort);
             }
