@@ -1491,6 +1491,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
+const IDF_VIEW_REFRESH_KEY = 'itm_idf_device_refresh_<?php echo (int)$pos['idf_id']; ?>';
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
 const FIBER_SPEED_OPTIONS = <?php echo json_encode($fiberSpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
@@ -1513,6 +1514,19 @@ echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 let activeStatusSelect = null;
 let activeCableColorSelect = null;
+
+function notifyIdfViewRefresh() {
+    try {
+        localStorage.setItem(IDF_VIEW_REFRESH_KEY, String(Date.now()));
+    } catch (e) {
+        // Ignore storage write failures (privacy mode/quota) and keep the current page flow.
+    }
+}
+
+function reloadWithViewSync() {
+    notifyIdfViewRefresh();
+    location.reload();
+}
 
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
@@ -1697,7 +1711,7 @@ function savePort() {
             : null,
     };
     apiPost('port_update.php', payload)
-        .then(() => location.reload())
+        .then(() => reloadWithViewSync())
         .catch(err => alert(err.message));
 }
 
@@ -1743,7 +1757,7 @@ function onPortDotClick(portElement) {
 function regeneratePorts() {
     if (!confirm('Regenerate ports? This will DELETE and recreate ports 1..port_count.')) return;
     apiPost('ports_regen.php', {csrf_token: CSRF, position_id: POSITION_ID})
-        .then(() => location.reload())
+        .then(() => reloadWithViewSync())
         .catch(err => alert(err.message));
 }
 
@@ -1937,7 +1951,7 @@ function createLink() {
     };
 
     apiPost('link_create.php', payload)
-        .then(() => location.reload())
+        .then(() => reloadWithViewSync())
         .catch(err => {
             const message = String(err.message || '');
             if (message.toLowerCase().includes('already linked')) {
@@ -2437,7 +2451,7 @@ function saveStatusFromModal() {
 function unlinkPort(linkId) {
     if (!confirm('Remove this cable link?')) return;
     apiPost('link_delete.php', {csrf_token: CSRF, link_id: Number(linkId)})
-        .then(() => location.reload())
+        .then(() => reloadWithViewSync())
         .catch(err => alert(err.message));
 }
 

@@ -1109,6 +1109,7 @@ foreach ($equipmentOptions as $equipmentOption) {
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const IDF_ID = <?php echo (int)$idf_id; ?>;
+const IDF_DEVICE_REFRESH_KEY = `itm_idf_device_refresh_${IDF_ID}`;
 const SWITCH_DEVICE_TYPE_ID = <?php echo (int)$switchDeviceTypeId; ?>;
 const UPS_DEVICE_TYPE_ID = <?php echo (int)$upsDeviceTypeId; ?>;
 const DEFAULT_NON_SWITCH_LAYOUT_ID = <?php echo (int)$defaultHorizontalLayoutId; ?>;
@@ -1136,6 +1137,7 @@ echo json_encode($equipmentMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
 }, {});
 const INITIAL_VISIBLE_POSITIONS = <?php echo (int)$displayMaxPos; ?>;
 let currentVisiblePositions = INITIAL_VISIBLE_POSITIONS;
+let idfEditorTabOpened = false;
 
 function createEmptySlot(positionNo) {
     const slot = document.createElement('div');
@@ -1221,6 +1223,21 @@ function openModal(){ document.getElementById('idfModalBackdrop').style.display 
 function closeCopyIfBackdrop(e){ if(e.target.id === 'idfCopyBackdrop') closeCopy(); }
 function closeCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'none'; }
 function openCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'flex'; }
+
+function openDeviceEditorInNewTab(url) {
+    const editorWindow = window.open(url, '_blank');
+    if (!editorWindow) {
+        // Why: If popup blocking prevents a new tab, still allow the edit flow to continue.
+        window.location.href = url;
+        return;
+    }
+    idfEditorTabOpened = true;
+    try {
+        editorWindow.focus();
+    } catch (e) {
+        // Ignore focus failures from strict browser policies.
+    }
+}
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
@@ -1468,7 +1485,7 @@ function onPortClick(portId, portElement) {
         url.searchParams.set('open_edit_port_id', String(portId));
     }
 
-    window.location.href = url.toString();
+    openDeviceEditorInNewTab(url.toString());
 }
 
 
@@ -1498,7 +1515,7 @@ function onPortDotClick(portElement) {
     const url = new URL('device.php', window.location.href);
     url.searchParams.set('position_id', String(positionId));
     alert(`SFP port ${portNo > 0 ? portNo : ''} (${portType}) does not have an IDF port record yet. Opening device view so you can regenerate/save ports first.`);
-    window.location.href = url.toString();
+    openDeviceEditorInNewTab(url.toString());
 }
 
 function idfExportExcel() {
@@ -1576,6 +1593,14 @@ async function idfExportPdf() {
         },
     });
 })();
+
+window.addEventListener('storage', (event) => {
+    if (!event || event.key !== IDF_DEVICE_REFRESH_KEY || !idfEditorTabOpened) {
+        return;
+    }
+    // Why: refresh rack view after cross-tab port/link saves so users see updated colors/status immediately.
+    location.reload();
+});
 
 renderVisiblePositions();
 </script>

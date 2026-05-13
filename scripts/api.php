@@ -4,6 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * IDF rack port click actions now open device.php in a separate tab (instead of in-page redirect), and successful device port/link mutations publish a same-origin storage refresh signal so the originating rack view auto-reloads with updated state.
  * IDF rack Edit Device RJ45 capacity updates now enforce linked switch RJ45 row count parity in switch_ports and prune/regenerate matching RJ45 rows in idf_ports.
  * IDF rack/device compact icon rendering no longer injects synthetic Port 0 SFP placeholders when no fiber ports are configured.
  * Equipment edit switch sync now resolves idf_ports.fiber_ports_number via tenant equipment_fiber_count ids and treats sync query failures as transaction errors.
