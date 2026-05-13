@@ -316,7 +316,32 @@ if ($equipment_id > 0) {
             idf_fail('Selected equipment not found', 404);
         }
 
-        $device_name = trim((string)($equipment['name'] ?? ''));
+        $existingEquipmentName = trim((string)($equipment['name'] ?? ''));
+        if ($device_name === '') {
+            $device_name = $existingEquipmentName;
+        }
+
+        if ($device_name !== '') {
+            $stmtDuplicateEquipmentName = mysqli_prepare(
+                $conn,
+                "SELECT id
+                 FROM equipment
+                 WHERE company_id = ?
+                   AND LOWER(name) = LOWER(?)
+                   AND id <> ?
+                 LIMIT 1"
+            );
+            if ($stmtDuplicateEquipmentName) {
+                mysqli_stmt_bind_param($stmtDuplicateEquipmentName, 'isi', $company_id, $device_name, $equipment_id);
+                mysqli_stmt_execute($stmtDuplicateEquipmentName);
+                $resDuplicateEquipmentName = mysqli_stmt_get_result($stmtDuplicateEquipmentName);
+                $duplicateEquipmentNameExists = $resDuplicateEquipmentName && mysqli_num_rows($resDuplicateEquipmentName) > 0;
+                mysqli_stmt_close($stmtDuplicateEquipmentName);
+                if ($duplicateEquipmentNameExists) {
+                    idf_fail('Equipment name already exists for this company.');
+                }
+            }
+        }
 
         if ($device_type_name === 'switch') {
             if ($switch_rj45_id <= 0) {
@@ -337,14 +362,18 @@ if ($equipment_id > 0) {
         $stmtUpdateEq = mysqli_prepare(
             $conn,
             "UPDATE equipment
-             SET switch_rj45_id=?, switch_port_numbering_layout_id=?, notes=?
+             SET name=?, switch_rj45_id=?, switch_port_numbering_layout_id=?, notes=?
              WHERE id=? AND company_id=?
              LIMIT 1"
         );
         if ($stmtUpdateEq) {
             $notesForEquipment = $notes;
-            mysqli_stmt_bind_param($stmtUpdateEq, 'iisii', $switch_rj45_id, $layout_id, $notesForEquipment, $equipment_id, $company_id);
-            mysqli_stmt_execute($stmtUpdateEq);
+            mysqli_stmt_bind_param($stmtUpdateEq, 'siisii', $device_name, $switch_rj45_id, $layout_id, $notesForEquipment, $equipment_id, $company_id);
+            if (!mysqli_stmt_execute($stmtUpdateEq)) {
+                $updateEquipmentError = mysqli_stmt_error($stmtUpdateEq);
+                mysqli_stmt_close($stmtUpdateEq);
+                idf_fail('DB error updating linked equipment: ' . $updateEquipmentError, 500);
+            }
             mysqli_stmt_close($stmtUpdateEq);
         }
     }
