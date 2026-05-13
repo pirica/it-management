@@ -289,7 +289,7 @@ $stmtPorts = mysqli_prepare(
        COALESCE(spt.type, 'RJ45') AS port_type_label,
        COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
        COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
-       COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
+       COALESCE(cc_pr_live_direct.hex_color, cc_live.hex_color, cc_sp_link_direct.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
        COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
        COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
        COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''), '') AS notes,
@@ -332,8 +332,8 @@ $stmtPorts = mysqli_prepare(
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
-       COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
-       COALESCE(cc_live.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
+       COALESCE(NULLIF(cc_pr_live_direct.color_name, ''), NULLIF(cc_live.color_name, ''), NULLIF(cc_sp_link_direct.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
+       COALESCE(cc_pr_live_direct.hex_color, cc_live.hex_color, cc_sp_link_direct.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
        CASE
@@ -409,6 +409,9 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN cable_colors cc_live
         ON cc_live.id = ss_live.color_id
        AND cc_live.company_id = ss_live.company_id
+      LEFT JOIN cable_colors cc_pr_live_direct
+        ON cc_pr_live_direct.id = pr_live.color_id
+       AND cc_pr_live_direct.company_id = pr_live.company_id
       LEFT JOIN vlans v
         ON v.id = pr.vlan_id
        AND v.company_id = pr.company_id
@@ -444,6 +447,9 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN cable_colors cc_ss_link
         ON cc_ss_link.id = ss_link.color_id
        AND cc_ss_link.company_id = ss_link.company_id
+      LEFT JOIN cable_colors cc_sp_link_direct
+        ON cc_sp_link_direct.id = sp_link.color_id
+       AND cc_sp_link_direct.company_id = sp_link.company_id
       LEFT JOIN vlans v_link_sp
         ON v_link_sp.id = sp_link.vlan_id
        AND v_link_sp.company_id = sp_link.company_id
