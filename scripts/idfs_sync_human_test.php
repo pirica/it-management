@@ -181,6 +181,38 @@ function itm_test_lookup_color_id($db, $companyId, $colorName)
     return (int)($row['id'] ?? 0);
 }
 
+function itm_test_lookup_rj45_id_by_count($db, $companyId, $portCount)
+{
+    $row = itm_test_db_one(
+        $db,
+        "SELECT id
+         FROM equipment_rj45
+         WHERE company_id = ?
+           AND name REGEXP CONCAT('(^|[^0-9])', ?, '([^0-9]|$)')
+         ORDER BY id ASC
+         LIMIT 1",
+        'ii',
+        [$companyId, $portCount]
+    );
+    return (int)($row['id'] ?? 0);
+}
+
+function itm_test_lookup_layout_id($db, $companyId, $layoutName)
+{
+    $row = itm_test_db_one(
+        $db,
+        "SELECT id
+         FROM switch_port_numbering_layout
+         WHERE company_id = ?
+           AND LOWER(name) = LOWER(?)
+         ORDER BY id ASC
+         LIMIT 1",
+        'is',
+        [$companyId, $layoutName]
+    );
+    return (int)($row['id'] ?? 0);
+}
+
 function itm_test_switch_label_column($db)
 {
     foreach (['to_patch_port', 'label', 'patch_port'] as $candidate) {
@@ -210,6 +242,7 @@ $idfId = (int)(getenv('ITM_IDF_ID') ?: '4');
 $cookieFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_sync_human_' . uniqid('', true) . '.cookie';
 $db = null;
 $createdTempEquipmentId = 0;
+$createdTempEquipmentIds = [];
 $createdTempPositionIds = [];
 
 try {
@@ -222,8 +255,14 @@ try {
     $colorGreenId = itm_test_lookup_color_id($db, $companyId, 'Green');
     $colorRedId = itm_test_lookup_color_id($db, $companyId, 'Red');
     $colorGrayId = itm_test_lookup_color_id($db, $companyId, 'Gray');
+    $rj45EightId = itm_test_lookup_rj45_id_by_count($db, $companyId, 8);
+    $rj45TwentyFourId = itm_test_lookup_rj45_id_by_count($db, $companyId, 24);
+    $layoutVerticalId = itm_test_lookup_layout_id($db, $companyId, 'Vertical');
+    $layoutHorizontalId = itm_test_lookup_layout_id($db, $companyId, 'Horizontal');
     itm_test_assert($statusUpId > 0 && $statusDownId > 0 && $statusUnknownId > 0, 'Switch status IDs are available (Up/Down/Unknown)');
     itm_test_assert($colorGreenId > 0 && $colorRedId > 0 && $colorGrayId > 0, 'Cable color IDs are available (Green/Red/Gray)');
+    itm_test_assert($rj45EightId > 0 && $rj45TwentyFourId > 0, 'RJ45 capacity options are available (8/24)');
+    itm_test_assert($layoutVerticalId > 0 && $layoutHorizontalId > 0, 'Numbering layout options are available (Vertical/Horizontal)');
 
     $loginPageStatus = 0;
     $loginPageHtml = itm_test_http_request('GET', rtrim($baseUrl, '/') . '/login.php', $cookieFile, null, [], $loginPageStatus);
@@ -510,9 +549,10 @@ try {
             switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id, active
          ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)",
         'iiisiii',
-        [$companyId, 37, 25, $tempEquipmentName, 16, 8, 8]
+        [$companyId, 37, 25, $tempEquipmentName, $rj45EightId, $layoutVerticalId, 8]
     );
     $createdTempEquipmentId = (int)mysqli_insert_id($db);
+    $createdTempEquipmentIds[] = $createdTempEquipmentId;
     itm_test_assert($createdTempEquipmentId > 0, 'Temporary equipment created for create/delete sync test');
 
     itm_test_db_exec(
@@ -537,8 +577,8 @@ try {
             'device_type' => $switchDeviceTypeId,
             'device_name' => $tempEquipmentName,
             'equipment_id' => $createdTempEquipmentId,
-            'switch_rj45_id' => 16,
-            'switch_port_numbering_layout_id' => 8,
+            'switch_rj45_id' => $rj45EightId,
+            'switch_port_numbering_layout_id' => $layoutVerticalId,
             'port_count' => 8,
             'notes' => 'ITM HUMAN TEMP POSITION',
         ]
@@ -557,6 +597,30 @@ try {
     itm_test_assert($tempPositionRow !== null, 'Temporary linked position created');
     $tempPositionId = (int)$tempPositionRow['id'];
     $createdTempPositionIds[] = $tempPositionId;
+
+    $tempPositionMeta = itm_test_db_one(
+        $db,
+        "SELECT port_count, switch_port_numbering_layout_id
+         FROM idf_positions
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$tempPositionId, $companyId]
+    );
+    itm_test_assert((int)($tempPositionMeta['port_count'] ?? 0) === 8, 'Position create persisted port_count');
+    itm_test_assert((int)($tempPositionMeta['switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position create persisted numbering layout');
+
+    $tempIdfPortLayout = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports
+         WHERE company_id = ?
+           AND position_id = ?
+           AND switch_port_numbering_layout_id = ?",
+        'iii',
+        [$companyId, $tempPositionId, $layoutVerticalId]
+    );
+    itm_test_assert((int)($tempIdfPortLayout['c'] ?? 0) >= 8, 'Position create synced numbering layout to IDF ports');
 
     $equipmentAfterAssign = itm_test_db_one(
         $db,
@@ -580,6 +644,107 @@ try {
         [$companyId, $createdTempEquipmentId]
     );
     itm_test_assert((int)($switchAfterAssign['idf_id'] ?? 0) === $idfId, 'switch_ports.idf_id synced after position create');
+
+    itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_save.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'idf_id' => $idfId,
+            'position_no' => $tempPositionNo,
+            'position_id' => $tempPositionId,
+            'device_type' => $switchDeviceTypeId,
+            'device_name' => $tempEquipmentName,
+            'equipment_id' => $createdTempEquipmentId,
+            'switch_rj45_id' => $rj45TwentyFourId,
+            'switch_port_numbering_layout_id' => $layoutHorizontalId,
+            'port_count' => 24,
+            'notes' => 'ITM HUMAN TEMP POSITION EDITED',
+        ]
+    );
+    itm_test_out('[PASS] Position edit API completed for layout/port_count sync');
+
+    $tempPositionAfterEdit = itm_test_db_one(
+        $db,
+        "SELECT port_count, switch_port_numbering_layout_id
+         FROM idf_positions
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$tempPositionId, $companyId]
+    );
+    itm_test_assert((int)($tempPositionAfterEdit['port_count'] ?? 0) === 24, 'Position edit persisted port_count');
+    itm_test_assert((int)($tempPositionAfterEdit['switch_port_numbering_layout_id'] ?? 0) === $layoutHorizontalId, 'Position edit persisted numbering layout');
+
+    $equipmentAfterEdit = itm_test_db_one(
+        $db,
+        "SELECT switch_rj45_id, switch_port_numbering_layout_id
+         FROM equipment
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$createdTempEquipmentId, $companyId]
+    );
+    itm_test_assert((int)($equipmentAfterEdit['switch_rj45_id'] ?? 0) === $rj45TwentyFourId, 'Position edit synced RJ45 capacity to linked equipment');
+    itm_test_assert((int)($equipmentAfterEdit['switch_port_numbering_layout_id'] ?? 0) === $layoutHorizontalId, 'Position edit synced numbering layout to linked equipment');
+
+    $idfPortsAfterEdit = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports
+         WHERE company_id = ?
+           AND position_id = ?
+           AND switch_port_numbering_layout_id = ?",
+        'iii',
+        [$companyId, $tempPositionId, $layoutHorizontalId]
+    );
+    itm_test_assert((int)($idfPortsAfterEdit['c'] ?? 0) >= 24, 'Position edit synced numbering layout to IDF ports');
+
+    $copyTargetPositionNo = $tempPositionNo + 1;
+    itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_copy.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'position_id' => $tempPositionId,
+            'target_position' => $copyTargetPositionNo,
+            'overwrite' => 0,
+        ]
+    );
+    itm_test_out('[PASS] Position copy API completed for layout/port_count sync');
+
+    $copiedPosition = itm_test_db_one(
+        $db,
+        "SELECT id, equipment_id, port_count, switch_port_numbering_layout_id
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ? AND position_no = ?
+         LIMIT 1",
+        'iii',
+        [$companyId, $idfId, $copyTargetPositionNo]
+    );
+    itm_test_assert($copiedPosition !== null, 'Copied position created for layout/port_count sync');
+    $copiedPositionId = (int)($copiedPosition['id'] ?? 0);
+    $createdTempPositionIds[] = $copiedPositionId;
+    $copiedEquipmentId = (int)($copiedPosition['equipment_id'] ?? 0);
+    if ($copiedEquipmentId > 0) {
+        $createdTempEquipmentIds[] = $copiedEquipmentId;
+    }
+    itm_test_assert((int)($copiedPosition['port_count'] ?? 0) === 24, 'Position copy preserved port_count');
+    itm_test_assert((int)($copiedPosition['switch_port_numbering_layout_id'] ?? 0) === $layoutHorizontalId, 'Position copy preserved numbering layout');
+
+    $copiedPortLayout = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports
+         WHERE company_id = ?
+           AND position_id = ?
+           AND switch_port_numbering_layout_id = ?",
+        'iii',
+        [$companyId, $copiedPositionId, $layoutHorizontalId]
+    );
+    itm_test_assert((int)($copiedPortLayout['c'] ?? 0) >= 24, 'Position copy synced numbering layout to copied IDF ports');
 
     itm_test_api_post_json(
         $baseUrl,
@@ -635,12 +800,18 @@ try {
             foreach ($createdTempPositionIds as $positionId) {
                 $positionId = (int)$positionId;
                 if ($positionId > 0) {
+                    @mysqli_query($db, "DELETE FROM idf_links WHERE port_id_a IN (SELECT id FROM idf_ports WHERE position_id = {$positionId}) OR port_id_b IN (SELECT id FROM idf_ports WHERE position_id = {$positionId})");
+                    @mysqli_query($db, "DELETE FROM idf_ports WHERE position_id = {$positionId}");
                     @mysqli_query($db, "DELETE FROM idf_positions WHERE id = {$positionId} LIMIT 1");
                 }
             }
         }
-        if ($createdTempEquipmentId > 0) {
-            @mysqli_query($db, "DELETE FROM equipment WHERE id = " . (int)$createdTempEquipmentId . " LIMIT 1");
+        $equipmentIdsToDelete = array_values(array_unique(array_filter(array_map('intval', array_merge($createdTempEquipmentIds, [$createdTempEquipmentId])))));
+        foreach ($equipmentIdsToDelete as $equipmentIdToDelete) {
+            if ($equipmentIdToDelete > 0) {
+                @mysqli_query($db, "DELETE FROM switch_ports WHERE equipment_id = " . (int)$equipmentIdToDelete);
+                @mysqli_query($db, "DELETE FROM equipment WHERE id = " . (int)$equipmentIdToDelete . " LIMIT 1");
+            }
         }
         mysqli_close($db);
     }

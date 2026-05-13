@@ -1374,12 +1374,11 @@ function openDeviceModal(positionNo, positionId) {
                 form.device_name.value = position.device_name;
                 form.equipment_id.value = position.equipment_id || '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
-                form.switch_rj45_id.value = position.switch_rj45_id || '';
-                form.switch_port_numbering_layout_id.value = position.switch_port_numbering_layout_id || '';
+                form.switch_rj45_id.value = position.effective_switch_rj45_id || position.switch_rj45_id || '';
+                form.switch_port_numbering_layout_id.value = position.effective_switch_port_numbering_layout_id || position.switch_port_numbering_layout_id || '';
                 form.port_count.value = position.port_count || '';
                 form.notes.value = position.notes || '';
                 refreshPortCountInputs(form);
-                syncFieldsFromEquipment(form, false);
                 openModal();
             })
             .catch(err => alert(err.message));
@@ -1417,7 +1416,7 @@ function refreshPortCountInputs(form) {
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = (isSwitch || isUps) ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
-    if (layoutWrap) layoutWrap.style.display = (hasLinkedEquipment || isUps) ? 'none' : 'block';
+    if (layoutWrap) layoutWrap.style.display = isUps ? 'none' : 'block';
     form.switch_rj45_id.required = isSwitch;
     const isEditMode = form.dataset.isEdit === '1';
     if (isSwitch && !isEditMode && DEFAULT_SWITCH_LAYOUT_ID > 0) {
