@@ -11,6 +11,8 @@ $company_id = (int)($_SESSION['company_id'] ?? 0);
 $position_id = (int)($_GET['position_id'] ?? 0);
 $open_edit_port_id = (int)($_GET['open_edit_port_id'] ?? 0);
 $open_link_port_id = (int)($_GET['open_link_port_id'] ?? 0);
+$embed_mode = isset($_GET['embed']) && (string)$_GET['embed'] === '1';
+$embed_modal_only = $embed_mode && isset($_GET['embed_modal']) && (string)$_GET['embed_modal'] === '1';
 
 function idf_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
@@ -986,18 +988,39 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             .idf-modal { width:100%; margin:10px auto; }
             .idf-grid-2 { grid-template-columns:1fr; }
         }
+        body.idf-embed-mode {
+            margin:0;
+            padding:0;
+            background:var(--bg-primary);
+        }
+        body.idf-embed-mode .content {
+            padding:12px;
+        }
+        body.idf-embed-mode .idf-modal-backdrop {
+            left:0;
+            z-index:2200;
+        }
     </style>
 </head>
-<body>
+<body class="<?php echo $embed_mode ? 'idf-embed-mode' : ''; ?><?php echo $embed_modal_only ? ' idf-embed-modal-only' : ''; ?>">
+<?php if (!$embed_mode): ?>
 <div class="container">
     <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
     <div class="main-content">
         <?php include __DIR__ . '/../../includes/header.php'; ?>
+<?php endif; ?>
 
         <div class="content" id="idfDeviceCaptureRoot">
+            <?php if ($embed_modal_only): ?>
+            <div style="display:none;">
+            <?php endif; ?>
             <div class="idf-toolbar">
                 <div class="left">
-                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
+                    <?php if ($embed_mode): ?>
+                        <button class="btn btn-sm" type="button" onclick="closeEmbeddedDeviceView()">Close</button>
+                    <?php else: ?>
+                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
+                    <?php endif; ?>
                     <div style="display:flex; flex-direction:column;">
                         <div style="opacity:.85; font-size:13px; font-weight:600; margin-bottom:2px;">
                             🗄️ IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
@@ -1219,9 +1242,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($embed_modal_only): ?>
+            </div>
+            <?php endif; ?>
         </div>
+<?php if (!$embed_mode): ?>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="idf-modal-backdrop" id="portBackdrop">
     <div class="idf-modal" onclick="event.stopPropagation()">
@@ -1493,6 +1521,8 @@ const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
+const EMBED_MODE = <?php echo $embed_mode ? 'true' : 'false'; ?>;
+const EMBED_MODAL_ONLY = <?php echo $embed_modal_only ? 'true' : 'false'; ?>;
 const FIBER_SPEED_OPTIONS = <?php echo json_encode($fiberSpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const RJ45_SPEED_OPTIONS = <?php echo json_encode($rj45SpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const PORTS = <?php
@@ -1510,9 +1540,29 @@ $portsMeta = array_map(static function (array $port): array {
 }, $ports);
 echo json_encode($portsMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>;
+function closeEmbeddedDeviceView(eventType) {
+    const payloadType = eventType || 'idf_device_embed_close';
+    if (window.parent && window.parent !== window && EMBED_MODE) {
+        try {
+            window.parent.postMessage({type: payloadType}, '*');
+            return;
+        } catch (e) {
+            // fall through to same-window redirect fallback
+        }
+    }
+    window.location.href = 'view.php?id=<?php echo (int)$pos['idf_id']; ?>';
+}
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 let activeStatusSelect = null;
 let activeCableColorSelect = null;
+
+function finishInlineMutationOrReload() {
+    if (EMBED_MODE && EMBED_MODAL_ONLY) {
+        closeEmbeddedDeviceView('idf_device_embed_updated');
+        return;
+    }
+    location.reload();
+}
 
 async function apiPost(path, body) {
     const res = await fetch(`${IDF_BASE}/api/${path}`, {
@@ -1665,8 +1715,11 @@ function togglePoeFieldForPortType(portTypeLabel) {
     }
 }
 
-function closePortModal() {
+function closePortModal(shouldCloseHost) {
     document.getElementById('portBackdrop').style.display = 'none';
+    if (EMBED_MODE && EMBED_MODAL_ONLY && shouldCloseHost !== false) {
+        closeEmbeddedDeviceView('idf_device_embed_close');
+    }
 }
 
 function savePort() {
@@ -1697,7 +1750,7 @@ function savePort() {
             : null,
     };
     apiPost('port_update.php', payload)
-        .then(() => location.reload())
+        .then(() => finishInlineMutationOrReload())
         .catch(err => alert(err.message));
 }
 
@@ -1743,7 +1796,7 @@ function onPortDotClick(portElement) {
 function regeneratePorts() {
     if (!confirm('Regenerate ports? This will DELETE and recreate ports 1..port_count.')) return;
     apiPost('ports_regen.php', {csrf_token: CSRF, position_id: POSITION_ID})
-        .then(() => location.reload())
+        .then(() => finishInlineMutationOrReload())
         .catch(err => alert(err.message));
 }
 
@@ -1829,8 +1882,11 @@ function openLinkModal(portId) {
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
 
-function closeLinkModal() {
+function closeLinkModal(shouldCloseHost) {
     document.getElementById('linkBackdrop').style.display = 'none';
+    if (EMBED_MODE && EMBED_MODAL_ONLY && shouldCloseHost !== false) {
+        closeEmbeddedDeviceView('idf_device_embed_close');
+    }
 }
 
 function createLink() {
@@ -1937,11 +1993,11 @@ function createLink() {
     };
 
     apiPost('link_create.php', payload)
-        .then(() => location.reload())
+        .then(() => finishInlineMutationOrReload())
         .catch(err => {
             const message = String(err.message || '');
             if (message.toLowerCase().includes('already linked')) {
-                closeLinkModal();
+                closeLinkModal(false);
                 openPortModal(payload.port_id_a);
                 return;
             }
@@ -2275,6 +2331,8 @@ document.addEventListener('DOMContentLoaded', () => {
         openLinkModal(AUTO_OPEN_LINK_PORT_ID);
     } else if (AUTO_OPEN_EDIT_PORT_ID > 0) {
         openPortModal(AUTO_OPEN_EDIT_PORT_ID);
+    } else if (EMBED_MODE && EMBED_MODAL_ONLY) {
+        closeEmbeddedDeviceView('idf_device_embed_close');
     }
 });
 
@@ -2437,7 +2495,7 @@ function saveStatusFromModal() {
 function unlinkPort(linkId) {
     if (!confirm('Remove this cable link?')) return;
     apiPost('link_delete.php', {csrf_token: CSRF, link_id: Number(linkId)})
-        .then(() => location.reload())
+        .then(() => finishInlineMutationOrReload())
         .catch(err => alert(err.message));
 }
 
