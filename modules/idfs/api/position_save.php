@@ -27,6 +27,187 @@ if (!function_exists('idf_generate_unlinked_equipment_token')) {
     }
 }
 
+if (!function_exists('idf_sync_switch_rj45_capacity')) {
+    function idf_sync_switch_rj45_capacity(
+        mysqli $conn,
+        int $companyId,
+        int $equipmentId,
+        int $idfId,
+        int $targetPortCount,
+        int $rj45PortTypeId,
+        string $rj45PortTypeName,
+        int $unknownStatusId,
+        int $defaultColorId,
+        int $managementId,
+        string $hostname,
+        string $labelColumn,
+        bool $hasManagementColumn,
+        bool $hasCommentsColumn
+    ): void {
+        if ($companyId <= 0 || $equipmentId <= 0 || $targetPortCount < 0 || $rj45PortTypeId <= 0) {
+            return;
+        }
+
+        // Why: RJ45 capacity edits in rack modal must shrink stale switch rows above the selected capacity.
+        $stmtDeleteExtra = mysqli_prepare(
+            $conn,
+            "DELETE FROM switch_ports
+             WHERE company_id = ?
+               AND equipment_id = ?
+               AND port_number > ?
+               AND (
+                    LOWER(TRIM(COALESCE(port_type, ''))) = LOWER(?)
+                    OR (
+                        port_type REGEXP '^[0-9]+$'
+                        AND CAST(port_type AS UNSIGNED) = ?
+                    )
+               )"
+        );
+        if (!$stmtDeleteExtra) {
+            idf_fail('DB error preparing switch RJ45 capacity sync', 500);
+        }
+        mysqli_stmt_bind_param($stmtDeleteExtra, 'iiisi', $companyId, $equipmentId, $targetPortCount, $rj45PortTypeName, $rj45PortTypeId);
+        if (!mysqli_stmt_execute($stmtDeleteExtra)) {
+            $err = mysqli_stmt_error($stmtDeleteExtra);
+            mysqli_stmt_close($stmtDeleteExtra);
+            idf_fail('DB error deleting extra switch RJ45 ports: ' . $err, 500);
+        }
+        mysqli_stmt_close($stmtDeleteExtra);
+
+        if ($targetPortCount <= 0) {
+            return;
+        }
+
+        $insertColumns = [
+            'company_id',
+            'equipment_id',
+            'hostname',
+            'port_type',
+            'port_number',
+            $labelColumn,
+            'status_id',
+            'color_id',
+            'idf_id',
+        ];
+        $insertValues = [
+            '?',
+            '?',
+            'NULLIF(?, \'\')',
+            '?',
+            '?',
+            '?',
+            '?',
+            '?',
+            'NULLIF(?, 0)',
+        ];
+        $bindTypes = 'iissisiii';
+
+        if ($hasManagementColumn) {
+            $insertColumns[] = 'management_id';
+            $insertValues[] = 'NULLIF(?, 0)';
+            $bindTypes .= 'i';
+        }
+        if ($hasCommentsColumn) {
+            $insertColumns[] = 'comments';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+        }
+
+        $updateAssignments = [
+            'idf_id = COALESCE(VALUES(idf_id), switch_ports.idf_id)',
+            'hostname = COALESCE(VALUES(hostname), switch_ports.hostname)',
+        ];
+        if ($hasManagementColumn) {
+            $updateAssignments[] = 'management_id = COALESCE(VALUES(management_id), switch_ports.management_id)';
+        }
+
+        $insertSql = "INSERT INTO switch_ports (" . implode(', ', $insertColumns) . ")
+                      VALUES (" . implode(', ', $insertValues) . ")
+                      ON DUPLICATE KEY UPDATE
+                      " . implode(",\n                      ", $updateAssignments);
+
+        $stmtUpsert = mysqli_prepare($conn, $insertSql);
+        if (!$stmtUpsert) {
+            idf_fail('DB error preparing switch RJ45 upsert', 500);
+        }
+
+        for ($portNo = 1; $portNo <= $targetPortCount; $portNo++) {
+            $defaultLabel = '';
+            $defaultComments = '';
+
+            if ($hasManagementColumn && $hasCommentsColumn) {
+                mysqli_stmt_bind_param(
+                    $stmtUpsert,
+                    $bindTypes,
+                    $companyId,
+                    $equipmentId,
+                    $hostname,
+                    $rj45PortTypeName,
+                    $portNo,
+                    $defaultLabel,
+                    $unknownStatusId,
+                    $defaultColorId,
+                    $idfId,
+                    $managementId,
+                    $defaultComments
+                );
+            } elseif ($hasManagementColumn) {
+                mysqli_stmt_bind_param(
+                    $stmtUpsert,
+                    $bindTypes,
+                    $companyId,
+                    $equipmentId,
+                    $hostname,
+                    $rj45PortTypeName,
+                    $portNo,
+                    $defaultLabel,
+                    $unknownStatusId,
+                    $defaultColorId,
+                    $idfId,
+                    $managementId
+                );
+            } elseif ($hasCommentsColumn) {
+                mysqli_stmt_bind_param(
+                    $stmtUpsert,
+                    $bindTypes,
+                    $companyId,
+                    $equipmentId,
+                    $hostname,
+                    $rj45PortTypeName,
+                    $portNo,
+                    $defaultLabel,
+                    $unknownStatusId,
+                    $defaultColorId,
+                    $idfId,
+                    $defaultComments
+                );
+            } else {
+                mysqli_stmt_bind_param(
+                    $stmtUpsert,
+                    $bindTypes,
+                    $companyId,
+                    $equipmentId,
+                    $hostname,
+                    $rj45PortTypeName,
+                    $portNo,
+                    $defaultLabel,
+                    $unknownStatusId,
+                    $defaultColorId,
+                    $idfId
+                );
+            }
+
+            if (!mysqli_stmt_execute($stmtUpsert)) {
+                $err = mysqli_stmt_error($stmtUpsert);
+                mysqli_stmt_close($stmtUpsert);
+                idf_fail('DB error upserting switch RJ45 port rows: ' . $err, 500);
+            }
+        }
+
+        mysqli_stmt_close($stmtUpsert);
+    }
+}
+
 if ($switch_rj45_id > 0) {
     $stmtSwitchRj45 = mysqli_prepare(
         $conn,
@@ -537,6 +718,134 @@ if ($pid > 0) {
         }
         $defaultCableColorName = 'Gray';
         $defaultCableHexColor = '#808080';
+
+        $defaultCableColorId = 0;
+        $stmtDefaultCableColorId = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM cable_colors
+             WHERE company_id = ?
+               AND LOWER(color_name) = 'gray'
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        if ($stmtDefaultCableColorId) {
+            mysqli_stmt_bind_param($stmtDefaultCableColorId, 'i', $company_id);
+            mysqli_stmt_execute($stmtDefaultCableColorId);
+            $resDefaultCableColorId = mysqli_stmt_get_result($stmtDefaultCableColorId);
+            $defaultCableColorIdRow = $resDefaultCableColorId ? mysqli_fetch_assoc($resDefaultCableColorId) : null;
+            mysqli_stmt_close($stmtDefaultCableColorId);
+            $defaultCableColorId = (int)($defaultCableColorIdRow['id'] ?? 0);
+        }
+        if ($defaultCableColorId <= 0) {
+            $stmtFallbackCableColorId = mysqli_prepare(
+                $conn,
+                "SELECT id
+                 FROM cable_colors
+                 WHERE company_id = ?
+                 ORDER BY id ASC
+                 LIMIT 1"
+            );
+            if ($stmtFallbackCableColorId) {
+                mysqli_stmt_bind_param($stmtFallbackCableColorId, 'i', $company_id);
+                mysqli_stmt_execute($stmtFallbackCableColorId);
+                $resFallbackCableColorId = mysqli_stmt_get_result($stmtFallbackCableColorId);
+                $fallbackCableColorIdRow = $resFallbackCableColorId ? mysqli_fetch_assoc($resFallbackCableColorId) : null;
+                mysqli_stmt_close($stmtFallbackCableColorId);
+                $defaultCableColorId = (int)($fallbackCableColorIdRow['id'] ?? 0);
+            }
+        }
+        if ($defaultCableColorId <= 0) {
+            idf_fail('Unable to resolve default cable color for company', 500);
+        }
+
+        $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
+        if ($port_count > 0 && $rj45PortTypeId <= 0) {
+            idf_fail('Unable to resolve RJ45 port type for company', 500);
+        }
+        $rj45PortTypeName = 'RJ45';
+        if ($rj45PortTypeId > 0) {
+            $stmtRj45TypeName = mysqli_prepare(
+                $conn,
+                "SELECT type
+                 FROM switch_port_types
+                 WHERE company_id = ? AND id = ?
+                 LIMIT 1"
+            );
+            if ($stmtRj45TypeName) {
+                mysqli_stmt_bind_param($stmtRj45TypeName, 'ii', $company_id, $rj45PortTypeId);
+                mysqli_stmt_execute($stmtRj45TypeName);
+                $resRj45TypeName = mysqli_stmt_get_result($stmtRj45TypeName);
+                $rj45TypeNameRow = $resRj45TypeName ? mysqli_fetch_assoc($resRj45TypeName) : null;
+                mysqli_stmt_close($stmtRj45TypeName);
+                $resolvedRj45TypeName = trim((string)($rj45TypeNameRow['type'] ?? ''));
+                if ($resolvedRj45TypeName !== '') {
+                    $rj45PortTypeName = $resolvedRj45TypeName;
+                }
+            }
+        }
+
+        if ($device_type_name === 'switch' && $equipment_id > 0 && $port_count >= 0 && $rj45PortTypeId > 0) {
+            // Why: Rack Edit must keep linked switch_ports capacity aligned with selected RJ45 count (grow + shrink), not only idf_positions metadata.
+            $switchPortsHasManagementColumn = idf_table_has_column($conn, 'switch_ports', 'management_id');
+            $switchPortsHasCommentsColumn = idf_table_has_column($conn, 'switch_ports', 'comments');
+
+            $switchHostnameForSync = '';
+            $stmtSwitchHostname = mysqli_prepare(
+                $conn,
+                "SELECT COALESCE(hostname, '') AS hostname
+                 FROM equipment
+                 WHERE company_id = ? AND id = ?
+                 LIMIT 1"
+            );
+            if ($stmtSwitchHostname) {
+                mysqli_stmt_bind_param($stmtSwitchHostname, 'ii', $company_id, $equipment_id);
+                mysqli_stmt_execute($stmtSwitchHostname);
+                $resSwitchHostname = mysqli_stmt_get_result($stmtSwitchHostname);
+                $switchHostnameRow = $resSwitchHostname ? mysqli_fetch_assoc($resSwitchHostname) : null;
+                mysqli_stmt_close($stmtSwitchHostname);
+                $switchHostnameForSync = trim((string)($switchHostnameRow['hostname'] ?? ''));
+            }
+
+            idf_sync_switch_rj45_capacity(
+                $conn,
+                $company_id,
+                $equipment_id,
+                $idf_id,
+                $port_count,
+                $rj45PortTypeId,
+                $rj45PortTypeName,
+                $unknownStatusId,
+                $defaultCableColorId,
+                $portManagementId,
+                $switchHostnameForSync,
+                $switchPortLabelColumn,
+                $switchPortsHasManagementColumn,
+                $switchPortsHasCommentsColumn
+            );
+
+            // Why: Shrinking RJ45 capacity must also remove stale idf_ports rows above selected count to keep rack visualizer and DB in sync.
+            $stmtDeleteExtraIdfRj45 = mysqli_prepare(
+                $conn,
+                "DELETE FROM idf_ports
+                 WHERE company_id = ?
+                   AND position_id = ?
+                   AND port_type = ?
+                   AND port_no > ?"
+            );
+            if ($stmtDeleteExtraIdfRj45) {
+                mysqli_stmt_bind_param($stmtDeleteExtraIdfRj45, 'iiii', $company_id, $pid, $rj45PortTypeId, $port_count);
+                if (!mysqli_stmt_execute($stmtDeleteExtraIdfRj45)) {
+                    $err = mysqli_stmt_error($stmtDeleteExtraIdfRj45);
+                    mysqli_stmt_close($stmtDeleteExtraIdfRj45);
+                    idf_fail('DB error deleting extra IDF RJ45 ports: ' . $err, 500);
+                }
+                mysqli_stmt_close($stmtDeleteExtraIdfRj45);
+            } else {
+                idf_fail('DB error preparing IDF RJ45 prune', 500);
+            }
+        }
+
         $portSeedByKey = [];
         $portTypeByNumber = [];
         if ($equipment_id > 0) {
@@ -654,10 +963,6 @@ if ($pid > 0) {
             }
         }
         if ($port_count > 0) {
-            $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
-            if ($rj45PortTypeId <= 0) {
-                idf_fail('Unable to resolve RJ45 port type for company', 500);
-            }
             for ($rj45PortNo = 1; $rj45PortNo <= $port_count; $rj45PortNo++) {
                 $rj45Key = $rj45PortTypeId . ':' . $rj45PortNo;
                 if (!isset($portTypeByNumber[$rj45Key])) {
@@ -721,10 +1026,6 @@ if ($pid > 0) {
                     mysqli_stmt_execute($stmtInsertPort);
                 }
             } else {
-                $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
-                if ($rj45PortTypeId <= 0) {
-                    idf_fail('Unable to resolve default port type for company', 500);
-                }
                 for ($n = 1; $n <= $port_count; $n++) {
                     $emptyLabel = '';
                     $emptyConn = '';
