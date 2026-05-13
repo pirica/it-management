@@ -323,8 +323,8 @@ $stmtPorts = mysqli_prepare(
        COALESCE(ep.name, '') AS poe_label,
        l.id AS link_id,
        l.cable_color_id,
-       COALESCE(NULLIF(pr.cable_color, ''), NULLIF(cc_l.color_name, ''), cc_l.hex_color, NULLIF(cc_live.color_name, ''), cc_live.hex_color, '') AS cable_color_name,
-       COALESCE(NULLIF(pr.hex_color, ''), NULLIF(cc_l.hex_color, ''), NULLIF(cc_live.hex_color, '')) AS cable_hex_color,
+       COALESCE(NULLIF(cc_live.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
+       COALESCE(cc_live.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
        CASE
@@ -452,6 +452,9 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN switch_status ss_link_meta
         ON ss_link_meta.id = l.equipment_status_id
        AND ss_link_meta.company_id = l.company_id
+      LEFT JOIN cable_colors cc_ss_link_meta
+        ON cc_ss_link_meta.id = ss_link_meta.color_id
+       AND cc_ss_link_meta.company_id = ss_link_meta.company_id
       LEFT JOIN idf_positions p_remote
         ON p_remote.id = pr_remote.position_id
      LEFT JOIN equipment e_remote
