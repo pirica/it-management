@@ -142,6 +142,7 @@ $hasSwitchPortsLabelColumn = false;
 $hasSwitchPortsToPatchPortColumn = false;
 $hasSwitchPortsPatchPortColumn = false;
 $hasSwitchPortsCommentsColumn = false;
+$hasSwitchPortsHostnameColumn = false;
 $switchPortsLabelColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'label'");
 if ($switchPortsLabelColumnRes && mysqli_num_rows($switchPortsLabelColumnRes) > 0) {
     $hasSwitchPortsLabelColumn = true;
@@ -158,6 +159,10 @@ $switchPortsCommentsColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_p
 if ($switchPortsCommentsColumnRes && mysqli_num_rows($switchPortsCommentsColumnRes) > 0) {
     $hasSwitchPortsCommentsColumn = true;
 }
+$switchPortsHostnameColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'hostname'");
+if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnRes) > 0) {
+    $hasSwitchPortsHostnameColumn = true;
+}
 
 $switchPortsLiveLabelSelect = "''";
 if ($hasSwitchPortsToPatchPortColumn) {
@@ -169,6 +174,9 @@ if ($hasSwitchPortsToPatchPortColumn) {
 }
 $switchPortsLiveCommentsSelect = $hasSwitchPortsCommentsColumn
     ? "NULLIF(pr_live.comments, '')"
+    : "''";
+$switchPortsLiveHostnameSelect = $hasSwitchPortsHostnameColumn
+    ? "NULLIF(pr_live.hostname, '')"
     : "''";
 $switchPortsLinkedLabelSelect = "''";
 if ($hasSwitchPortsToPatchPortColumn) {
@@ -280,9 +288,10 @@ $stmtPorts = mysqli_prepare(
        pr.*,
        COALESCE(spt.type, 'RJ45') AS port_type_label,
        COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
-       COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown') AS status_label,
-       COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, '#adb5bd') AS status_color,
+       COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
+       COALESCE(cc_live.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
        COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), NULLIF(NULLIF(l.equipment_label, ''), '0'), '') AS label,
+       COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
        COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''), '') AS notes,
        p_local.position_no AS local_position_no,
        p_local.device_name AS local_device_name,
@@ -416,7 +425,8 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN idf_links l ON l.id = (
           SELECT l2.id
           FROM idf_links l2
-          WHERE l2.port_id_a = pr.id OR l2.port_id_b = pr.id
+          WHERE (l2.port_id_a = pr.id OR l2.port_id_b = pr.id)
+            AND l2.company_id = pr.company_id
           ORDER BY l2.id ASC
           LIMIT 1
       )
