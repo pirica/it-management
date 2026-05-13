@@ -139,6 +139,7 @@
  * IDF position_copy now clones idf_ports rj45_speed_id + cable_color/hex_color and preserves nullable text fields with safe defaults during port duplication.
  * Equipment edit switch-config sync now rebuilds related idf_ports and switch_ports rows from current RJ45/fiber metadata, so reducing Fiber Ports Number (for example 4 to 2) removes stale mirrored ports.
  * Equipment switch-config sync regeneration now handles legacy schemas where optional switch columns (for example switch_fiber_port_label) are absent, preventing generic save failures when changing Fiber Ports Number.
+ * Equipment switch-config sync metadata join now compares idf_positions.equipment_id numerically (regex + CAST UNSIGNED) to avoid MySQL collation-mix failures during equipment edit saves.
 
  * Switch Ports CRUD table/list/detail views now display every column except id and company_id to keep internal tenant keys hidden while exposing full port metadata.
  * Added modules/rj45_speed CRUD module and database.sql seed-backed import support for RJ45 cable speed reference data.

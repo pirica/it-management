@@ -644,7 +644,8 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
          FROM equipment e
          LEFT JOIN idf_positions p
            ON p.company_id = e.company_id
-          AND p.equipment_id = CAST(e.id AS CHAR)
+          AND p.equipment_id REGEXP '^[0-9]+$'
+          AND CAST(p.equipment_id AS UNSIGNED) = e.id
          {$switchFiberJoinSql}
          WHERE e.company_id = ? AND e.id = ?
          LIMIT 1"
