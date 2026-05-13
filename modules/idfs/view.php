@@ -836,11 +836,34 @@ foreach ($equipmentOptions as $equipmentOption) {
             box-shadow: var(--shadow-lg);
             padding:14px;
         }
+        .idf-inline-device-modal {
+            width:min(1200px, calc(100vw - 300px));
+            margin:14px auto;
+            border-radius:14px;
+            border:1px solid var(--border);
+            background:var(--bg-primary);
+            box-shadow: var(--shadow-lg);
+            padding:14px;
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            max-height:calc(100vh - 60px);
+        }
+        .idf-inline-device-frame {
+            width:100%;
+            min-height:560px;
+            height:72vh;
+            border:1px solid var(--border);
+            border-radius:10px;
+            background:var(--bg-primary);
+        }
         .idf-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; }
         body.sidebar-collapsed .idf-modal-backdrop { left:0; }
         @media (max-width: 768px) {
             .idf-modal-backdrop { left:0; padding:12px; }
             .idf-modal { width:100%; margin:10px auto; }
+            .idf-inline-device-modal { width:100%; margin:10px auto; max-height:none; }
+            .idf-inline-device-frame { min-height:420px; height:78vh; }
             .idf-grid-2 { grid-template-columns:1fr; }
         }
     </style>
@@ -1101,6 +1124,19 @@ foreach ($equipmentOptions as $equipmentOption) {
     </div>
 </div>
 
+<div class="idf-modal-backdrop" id="idfInlineDeviceBackdrop" onclick="closeInlineDeviceIfBackdrop(event)">
+    <div class="idf-inline-device-modal" onclick="event.stopPropagation()">
+        <div class="idf-modal-header" style="margin-bottom:0;">
+            <div class="idf-modal-title">Port Editor</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-sm" type="button" onclick="refreshInlineDeviceFrame()">Refresh</button>
+                <button class="btn btn-sm" type="button" onclick="closeInlineDevice()">Close</button>
+            </div>
+        </div>
+        <iframe id="idfInlineDeviceFrame" class="idf-inline-device-frame" src="about:blank" loading="lazy"></iframe>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
@@ -1221,6 +1257,34 @@ function openModal(){ document.getElementById('idfModalBackdrop').style.display 
 function closeCopyIfBackdrop(e){ if(e.target.id === 'idfCopyBackdrop') closeCopy(); }
 function closeCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'none'; }
 function openCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'flex'; }
+function closeInlineDeviceIfBackdrop(e){ if (e.target.id === 'idfInlineDeviceBackdrop') closeInlineDevice(); }
+function openInlineDevice(url) {
+    const backdrop = document.getElementById('idfInlineDeviceBackdrop');
+    const frame = document.getElementById('idfInlineDeviceFrame');
+    if (!backdrop || !frame) {
+        window.location.href = url;
+        return;
+    }
+    frame.src = url;
+    backdrop.style.display = 'flex';
+}
+function refreshInlineDeviceFrame() {
+    const frame = document.getElementById('idfInlineDeviceFrame');
+    if (frame && frame.contentWindow) {
+        frame.contentWindow.location.reload();
+    }
+}
+function closeInlineDevice() {
+    const backdrop = document.getElementById('idfInlineDeviceBackdrop');
+    const frame = document.getElementById('idfInlineDeviceFrame');
+    if (frame) {
+        frame.src = 'about:blank';
+    }
+    if (backdrop) {
+        backdrop.style.display = 'none';
+    }
+    location.reload();
+}
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
@@ -1468,7 +1532,7 @@ function onPortClick(portId, portElement) {
         url.searchParams.set('open_edit_port_id', String(portId));
     }
 
-    window.location.href = url.toString();
+    openInlineDevice(url.toString());
 }
 
 
@@ -1498,7 +1562,7 @@ function onPortDotClick(portElement) {
     const url = new URL('device.php', window.location.href);
     url.searchParams.set('position_id', String(positionId));
     alert(`SFP port ${portNo > 0 ? portNo : ''} (${portType}) does not have an IDF port record yet. Opening device view so you can regenerate/save ports first.`);
-    window.location.href = url.toString();
+    openInlineDevice(url.toString());
 }
 
 function idfExportExcel() {
