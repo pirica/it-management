@@ -4,6 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * IDF rack Edit Device now renders saved position Numbering Layout first, avoids legacy position-number port bleed-through, and cache-busts the rack refresh after modal saves.
  * IDF rack Edit Device RJ45 capacity updates now enforce linked switch RJ45 row count parity in switch_ports and prune/regenerate matching RJ45 rows in idf_ports.
  * IDF rack/device compact icon rendering no longer injects synthetic Port 0 SFP placeholders when no fiber ports are configured.
  * Equipment edit switch sync now resolves idf_ports.fiber_ports_number via tenant equipment_fiber_count ids and treats sync query failures as transaction errors.
@@ -438,6 +439,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-05-14:</strong> IDF rack Edit Device now re-renders the rack from saved <code>idf_positions.switch_port_numbering_layout_id</code> first (with linked-equipment fallback), joins the selected RJ45 profile for rendered port totals, prevents legacy position-number port bleed-through, and cache-busts the same-page refresh after modal saves so Numbering Layout changes are visible immediately.</li>
             <li><strong>2026-05-14:</strong> IDF rack Edit and Copy now preserve effective Numbering Layout and Port Count by loading layout/RJ45 metadata from linked equipment and existing IDF port rows, then syncing saved layouts back to <code>idf_positions</code>, <code>equipment</code>, and <code>idf_ports</code> as applicable.</li>
             <li><strong>2026-05-14:</strong> IDF rack port click actions in <code>modules/idfs/view.php</code> now stay on the same page using an inline modal editor (no new tab), opening <code>modules/idfs/device.php</code> in embedded modal mode (<code>embed=1&amp;embed_modal=1</code>) and closing back to rack view with auto-refresh after successful edit/link/update actions.</li>
             <li><strong>2026-05-13:</strong> IDF device view parity hardening now mirrors rack-view precedence for <code>status</code>, <code>status_color</code>, <code>connected_to</code>, and cable color resolution (plus company-scoped link lookup), so matching port IDs render consistently between <code>modules/idfs/view.php</code> and <code>modules/idfs/device.php</code>.</li>

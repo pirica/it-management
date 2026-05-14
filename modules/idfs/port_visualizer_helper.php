@@ -155,7 +155,7 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
         }
 
-        $html = '<div class="itm-port-visualizer-container">';
+        $html = '<div class="itm-port-visualizer-container" data-layout="' . sanitize($layout) . '" data-port-total="' . (int)$totalPorts . '" data-grid-cols="' . (int)$cols . '" data-grid-rows="' . (int)$rows . '">';
 
         // Left side: Port Grid
         $html .= '<div class="itm-port-grid" style="grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px);">';

@@ -84,6 +84,61 @@ function itm_test_extract_csrf($html)
     return '';
 }
 
+function itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile)
+{
+    $statusCode = 0;
+    $html = itm_test_http_request(
+        'GET',
+        rtrim($baseUrl, '/') . '/modules/idfs/view.php?id=' . (int)$idfId . '&_itm_test=' . time(),
+        $cookieFile,
+        null,
+        [],
+        $statusCode
+    );
+    itm_test_assert($statusCode === 200, 'IDF rack view rendered for UI assertion');
+    return $html;
+}
+
+function itm_test_extract_position_slot_html($html, $positionNo)
+{
+    $pattern = '/<div\s+class="idf-slot"[^>]*data-position="' . preg_quote((string)$positionNo, '/') . '"[^>]*>/i';
+    if (preg_match($pattern, $html, $matches, PREG_OFFSET_CAPTURE) !== 1) {
+        itm_test_fail('Rendered IDF slot not found for position ' . (int)$positionNo);
+    }
+
+    $start = (int)$matches[0][1];
+    $next = strpos($html, '<div class="idf-slot"', $start + 1);
+    if ($next === false) {
+        $next = strlen($html);
+    }
+    return substr($html, $start, $next - $start);
+}
+
+function itm_test_assert_slot_contains($slotHtml, $needle, $message, $debug)
+{
+    if (strpos($slotHtml, $needle) === false) {
+        itm_test_fail($message . $debug);
+    }
+    itm_test_out('[PASS] ' . $message);
+}
+
+function itm_test_assert_idf_slot_rendered($html, $positionNo, $positionId, $portCount, $layoutName, $layoutSlug, $gridCols, $gridRows, $message)
+{
+    $slotHtml = itm_test_extract_position_slot_html($html, $positionNo);
+    $slotDebug = '';
+    if (preg_match_all('/data-(?:layout|port-total|grid-cols|grid-rows)="[^"]*"/i', $slotHtml, $slotMatches)) {
+        $slotDebug = ' Rendered visualizer attrs: ' . implode(' ', array_unique($slotMatches[0]));
+    }
+    itm_test_assert_slot_contains($slotHtml, 'data-has-device="1"', $message . ' has a device in rendered rack slot', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-position-id="' . (int)$positionId . '"', $message . ' exposes rendered position id', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-port-count="' . (int)$portCount . '"', $message . ' exposes rendered port count', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-layout-name="' . $layoutName . '"', $message . ' exposes rendered numbering layout', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-layout="' . $layoutSlug . '"', $message . ' renders visualizer with selected layout', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-port-total="' . (int)$portCount . '"', $message . ' renders visualizer with selected port total', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-grid-cols="' . (int)$gridCols . '"', $message . ' renders expected visualizer columns', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-grid-rows="' . (int)$gridRows . '"', $message . ' renders expected visualizer rows', $slotDebug);
+}
+
 function itm_test_api_post_json($baseUrl, $path, $cookieFile, array $payload)
 {
     $statusCode = 0;
@@ -621,6 +676,31 @@ try {
         [$companyId, $tempPositionId, $layoutVerticalId]
     );
     itm_test_assert((int)($tempIdfPortLayout['c'] ?? 0) >= 8, 'Position create synced numbering layout to IDF ports');
+    itm_test_assert((int)($tempIdfPortLayout['c'] ?? 0) === 8, 'Position create materialized exactly selected RJ45 IDF ports');
+
+    $switchPortsAfterCreateCount = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND equipment_id = ?",
+        'ii',
+        [$companyId, $createdTempEquipmentId]
+    );
+    itm_test_assert((int)($switchPortsAfterCreateCount['c'] ?? 0) === 8, 'Position create materialized exactly selected switch_ports rows');
+
+    $idfViewAfterCreateHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+    itm_test_assert_idf_slot_rendered(
+        $idfViewAfterCreateHtml,
+        $tempPositionNo,
+        $tempPositionId,
+        8,
+        'Vertical',
+        'vertical',
+        4,
+        2,
+        'Position create UI'
+    );
 
     $equipmentAfterAssign = itm_test_db_one(
         $db,
@@ -700,6 +780,31 @@ try {
         [$companyId, $tempPositionId, $layoutHorizontalId]
     );
     itm_test_assert((int)($idfPortsAfterEdit['c'] ?? 0) >= 24, 'Position edit synced numbering layout to IDF ports');
+    itm_test_assert((int)($idfPortsAfterEdit['c'] ?? 0) === 24, 'Position edit materialized exactly selected RJ45 IDF ports');
+
+    $switchPortsAfterEditCount = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND equipment_id = ?",
+        'ii',
+        [$companyId, $createdTempEquipmentId]
+    );
+    itm_test_assert((int)($switchPortsAfterEditCount['c'] ?? 0) === 24, 'Position edit materialized exactly selected switch_ports rows');
+
+    $idfViewAfterEditHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+    itm_test_assert_idf_slot_rendered(
+        $idfViewAfterEditHtml,
+        $tempPositionNo,
+        $tempPositionId,
+        24,
+        'Horizontal',
+        'horizontal',
+        24,
+        1,
+        'Position edit UI'
+    );
 
     $copyTargetPositionNo = $tempPositionNo + 1;
     itm_test_api_post_json(
@@ -745,6 +850,31 @@ try {
         [$companyId, $copiedPositionId, $layoutHorizontalId]
     );
     itm_test_assert((int)($copiedPortLayout['c'] ?? 0) >= 24, 'Position copy synced numbering layout to copied IDF ports');
+    itm_test_assert((int)($copiedPortLayout['c'] ?? 0) === 24, 'Position copy materialized exactly selected RJ45 IDF ports');
+
+    $copiedSwitchPortsCount = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND equipment_id = ?",
+        'ii',
+        [$companyId, $copiedEquipmentId]
+    );
+    itm_test_assert((int)($copiedSwitchPortsCount['c'] ?? 0) === 24, 'Position copy materialized exactly selected switch_ports rows');
+
+    $idfViewAfterCopyHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+    itm_test_assert_idf_slot_rendered(
+        $idfViewAfterCopyHtml,
+        $copyTargetPositionNo,
+        $copiedPositionId,
+        24,
+        'Horizontal',
+        'horizontal',
+        24,
+        1,
+        'Position copy UI'
+    );
 
     itm_test_api_post_json(
         $baseUrl,
