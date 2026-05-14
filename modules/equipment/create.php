@@ -616,6 +616,7 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
     $hasSwitchFiberPortLabelColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_port_label');
     $hasSwitchLayoutColumn = equipment_table_has_column($conn, 'equipment', 'switch_port_numbering_layout_id');
     $hasSwitchEnvironmentColumn = equipment_table_has_column($conn, 'equipment', 'switch_environment_id');
+    $hasEquipmentRj45SpeedColumn = equipment_table_has_column($conn, 'equipment', 'rj45_speed_id');
     $hasSwitchFiberIdColumn = equipment_table_has_column($conn, 'equipment', 'switch_fiber_id');
     $hasEquipmentFiberTable = equipment_table_exists($conn, 'equipment_fiber');
 
@@ -623,6 +624,7 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
     $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn ? "COALESCE(e.switch_fiber_port_label, '')" : "''";
     $equipmentLayoutSelect = $hasSwitchLayoutColumn ? "COALESCE(e.switch_port_numbering_layout_id, 0)" : "0";
     $switchEnvironmentSelect = $hasSwitchEnvironmentColumn ? "COALESCE(e.switch_environment_id, 0)" : "0";
+    $equipmentRj45SpeedSelect = $hasEquipmentRj45SpeedColumn ? "COALESCE(e.rj45_speed_id, 0)" : "0";
     $switchFiberNameSelect = ($hasSwitchFiberIdColumn && $hasEquipmentFiberTable) ? "COALESCE(ef.name, '')" : "''";
     $switchFiberJoinSql = ($hasSwitchFiberIdColumn && $hasEquipmentFiberTable)
         ? "LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id"
@@ -640,7 +642,8 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
             {$switchFiberPortLabelSelect} AS switch_fiber_port_label,
             {$switchFiberNameSelect} AS switch_fiber_name,
             {$equipmentLayoutSelect} AS equipment_layout_id,
-            {$switchEnvironmentSelect} AS switch_environment_id
+            {$switchEnvironmentSelect} AS switch_environment_id,
+            {$equipmentRj45SpeedSelect} AS rj45_speed_id
          FROM equipment e
          LEFT JOIN idf_positions p
            ON p.company_id = e.company_id
@@ -676,6 +679,7 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
         $layoutId = (int)($meta['position_layout_id'] ?? 0);
     }
     $managementId = (int)($meta['switch_environment_id'] ?? 0);
+    $rj45SpeedId = (int)($meta['rj45_speed_id'] ?? 0);
     $hostname = trim((string)($meta['equipment_hostname'] ?? ''));
 
     $unknownStatusId = 0;
@@ -788,22 +792,24 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
         $stmtInsertIdfPort = mysqli_prepare(
             $conn,
             "INSERT INTO idf_ports
-                (company_id, position_id, port_no, port_type, status_id, fiber_ports_number, switch_port_numbering_layout_id, management_id)
+                (company_id, position_id, port_no, port_type, status_id, rj45_speed_id, fiber_ports_number, switch_port_numbering_layout_id, management_id)
              VALUES
-                (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0))"
+                (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0))"
         );
         if ($stmtInsertIdfPort) {
             foreach ($portsToInsert as $portMeta) {
                 $portNo = (int)$portMeta['port_no'];
                 $portTypeId = (int)$portMeta['port_type'];
+                $portRj45SpeedId = $portTypeId === $rj45PortTypeId ? $rj45SpeedId : 0;
                 mysqli_stmt_bind_param(
                     $stmtInsertIdfPort,
-                    'iiiiiiii',
+                    'iiiiiiiii',
                     $companyId,
                     $positionId,
                     $portNo,
                     $portTypeId,
                     $unknownStatusId,
+                    $portRj45SpeedId,
                     $fiberPortsNumberId,
                     $layoutId,
                     $managementId
@@ -876,9 +882,9 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
         $stmtInsertSwitchPort = mysqli_prepare(
             $conn,
             "INSERT INTO switch_ports
-                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, management_id, comments)
+                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, rj45_speed_id, idf_id, management_id, comments)
              VALUES
-                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?)"
+                (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?)"
         );
         if ($stmtInsertSwitchPort) {
             $defaultPatchPort = '0';
@@ -887,12 +893,13 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
                 $portNo = (int)$portMeta['port_no'];
                 $portTypeId = (int)$portMeta['port_type'];
                 $portTypeName = trim((string)($portTypeNameById[$portTypeId] ?? ''));
+                $portRj45SpeedId = $portTypeId === $rj45PortTypeId ? $rj45SpeedId : 0;
                 if ($portTypeName === '') {
                     continue;
                 }
                 mysqli_stmt_bind_param(
                     $stmtInsertSwitchPort,
-                    'iissisiiiis',
+                    'iissisiiiiis',
                     $companyId,
                     $equipmentId,
                     $hostname,
@@ -901,6 +908,7 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
                     $defaultPatchPort,
                     $unknownStatusId,
                     $defaultColorId,
+                    $portRj45SpeedId,
                     $idfId,
                     $managementId,
                     $defaultComments
@@ -1074,6 +1082,7 @@ $workstationOsTypes = fetch_options($conn, 'workstation_os_types');
 $workstationOsVersions = fetch_options($conn, 'workstation_os_versions');
 $workstationRamOptions = fetch_options($conn, 'workstation_ram');
 $workstationOfficeOptions = fetch_options($conn, 'workstation_office');
+$rj45CableOptions = fetch_options($conn, 'rj45_speed', 'cable_type');
 $switchRj45Options = fetch_options($conn, 'equipment_rj45');
 $switchFiberOptions = fetch_options($conn, 'equipment_fiber');
 $switchFiberPatchOptions = fetch_options($conn, 'equipment_fiber_patch');
@@ -1082,6 +1091,7 @@ $switchPoeOptions = fetch_options($conn, 'equipment_poe');
 $switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
 $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_layout');
 $hasWorkstationOfficeIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_office_id');
+$hasEquipmentRj45SpeedColumn = equipment_table_has_column($conn, 'equipment', 'rj45_speed_id');
 $hasWorkstationOsVersionIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_version_id');
 $hasWorkstationRamIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_ram_id');
 $hasWorkstationStorageColumn = equipment_table_has_column($conn, 'equipment', 'workstation_storage');
@@ -1109,7 +1119,7 @@ $data = [
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
-    'workstation_office_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
+    'workstation_office_id' => '', 'rj45_speed_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
     'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '', 'active' => 1
@@ -1149,7 +1159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_poe_id','switch_environment_id'] as $fkField) {
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','rj45_speed_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_poe_id','switch_environment_id'] as $fkField) {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
@@ -1315,6 +1325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $workstation_device_type_id = (int)$data['workstation_device_type_id'] ?: 'NULL';
         $workstation_os_type_id = (int)$data['workstation_os_type_id'] ?: 'NULL';
         $workstation_office_id = (int)$data['workstation_office_id'] ?: 'NULL';
+        $rj45_speed_id = (int)$data['rj45_speed_id'] ?: 'NULL';
         $workstation_os_version_id = (int)$data['workstation_os_version_id'] ?: 'NULL';
         $workstation_ram_id = (int)$data['workstation_ram_id'] ?: 'NULL';
         $workstation_processor = $data['workstation_processor'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_processor'], $conn) . "'";
@@ -1364,6 +1375,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
         $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
         $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
+        $rj45SpeedUpdateSql = $hasEquipmentRj45SpeedColumn ? "rj45_speed_id=$rj45_speed_id,\n                    " : '';
+        $rj45SpeedInsertColumns = $hasEquipmentRj45SpeedColumn ? ', rj45_speed_id' : '';
+        $rj45SpeedInsertValues = $hasEquipmentRj45SpeedColumn ? ", $rj45_speed_id" : '';
         $workstationOsVersionUpdateSql = $hasWorkstationOsVersionIdColumn ? "workstation_os_version_id=$workstation_os_version_id,\n                    " : '';
         $workstationOsVersionInsertColumns = $hasWorkstationOsVersionIdColumn ? ', workstation_os_version_id' : '';
         $workstationOsVersionInsertValues = $hasWorkstationOsVersionIdColumn ? ", $workstation_os_version_id" : '';
@@ -1387,7 +1401,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     warranty_type_id=$warranty_type_id, printer_device_type_id=$printer_device_type_id,
                     printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
-                    $workstationOfficeUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
+                    $workstationOfficeUpdateSql$rj45SpeedUpdateSql$workstationOsVersionUpdateSql$workstationRamUpdateSql
                     workstation_processor=$workstation_processor, $workstationStorageUpdateSql$workstationOsInstalledOnUpdateSql
                     switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_ports_number=$switch_fiber_ports_number, $switchFiberPortLabelUpdateSql
                     switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
@@ -1398,11 +1412,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, name, serial_number, model, hostname,
                     ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id,
                     printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, active)
+                    workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, active)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+                    $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
         }
 
         mysqli_begin_transaction($conn);
@@ -1436,6 +1450,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                management_id = $switch_environment_id
                                             WHERE company_id = $company_id
                                               AND equipment_id = $id";
+                    if (equipment_table_has_column($conn, 'switch_ports', 'rj45_speed_id')) {
+                        $switchPortsSyncSql = "UPDATE switch_ports
+                                               SET hostname = $hostname,
+                                                   idf_id = $idf_id,
+                                                   rack_id = $rack_id,
+                                                   location_id = $location_id,
+                                                   fiber_port_id = $switch_fiber_id,
+                                                   fiber_patch_id = $switch_fiber_patch_id,
+                                                   fiber_rack_id = $switch_fiber_rack_id,
+                                                   rj45_speed_id = $rj45_speed_id,
+                                                   management_id = $switch_environment_id
+                                                WHERE company_id = $company_id
+                                                  AND equipment_id = $id";
+                    }
                     if (!mysqli_query($conn, $switchPortsSyncSql)) {
                         $error = itm_format_db_constraint_error((int)mysqli_errno($conn), (string)mysqli_error($conn));
                     }
@@ -1444,7 +1472,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $idfPortsSyncSql = "UPDATE idf_ports ip
                                         JOIN idf_positions p ON p.id = ip.position_id
                                         SET ip.speed_id = $switch_fiber_id,
-                                            ip.rj45_speed_id = $switch_rj45_id,
+                                            ip.rj45_speed_id = $rj45_speed_id,
                                             ip.fiber_ports_number = $switch_fiber_ports_number_fk_sql,
                                             ip.switch_port_numbering_layout_id = $switch_port_numbering_layout_id,
                                             ip.management_id = $switch_environment_id,
@@ -1711,15 +1739,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
                 <div class="form-group"><label>Type *</label><select name="equipment_type_id" required data-addable-select="1" data-add-table="equipment_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment type"><option value="">-- Select --</option><?php render_options($types, $data['equipment_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
-            </div>
-            <div class="form-row form-row-3">
                 <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack" data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>IDF</label><select class="input" id="idf-rack-select" name="idf_id" data-addable-select="1" data-add-table="idfs" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="idf"><option value="">-- Select IDF --</option><?php render_options($idfs, $data['idf_id']); ?><option value="__add_new__">➕</option></select></div>
-            </div>
-            <div class="form-row form-row-3">
-                <div class="form-group"><label>Patch Port</label><input name="patch_port" value="<?php echo sanitize($data['patch_port']); ?>"></div><div class="form-group"></div><div class="form-group"></div>
             </div>
             <div class="form-row form-row-3"> 
                 <div class="form-group"><label>Hostname</label><input name="hostname" value="<?php echo sanitize($data['hostname']); ?>"></div>
@@ -1791,9 +1811,14 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-group"><label>Comments</label><textarea name="notes" rows="5"><?php echo sanitize($data['notes']); ?></textarea></div>
-            <div id="switch-fields" style="display:none;">
-                <h3 style="margin-top:20px;">Switch Details</h3>
+            <div id="switch-fields" style="display:block;">
+                <h3 style="margin-top:20px;">Network Details</h3>
                 <div class="switch-details-grid">
+                    <div class="form-group"><label>Location</label><select name="location_id" data-addable-select="1" data-add-table="it_locations" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="location" data-add-extra-fields="<?php echo $locationExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($locations, $data['location_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Rack</label><select name="rack_id" data-addable-select="1" data-add-table="racks" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rack" data-add-extra-fields="<?php echo $rackExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($racks, $data['rack_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>IDF</label><select class="input" id="idf-rack-select" name="idf_id" data-addable-select="1" data-add-table="idfs" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="idf"><option value="">-- Select IDF --</option><?php render_options($idfs, $data['idf_id']); ?><option value="__add_new__">➕</option></select></div>
+                    <div class="form-group"><label>Patch Port</label><input name="patch_port" value="<?php echo sanitize($data['patch_port']); ?>"></div>
+                    <div class="form-group"><label>RJ45 Cable</label><select name="rj45_speed_id" data-addable-select="1" data-add-table="rj45_speed" data-add-id-col="id" data-add-label-col="cable_type" data-add-company-scoped="1" data-add-friendly="rj45 cable"><option value="">-- None --</option><?php render_options($rj45CableOptions, $data['rj45_speed_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>RJ45 Ports *</label><select name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option"><option value="">-- Select --</option><?php render_options($switchRj45Options, $data['switch_rj45_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Port Numbering Layout</label><select name="switch_port_numbering_layout_id" data-addable-select="1" data-add-table="switch_port_numbering_layout" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="port numbering layout"><option value="">-- Select --</option><?php render_options($switchPortNumberingLayoutOptions, $data['switch_port_numbering_layout_id']); ?><option value="__add_new__">➕</option></select></div>
                     <div class="form-group"><label>Fiber Ports Number</label><select id="switch-fiber-ports-number-select" name="switch_fiber_ports_number"><option value="">-- None --</option><?php $switchFiberPortsNumberOptions = ['2','4','8','12','16','24','32','48']; foreach ($switchFiberPortsNumberOptions as $switchFiberPortsNumberOption): ?><option value="<?php echo sanitize($switchFiberPortsNumberOption); ?>" <?php echo ((string)$data['switch_fiber_ports_number'] === (string)$switchFiberPortsNumberOption) ? 'selected' : ''; ?>><?php echo sanitize($switchFiberPortsNumberOption); ?></option><?php endforeach; ?><?php if ((string)$data['switch_fiber_ports_number'] !== '' && !in_array((string)$data['switch_fiber_ports_number'], $switchFiberPortsNumberOptions, true)): ?><option value="<?php echo sanitize($data['switch_fiber_ports_number']); ?>" selected><?php echo sanitize($data['switch_fiber_ports_number']); ?></option><?php endif; ?><option value="__add_new__">➕</option></select></div>
@@ -1906,13 +1931,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
         if (!typeSelect || !switchFields) {
             return;
         }
-        var show = switchTypeId !== '0' && typeSelect.value === switchTypeId;
-        switchFields.style.display = show ? 'block' : 'none';
-        if (!show) {
-            switchFields.querySelectorAll('select').forEach(function (el) {
-                el.value = '';
-            });
-        }
+        switchFields.style.display = 'block';
     }
 
     function toggleServerFields() {
@@ -2211,7 +2230,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
                 normalizeValue(equipmentForm.getAttribute('data-original-switch-environment-id')) !== normalizeValue(switchEnvironmentSelect ? switchEnvironmentSelect.value : '');
 
             if (switchDetailsChanged) {
-                var switchMessage = 'Changing Switch Details will regenerate and overwrite existing switch/IDF port synchronization data. Existing related port/link information may be deleted. This action cannot be undone.\n\nDo you want to continue saving?';
+                var switchMessage = 'Changing Network Details will regenerate and overwrite existing switch/IDF port synchronization data. Existing related port/link information may be deleted. This action cannot be undone.\n\nDo you want to continue saving?';
                 if (!confirm(switchMessage)) {
                     event.preventDefault();
                 }
