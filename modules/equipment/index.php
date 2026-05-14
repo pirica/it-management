@@ -494,6 +494,20 @@ if (!empty($_SESSION['crud_success'])) {
                                     </select>
                                 </div>
                             </label>
+                            <label id="rj45CableRow" style="display:none;">
+                                RJ45 Cable:
+                                <div class="switch-control-input">
+                                    <select id="rj45CableSelect"
+                                        data-addable-select="1"
+                                        data-add-table="rj45_speed"
+                                        data-add-id-col="id"
+                                        data-add-label-col="cable_type"
+                                        data-add-company-scoped="1"
+                                        data-add-friendly="rj45 cable">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                            </label>
                             <label id="patchPortRow">
                                 Patch port:
                                 <input type="text" id="labelInput" placeholder="Patch port">
@@ -628,6 +642,7 @@ if (!empty($_SESSION['crud_success'])) {
         let ports = [];
         let colorOptions = [];
         let statusOptions = [];
+        let rj45SpeedOptions = [];
         let vlanOptions = [];
         let availablePortTypes = ['rj45', 'sfp', 'sfp_plus'];
         let fiberPortOptions = [];
@@ -994,6 +1009,11 @@ if (!empty($_SESSION['crud_success'])) {
                 if (fiberPortLabel !== '') {
                     tooltipParts.push('Fiber Port Label: ' + escapeHtml(fiberPortLabel));
                 }
+            } else {
+                const rj45CableType = el.dataset.rj45CableType || '';
+                if (rj45CableType !== '') {
+                    tooltipParts.push('RJ45 Cable: ' + escapeHtml(rj45CableType));
+                }
             }
 
             tooltip.innerHTML = tooltipParts.join('<br>');
@@ -1014,6 +1034,7 @@ if (!empty($_SESSION['crud_success'])) {
             const isFiber = isFiberPortType(portType);
             const isRj45 = normalizePortType(portType) === 'rj45';
             document.getElementById('vlanRow').style.display = '';
+            document.getElementById('rj45CableRow').style.display = isRj45 ? '' : 'none';
             document.getElementById('fiberPortsRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberPatchRow').style.display = isFiber ? '' : 'none';
             document.getElementById('fiberRackRow').style.display = isFiber ? '' : 'none';
@@ -1034,6 +1055,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('selectedPort').textContent = el.dataset.portNumber;
             document.getElementById('colorSelect').value = el.dataset.color || '';
             document.getElementById('statusSelect').value = el.dataset.status || '';
+            document.getElementById('rj45CableSelect').value = el.dataset.rj45SpeedId || '';
             const selectedPatchPortLabel = String(el.dataset.label || '').trim();
             document.getElementById('labelInput').value = selectedPatchPortLabel === '0' ? '' : selectedPatchPortLabel;
             document.getElementById('vlanSelect').value = el.dataset.vlanId || '';
@@ -1060,6 +1082,8 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.vlanColor = p.vlan_color || '';
             el.dataset.color = p.color || 'black';
             el.dataset.colorHex = p.color_hex || '';
+            el.dataset.rj45SpeedId = p.rj45_speed_id || '';
+            el.dataset.rj45CableType = p.rj45_cable_type || '';
             el.dataset.fiberPortId = p.fiber_port_id || '';
             el.dataset.fiberPatchId = p.fiber_patch_id || '';
             el.dataset.fiberRackId = p.fiber_rack_id || '';
@@ -1170,9 +1194,10 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
 
-        function hydrateLookups(statuses, colors, vlans, fiberPorts, fiberPatches, fiberRacks, idfs, racks, locations) {
+        function hydrateLookups(statuses, colors, rj45Speeds, vlans, fiberPorts, fiberPatches, fiberRacks, idfs, racks, locations) {
             statusOptions = Array.isArray(statuses) ? statuses : [];
             colorOptions = Array.isArray(colors) ? colors : [];
+            rj45SpeedOptions = Array.isArray(rj45Speeds) ? rj45Speeds : [];
             vlanOptions = Array.isArray(vlans) ? vlans : [];
             fiberPortOptions = Array.isArray(fiberPorts) ? fiberPorts : [];
             fiberPatchOptions = Array.isArray(fiberPatches) ? fiberPatches : [];
@@ -1182,6 +1207,7 @@ if (!empty($_SESSION['crud_success'])) {
 
             const statusSelect = document.getElementById('statusSelect');
             const colorSelect = document.getElementById('colorSelect');
+            const rj45CableSelect = document.getElementById('rj45CableSelect');
             const vlanSelect = document.getElementById('vlanSelect');
             const fiberPortsSelect = document.getElementById('fiberPortsSelect');
             const fiberPatchSelect = document.getElementById('fiberPatchSelect');
@@ -1192,6 +1218,7 @@ if (!empty($_SESSION['crud_success'])) {
 
             statusSelect.innerHTML = '<option value=""></option>';
             colorSelect.innerHTML = '<option value=""></option>';
+            rj45CableSelect.innerHTML = '<option value=""></option>';
             vlanSelect.innerHTML = '<option value=""></option>';
             fiberPortsSelect.innerHTML = '<option value=""></option>';
             fiberPatchSelect.innerHTML = '<option value=""></option>';
@@ -1215,6 +1242,9 @@ if (!empty($_SESSION['crud_success'])) {
                 option.dataset.hex = item.hex_color || '';
                 colorSelect.appendChild(option);
 
+            });
+            rj45SpeedOptions.forEach(function (item) {
+                rj45CableSelect.appendChild(new Option(item.name, item.id));
             });
 
             vlanOptions.forEach(function (item) {
@@ -1241,14 +1271,15 @@ if (!empty($_SESSION['crud_success'])) {
             (Array.isArray(locations) ? locations : []).forEach(function (item) {
                 toLocationSelect.appendChild(new Option(item.name, item.id));
             });
-            colorSelect.appendChild(new Option('➕', '__add_new__'));
-            vlanSelect.appendChild(new Option('➕', '__add_new__'));
-            fiberPortsSelect.appendChild(new Option('➕', '__add_new__'));
-            fiberPatchSelect.appendChild(new Option('➕', '__add_new__'));
-            fiberRackSelect.appendChild(new Option('➕', '__add_new__'));
-            idfSelect.appendChild(new Option('➕', '__add_new__'));
-            toRackSelect.appendChild(new Option('➕', '__add_new__'));
-            toLocationSelect.appendChild(new Option('➕', '__add_new__'));
+            colorSelect.appendChild(new Option('+', '__add_new__'));
+            rj45CableSelect.appendChild(new Option('+', '__add_new__'));
+            vlanSelect.appendChild(new Option('+', '__add_new__'));
+            fiberPortsSelect.appendChild(new Option('+', '__add_new__'));
+            fiberPatchSelect.appendChild(new Option('+', '__add_new__'));
+            fiberRackSelect.appendChild(new Option('+', '__add_new__'));
+            idfSelect.appendChild(new Option('+', '__add_new__'));
+            toRackSelect.appendChild(new Option('+', '__add_new__'));
+            toLocationSelect.appendChild(new Option('+', '__add_new__'));
         }
 
         function fallbackLayout() {
@@ -1352,6 +1383,7 @@ if (!empty($_SESSION['crud_success'])) {
                     hydrateLookups(
                         data.statuses || [],
                         data.colors || [],
+                        data.rj45_speeds || [],
                         data.vlans || [],
                         data.fiber_ports || [],
                         data.fiber_patches || [],
@@ -1381,6 +1413,7 @@ if (!empty($_SESSION['crud_success'])) {
                 switch_id: selectedSwitchId,
                 color: document.getElementById('colorSelect').value || null,
                 status: document.getElementById('statusSelect').value || null,
+                rj45_speed_id: document.getElementById('rj45CableSelect').value || null,
                 label: document.getElementById('labelInput').value || null,
                 vlan: document.getElementById('vlanSelect').value || null,
                 comments: document.getElementById('commentsInput').value
@@ -1415,6 +1448,7 @@ if (!empty($_SESSION['crud_success'])) {
             savePort(payload, true)
                 .then(function () {
                     selected.dataset.status = payload.status || selected.dataset.status;
+                    selected.dataset.rj45SpeedId = payload.rj45_speed_id || '';
                     selected.dataset.label = payload.label || selected.dataset.label;
                     selected.dataset.vlanId = payload.vlan || '';
                     const selectedVlan = vlanOptions.find(function (item) { return String(item.id) === String(payload.vlan || ''); });
@@ -1437,6 +1471,11 @@ if (!empty($_SESSION['crud_success'])) {
                         selected.dataset.fiberRack = selectedFiberRackOption ? (selectedFiberRackOption.text || '') : '';
                         selected.dataset.idfId = payload.to_idf_id || '';
                         selected.dataset.idfCode = selectedIdfOption ? (selectedIdfOption.text || '') : '';
+                    } else {
+                        const selectedRj45CableOption = document.getElementById('rj45CableSelect').selectedOptions[0] || null;
+                        selected.dataset.rj45CableType = (payload.rj45_speed_id && selectedRj45CableOption)
+                            ? (selectedRj45CableOption.text || '')
+                            : '';
                     }
                     paintPort(selected, payload.color || selected.dataset.color, selected.dataset.colorHex || '');
                     paintVlan(selected, payload.vlan || '');
@@ -1516,3 +1555,4 @@ if (!empty($_SESSION['crud_success'])) {
 <?php endif; ?>
 </body>
 </html>
+

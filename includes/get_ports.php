@@ -267,6 +267,7 @@ $hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasPortType = itm_table_has_column($conn, 'switch_ports', 'port_type');
 $hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
+$hasRj45SpeedId = itm_table_has_column($conn, 'switch_ports', 'rj45_speed_id');
 $hasVlanId = itm_table_has_column($conn, 'switch_ports', 'vlan_id');
 $hasLegacyNumberPort = itm_table_has_column($conn, 'equipment', 'numberport');
 $hasSwitchFiberCountId = itm_table_has_column($conn, 'equipment', 'switch_fiber_count_id');
@@ -299,6 +300,7 @@ if (!$hasStatusId || !$hasColorId) {
 // Pre-fetch lookups
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'cable_colors', 'color_name');
+$rj45Speeds = fetch_lookup_map($conn, 'rj45_speed', 'cable_type');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 $fiberPorts = fetch_lookup_map($conn, 'equipment_fiber', 'name');
 $fiberPatches = fetch_lookup_map($conn, 'equipment_fiber_patch', 'name');
@@ -573,7 +575,9 @@ if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
     $portTypeJoinSql = $isNumericPortTypeColumn ? 'LEFT JOIN switch_port_types spt ON spt.id = sp.port_type' : '';
-    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, COALESCE(sp.to_idf_id, sp.idf_id) AS to_idf_id, COALESCE(sp.to_rack_id, sp.rack_id) AS to_rack_id, COALESCE(sp.to_location_id, sp.location_id) AS to_location_id, i.idf_code, sp.comments{$vlanSelect},
+    $rj45SelectSql = $hasRj45SpeedId ? ', sp.rj45_speed_id, COALESCE(rs.cable_type, \'\') AS rj45_cable_type' : ', NULL AS rj45_speed_id, \'\' AS rj45_cable_type';
+    $rj45JoinSql = $hasRj45SpeedId ? 'LEFT JOIN rj45_speed rs ON rs.id = sp.rj45_speed_id' : '';
+    $sql = "SELECT sp.id, {$portTypeSelectSql} AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, COALESCE(sp.to_idf_id, sp.idf_id) AS to_idf_id, COALESCE(sp.to_rack_id, sp.rack_id) AS to_rack_id, COALESCE(sp.to_location_id, sp.location_id) AS to_location_id, i.idf_code, sp.comments{$vlanSelect}{$rj45SelectSql},
                    sp.fiber_port_id, sp.fiber_patch_id, sp.fiber_rack_id,
                    COALESCE(ef.name, '') AS fiber_port_name,
                    COALESCE(efp.name, '') AS fiber_patch_name,
@@ -582,6 +586,7 @@ if ($hasEquipmentId && $hasPortType) {
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
+            {$rj45JoinSql}
             LEFT JOIN idfs i ON i.id = COALESCE(sp.to_idf_id, sp.idf_id)
             LEFT JOIN equipment_fiber ef ON ef.id = sp.fiber_port_id
             LEFT JOIN equipment_fiber_patch efp ON efp.id = sp.fiber_patch_id
@@ -602,7 +607,9 @@ if ($hasEquipmentId && $hasPortType) {
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
-    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, COALESCE(sp.to_idf_id, sp.idf_id) AS to_idf_id, COALESCE(sp.to_rack_id, sp.rack_id) AS to_rack_id, COALESCE(sp.to_location_id, sp.location_id) AS to_location_id, i.idf_code, sp.comments{$vlanSelect},
+    $rj45SelectSql = $hasRj45SpeedId ? ', sp.rj45_speed_id, COALESCE(rs.cable_type, \'\') AS rj45_cable_type' : ', NULL AS rj45_speed_id, \'\' AS rj45_cable_type';
+    $rj45JoinSql = $hasRj45SpeedId ? 'LEFT JOIN rj45_speed rs ON rs.id = sp.rj45_speed_id' : '';
+    $sql = "SELECT sp.id, 'rj45' AS port_type, sp.port_number, sp.to_patch_port, sp.to_patch_port AS label, ss.status, sc.color_name AS color, COALESCE(sc.hex_color, '') AS color_hex, COALESCE(sp.to_idf_id, sp.idf_id) AS to_idf_id, COALESCE(sp.to_rack_id, sp.rack_id) AS to_rack_id, COALESCE(sp.to_location_id, sp.location_id) AS to_location_id, i.idf_code, sp.comments{$vlanSelect}{$rj45SelectSql},
                    sp.fiber_port_id, sp.fiber_patch_id, sp.fiber_rack_id,
                    COALESCE(ef.name, '') AS fiber_port_name,
                    COALESCE(efp.name, '') AS fiber_patch_name,
@@ -611,6 +618,7 @@ if ($hasEquipmentId && $hasPortType) {
             LEFT JOIN switch_status ss ON ss.id = sp.status_id
             LEFT JOIN cable_colors sc ON sc.id = sp.color_id
             LEFT JOIN vlans v ON v.id = sp.vlan_id
+            {$rj45JoinSql}
             LEFT JOIN idfs i ON i.id = COALESCE(sp.to_idf_id, sp.idf_id)
             LEFT JOIN equipment_fiber ef ON ef.id = sp.fiber_port_id
             LEFT JOIN equipment_fiber_patch efp ON efp.id = sp.fiber_patch_id
@@ -686,6 +694,7 @@ echo json_encode([
     'ports' => $ports,
     'statuses' => $statuses,
     'colors' => $colors,
+    'rj45_speeds' => $rj45Speeds,
     'vlans' => $vlans,
     'fiber_ports' => $fiberPorts,
     'fiber_patches' => $fiberPatches,

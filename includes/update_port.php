@@ -126,6 +126,7 @@ function find_lookup_id(array $rows, $value): int
 $hasEquipmentId = itm_table_has_column($conn, 'switch_ports', 'equipment_id');
 $hasStatusId = itm_table_has_column($conn, 'switch_ports', 'status_id');
 $hasColorId = itm_table_has_column($conn, 'switch_ports', 'color_id');
+$hasRj45SpeedId = itm_table_has_column($conn, 'switch_ports', 'rj45_speed_id');
 $hasVlanId = itm_table_has_column($conn, 'switch_ports', 'vlan_id');
 $hasFiberPortId = itm_table_has_column($conn, 'switch_ports', 'fiber_port_id');
 $hasFiberPatchId = itm_table_has_column($conn, 'switch_ports', 'fiber_patch_id');
@@ -147,6 +148,7 @@ if (!$hasStatusId || !$hasColorId) {
 // Pre-fetch reference data
 $statuses = fetch_lookup_map($conn, 'switch_status', 'status');
 $colors = fetch_lookup_map($conn, 'cable_colors', 'color_name');
+$rj45Speeds = fetch_lookup_map($conn, 'rj45_speed', 'cable_type');
 $vlans = fetch_company_vlans($conn, (int)$company_id);
 
 // Parameter validation
@@ -172,6 +174,7 @@ if ($switchId <= 0) {
 // Resolve lookup values
 $colorId = find_lookup_id($colors, $input['color'] ?? null);
 $statusId = find_lookup_id($statuses, $input['status'] ?? null);
+$rj45SpeedId = $hasRj45SpeedId ? find_lookup_id($rj45Speeds, $input['rj45_speed_id'] ?? null) : 0;
 $vlanId = $hasVlanId ? find_lookup_id($vlans, $input['vlan'] ?? null) : 0;
 $toPatchPort = isset($input['to_patch_port']) ? trim((string)$input['to_patch_port']) : (isset($input['label']) ? trim((string)$input['label']) : null);
 $comments = isset($input['comments']) ? trim((string)$input['comments']) : null;
@@ -223,6 +226,15 @@ if ($statusId > 0) {
     $fields[] = 'status_id = ?';
     $types .= 'i';
     $params[] = $statusId;
+}
+if ($hasRj45SpeedId && array_key_exists('rj45_speed_id', $input)) {
+    if ($rj45SpeedId > 0) {
+        $fields[] = 'rj45_speed_id = ?';
+        $types .= 'i';
+        $params[] = $rj45SpeedId;
+    } else {
+        $fields[] = 'rj45_speed_id = NULL';
+    }
 }
 if ($hasVlanId && array_key_exists('vlan', $input)) {
     if ($vlanId > 0) {
@@ -378,7 +390,7 @@ mysqli_stmt_close($stmt);
 if ($hasManagementId) {
     $autoSyncMarker = '[SPM-AUTO-TO-IDF]';
     $switchPortRow = null;
-    $switchPortSql = "SELECT id, company_id, equipment_id, port_type, port_number, to_patch_port, status_id, vlan_id,
+    $switchPortSql = "SELECT id, company_id, equipment_id, port_type, port_number, to_patch_port, status_id, vlan_id, rj45_speed_id,
                              fiber_port_id, management_id, comments, to_idf_id
                       FROM switch_ports
                       WHERE id = ? AND company_id = ? AND equipment_id = ?
@@ -546,6 +558,7 @@ if ($hasManagementId) {
                      SET label = ?,
                          status_id = ?,
                          vlan_id = NULLIF(?, 0),
+                         rj45_speed_id = NULLIF(?, 0),
                          speed_id = NULLIF(?, 0),
                          management_id = NULLIF(?, 0),
                          connected_to = ?,
@@ -557,6 +570,7 @@ if ($hasManagementId) {
                     $idfLabel = (string)($switchPortRow['to_patch_port'] ?? '');
                     $idfStatusId = (int)($switchPortRow['status_id'] ?? 0);
                     $idfVlanId = (int)($switchPortRow['vlan_id'] ?? 0);
+                    $idfRj45SpeedId = (int)($switchPortRow['rj45_speed_id'] ?? 0);
                     $idfSpeedId = (int)($switchPortRow['fiber_port_id'] ?? 0);
                     $idfManagementId = (int)($switchPortRow['management_id'] ?? 0);
                     $idfNotes = trim((string)($switchPortRow['comments'] ?? ''));
@@ -568,10 +582,11 @@ if ($hasManagementId) {
                     $companyIdParam = (int)$company_id;
                     mysqli_stmt_bind_param(
                         $stmtUpdateIdfPort,
-                        'siiiissii',
+                        'siiiiissii',
                         $idfLabel,
                         $idfStatusId,
                         $idfVlanId,
+                        $idfRj45SpeedId,
                         $idfSpeedId,
                         $idfManagementId,
                         $connectedToValue,
@@ -600,9 +615,9 @@ if ($hasManagementId) {
                     $conn,
                     "INSERT INTO idf_ports (
                         company_id, position_id, port_no, port_type, label, status_id, connected_to,
-                        vlan_id, speed_id, management_id, notes
+                        vlan_id, rj45_speed_id, speed_id, management_id, notes
                      ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?
+                        ?, ?, ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?
                      )"
                 );
                 if ($stmtInsertIdfPort) {
@@ -610,6 +625,7 @@ if ($hasManagementId) {
                     $idfLabel = (string)($switchPortRow['to_patch_port'] ?? '');
                     $idfStatusId = (int)($switchPortRow['status_id'] ?? 0);
                     $idfVlanId = (int)($switchPortRow['vlan_id'] ?? 0);
+                    $idfRj45SpeedId = (int)($switchPortRow['rj45_speed_id'] ?? 0);
                     $idfSpeedId = (int)($switchPortRow['fiber_port_id'] ?? 0);
                     $idfManagementId = (int)($switchPortRow['management_id'] ?? 0);
                     $idfNotes = trim((string)($switchPortRow['comments'] ?? ''));
@@ -620,7 +636,7 @@ if ($hasManagementId) {
                     }
                     mysqli_stmt_bind_param(
                         $stmtInsertIdfPort,
-                        'iiiisisiiis',
+                        'iiiisisiiiis',
                         $companyIdParam,
                         $targetInsertPositionId,
                         $portNoParam,
@@ -629,6 +645,7 @@ if ($hasManagementId) {
                         $idfStatusId,
                         $connectedToValue,
                         $idfVlanId,
+                        $idfRj45SpeedId,
                         $idfSpeedId,
                         $idfManagementId,
                         $idfNotes
