@@ -244,7 +244,8 @@ $switchPortsFallbackCommentsSelect = $hasSwitchPortsCommentsColumn
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name,
-            COALESCE(spnl_equipment.name, spnl.name, 'Vertical') AS layout_name,
+            COALESCE(spnl.name, spnl_equipment.name, 'Vertical') AS layout_name,
+            COALESCE(er.name, '') AS switch_rj45_name,
             COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
             COALESCE(ef.name, '') AS equipment_fiber_name,
             {$switchFiberPortLabelSelect} AS equipment_fiber_port_label,
@@ -258,6 +259,7 @@ $stmtPos = mysqli_prepare(
      LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
      LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id
      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
+     LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = e.company_id
      LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id AND ef.company_id = e.company_id
      LEFT JOIN switch_port_numbering_layout spnl
        ON spnl.id = p.switch_port_numbering_layout_id
@@ -348,8 +350,8 @@ if ($stmtPos) {
              FROM idf_ports pr
              JOIN idf_positions p_local
                ON p_local.company_id = pr.company_id
+              AND p_local.id = ?
               AND p_local.idf_id = ?
-              AND (p_local.id = pr.position_id OR p_local.position_no = pr.position_id)
              JOIN idfs i_local ON i_local.id = p_local.idf_id
              LEFT JOIN equipment e_local ON e_local.id = p_local.equipment_id AND e_local.company_id = p_local.company_id
              LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id AND et_local.company_id = e_local.company_id
@@ -411,11 +413,23 @@ if ($stmtPos) {
              LEFT JOIN idf_device_type dt_remote ON dt_remote.id = p_remote.device_type AND dt_remote.company_id = p_remote.company_id
              LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id AND cc_l.company_id = l.company_id
              WHERE pr.company_id = ?
-               AND (pr.position_id = ? OR pr.position_id = ?)
+               AND (
+                    pr.position_id = ?
+                    OR (
+                        pr.position_id = ?
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM idf_positions p_actual
+                            WHERE p_actual.company_id = pr.company_id
+                              AND p_actual.id = pr.position_id
+                            LIMIT 1
+                        )
+                    )
+               )
              ORDER BY pr.port_no ASC"
         );
         if ($stmtPorts) {
-            mysqli_stmt_bind_param($stmtPorts, 'iiii', $idf_id, $company_id, $posId, $posNo);
+            mysqli_stmt_bind_param($stmtPorts, 'iiiii', $posId, $idf_id, $company_id, $posId, $posNo);
             mysqli_stmt_execute($stmtPorts);
             $portRes = mysqli_stmt_get_result($stmtPorts);
             $idfPortsCount = 0;
@@ -917,7 +931,12 @@ foreach ($equipmentOptions as $equipmentOption) {
 
                         <div class="idf-slots" id="idfSlots">
                             <?php for ($i = 1; $i <= $displayMaxPos; $i++): $pos = $positions[$i] ?? null; ?>
-                                <div class="idf-slot" data-position="<?php echo $i; ?>" data-has-device="<?php echo $pos ? '1' : '0'; ?>">
+                                <div class="idf-slot"
+                                     data-position="<?php echo $i; ?>"
+                                     data-has-device="<?php echo $pos ? '1' : '0'; ?>"
+                                     data-position-id="<?php echo $pos ? (int)$pos['id'] : 0; ?>"
+                                     data-port-count="<?php echo $pos ? (int)$pos['port_count'] : 0; ?>"
+                                     data-layout-name="<?php echo $pos ? sanitize((string)($pos['layout_name'] ?? 'Vertical')) : ''; ?>">
                                     <div class="idf-slot-left">
                                         <div class="idf-slot-no"><?php echo $i; ?></div>
 
@@ -1243,13 +1262,19 @@ function idfRemovePosition(positionNo) {
         idf_id: IDF_ID,
         position_no: clickedPosition
     })
-        .then(() => location.reload())
+        .then(() => reloadIdfRackView())
         .catch(err => alert(err.message));
 }
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
 function closeModal(){ document.getElementById('idfModalBackdrop').style.display = 'none'; }
 function openModal(){ document.getElementById('idfModalBackdrop').style.display = 'flex'; }
+
+function reloadIdfRackView() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('_itm_refresh', String(Date.now()));
+    window.location.replace(url.toString());
+}
 
 function closeCopyIfBackdrop(e){ if(e.target.id === 'idfCopyBackdrop') closeCopy(); }
 function closeCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'none'; }
@@ -1282,7 +1307,7 @@ function closeInlineDevice(shouldReload) {
     }
     document.body.style.overflow = '';
     if (shouldReload) {
-        location.reload();
+        reloadIdfRackView();
     }
 }
 
@@ -1450,7 +1475,7 @@ function saveDevice() {
         notes: form.notes.value.trim(),
     };
     apiPost('position_save.php', payload)
-        .then(() => location.reload())
+        .then(() => reloadIdfRackView())
         .catch(err => alert(err.message));
 }
 
@@ -1517,13 +1542,13 @@ function copyDevice() {
         overwrite: overwriteMode,
     };
     apiPost('position_copy.php', payload)
-        .then(() => location.reload())
+        .then(() => reloadIdfRackView())
         .catch(err => alert(err.message));
 }
 
 function idfMove(idfId, positionNo, dir) {
     apiPost('position_move.php', {csrf_token: CSRF, idf_id: idfId, position_no: positionNo, dir})
-        .then(() => location.reload())
+        .then(() => reloadIdfRackView())
         .catch(err => alert(err.message));
 }
 
@@ -1532,7 +1557,7 @@ function idfDeleteDevice(positionId, deviceName) {
     const deviceLabel = safeDeviceName !== '' ? ` (${safeDeviceName})` : '';
     if (!confirm(`Are you sure you want to delete this device${deviceLabel} from rack position?\n\nThis will permanently delete all related data, including ports, cable links, and synchronization records. This action cannot be undone.`)) return;
     apiPost('position_delete.php', {csrf_token: CSRF, position_id: positionId})
-        .then(() => location.reload())
+        .then(() => reloadIdfRackView())
         .catch(err => alert(err.message));
 }
 
@@ -1654,10 +1679,10 @@ async function idfExportPdf() {
                     order: ordered,
                 });
 
-                location.reload();
+                reloadIdfRackView();
             } catch (e) {
                 alert(e.message || 'Reorder failed');
-                location.reload();
+                reloadIdfRackView();
             }
         },
     });
