@@ -613,7 +613,7 @@ $displayMaxPos = max(10, $maxPosInDb);
 $equipmentOptions = [];
 $stmtEq = mysqli_prepare(
     $conn,
-    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id,
+    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, COALESCE(e.switch_fiber_ports_number, '') AS switch_fiber_ports_number,
             COALESCE(NULLIF(e_layout_scoped.id, 0), NULLIF(e_layout_company_match.id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), 0) AS switch_port_numbering_layout_id,
             er.name AS switch_rj45_name
      FROM equipment e
@@ -717,6 +717,7 @@ foreach ($switchRj45Options as $switchRj45Option) {
 $switchLayoutOptions = [];
 $defaultHorizontalLayoutId = 0;
 $defaultVerticalLayoutId = 0;
+$switchFiberPortsNumberOptions = ['2', '4', '8', '12', '16', '24', '32', '48'];
 $stmtLayout = mysqli_prepare(
     $conn,
     "SELECT id, name
@@ -779,6 +780,7 @@ foreach ($equipmentOptions as $equipmentOption) {
         'name' => (string)($equipmentOption['name'] ?? ''),
         'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
         'switch_port_numbering_layout_id' => (int)($equipmentOption['switch_port_numbering_layout_id'] ?? 0),
+        'switch_fiber_ports_number' => (string)($equipmentOption['switch_fiber_ports_number'] ?? ''),
         'port_count' => $portCount,
         'notes' => (string)($equipmentOption['notes'] ?? ''),
     ];
@@ -1112,6 +1114,17 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </select>
             </div>
 
+            <div id="idfSwitchFiberPortsNumberWrap" style="display:none;">
+                <label class="label">Fiber Ports Number</label>
+                <select class="input" id="idfSwitchFiberPortsNumberSelect" name="switch_fiber_ports_number">
+                    <option value="">-- None --</option>
+                    <?php foreach ($switchFiberPortsNumberOptions as $switchFiberPortsNumberOption): ?>
+                        <option value="<?php echo sanitize($switchFiberPortsNumberOption); ?>"><?php echo sanitize($switchFiberPortsNumberOption); ?></option>
+                    <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
+                </select>
+            </div>
+
             <div style="grid-column: 1 / -1;">
                 <label class="label">Notes</label>
                 <input class="input" name="notes" placeholder="Optional notes">
@@ -1193,6 +1206,7 @@ foreach ($equipmentOptions as $equipmentOption) {
         'notes' => (string)($equipmentOption['notes'] ?? ''),
         'switch_rj45_id' => (int)($equipmentOption['switch_rj45_id'] ?? 0),
         'switch_port_numbering_layout_id' => (int)($equipmentOption['switch_port_numbering_layout_id'] ?? 0),
+        'switch_fiber_ports_number' => (string)($equipmentOption['switch_fiber_ports_number'] ?? ''),
         'port_count' => $portCount,
     ];
 }
@@ -1351,6 +1365,26 @@ document.addEventListener('keydown', (event) => {
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
+function setFiberPortsNumberValue(form, rawValue) {
+    const select = form.switch_fiber_ports_number;
+    if (!select) return;
+
+    const value = String(rawValue || '').trim();
+    if (value !== '') {
+        const hasOption = Array.prototype.some.call(select.options, (option) => String(option.value) === value);
+        if (!hasOption) {
+            const addOption = Array.prototype.find.call(select.options, (option) => String(option.value) === '__add_new__');
+            const customOption = new Option(value, value, false, false);
+            if (addOption) {
+                select.insertBefore(customOption, addOption);
+            } else {
+                select.appendChild(customOption);
+            }
+        }
+    }
+    select.value = value;
+}
+
 function applyEquipmentRelation(form) {
     const rawEquipmentId = form.equipment_id.value;
     if (!rawEquipmentId) return;
@@ -1361,6 +1395,7 @@ function applyEquipmentRelation(form) {
     form.device_name.value = equipment.name || '';
     form.switch_rj45_id.value = equipment.switch_rj45_id ? String(equipment.switch_rj45_id) : '';
     form.switch_port_numbering_layout_id.value = equipment.switch_port_numbering_layout_id ? String(equipment.switch_port_numbering_layout_id) : '';
+    setFiberPortsNumberValue(form, equipment.switch_fiber_ports_number || '');
     form.port_count.value = equipment.port_count ? String(equipment.port_count) : '';
     form.notes.value = equipment.notes || '';
     refreshPortCountInputs(form);
@@ -1416,6 +1451,7 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.switch_rj45_id.value = position.effective_switch_rj45_id || position.switch_rj45_id || '';
                 form.switch_port_numbering_layout_id.value = position.equipment_switch_port_numbering_layout_id || position.effective_switch_port_numbering_layout_id || position.switch_port_numbering_layout_id || '';
+                setFiberPortsNumberValue(form, position.equipment_switch_fiber_ports_number || '');
                 form.port_count.value = position.port_count || '';
                 form.notes.value = position.notes || '';
                 refreshPortCountInputs(form);
@@ -1437,12 +1473,13 @@ function syncFieldsFromEquipment(form, shouldAlert) {
     form.device_name.value = meta.name || '';
     form.switch_rj45_id.value = meta.switch_rj45_id ? String(meta.switch_rj45_id) : '';
     form.switch_port_numbering_layout_id.value = meta.switch_port_numbering_layout_id ? String(meta.switch_port_numbering_layout_id) : '';
+    setFiberPortsNumberValue(form, meta.switch_fiber_ports_number || '');
     form.port_count.value = meta.port_count ? String(meta.port_count) : '';
     form.notes.value = meta.notes || '';
     refreshPortCountInputs(form);
 
     if (shouldAlert) {
-        alert('Device Name, Port Count, and Notes were filled from linked equipment.');
+        alert('Device Name, Port Count, Fiber Ports Number, and Notes were filled from linked equipment.');
     }
 }
 
@@ -1453,9 +1490,11 @@ function refreshPortCountInputs(form) {
     const hasLinkedEquipment = String(form.equipment_id.value || '') !== '';
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
+    const fiberWrap = document.getElementById('idfSwitchFiberPortsNumberWrap');
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
     if (portCountWrap) portCountWrap.style.display = (isSwitch || isUps) ? 'none' : 'block';
     if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
+    if (fiberWrap) fiberWrap.style.display = isSwitch ? 'block' : 'none';
     if (layoutWrap) layoutWrap.style.display = isUps ? 'none' : 'block';
     form.switch_rj45_id.required = isSwitch;
     const isEditMode = form.dataset.isEdit === '1';
@@ -1467,6 +1506,7 @@ function refreshPortCountInputs(form) {
     }
     if (!isSwitch) {
         form.switch_rj45_id.value = '';
+        setFiberPortsNumberValue(form, '');
     }
     if (isUps) {
         form.port_count.value = '0';
@@ -1486,6 +1526,7 @@ function saveDevice() {
         equipment_id: form.equipment_id.value ? Number(form.equipment_id.value) : null,
         switch_rj45_id: form.switch_rj45_id.value ? Number(form.switch_rj45_id.value) : null,
         switch_port_numbering_layout_id: form.switch_port_numbering_layout_id.value ? Number(form.switch_port_numbering_layout_id.value) : null,
+        switch_fiber_ports_number: form.switch_fiber_ports_number ? form.switch_fiber_ports_number.value : null,
         port_count: form.port_count.value === '' ? null : Number(form.port_count.value),
         notes: form.notes.value.trim(),
     };
@@ -1493,6 +1534,42 @@ function saveDevice() {
         .then(() => reloadIdfRackView())
         .catch(err => alert(err.message));
 }
+
+function setupFiberPortsNumberQuickAdd() {
+    const select = document.getElementById('idfSwitchFiberPortsNumberSelect');
+    if (!select) return;
+
+    let previousValue = select.value || '';
+    select.addEventListener('focus', function () {
+        if (select.value !== '__add_new__') {
+            previousValue = select.value || '';
+        }
+    });
+    select.addEventListener('change', function () {
+        if (select.value !== '__add_new__') {
+            previousValue = select.value || '';
+            return;
+        }
+
+        let typedValue = window.prompt('Enter Fiber Ports Number');
+        if (typedValue === null) {
+            select.value = previousValue;
+            return;
+        }
+
+        typedValue = String(typedValue).trim();
+        if (typedValue === '' || !/^\d+$/.test(typedValue) || Number(typedValue) <= 0) {
+            alert('Enter a positive whole number for Fiber Ports Number.');
+            select.value = previousValue;
+            return;
+        }
+
+        setFiberPortsNumberValue(document.getElementById('idfDeviceForm'), typedValue);
+        previousValue = typedValue;
+    });
+}
+
+setupFiberPortsNumberQuickAdd();
 
 document.getElementById('idfDeviceForm').equipment_id.addEventListener('change', function () {
     const form = document.getElementById('idfDeviceForm');

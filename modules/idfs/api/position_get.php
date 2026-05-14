@@ -13,6 +13,7 @@ $stmt = mysqli_prepare(
     $conn,
     "SELECT p.*, i.company_id,
             COALESCE(e.switch_rj45_id, er_count.id, 0) AS effective_switch_rj45_id,
+            COALESCE(e.switch_fiber_ports_number, '') AS equipment_switch_fiber_ports_number,
             COALESCE(NULLIF(e_layout_scoped.id, 0), NULLIF(e_layout_company_match.id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), 0) AS equipment_switch_port_numbering_layout_id,
             COALESCE(
                 NULLIF(e_layout_scoped.id, 0),
