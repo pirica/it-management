@@ -299,6 +299,7 @@ $db = null;
 $createdTempEquipmentId = 0;
 $createdTempEquipmentIds = [];
 $createdTempPositionIds = [];
+$itmTestExitCode = 0;
 
 try {
     $db = itm_test_db_connect();
@@ -314,10 +315,23 @@ try {
     $rj45TwentyFourId = itm_test_lookup_rj45_id_by_count($db, $companyId, 24);
     $layoutVerticalId = itm_test_lookup_layout_id($db, $companyId, 'Vertical');
     $layoutHorizontalId = itm_test_lookup_layout_id($db, $companyId, 'Horizontal');
+    $legacyVerticalLayout = itm_test_db_one(
+        $db,
+        "SELECT id
+         FROM switch_port_numbering_layout
+         WHERE company_id <> ?
+           AND LOWER(name) = 'vertical'
+         ORDER BY id ASC
+         LIMIT 1",
+        'i',
+        [$companyId]
+    );
+    $legacyVerticalLayoutId = (int)($legacyVerticalLayout['id'] ?? 0);
     itm_test_assert($statusUpId > 0 && $statusDownId > 0 && $statusUnknownId > 0, 'Switch status IDs are available (Up/Down/Unknown)');
     itm_test_assert($colorGreenId > 0 && $colorRedId > 0 && $colorGrayId > 0, 'Cable color IDs are available (Green/Red/Gray)');
     itm_test_assert($rj45EightId > 0 && $rj45TwentyFourId > 0, 'RJ45 capacity options are available (8/24)');
     itm_test_assert($layoutVerticalId > 0 && $layoutHorizontalId > 0, 'Numbering layout options are available (Vertical/Horizontal)');
+    itm_test_assert($legacyVerticalLayoutId > 0, 'Legacy non-company Vertical layout option exists for linked-equipment fallback test');
 
     $loginPageStatus = 0;
     $loginPageHtml = itm_test_http_request('GET', rtrim($baseUrl, '/') . '/login.php', $cookieFile, null, [], $loginPageStatus);
@@ -353,6 +367,15 @@ try {
     itm_test_assert($idfViewStatus === 200, 'IDF view page is reachable after login');
     $csrf = itm_test_extract_csrf($idfViewHtml);
     itm_test_assert($csrf !== '', 'CSRF token extracted from IDF view page');
+
+    $switchTypeRow = itm_test_db_one(
+        $db,
+        "SELECT id FROM idf_device_type WHERE company_id = ? AND LOWER(idfdevicetype_name) = 'switch' ORDER BY id ASC LIMIT 1",
+        'i',
+        [$companyId]
+    );
+    $switchDeviceTypeId = (int)($switchTypeRow['id'] ?? 0);
+    itm_test_assert($switchDeviceTypeId > 0, 'IDF switch device type exists for temp create/delete sync test');
 
     $portA = itm_test_db_one(
         $db,
@@ -390,6 +413,88 @@ try {
         'iiii',
         [$companyId, $idfId, (int)$portA['position_id'], (int)$portA['port_id']]
     );
+    if ($portB === null) {
+        $fallbackPositionRow = itm_test_db_one(
+            $db,
+            "SELECT COALESCE(MAX(position_no), 0) AS max_position
+             FROM idf_positions
+             WHERE company_id = ? AND idf_id = ?",
+            'ii',
+            [$companyId, $idfId]
+        );
+        $fallbackPositionNo = ((int)($fallbackPositionRow['max_position'] ?? 0)) + 1;
+        itm_test_assert($fallbackPositionNo <= 100, 'Temporary link destination position number is within allowed range');
+
+        $fallbackEquipmentName = 'ITM Human Link Dest ' . date('YmdHis');
+        itm_test_db_exec(
+            $db,
+            "INSERT INTO equipment (
+                company_id, equipment_type_id, status_id, idf_id, name,
+                switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id, active
+             ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)",
+            'iiisiii',
+            [$companyId, 37, 25, $fallbackEquipmentName, $rj45EightId, $layoutVerticalId, 8]
+        );
+        $fallbackEquipmentId = (int)mysqli_insert_id($db);
+        $createdTempEquipmentIds[] = $fallbackEquipmentId;
+        itm_test_assert($fallbackEquipmentId > 0, 'Temporary destination equipment created for link sync test');
+
+        itm_test_db_exec(
+            $db,
+            "INSERT INTO switch_ports (
+                company_id, equipment_id, hostname, port_type, port_number,
+                to_patch_port, status_id, color_id, idf_id, management_id, comments
+             ) VALUES (?, ?, ?, 'RJ45', 1, '0', ?, ?, NULL, 8, '')",
+            'iisii',
+            [$companyId, $fallbackEquipmentId, $fallbackEquipmentName, $statusUnknownId, $colorGrayId]
+        );
+
+        itm_test_api_post_json(
+            $baseUrl,
+            '/modules/idfs/api/position_save.php',
+            $cookieFile,
+            [
+                'csrf_token' => $csrf,
+                'idf_id' => $idfId,
+                'position_no' => $fallbackPositionNo,
+                'device_type' => $switchDeviceTypeId,
+                'device_name' => $fallbackEquipmentName,
+                'equipment_id' => $fallbackEquipmentId,
+                'switch_rj45_id' => $rj45EightId,
+                'switch_port_numbering_layout_id' => $layoutVerticalId,
+                'port_count' => 8,
+                'notes' => 'ITM HUMAN TEMP LINK DESTINATION',
+            ]
+        );
+
+        $fallbackPosition = itm_test_db_one(
+            $db,
+            "SELECT id
+             FROM idf_positions
+             WHERE company_id = ? AND idf_id = ? AND position_no = ? AND equipment_id = ?
+             LIMIT 1",
+            'iiis',
+            [$companyId, $idfId, $fallbackPositionNo, (string)$fallbackEquipmentId]
+        );
+        $fallbackPositionId = (int)($fallbackPosition['id'] ?? 0);
+        itm_test_assert($fallbackPositionId > 0, 'Temporary destination position created for link sync test');
+        $createdTempPositionIds[] = $fallbackPositionId;
+
+        $portB = itm_test_db_one(
+            $db,
+            "SELECT pr.id AS port_id, pr.port_no, pr.port_type, p.id AS position_id
+             FROM idf_ports pr
+             JOIN idf_positions p ON p.id = pr.position_id AND p.company_id = pr.company_id
+             LEFT JOIN idf_links l ON l.company_id = pr.company_id AND (l.port_id_a = pr.id OR l.port_id_b = pr.id)
+             WHERE pr.company_id = ?
+               AND p.id = ?
+               AND l.id IS NULL
+             ORDER BY pr.id ASC
+             LIMIT 1",
+            'ii',
+            [$companyId, $fallbackPositionId]
+        );
+    }
     itm_test_assert($portB !== null, 'Found destination IDF port on a different position');
 
     $portAId = (int)$portA['port_id'];
@@ -576,15 +681,6 @@ try {
     itm_test_assert((int)($switchAfterUnlink['status_id'] ?? 0) === $statusUnknownId, 'Source switch_ports status reset to Unknown after unlink');
     itm_test_assert((int)($switchAfterUnlink['color_id'] ?? 0) === $colorGrayId, 'Source switch_ports color reset to Gray after unlink');
 
-    $switchTypeRow = itm_test_db_one(
-        $db,
-        "SELECT id FROM idf_device_type WHERE company_id = ? AND LOWER(idfdevicetype_name) = 'switch' ORDER BY id ASC LIMIT 1",
-        'i',
-        [$companyId]
-    );
-    $switchDeviceTypeId = (int)($switchTypeRow['id'] ?? 0);
-    itm_test_assert($switchDeviceTypeId > 0, 'IDF switch device type exists for temp create/delete sync test');
-
     $nextPositionRow = itm_test_db_one(
         $db,
         "SELECT COALESCE(MAX(position_no), 0) AS max_position
@@ -701,6 +797,80 @@ try {
         2,
         'Position create UI'
     );
+
+    itm_test_db_exec(
+        $db,
+        "UPDATE equipment
+         SET switch_port_numbering_layout_id = ?
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'iii',
+        [$legacyVerticalLayoutId, $createdTempEquipmentId, $companyId]
+    );
+    itm_test_db_exec(
+        $db,
+        "UPDATE idf_positions
+         SET switch_port_numbering_layout_id = NULL
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$tempPositionId, $companyId]
+    );
+    $legacyLayoutPosition = itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_get.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'position_id' => $tempPositionId,
+        ]
+    );
+    $legacyLayoutPayload = $legacyLayoutPosition['position'] ?? [];
+    itm_test_assert((int)($legacyLayoutPayload['equipment_switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position edit payload maps legacy linked-equipment layout to company layout option');
+    itm_test_assert((int)($legacyLayoutPayload['effective_switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position edit payload uses linked equipment layout when position layout is blank');
+
+    $idfViewAfterLegacyLayoutHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+    itm_test_assert_idf_slot_rendered(
+        $idfViewAfterLegacyLayoutHtml,
+        $tempPositionNo,
+        $tempPositionId,
+        8,
+        'Vertical',
+        'vertical',
+        4,
+        2,
+        'Position linked equipment legacy layout UI'
+    );
+
+    itm_test_db_exec(
+        $db,
+        "UPDATE equipment
+         SET switch_port_numbering_layout_id = NULL
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$createdTempEquipmentId, $companyId]
+    );
+    itm_test_db_exec(
+        $db,
+        "UPDATE idf_ports
+         SET switch_port_numbering_layout_id = ?
+         WHERE company_id = ? AND position_id = ?",
+        'iii',
+        [$legacyVerticalLayoutId, $companyId, $tempPositionId]
+    );
+    $legacyPortLayoutPosition = itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_get.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'position_id' => $tempPositionId,
+        ]
+    );
+    $legacyPortLayoutPayload = $legacyPortLayoutPosition['position'] ?? [];
+    itm_test_assert((int)($legacyPortLayoutPayload['equipment_switch_port_numbering_layout_id'] ?? 0) === 0, 'Position edit payload leaves linked equipment layout blank when equipment layout is blank');
+    itm_test_assert((int)($legacyPortLayoutPayload['effective_switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position edit payload maps legacy IDF port layout to company layout option');
 
     $equipmentAfterAssign = itm_test_db_one(
         $db,
@@ -920,10 +1090,9 @@ try {
     itm_test_assert(($switchAfterDelete['idf_id'] ?? null) === null, 'switch_ports.idf_id reset to NULL after position delete');
 
     itm_test_out(PHP_EOL . 'All human-style IDF sync tests passed.');
-    exit(0);
 } catch (Throwable $e) {
     fwrite(STDERR, '[FAIL] ' . $e->getMessage() . PHP_EOL);
-    exit(1);
+    $itmTestExitCode = 1;
 } finally {
     if ($db instanceof mysqli) {
         if (!empty($createdTempPositionIds)) {
@@ -949,3 +1118,5 @@ try {
         @unlink($cookieFile);
     }
 }
+
+exit($itmTestExitCode);

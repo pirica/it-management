@@ -13,12 +13,40 @@ $stmt = mysqli_prepare(
     $conn,
     "SELECT p.*, i.company_id,
             COALESCE(e.switch_rj45_id, er_count.id, 0) AS effective_switch_rj45_id,
-            COALESCE(NULLIF(p.switch_port_numbering_layout_id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), NULLIF(port_layout.switch_port_numbering_layout_id, 0), 0) AS effective_switch_port_numbering_layout_id
+            COALESCE(NULLIF(e_layout_scoped.id, 0), NULLIF(e_layout_company_match.id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), 0) AS equipment_switch_port_numbering_layout_id,
+            COALESCE(
+                NULLIF(e_layout_scoped.id, 0),
+                NULLIF(e_layout_company_match.id, 0),
+                NULLIF(e.switch_port_numbering_layout_id, 0),
+                NULLIF(p_layout_scoped.id, 0),
+                NULLIF(p_layout_company_match.id, 0),
+                NULLIF(p.switch_port_numbering_layout_id, 0),
+                NULLIF(port_layout_scoped.id, 0),
+                NULLIF(port_layout_company_match.id, 0),
+                NULLIF(port_layout.switch_port_numbering_layout_id, 0),
+                0
+            ) AS effective_switch_port_numbering_layout_id
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
      LEFT JOIN equipment e
        ON e.id = p.equipment_id
       AND e.company_id = p.company_id
+     LEFT JOIN switch_port_numbering_layout e_layout_scoped
+       ON e_layout_scoped.id = e.switch_port_numbering_layout_id
+      AND e_layout_scoped.company_id = e.company_id
+     LEFT JOIN switch_port_numbering_layout e_layout_any
+       ON e_layout_any.id = e.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout e_layout_company_match
+       ON e_layout_company_match.company_id = e.company_id
+      AND LOWER(e_layout_company_match.name) = LOWER(e_layout_any.name)
+     LEFT JOIN switch_port_numbering_layout p_layout_scoped
+       ON p_layout_scoped.id = p.switch_port_numbering_layout_id
+      AND p_layout_scoped.company_id = p.company_id
+     LEFT JOIN switch_port_numbering_layout p_layout_any
+       ON p_layout_any.id = p.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout p_layout_company_match
+       ON p_layout_company_match.company_id = p.company_id
+      AND LOWER(p_layout_company_match.name) = LOWER(p_layout_any.name)
      LEFT JOIN equipment_rj45 er_count
        ON er_count.company_id = p.company_id
       AND p.port_count > 0
@@ -30,6 +58,14 @@ $stmt = mysqli_prepare(
           AND switch_port_numbering_layout_id <> 0
         GROUP BY position_id
      ) port_layout ON port_layout.position_id = p.id
+     LEFT JOIN switch_port_numbering_layout port_layout_scoped
+       ON port_layout_scoped.id = port_layout.switch_port_numbering_layout_id
+      AND port_layout_scoped.company_id = p.company_id
+     LEFT JOIN switch_port_numbering_layout port_layout_any
+       ON port_layout_any.id = port_layout.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout port_layout_company_match
+       ON port_layout_company_match.company_id = p.company_id
+      AND LOWER(port_layout_company_match.name) = LOWER(port_layout_any.name)
      WHERE p.id=?
      LIMIT 1"
 );

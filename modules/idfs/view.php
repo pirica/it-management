@@ -244,7 +244,7 @@ $switchPortsFallbackCommentsSelect = $hasSwitchPortsCommentsColumn
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name,
-            COALESCE(spnl.name, spnl_equipment.name, 'Vertical') AS layout_name,
+            COALESCE(spnl_equipment.name, spnl_equipment_company_match.name, spnl.name, 'Vertical') AS layout_name,
             COALESCE(er.name, '') AS switch_rj45_name,
             COALESCE(e.switch_fiber_ports_number, 0) AS equipment_fiber_ports_number,
             COALESCE(ef.name, '') AS equipment_fiber_name,
@@ -267,6 +267,11 @@ $stmtPos = mysqli_prepare(
      LEFT JOIN switch_port_numbering_layout spnl_equipment
        ON spnl_equipment.id = e.switch_port_numbering_layout_id
       AND spnl_equipment.company_id = e.company_id
+     LEFT JOIN switch_port_numbering_layout spnl_equipment_any
+       ON spnl_equipment_any.id = e.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout spnl_equipment_company_match
+       ON spnl_equipment_company_match.company_id = e.company_id
+      AND LOWER(spnl_equipment_company_match.name) = LOWER(spnl_equipment_any.name)
      WHERE p.idf_id=? AND p.company_id=?
      ORDER BY p.position_no ASC"
 );
@@ -608,9 +613,19 @@ $displayMaxPos = max(10, $maxPosInDb);
 $equipmentOptions = [];
 $stmtEq = mysqli_prepare(
     $conn,
-    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
+    "SELECT e.id, e.name, e.hostname, e.notes, e.switch_rj45_id,
+            COALESCE(NULLIF(e_layout_scoped.id, 0), NULLIF(e_layout_company_match.id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), 0) AS switch_port_numbering_layout_id,
+            er.name AS switch_rj45_name
      FROM equipment e
      LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = e.company_id
+     LEFT JOIN switch_port_numbering_layout e_layout_scoped
+       ON e_layout_scoped.id = e.switch_port_numbering_layout_id
+      AND e_layout_scoped.company_id = e.company_id
+     LEFT JOIN switch_port_numbering_layout e_layout_any
+       ON e_layout_any.id = e.switch_port_numbering_layout_id
+     LEFT JOIN switch_port_numbering_layout e_layout_company_match
+       ON e_layout_company_match.company_id = e.company_id
+      AND LOWER(e_layout_company_match.name) = LOWER(e_layout_any.name)
      WHERE e.company_id=?
      ORDER BY e.name ASC
      LIMIT 500"
@@ -1400,7 +1415,7 @@ function openDeviceModal(positionNo, positionId) {
                 form.equipment_id.value = position.equipment_id || '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.switch_rj45_id.value = position.effective_switch_rj45_id || position.switch_rj45_id || '';
-                form.switch_port_numbering_layout_id.value = position.effective_switch_port_numbering_layout_id || position.switch_port_numbering_layout_id || '';
+                form.switch_port_numbering_layout_id.value = position.equipment_switch_port_numbering_layout_id || position.effective_switch_port_numbering_layout_id || position.switch_port_numbering_layout_id || '';
                 form.port_count.value = position.port_count || '';
                 form.notes.value = position.notes || '';
                 refreshPortCountInputs(form);
