@@ -288,7 +288,7 @@ $stmtPorts = mysqli_prepare(
     $conn,
     "SELECT
        pr.*,
-       COALESCE(spt.type, 'RJ45') AS port_type_label,
+       COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
        COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
        COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
        COALESCE(cc_pr_live_direct.hex_color, cc_live.hex_color, cc_sp_link_direct.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
@@ -383,6 +383,8 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN switch_port_types spt
         ON spt.id = pr.port_type
        AND spt.company_id = pr.company_id
+      LEFT JOIN switch_port_types spt_any
+        ON spt_any.id = pr.port_type
       LEFT JOIN switch_ports pr_live
         ON pr_live.company_id = pr.company_id
        AND pr_live.equipment_id = p_local.equipment_id
@@ -637,6 +639,7 @@ $stmtDestinationPorts = mysqli_prepare(
         p.device_name,
         p.device_type,
         p.equipment_id,
+        COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
         CASE
             WHEN EXISTS (
                 SELECT 1
@@ -660,6 +663,11 @@ $stmtDestinationPorts = mysqli_prepare(
      LEFT JOIN cable_colors cc_status
        ON cc_status.id = ss.color_id
       AND cc_status.company_id = ss.company_id
+     LEFT JOIN switch_port_types spt
+       ON spt.id = pr.port_type
+      AND spt.company_id = pr.company_id
+     LEFT JOIN switch_port_types spt_any
+       ON spt_any.id = pr.port_type
      WHERE i.company_id = ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
@@ -683,6 +691,7 @@ if ($stmtDestinationPorts) {
             'color_name' => (string)($row['color_name'] ?? 'Gray'),
             'color_hex' => (string)($row['color_hex'] ?? '#808080'),
             'is_linked' => !empty($row['is_linked']),
+            'port_type_label' => (string)($row['port_type_label'] ?? 'RJ45'),
         ];
     }
     mysqli_stmt_close($stmtDestinationPorts);
@@ -1531,6 +1540,7 @@ $portsMeta = array_map(static function (array $port): array {
         'id' => (int)($port['id'] ?? 0),
         'port_no' => (int)($port['port_no'] ?? 0),
         'label' => (string)($port['label'] ?? ''),
+        'port_type_label' => (string)($port['port_type_label'] ?? 'RJ45'),
         'cable_color_id' => isset($port['cable_color_id']) ? (int)$port['cable_color_id'] : 0,
         'cable_color_name' => (string)($port['cable_color_name'] ?? ''),
         'cable_hex_color' => (string)($port['cable_hex_color'] ?? ''),
@@ -1759,7 +1769,11 @@ function onPortClick(portId) {
 }
 
 function sortDestinationPorts(ports) {
-    const items = Array.isArray(ports) ? ports.slice() : [];
+    let items = Array.isArray(ports) ? ports.slice() : [];
+
+    // Filter out ports on the same device to prevent loop error message after submission
+    items = items.filter(p => Number(p.position_id) !== Number(POSITION_ID));
+
     items.sort((a, b) => {
         const idfA = String((a && a.idf_name) || '').toLowerCase();
         const idfB = String((b && b.idf_name) || '').toLowerCase();
@@ -1772,6 +1786,13 @@ function sortDestinationPorts(ports) {
         const devA = String((a && a.device_name) || '').toLowerCase();
         const devB = String((b && b.device_name) || '').toLowerCase();
         if (devA !== devB) return devA < devB ? -1 : 1;
+
+        // Sort RJ45 before SFP
+        const typeA = String((a && a.port_type_label) || 'RJ45').toUpperCase();
+        const typeB = String((b && b.port_type_label) || 'RJ45').toUpperCase();
+        const isSfpA = typeA.includes('SFP');
+        const isSfpB = typeB.includes('SFP');
+        if (isSfpA !== isSfpB) return isSfpA ? 1 : -1;
 
         const portA = Number((a && a.port_no) || 0);
         const portB = Number((b && b.port_no) || 0);
@@ -1841,7 +1862,8 @@ function openLinkModal(portId) {
         const colorHexText = /^#?[0-9a-f]{6}$/i.test(rawColorHex)
             ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
             : '#808080';
-        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no} • Status (${statusText}) • ${colorNameText} (${colorHexText})`;
+        const portType = String(port.port_type_label || 'RJ45').toUpperCase();
+        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • ${portType} • Port ${port.port_no} • Status (${statusText}) • ${colorNameText} (${colorHexText})`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
@@ -1854,7 +1876,8 @@ function openLinkModal(portId) {
     f.port_id_a.value = String(source.id);
     const rawSourceLabel = String(source.label || '').trim();
     const showSourceLabel = rawSourceLabel !== '' && rawSourceLabel !== '0' && rawSourceLabel.toLowerCase() !== 'null';
-    f.source_display.value = `Port ${source.port_no}${showSourceLabel ? ` • ${rawSourceLabel}` : ''}`;
+    const sourcePortType = String(source.port_type_label || 'RJ45').toUpperCase();
+    f.source_display.value = `${sourcePortType} Port ${source.port_no}${showSourceLabel ? ` • ${rawSourceLabel}` : ''}`;
     const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
         option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
     );
