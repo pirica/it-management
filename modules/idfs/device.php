@@ -288,7 +288,7 @@ $stmtPorts = mysqli_prepare(
     $conn,
     "SELECT
        pr.*,
-       COALESCE(spt.type, 'RJ45') AS port_type_label,
+       COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
        COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
        COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
        COALESCE(cc_pr_live_direct.hex_color, cc_live.hex_color, cc_sp_link_direct.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
@@ -383,6 +383,8 @@ $stmtPorts = mysqli_prepare(
       LEFT JOIN switch_port_types spt
         ON spt.id = pr.port_type
        AND spt.company_id = pr.company_id
+      LEFT JOIN switch_port_types spt_any
+        ON spt_any.id = pr.port_type
       LEFT JOIN switch_ports pr_live
         ON pr_live.company_id = pr.company_id
        AND pr_live.equipment_id = p_local.equipment_id
@@ -637,7 +639,7 @@ $stmtDestinationPorts = mysqli_prepare(
         p.device_name,
         p.device_type,
         p.equipment_id,
-        COALESCE(spt.type, 'RJ45') AS port_type_label,
+        COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
         CASE
             WHEN EXISTS (
                 SELECT 1
@@ -664,6 +666,8 @@ $stmtDestinationPorts = mysqli_prepare(
      LEFT JOIN switch_port_types spt
        ON spt.id = pr.port_type
       AND spt.company_id = pr.company_id
+     LEFT JOIN switch_port_types spt_any
+       ON spt_any.id = pr.port_type
      WHERE i.company_id = ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
