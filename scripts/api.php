@@ -4,6 +4,7 @@
  *
  * Why: Document only the JSON endpoints that actually exist in this codebase,
  * including request format, auth model, and real endpoint paths.
+ * IDF rack Add/Edit Device modal now includes Fiber Ports Number from linked equipment, persists it to equipment.switch_fiber_ports_number, and syncs SFP rows in idf_ports/switch_ports.
  * IDF rack Edit Device now maps linked equipment numbering layouts from legacy/global IDs to the active company's matching layout option so the modal preselects correctly.
  * IDF rack Edit Device now renders saved position Numbering Layout first, avoids legacy position-number port bleed-through, and cache-busts the rack refresh after modal saves.
  * IDF rack Edit Device RJ45 capacity updates now enforce linked switch RJ45 row count parity in switch_ports and prune/regenerate matching RJ45 rows in idf_ports.

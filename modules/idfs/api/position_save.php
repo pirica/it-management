@@ -13,6 +13,11 @@ $device_name = trim((string)($data['device_name'] ?? ''));
 $equipment_id = isset($data['equipment_id']) ? (int)$data['equipment_id'] : 0;
 $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] : 0;
 $layout_id = isset($data['switch_port_numbering_layout_id']) ? (int)$data['switch_port_numbering_layout_id'] : 0;
+$switch_fiber_ports_number_submitted = array_key_exists('switch_fiber_ports_number', $data);
+$switch_fiber_ports_number = $switch_fiber_ports_number_submitted ? substr(trim((string)($data['switch_fiber_ports_number'] ?? '')), 0, 50) : '';
+if ($switch_fiber_ports_number === '__add_new__') {
+    $switch_fiber_ports_number = '';
+}
 $port_count = isset($data['port_count']) ? (int)$data['port_count'] : 0;
 $notes = trim((string)($data['notes'] ?? ''));
 $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
@@ -24,6 +29,54 @@ if (!function_exists('idf_generate_unlinked_equipment_token')) {
     function idf_generate_unlinked_equipment_token(): string
     {
         return (string)random_int(1000, 9999) . '-' . (string)random_int(1000, 9999);
+    }
+}
+
+if (!function_exists('idf_ensure_equipment_fiber_count_id')) {
+    function idf_ensure_equipment_fiber_count_id(mysqli $conn, int $companyId, string $fiberPortsNumber): int
+    {
+        $fiberPortsNumber = trim($fiberPortsNumber);
+        if ($companyId <= 0 || $fiberPortsNumber === '') {
+            return 0;
+        }
+
+        $stmtLookup = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM equipment_fiber_count
+             WHERE company_id = ? AND name = ?
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        if ($stmtLookup) {
+            mysqli_stmt_bind_param($stmtLookup, 'is', $companyId, $fiberPortsNumber);
+            mysqli_stmt_execute($stmtLookup);
+            $resLookup = mysqli_stmt_get_result($stmtLookup);
+            $rowLookup = $resLookup ? mysqli_fetch_assoc($resLookup) : null;
+            mysqli_stmt_close($stmtLookup);
+            $existingId = (int)($rowLookup['id'] ?? 0);
+            if ($existingId > 0) {
+                return $existingId;
+            }
+        }
+
+        $stmtInsert = mysqli_prepare(
+            $conn,
+            "INSERT INTO equipment_fiber_count (company_id, name)
+             VALUES (?, ?)"
+        );
+        if (!$stmtInsert) {
+            idf_fail('DB error preparing fiber count lookup creation', 500);
+        }
+        mysqli_stmt_bind_param($stmtInsert, 'is', $companyId, $fiberPortsNumber);
+        if (!mysqli_stmt_execute($stmtInsert)) {
+            $err = mysqli_stmt_error($stmtInsert);
+            mysqli_stmt_close($stmtInsert);
+            idf_fail('DB error creating fiber count lookup: ' . $err, 500);
+        }
+        $createdId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmtInsert);
+        return $createdId;
     }
 }
 
@@ -208,6 +261,139 @@ if (!function_exists('idf_sync_switch_rj45_capacity')) {
     }
 }
 
+if (!function_exists('idf_sync_switch_fiber_capacity')) {
+    function idf_sync_switch_fiber_capacity(
+        mysqli $conn,
+        int $companyId,
+        int $equipmentId,
+        int $idfId,
+        int $targetFiberCount,
+        int $fiberPortTypeId,
+        string $fiberPortTypeName,
+        int $unknownStatusId,
+        int $defaultColorId,
+        int $managementId,
+        string $hostname,
+        string $labelColumn,
+        bool $hasManagementColumn,
+        bool $hasCommentsColumn
+    ): void {
+        if ($companyId <= 0 || $equipmentId <= 0 || $targetFiberCount < 0) {
+            return;
+        }
+
+        // Why: Fiber count changes in the rack modal must remove stale SFP/SFP+ rows before the rack card is regenerated.
+        $stmtDeleteExtra = mysqli_prepare(
+            $conn,
+            "DELETE sp
+             FROM switch_ports sp
+             LEFT JOIN switch_port_types spt
+               ON spt.company_id = sp.company_id
+              AND (
+                    spt.type = sp.port_type
+                    OR (
+                        sp.port_type REGEXP '^[0-9]+$'
+                        AND spt.id = CAST(sp.port_type AS UNSIGNED)
+                    )
+              )
+             WHERE sp.company_id = ?
+               AND sp.equipment_id = ?
+               AND LOWER(TRIM(COALESCE(spt.type, sp.port_type, ''))) LIKE '%sfp%'
+               AND (? <= 0 OR sp.port_number > ?)"
+        );
+        if (!$stmtDeleteExtra) {
+            idf_fail('DB error preparing switch fiber capacity sync', 500);
+        }
+        mysqli_stmt_bind_param($stmtDeleteExtra, 'iiii', $companyId, $equipmentId, $targetFiberCount, $targetFiberCount);
+        if (!mysqli_stmt_execute($stmtDeleteExtra)) {
+            $err = mysqli_stmt_error($stmtDeleteExtra);
+            mysqli_stmt_close($stmtDeleteExtra);
+            idf_fail('DB error deleting extra switch fiber ports: ' . $err, 500);
+        }
+        mysqli_stmt_close($stmtDeleteExtra);
+
+        if ($targetFiberCount <= 0 || $fiberPortTypeId <= 0 || trim($fiberPortTypeName) === '') {
+            return;
+        }
+
+        $insertColumns = [
+            'company_id',
+            'equipment_id',
+            'hostname',
+            'port_type',
+            'port_number',
+            $labelColumn,
+            'status_id',
+            'color_id',
+            'idf_id',
+        ];
+        $insertValues = [
+            '?',
+            '?',
+            'NULLIF(?, \'\')',
+            '?',
+            '?',
+            '?',
+            '?',
+            '?',
+            'NULLIF(?, 0)',
+        ];
+        $bindTypes = 'iissisiii';
+
+        if ($hasManagementColumn) {
+            $insertColumns[] = 'management_id';
+            $insertValues[] = 'NULLIF(?, 0)';
+            $bindTypes .= 'i';
+        }
+        if ($hasCommentsColumn) {
+            $insertColumns[] = 'comments';
+            $insertValues[] = '?';
+            $bindTypes .= 's';
+        }
+
+        $updateAssignments = [
+            'idf_id = COALESCE(VALUES(idf_id), switch_ports.idf_id)',
+            'hostname = COALESCE(VALUES(hostname), switch_ports.hostname)',
+        ];
+        if ($hasManagementColumn) {
+            $updateAssignments[] = 'management_id = COALESCE(VALUES(management_id), switch_ports.management_id)';
+        }
+
+        $insertSql = "INSERT INTO switch_ports (" . implode(', ', $insertColumns) . ")
+                      VALUES (" . implode(', ', $insertValues) . ")
+                      ON DUPLICATE KEY UPDATE
+                      " . implode(",\n                      ", $updateAssignments);
+
+        $stmtUpsert = mysqli_prepare($conn, $insertSql);
+        if (!$stmtUpsert) {
+            idf_fail('DB error preparing switch fiber upsert', 500);
+        }
+
+        for ($portNo = 1; $portNo <= $targetFiberCount; $portNo++) {
+            $defaultLabel = '';
+            $defaultComments = '';
+
+            if ($hasManagementColumn && $hasCommentsColumn) {
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $managementId, $defaultComments);
+            } elseif ($hasManagementColumn) {
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $managementId);
+            } elseif ($hasCommentsColumn) {
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $defaultComments);
+            } else {
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId);
+            }
+
+            if (!mysqli_stmt_execute($stmtUpsert)) {
+                $err = mysqli_stmt_error($stmtUpsert);
+                mysqli_stmt_close($stmtUpsert);
+                idf_fail('DB error upserting switch fiber port rows: ' . $err, 500);
+            }
+        }
+
+        mysqli_stmt_close($stmtUpsert);
+    }
+}
+
 if ($switch_rj45_id > 0) {
     $stmtSwitchRj45 = mysqli_prepare(
         $conn,
@@ -240,6 +426,9 @@ if ($device_name === '') {
 }
 if ($port_count < 0 || $port_count > 9999) {
     idf_fail('Invalid port_count');
+}
+if ($switch_fiber_ports_number !== '' && (!preg_match('/^\d+$/', $switch_fiber_ports_number) || (int)$switch_fiber_ports_number < 1 || (int)$switch_fiber_ports_number > 9999)) {
+    idf_fail('Invalid Fiber Ports Number');
 }
 
 $validTypeIdsByName = [];
@@ -357,18 +546,29 @@ if ($equipment_id > 0) {
         if ($layout_id <= 0) {
             $layout_id = (int)($equipment['switch_port_numbering_layout_id'] ?? 0);
         }
+        if ($device_type_name === 'switch') {
+            if (!$switch_fiber_ports_number_submitted) {
+                $switch_fiber_ports_number = trim((string)($equipment['switch_fiber_ports_number'] ?? ''));
+            }
+        } else {
+            // Why: hidden rack-modal switch fields must not clear existing linked equipment switch metadata for non-switch positions.
+            $switch_fiber_ports_number = trim((string)($equipment['switch_fiber_ports_number'] ?? ''));
+        }
+        if ($switch_fiber_ports_number !== '') {
+            idf_ensure_equipment_fiber_count_id($conn, $company_id, $switch_fiber_ports_number);
+        }
 
         // Keep equipment table in sync
         $stmtUpdateEq = mysqli_prepare(
             $conn,
             "UPDATE equipment
-             SET name=?, switch_rj45_id=?, switch_port_numbering_layout_id=?, notes=?
+             SET name=?, switch_rj45_id=?, switch_port_numbering_layout_id=?, switch_fiber_ports_number=NULLIF(?, ''), notes=?
              WHERE id=? AND company_id=?
              LIMIT 1"
         );
         if ($stmtUpdateEq) {
             $notesForEquipment = $notes;
-            mysqli_stmt_bind_param($stmtUpdateEq, 'siisii', $device_name, $switch_rj45_id, $layout_id, $notesForEquipment, $equipment_id, $company_id);
+            mysqli_stmt_bind_param($stmtUpdateEq, 'siissii', $device_name, $switch_rj45_id, $layout_id, $switch_fiber_ports_number, $notesForEquipment, $equipment_id, $company_id);
             if (!mysqli_stmt_execute($stmtUpdateEq)) {
                 $updateEquipmentError = mysqli_stmt_error($stmtUpdateEq);
                 mysqli_stmt_close($stmtUpdateEq);
@@ -872,6 +1072,99 @@ if ($pid > 0) {
                 mysqli_stmt_close($stmtDeleteExtraIdfRj45);
             } else {
                 idf_fail('DB error preparing IDF RJ45 prune', 500);
+            }
+        }
+
+        if ($device_type_name === 'switch' && $equipment_id > 0) {
+            $fiberCountForSync = 0;
+            $fiberPortTypeIdForSync = 0;
+            $fiberPortTypeNameForSync = 'SFP';
+            $stmtFiberSyncMeta = mysqli_prepare(
+                $conn,
+                "SELECT COALESCE(e.switch_fiber_ports_number, 0) AS switch_fiber_ports_number,
+                        COALESCE(e.switch_fiber_port_label, '') AS switch_fiber_port_label,
+                        COALESCE(ef.name, '') AS switch_fiber_name
+                 FROM equipment e
+                 LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
+                 WHERE e.company_id = ? AND e.id = ?
+                 LIMIT 1"
+            );
+            if ($stmtFiberSyncMeta) {
+                mysqli_stmt_bind_param($stmtFiberSyncMeta, 'ii', $company_id, $equipment_id);
+                mysqli_stmt_execute($stmtFiberSyncMeta);
+                $resFiberSyncMeta = mysqli_stmt_get_result($stmtFiberSyncMeta);
+                $fiberSyncMeta = $resFiberSyncMeta ? mysqli_fetch_assoc($resFiberSyncMeta) : null;
+                mysqli_stmt_close($stmtFiberSyncMeta);
+                if ($fiberSyncMeta) {
+                    $fiberCountForSync = (int)($fiberSyncMeta['switch_fiber_ports_number'] ?? 0);
+                    $fiberHintForSync = strtolower(trim((string)($fiberSyncMeta['switch_fiber_port_label'] ?? '') . ' ' . (string)($fiberSyncMeta['switch_fiber_name'] ?? '')));
+                    $fiberTypeFallbackForSync = (strpos($fiberHintForSync, 'sfp+') !== false || strpos($fiberHintForSync, 'sfp plus') !== false) ? 'sfp+' : 'sfp';
+                    if ($fiberCountForSync > 0) {
+                        $fiberPortTypeIdForSync = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallbackForSync, $fiberTypeFallbackForSync);
+                        if ($fiberPortTypeIdForSync > 0) {
+                            $stmtFiberTypeName = mysqli_prepare(
+                                $conn,
+                                "SELECT type
+                                 FROM switch_port_types
+                                 WHERE company_id = ? AND id = ?
+                                 LIMIT 1"
+                            );
+                            if ($stmtFiberTypeName) {
+                                mysqli_stmt_bind_param($stmtFiberTypeName, 'ii', $company_id, $fiberPortTypeIdForSync);
+                                mysqli_stmt_execute($stmtFiberTypeName);
+                                $resFiberTypeName = mysqli_stmt_get_result($stmtFiberTypeName);
+                                $fiberTypeNameRow = $resFiberTypeName ? mysqli_fetch_assoc($resFiberTypeName) : null;
+                                mysqli_stmt_close($stmtFiberTypeName);
+                                $resolvedFiberTypeName = trim((string)($fiberTypeNameRow['type'] ?? ''));
+                                if ($resolvedFiberTypeName !== '') {
+                                    $fiberPortTypeNameForSync = $resolvedFiberTypeName;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            idf_sync_switch_fiber_capacity(
+                $conn,
+                $company_id,
+                $equipment_id,
+                $idf_id,
+                $fiberCountForSync,
+                $fiberPortTypeIdForSync,
+                $fiberPortTypeNameForSync,
+                $unknownStatusId,
+                $defaultCableColorId,
+                $portManagementId,
+                (string)($switchHostnameForSync ?? ''),
+                $switchPortLabelColumn,
+                idf_table_has_column($conn, 'switch_ports', 'management_id'),
+                idf_table_has_column($conn, 'switch_ports', 'comments')
+            );
+
+            $stmtDeleteExtraIdfFiber = mysqli_prepare(
+                $conn,
+                "DELETE FROM idf_ports
+                 WHERE company_id = ?
+                   AND position_id = ?
+                   AND port_type IN (
+                        SELECT id
+                        FROM switch_port_types
+                        WHERE company_id = ?
+                          AND LOWER(type) LIKE '%sfp%'
+                   )
+                   AND (? <= 0 OR port_no > ?)"
+            );
+            if ($stmtDeleteExtraIdfFiber) {
+                mysqli_stmt_bind_param($stmtDeleteExtraIdfFiber, 'iiiii', $company_id, $pid, $company_id, $fiberCountForSync, $fiberCountForSync);
+                if (!mysqli_stmt_execute($stmtDeleteExtraIdfFiber)) {
+                    $err = mysqli_stmt_error($stmtDeleteExtraIdfFiber);
+                    mysqli_stmt_close($stmtDeleteExtraIdfFiber);
+                    idf_fail('DB error deleting extra IDF fiber ports: ' . $err, 500);
+                }
+                mysqli_stmt_close($stmtDeleteExtraIdfFiber);
+            } else {
+                idf_fail('DB error preparing IDF fiber prune', 500);
             }
         }
 

@@ -139,6 +139,17 @@ function itm_test_assert_idf_slot_rendered($html, $positionNo, $positionId, $por
     itm_test_assert_slot_contains($slotHtml, 'data-grid-rows="' . (int)$gridRows . '"', $message . ' renders expected visualizer rows', $slotDebug);
 }
 
+function itm_test_assert_idf_slot_sfp_count($html, $positionNo, $expectedCount, $message)
+{
+    $slotHtml = itm_test_extract_position_slot_html($html, $positionNo);
+    preg_match_all('/data-port-type="sfp(?:_plus)?"/i', $slotHtml, $matches);
+    $actualCount = count($matches[0]);
+    itm_test_assert(
+        $actualCount === (int)$expectedCount,
+        $message . ' renders expected Fiber Ports Number dots (' . (int)$expectedCount . ')'
+    );
+}
+
 function itm_test_api_post_json($baseUrl, $path, $cookieFile, array $payload)
 {
     $statusCode = 0;
@@ -730,6 +741,7 @@ try {
             'equipment_id' => $createdTempEquipmentId,
             'switch_rj45_id' => $rj45EightId,
             'switch_port_numbering_layout_id' => $layoutVerticalId,
+            'switch_fiber_ports_number' => '2',
             'port_count' => 8,
             'notes' => 'ITM HUMAN TEMP POSITION',
         ]
@@ -764,10 +776,14 @@ try {
     $tempIdfPortLayout = itm_test_db_one(
         $db,
         "SELECT COUNT(*) AS c
-         FROM idf_ports
-         WHERE company_id = ?
-           AND position_id = ?
-           AND switch_port_numbering_layout_id = ?",
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND ip.switch_port_numbering_layout_id = ?
+           AND LOWER(spt.type) = 'rj45'",
         'iii',
         [$companyId, $tempPositionId, $layoutVerticalId]
     );
@@ -779,11 +795,50 @@ try {
         "SELECT COUNT(*) AS c
          FROM switch_ports
          WHERE company_id = ?
-           AND equipment_id = ?",
+           AND equipment_id = ?
+           AND LOWER(COALESCE(port_type, '')) = 'rj45'",
         'ii',
         [$companyId, $createdTempEquipmentId]
     );
     itm_test_assert((int)($switchPortsAfterCreateCount['c'] ?? 0) === 8, 'Position create materialized exactly selected switch_ports rows');
+
+    $equipmentFiberAfterCreate = itm_test_db_one(
+        $db,
+        "SELECT switch_fiber_ports_number
+         FROM equipment
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$createdTempEquipmentId, $companyId]
+    );
+    itm_test_assert((string)($equipmentFiberAfterCreate['switch_fiber_ports_number'] ?? '') === '2', 'Position create synced Fiber Ports Number to linked equipment');
+
+    $idfFiberPortsAfterCreate = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND LOWER(spt.type) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $tempPositionId]
+    );
+    itm_test_assert((int)($idfFiberPortsAfterCreate['c'] ?? 0) === 2, 'Position create materialized selected Fiber Ports Number in IDF ports');
+
+    $switchFiberPortsAfterCreate = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND equipment_id = ?
+           AND LOWER(COALESCE(port_type, '')) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $createdTempEquipmentId]
+    );
+    itm_test_assert((int)($switchFiberPortsAfterCreate['c'] ?? 0) === 2, 'Position create materialized selected Fiber Ports Number in switch_ports');
 
     $idfViewAfterCreateHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
     itm_test_assert_idf_slot_rendered(
@@ -797,6 +852,7 @@ try {
         2,
         'Position create UI'
     );
+    itm_test_assert_idf_slot_sfp_count($idfViewAfterCreateHtml, $tempPositionNo, 2, 'Position create UI');
 
     itm_test_db_exec(
         $db,
@@ -828,6 +884,7 @@ try {
     $legacyLayoutPayload = $legacyLayoutPosition['position'] ?? [];
     itm_test_assert((int)($legacyLayoutPayload['equipment_switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position edit payload maps legacy linked-equipment layout to company layout option');
     itm_test_assert((int)($legacyLayoutPayload['effective_switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position edit payload uses linked equipment layout when position layout is blank');
+    itm_test_assert((string)($legacyLayoutPayload['equipment_switch_fiber_ports_number'] ?? '') === '2', 'Position edit payload exposes linked equipment Fiber Ports Number');
 
     $idfViewAfterLegacyLayoutHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
     itm_test_assert_idf_slot_rendered(
@@ -909,6 +966,7 @@ try {
             'equipment_id' => $createdTempEquipmentId,
             'switch_rj45_id' => $rj45TwentyFourId,
             'switch_port_numbering_layout_id' => $layoutHorizontalId,
+            'switch_fiber_ports_number' => '4',
             'port_count' => 24,
             'notes' => 'ITM HUMAN TEMP POSITION EDITED',
         ]
@@ -929,7 +987,7 @@ try {
 
     $equipmentAfterEdit = itm_test_db_one(
         $db,
-        "SELECT switch_rj45_id, switch_port_numbering_layout_id
+        "SELECT switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_ports_number
          FROM equipment
          WHERE id = ? AND company_id = ?
          LIMIT 1",
@@ -938,14 +996,19 @@ try {
     );
     itm_test_assert((int)($equipmentAfterEdit['switch_rj45_id'] ?? 0) === $rj45TwentyFourId, 'Position edit synced RJ45 capacity to linked equipment');
     itm_test_assert((int)($equipmentAfterEdit['switch_port_numbering_layout_id'] ?? 0) === $layoutHorizontalId, 'Position edit synced numbering layout to linked equipment');
+    itm_test_assert((string)($equipmentAfterEdit['switch_fiber_ports_number'] ?? '') === '4', 'Position edit synced Fiber Ports Number to linked equipment');
 
     $idfPortsAfterEdit = itm_test_db_one(
         $db,
         "SELECT COUNT(*) AS c
-         FROM idf_ports
-         WHERE company_id = ?
-           AND position_id = ?
-           AND switch_port_numbering_layout_id = ?",
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND ip.switch_port_numbering_layout_id = ?
+           AND LOWER(spt.type) = 'rj45'",
         'iii',
         [$companyId, $tempPositionId, $layoutHorizontalId]
     );
@@ -957,11 +1020,39 @@ try {
         "SELECT COUNT(*) AS c
          FROM switch_ports
          WHERE company_id = ?
-           AND equipment_id = ?",
+           AND equipment_id = ?
+           AND LOWER(COALESCE(port_type, '')) = 'rj45'",
         'ii',
         [$companyId, $createdTempEquipmentId]
     );
     itm_test_assert((int)($switchPortsAfterEditCount['c'] ?? 0) === 24, 'Position edit materialized exactly selected switch_ports rows');
+
+    $idfFiberPortsAfterEdit = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND LOWER(spt.type) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $tempPositionId]
+    );
+    itm_test_assert((int)($idfFiberPortsAfterEdit['c'] ?? 0) === 4, 'Position edit materialized selected Fiber Ports Number in IDF ports');
+
+    $switchFiberPortsAfterEdit = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND equipment_id = ?
+           AND LOWER(COALESCE(port_type, '')) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $createdTempEquipmentId]
+    );
+    itm_test_assert((int)($switchFiberPortsAfterEdit['c'] ?? 0) === 4, 'Position edit materialized selected Fiber Ports Number in switch_ports');
 
     $idfViewAfterEditHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
     itm_test_assert_idf_slot_rendered(
@@ -975,6 +1066,7 @@ try {
         1,
         'Position edit UI'
     );
+    itm_test_assert_idf_slot_sfp_count($idfViewAfterEditHtml, $tempPositionNo, 4, 'Position edit UI');
 
     $copyTargetPositionNo = $tempPositionNo + 1;
     itm_test_api_post_json(
@@ -1012,10 +1104,14 @@ try {
     $copiedPortLayout = itm_test_db_one(
         $db,
         "SELECT COUNT(*) AS c
-         FROM idf_ports
-         WHERE company_id = ?
-           AND position_id = ?
-           AND switch_port_numbering_layout_id = ?",
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND ip.switch_port_numbering_layout_id = ?
+           AND LOWER(spt.type) = 'rj45'",
         'iii',
         [$companyId, $copiedPositionId, $layoutHorizontalId]
     );
@@ -1027,11 +1123,50 @@ try {
         "SELECT COUNT(*) AS c
          FROM switch_ports
          WHERE company_id = ?
-           AND equipment_id = ?",
+           AND equipment_id = ?
+           AND LOWER(COALESCE(port_type, '')) = 'rj45'",
         'ii',
         [$companyId, $copiedEquipmentId]
     );
     itm_test_assert((int)($copiedSwitchPortsCount['c'] ?? 0) === 24, 'Position copy materialized exactly selected switch_ports rows');
+
+    $copiedEquipmentFiber = itm_test_db_one(
+        $db,
+        "SELECT switch_fiber_ports_number
+         FROM equipment
+         WHERE id = ? AND company_id = ?
+         LIMIT 1",
+        'ii',
+        [$copiedEquipmentId, $companyId]
+    );
+    itm_test_assert((string)($copiedEquipmentFiber['switch_fiber_ports_number'] ?? '') === '4', 'Position copy preserved Fiber Ports Number on copied equipment');
+
+    $copiedIdfFiberPorts = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND LOWER(spt.type) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $copiedPositionId]
+    );
+    itm_test_assert((int)($copiedIdfFiberPorts['c'] ?? 0) === 4, 'Position copy preserved Fiber Ports Number in copied IDF ports');
+
+    $copiedSwitchFiberPorts = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND equipment_id = ?
+           AND LOWER(COALESCE(port_type, '')) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $copiedEquipmentId]
+    );
+    itm_test_assert((int)($copiedSwitchFiberPorts['c'] ?? 0) === 4, 'Position copy preserved Fiber Ports Number in copied switch_ports');
 
     $idfViewAfterCopyHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
     itm_test_assert_idf_slot_rendered(
@@ -1045,6 +1180,7 @@ try {
         1,
         'Position copy UI'
     );
+    itm_test_assert_idf_slot_sfp_count($idfViewAfterCopyHtml, $copyTargetPositionNo, 4, 'Position copy UI');
 
     itm_test_api_post_json(
         $baseUrl,
