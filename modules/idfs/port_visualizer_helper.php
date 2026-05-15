@@ -56,6 +56,45 @@ if (!function_exists('itm_build_capacity_placeholder_ports')) {
     }
 }
 
+if (!function_exists('itm_normalize_hex_color')) {
+    function itm_normalize_hex_color($raw, string $fallback = '#808080'): string
+    {
+        $value = strtoupper(trim((string)$raw));
+        if ($value === '') {
+            return $fallback;
+        }
+        if (preg_match('/^#?([0-9A-F]{6})$/', $value, $matches)) {
+            return '#' . $matches[1];
+        }
+        return $fallback;
+    }
+}
+
+if (!function_exists('itm_resolve_port_display_color')) {
+    /**
+     * Resolve rack/device dot color from IDF port row metadata (DB cable/status hex fields).
+     */
+    function itm_resolve_port_display_color(array $portMeta, string $fallback = '#808080'): string
+    {
+        $candidates = [
+            trim((string)($portMeta['cable_hex_color'] ?? '')),
+            trim((string)($portMeta['status_color'] ?? '')),
+            trim((string)($portMeta['hex_color'] ?? '')),
+        ];
+        foreach ($candidates as $candidate) {
+            if ($candidate === '') {
+                continue;
+            }
+            $normalized = itm_normalize_hex_color($candidate, '');
+            if ($normalized !== '') {
+                return $normalized;
+            }
+        }
+
+        return $fallback;
+    }
+}
+
 if (!function_exists('itm_port_visualizer_type_key')) {
     function itm_port_visualizer_type_key(array $portMeta): string
     {
@@ -327,21 +366,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                     continue;
                 }
 
-                $statusColor = trim((string)($p['status_color'] ?? ''));
-                $cableHexColor = trim((string)($p['cable_hex_color'] ?? ''));
-                // Why: rack dots should visually follow cable color when present; status color is fallback.
-                $statusColor = $cableHexColor !== '' ? $cableHexColor : ($statusColor !== '' ? $statusColor : '#161b22');
-                $isActive = false;
-                if ($statusColor === '#007bff' || $statusColor === '#58a6ff' || strtolower($statusColor) === 'blue') {
-                    $isActive = true;
-                } elseif ($statusColor === '#28a745' || $statusColor === '#3fb950' || strtolower($statusColor) === 'green') {
-                    $isActive = true;
-                }
-
-                // Keep default gray statuses visible; only preserve explicit dark colors as dark.
-                if (!$isActive && ($statusColor === '#6c757d' || $statusColor === '#161b22')) {
-                    $statusColor = '#161b22';
-                }
+                // Why: dots must reflect cable_colors.hex_color from switch_ports / switch_status joins, not a hardcoded dark fill.
+                $statusColor = itm_resolve_port_display_color($p, '#808080');
 
                 $titleParts = [];
                 $contextParts = [];
@@ -612,9 +638,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
                     $dotPort = $portMetaByTypeAndNo[$dotKey];
                     $dotType = $dotTypeRaw;
-                    $dotCableHexColor = trim((string)($dotPort['cable_hex_color'] ?? ''));
-                    $dotStatusColor = trim((string)($dotPort['status_color'] ?? ''));
-                    $dotColor = $dotCableHexColor !== '' ? $dotCableHexColor : $dotStatusColor;
+                    $dotColor = itm_resolve_port_display_color($dotPort, '#808080');
                     $dotStyleRules = [];
                     if ($dotColor !== '') {
                         $dotStyleRules[] = 'background:' . sanitize($dotColor);

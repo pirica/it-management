@@ -614,6 +614,9 @@ if ($positionLinkedEquipmentId > 0 && !empty($ports)) {
     idf_attach_switch_port_ids_to_ports($conn, $company_id, $positionLinkedEquipmentId, $ports);
 }
 
+if (!empty($ports)) {
+    idf_normalize_port_visualizer_colors($ports);
+}
 
 foreach ($ports as $portMeta) {
     $portNo = (int)($portMeta['port_no'] ?? 0);
@@ -1518,7 +1521,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Edit Port</div>
-            <button class="btn btn-sm" type="button" onclick="closePortModal()">âœ–</button>
+            <button class="btn btn-sm" type="button" onclick="closePortModal()" aria-label="Close">&times;</button>
         </div>
 
         <form id="portForm" class="idf-grid-2">
@@ -1618,7 +1621,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Create Cable Link</div>
-            <button class="btn btn-sm" type="button" onclick="closeLinkModal()">âœ–</button>
+            <button class="btn btn-sm" type="button" onclick="closeLinkModal()" aria-label="Close">&times;</button>
         </div>
 
         <form id="linkForm" class="idf-grid-2">
@@ -1749,7 +1752,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Add Cable Color</div>
-            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">âœ–</button>
+            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)" aria-label="Close">&times;</button>
         </div>
         <div>
             <label class="label" for="cableColorModalName">Color name</label>
@@ -1773,7 +1776,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Add Status</div>
-            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)">âœ–</button>
+            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)" aria-label="Close">&times;</button>
         </div>
         <div>
             <label class="label" for="statusModalInput">Status</label>
