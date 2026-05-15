@@ -120,26 +120,26 @@ if ($equipmentId > 0) {
 
             $portTypeNameRaw = trim((string)($fiberSwitchPortRow['port_type_name'] ?? ''));
             $portTypeNameNormalized = strtolower($portTypeNameRaw);
-            if (strpos($portTypeNameNormalized, 'sfp') === false) {
-                continue;
-            }
-
-            $fiberPortTypeId = (int)($fiberSwitchPortRow['port_type_id'] ?? 0);
-            if ($fiberPortTypeId <= 0) {
+            $resolvedPortTypeId = (int)($fiberSwitchPortRow['port_type_id'] ?? 0);
+            if ($resolvedPortTypeId <= 0) {
                 $fiberPortTypeFallback = (strpos($portTypeNameNormalized, 'sfp+') !== false || strpos($portTypeNameNormalized, 'sfp plus') !== false)
                     ? 'sfp+'
-                    : 'sfp';
-                $fiberPortTypeId = idf_resolve_port_type_id($conn, $company_id, $portTypeNameRaw, $fiberPortTypeFallback);
+                    : ((strpos($portTypeNameNormalized, 'sfp') !== false) ? 'sfp' : 'RJ45');
+                $resolvedPortTypeId = idf_resolve_port_type_id($conn, $company_id, $portTypeNameRaw, $fiberPortTypeFallback);
             }
-            if ($fiberPortTypeId <= 0) {
+            if ($resolvedPortTypeId <= 0) {
                 continue;
             }
 
-            $fiberPortKey = $fiberPortTypeId . ':' . $fiberPortNo;
-            $fiberPortsToInsert[$fiberPortKey] = [
+            $portKey = $resolvedPortTypeId . ':' . $fiberPortNo;
+            $portMeta = [
                 'port_no' => $fiberPortNo,
-                'port_type' => $fiberPortTypeId,
+                'port_type' => $resolvedPortTypeId,
             ];
+            $portRowsToInsert[$portKey] = $portMeta;
+            if (strpos($portTypeNameNormalized, 'sfp') !== false) {
+                $fiberPortsToInsert[$portKey] = $portMeta;
+            }
         }
         mysqli_stmt_close($stmtFiberSwitchPorts);
     }

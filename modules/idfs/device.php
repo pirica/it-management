@@ -1,7 +1,8 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
 require_once __DIR__ . '/idf_positions_schema.php';
+require_once __DIR__ . '/idf_ports_sync.php';
 idf_ensure_idf_positions_capacity_columns($conn);
 
 if (!isset($_SESSION['company_id'])) {
@@ -543,122 +544,49 @@ $stmtPorts = mysqli_prepare(
       WHERE p_local.id=?
       ORDER BY " . $portOrderSql
 );
-if ($stmtPorts) {
+
+$idfDeviceHydratePortRow = static function (array $row): array {
+    if (isset($row['effective_status_id'])) {
+        $row['status_id'] = (int)$row['effective_status_id'];
+    }
+    if (isset($row['effective_vlan_id'])) {
+        $row['vlan_id'] = (int)$row['effective_vlan_id'];
+    }
+    if (isset($row['effective_poe_id'])) {
+        $row['poe_id'] = (int)$row['effective_poe_id'];
+    }
+    $portTypeRaw = strtolower(trim((string)($row['port_type_label'] ?? '')));
+    if (strpos($portTypeRaw, 'sfp') !== false) {
+        $row['speed_value_id'] = (int)($row['effective_fiber_port_id'] ?? 0);
+    } else {
+        $row['speed_value_id'] = (int)($row['effective_rj45_speed_id'] ?? 0);
+    }
+    return $row;
+};
+
+$idfDeviceLoadPorts = static function () use (&$ports, $stmtPorts, $pos, $position_id, $idfDeviceHydratePortRow): void {
+    $ports = [];
+    if (!$stmtPorts) {
+        return;
+    }
     $idfIdForPorts = (int)($pos['idf_id'] ?? 0);
     mysqli_stmt_bind_param($stmtPorts, 'ii', $idfIdForPorts, $position_id);
     mysqli_stmt_execute($stmtPorts);
     $resPorts = mysqli_stmt_get_result($stmtPorts);
     while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
-        if (isset($row['effective_status_id'])) {
-            $row['status_id'] = (int)$row['effective_status_id'];
-        }
-        if (isset($row['effective_vlan_id'])) {
-            $row['vlan_id'] = (int)$row['effective_vlan_id'];
-        }
-        if (isset($row['effective_poe_id'])) {
-            $row['poe_id'] = (int)$row['effective_poe_id'];
-        }
-        $portTypeRaw = strtolower(trim((string)($row['port_type_label'] ?? '')));
-        if (strpos($portTypeRaw, 'sfp') !== false) {
-            $row['speed_value_id'] = (int)($row['effective_fiber_port_id'] ?? 0);
-        } else {
-            $row['speed_value_id'] = (int)($row['effective_rj45_speed_id'] ?? 0);
-        }
-        $ports[] = $row;
+        $ports[] = $idfDeviceHydratePortRow($row);
+    }
+};
+
+if ($stmtPorts) {
+    $idfDeviceLoadPorts();
+    if (empty($ports) && $position_id > 0) {
+        idf_ensure_ports_for_position($conn, $company_id, $position_id);
+        $idfDeviceLoadPorts();
     }
     mysqli_stmt_close($stmtPorts);
 }
 
-$positionLinkedEquipmentId = 0;
-$positionEquipmentIdRaw = trim((string)($pos['equipment_id'] ?? ''));
-if ($positionEquipmentIdRaw !== '' && ctype_digit($positionEquipmentIdRaw)) {
-    $positionLinkedEquipmentId = (int)$positionEquipmentIdRaw;
-}
-
-if (empty($ports) && $positionLinkedEquipmentId > 0 && $position_id > 0) {
-    $stmtLivePorts = mysqli_prepare(
-        $conn,
-        "SELECT pr.id,
-                pr.port_no,
-                pr.port_type,
-                COALESCE(spt.type, spt_any.type, COALESCE(sp.port_type, 'RJ45')) AS port_type_label,
-                COALESCE(pr_live.status_id, sp.status_id, pr.status_id) AS effective_status_id,
-                COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
-                COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLiveLabelSelect}, '') AS label,
-                COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
-                COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), '') AS notes,
-                COALESCE(pr_live.vlan_id, pr.vlan_id) AS effective_vlan_id,
-                COALESCE(pr_live.rj45_speed_id, sp.rj45_speed_id, pr.rj45_speed_id) AS effective_rj45_speed_id,
-                COALESCE(pr_live.fiber_port_id, sp.fiber_port_id, pr.speed_id) AS effective_fiber_port_id,
-                COALESCE(pr_live.fiber_patch_id, sp.fiber_patch_id, 0) AS effective_fiber_patch_id,
-                COALESCE(pr_live.fiber_rack_id, sp.fiber_rack_id, 0) AS effective_fiber_rack_id,
-                COALESCE(pr_live.to_idf_id, sp.to_idf_id, 0) AS effective_to_idf_id,
-                COALESCE(pr_live.to_rack_id, sp.to_rack_id, 0) AS effective_to_rack_id,
-                COALESCE(pr_live.to_location_id, sp.to_location_id, 0) AS effective_to_location_id,
-                COALESCE(pr_live.poe_id, pr.poe_id, 0) AS effective_poe_id,
-                sp.id AS switch_port_live_id
-         FROM switch_ports sp
-         LEFT JOIN switch_status ss ON ss.id = sp.status_id AND ss.company_id = sp.company_id
-         LEFT JOIN idf_ports pr
-           ON pr.company_id = sp.company_id
-          AND pr.port_no = sp.port_number
-          AND (
-               pr.position_id = ?
-               OR (
-                   pr.position_id = ?
-                   AND NOT EXISTS (
-                       SELECT 1
-                       FROM idf_positions p_actual
-                       WHERE p_actual.company_id = pr.company_id
-                         AND p_actual.id = pr.position_id
-                       LIMIT 1
-                   )
-               )
-          )
-         LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
-         LEFT JOIN switch_port_types spt_any ON spt_any.id = pr.port_type
-         LEFT JOIN switch_ports pr_live
-           ON pr_live.id = sp.id
-          AND pr_live.company_id = sp.company_id
-         LEFT JOIN switch_status ss_live ON ss_live.id = pr_live.status_id AND ss_live.company_id = pr_live.company_id
-         WHERE sp.company_id = ?
-           AND sp.equipment_id = ?
-           AND pr.id IS NOT NULL
-         ORDER BY pr.port_no ASC"
-    );
-    if ($stmtLivePorts) {
-        $positionNoForPorts = (int)($pos['position_no'] ?? 0);
-        mysqli_stmt_bind_param(
-            $stmtLivePorts,
-            'iiii',
-            $position_id,
-            $positionNoForPorts,
-            $company_id,
-            $positionLinkedEquipmentId
-        );
-        mysqli_stmt_execute($stmtLivePorts);
-        $livePortRes = mysqli_stmt_get_result($stmtLivePorts);
-        while ($livePortRes && ($liveRow = mysqli_fetch_assoc($livePortRes))) {
-            if (isset($liveRow['effective_status_id'])) {
-                $liveRow['status_id'] = (int)$liveRow['effective_status_id'];
-            }
-            if (isset($liveRow['effective_vlan_id'])) {
-                $liveRow['vlan_id'] = (int)$liveRow['effective_vlan_id'];
-            }
-            if (isset($liveRow['effective_poe_id'])) {
-                $liveRow['poe_id'] = (int)$liveRow['effective_poe_id'];
-            }
-            $portTypeRaw = strtolower(trim((string)($liveRow['port_type_label'] ?? '')));
-            if (strpos($portTypeRaw, 'sfp') !== false) {
-                $liveRow['speed_value_id'] = (int)($liveRow['effective_fiber_port_id'] ?? 0);
-            } else {
-                $liveRow['speed_value_id'] = (int)($liveRow['effective_rj45_speed_id'] ?? 0);
-            }
-            $ports[] = $liveRow;
-        }
-        mysqli_stmt_close($stmtLivePorts);
-    }
-}
 
 foreach ($ports as $portMeta) {
     $portNo = (int)($portMeta['port_no'] ?? 0);
@@ -1310,14 +1238,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             ? $return_to
                             : ('view.php?id=' . (int)$pos['idf_id']);
                         ?>
-                        <a class="btn btn-sm" href="<?php echo sanitize($deviceBackHref); ?>">← Back to rack</a>
+                        <a class="btn btn-sm" href="<?php echo sanitize($deviceBackHref); ?>">â† Back to rack</a>
                     <?php endif; ?>
                     <div style="display:flex; flex-direction:column;">
                         <div style="opacity:.85; font-size:13px; font-weight:600; margin-bottom:2px;">
-                            🗄️ IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
+                            ðŸ—„ï¸ IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
                         </div>
                         <div class="idf-rack-title">
-                            🔧 <?php echo sanitize($pos['device_name']); ?>
+                            ðŸ”§ <?php echo sanitize($pos['device_name']); ?>
                             <span class="idf-badge">Position <?php echo (int)$pos['position_no']; ?></span>
                             <span class="idf-badge"><?php echo sanitize((string)$pos['device_type']); ?></span>
                             <?php if (!empty($pos['equipment_id'])): ?>
@@ -1333,7 +1261,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
-                <h3 style="margin-top:0;">👁️ Port Visualization</h3>
+                <h3 style="margin-top:0;">ðŸ‘ï¸ Port Visualization</h3>
                 <div class="idf-device-port-visual">
                 <?php
                 $deviceGridPortType = 'rj45';
@@ -1360,7 +1288,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
-                <h3 style="margin-top:0;">🔗 Equipment Link Map</h3>
+                <h3 style="margin-top:0;">ðŸ”— Equipment Link Map</h3>
                 <div style="opacity:.8; margin-bottom:10px; font-size:12px;">
                     Quick view of this device's patch links to other equipment, including selected equipment metadata.
                 </div>
@@ -1383,10 +1311,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td>
                                     <?php echo (int)$row['local_port_no']; ?>
                                     <?php if ($row['local_label'] !== ''): ?>
-                                        <span style="opacity:.75;">• <?php echo sanitize($row['local_label']); ?></span>
+                                        <span style="opacity:.75;">â€¢ <?php echo sanitize($row['local_label']); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td>Pos <?php echo (int)$row['remote_position_no']; ?> • <?php echo sanitize($row['remote_device_name']); ?></td>
+                                <td>Pos <?php echo (int)$row['remote_position_no']; ?> â€¢ <?php echo sanitize($row['remote_device_name']); ?></td>
                                 <td><?php echo (int)$row['remote_port_no']; ?></td>
                                 <td>
                                     <?php
@@ -1398,10 +1326,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                     <span class="idf-swatch" style="background:<?php echo sanitize($linkCableSwatchColor); ?>"></span>
                                     <?php echo sanitize($linkCableDisplay); ?>
                                     <?php if ($row['cable_label'] !== ''): ?>
-                                        <span style="opacity:.75;">• <?php echo sanitize($row['cable_label']); ?></span>
+                                        <span style="opacity:.75;">â€¢ <?php echo sanitize($row['cable_label']); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo $row['link_notes'] !== '' ? sanitize($row['link_notes']) : '<span style="opacity:.75;">—</span>'; ?></td>
+                                <td><?php echo $row['link_notes'] !== '' ? sanitize($row['link_notes']) : '<span style="opacity:.75;">â€”</span>'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -1410,10 +1338,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px;">
-                <h3 style="margin-top:0;">🔌 Ports</h3>
+                <h3 style="margin-top:0;">ðŸ”Œ Ports</h3>
 
                 <?php if ((int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0) > 0 && count($ports) === 0): ?>
-                    <div class="alert alert-error">Port list is empty. Use “Regenerate Ports”.</div>
+                    <div class="alert alert-error">Port list is empty. Use â€œRegenerate Portsâ€.</div>
                 <?php endif; ?>
 
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1432,7 +1360,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     if ($portSortField !== $field) {
                         return '';
                     }
-                    return $portSortDir === 'ASC' ? ' ▲' : ' ▼';
+                    return $portSortDir === 'ASC' ? ' â–²' : ' â–¼';
                 };
                 ?>
 
@@ -1476,13 +1404,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             }
                             if ($remoteDev !== '' || $remotePos > 0 || $remotePort > 0) {
                                 $color = (string)($p['cable_hex_color'] ?? '#ffff00');
-                                $label = !empty($p['cable_label']) ? (' • ' . sanitize((string)$p['cable_label'])) : '';
+                                $label = !empty($p['cable_label']) ? (' â€¢ ' . sanitize((string)$p['cable_label'])) : '';
                                 $isLoopRisk = $o && ((int)($o['position_id'] ?? 0) === (int)$position_id);
                                 $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
-                                    . 'Pos ' . $remotePos . ' • ' . sanitize($remoteDev) . ' • Port ' . $remotePort . $label
+                                    . 'Pos ' . $remotePos . ' â€¢ ' . sanitize($remoteDev) . ' â€¢ Port ' . $remotePort . $label
                                     . ($isLoopRisk ? ' <span class="badge badge-danger" title="Same-device link detected. This can create a Layer 2 loop on switches without STP.">Loop Risk</span>' : '');
                                 if ($connectedToText === '') {
-                                    $connectedToText = 'Pos ' . $remotePos . ' • ' . $remoteDev . ' • Port ' . $remotePort;
+                                    $connectedToText = 'Pos ' . $remotePos . ' â€¢ ' . $remoteDev . ' â€¢ Port ' . $remotePort;
                                 }
                                 $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                             }
@@ -1515,7 +1443,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
-                            <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
+                            <td><?php echo $linkText ?: '<span style="opacity:.75;">â€”</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
                                 <?php if ($canEditLinkedSwitch): ?>
@@ -1563,7 +1491,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Edit Port</div>
-            <button class="btn btn-sm" type="button" onclick="closePortModal()">✖</button>
+            <button class="btn btn-sm" type="button" onclick="closePortModal()">âœ–</button>
         </div>
 
         <form id="portForm" class="idf-grid-2">
@@ -1583,7 +1511,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
                         <option value="<?php echo (int)$statusId; ?>" <?php echo strcasecmp($statusOption, 'Unknown') === 0 ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">âž•</option>
                 </select>
             </div>
             <div>
@@ -1643,7 +1571,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 ?>
                             </option>
                         <?php endwhile; ?>
-                        <option value="__add_new__">➕</option>
+                        <option value="__add_new__">âž•</option>
                     </select>
                 </div>
             </div>
@@ -1663,7 +1591,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Create Cable Link</div>
-            <button class="btn btn-sm" type="button" onclick="closeLinkModal()">✖</button>
+            <button class="btn btn-sm" type="button" onclick="closeLinkModal()">âœ–</button>
         </div>
 
         <form id="linkForm" class="idf-grid-2">
@@ -1684,7 +1612,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $equipmentHostname = trim((string)($e['hostname'] ?? ''));
                             $equipmentLabel = $equipmentName;
                             if ($equipmentHostname !== '') {
-                                $equipmentLabel .= ' • ' . $equipmentHostname;
+                                $equipmentLabel .= ' â€¢ ' . $equipmentHostname;
                             }
                             echo sanitize($equipmentLabel);
                             ?>
@@ -1722,7 +1650,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 ?>
                             </option>
                         <?php endwhile; ?>
-                        <option value="__add_new__">➕</option>
+                        <option value="__add_new__">âž•</option>
                     </select>
                 </div>
             </div>
@@ -1736,7 +1664,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
                         <option value="<?php echo (int)$statusId; ?>" <?php echo strcasecmp($statusOption, 'Unknown') === 0 ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">âž•</option>
                 </select>
             </div>
             <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
@@ -1768,7 +1696,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                         ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">➕</option>
+                                <option value="__add_new__">âž•</option>
                             </select>
                         </div>
                     </div>
@@ -1794,7 +1722,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Add Cable Color</div>
-            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">✖</button>
+            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">âœ–</button>
         </div>
         <div>
             <label class="label" for="cableColorModalName">Color name</label>
@@ -1818,7 +1746,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Add Status</div>
-            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)">✖</button>
+            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)">âœ–</button>
         </div>
         <div>
             <label class="label" for="statusModalInput">Status</label>
@@ -1969,7 +1897,7 @@ function openPortModal(portId) {
     const rowData = (row && row.dataset) ? row.dataset : {};
 
     if (!portMeta) {
-        alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click “Regenerate Ports” first.');
+        alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click â€œRegenerate Portsâ€ first.');
         return;
     }
     form.port_id.value = String(portMeta.id);
@@ -2137,7 +2065,7 @@ function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
         const colorHexText = /^#?[0-9a-f]{6}$/i.test(rawColorHex)
             ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
             : '#808080';
-        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no} • ${portType} • Status (${statusText}) • ${colorNameText} (${colorHexText})`;
+        option.textContent = `${idfName} â€¢ Pos ${port.position_no} â€¢ ${port.device_name} â€¢ Port ${port.port_no} â€¢ ${portType} â€¢ Status (${statusText}) â€¢ ${colorNameText} (${colorHexText})`;
         selectEl.appendChild(option);
     });
     if (!destinations.length) {
@@ -2328,7 +2256,7 @@ function findPortMetaByRef(portRef) {
 function onPortClick(portId) {
     const port = findPortMetaByRef(portId);
     if (!port) {
-        alert('Port not found. Use “Regenerate Ports” on this device if switch ports exist but IDF ports are missing.');
+        alert('Port not found. Use â€œRegenerate Portsâ€ on this device if switch ports exist but IDF ports are missing.');
         return;
     }
     openPortModal(port.id);
@@ -2383,7 +2311,7 @@ function onPortDotClick(portElement) {
         if (port) {
             onPortClick(port.id);
         } else {
-            alert('Port not found. Click “Regenerate Ports” if switch_ports exist but IDF ports are missing.');
+            alert('Port not found. Click â€œRegenerate Portsâ€ if switch_ports exist but IDF ports are missing.');
         }
     }
 }
@@ -2405,7 +2333,7 @@ function idfPortsExportExcel() {
 function openLinkModal(portId) {
     const source = findPortMetaByRef(portId);
     if (!source) {
-        alert('Source port not found. If this device has switch_ports rows but no IDF ports yet, click “Regenerate Ports” first.');
+        alert('Source port not found. If this device has switch_ports rows but no IDF ports yet, click â€œRegenerate Portsâ€ first.');
         return;
     }
     if (source.is_linked) {
@@ -2437,7 +2365,7 @@ function openLinkModal(portId) {
             ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
             : '#808080';
         const portType = String(port.port_type_label || 'RJ45').toUpperCase();
-        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • ${portType} • Port ${port.port_no} • Status (${statusText}) • ${colorNameText} (${colorHexText})`;
+        option.textContent = `${idfName} â€¢ Pos ${port.position_no} â€¢ ${port.device_name} â€¢ ${portType} â€¢ Port ${port.port_no} â€¢ Status (${statusText}) â€¢ ${colorNameText} (${colorHexText})`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
@@ -2454,7 +2382,7 @@ function openLinkModal(portId) {
     const rawSourceLabel = String(source.label || '').trim();
     const showSourceLabel = rawSourceLabel !== '' && rawSourceLabel !== '0' && rawSourceLabel.toLowerCase() !== 'null';
     const sourcePortType = String(source.port_type_label || 'RJ45').toUpperCase();
-    f.source_display.value = `${sourcePortType} Port ${source.port_no}${showSourceLabel ? ` • ${rawSourceLabel}` : ''}`;
+    f.source_display.value = `${sourcePortType} Port ${source.port_no}${showSourceLabel ? ` â€¢ ${rawSourceLabel}` : ''}`;
     const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
         option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
     );
@@ -2642,7 +2570,7 @@ function formatSwitchPortOption(port) {
     const equipmentName = (port.equipment_name || '').trim();
     const equipmentHostname = (port.equipment_hostname || '').trim();
     const hostname = (equipmentName && equipmentHostname)
-        ? `${equipmentName} • ${equipmentHostname}`
+        ? `${equipmentName} â€¢ ${equipmentHostname}`
         : (equipmentName || equipmentHostname || '-');
     const portType = String(port.equipment_port_type || '-').toUpperCase();
     const portNumber = port.equipment_port || '-';
