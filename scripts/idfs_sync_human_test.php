@@ -632,6 +632,135 @@ function itm_test_create_temp_switch_rack_position(
     itm_test_out('[PASS] Seeded temporary switch position ' . (int)$positionNo . ' for link tests (' . $nameSuffix . ')');
 }
 
+function itm_test_create_temp_fiber_only_patch_position(
+    $db,
+    $baseUrl,
+    $cookieFile,
+    $csrf,
+    $companyId,
+    $idfId,
+    $positionNo,
+    $patchPanelTypeId,
+    $layoutVerticalId,
+    $fiberPortCount,
+    $nameSuffix,
+    array &$createdTempPositionIds
+) {
+    itm_test_assert($positionNo <= 100, 'Temporary fiber seed position number is within allowed range');
+    $fiberPortCount = max(1, (int)$fiberPortCount);
+
+    $deviceName = 'ITM Human Test SFP Seed ' . $nameSuffix . ' ' . date('YmdHis') . ' ' . mt_rand(1000, 9999);
+    itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_save.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'idf_id' => $idfId,
+            'position_no' => $positionNo,
+            'device_type' => $patchPanelTypeId,
+            'device_name' => $deviceName,
+            'equipment_id' => '',
+            'switch_port_numbering_layout_id' => $layoutVerticalId,
+            'switch_fiber_ports_number' => (string)$fiberPortCount,
+            'rj45_count' => 0,
+            'notes' => 'ITM HUMAN TEST MISMATCH SFP ' . strtoupper((string)$nameSuffix),
+        ]
+    );
+
+    $positionRow = itm_test_db_one(
+        $db,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ? AND position_no = ?
+         LIMIT 1",
+        'iii',
+        [$companyId, $idfId, $positionNo]
+    );
+    $positionId = (int)($positionRow['id'] ?? 0);
+    itm_test_assert($positionId > 0, 'Temporary fiber seed position created (' . $nameSuffix . ')');
+    $createdTempPositionIds[] = $positionId;
+    itm_test_out('[PASS] Seeded temporary fiber-only patch position ' . (int)$positionNo . ' for port-type tests (' . $nameSuffix . ')');
+}
+
+function itm_test_unlinked_ports_have_family(array $ports, $family)
+{
+    foreach ($ports as $port) {
+        if (itm_test_port_type_family((string)($port['port_type_label'] ?? '')) === $family) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function itm_test_ensure_mixed_family_unlinked_pair(
+    $db,
+    $baseUrl,
+    $cookieFile,
+    $csrf,
+    $companyId,
+    $idfId,
+    $switchDeviceTypeId,
+    $patchPanelTypeId,
+    $rj45EightId,
+    $layoutVerticalId,
+    $statusUnknownId,
+    $colorGrayId,
+    array &$createdTempEquipmentIds,
+    array &$createdTempPositionIds
+) {
+    $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    $mixedPair = itm_test_find_mixed_family_unlinked_pair($unlinkedPorts);
+    if ($mixedPair !== null) {
+        return $mixedPair;
+    }
+
+    if (!itm_test_unlinked_ports_have_family($unlinkedPorts, 'rj45')) {
+        $positionNo = itm_test_next_idf_position_no($db, $companyId, $idfId);
+        itm_test_create_temp_switch_rack_position(
+            $db,
+            $baseUrl,
+            $cookieFile,
+            $csrf,
+            $companyId,
+            $idfId,
+            $positionNo,
+            $switchDeviceTypeId,
+            $rj45EightId,
+            $layoutVerticalId,
+            $statusUnknownId,
+            $colorGrayId,
+            'MISMATCH_RJ45',
+            $createdTempEquipmentIds,
+            $createdTempPositionIds
+        );
+        $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    }
+
+    if (!itm_test_unlinked_ports_have_family($unlinkedPorts, 'fiber')) {
+        $positionNo = itm_test_next_idf_position_no($db, $companyId, $idfId);
+        itm_test_create_temp_fiber_only_patch_position(
+            $db,
+            $baseUrl,
+            $cookieFile,
+            $csrf,
+            $companyId,
+            $idfId,
+            $positionNo,
+            $patchPanelTypeId,
+            $layoutVerticalId,
+            2,
+            'MISMATCH_SFP',
+            $createdTempPositionIds
+        );
+    }
+
+    $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    $mixedPair = itm_test_find_mixed_family_unlinked_pair($unlinkedPorts);
+    itm_test_assert($mixedPair !== null, 'Found RJ45 and SFP unlinked ports for port-type mismatch test after TEST seed');
+    return $mixedPair;
+}
+
 function itm_test_ensure_rj45_link_test_pair(
     $db,
     $baseUrl,
@@ -1102,6 +1231,47 @@ try {
         $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
         $randomPair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', false, $usedPortIds);
         if ($randomPair === null) {
+            $extraPositionNo = itm_test_next_idf_position_no($db, $companyId, $idfId);
+            itm_test_create_temp_switch_rack_position(
+                $db,
+                $baseUrl,
+                $cookieFile,
+                $csrf,
+                $companyId,
+                $idfId,
+                $extraPositionNo,
+                $switchDeviceTypeId,
+                $rj45EightId,
+                $layoutVerticalId,
+                $statusUnknownId,
+                $colorGrayId,
+                'RANDOM_' . strtoupper((string)$randomColorCase['name']),
+                $createdTempEquipmentIds,
+                $createdTempPositionIds
+            );
+            $extraPositionNoB = $extraPositionNo + 1;
+            itm_test_assert($extraPositionNoB <= 100, 'Second random-link seed position number is within allowed range');
+            itm_test_create_temp_switch_rack_position(
+                $db,
+                $baseUrl,
+                $cookieFile,
+                $csrf,
+                $companyId,
+                $idfId,
+                $extraPositionNoB,
+                $switchDeviceTypeId,
+                $rj45EightId,
+                $layoutVerticalId,
+                $statusUnknownId,
+                $colorGrayId,
+                'RANDOM_' . strtoupper((string)$randomColorCase['name']) . '_B',
+                $createdTempEquipmentIds,
+                $createdTempPositionIds
+            );
+            $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+            $randomPair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', false, $usedPortIds);
+        }
+        if ($randomPair === null) {
             itm_test_out('[SKIP] No extra RJ45 pair available for random cable color link test (' . $randomColorCase['name'] . ')');
             continue;
         }
@@ -1162,28 +1332,38 @@ try {
         itm_test_out('[PASS] Random ' . $randomColorCase['name'] . ' link deleted after cable color sync assertion');
     }
 
-    $unlinkedPortsForMismatch = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
-    $mixedPair = itm_test_find_mixed_family_unlinked_pair($unlinkedPortsForMismatch);
-    if ($mixedPair !== null) {
-        $mismatchError = itm_test_api_post_json_expect_fail(
-            $baseUrl,
-            '/modules/idfs/api/link_create.php',
-            $cookieFile,
-            [
-                'csrf_token' => $csrf,
-                'port_id_a' => (int)$mixedPair['port_a']['port_id'],
-                'port_id_b' => (int)$mixedPair['port_b']['port_id'],
-                'status_id' => $statusUpId,
-                'cable_color_id' => $colorGreenId,
-            ]
-        );
-        itm_test_assert(stripos($mismatchError, 'Cannot link') !== false, 'RJ45↔SFP link attempt is rejected with port-type message');
-    } else {
-        itm_test_out('[SKIP] No RJ45/SFP unlinked pair available for port-type mismatch rejection test');
-    }
-
     $patchPanelTypeId = itm_test_lookup_device_type_id($db, $companyId, 'patch_panel');
     itm_test_assert($patchPanelTypeId > 0, 'Patch panel IDF device type exists for unlinked fiber-only test');
+
+    $mixedPair = itm_test_ensure_mixed_family_unlinked_pair(
+        $db,
+        $baseUrl,
+        $cookieFile,
+        $csrf,
+        $companyId,
+        $idfId,
+        $switchDeviceTypeId,
+        $patchPanelTypeId,
+        $rj45EightId,
+        $layoutVerticalId,
+        $statusUnknownId,
+        $colorGrayId,
+        $createdTempEquipmentIds,
+        $createdTempPositionIds
+    );
+    $mismatchError = itm_test_api_post_json_expect_fail(
+        $baseUrl,
+        '/modules/idfs/api/link_create.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'port_id_a' => (int)$mixedPair['port_a']['port_id'],
+            'port_id_b' => (int)$mixedPair['port_b']['port_id'],
+            'status_id' => $statusUpId,
+            'cable_color_id' => $colorGreenId,
+        ]
+    );
+    itm_test_assert(stripos($mismatchError, 'Cannot link') !== false, 'RJ45↔SFP link attempt is rejected with port-type message');
     $unlinkedPatchPositionRow = itm_test_db_one(
         $db,
         "SELECT COALESCE(MAX(position_no), 0) AS max_position
