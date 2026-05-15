@@ -370,6 +370,8 @@ $stmtPorts = mysqli_prepare(
        COALESCE(cc_pr_live_direct.hex_color, cc_live.hex_color, cc_sp_link_direct.hex_color, cc_l.hex_color, pr.hex_color, cc_ss_link_meta.hex_color, '#808080') AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
+       COALESCE(NULLIF(le.name, ''), NULLIF(sp_link.hostname, ''), '') AS equipment_hostname,
+       COALESCE(CAST(l.equipment_port AS CHAR), CAST(sp_link.port_number AS CHAR), '') AS equipment_port,
        CASE
          WHEN l.port_id_a = pr.id THEN l.port_id_b
          WHEN l.port_id_b = pr.id THEN l.port_id_a
@@ -508,7 +510,20 @@ $stmtPorts = mysqli_prepare(
         ON cc_ss_link_meta.id = ss_link_meta.color_id
        AND cc_ss_link_meta.company_id = ss_link_meta.company_id
       LEFT JOIN idf_positions p_remote
-        ON p_remote.id = pr_remote.position_id
+        ON p_remote.company_id = pr_remote.company_id
+       AND (
+            p_remote.id = pr_remote.position_id
+            OR (
+                p_remote.position_no = pr_remote.position_id
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM idf_positions p_actual
+                    WHERE p_actual.company_id = pr_remote.company_id
+                      AND p_actual.id = pr_remote.position_id
+                    LIMIT 1
+                )
+            )
+       )
      LEFT JOIN equipment e_remote
        ON e_remote.id = p_remote.equipment_id
      LEFT JOIN equipment_types et_remote
@@ -614,7 +629,21 @@ if ($otherIds) {
            e.serial_number AS equipment_serial_number,
            i.id AS idf_id
          FROM idf_ports pr
-         JOIN idf_positions p ON p.id=pr.position_id
+         JOIN idf_positions p
+           ON p.company_id = pr.company_id
+          AND (
+               p.id = pr.position_id
+               OR (
+                   p.position_no = pr.position_id
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM idf_positions p_actual
+                       WHERE p_actual.company_id = pr.company_id
+                         AND p_actual.id = pr.position_id
+                       LIMIT 1
+                   )
+               )
+          )
          JOIN idfs i ON i.id=p.idf_id
          LEFT JOIN equipment e ON e.id = p.equipment_id
          WHERE pr.id IN ($list) AND i.company_id=$company_id"
@@ -626,34 +655,66 @@ if ($otherIds) {
 
 $linkOverview = [];
 foreach ($ports as $p) {
-    if (empty($p['link_id']) || empty($p['other_port_id'])) {
+    if (empty($p['link_id'])) {
         continue;
     }
-    $otherPortId = (int)$p['other_port_id'];
-    if (!isset($otherMap[$otherPortId])) {
-        continue;
+
+    $otherPortId = (int)($p['other_port_id'] ?? 0);
+    $remote = $otherPortId > 0 ? ($otherMap[$otherPortId] ?? null) : null;
+
+    $remotePositionNo = (int)($p['remote_position_no'] ?? 0);
+    $remoteDeviceName = trim((string)($p['remote_device_name'] ?? ''));
+    $remotePortNo = (int)($p['remote_port_no'] ?? 0);
+
+    if ($remote) {
+        if ($remotePositionNo <= 0) {
+            $remotePositionNo = (int)($remote['position_no'] ?? 0);
+        }
+        if ($remoteDeviceName === '') {
+            $remoteDeviceName = trim((string)($remote['device_name'] ?? ''));
+        }
+        if ($remotePortNo <= 0) {
+            $remotePortNo = (int)($remote['port_no'] ?? 0);
+        }
     }
-    $remote = $otherMap[$otherPortId];
+
     $linkedEquipmentName = trim((string)($p['equipment_hostname'] ?? ''));
     $linkedEquipmentPort = trim((string)($p['equipment_port'] ?? ''));
-    $positionEquipmentSerial = trim((string)($remote['equipment_serial_number'] ?? ''));
-    $linkedRemoteDeviceName = $linkedEquipmentName !== ''
-        ? $linkedEquipmentName
-        : ($positionEquipmentSerial !== '' ? $positionEquipmentSerial : (string)($remote['device_name'] ?? ''));
-    $linkedRemotePortNo = ctype_digit($linkedEquipmentPort)
-        ? (int)$linkedEquipmentPort
-        : (int)($remote['port_no'] ?? 0);
+    if ($linkedEquipmentName !== '') {
+        $positionEquipmentSerial = $remote ? trim((string)($remote['equipment_serial_number'] ?? '')) : '';
+        $remoteDeviceName = $linkedEquipmentName !== ''
+            ? $linkedEquipmentName
+            : ($positionEquipmentSerial !== '' ? $positionEquipmentSerial : $remoteDeviceName);
+        if ($linkedEquipmentPort !== '' && ctype_digit($linkedEquipmentPort)) {
+            $remotePortNo = (int)$linkedEquipmentPort;
+        }
+    } elseif ($remote) {
+        $positionEquipmentSerial = trim((string)($remote['equipment_serial_number'] ?? ''));
+        if ($remoteDeviceName === '' && $positionEquipmentSerial !== '') {
+            $remoteDeviceName = $positionEquipmentSerial;
+        }
+    }
+
+    if ($remoteDeviceName === '' && $remotePositionNo <= 0 && $remotePortNo <= 0) {
+        continue;
+    }
+
+    $linkNotes = trim((string)($p['link_notes'] ?? ''));
+    if ($linkNotes === '') {
+        $linkNotes = trim((string)($p['notes'] ?? ''));
+    }
+
     $linkOverview[] = [
         'link_id' => (int)$p['link_id'],
         'local_port_no' => (int)($p['port_no'] ?? 0),
         'local_label' => (string)($p['label'] ?? ''),
-        'remote_position_no' => (int)($remote['position_no'] ?? 0),
-        'remote_device_name' => $linkedRemoteDeviceName,
-        'remote_port_no' => $linkedRemotePortNo,
+        'remote_position_no' => $remotePositionNo,
+        'remote_device_name' => $remoteDeviceName,
+        'remote_port_no' => $remotePortNo,
         'cable_color_name' => (string)($p['cable_color_name'] ?? ''),
         'cable_hex_color' => (string)($p['cable_hex_color'] ?? ''),
         'cable_label' => (string)($p['cable_label'] ?? ''),
-        'link_notes' => (string)($p['link_notes'] ?? ''),
+        'link_notes' => $linkNotes,
     ];
 }
 
@@ -1135,9 +1196,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 <?php endif; ?>
 
         <div class="content" id="idfDeviceCaptureRoot">
-            <?php if ($embed_modal_only): ?>
-            <div style="display:none;">
-            <?php endif; ?>
             <div class="idf-toolbar">
                 <div class="left">
                     <?php if ($embed_mode): ?>
@@ -1197,112 +1255,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
 
-            <div class="card" style="padding:14px; border-radius:18px;">
-                <h3 style="margin-top:0;">🔌 Ports</h3>
-
-                <?php if ((int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0) > 0 && count($ports) === 0): ?>
-                    <div class="alert alert-error">Port list is empty. Use “Regenerate Ports”.</div>
-                <?php endif; ?>
-
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                    <button class="btn btn-sm" type="button" onclick="regeneratePorts()">Regenerate Ports</button>
-                </div>
-
-
-                <?php
-                $buildPortSortLink = static function (string $field) use ($portSortField, $portSortDir): string {
-                    $query = $_GET;
-                    $query['sort'] = $field;
-                    $query['dir'] = ($portSortField === $field && $portSortDir === 'ASC') ? 'desc' : 'asc';
-                    return '?' . http_build_query($query);
-                };
-                $renderPortSortIndicator = static function (string $field) use ($portSortField, $portSortDir): string {
-                    if ($portSortField !== $field) {
-                        return '';
-                    }
-                    return $portSortDir === 'ASC' ? ' ▲' : ' ▼';
-                };
-                ?>
-
-                <table id="portsTable" class="table idf-ports-table">
-                    <thead>
-                    <tr>
-                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('rj45_speed')); ?>">RJ45 Speed<?php echo $renderPortSortIndicator('rj45_speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php if (!$ports): ?>
-                        <tr><td colspan="12" style="opacity:.8;">No ports yet.</td></tr>
-                    <?php endif; ?>
-
-                    <?php foreach ($ports as $p): ?>
-                        <?php
-                        $linkedEquipmentId = (int)($p['linked_equipment_id'] ?? 0);
-                        $linkedEquipmentIsSwitch = (int)($p['linked_equipment_is_switch'] ?? 0) === 1;
-                        $canEditLinkedSwitch = $linkedEquipmentId > 0
-                            && $linkedEquipmentIsSwitch
-                            && !empty($p['link_id']);
-                        $editLinkedUrl = '../equipment/index.php?switch_id=' . $linkedEquipmentId . '&spm=1#switch-port-manager';
-                        $linkText = '';
-                        $connectedToText = trim((string)($p['connected_to'] ?? ''));
-                        $unlinkBtn = '';
-                        if (!empty($p['link_id']) && !empty($p['other_port_id']) && isset($otherMap[(int)$p['other_port_id']])) {
-                            $o = $otherMap[(int)$p['other_port_id']];
-                            $color = (string)($p['cable_hex_color'] ?? '#ffff00');
-                            $label = !empty($p['cable_label']) ? (' • ' . sanitize((string)$p['cable_label'])) : '';
-                            $isLoopRisk = ((int)($o['position_id'] ?? 0) === (int)$position_id);
-                            $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
-                                . 'Pos ' . (int)$o['position_no'] . ' • ' . sanitize($o['device_name']) . ' • Port ' . (int)$o['port_no'] . $label
-                                . ($isLoopRisk ? ' <span class="badge badge-danger" title="Same-device link detected. This can create a Layer 2 loop on switches without STP.">Loop Risk</span>' : '');
-                            if ($connectedToText === '') {
-                                $connectedToText = 'Pos ' . (int)$o['position_no'] . ' • ' . (string)$o['device_name'] . ' • Port ' . (int)$o['port_no'];
-                            }
-                            $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
-                        }
-                        $speedValueId = isset($p['speed_value_id']) ? (int)$p['speed_value_id'] : (isset($p['speed_id']) ? (int)$p['speed_id'] : 0);
-                        ?>
-                        <tr
-                            data-port-id="<?php echo (int)$p['id']; ?>"
-                            data-port-type-id="<?php echo (int)($p['port_type'] ?? 0); ?>"
-                            data-port-type="<?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?>"
-                            data-label="<?php echo sanitize((string)($p['label'] ?? '')); ?>"
-                            data-status-id="<?php echo (int)($p['status_id'] ?? 0); ?>"
-                            data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
-                            data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
-                            data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
-                            data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
-                            data-speed-id="<?php echo $speedValueId > 0 ? (string)$speedValueId : ''; ?>"
-                            data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
-                            data-poe-id="<?php echo (int)($p['poe_id'] ?? 0); ?>"
-                            data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
-                            data-notes="<?php echo sanitize((string)($p['notes'] ?? '')); ?>"
-                        >
-                            <td><?php echo (int)$p['port_no']; ?></td>
-                            <td><?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?></td>
-                            <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
-                            <td><?php echo sanitize($connectedToText); ?></td>
-                            <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
-                            <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
-                            <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
-                                <?php if ($canEditLinkedSwitch): ?>
-                                    <a class="btn btn-sm" href="<?php echo $editLinkedUrl; ?>">Edit Linked</a>
-                                <?php endif; ?>
-                                <button class="btn btn-sm" type="button" onclick="openLinkModal(<?php echo (int)$p['id']; ?>)">Link</button>
-                                <?php echo $unlinkBtn; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card" style="padding:14px; border-radius:18px; margin-top:14px;">
+            <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
                 <h3 style="margin-top:0;">🔗 Equipment Link Map</h3>
                 <div style="opacity:.8; margin-bottom:10px; font-size:12px;">
                     Quick view of this device's patch links to other equipment, including selected equipment metadata.
@@ -1352,6 +1305,127 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </table>
             </div>
 
+            <div class="card" style="padding:14px; border-radius:18px;">
+                <h3 style="margin-top:0;">🔌 Ports</h3>
+
+                <?php if ((int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0) > 0 && count($ports) === 0): ?>
+                    <div class="alert alert-error">Port list is empty. Use “Regenerate Ports”.</div>
+                <?php endif; ?>
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                    <button class="btn btn-sm" type="button" onclick="regeneratePorts()">Regenerate Ports</button>
+                </div>
+
+
+                <?php
+                $buildPortSortLink = static function (string $field) use ($portSortField, $portSortDir): string {
+                    $query = $_GET;
+                    $query['sort'] = $field;
+                    $query['dir'] = ($portSortField === $field && $portSortDir === 'ASC') ? 'desc' : 'asc';
+                    return '?' . http_build_query($query);
+                };
+                $renderPortSortIndicator = static function (string $field) use ($portSortField, $portSortDir): string {
+                    if ($portSortField !== $field) {
+                        return '';
+                    }
+                    return $portSortDir === 'ASC' ? ' ▲' : ' ▼';
+                };
+                ?>
+
+                <table id="portsTable" class="table idf-ports-table">
+                    <thead>
+                    <tr>
+                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('rj45_speed')); ?>">RJ45 Speed<?php echo $renderPortSortIndicator('rj45_speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (!$ports): ?>
+                        <tr><td colspan="12" style="opacity:.8;">No ports yet.</td></tr>
+                    <?php endif; ?>
+
+                    <?php foreach ($ports as $p): ?>
+                        <?php
+                        $linkedEquipmentId = (int)($p['linked_equipment_id'] ?? 0);
+                        $linkedEquipmentIsSwitch = (int)($p['linked_equipment_is_switch'] ?? 0) === 1;
+                        $canEditLinkedSwitch = $linkedEquipmentId > 0
+                            && $linkedEquipmentIsSwitch
+                            && !empty($p['link_id']);
+                        $editLinkedUrl = '../equipment/index.php?switch_id=' . $linkedEquipmentId . '&spm=1#switch-port-manager';
+                        $linkText = '';
+                        $connectedToText = trim((string)($p['connected_to'] ?? ''));
+                        $unlinkBtn = '';
+                        if (!empty($p['link_id'])) {
+                            $o = null;
+                            if (!empty($p['other_port_id']) && isset($otherMap[(int)$p['other_port_id']])) {
+                                $o = $otherMap[(int)$p['other_port_id']];
+                            }
+                            $remotePos = $o ? (int)$o['position_no'] : (int)($p['remote_position_no'] ?? 0);
+                            $remoteDev = $o ? (string)$o['device_name'] : trim((string)($p['remote_device_name'] ?? ''));
+                            $remotePort = $o ? (int)$o['port_no'] : (int)($p['remote_port_no'] ?? 0);
+                            $equipmentName = trim((string)($p['equipment_hostname'] ?? ''));
+                            $equipmentPort = trim((string)($p['equipment_port'] ?? ''));
+                            if ($equipmentName !== '') {
+                                $remoteDev = $equipmentName;
+                            }
+                            if ($equipmentPort !== '' && ctype_digit($equipmentPort)) {
+                                $remotePort = (int)$equipmentPort;
+                            }
+                            if ($remoteDev !== '' || $remotePos > 0 || $remotePort > 0) {
+                                $color = (string)($p['cable_hex_color'] ?? '#ffff00');
+                                $label = !empty($p['cable_label']) ? (' • ' . sanitize((string)$p['cable_label'])) : '';
+                                $isLoopRisk = $o && ((int)($o['position_id'] ?? 0) === (int)$position_id);
+                                $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
+                                    . 'Pos ' . $remotePos . ' • ' . sanitize($remoteDev) . ' • Port ' . $remotePort . $label
+                                    . ($isLoopRisk ? ' <span class="badge badge-danger" title="Same-device link detected. This can create a Layer 2 loop on switches without STP.">Loop Risk</span>' : '');
+                                if ($connectedToText === '') {
+                                    $connectedToText = 'Pos ' . $remotePos . ' • ' . $remoteDev . ' • Port ' . $remotePort;
+                                }
+                                $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
+                            }
+                        }
+                        $speedValueId = isset($p['speed_value_id']) ? (int)$p['speed_value_id'] : (isset($p['speed_id']) ? (int)$p['speed_id'] : 0);
+                        ?>
+                        <tr
+                            data-port-id="<?php echo (int)$p['id']; ?>"
+                            data-port-type-id="<?php echo (int)($p['port_type'] ?? 0); ?>"
+                            data-port-type="<?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?>"
+                            data-label="<?php echo sanitize((string)($p['label'] ?? '')); ?>"
+                            data-status-id="<?php echo (int)($p['status_id'] ?? 0); ?>"
+                            data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
+                            data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
+                            data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
+                            data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
+                            data-speed-id="<?php echo $speedValueId > 0 ? (string)$speedValueId : ''; ?>"
+                            data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
+                            data-poe-id="<?php echo (int)($p['poe_id'] ?? 0); ?>"
+                            data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
+                            data-notes="<?php echo sanitize((string)($p['notes'] ?? '')); ?>"
+                        >
+                            <td><?php echo (int)$p['port_no']; ?></td>
+                            <td><?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?></td>
+                            <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
+                            <td><?php echo sanitize($connectedToText); ?></td>
+                            <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
+                            <td><?php echo $linkText ?: '<span style="opacity:.75;">—</span>'; ?></td>
+                            <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
+                                <?php if ($canEditLinkedSwitch): ?>
+                                    <a class="btn btn-sm" href="<?php echo $editLinkedUrl; ?>">Edit Linked</a>
+                                <?php endif; ?>
+                                <button class="btn btn-sm" type="button" onclick="openLinkModal(<?php echo (int)$p['id']; ?>)">Link</button>
+                                <?php echo $unlinkBtn; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
             <table id="portsExportTable" class="table" style="display:none;">
                 <thead>
                 <tr>
@@ -1375,9 +1449,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <?php endforeach; ?>
                 </tbody>
             </table>
-            <?php if ($embed_modal_only): ?>
-            </div>
-            <?php endif; ?>
         </div>
 <?php if (!$embed_mode): ?>
     </div>
