@@ -147,6 +147,12 @@ if ($managementInputString !== '') {
     $resolvedManagementId = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_environment', 'name', $rawManagementInput);
     $portManagementId = $resolvedManagementId !== null ? (int)$resolvedManagementId : 0;
 }
+$fiber_port_id = isset($data['fiber_port_id']) && is_numeric((string)$data['fiber_port_id']) ? (int)$data['fiber_port_id'] : 0;
+$fiber_patch_id = isset($data['fiber_patch_id']) && is_numeric((string)$data['fiber_patch_id']) ? (int)$data['fiber_patch_id'] : 0;
+$fiber_rack_id = isset($data['fiber_rack_id']) && is_numeric((string)$data['fiber_rack_id']) ? (int)$data['fiber_rack_id'] : 0;
+$to_idf_id = isset($data['to_idf_id']) && is_numeric((string)$data['to_idf_id']) ? (int)$data['to_idf_id'] : 0;
+$to_rack_id = isset($data['to_rack_id']) && is_numeric((string)$data['to_rack_id']) ? (int)$data['to_rack_id'] : 0;
+$to_location_id = isset($data['to_location_id']) && is_numeric((string)$data['to_location_id']) ? (int)$data['to_location_id'] : 0;
 $notes = trim((string)($data['notes'] ?? ''));
 $cable_color_id = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 $cable_color_name = null;
@@ -279,7 +285,14 @@ $stmtSwitchSync = mysqli_prepare(
      SET sp.{$switchPortLabelColumn} = ?,
          sp.status_id = ?,
          sp.color_id = NULLIF(?, 0),
+         sp.rj45_speed_id = NULLIF(?, 0),
+         sp.fiber_port_id = NULLIF(?, 0),
+         sp.fiber_patch_id = NULLIF(?, 0),
+         sp.fiber_rack_id = NULLIF(?, 0),
          sp.vlan_id = NULLIF(?, 0),
+         sp.to_idf_id = NULLIF(?, 0),
+         sp.to_rack_id = NULLIF(?, 0),
+         sp.to_location_id = NULLIF(?, 0),
          sp.comments = ?
      WHERE sp.company_id = ?
        AND p.company_id = sp.company_id
@@ -312,14 +325,23 @@ if (!$stmtSwitchSync) {
 }
 if ($stmtSwitchSync) {
     $switchColorId = $cable_color_id > 0 ? $cable_color_id : 0;
+    $switchRj45SpeedSyncId = $rj45SpeedVal > 0 ? $rj45SpeedVal : 0;
+    $switchFiberPortSyncId = $fiber_port_id > 0 ? $fiber_port_id : ($isFiberPortType && $speed_val > 0 ? $speed_val : 0);
     mysqli_stmt_bind_param(
         $stmtSwitchSync,
-        'isiiisi',
+        'isiiiiiiiiiisi',
         $port_id,
         $label_val,
         $status_id,
         $switchColorId,
+        $switchRj45SpeedSyncId,
+        $switchFiberPortSyncId,
+        $fiber_patch_id,
+        $fiber_rack_id,
         $vlan_val,
+        $to_idf_id,
+        $to_rack_id,
+        $to_location_id,
         $notes_val,
         $company_id
     );
@@ -450,6 +472,13 @@ $stmtLinkMetaSync = mysqli_prepare(
      SET l.equipment_label = ?,
          l.equipment_status_id = ?,
          l.equipment_vlan_id = NULLIF(?, 0),
+         l.equipment_rj45_speed_id = NULLIF(?, 0),
+         l.equipment_fiber_port_id = NULLIF(?, 0),
+         l.equipment_fiber_patch_id = NULLIF(?, 0),
+         l.equipment_fiber_rack_id = NULLIF(?, 0),
+         l.equipment_to_idf_id = NULLIF(?, 0),
+         l.equipment_to_rack_id = NULLIF(?, 0),
+         l.equipment_to_location_id = NULLIF(?, 0),
          l.equipment_comments = ?,
          l.equipment_color_id = NULLIF(?, 0)
      WHERE l.company_id = ?
@@ -457,12 +486,21 @@ $stmtLinkMetaSync = mysqli_prepare(
 );
 if ($stmtLinkMetaSync) {
     $linkColorId = $cable_color_id > 0 ? $cable_color_id : 0;
+    $linkRj45SpeedId = $rj45SpeedVal > 0 ? $rj45SpeedVal : 0;
+    $linkFiberPortId = $fiber_port_id > 0 ? $fiber_port_id : ($isFiberPortType && $speed_val > 0 ? $speed_val : 0);
     mysqli_stmt_bind_param(
         $stmtLinkMetaSync,
-        'siisiiii',
+        'siiiiiiiiisiiii',
         $label_val,
         $status_id,
         $vlan_val,
+        $linkRj45SpeedId,
+        $linkFiberPortId,
+        $fiber_patch_id,
+        $fiber_rack_id,
+        $to_idf_id,
+        $to_rack_id,
+        $to_location_id,
         $notes_val,
         $linkColorId,
         $company_id,
