@@ -13,6 +13,8 @@ $company_id = (int)($_SESSION['company_id'] ?? 0);
 $position_id = (int)($_GET['position_id'] ?? 0);
 $open_edit_port_id = (int)($_GET['open_edit_port_id'] ?? 0);
 $open_link_port_id = (int)($_GET['open_link_port_id'] ?? 0);
+$open_edit_port_no = (int)($_GET['open_edit_port_no'] ?? 0);
+$open_link_port_no = (int)($_GET['open_link_port_no'] ?? 0);
 $embed_mode = isset($_GET['embed']) && (string)$_GET['embed'] === '1';
 $embed_modal_only = $embed_mode && isset($_GET['embed_modal']) && (string)$_GET['embed_modal'] === '1';
 
@@ -365,6 +367,7 @@ $stmtPorts = mysqli_prepare(
        {$rj45SpeedLabelExpr} AS rj45_speed_label,
        {$speedValueIdExpr} AS speed_value_id,
        COALESCE(ep.name, '') AS poe_label,
+       pr_live.id AS switch_port_live_id,
        l.id AS link_id,
        l.cable_color_id,
        COALESCE(NULLIF(cc_pr_live_direct.color_name, ''), NULLIF(cc_live.color_name, ''), NULLIF(cc_sp_link_direct.color_name, ''), NULLIF(cc_l.color_name, ''), NULLIF(pr.cable_color, ''), cc_ss_link_meta.color_name, cc_l.hex_color, 'Gray') AS cable_color_name,
@@ -564,6 +567,97 @@ if ($stmtPorts) {
         $ports[] = $row;
     }
     mysqli_stmt_close($stmtPorts);
+}
+
+$positionLinkedEquipmentId = 0;
+$positionEquipmentIdRaw = trim((string)($pos['equipment_id'] ?? ''));
+if ($positionEquipmentIdRaw !== '' && ctype_digit($positionEquipmentIdRaw)) {
+    $positionLinkedEquipmentId = (int)$positionEquipmentIdRaw;
+}
+
+if (empty($ports) && $positionLinkedEquipmentId > 0 && $position_id > 0) {
+    $stmtLivePorts = mysqli_prepare(
+        $conn,
+        "SELECT pr.id,
+                pr.port_no,
+                pr.port_type,
+                COALESCE(spt.type, spt_any.type, COALESCE(sp.port_type, 'RJ45')) AS port_type_label,
+                COALESCE(pr_live.status_id, sp.status_id, pr.status_id) AS effective_status_id,
+                COALESCE(ss_live.status, ss.status, 'Unknown') AS status_label,
+                COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), {$switchPortsLiveLabelSelect}, '') AS label,
+                COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
+                COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), '') AS notes,
+                COALESCE(pr_live.vlan_id, pr.vlan_id) AS effective_vlan_id,
+                COALESCE(pr_live.rj45_speed_id, sp.rj45_speed_id, pr.rj45_speed_id) AS effective_rj45_speed_id,
+                COALESCE(pr_live.fiber_port_id, sp.fiber_port_id, pr.speed_id) AS effective_fiber_port_id,
+                COALESCE(pr_live.fiber_patch_id, sp.fiber_patch_id, 0) AS effective_fiber_patch_id,
+                COALESCE(pr_live.fiber_rack_id, sp.fiber_rack_id, 0) AS effective_fiber_rack_id,
+                COALESCE(pr_live.to_idf_id, sp.to_idf_id, 0) AS effective_to_idf_id,
+                COALESCE(pr_live.to_rack_id, sp.to_rack_id, 0) AS effective_to_rack_id,
+                COALESCE(pr_live.to_location_id, sp.to_location_id, 0) AS effective_to_location_id,
+                COALESCE(pr_live.poe_id, pr.poe_id, 0) AS effective_poe_id,
+                sp.id AS switch_port_live_id
+         FROM switch_ports sp
+         LEFT JOIN switch_status ss ON ss.id = sp.status_id AND ss.company_id = sp.company_id
+         LEFT JOIN idf_ports pr
+           ON pr.company_id = sp.company_id
+          AND pr.port_no = sp.port_number
+          AND (
+               pr.position_id = ?
+               OR (
+                   pr.position_id = ?
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM idf_positions p_actual
+                       WHERE p_actual.company_id = pr.company_id
+                         AND p_actual.id = pr.position_id
+                       LIMIT 1
+                   )
+               )
+          )
+         LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
+         LEFT JOIN switch_port_types spt_any ON spt_any.id = pr.port_type
+         LEFT JOIN switch_ports pr_live
+           ON pr_live.id = sp.id
+          AND pr_live.company_id = sp.company_id
+         LEFT JOIN switch_status ss_live ON ss_live.id = pr_live.status_id AND ss_live.company_id = pr_live.company_id
+         WHERE sp.company_id = ?
+           AND sp.equipment_id = ?
+           AND pr.id IS NOT NULL
+         ORDER BY pr.port_no ASC"
+    );
+    if ($stmtLivePorts) {
+        $positionNoForPorts = (int)($pos['position_no'] ?? 0);
+        mysqli_stmt_bind_param(
+            $stmtLivePorts,
+            'iiii',
+            $position_id,
+            $positionNoForPorts,
+            $company_id,
+            $positionLinkedEquipmentId
+        );
+        mysqli_stmt_execute($stmtLivePorts);
+        $livePortRes = mysqli_stmt_get_result($stmtLivePorts);
+        while ($livePortRes && ($liveRow = mysqli_fetch_assoc($livePortRes))) {
+            if (isset($liveRow['effective_status_id'])) {
+                $liveRow['status_id'] = (int)$liveRow['effective_status_id'];
+            }
+            if (isset($liveRow['effective_vlan_id'])) {
+                $liveRow['vlan_id'] = (int)$liveRow['effective_vlan_id'];
+            }
+            if (isset($liveRow['effective_poe_id'])) {
+                $liveRow['poe_id'] = (int)$liveRow['effective_poe_id'];
+            }
+            $portTypeRaw = strtolower(trim((string)($liveRow['port_type_label'] ?? '')));
+            if (strpos($portTypeRaw, 'sfp') !== false) {
+                $liveRow['speed_value_id'] = (int)($liveRow['effective_fiber_port_id'] ?? 0);
+            } else {
+                $liveRow['speed_value_id'] = (int)($liveRow['effective_rj45_speed_id'] ?? 0);
+            }
+            $ports[] = $liveRow;
+        }
+        mysqli_stmt_close($stmtLivePorts);
+    }
 }
 
 foreach ($ports as $portMeta) {
@@ -1743,6 +1837,8 @@ const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
+const AUTO_OPEN_EDIT_PORT_NO = <?php echo (int)$open_edit_port_no; ?>;
+const AUTO_OPEN_LINK_PORT_NO = <?php echo (int)$open_link_port_no; ?>;
 const RETURN_TO = <?php echo json_encode($return_to, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const EMBED_MODE = <?php echo $embed_mode ? 'true' : 'false'; ?>;
 const EMBED_MODAL_ONLY = <?php echo $embed_modal_only ? 'true' : 'false'; ?>;
@@ -1759,6 +1855,7 @@ $portsMeta = array_map(static function (array $port): array {
     return [
         'id' => (int)($port['id'] ?? 0),
         'port_no' => (int)($port['port_no'] ?? 0),
+        'switch_port_id' => isset($port['switch_port_live_id']) ? (int)$port['switch_port_live_id'] : 0,
         'port_type_id' => isset($port['port_type']) ? (int)$port['port_type'] : 0,
         'label' => (string)($port['label'] ?? ''),
         'port_type_label' => (string)($port['port_type_label'] ?? 'RJ45'),
@@ -1865,12 +1962,17 @@ function applySelectValue(selectEl, value) {
 }
 
 function openPortModal(portId) {
-    const row = document.querySelector(`tr[data-port-id="${portId}"]`);
-    const portMeta = PORTS.find((port) => Number(port.id) === Number(portId)) || null;
+    const portMeta = findPortMetaByRef(portId);
+    const resolvedPortId = portMeta ? Number(portMeta.id) : Number(portId);
+    const row = document.querySelector(`tr[data-port-id="${resolvedPortId}"]`);
     const form = document.getElementById('portForm');
     const rowData = (row && row.dataset) ? row.dataset : {};
 
-    form.port_id.value = portId;
+    if (!portMeta) {
+        alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click “Regenerate Ports” first.');
+        return;
+    }
+    form.port_id.value = String(portMeta.id);
     const requestedPortTypeId = (portMeta && portMeta.port_type_id) ? String(portMeta.port_type_id) : (rowData.portTypeId || '');
     if (requestedPortTypeId && Array.from(form.port_type.options).some((option) => option.value === requestedPortTypeId)) {
         form.port_type.value = requestedPortTypeId;
@@ -2129,7 +2231,7 @@ function closePortModal(shouldCloseHost) {
 
 function savePort() {
     const f = document.getElementById('portForm');
-    const sourcePort = PORTS.find((port) => Number(port.id) === Number(f.port_id.value)) || null;
+    const sourcePort = findPortMetaByRef(f.port_id.value) || null;
     const normalizedStatus = getNormalizedStatusValue(f);
     if (!normalizedStatus) {
         alert('Please enter a status value.');
@@ -2207,8 +2309,29 @@ function savePort() {
         .catch(err => alert(err.message));
 }
 
+function findPortMetaByRef(portRef) {
+    const ref = Number(portRef);
+    if (!ref) {
+        return null;
+    }
+    let port = PORTS.find((item) => Number(item.id) === ref);
+    if (port) {
+        return port;
+    }
+    port = PORTS.find((item) => Number(item.switch_port_id) === ref);
+    if (port) {
+        return port;
+    }
+    return PORTS.find((item) => Number(item.port_no) === ref) || null;
+}
+
 function onPortClick(portId) {
-    openPortModal(portId);
+    const port = findPortMetaByRef(portId);
+    if (!port) {
+        alert('Port not found. Use “Regenerate Ports” on this device if switch ports exist but IDF ports are missing.');
+        return;
+    }
+    openPortModal(port.id);
 }
 
 function sortDestinationPorts(ports) {
@@ -2252,8 +2375,16 @@ function onPortDotClick(portElement) {
         return;
     }
     const portId = Number(portNode.dataset.portId || 0);
+    const portNo = Number(portNode.dataset.portNumber || 0);
     if (portId > 0) {
         onPortClick(portId);
+    } else if (portNo > 0) {
+        const port = PORTS.find((item) => Number(item.port_no) === portNo);
+        if (port) {
+            onPortClick(port.id);
+        } else {
+            alert('Port not found. Click “Regenerate Ports” if switch_ports exist but IDF ports are missing.');
+        }
     }
 }
 
@@ -2272,9 +2403,9 @@ function idfPortsExportExcel() {
 }
 
 function openLinkModal(portId) {
-    const source = PORTS.find(p => Number(p.id) === Number(portId));
+    const source = findPortMetaByRef(portId);
     if (!source) {
-        alert('Source port not found.');
+        alert('Source port not found. If this device has switch_ports rows but no IDF ports yet, click “Regenerate Ports” first.');
         return;
     }
     if (source.is_linked) {
@@ -2377,7 +2508,7 @@ function createLink() {
             alert('Unable to determine destination port from selected equipment port.');
             return;
         }
-        const sourcePortForLink = PORTS.find((port) => Number(port.id) === Number(f.port_id_a.value));
+        const sourcePortForLink = findPortMetaByRef(f.port_id_a.value);
         const selectedEquipmentId = Number(f.equipment_id.value);
         const allAvailableDestinationPorts = filterLinkCompatibleDestinations(sourcePortForLink, DESTINATION_PORTS.filter((port) =>
             Number(port.id) !== Number(f.port_id_a.value)
@@ -2423,7 +2554,7 @@ function createLink() {
         return;
     }
 
-    const sourcePort = PORTS.find((port) => Number(port.id) === Number(f.port_id_a.value));
+    const sourcePort = findPortMetaByRef(f.port_id_a.value);
     const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
     if (sourcePort && selectedDestinationPort && !portsAreLinkCompatible(
         String(sourcePort.port_type_label || 'RJ45'),
@@ -2543,7 +2674,7 @@ async function loadEquipmentPorts(equipmentId) {
     select.disabled = true;
     select.innerHTML = '<option value="">Loading...</option>';
 
-    const sourcePort = PORTS.find((port) => Number(port.id) === Number(f.port_id_a.value));
+    const sourcePort = findPortMetaByRef(f.port_id_a.value);
     const sourcePortType = sourcePort ? String(sourcePort.port_type_label || 'RJ45') : 'RJ45';
 
     try {
@@ -2836,18 +2967,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Why: Once the deep-link modal is consumed, removing query flags prevents a stale auto-open after save/reload.
-    if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0) {
+    if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0 || AUTO_OPEN_LINK_PORT_NO > 0 || AUTO_OPEN_EDIT_PORT_NO > 0) {
         const deepLinkUrl = new URL(window.location.href);
         deepLinkUrl.searchParams.delete('open_link_port_id');
         deepLinkUrl.searchParams.delete('open_edit_port_id');
+        deepLinkUrl.searchParams.delete('open_link_port_no');
+        deepLinkUrl.searchParams.delete('open_edit_port_no');
         window.history.replaceState({}, document.title, deepLinkUrl.toString());
     }
 
     // Why: IDF rack clicks route to this page with an explicit action so users land directly in the expected modal.
     if (AUTO_OPEN_LINK_PORT_ID > 0) {
         openLinkModal(AUTO_OPEN_LINK_PORT_ID);
+    } else if (AUTO_OPEN_LINK_PORT_NO > 0) {
+        openLinkModal(AUTO_OPEN_LINK_PORT_NO);
     } else if (AUTO_OPEN_EDIT_PORT_ID > 0) {
         openPortModal(AUTO_OPEN_EDIT_PORT_ID);
+    } else if (AUTO_OPEN_EDIT_PORT_NO > 0) {
+        openPortModal(AUTO_OPEN_EDIT_PORT_NO);
     } else if (EMBED_MODE && EMBED_MODAL_ONLY) {
         closeEmbeddedDeviceView('idf_device_embed_close');
     }
