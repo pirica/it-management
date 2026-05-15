@@ -40,26 +40,6 @@ if ($switchPortLabelColumn === null) {
     $switchPortLabelColumn = 'to_patch_port';
 }
 
-if (!function_exists('idf_parse_linked_equipment_id')) {
-    function idf_parse_linked_equipment_id($raw): int
-    {
-        $equipmentIdRaw = trim((string)$raw);
-        if ($equipmentIdRaw === '' || !ctype_digit($equipmentIdRaw)) {
-            return 0;
-        }
-
-        $equipmentId = (int)$equipmentIdRaw;
-        return $equipmentId > 0 ? $equipmentId : 0;
-    }
-}
-
-if (!function_exists('idf_generate_unlinked_equipment_token')) {
-    function idf_generate_unlinked_equipment_token(): string
-    {
-        return (string)random_int(1000, 9999) . '-' . (string)random_int(1000, 9999);
-    }
-}
-
 if (!function_exists('idf_prune_position_port_capacity')) {
     function idf_prune_position_port_capacity(
         mysqli $conn,
