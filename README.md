@@ -12,6 +12,18 @@ A complete IT Asset Management System built with PHP and MySQL, multi-company su
 - ✅ Responsive design
 - ✅ MySQLi implementation (no PDO)
 
+## Screenshots
+
+Captured from a local Laragon-style install at `http://localhost/it-management/` (default light theme after sign-in).
+
+**Dashboard** — tenant overview with quick stats and settings shortcut.
+
+![Dashboard overview](docs/readme/dashboard.png)
+
+**Equipment** — module list with search, sort, and table tools (export / import).
+
+![Equipment module list](docs/readme/equipment-list.png)
+
 ## Installation
 
 1. Extract the project files into your web root.
