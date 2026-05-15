@@ -406,8 +406,8 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             }
             $stmtInsertBootstrapPosition = mysqli_prepare(
                 $conn,
-                "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, 0, NULLIF(?, 0), ?)"
+                "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, rj45_count, sfp_count, switch_port_numbering_layout_id, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, 0, 0, NULLIF(?, 0), ?)"
             );
             if ($stmtInsertBootstrapPosition) {
                 $equipmentIdStr = (string)$equipmentId;
@@ -492,7 +492,7 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             mysqli_query(
                 $conn,
                 "UPDATE idf_positions
-                 SET equipment_id = NULL, device_name = CONCAT('Empty Position ', position_no), port_count = 0, notes = NULL
+                 SET equipment_id = NULL, device_name = CONCAT('Empty Position ', position_no), rj45_count = 0, sfp_count = 0, notes = NULL
                  WHERE id = {$oldPositionId}
                  LIMIT 1"
             );
@@ -513,7 +513,7 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             }
         }
     }
-    mysqli_query($conn, "UPDATE idf_positions SET port_count = {$portCount} WHERE id = {$targetPositionId} LIMIT 1");
+    mysqli_query($conn, "UPDATE idf_positions SET rj45_count = {$portCount} WHERE id = {$targetPositionId} LIMIT 1");
 
     if ($portCount > 0) {
         $unknownStatusId = 0;
@@ -635,7 +635,8 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
         "SELECT
             p.id AS position_id,
             p.idf_id,
-            p.port_count,
+            p.rj45_count,
+            p.sfp_count,
             COALESCE(p.switch_port_numbering_layout_id, 0) AS position_layout_id,
             COALESCE(e.hostname, '') AS equipment_hostname,
             {$switchFiberPortsNumberSelect} AS switch_fiber_ports_number,
@@ -672,7 +673,7 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
     }
 
     $idfId = (int)($meta['idf_id'] ?? 0);
-    $portCount = max(0, (int)($meta['port_count'] ?? 0));
+    $portCount = max(0, (int)($meta['rj45_count'] ?? $meta['port_count'] ?? 0));
     $fiberCount = max(0, (int)($meta['switch_fiber_ports_number'] ?? 0));
     $layoutId = (int)($meta['equipment_layout_id'] ?? 0);
     if ($layoutId <= 0) {

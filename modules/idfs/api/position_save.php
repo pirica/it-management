@@ -20,7 +20,20 @@ $switch_fiber_ports_number = $switch_fiber_ports_number_submitted ? substr(trim(
 if ($switch_fiber_ports_number === '__add_new__') {
     $switch_fiber_ports_number = '';
 }
-$port_count = isset($data['port_count']) ? (int)$data['port_count'] : 0;
+$rj45_count = 0;
+if (isset($data['rj45_count'])) {
+    $rj45_count = (int)$data['rj45_count'];
+} elseif (isset($data['port_count'])) {
+    $rj45_count = (int)$data['port_count'];
+}
+$sfp_count = 0;
+if ($switch_fiber_ports_number_submitted && $switch_fiber_ports_number === '') {
+    $sfp_count = 0;
+} elseif (isset($data['sfp_count'])) {
+    $sfp_count = max(0, min(9999, (int)$data['sfp_count']));
+} elseif ($switch_fiber_ports_number !== '' && preg_match('/^\d+$/', $switch_fiber_ports_number)) {
+    $sfp_count = (int)$switch_fiber_ports_number;
+}
 $notes = trim((string)($data['notes'] ?? ''));
 $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
 if ($switchPortLabelColumn === null) {
@@ -428,7 +441,7 @@ if ($switch_rj45_id > 0) {
             idf_fail('Invalid port count option');
         }
         if (!empty($switchRj45['name']) && preg_match('/(\d+)/', (string)$switchRj45['name'], $matches)) {
-            $port_count = (int)$matches[1];
+            $rj45_count = (int)$matches[1];
         }
     }
 }
@@ -439,8 +452,11 @@ if ($idf_id <= 0 || $position_no < 1 || $position_no > 250) {
 if ($device_name === '') {
     idf_fail('Device name is required');
 }
-if ($port_count < 0 || $port_count > 9999) {
-    idf_fail('Invalid port_count');
+if ($rj45_count < 0 || $rj45_count > 9999) {
+    idf_fail('Invalid rj45_count');
+}
+if ($sfp_count < 0 || $sfp_count > 9999) {
+    idf_fail('Invalid sfp_count');
 }
 if ($switch_fiber_ports_number !== '' && (!preg_match('/^\d+$/', $switch_fiber_ports_number) || (int)$switch_fiber_ports_number < 1 || (int)$switch_fiber_ports_number > 9999)) {
     idf_fail('Invalid Fiber Ports Number');
@@ -551,7 +567,7 @@ if ($equipment_id > 0) {
             if ($switch_rj45_id <= 0) {
                 $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
                 if (!empty($equipment['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipment['switch_rj45_name'], $matches)) {
-                    $port_count = (int)$matches[1];
+                    $rj45_count = (int)$matches[1];
                 }
             }
         } elseif ($switch_rj45_id <= 0) {
@@ -571,6 +587,12 @@ if ($equipment_id > 0) {
         }
         if ($switch_fiber_ports_number !== '') {
             idf_ensure_equipment_fiber_count_id($conn, $company_id, $switch_fiber_ports_number);
+        }
+        if ($sfp_count <= 0) {
+            $equipmentFiberCountRaw = trim((string)($equipment['switch_fiber_ports_number'] ?? ''));
+            if ($equipmentFiberCountRaw !== '' && preg_match('/^\d+$/', $equipmentFiberCountRaw)) {
+                $sfp_count = (int)$equipmentFiberCountRaw;
+            }
         }
 
         // Keep equipment table in sync
@@ -623,16 +645,17 @@ if (!$isIntentionallyUnlinked && $equipment_id <= 0 && $device_type_name === 'sw
             if ($layout_id <= 0) {
                 $layout_id = (int)($equipmentByName['switch_port_numbering_layout_id'] ?? 0);
             }
-            if ($port_count <= 0 && !empty($equipmentByName['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentByName['switch_rj45_name'], $matches)) {
-                $port_count = (int)$matches[1];
+            if ($rj45_count <= 0 && !empty($equipmentByName['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentByName['switch_rj45_name'], $matches)) {
+                $rj45_count = (int)$matches[1];
             }
         }
     }
 }
 
 if ($device_type_name === 'ups') {
-    // Why: UPS entries are not network switch panels and must not carry RJ45 port-count presets.
-    $port_count = 0;
+    // Why: UPS entries are not network switch panels and must not carry RJ45/SFP port-count presets.
+    $rj45_count = 0;
+    $sfp_count = 0;
 }
 
 $stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
@@ -849,14 +872,15 @@ if ($position_id > 0) {
          SET device_type=?,
              device_name=?,
              equipment_id=?,
-             port_count=?,
+             rj45_count=?,
+             sfp_count=?,
              switch_port_numbering_layout_id=?,
              notes=?
          WHERE id=?
          LIMIT 1"
     );
     if ($stmtUpdatePos) {
-        mysqli_stmt_bind_param($stmtUpdatePos, 'issiisi', $device_type_id, $device_name, $equipmentId_val, $port_count, $layout_val, $notes_val, $position_id);
+        mysqli_stmt_bind_param($stmtUpdatePos, 'issiiisi', $device_type_id, $device_name, $equipmentId_val, $rj45_count, $sfp_count, $layout_val, $notes_val, $position_id);
         if (!mysqli_stmt_execute($stmtUpdatePos)) {
             idf_fail('DB error updating position: ' . mysqli_stmt_error($stmtUpdatePos), 500);
         }
@@ -866,19 +890,20 @@ if ($position_id > 0) {
     $layout_val = $layout_id > 0 ? $layout_id : null;
     $stmtInsertPos = mysqli_prepare(
         $conn,
-        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, rj45_count, sfp_count, switch_port_numbering_layout_id, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            company_id=VALUES(company_id),
            device_type=VALUES(device_type),
            device_name=VALUES(device_name),
            equipment_id=VALUES(equipment_id),
-           port_count=VALUES(port_count),
+           rj45_count=VALUES(rj45_count),
+           sfp_count=VALUES(sfp_count),
            switch_port_numbering_layout_id=VALUES(switch_port_numbering_layout_id),
            notes=VALUES(notes)"
     );
     if ($stmtInsertPos) {
-        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissiis', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $port_count, $layout_val, $notes_val);
+        mysqli_stmt_bind_param($stmtInsertPos, 'iiiissiiis', $company_id, $idf_id, $position_no, $device_type_id, $device_name, $equipmentId_val, $rj45_count, $sfp_count, $layout_val, $notes_val);
         if (!mysqli_stmt_execute($stmtInsertPos)) {
             idf_fail('DB error saving position: ' . mysqli_stmt_error($stmtInsertPos), 500);
         }
@@ -899,7 +924,7 @@ if ($stmtPid) {
 if ($pid > 0) {
     $stmtSeedPosMeta = mysqli_prepare(
         $conn,
-        "SELECT equipment_id, port_count, device_name
+        "SELECT equipment_id, rj45_count, sfp_count, device_name
          FROM idf_positions
          WHERE id = ? AND company_id = ?
          LIMIT 1"
@@ -918,8 +943,11 @@ if ($pid > 0) {
                 $linkedEquipmentId = $positionEquipmentId;
                 $isIntentionallyUnlinked = false;
             }
-            if ($port_count <= 0) {
-                $port_count = (int)($seedPosMeta['port_count'] ?? 0);
+            if ($rj45_count <= 0) {
+                $rj45_count = (int)($seedPosMeta['rj45_count'] ?? 0);
+            }
+            if ($sfp_count <= 0) {
+                $sfp_count = (int)($seedPosMeta['sfp_count'] ?? 0);
             }
             if (!$isIntentionallyUnlinked && $equipment_id <= 0) {
                 $seedDeviceName = trim((string)($seedPosMeta['device_name'] ?? ''));
@@ -960,11 +988,7 @@ if ($pid > 0) {
         mysqli_stmt_close($stmtCnt);
     }
 
-    $unlinkedFiberPortCount = 0;
-    if ($isIntentionallyUnlinked && $switch_fiber_ports_number !== '' && preg_match('/^\d+$/', $switch_fiber_ports_number)) {
-        $unlinkedFiberPortCount = (int)$switch_fiber_ports_number;
-    }
-    if ($port_count > 0 || $equipment_id > 0 || $unlinkedFiberPortCount > 0) {
+    if ($rj45_count > 0 || $equipment_id > 0 || $sfp_count > 0) {
         $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
@@ -1013,7 +1037,7 @@ if ($pid > 0) {
         }
 
         $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
-        if ($port_count > 0 && $rj45PortTypeId <= 0) {
+        if ($rj45_count > 0 && $rj45PortTypeId <= 0) {
             idf_fail('Unable to resolve RJ45 port type for company', 500);
         }
         $rj45PortTypeName = 'RJ45';
@@ -1038,7 +1062,7 @@ if ($pid > 0) {
             }
         }
 
-        if ($device_type_name === 'switch' && $equipment_id > 0 && $port_count >= 0 && $rj45PortTypeId > 0) {
+        if ($device_type_name === 'switch' && $equipment_id > 0 && $rj45_count >= 0 && $rj45PortTypeId > 0) {
             // Why: Rack Edit must keep linked switch_ports capacity aligned with selected RJ45 count (grow + shrink), not only idf_positions metadata.
             $switchPortsHasManagementColumn = idf_table_has_column($conn, 'switch_ports', 'management_id');
             $switchPortsHasCommentsColumn = idf_table_has_column($conn, 'switch_ports', 'comments');
@@ -1065,7 +1089,7 @@ if ($pid > 0) {
                 $company_id,
                 $equipment_id,
                 $idf_id,
-                $port_count,
+                $rj45_count,
                 $rj45PortTypeId,
                 $rj45PortTypeName,
                 $unknownStatusId,
@@ -1087,7 +1111,7 @@ if ($pid > 0) {
                    AND port_no > ?"
             );
             if ($stmtDeleteExtraIdfRj45) {
-                mysqli_stmt_bind_param($stmtDeleteExtraIdfRj45, 'iiii', $company_id, $pid, $rj45PortTypeId, $port_count);
+                mysqli_stmt_bind_param($stmtDeleteExtraIdfRj45, 'iiii', $company_id, $pid, $rj45PortTypeId, $rj45_count);
                 if (!mysqli_stmt_execute($stmtDeleteExtraIdfRj45)) {
                     $err = mysqli_stmt_error($stmtDeleteExtraIdfRj45);
                     mysqli_stmt_close($stmtDeleteExtraIdfRj45);
@@ -1307,11 +1331,11 @@ if ($pid > 0) {
                     }
                 }
             }
-        } elseif ($unlinkedFiberPortCount > 0) {
+        } elseif ($sfp_count > 0) {
             $fiberTypeFallback = 'sfp';
             $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
             if ($fiberTypeId > 0) {
-                for ($fiberPortNo = 1; $fiberPortNo <= $unlinkedFiberPortCount; $fiberPortNo++) {
+                for ($fiberPortNo = 1; $fiberPortNo <= $sfp_count; $fiberPortNo++) {
                     $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
                     if (!isset($portTypeByNumber[$fiberKey])) {
                         $portTypeByNumber[$fiberKey] = [
@@ -1333,8 +1357,8 @@ if ($pid > 0) {
                 }
             }
         }
-        if ($port_count > 0) {
-            for ($rj45PortNo = 1; $rj45PortNo <= $port_count; $rj45PortNo++) {
+        if ($rj45_count > 0) {
+            for ($rj45PortNo = 1; $rj45PortNo <= $rj45_count; $rj45PortNo++) {
                 $rj45Key = $rj45PortTypeId . ':' . $rj45PortNo;
                 if (!isset($portTypeByNumber[$rj45Key])) {
                     // Why: Add-device flow must always materialize selected RJ45 capacity even when linked switch metadata only contributes fiber rows.
@@ -1397,7 +1421,7 @@ if ($pid > 0) {
                     mysqli_stmt_execute($stmtInsertPort);
                 }
             } else {
-                for ($n = 1; $n <= $port_count; $n++) {
+                for ($n = 1; $n <= $rj45_count; $n++) {
                     $emptyLabel = '';
                     $emptyConn = '';
                     $emptyNotes = '';
