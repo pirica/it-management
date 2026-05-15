@@ -243,6 +243,95 @@ function idf_resolve_position_equipment_id(
 }
 
 /**
+ * Infer equipment_id when the position row does not declare it but the UI already shows live switch data
+ * (e.g. connected_to hostname from switch_ports, or device_name on the rack position).
+ */
+function idf_infer_equipment_id_after_ports_load(
+    mysqli $conn,
+    int $company_id,
+    array $ports,
+    array $positionRow
+): int {
+    if ($company_id <= 0) {
+        return 0;
+    }
+
+    $declared = idf_parse_linked_equipment_id($positionRow['equipment_id'] ?? '');
+    if ($declared > 0) {
+        return $declared;
+    }
+
+    $tryLookupHost = static function (mysqli $conn, int $companyId, string $hint): int {
+        $hint = trim($hint);
+        if ($hint === '' || strcasecmp($hint, '-') === 0) {
+            return 0;
+        }
+
+        $stmtEq = mysqli_prepare(
+            $conn,
+            'SELECT id
+             FROM equipment
+             WHERE company_id = ?
+               AND (LOWER(hostname) = LOWER(?) OR LOWER(name) = LOWER(?))
+             LIMIT 1'
+        );
+        if ($stmtEq) {
+            mysqli_stmt_bind_param($stmtEq, 'iss', $companyId, $hint, $hint);
+            mysqli_stmt_execute($stmtEq);
+            $resEq = mysqli_stmt_get_result($stmtEq);
+            $rowEq = $resEq ? mysqli_fetch_assoc($resEq) : null;
+            mysqli_stmt_close($stmtEq);
+            $eqId = (int)($rowEq['id'] ?? 0);
+            if ($eqId > 0) {
+                return $eqId;
+            }
+        }
+
+        $stmtSp = mysqli_prepare(
+            $conn,
+            'SELECT DISTINCT equipment_id
+             FROM switch_ports
+             WHERE company_id = ?
+               AND equipment_id > 0
+               AND TRIM(hostname) <> \'\'
+               AND LOWER(TRIM(hostname)) = LOWER(?)
+             LIMIT 1'
+        );
+        if ($stmtSp) {
+            mysqli_stmt_bind_param($stmtSp, 'is', $companyId, $hint);
+            mysqli_stmt_execute($stmtSp);
+            $resSp = mysqli_stmt_get_result($stmtSp);
+            $rowSp = $resSp ? mysqli_fetch_assoc($resSp) : null;
+            mysqli_stmt_close($stmtSp);
+            $spEq = (int)($rowSp['equipment_id'] ?? 0);
+            if ($spEq > 0) {
+                return $spEq;
+            }
+        }
+
+        return 0;
+    };
+
+    foreach ($ports as $p) {
+        $c = trim((string)($p['connected_to'] ?? ''));
+        $resolved = $tryLookupHost($conn, $company_id, $c);
+        if ($resolved > 0) {
+            return $resolved;
+        }
+    }
+
+    $deviceName = trim((string)($positionRow['device_name'] ?? ''));
+    if ($deviceName !== '') {
+        $resolved = $tryLookupHost($conn, $company_id, $deviceName);
+        if ($resolved > 0) {
+            return $resolved;
+        }
+    }
+
+    return 0;
+}
+
+/**
  * Fill missing effective_* / display fields on an IDF port row from a switch_ports row.
  */
 function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $switchRow, int $equipmentDefaultPoeId = 0): void
