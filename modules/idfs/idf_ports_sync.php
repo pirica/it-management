@@ -168,6 +168,81 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
 }
 
 /**
+ * Resolve the equipment that owns switch_ports for a rack position (declared link, port match, or IDF).
+ */
+function idf_resolve_position_equipment_id(
+    mysqli $conn,
+    int $company_id,
+    int $positionId,
+    int $positionNo,
+    int $idfId,
+    int $declaredEquipmentId
+): int {
+    if ($declaredEquipmentId > 0) {
+        return $declaredEquipmentId;
+    }
+    if ($company_id <= 0 || $positionId <= 0) {
+        return 0;
+    }
+
+    $positionKeys = [$positionId];
+    if ($positionNo > 0 && $positionNo !== $positionId) {
+        $positionKeys[] = $positionNo;
+    }
+    $positionKeyList = implode(',', array_map('intval', $positionKeys));
+
+    $resByPorts = mysqli_query(
+        $conn,
+        "SELECT sp.equipment_id, COUNT(*) AS match_count
+         FROM switch_ports sp
+         INNER JOIN idf_ports pr
+           ON pr.company_id = sp.company_id
+          AND pr.port_no = sp.port_number
+         WHERE sp.company_id = {$company_id}
+           AND sp.equipment_id IS NOT NULL
+           AND sp.equipment_id > 0
+           AND pr.position_id IN ({$positionKeyList})
+         GROUP BY sp.equipment_id
+         ORDER BY match_count DESC, sp.equipment_id ASC
+         LIMIT 1"
+    );
+    if ($resByPorts && ($row = mysqli_fetch_assoc($resByPorts))) {
+        $equipmentId = (int)($row['equipment_id'] ?? 0);
+        if ($equipmentId > 0) {
+            return $equipmentId;
+        }
+    }
+
+    if ($idfId > 0) {
+        $stmtByIdf = mysqli_prepare(
+            $conn,
+            'SELECT sp.equipment_id, COUNT(*) AS match_count
+             FROM switch_ports sp
+             WHERE sp.company_id = ?
+               AND sp.equipment_id IS NOT NULL
+               AND sp.equipment_id > 0
+               AND sp.idf_id = ?
+             GROUP BY sp.equipment_id
+             ORDER BY match_count DESC, sp.equipment_id ASC
+             LIMIT 1'
+        );
+        if ($stmtByIdf) {
+            mysqli_stmt_bind_param($stmtByIdf, 'ii', $company_id, $idfId);
+            mysqli_stmt_execute($stmtByIdf);
+            $resByIdf = mysqli_stmt_get_result($stmtByIdf);
+            $rowByIdf = $resByIdf ? mysqli_fetch_assoc($resByIdf) : null;
+            mysqli_stmt_close($stmtByIdf);
+            $equipmentId = (int)($rowByIdf['equipment_id'] ?? 0);
+            if ($equipmentId > 0) {
+                return $equipmentId;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/**
  * Fill missing effective_* / display fields on an IDF port row from a switch_ports row.
  */
 function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $switchRow, int $equipmentDefaultPoeId = 0): void
@@ -353,6 +428,16 @@ function idf_attach_switch_port_ids_to_ports(
             if ($resolvedSwitchPortId > 0) {
                 $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
             }
+            if ($resolvedSwitchPortId > 0) {
+                $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
+            }
+        }
+        if ($resolvedSwitchPortId > 0 && isset($switchMetaById[$resolvedSwitchPortId])) {
+            idf_merge_switch_port_metadata_into_port_row(
+                $portRow,
+                $switchMetaById[$resolvedSwitchPortId],
+                $equipmentDefaultPoeId
+            );
         }
         if ($resolvedSwitchPortId > 0 && isset($switchMetaById[$resolvedSwitchPortId])) {
             idf_merge_switch_port_metadata_into_port_row(
