@@ -22,11 +22,48 @@ if (!function_exists('itm_format_visualizer_equipment_code')) {
     }
 }
 
+if (!function_exists('itm_build_capacity_placeholder_ports')) {
+    /**
+     * Why: Rack cards can declare RJ45/SFP capacity before idf_ports rows are materialized; synthesize dots from saved counts.
+     */
+    function itm_build_capacity_placeholder_ports(array $options): array
+    {
+        $ports = [];
+        $append = static function (array &$target, array $numbers, string $typeLabel): void {
+            foreach ($numbers as $portNoRaw) {
+                $portNo = (int)$portNoRaw;
+                if ($portNo <= 0) {
+                    continue;
+                }
+                $target[] = [
+                    'id' => 0,
+                    'port_no' => $portNo,
+                    'port_type_label' => $typeLabel,
+                    'status_label' => 'Unknown',
+                    'status_color' => '#808080',
+                    'cable_hex_color' => '#808080',
+                ];
+            }
+        };
+
+        $append($ports, (array)($options['rj45_ports'] ?? []), 'RJ45');
+        $append($ports, (array)($options['sfp_ports'] ?? []), 'SFP');
+        $append($ports, (array)($options['sfp_plus_ports'] ?? []), 'SFP+');
+
+        return $ports;
+    }
+}
+
 if (!function_exists('itm_render_port_visualizer')) {
     /**
      * Renders the HTML for a port grid.
      */
     function itm_render_port_visualizer($ports, $options = []) {
+        $hasRj45Capacity = !empty($options['rj45_ports']);
+        $hasFiberCapacity = !empty($options['sfp_ports']) || !empty($options['sfp_plus_ports']);
+        if (empty($ports)) {
+            $ports = itm_build_capacity_placeholder_ports($options);
+        }
         if (empty($ports)) {
             return '';
         }
@@ -36,6 +73,9 @@ if (!function_exists('itm_render_port_visualizer')) {
         // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
         $gridPortType = strtolower(trim((string)($options['grid_port_type'] ?? 'all')));
+        if ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
+            $gridPortType = 'all';
+        }
         if ($gridPortType === 'rj45') {
             $renderPorts = [];
             foreach ($ports as $itmRenderablePort) {
@@ -45,6 +85,12 @@ if (!function_exists('itm_render_port_visualizer')) {
                 }
                 $renderPorts[] = $itmRenderablePort;
             }
+        }
+        if (empty($renderPorts) && $hasFiberCapacity && $gridPortType !== 'rj45') {
+            $renderPorts = itm_build_capacity_placeholder_ports($options);
+        }
+        if (empty($renderPorts)) {
+            return '';
         }
 
         // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
