@@ -1130,6 +1130,58 @@ function idf_first_existing_column(mysqli $conn, string $table, array $candidate
     return null;
 }
 
+function idf_port_type_link_family(string $typeLabel): string {
+    $normalized = preg_replace('/[^a-z0-9]+/i', '', strtolower(trim($typeLabel)));
+    if ($normalized !== '' && strpos($normalized, 'sfp') !== false) {
+        return 'fiber';
+    }
+    return 'rj45';
+}
+
+function idf_ports_are_link_compatible(string $typeLabelA, string $typeLabelB): bool {
+    return idf_port_type_link_family($typeLabelA) === idf_port_type_link_family($typeLabelB);
+}
+
+function idf_port_type_link_mismatch_message(string $typeLabelA, string $typeLabelB): string {
+    $displayA = trim($typeLabelA) !== '' ? trim($typeLabelA) : (idf_port_type_link_family($typeLabelA) === 'fiber' ? 'SFP' : 'RJ45');
+    $displayB = trim($typeLabelB) !== '' ? trim($typeLabelB) : (idf_port_type_link_family($typeLabelB) === 'fiber' ? 'SFP' : 'RJ45');
+    return 'Cannot link ' . $displayA . ' to ' . $displayB
+        . '. RJ45 ports can only connect to RJ45 ports on another device.'
+        . ' SFP/SFP+ ports can only connect to SFP/SFP+ ports on another device.';
+}
+
+function idf_fetch_port_type_labels(mysqli $conn, int $company_id, array $portIds): array {
+    $portIds = array_values(array_unique(array_filter(array_map('intval', $portIds), static function ($id) {
+        return $id > 0;
+    })));
+    if (!$portIds) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($portIds), '?'));
+    $types = str_repeat('i', count($portIds));
+    $sql = "SELECT pr.id AS port_id, COALESCE(spt.type, 'RJ45') AS port_type_label
+            FROM idf_ports pr
+            LEFT JOIN switch_port_types spt
+              ON spt.id = pr.port_type
+             AND spt.company_id = pr.company_id
+            WHERE pr.company_id = ? AND pr.id IN ($placeholders)";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+    $bindTypes = 'i' . $types;
+    $bindValues = array_merge([$company_id], $portIds);
+    mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $labels = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $labels[(int)($row['port_id'] ?? 0)] = (string)($row['port_type_label'] ?? 'RJ45');
+    }
+    mysqli_stmt_close($stmt);
+    return $labels;
+}
+
 idf_ensure_status_schema($conn);
 require_once __DIR__ . '/../idf_positions_schema.php';
 idf_ensure_idf_positions_capacity_columns($conn);

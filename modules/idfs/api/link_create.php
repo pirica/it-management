@@ -105,6 +105,13 @@ if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
     idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
 }
 
+$portTypeLabels = idf_fetch_port_type_labels($conn, $company_id, [$portA, $portB]);
+$portTypeLabelA = (string)($portTypeLabels[$portA] ?? 'RJ45');
+$portTypeLabelB = (string)($portTypeLabels[$portB] ?? 'RJ45');
+if (!idf_ports_are_link_compatible($portTypeLabelA, $portTypeLabelB)) {
+    idf_fail(idf_port_type_link_mismatch_message($portTypeLabelA, $portTypeLabelB));
+}
+
 $positionEquipmentSerialSeen = [];
 $positionEquipmentIds = array_values(array_unique(array_filter(array_map(static function ($id): int {
     $idString = trim((string)$id);
@@ -346,6 +353,11 @@ if ($switchPortId > 0) {
 
         if (!$switchPort) {
             idf_fail('Selected equipment port not found');
+        }
+
+        $equipmentSwitchPortType = (string)($switchPort['equipment_port_type'] ?? '');
+        if (!idf_ports_are_link_compatible($portTypeLabelA, $equipmentSwitchPortType)) {
+            idf_fail(idf_port_type_link_mismatch_message($portTypeLabelA, $equipmentSwitchPortType));
         }
 
         $equipmentId_val = (string)$switchPort['equipment_id'];
