@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
 require_once __DIR__ . '/idf_positions_schema.php';
@@ -91,7 +91,7 @@ function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
         return trim($emoji . ' ' . $label);
     }
 
-    return 'ðŸ“¦ Other';
+    return '📦 Other';
 }
 
 $csrf = idf_csrf_token();
@@ -143,18 +143,18 @@ if ($stmtDeviceTypes) {
 
 if (!$idfDeviceTypeOptions) {
     $idfDeviceTypeOptions = [
-        ['value' => 1, 'label' => 'ðŸ”€ Switch'],
-        ['value' => 2, 'label' => 'âž° Patch Panel'],
-        ['value' => 3, 'label' => 'ðŸ”‹ UPS'],
-        ['value' => 4, 'label' => 'ðŸ–¥ï¸ Server'],
-        ['value' => 5, 'label' => 'ðŸ“¦ Other'],
+        ['value' => 1, 'label' => '🔀 Switch'],
+        ['value' => 2, 'label' => '➰ Patch Panel'],
+        ['value' => 3, 'label' => '🔋 UPS'],
+        ['value' => 4, 'label' => '🖥️ Server'],
+        ['value' => 5, 'label' => '📦 Other'],
     ];
     $idfDeviceTypeMap = [
-        1 => ['emoji' => 'ðŸ”€', 'label' => 'Switch', 'key' => 'switch'],
-        2 => ['emoji' => 'âž°', 'label' => 'Patch Panel', 'key' => 'patch_panel'],
-        3 => ['emoji' => 'ðŸ”‹', 'label' => 'UPS', 'key' => 'ups'],
-        4 => ['emoji' => 'ðŸ–¥ï¸', 'label' => 'Server', 'key' => 'server'],
-        5 => ['emoji' => 'ðŸ“¦', 'label' => 'Other', 'key' => 'other'],
+        1 => ['emoji' => '🔀', 'label' => 'Switch', 'key' => 'switch'],
+        2 => ['emoji' => '➰', 'label' => 'Patch Panel', 'key' => 'patch_panel'],
+        3 => ['emoji' => '🔋', 'label' => 'UPS', 'key' => 'ups'],
+        4 => ['emoji' => '🖥️', 'label' => 'Server', 'key' => 'server'],
+        5 => ['emoji' => '📦', 'label' => 'Other', 'key' => 'other'],
     ];
     $switchDeviceTypeId = 1;
     $upsDeviceTypeId = 3;
@@ -899,9 +899,9 @@ foreach ($equipmentOptions as $equipmentOption) {
                 <section class="idf-command-bar">
                     <div class="idf-command-title">
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <a class="btn btn-sm" href="index.php">â† Back</a>
+                            <a class="btn btn-sm" href="index.php">← Back</a>
                             <div class="idf-rack-title">
-                                ðŸ—„ï¸ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($locationNameLabel); ?>
+                                🗄️ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($locationNameLabel); ?>
                                 <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
                             </div>
                         </div>
@@ -923,15 +923,15 @@ foreach ($equipmentOptions as $equipmentOption) {
                                 <div class="idf-rack-title">Rack Face (<span id="idfVisibleCount"><?php echo $displayMaxPos; ?></span> positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
-                                    Â· Location: <?php echo sanitize($locationNameLabel); ?>
-                                    Â· Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
-                                    Â· IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
-                                    Â· Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
+                                    · Location: <?php echo sanitize($locationNameLabel); ?>
+                                    · Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
+                                    · IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
+                                    · Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm idf-mini" type="button" onclick="idfAddPosition()">&#10133;</button>
-                                <span class="idf-badge">Move â†‘ â†“ â€¢ Drag â€¢ Copy â€¢ Ports</span>
+                                <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
                             </div>
                         </div>
 
@@ -958,13 +958,13 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <div class="idf-slot-sub">
                                                     <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)($pos['device_type'] ?? ''), $idfDeviceTypeMap)); ?></span>
                                                     <?php if ((int)($pos['rj45_count'] ?? 0) > 0): ?>
-                                                        <span class="idf-badge">ðŸ”Œ <?php echo (int)$pos['rj45_count']; ?> RJ45</span>
+                                                        <span class="idf-badge">🔌 <?php echo (int)$pos['rj45_count']; ?> RJ45</span>
                                                     <?php endif; ?>
                                                     <?php if ((int)($pos['sfp_count'] ?? 0) > 0): ?>
-                                                        <span class="idf-badge">ðŸ§¬ <?php echo (int)$pos['sfp_count']; ?> SFP</span>
+                                                        <span class="idf-badge">🧬 <?php echo (int)$pos['sfp_count']; ?> SFP</span>
                                                     <?php endif; ?>
                                                     <?php if (!empty($pos['equipment_id'])): ?>
-                                                        <span class="idf-badge">ðŸ§¾ Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
+                                                        <span class="idf-badge">🧾 Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
                                                     <?php endif; ?>
                                                 </div>
                                                 <div style="margin-top: 8px;">
@@ -999,8 +999,8 @@ foreach ($equipmentOptions as $equipmentOption) {
 
                                     <div class="idf-slot-actions">
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition(<?php echo $i; ?>)">&#10134;</button>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">â†‘</button>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">â†“</button>
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">↑</button>
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
 
                                         <?php if ($pos): ?>
                                             <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">View</a>
@@ -1012,7 +1012,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                             <?php if ($idfShowEditLinked): ?>
                                                 <a class="btn btn-sm idf-mini" href="../equipment/index.php?switch_id=<?php echo (int)$idfEquipmentIdRaw; ?>&spm=1#switch-port-manager">Edit Linked</a>
                                             <?php endif; ?>
-                                            <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy toâ€¦</button>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
                                             <button class="btn btn-sm idf-mini" type="button" data-device-name="<?php echo htmlspecialchars((string)($pos['device_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, this.dataset.deviceName)">Delete</button>
                                         <?php else: ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
@@ -1052,7 +1052,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title" id="idfModalTitle">Device</div>
-            <button class="btn btn-sm" type="button" onclick="closeModal()">âœ–</button>
+            <button class="btn btn-sm" type="button" onclick="closeModal()">✖</button>
         </div>
 
         <form id="idfDeviceForm" class="idf-grid-2">
@@ -1081,10 +1081,10 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
-                            <?php echo sanitize($e['name'] . (!empty($e['hostname']) ? (' â€¢ Host ' . $e['hostname']) : '')); ?>
+                            <?php echo sanitize($e['name'] . (!empty($e['hostname']) ? (' • Host ' . $e['hostname']) : '')); ?>
                         </option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">âž•</option>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
@@ -1110,7 +1110,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <?php foreach ($switchRj45Options as $switchRj45Option): ?>
                         <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">âž•</option>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
@@ -1121,7 +1121,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <?php foreach ($switchFiberPortsNumberOptions as $switchFiberPortsNumberOption): ?>
                         <option value="<?php echo sanitize($switchFiberPortsNumberOption); ?>"><?php echo sanitize($switchFiberPortsNumberOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">âž•</option>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
@@ -1142,7 +1142,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Copy device to position</div>
-            <button class="btn btn-sm" type="button" onclick="closeCopy()">âœ–</button>
+            <button class="btn btn-sm" type="button" onclick="closeCopy()">✖</button>
         </div>
 
         <form id="idfCopyForm" class="idf-grid-2">
@@ -1170,7 +1170,6 @@ foreach ($equipmentOptions as $equipmentOption) {
         </form>
     </div>
 </div>
-
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -1226,8 +1225,8 @@ function createEmptySlot(positionNo) {
         </div>
         <div class="idf-slot-actions">
             <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition(${positionNo})">&#10134;</button>
-            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">â†‘</button>
-            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">â†“</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">↑</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">↓</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(${positionNo}, null)">Add device</button>
         </div>
     `;
