@@ -181,11 +181,13 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
   * PR descriptions must list the exact commands that were run and their outcomes.
-* **New branch + New PR always (mandatory):**
-  * Package every requested implementation in a **fresh branch** and open a **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
+* **New branch + NEW PR always (mandatory — non-negotiable):**
+  * **Every separate request, bugfix, or follow-up** ships on a **fresh branch** and opens a **brand-new pull request**. Do **not** add unrelated commits to an already-open PR “to save time”, and do **not** reuse **PR #N** for **new scope** after merge unless the user explicitly asked to extend that same PR while it is still open.
+  * Treat **“always a NEW PR”** literally: **`gh pr create`** (or equivalent) for each deliverable; the prior merged PR is history—**next change = next PR number**.
+  * Package every requested implementation in a **fresh branch** and open that **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
   * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
-  * Do not reuse a previously opened PR for a new request, even if the files overlap.
-  * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your ‘NEW PR always’ rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
+  * Do not reuse a previously opened **pull request** for a **new** request, even if the files overlap.
+  * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your **NEW PR always** rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
   * All **Create, Edit, Update, Delete, Copy, and Move** operations must keep the following tables fully synchronized at all times: `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links`.
   * **Hard-fail policy:** partial cross-table updates are not allowed. When a workflow touches multiple IDF-related tables, use transaction boundaries and rollback on any synchronization failure.

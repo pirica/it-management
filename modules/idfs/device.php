@@ -1769,15 +1769,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div data-link-default-field="vlan">
-                <label class="label">VLAN</label>
-                <select class="input" name="vlan">
-                    <option value="">-- None --</option>
-                    <?php foreach ($vlanOptions as $vlanId => $vlanLabel): ?>
-                        <option value="<?php echo (int)$vlanId; ?>"><?php echo sanitize($vlanLabel); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
             <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
                 <label class="label" id="linkCommentsLabel">Comments</label>
