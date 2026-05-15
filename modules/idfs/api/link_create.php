@@ -21,6 +21,13 @@ $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
 $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 $linkedCableColorName = trim((string)($data['linked_cable_color'] ?? ''));
 $linkedCableColorHexRaw = trim((string)($data['linked_cable_color_hex'] ?? ''));
+$rj45SpeedId = isset($data['rj45_speed_id']) ? (int)$data['rj45_speed_id'] : 0;
+$fiberPortId = isset($data['fiber_port_id']) ? (int)$data['fiber_port_id'] : 0;
+$fiberPatchId = isset($data['fiber_patch_id']) ? (int)$data['fiber_patch_id'] : 0;
+$fiberRackId = isset($data['fiber_rack_id']) ? (int)$data['fiber_rack_id'] : 0;
+$toIdfId = isset($data['to_idf_id']) ? (int)$data['to_idf_id'] : 0;
+$toRackId = isset($data['to_rack_id']) ? (int)$data['to_rack_id'] : 0;
+$toLocationId = isset($data['to_location_id']) ? (int)$data['to_location_id'] : 0;
 $requestCableColorName = trim((string)($data['cable_color_name'] ?? ''));
 $requestCableColorHexRaw = trim((string)($data['cable_color_hex'] ?? ''));
 $resolvedColorNameInput = $linkedCableColorName !== '' ? $linkedCableColorName : $requestCableColorName;
@@ -150,6 +157,13 @@ $equipmentHostname_val = null;
 $equipmentPortType_val = null;
 $equipmentPort_val = null;
 $equipmentVlanId_val = null;
+$equipmentRj45SpeedId_val = $rj45SpeedId > 0 ? $rj45SpeedId : null;
+$equipmentFiberPortId_val = $fiberPortId > 0 ? $fiberPortId : null;
+$equipmentFiberPatchId_val = $fiberPatchId > 0 ? $fiberPatchId : null;
+$equipmentFiberRackId_val = $fiberRackId > 0 ? $fiberRackId : null;
+$equipmentToIdfId_val = $toIdfId > 0 ? $toIdfId : null;
+$equipmentToRackId_val = $toRackId > 0 ? $toRackId : null;
+$equipmentToLocationId_val = $toLocationId > 0 ? $toLocationId : null;
 $equipmentLabel_val = null;
 $equipmentComments_val = null;
 $equipmentStatusId_val = null;
@@ -304,6 +318,13 @@ if ($switchPortId > 0) {
             COALESCE(spt.type, sp.port_type) AS equipment_port_type,
             sp.port_number AS equipment_port,
             sp.vlan_id AS equipment_vlan_id,
+            sp.rj45_speed_id AS equipment_rj45_speed_id,
+            sp.fiber_port_id AS equipment_fiber_port_id,
+            sp.fiber_patch_id AS equipment_fiber_patch_id,
+            sp.fiber_rack_id AS equipment_fiber_rack_id,
+            sp.to_idf_id AS equipment_to_idf_id,
+            sp.to_rack_id AS equipment_to_rack_id,
+            sp.to_location_id AS equipment_to_location_id,
             sp.{$switchPortLabelColumn} AS equipment_label,
             sp.comments AS equipment_comments,
             sp.status_id AS equipment_status_id,
@@ -340,6 +361,27 @@ if ($switchPortId > 0) {
         $equipmentVlanId_val = isset($switchPort['equipment_vlan_id']) && $switchPort['equipment_vlan_id'] !== null
             ? (int)$switchPort['equipment_vlan_id']
             : null;
+        $equipmentRj45SpeedId_val = isset($switchPort['equipment_rj45_speed_id']) && $switchPort['equipment_rj45_speed_id'] !== null
+            ? (int)$switchPort['equipment_rj45_speed_id']
+            : $equipmentRj45SpeedId_val;
+        $equipmentFiberPortId_val = isset($switchPort['equipment_fiber_port_id']) && $switchPort['equipment_fiber_port_id'] !== null
+            ? (int)$switchPort['equipment_fiber_port_id']
+            : $equipmentFiberPortId_val;
+        $equipmentFiberPatchId_val = isset($switchPort['equipment_fiber_patch_id']) && $switchPort['equipment_fiber_patch_id'] !== null
+            ? (int)$switchPort['equipment_fiber_patch_id']
+            : $equipmentFiberPatchId_val;
+        $equipmentFiberRackId_val = isset($switchPort['equipment_fiber_rack_id']) && $switchPort['equipment_fiber_rack_id'] !== null
+            ? (int)$switchPort['equipment_fiber_rack_id']
+            : $equipmentFiberRackId_val;
+        $equipmentToIdfId_val = isset($switchPort['equipment_to_idf_id']) && $switchPort['equipment_to_idf_id'] !== null
+            ? (int)$switchPort['equipment_to_idf_id']
+            : $equipmentToIdfId_val;
+        $equipmentToRackId_val = isset($switchPort['equipment_to_rack_id']) && $switchPort['equipment_to_rack_id'] !== null
+            ? (int)$switchPort['equipment_to_rack_id']
+            : $equipmentToRackId_val;
+        $equipmentToLocationId_val = isset($switchPort['equipment_to_location_id']) && $switchPort['equipment_to_location_id'] !== null
+            ? (int)$switchPort['equipment_to_location_id']
+            : $equipmentToLocationId_val;
         $equipmentLabel_val = (string)$switchPort['equipment_label'];
         $equipmentComments_val = (string)$switchPort['equipment_comments'];
         $equipmentStatusId_val = isset($switchPort['equipment_status_id']) && $switchPort['equipment_status_id'] !== null
@@ -517,6 +559,13 @@ if (
                 COALESCE(spt.type, sp.port_type) AS equipment_port_type,
                 sp.port_number AS equipment_port,
                 sp.vlan_id AS equipment_vlan_id,
+                sp.rj45_speed_id AS equipment_rj45_speed_id,
+                sp.fiber_port_id AS equipment_fiber_port_id,
+                sp.fiber_patch_id AS equipment_fiber_patch_id,
+                sp.fiber_rack_id AS equipment_fiber_rack_id,
+                sp.to_idf_id AS equipment_to_idf_id,
+                sp.to_rack_id AS equipment_to_rack_id,
+                sp.to_location_id AS equipment_to_location_id,
                 sp.{$switchPortLabelColumn} AS equipment_label,
                 sp.comments AS equipment_comments,
                 sp.status_id AS equipment_status_id,
@@ -543,6 +592,13 @@ if (
                 $equipmentPortType_val = (string)($destinationSwitch['equipment_port_type'] ?? '');
                 $equipmentPort_val = (string)($destinationSwitch['equipment_port'] ?? '');
                 $equipmentVlanId_val = isset($destinationSwitch['equipment_vlan_id']) ? (int)$destinationSwitch['equipment_vlan_id'] : null;
+                $equipmentRj45SpeedId_val = isset($destinationSwitch['equipment_rj45_speed_id']) ? (int)$destinationSwitch['equipment_rj45_speed_id'] : $equipmentRj45SpeedId_val;
+                $equipmentFiberPortId_val = isset($destinationSwitch['equipment_fiber_port_id']) ? (int)$destinationSwitch['equipment_fiber_port_id'] : $equipmentFiberPortId_val;
+                $equipmentFiberPatchId_val = isset($destinationSwitch['equipment_fiber_patch_id']) ? (int)$destinationSwitch['equipment_fiber_patch_id'] : $equipmentFiberPatchId_val;
+                $equipmentFiberRackId_val = isset($destinationSwitch['equipment_fiber_rack_id']) ? (int)$destinationSwitch['equipment_fiber_rack_id'] : $equipmentFiberRackId_val;
+                $equipmentToIdfId_val = isset($destinationSwitch['equipment_to_idf_id']) ? (int)$destinationSwitch['equipment_to_idf_id'] : $equipmentToIdfId_val;
+                $equipmentToRackId_val = isset($destinationSwitch['equipment_to_rack_id']) ? (int)$destinationSwitch['equipment_to_rack_id'] : $equipmentToRackId_val;
+                $equipmentToLocationId_val = isset($destinationSwitch['equipment_to_location_id']) ? (int)$destinationSwitch['equipment_to_location_id'] : $equipmentToLocationId_val;
                 $equipmentLabel_val = (string)($destinationSwitch['equipment_label'] ?? '');
                 $equipmentComments_val = (string)($destinationSwitch['equipment_comments'] ?? '');
                 $equipmentStatusId_val = isset($destinationSwitch['equipment_status_id']) ? (int)$destinationSwitch['equipment_status_id'] : null;
@@ -564,10 +620,12 @@ $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
         company_id, port_id_a, port_id_b, equipment_id, equipment_hostname,
-        equipment_port_type, equipment_port, equipment_vlan_id, equipment_label,
+        equipment_port_type, equipment_port, equipment_vlan_id, equipment_rj45_speed_id,
+        equipment_fiber_port_id, equipment_fiber_patch_id, equipment_fiber_rack_id,
+        equipment_to_idf_id, equipment_to_rack_id, equipment_to_location_id, equipment_label,
         equipment_comments, equipment_status_id, equipment_color_id, cable_color_id,
         cable_color_hex, cable_label, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)"
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?)"
 );
 
 $insertedLinkIds = [];
@@ -588,9 +646,11 @@ if ($stmtFinal) {
             $equipmentIdInsert = sprintf('%04d-%04d', random_int(1000, 9999), random_int(1000, 9999));
         }
         mysqli_stmt_bind_param(
-            $stmtFinal, 'iiissssissiiisss',
+            $stmtFinal, 'iiissssiiiiiiiissiiisss',
             $company_id, $portIdA, $portIdB, $equipmentIdInsert, $equipmentHostname_val,
-            $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentLabel_val,
+            $equipmentPortType_val, $equipmentPort_val, $equipmentVlanId_val, $equipmentRj45SpeedId_val,
+            $equipmentFiberPortId_val, $equipmentFiberPatchId_val, $equipmentFiberRackId_val,
+            $equipmentToIdfId_val, $equipmentToRackId_val, $equipmentToLocationId_val, $equipmentLabel_val,
             $equipmentComments_val, $statusSyncId, $equipmentColorId_val, $cableColorId,
             $selectedColorHex, $label_val, $notes_val
         );

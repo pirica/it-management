@@ -377,6 +377,48 @@ function idf_ensure_status_schema(mysqli $conn) {
         }
     }
 
+    $idfLinkNullableFkColumns = [
+        'equipment_rj45_speed_id' => ['after' => 'equipment_vlan_id', 'fk' => 'idf_links_ibfk_rj45_speed', 'ref' => 'rj45_speed'],
+        'equipment_fiber_port_id' => ['after' => 'equipment_rj45_speed_id', 'fk' => 'idf_links_ibfk_fiber_port', 'ref' => 'equipment_fiber'],
+        'equipment_fiber_patch_id' => ['after' => 'equipment_fiber_port_id', 'fk' => 'idf_links_ibfk_fiber_patch', 'ref' => 'equipment_fiber_patch'],
+        'equipment_fiber_rack_id' => ['after' => 'equipment_fiber_patch_id', 'fk' => 'idf_links_ibfk_fiber_rack', 'ref' => 'equipment_fiber_rack'],
+        'equipment_to_idf_id' => ['after' => 'equipment_fiber_rack_id', 'fk' => 'idf_links_ibfk_to_idf', 'ref' => 'idfs'],
+        'equipment_to_rack_id' => ['after' => 'equipment_to_idf_id', 'fk' => 'idf_links_ibfk_to_rack', 'ref' => 'racks'],
+        'equipment_to_location_id' => ['after' => 'equipment_to_rack_id', 'fk' => 'idf_links_ibfk_to_location', 'ref' => 'it_locations'],
+    ];
+    foreach ($idfLinkNullableFkColumns as $linkColumn => $linkMeta) {
+        if (!idf_table_has_column($conn, 'idf_links', $linkColumn)) {
+            mysqli_query($conn, "ALTER TABLE `idf_links` ADD COLUMN `{$linkColumn}` int DEFAULT NULL AFTER `{$linkMeta['after']}`");
+        }
+        $linkIndexName = $linkColumn;
+        $linkIndexRes = mysqli_query($conn, "SHOW INDEX FROM `idf_links` WHERE Key_name = '{$linkIndexName}'");
+        if (!$linkIndexRes || !mysqli_fetch_assoc($linkIndexRes)) {
+            mysqli_query($conn, "ALTER TABLE `idf_links` ADD KEY `{$linkIndexName}` (`{$linkColumn}`)");
+        }
+        $hasLinkFk = false;
+        $linkFkRes = mysqli_query(
+            $conn,
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = '{$databaseNameEscaped}'
+               AND TABLE_NAME = 'idf_links'
+               AND CONSTRAINT_NAME = '{$linkMeta['fk']}'
+             LIMIT 1"
+        );
+        if ($linkFkRes && mysqli_fetch_assoc($linkFkRes)) {
+            $hasLinkFk = true;
+        }
+        if (!$hasLinkFk) {
+            mysqli_query(
+                $conn,
+                "ALTER TABLE `idf_links`
+                 ADD CONSTRAINT `{$linkMeta['fk']}`
+                 FOREIGN KEY (`{$linkColumn}`) REFERENCES `{$linkMeta['ref']}` (`id`)
+                 ON DELETE SET NULL"
+            );
+        }
+    }
+
     // Why: Legacy audit triggers may still reference idf_links.cable_color after migration to cable_color_id.
     $linkCableColorLegacyRes = mysqli_query($conn, "SHOW COLUMNS FROM `idf_links` LIKE 'cable_color'");
     $linkHasLegacyCableColor = $linkCableColorLegacyRes && mysqli_num_rows($linkCableColorLegacyRes) > 0;
@@ -408,6 +450,13 @@ function idf_ensure_status_schema(mysqli $conn) {
                    'equipment_port_type', NEW.`equipment_port_type`,
                    'equipment_port', NEW.`equipment_port`,
                    'equipment_vlan_id', NEW.`equipment_vlan_id`,
+                   'equipment_rj45_speed_id', NEW.`equipment_rj45_speed_id`,
+                   'equipment_fiber_port_id', NEW.`equipment_fiber_port_id`,
+                   'equipment_fiber_patch_id', NEW.`equipment_fiber_patch_id`,
+                   'equipment_fiber_rack_id', NEW.`equipment_fiber_rack_id`,
+                   'equipment_to_idf_id', NEW.`equipment_to_idf_id`,
+                   'equipment_to_rack_id', NEW.`equipment_to_rack_id`,
+                   'equipment_to_location_id', NEW.`equipment_to_location_id`,
                    'equipment_label', NEW.`equipment_label`,
                    'equipment_comments', NEW.`equipment_comments`,
                    'equipment_status_id', NEW.`equipment_status_id`,
@@ -445,6 +494,13 @@ function idf_ensure_status_schema(mysqli $conn) {
                    'equipment_port_type', OLD.`equipment_port_type`,
                    'equipment_port', OLD.`equipment_port`,
                    'equipment_vlan_id', OLD.`equipment_vlan_id`,
+                   'equipment_rj45_speed_id', OLD.`equipment_rj45_speed_id`,
+                   'equipment_fiber_port_id', OLD.`equipment_fiber_port_id`,
+                   'equipment_fiber_patch_id', OLD.`equipment_fiber_patch_id`,
+                   'equipment_fiber_rack_id', OLD.`equipment_fiber_rack_id`,
+                   'equipment_to_idf_id', OLD.`equipment_to_idf_id`,
+                   'equipment_to_rack_id', OLD.`equipment_to_rack_id`,
+                   'equipment_to_location_id', OLD.`equipment_to_location_id`,
                    'equipment_label', OLD.`equipment_label`,
                    'equipment_comments', OLD.`equipment_comments`,
                    'equipment_status_id', OLD.`equipment_status_id`,
@@ -465,6 +521,13 @@ function idf_ensure_status_schema(mysqli $conn) {
                    'equipment_port_type', NEW.`equipment_port_type`,
                    'equipment_port', NEW.`equipment_port`,
                    'equipment_vlan_id', NEW.`equipment_vlan_id`,
+                   'equipment_rj45_speed_id', NEW.`equipment_rj45_speed_id`,
+                   'equipment_fiber_port_id', NEW.`equipment_fiber_port_id`,
+                   'equipment_fiber_patch_id', NEW.`equipment_fiber_patch_id`,
+                   'equipment_fiber_rack_id', NEW.`equipment_fiber_rack_id`,
+                   'equipment_to_idf_id', NEW.`equipment_to_idf_id`,
+                   'equipment_to_rack_id', NEW.`equipment_to_rack_id`,
+                   'equipment_to_location_id', NEW.`equipment_to_location_id`,
                    'equipment_label', NEW.`equipment_label`,
                    'equipment_comments', NEW.`equipment_comments`,
                    'equipment_status_id', NEW.`equipment_status_id`,
@@ -502,6 +565,13 @@ function idf_ensure_status_schema(mysqli $conn) {
                    'equipment_port_type', OLD.`equipment_port_type`,
                    'equipment_port', OLD.`equipment_port`,
                    'equipment_vlan_id', OLD.`equipment_vlan_id`,
+                   'equipment_rj45_speed_id', OLD.`equipment_rj45_speed_id`,
+                   'equipment_fiber_port_id', OLD.`equipment_fiber_port_id`,
+                   'equipment_fiber_patch_id', OLD.`equipment_fiber_patch_id`,
+                   'equipment_fiber_rack_id', OLD.`equipment_fiber_rack_id`,
+                   'equipment_to_idf_id', OLD.`equipment_to_idf_id`,
+                   'equipment_to_rack_id', OLD.`equipment_to_rack_id`,
+                   'equipment_to_location_id', OLD.`equipment_to_location_id`,
                    'equipment_label', OLD.`equipment_label`,
                    'equipment_comments', OLD.`equipment_comments`,
                    'equipment_status_id', OLD.`equipment_status_id`,

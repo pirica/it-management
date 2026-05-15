@@ -301,6 +301,13 @@ $stmtPorts = mysqli_prepare(
        i_local.name AS local_idf_name,
        COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
        COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
+       COALESCE(pr_live.rj45_speed_id, l.equipment_rj45_speed_id, pr.rj45_speed_id) AS effective_rj45_speed_id,
+       COALESCE(pr_live.fiber_port_id, sp_link.fiber_port_id, l.equipment_fiber_port_id, 0) AS effective_fiber_port_id,
+       COALESCE(pr_live.fiber_patch_id, sp_link.fiber_patch_id, l.equipment_fiber_patch_id, 0) AS effective_fiber_patch_id,
+       COALESCE(pr_live.fiber_rack_id, sp_link.fiber_rack_id, l.equipment_fiber_rack_id, 0) AS effective_fiber_rack_id,
+       COALESCE(pr_live.to_idf_id, sp_link.to_idf_id, l.equipment_to_idf_id, 0) AS effective_to_idf_id,
+       COALESCE(pr_live.to_rack_id, sp_link.to_rack_id, l.equipment_to_rack_id, 0) AS effective_to_rack_id,
+       COALESCE(pr_live.to_location_id, sp_link.to_location_id, l.equipment_to_location_id, 0) AS effective_to_location_id,
        CASE
             WHEN v_live.id IS NOT NULL THEN
               CASE
@@ -839,6 +846,86 @@ while ($resRj45Speeds && ($row = mysqli_fetch_assoc($resRj45Speeds))) {
     }
 }
 
+$fiberPatchOptions = [];
+$resFiberPatches = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_fiber_patch
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resFiberPatches && ($row = mysqli_fetch_assoc($resFiberPatches))) {
+    $fiberPatchId = (int)($row['id'] ?? 0);
+    $fiberPatchName = trim((string)($row['name'] ?? ''));
+    if ($fiberPatchId > 0 && $fiberPatchName !== '') {
+        $fiberPatchOptions[$fiberPatchId] = $fiberPatchName;
+    }
+}
+
+$fiberRackOptions = [];
+$resFiberRacks = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM equipment_fiber_rack
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resFiberRacks && ($row = mysqli_fetch_assoc($resFiberRacks))) {
+    $fiberRackId = (int)($row['id'] ?? 0);
+    $fiberRackName = trim((string)($row['name'] ?? ''));
+    if ($fiberRackId > 0 && $fiberRackName !== '') {
+        $fiberRackOptions[$fiberRackId] = $fiberRackName;
+    }
+}
+
+$idfOptions = [];
+$resIdfOptions = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM idfs
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resIdfOptions && ($row = mysqli_fetch_assoc($resIdfOptions))) {
+    $idfOptionId = (int)($row['id'] ?? 0);
+    $idfOptionName = trim((string)($row['name'] ?? ''));
+    if ($idfOptionId > 0 && $idfOptionName !== '') {
+        $idfOptions[$idfOptionId] = $idfOptionName;
+    }
+}
+
+$rackOptions = [];
+$resRackOptions = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM racks
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resRackOptions && ($row = mysqli_fetch_assoc($resRackOptions))) {
+    $rackOptionId = (int)($row['id'] ?? 0);
+    $rackOptionName = trim((string)($row['name'] ?? ''));
+    if ($rackOptionId > 0 && $rackOptionName !== '') {
+        $rackOptions[$rackOptionId] = $rackOptionName;
+    }
+}
+
+$locationOptions = [];
+$resLocationOptions = mysqli_query(
+    $conn,
+    "SELECT id, name
+     FROM it_locations
+     WHERE company_id = $company_id
+     ORDER BY name ASC"
+);
+while ($resLocationOptions && ($row = mysqli_fetch_assoc($resLocationOptions))) {
+    $locationOptionId = (int)($row['id'] ?? 0);
+    $locationOptionName = trim((string)($row['name'] ?? ''));
+    if ($locationOptionId > 0 && $locationOptionName !== '') {
+        $locationOptions[$locationOptionId] = $locationOptionName;
+    }
+}
+
 $poeOptions = [];
 $resPoeOptions = mysqli_query(
     $conn,
@@ -1288,7 +1375,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </select>
             </div>
             <div>
-                <label class="label">Label</label>
+                <label class="label" id="portPatchPortLabel">Patch port</label>
                 <input class="input" name="label">
             </div>
             <div>
@@ -1305,11 +1392,18 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </select>
             </div>
             <div>
-                <label class="label">Speed</label>
+                <label class="label" id="portSpeedFieldLabel">RJ45 Cable</label>
                 <select class="input" name="speed">
                     <option value="">-- None --</option>
                 </select>
             </div>
+            <div style="grid-column: 1 / -1;">
+                <label class="label">Destination port</label>
+                <select class="input" name="port_id_b">
+                    <option value="">Select destination port</option>
+                </select>
+            </div>
+            <div id="portTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div id="portPoeField">
                 <label class="label">PoE</label>
                 <select class="input" name="poe">
@@ -1342,7 +1436,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
             <div style="grid-column: 1 / -1;">
-                <label class="label">Notes</label>
+                <label class="label" id="portCommentsLabel">Comments</label>
                 <input class="input" name="notes">
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
@@ -1421,7 +1515,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
             <div data-link-default-field="cable_label">
-                <label class="label">Cable label (optional)</label>
+                <label class="label" id="linkPatchPortLabel">Patch port</label>
                 <input class="input" name="cable_label" placeholder="e.g. FIB-12 / CAT6-34">
             </div>
             <div data-link-default-field="status">
@@ -1433,8 +1527,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="__add_new__">➕</option>
                 </select>
             </div>
+            <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
-                <label class="label">Notes (optional)</label>
+                <label class="label" id="linkCommentsLabel">Comments</label>
                 <input class="input" name="notes" placeholder="Optional">
             </div>
             <div style="grid-column: 1 / -1; display:none;" id="linkedEquipmentFields">
@@ -1534,6 +1629,12 @@ const EMBED_MODE = <?php echo $embed_mode ? 'true' : 'false'; ?>;
 const EMBED_MODAL_ONLY = <?php echo $embed_modal_only ? 'true' : 'false'; ?>;
 const FIBER_SPEED_OPTIONS = <?php echo json_encode($fiberSpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const RJ45_SPEED_OPTIONS = <?php echo json_encode($rj45SpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const VLAN_OPTIONS = <?php echo json_encode($vlanOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const FIBER_PATCH_OPTIONS = <?php echo json_encode($fiberPatchOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const FIBER_RACK_OPTIONS = <?php echo json_encode($fiberRackOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const IDF_LINK_OPTIONS = <?php echo json_encode($idfOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const RACK_LINK_OPTIONS = <?php echo json_encode($rackOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const LOCATION_LINK_OPTIONS = <?php echo json_encode($locationOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const PORTS = <?php
 $portsMeta = array_map(static function (array $port): array {
     return [
@@ -1541,6 +1642,17 @@ $portsMeta = array_map(static function (array $port): array {
         'port_no' => (int)($port['port_no'] ?? 0),
         'label' => (string)($port['label'] ?? ''),
         'port_type_label' => (string)($port['port_type_label'] ?? 'RJ45'),
+        'status_id' => isset($port['status_id']) ? (int)$port['status_id'] : 0,
+        'vlan_id' => isset($port['effective_vlan_id']) ? (int)$port['effective_vlan_id'] : (isset($port['vlan_id']) ? (int)$port['vlan_id'] : 0),
+        'rj45_speed_id' => isset($port['effective_rj45_speed_id']) ? (int)$port['effective_rj45_speed_id'] : (isset($port['rj45_speed_id']) ? (int)$port['rj45_speed_id'] : 0),
+        'fiber_port_id' => isset($port['effective_fiber_port_id']) ? (int)$port['effective_fiber_port_id'] : 0,
+        'fiber_patch_id' => isset($port['effective_fiber_patch_id']) ? (int)$port['effective_fiber_patch_id'] : 0,
+        'fiber_rack_id' => isset($port['effective_fiber_rack_id']) ? (int)$port['effective_fiber_rack_id'] : 0,
+        'to_idf_id' => isset($port['effective_to_idf_id']) ? (int)$port['effective_to_idf_id'] : 0,
+        'to_rack_id' => isset($port['effective_to_rack_id']) ? (int)$port['effective_to_rack_id'] : 0,
+        'to_location_id' => isset($port['effective_to_location_id']) ? (int)$port['effective_to_location_id'] : 0,
+        'link_id' => isset($port['link_id']) ? (int)$port['link_id'] : 0,
+        'other_port_id' => isset($port['other_port_id']) ? (int)$port['other_port_id'] : 0,
         'cable_color_id' => isset($port['cable_color_id']) ? (int)$port['cable_color_id'] : 0,
         'cable_color_name' => (string)($port['cable_color_name'] ?? ''),
         'cable_hex_color' => (string)($port['cable_hex_color'] ?? ''),
@@ -1641,6 +1753,10 @@ function openPortModal(portId) {
     form.poe.value = rowData.poeId || '';
     togglePoeFieldForPortType(rowData.portType || selectedPortTypeLabel);
     form.notes.value = rowData.notes || '';
+    if (form.port_id_b) {
+        fillDestinationSelect(form.port_id_b, portMeta, true);
+        form.port_id_b.disabled = Boolean(portMeta && portMeta.is_linked);
+    }
     const requestedCableColorId = portMeta ? (portMeta.cable_color_id || 0) : 0;
     const requestedCableColorName = portMeta ? ((portMeta.cable_color_name || portMeta.cable_color || '').trim()) : '';
     if (requestedCableColorId > 0 && Array.from(form.cable_color_id.options).some((option) => Number(option.value) === requestedCableColorId)) {
@@ -1662,6 +1778,7 @@ function openPortModal(portId) {
         form.cable_color_id.value || requestedCableColorName || requestedCableHex || 'Gray',
         form.cable_color_id
     );
+    updatePortFormTypePresentation(portMeta);
 
     document.getElementById('portBackdrop').style.display = 'flex';
 }
@@ -1676,6 +1793,98 @@ function normalizePortTypeLabel(value) {
         return normalized.indexOf('plus') !== -1 ? 'sfp_plus' : 'sfp';
     }
     return 'rj45';
+}
+
+function buildSelectHtml(name, optionsMap, selectedValue, noneLabel) {
+    const selectedNormalized = String(selectedValue || '');
+    let html = `<select class="input" name="${name}">`;
+    html += `<option value="">${noneLabel || '-- None --'}</option>`;
+    Object.keys(optionsMap || {}).forEach((id) => {
+        const safeId = String(id);
+        const selectedAttr = safeId === selectedNormalized ? ' selected' : '';
+        html += `<option value="${safeId}"${selectedAttr}>${String(optionsMap[id] || '')}</option>`;
+    });
+    html += '</select>';
+    return html;
+}
+
+function renderTypeSpecificFields(containerId, typeLabel, values, includePrimaryCableField) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const normalizedType = normalizePortTypeLabel(typeLabel);
+    const currentValues = values || {};
+    let html = '<div class="idf-grid-2">';
+    if (normalizedType === 'rj45') {
+        if (includePrimaryCableField) {
+            html += '<div><label class="label">RJ45 Cable</label>' + buildSelectHtml('rj45_speed_id', RJ45_SPEED_OPTIONS, currentValues.rj45_speed_id || '', '-- None --') + '</div>';
+        }
+        html += '<div><label class="label">To Rack</label>' + buildSelectHtml('to_rack_id', RACK_LINK_OPTIONS, currentValues.to_rack_id || '', '-- None --') + '</div>';
+    } else {
+        if (includePrimaryCableField) {
+            html += '<div><label class="label">Fiber Ports</label>' + buildSelectHtml('fiber_port_id', FIBER_SPEED_OPTIONS, currentValues.fiber_port_id || '', '-- None --') + '</div>';
+        }
+        html += '<div><label class="label">Fiber Patch</label>' + buildSelectHtml('fiber_patch_id', FIBER_PATCH_OPTIONS, currentValues.fiber_patch_id || '', '-- None --') + '</div>';
+        html += '<div><label class="label">Fiber Rack</label>' + buildSelectHtml('fiber_rack_id', FIBER_RACK_OPTIONS, currentValues.fiber_rack_id || '', '-- None --') + '</div>';
+    }
+    html += '<div><label class="label">To IDF</label>' + buildSelectHtml('to_idf_id', IDF_LINK_OPTIONS, currentValues.to_idf_id || '', '-- None --') + '</div>';
+    html += '<div><label class="label">Location</label>' + buildSelectHtml('to_location_id', LOCATION_LINK_OPTIONS, currentValues.to_location_id || '', '-- None --') + '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
+    if (!selectEl || !source) return;
+    const currentOtherPortId = Number(source.other_port_id || 0);
+    const destinations = sortDestinationPorts(DESTINATION_PORTS.filter((p) =>
+        Number(p.id) !== Number(source.id) && (!p.is_linked || (allowLinkedCurrent && Number(p.id) === currentOtherPortId))
+    ));
+    selectEl.innerHTML = '<option value="">Select destination port</option>';
+    destinations.forEach((port) => {
+        const option = document.createElement('option');
+        option.value = String(port.id);
+        const idfName = port.idf_name ? `IDF ${port.idf_name}` : (port.idf_id ? `IDF #${port.idf_id}` : 'IDF');
+        const portType = String(port.port_type_label || 'RJ45').toUpperCase();
+        const rawStatus = String(port.status_label || '').trim();
+        const statusText = rawStatus !== '' && rawStatus.toLowerCase() !== 'null' ? rawStatus.toUpperCase() : 'UNKNOWN';
+        const rawColorName = String(port.color_name || '').trim();
+        const colorNameText = rawColorName !== '' && rawColorName.toLowerCase() !== 'null' ? rawColorName : 'Gray';
+        const rawColorHex = String(port.color_hex || '').trim();
+        const colorHexText = /^#?[0-9a-f]{6}$/i.test(rawColorHex)
+            ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
+            : '#808080';
+        option.textContent = `${idfName} • Pos ${port.position_no} • ${port.device_name} • Port ${port.port_no} • ${portType} • Status (${statusText}) • ${colorNameText} (${colorHexText})`;
+        selectEl.appendChild(option);
+    });
+    if (!destinations.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No available destination ports';
+        selectEl.appendChild(option);
+    }
+    if (currentOtherPortId > 0) {
+        selectEl.value = String(currentOtherPortId);
+    }
+}
+
+function updatePortFormTypePresentation(portMeta) {
+    const portTypeLabel = portMeta ? (portMeta.port_type_label || 'RJ45') : 'RJ45';
+    const normalizedType = normalizePortTypeLabel(portTypeLabel);
+    const speedLabelEl = document.getElementById('portSpeedFieldLabel');
+    const patchLabelEl = document.getElementById('portPatchPortLabel');
+    const commentsLabelEl = document.getElementById('portCommentsLabel');
+    if (speedLabelEl) speedLabelEl.textContent = normalizedType === 'rj45' ? 'RJ45 Cable' : 'Fiber Ports';
+    if (patchLabelEl) patchLabelEl.textContent = 'Patch port';
+    if (commentsLabelEl) commentsLabelEl.textContent = 'Comments';
+    renderTypeSpecificFields('portTypeSpecificFields', portTypeLabel, portMeta || {}, false);
+}
+
+function updateLinkFormTypePresentation(portMeta) {
+    const portTypeLabel = portMeta ? (portMeta.port_type_label || 'RJ45') : 'RJ45';
+    const patchLabelEl = document.getElementById('linkPatchPortLabel');
+    const commentsLabelEl = document.getElementById('linkCommentsLabel');
+    if (patchLabelEl) patchLabelEl.textContent = 'Patch port';
+    if (commentsLabelEl) commentsLabelEl.textContent = 'Comments';
+    renderTypeSpecificFields('linkTypeSpecificFields', portTypeLabel, portMeta || {}, true);
 }
 
 function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
@@ -1734,6 +1943,7 @@ function closePortModal(shouldCloseHost) {
 
 function savePort() {
     const f = document.getElementById('portForm');
+    const sourcePort = PORTS.find((port) => Number(port.id) === Number(f.port_id.value)) || null;
     const normalizedStatus = getNormalizedStatusValue(f);
     if (!normalizedStatus) {
         alert('Please enter a status value.');
@@ -1758,8 +1968,41 @@ function savePort() {
         cable_color_id: (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
             ? Number(f.cable_color_id.value)
             : null,
+        rj45_speed_id: normalizedPortType === 'rj45'
+            ? (f.speed.value ? Number(f.speed.value) : (f.rj45_speed_id && f.rj45_speed_id.value ? Number(f.rj45_speed_id.value) : null))
+            : null,
+        fiber_port_id: normalizedPortType !== 'rj45'
+            ? (f.speed.value ? Number(f.speed.value) : (f.fiber_port_id && f.fiber_port_id.value ? Number(f.fiber_port_id.value) : null))
+            : null,
+        fiber_patch_id: normalizedPortType !== 'rj45' && f.fiber_patch_id && f.fiber_patch_id.value ? Number(f.fiber_patch_id.value) : null,
+        fiber_rack_id: normalizedPortType !== 'rj45' && f.fiber_rack_id && f.fiber_rack_id.value ? Number(f.fiber_rack_id.value) : null,
+        to_idf_id: f.to_idf_id && f.to_idf_id.value ? Number(f.to_idf_id.value) : null,
+        to_rack_id: f.to_rack_id && f.to_rack_id.value ? Number(f.to_rack_id.value) : null,
+        to_location_id: f.to_location_id && f.to_location_id.value ? Number(f.to_location_id.value) : null,
     };
     apiPost('port_update.php', payload)
+        .then(() => {
+            const destinationPortId = f.port_id_b && f.port_id_b.value ? Number(f.port_id_b.value) : 0;
+            if (sourcePort && !sourcePort.is_linked && destinationPortId > 0) {
+                return apiPost('link_create.php', {
+                    csrf_token: CSRF,
+                    port_id_a: Number(f.port_id.value),
+                    port_id_b: destinationPortId,
+                    cable_color_id: payload.cable_color_id,
+                    cable_label: payload.label,
+                    notes: payload.notes,
+                    status_id: payload.status_id,
+                    rj45_speed_id: payload.rj45_speed_id,
+                    fiber_port_id: payload.fiber_port_id,
+                    fiber_patch_id: payload.fiber_patch_id,
+                    fiber_rack_id: payload.fiber_rack_id,
+                    to_idf_id: payload.to_idf_id,
+                    to_rack_id: payload.to_rack_id,
+                    to_location_id: payload.to_location_id
+                });
+            }
+            return null;
+        })
         .then(() => finishInlineMutationOrReload())
         .catch(err => alert(err.message));
 }
@@ -1902,6 +2145,7 @@ function openLinkModal(portId) {
     toggleLinkedEquipmentFields(false);
     updateCableColorSwatch(f.cable_color_id.value || 'Gray', f.cable_color_id);
     destinationSelect.value = '';
+    updateLinkFormTypePresentation(source);
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
 
@@ -2009,6 +2253,13 @@ function createLink() {
         cable_label: cableLabel,
         notes,
         status_id: Number(getNormalizedStatusValue(f) || 0),
+        rj45_speed_id: f.rj45_speed_id && f.rj45_speed_id.value ? Number(f.rj45_speed_id.value) : null,
+        fiber_port_id: f.fiber_port_id && f.fiber_port_id.value ? Number(f.fiber_port_id.value) : null,
+        fiber_patch_id: f.fiber_patch_id && f.fiber_patch_id.value ? Number(f.fiber_patch_id.value) : null,
+        fiber_rack_id: f.fiber_rack_id && f.fiber_rack_id.value ? Number(f.fiber_rack_id.value) : null,
+        to_idf_id: f.to_idf_id && f.to_idf_id.value ? Number(f.to_idf_id.value) : null,
+        to_rack_id: f.to_rack_id && f.to_rack_id.value ? Number(f.to_rack_id.value) : null,
+        to_location_id: f.to_location_id && f.to_location_id.value ? Number(f.to_location_id.value) : null,
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
         linked_cable_color: linkedCableColorName,
