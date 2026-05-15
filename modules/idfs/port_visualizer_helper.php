@@ -29,7 +29,8 @@ if (!function_exists('itm_build_capacity_placeholder_ports')) {
     function itm_build_capacity_placeholder_ports(array $options): array
     {
         $ports = [];
-        $append = static function (array &$target, array $numbers, string $typeLabel): void {
+        $positionId = isset($options['position_id']) ? (int)$options['position_id'] : 0;
+        $append = static function (array &$target, array $numbers, string $typeLabel) use ($positionId): void {
             foreach ($numbers as $portNoRaw) {
                 $portNo = (int)$portNoRaw;
                 if ($portNo <= 0) {
@@ -42,6 +43,7 @@ if (!function_exists('itm_build_capacity_placeholder_ports')) {
                     'status_label' => 'Unknown',
                     'status_color' => '#808080',
                     'cable_hex_color' => '#808080',
+                    'position_id' => $positionId,
                 ];
             }
         };
@@ -106,6 +108,21 @@ if (!function_exists('itm_merge_capacity_placeholder_ports')) {
     }
 }
 
+if (!function_exists('itm_filter_ports_by_type_keys')) {
+    function itm_filter_ports_by_type_keys(array $ports, array $allowedTypeKeys): array
+    {
+        $allowed = array_flip($allowedTypeKeys);
+        $filtered = [];
+        foreach ($ports as $portMeta) {
+            $typeKey = itm_port_visualizer_type_key($portMeta);
+            if (isset($allowed[$typeKey])) {
+                $filtered[] = $portMeta;
+            }
+        }
+        return $filtered;
+    }
+}
+
 if (!function_exists('itm_render_port_visualizer')) {
     /**
      * Renders the HTML for a port grid.
@@ -123,25 +140,47 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
+        $useSplitBlocks = $hasRj45Capacity && $hasFiberCapacity;
+        $fragmentMode = (string)($options['fragment'] ?? '');
+        if ($useSplitBlocks && $fragmentMode === '') {
+            $layoutName = strtolower((string)($options['layout'] ?? 'vertical'));
+            $rj45Count = count((array)($options['rj45_ports'] ?? []));
+            $fiberCount = count((array)($options['sfp_ports'] ?? [])) + count((array)($options['sfp_plus_ports'] ?? []));
+
+            $rj45Options = $options;
+            $rj45Options['fragment'] = 'rj45';
+            $rj45Options['grid_port_type'] = 'rj45';
+            $rj45Options['sfp_ports'] = [];
+            $rj45Options['sfp_plus_ports'] = [];
+            $rj45Options['show_device_icon'] = false;
+
+            $fiberOptions = $options;
+            $fiberOptions['fragment'] = 'fiber';
+            $fiberOptions['grid_port_type'] = 'fiber';
+            $fiberOptions['rj45_ports'] = [];
+            $fiberOptions['show_device_icon'] = false;
+
+            return '<div class="itm-port-visualizer-container itm-port-visualizer-container--split"'
+                . ' data-layout="' . sanitize($layoutName) . '"'
+                . ' data-port-total="' . (int)($rj45Count + $fiberCount) . '">'
+                . '<div class="itm-port-visualizer-split">'
+                . itm_render_port_visualizer($ports, $rj45Options)
+                . itm_render_port_visualizer($ports, $fiberOptions)
+                . '</div></div>';
+        }
+
         $allPortsForMeta = $ports;
         $renderPorts = $ports;
         // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
         $gridPortType = strtolower(trim((string)($options['grid_port_type'] ?? 'all')));
-        if ($hasRj45Capacity && $hasFiberCapacity) {
-            $gridPortType = 'all';
-        } elseif ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
+        if ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
             $gridPortType = 'all';
         }
         if ($gridPortType === 'rj45') {
-            $renderPorts = [];
-            foreach ($ports as $itmRenderablePort) {
-                $itmRenderableTypeRaw = strtolower(trim((string)($itmRenderablePort['port_type_label'] ?? ($itmRenderablePort['port_type'] ?? 'rj45'))));
-                if (strpos($itmRenderableTypeRaw, 'sfp') !== false) {
-                    continue;
-                }
-                $renderPorts[] = $itmRenderablePort;
-            }
+            $renderPorts = itm_filter_ports_by_type_keys($ports, ['rj45']);
+        } elseif ($gridPortType === 'fiber') {
+            $renderPorts = itm_filter_ports_by_type_keys($ports, ['sfp', 'sfp_plus']);
         }
         if (empty($renderPorts) && $hasFiberCapacity && $gridPortType !== 'rj45') {
             $renderPorts = itm_build_capacity_placeholder_ports($options);
@@ -150,43 +189,50 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
-        // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
-        // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
-        $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
-        foreach ($renderPorts as $itmPortMetaScan) {
-            $scanNo = (int)($itmPortMetaScan['port_no'] ?? 0);
-            if ($scanNo <= 0) {
-                continue;
+        if ($fragmentMode !== '' || $gridPortType === 'rj45' || $gridPortType === 'fiber') {
+            foreach ($renderPorts as &$itmPortMeta) {
+                $itmPortMeta['_visual_port_no'] = (int)($itmPortMeta['port_no'] ?? 0);
             }
-            $scanTypeRaw = strtolower(trim((string)($itmPortMetaScan['port_type_label'] ?? ($itmPortMetaScan['port_type'] ?? 'rj45'))));
-            $scanType = 'rj45';
-            if (strpos($scanTypeRaw, 'sfp+') !== false || strpos($scanTypeRaw, 'sfp plus') !== false) {
-                $scanType = 'sfp_plus';
-            } elseif (strpos($scanTypeRaw, 'sfp') !== false) {
-                $scanType = 'sfp';
+            unset($itmPortMeta);
+        } else {
+            // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
+            // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
+            $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
+            foreach ($renderPorts as $itmPortMetaScan) {
+                $scanNo = (int)($itmPortMetaScan['port_no'] ?? 0);
+                if ($scanNo <= 0) {
+                    continue;
+                }
+                $scanTypeRaw = strtolower(trim((string)($itmPortMetaScan['port_type_label'] ?? ($itmPortMetaScan['port_type'] ?? 'rj45'))));
+                $scanType = 'rj45';
+                if (strpos($scanTypeRaw, 'sfp+') !== false || strpos($scanTypeRaw, 'sfp plus') !== false) {
+                    $scanType = 'sfp_plus';
+                } elseif (strpos($scanTypeRaw, 'sfp') !== false) {
+                    $scanType = 'sfp';
+                }
+                if ($scanNo > $maxByType[$scanType]) {
+                    $maxByType[$scanType] = $scanNo;
+                }
             }
-            if ($scanNo > $maxByType[$scanType]) {
-                $maxByType[$scanType] = $scanNo;
-            }
-        }
-        $typeOffset = [
-            'rj45' => 0,
-            'sfp' => max(0, $maxByType['rj45']),
-            'sfp_plus' => max(0, $maxByType['rj45']) + max(0, $maxByType['sfp']),
-        ];
+            $typeOffset = [
+                'rj45' => 0,
+                'sfp' => max(0, $maxByType['rj45']),
+                'sfp_plus' => max(0, $maxByType['rj45']) + max(0, $maxByType['sfp']),
+            ];
 
-        foreach ($renderPorts as &$itmPortMeta) {
-            $rawPortNo = (int)($itmPortMeta['port_no'] ?? 0);
-            $normalizedType = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? 'rj45'))));
-            $visualPortNo = $rawPortNo > 0 ? $rawPortNo : 1;
-            if (strpos($normalizedType, 'sfp+') !== false || strpos($normalizedType, 'sfp plus') !== false) {
-                $visualPortNo += $typeOffset['sfp_plus'];
-            } elseif (strpos($normalizedType, 'sfp') !== false) {
-                $visualPortNo += $typeOffset['sfp'];
+            foreach ($renderPorts as &$itmPortMeta) {
+                $rawPortNo = (int)($itmPortMeta['port_no'] ?? 0);
+                $normalizedType = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? 'rj45'))));
+                $visualPortNo = $rawPortNo > 0 ? $rawPortNo : 1;
+                if (strpos($normalizedType, 'sfp+') !== false || strpos($normalizedType, 'sfp plus') !== false) {
+                    $visualPortNo += $typeOffset['sfp_plus'];
+                } elseif (strpos($normalizedType, 'sfp') !== false) {
+                    $visualPortNo += $typeOffset['sfp'];
+                }
+                $itmPortMeta['_visual_port_no'] = $visualPortNo;
             }
-            $itmPortMeta['_visual_port_no'] = $visualPortNo;
+            unset($itmPortMeta);
         }
-        unset($itmPortMeta);
 
         // Sort ports by visual slot first, then by database id to keep ties deterministic.
         usort($renderPorts, function($a, $b) {
@@ -258,10 +304,20 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
         }
 
-        $html = '<div class="itm-port-visualizer-container" data-layout="' . sanitize($layout) . '" data-port-total="' . (int)$totalPorts . '" data-grid-cols="' . (int)$cols . '" data-grid-rows="' . (int)$rows . '">';
+        $gridClass = 'itm-port-grid';
+        if ($fragmentMode === 'rj45') {
+            $gridClass .= ' itm-port-grid--rj45';
+        } elseif ($fragmentMode === 'fiber') {
+            $gridClass .= ' itm-port-grid--fiber';
+        }
 
-        // Left side: Port Grid
-        $html .= '<div class="itm-port-grid" style="grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px);">';
+        if ($fragmentMode === '') {
+            $html = '<div class="itm-port-visualizer-container" data-layout="' . sanitize($layout) . '" data-port-total="' . (int)$totalPorts . '" data-grid-cols="' . (int)$cols . '" data-grid-rows="' . (int)$rows . '">';
+        } else {
+            $html = '';
+        }
+
+        $html .= '<div class="' . $gridClass . '" style="grid-template-columns: repeat(' . $cols . ', 14px); grid-template-rows: repeat(' . $rows . ', 14px);">';
 
         for ($r = 0; $r < $rows; $r++) {
             for ($c = 0; $c < $cols; $c++) {
@@ -412,8 +468,19 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $title = implode(' • ', $titleParts);
 
                 $clickable = !empty($options['clickable']);
-                $onClick = $clickable ? 'onclick="if(typeof onPortClick === \'function\') onPortClick(' . (int)$p['id'] . ', this)"' : '';
+                $portId = (int)($p['id'] ?? 0);
+                $portNoAttr = (int)($p['port_no'] ?? 0);
+                if ($clickable && $portId > 0) {
+                    $onClick = 'onclick="if(typeof onPortClick === \'function\') onPortClick(' . $portId . ', this)"';
+                } elseif ($clickable && $portNoAttr > 0) {
+                    $onClick = 'onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';
+                } else {
+                    $onClick = '';
+                }
                 $cursor = $clickable ? 'pointer' : 'default';
+                $portNumberAttr = $portId <= 0 && $portNoAttr > 0
+                    ? ' data-port-number="' . $portNoAttr . '"'
+                    : '';
 
                 $glow = $isActive ? "box-shadow: 0 0 8px $statusColor;" : "";
                 $portStatusLabelAttr = sanitize($statusLabel);
@@ -422,7 +489,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portBorderRadius = ($portTypeKey === 'sfp' || $portTypeKey === 'sfp_plus') ? '50%' : '3px';
                 $portTypeClass = $portTypeKey === 'rj45' ? '' : ' itm-port-item--' . sanitize($portTypeKey);
 
-                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . (int)$p['id'] . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '" ' . $onClick . ' style="
+                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . $portId . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '"' . $portNumberAttr . ' ' . $onClick . ' style="
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';
@@ -435,6 +502,10 @@ if (!function_exists('itm_render_port_visualizer')) {
             }
         }
         $html .= '</div>'; // end grid
+
+        if ($fragmentMode !== '') {
+            return $html;
+        }
 
         $showDeviceIcon = isset($options['show_device_icon']) ? !empty($options['show_device_icon']) : true;
         if ($showDeviceIcon) {
