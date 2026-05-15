@@ -1182,6 +1182,22 @@ function idf_fetch_port_type_labels(mysqli $conn, int $company_id, array $portId
     return $labels;
 }
 
+function idf_parse_linked_equipment_id($raw): int
+{
+    $equipmentIdRaw = trim((string)$raw);
+    if ($equipmentIdRaw === '' || !ctype_digit($equipmentIdRaw)) {
+        return 0;
+    }
+
+    $equipmentId = (int)$equipmentIdRaw;
+    return $equipmentId > 0 ? $equipmentId : 0;
+}
+
+function idf_generate_unlinked_equipment_token(): string
+{
+    return (string)random_int(1000, 9999) . '-' . (string)random_int(1000, 9999);
+}
+
 idf_ensure_status_schema($conn);
 require_once __DIR__ . '/../idf_positions_schema.php';
 idf_ensure_idf_positions_capacity_columns($conn);
