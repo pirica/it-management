@@ -21,8 +21,7 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
 
     $rj45Count = (int)($positionRow['rj45_count'] ?? 0);
     $sfpCount = (int)($positionRow['sfp_count'] ?? 0);
-    $equipmentIdRaw = trim((string)($positionRow['equipment_id'] ?? ''));
-    $equipmentId = ($equipmentIdRaw !== '' && ctype_digit($equipmentIdRaw)) ? (int)$equipmentIdRaw : 0;
+    $equipmentId = idf_parse_linked_equipment_id($positionRow['equipment_id'] ?? '');
 
     $rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
     if ($rj45PortTypeId <= 0) {
@@ -169,6 +168,158 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
 }
 
 /**
+ * Attach switch_ports.id to loaded port rows (port list query join can miss when port_type strings differ).
+ */
+function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int $equipmentId, array &$ports): void
+{
+    if ($company_id <= 0 || $equipmentId <= 0 || empty($ports)) {
+        return;
+    }
+
+    $stmtSwitchPorts = mysqli_prepare(
+        $conn,
+        "SELECT sp.id,
+                sp.port_number,
+                COALESCE(spt.id, 0) AS port_type_id,
+                LOWER(TRIM(COALESCE(spt.type, sp.port_type, 'RJ45'))) AS port_type_name
+         FROM switch_ports sp
+         LEFT JOIN switch_port_types spt
+           ON spt.company_id = sp.company_id
+          AND (
+               spt.type = sp.port_type
+               OR spt.id = CAST(sp.port_type AS UNSIGNED)
+          )
+         WHERE sp.company_id = ? AND sp.equipment_id = ?"
+    );
+    if (!$stmtSwitchPorts) {
+        return;
+    }
+
+    mysqli_stmt_bind_param($stmtSwitchPorts, 'ii', $company_id, $equipmentId);
+    mysqli_stmt_execute($stmtSwitchPorts);
+    $resSwitchPorts = mysqli_stmt_get_result($stmtSwitchPorts);
+    $switchPortsByKey = [];
+    $switchPortsByNumber = [];
+    while ($resSwitchPorts && ($switchPortRow = mysqli_fetch_assoc($resSwitchPorts))) {
+        $switchPortId = (int)($switchPortRow['id'] ?? 0);
+        $portNo = (int)($switchPortRow['port_number'] ?? 0);
+        $portTypeId = (int)($switchPortRow['port_type_id'] ?? 0);
+        $portTypeName = strtolower(trim((string)($switchPortRow['port_type_name'] ?? '')));
+        if ($switchPortId <= 0 || $portNo <= 0) {
+            continue;
+        }
+        $switchPortsByKey[$portTypeId . ':' . $portNo] = $switchPortId;
+        $switchPortsByKey[$portTypeName . ':' . $portNo] = $switchPortId;
+        if (!isset($switchPortsByNumber[$portNo])) {
+            $switchPortsByNumber[$portNo] = $switchPortId;
+        }
+    }
+    mysqli_stmt_close($stmtSwitchPorts);
+
+    foreach ($ports as &$portRow) {
+        if (!empty($portRow['switch_port_live_id'])) {
+            continue;
+        }
+        $portNo = (int)($portRow['port_no'] ?? 0);
+        if ($portNo <= 0) {
+            continue;
+        }
+        $portTypeId = (int)($portRow['port_type'] ?? 0);
+        $portTypeLabel = strtolower(trim((string)($portRow['port_type_label'] ?? '')));
+        $resolvedSwitchPortId = 0;
+        if ($portTypeId > 0 && isset($switchPortsByKey[$portTypeId . ':' . $portNo])) {
+            $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeId . ':' . $portNo];
+        } elseif ($portTypeLabel !== '' && isset($switchPortsByKey[$portTypeLabel . ':' . $portNo])) {
+            $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeLabel . ':' . $portNo];
+        } elseif (isset($switchPortsByNumber[$portNo])) {
+            $resolvedSwitchPortId = (int)$switchPortsByNumber[$portNo];
+        }
+        if ($resolvedSwitchPortId > 0) {
+            $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
+        }
+    }
+    unset($portRow);
+}
+
+/**
+ * Re-home IDF ports that belong to this equipment's switch_ports but were saved on another position_id.
+ */
+function idf_claim_switch_ports_for_position(mysqli $conn, int $company_id, int $positionId, int $equipmentId): int
+{
+    if ($company_id <= 0 || $positionId <= 0 || $equipmentId <= 0) {
+        return 0;
+    }
+
+    $stmtClaim = mysqli_prepare(
+        $conn,
+        "UPDATE idf_ports pr
+         INNER JOIN switch_ports sp
+           ON sp.company_id = pr.company_id
+          AND sp.equipment_id = ?
+          AND sp.port_number = pr.port_no
+         SET pr.position_id = ?
+         WHERE pr.company_id = ?
+           AND pr.position_id <> ?"
+    );
+    if (!$stmtClaim) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmtClaim, 'iiii', $equipmentId, $positionId, $company_id, $positionId);
+    mysqli_stmt_execute($stmtClaim);
+    $claimed = mysqli_affected_rows($conn);
+    mysqli_stmt_close($stmtClaim);
+
+    return $claimed > 0 ? $claimed : 0;
+}
+
+/**
+ * Minimal port list when the full device query returns no rows (legacy position_id / missing joins).
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function idf_fetch_position_ports_simple(mysqli $conn, int $company_id, int $positionId, int $positionNo): array
+{
+    if ($company_id <= 0 || $positionId <= 0) {
+        return [];
+    }
+
+    $positionIds = [$positionId];
+    if ($positionNo > 0 && $positionNo !== $positionId) {
+        $positionIds[] = $positionNo;
+    }
+    $positionIdList = implode(',', array_map('intval', $positionIds));
+
+    $res = mysqli_query(
+        $conn,
+        "SELECT pr.*,
+                COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
+                COALESCE(ss.status, 'Unknown') AS status_label,
+                pr.status_id AS effective_status_id,
+                COALESCE(pr.vlan_id, 0) AS effective_vlan_id,
+                COALESCE(pr.poe_id, 0) AS effective_poe_id,
+                COALESCE(pr.rj45_speed_id, 0) AS effective_rj45_speed_id,
+                COALESCE(pr.speed_id, 0) AS effective_fiber_port_id
+         FROM idf_ports pr
+         LEFT JOIN switch_port_types spt
+           ON spt.id = pr.port_type AND spt.company_id = pr.company_id
+         LEFT JOIN switch_port_types spt_any
+           ON spt_any.id = pr.port_type
+         LEFT JOIN switch_status ss
+           ON ss.id = pr.status_id AND ss.company_id = pr.company_id
+         WHERE pr.company_id = {$company_id}
+           AND pr.position_id IN ({$positionIdList})
+         ORDER BY pr.port_no ASC"
+    );
+
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
+    }
+
+    return $rows;
+}
+
+/**
  * Move legacy IDF ports that were keyed by position_no onto the real position id when safe.
  */
 function idf_repair_legacy_position_port_ids(mysqli $conn, int $company_id, int $positionId, int $positionNo): int
@@ -232,11 +383,17 @@ function idf_ensure_ports_for_position(mysqli $conn, int $company_id, int $posit
     }
 
     $positionNo = (int)($positionRow['position_no'] ?? 0);
+    $equipmentId = idf_parse_linked_equipment_id($positionRow['equipment_id'] ?? '');
+
     idf_repair_legacy_position_port_ids($conn, $company_id, $positionId, $positionNo);
+    $claimed = 0;
+    if ($equipmentId > 0) {
+        $claimed = idf_claim_switch_ports_for_position($conn, $company_id, $positionId, $equipmentId);
+    }
 
     $portSlots = idf_collect_port_slots_for_position($conn, $company_id, $positionRow);
     if (empty($portSlots)) {
-        return 0;
+        return $claimed;
     }
 
     $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
@@ -305,5 +462,5 @@ function idf_ensure_ports_for_position(mysqli $conn, int $company_id, int $posit
     }
     mysqli_stmt_close($stmtInsert);
 
-    return $inserted;
+    return $inserted + $claimed;
 }

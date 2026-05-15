@@ -570,21 +570,39 @@ $idfDeviceLoadPorts = static function () use (&$ports, $stmtPorts, $pos, $positi
         return;
     }
     $idfIdForPorts = (int)($pos['idf_id'] ?? 0);
+    mysqli_stmt_reset($stmtPorts);
     mysqli_stmt_bind_param($stmtPorts, 'ii', $idfIdForPorts, $position_id);
     mysqli_stmt_execute($stmtPorts);
     $resPorts = mysqli_stmt_get_result($stmtPorts);
     while ($resPorts && ($row = mysqli_fetch_assoc($resPorts))) {
         $ports[] = $idfDeviceHydratePortRow($row);
     }
+    if ($resPorts) {
+        mysqli_free_result($resPorts);
+    }
 };
+
+$positionLinkedEquipmentId = idf_parse_linked_equipment_id($pos['equipment_id'] ?? '');
+
+if ($position_id > 0) {
+    idf_ensure_ports_for_position($conn, $company_id, $position_id);
+}
 
 if ($stmtPorts) {
     $idfDeviceLoadPorts();
-    if (empty($ports) && $position_id > 0) {
-        idf_ensure_ports_for_position($conn, $company_id, $position_id);
-        $idfDeviceLoadPorts();
-    }
     mysqli_stmt_close($stmtPorts);
+}
+
+if (empty($ports) && $position_id > 0) {
+    $positionNoForPorts = (int)($pos['position_no'] ?? 0);
+    $simplePorts = idf_fetch_position_ports_simple($conn, $company_id, $position_id, $positionNoForPorts);
+    foreach ($simplePorts as $simplePortRow) {
+        $ports[] = $idfDeviceHydratePortRow($simplePortRow);
+    }
+}
+
+if ($positionLinkedEquipmentId > 0 && !empty($ports)) {
+    idf_attach_switch_port_ids_to_ports($conn, $company_id, $positionLinkedEquipmentId, $ports);
 }
 
 
@@ -1340,8 +1358,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <div class="card" style="padding:14px; border-radius:18px;">
                 <h3 style="margin-top:0;">ðŸ”Œ Ports</h3>
 
-                <?php if ((int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0) > 0 && count($ports) === 0): ?>
-                    <div class="alert alert-error">Port list is empty. Use â€œRegenerate Portsâ€.</div>
+                <?php if (count($ports) === 0): ?>
+                    <motion class="alert alert-error">Port list is empty. Ports sync from linked equipment on page load; use "Regenerate Ports" if they still do not appear.</div>
                 <?php endif; ?>
 
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1897,7 +1915,7 @@ function openPortModal(portId) {
     const rowData = (row && row.dataset) ? row.dataset : {};
 
     if (!portMeta) {
-        alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click â€œRegenerate Portsâ€ first.');
+        alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click "Regenerate Ports" first.');
         return;
     }
     form.port_id.value = String(portMeta.id);
@@ -2256,7 +2274,7 @@ function findPortMetaByRef(portRef) {
 function onPortClick(portId) {
     const port = findPortMetaByRef(portId);
     if (!port) {
-        alert('Port not found. Use â€œRegenerate Portsâ€ on this device if switch ports exist but IDF ports are missing.');
+        alert('Port not found. Use "Regenerate Ports" on this device if switch ports exist but IDF ports are missing.');
         return;
     }
     openPortModal(port.id);
@@ -2311,9 +2329,13 @@ function onPortDotClick(portElement) {
         if (port) {
             onPortClick(port.id);
         } else {
-            alert('Port not found. Click â€œRegenerate Portsâ€ if switch_ports exist but IDF ports are missing.');
+            alert('Port not found. Click "Regenerate Ports" if switch_ports exist but IDF ports are missing.');
         }
     }
+}
+
+function syncPortsFromEquipment() {
+    return apiPost('ports_sync.php', {csrf_token: CSRF, position_id: POSITION_ID});
 }
 
 function regeneratePorts() {
@@ -2330,11 +2352,17 @@ function idfPortsExportExcel() {
     XLSX.writeFile(wb, `ports-position-${POSITION_ID}.xlsx`);
 }
 
-function openLinkModal(portId) {
-    const source = findPortMetaByRef(portId);
+async function openLinkModal(portId) {
+    let source = findPortMetaByRef(portId);
     if (!source) {
-        alert('Source port not found. If this device has switch_ports rows but no IDF ports yet, click â€œRegenerate Portsâ€ first.');
-        return;
+        try {
+            await syncPortsFromEquipment();
+            window.location.reload();
+            return;
+        } catch (err) {
+            alert(String(err.message || err) + ' Click "Regenerate Ports" if switch_ports exist but IDF ports are still missing.');
+            return;
+        }
     }
     if (source.is_linked) {
         // Why: when a link already exists users should land in the edit flow directly instead of a dead-end alert.
@@ -2906,9 +2934,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Why: IDF rack clicks route to this page with an explicit action so users land directly in the expected modal.
     if (AUTO_OPEN_LINK_PORT_ID > 0) {
-        openLinkModal(AUTO_OPEN_LINK_PORT_ID);
+        void openLinkModal(AUTO_OPEN_LINK_PORT_ID);
     } else if (AUTO_OPEN_LINK_PORT_NO > 0) {
-        openLinkModal(AUTO_OPEN_LINK_PORT_NO);
+        void openLinkModal(AUTO_OPEN_LINK_PORT_NO);
     } else if (AUTO_OPEN_EDIT_PORT_ID > 0) {
         openPortModal(AUTO_OPEN_EDIT_PORT_ID);
     } else if (AUTO_OPEN_EDIT_PORT_NO > 0) {
