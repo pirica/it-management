@@ -428,6 +428,16 @@ function idf_attach_switch_port_ids_to_ports(
             if ($resolvedSwitchPortId > 0) {
                 $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
             }
+            if ($resolvedSwitchPortId > 0) {
+                $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
+            }
+        }
+        if ($resolvedSwitchPortId > 0 && isset($switchMetaById[$resolvedSwitchPortId])) {
+            idf_merge_switch_port_metadata_into_port_row(
+                $portRow,
+                $switchMetaById[$resolvedSwitchPortId],
+                $equipmentDefaultPoeId
+            );
         }
         if ($resolvedSwitchPortId > 0 && isset($switchMetaById[$resolvedSwitchPortId])) {
             idf_merge_switch_port_metadata_into_port_row(
