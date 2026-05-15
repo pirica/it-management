@@ -1483,20 +1483,32 @@ function syncFieldsFromEquipment(form, shouldAlert) {
     }
 }
 
+function idfFormHasLinkedEquipment(form) {
+    const equipmentVal = String(form.equipment_id.value || '').trim();
+    return equipmentVal !== '' && equipmentVal !== '__add_new__' && Number(equipmentVal) > 0;
+}
+
 function refreshPortCountInputs(form) {
     const selectedDeviceTypeId = Number(form.device_type.value || 0);
     const isSwitch = selectedDeviceTypeId === SWITCH_DEVICE_TYPE_ID;
     const isUps = selectedDeviceTypeId === UPS_DEVICE_TYPE_ID;
-    const hasLinkedEquipment = String(form.equipment_id.value || '') !== '';
+    const hasLinkedEquipment = idfFormHasLinkedEquipment(form);
+    const isUnlinked = !hasLinkedEquipment;
     const portCountWrap = document.getElementById('idfPortCountWrap');
     const switchWrap = document.getElementById('idfSwitchRj45Wrap');
     const fiberWrap = document.getElementById('idfSwitchFiberPortsNumberWrap');
     const layoutWrap = document.getElementById('idfSwitchLayoutWrap');
-    if (portCountWrap) portCountWrap.style.display = (isSwitch || isUps) ? 'none' : 'block';
-    if (switchWrap) switchWrap.style.display = isSwitch ? 'block' : 'none';
-    if (fiberWrap) fiberWrap.style.display = isSwitch ? 'block' : 'none';
+    const showManualPortFields = isUnlinked ? !isUps : isSwitch;
+    const showPortCount = !isUnlinked && !isSwitch && !isUps;
+
+    if (portCountWrap) portCountWrap.style.display = showPortCount ? 'block' : 'none';
+    if (switchWrap) switchWrap.style.display = showManualPortFields ? 'block' : 'none';
+    if (fiberWrap) fiberWrap.style.display = showManualPortFields ? 'block' : 'none';
     if (layoutWrap) layoutWrap.style.display = isUps ? 'none' : 'block';
-    form.switch_rj45_id.required = isSwitch;
+
+    form.device_name.required = true;
+    form.switch_rj45_id.required = isUnlinked && isSwitch;
+
     const isEditMode = form.dataset.isEdit === '1';
     if (isSwitch && !isEditMode && DEFAULT_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_SWITCH_LAYOUT_ID);
@@ -1504,18 +1516,36 @@ function refreshPortCountInputs(form) {
     if (!isSwitch && !isUps && !isEditMode && DEFAULT_NON_SWITCH_LAYOUT_ID > 0) {
         form.switch_port_numbering_layout_id.value = String(DEFAULT_NON_SWITCH_LAYOUT_ID);
     }
-    if (!isSwitch) {
+    if (!isSwitch && hasLinkedEquipment) {
         form.switch_rj45_id.value = '';
         setFiberPortsNumberValue(form, '');
     }
     if (isUps) {
         form.port_count.value = '0';
         form.switch_port_numbering_layout_id.value = '';
+        if (isUnlinked) {
+            form.switch_rj45_id.value = '';
+            setFiberPortsNumberValue(form, '');
+        }
     }
 }
 
 function saveDevice() {
     const form = document.getElementById('idfDeviceForm');
+    const selectedDeviceTypeId = Number(form.device_type.value || 0);
+    const isSwitch = selectedDeviceTypeId === SWITCH_DEVICE_TYPE_ID;
+    const hasLinkedEquipment = idfFormHasLinkedEquipment(form);
+    const deviceName = form.device_name.value.trim();
+
+    if (deviceName === '') {
+        alert('Device name is required.');
+        return;
+    }
+    if (!hasLinkedEquipment && isSwitch && !form.switch_rj45_id.value) {
+        alert('RJ45 Ports are required for switch devices.');
+        return;
+    }
+
     const payload = {
         csrf_token: CSRF,
         idf_id: Number(form.idf_id.value),

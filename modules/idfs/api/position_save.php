@@ -778,6 +778,8 @@ if ($equipment_id > 0) {
             $portManagementId = (int)($portMetaRow['switch_environment_id'] ?? 0);
         }
     }
+} elseif ($switch_fiber_ports_number !== '') {
+    $portFiberPortsNumberId = idf_ensure_equipment_fiber_count_id($conn, $company_id, $switch_fiber_ports_number);
 }
 if ($portManagementId <= 0) {
     $stmtUnmanaged = mysqli_prepare(
@@ -940,7 +942,11 @@ if ($pid > 0) {
         mysqli_stmt_close($stmtCnt);
     }
 
-    if ($port_count > 0 || $equipment_id > 0) {
+    $unlinkedFiberPortCount = 0;
+    if ($equipment_id <= 0 && $switch_fiber_ports_number !== '' && preg_match('/^\d+$/', $switch_fiber_ports_number)) {
+        $unlinkedFiberPortCount = (int)$switch_fiber_ports_number;
+    }
+    if ($port_count > 0 || $equipment_id > 0 || $unlinkedFiberPortCount > 0) {
         $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
         if ($unknownStatusId <= 0) {
             idf_fail('Unable to resolve default status for company', 500);
@@ -1280,6 +1286,31 @@ if ($pid > 0) {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        } elseif ($unlinkedFiberPortCount > 0) {
+            $fiberTypeFallback = 'sfp';
+            $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
+            if ($fiberTypeId > 0) {
+                for ($fiberPortNo = 1; $fiberPortNo <= $unlinkedFiberPortCount; $fiberPortNo++) {
+                    $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
+                    if (!isset($portTypeByNumber[$fiberKey])) {
+                        $portTypeByNumber[$fiberKey] = [
+                            'port_no' => $fiberPortNo,
+                            'port_type' => $fiberTypeId,
+                        ];
+                        $portSeedByKey[$fiberKey] = [
+                            'label' => '',
+                            'status_id' => $unknownStatusId,
+                            'connected_to' => '',
+                            'vlan_id' => 0,
+                            'speed_id' => 0,
+                            'poe_id' => 0,
+                            'cable_color' => $defaultCableColorName,
+                            'hex_color' => $defaultCableHexColor,
+                            'notes' => '',
+                        ];
                     }
                 }
             }
