@@ -1359,7 +1359,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <h3 style="margin-top:0;">ðŸ”Œ Ports</h3>
 
                 <?php if (count($ports) === 0): ?>
-                    <motion class="alert alert-error">Port list is empty. Ports sync from linked equipment on page load; use "Regenerate Ports" if they still do not appear.</div>
+                    <div class="alert alert-error">Port list is empty. Ports sync from linked equipment on page load; use "Regenerate Ports" if they still do not appear.</div>
                 <?php endif; ?>
 
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
