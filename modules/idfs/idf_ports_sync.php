@@ -181,7 +181,8 @@ function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int 
         "SELECT sp.id,
                 sp.port_number,
                 COALESCE(spt.id, 0) AS port_type_id,
-                LOWER(TRIM(COALESCE(spt.type, sp.port_type, 'RJ45'))) AS port_type_name
+                LOWER(TRIM(COALESCE(spt.type, sp.port_type, 'RJ45'))) AS port_type_name,
+                COALESCE(NULLIF(cc_sp.hex_color, ''), NULLIF(cc_ss.hex_color, ''), '') AS switch_hex_color
          FROM switch_ports sp
          LEFT JOIN switch_port_types spt
            ON spt.company_id = sp.company_id
@@ -189,6 +190,15 @@ function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int 
                spt.type = sp.port_type
                OR spt.id = CAST(sp.port_type AS UNSIGNED)
           )
+         LEFT JOIN cable_colors cc_sp
+           ON cc_sp.id = sp.color_id
+          AND cc_sp.company_id = sp.company_id
+         LEFT JOIN switch_status ss
+           ON ss.id = sp.status_id
+          AND ss.company_id = sp.company_id
+         LEFT JOIN cable_colors cc_ss
+           ON cc_ss.id = ss.color_id
+          AND cc_ss.company_id = ss.company_id
          WHERE sp.company_id = ? AND sp.equipment_id = ?"
     );
     if (!$stmtSwitchPorts) {
@@ -200,16 +210,26 @@ function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int 
     $resSwitchPorts = mysqli_stmt_get_result($stmtSwitchPorts);
     $switchPortsByKey = [];
     $switchPortsByNumber = [];
+    $switchHexByKey = [];
+    $switchHexByNumber = [];
     while ($resSwitchPorts && ($switchPortRow = mysqli_fetch_assoc($resSwitchPorts))) {
         $switchPortId = (int)($switchPortRow['id'] ?? 0);
         $portNo = (int)($switchPortRow['port_number'] ?? 0);
         $portTypeId = (int)($switchPortRow['port_type_id'] ?? 0);
         $portTypeName = strtolower(trim((string)($switchPortRow['port_type_name'] ?? '')));
+        $switchHexColor = trim((string)($switchPortRow['switch_hex_color'] ?? ''));
         if ($switchPortId <= 0 || $portNo <= 0) {
             continue;
         }
         $switchPortsByKey[$portTypeId . ':' . $portNo] = $switchPortId;
         $switchPortsByKey[$portTypeName . ':' . $portNo] = $switchPortId;
+        if ($switchHexColor !== '') {
+            $switchHexByKey[$portTypeId . ':' . $portNo] = $switchHexColor;
+            $switchHexByKey[$portTypeName . ':' . $portNo] = $switchHexColor;
+            if (!isset($switchHexByNumber[$portNo])) {
+                $switchHexByNumber[$portNo] = $switchHexColor;
+            }
+        }
         if (!isset($switchPortsByNumber[$portNo])) {
             $switchPortsByNumber[$portNo] = $switchPortId;
         }
@@ -237,6 +257,49 @@ function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int 
         if ($resolvedSwitchPortId > 0) {
             $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
         }
+        $resolvedHex = '';
+        if ($portTypeId > 0 && isset($switchHexByKey[$portTypeId . ':' . $portNo])) {
+            $resolvedHex = trim((string)$switchHexByKey[$portTypeId . ':' . $portNo]);
+        } elseif ($portTypeLabel !== '' && isset($switchHexByKey[$portTypeLabel . ':' . $portNo])) {
+            $resolvedHex = trim((string)$switchHexByKey[$portTypeLabel . ':' . $portNo]);
+        } elseif (isset($switchHexByNumber[$portNo])) {
+            $resolvedHex = trim((string)$switchHexByNumber[$portNo]);
+        }
+        if ($resolvedHex !== '') {
+            $portRow['cable_hex_color'] = $resolvedHex;
+            if (trim((string)($portRow['status_color'] ?? '')) === '') {
+                $portRow['status_color'] = $resolvedHex;
+            }
+        }
+    }
+    unset($portRow);
+}
+
+/**
+ * Ensure port visualizer rows always expose DB cable/status hex colors.
+ */
+function idf_normalize_port_visualizer_colors(array &$ports): void
+{
+    foreach ($ports as &$portRow) {
+        $cableHex = trim((string)($portRow['cable_hex_color'] ?? ''));
+        $statusColor = trim((string)($portRow['status_color'] ?? ''));
+        $portHex = trim((string)($portRow['hex_color'] ?? ''));
+        if ($cableHex === '' && $portHex !== '') {
+            $cableHex = $portHex;
+        }
+        if ($statusColor === '') {
+            $statusColor = $cableHex;
+        }
+        if ($cableHex === '' && $statusColor === '') {
+            $cableHex = '#808080';
+            $statusColor = '#808080';
+        } elseif ($cableHex === '') {
+            $cableHex = $statusColor;
+        } elseif ($statusColor === '') {
+            $statusColor = $cableHex;
+        }
+        $portRow['cable_hex_color'] = $cableHex;
+        $portRow['status_color'] = $statusColor;
     }
     unset($portRow);
 }
@@ -294,6 +357,8 @@ function idf_fetch_position_ports_simple(mysqli $conn, int $company_id, int $pos
         "SELECT pr.*,
                 COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
                 COALESCE(ss.status, 'Unknown') AS status_label,
+                COALESCE(NULLIF(cc_ss.hex_color, ''), NULLIF(pr.hex_color, ''), '#808080') AS status_color,
+                COALESCE(NULLIF(pr.hex_color, ''), NULLIF(cc_ss.hex_color, ''), '#808080') AS cable_hex_color,
                 pr.status_id AS effective_status_id,
                 COALESCE(pr.vlan_id, 0) AS effective_vlan_id,
                 COALESCE(pr.poe_id, 0) AS effective_poe_id,
@@ -306,6 +371,9 @@ function idf_fetch_position_ports_simple(mysqli $conn, int $company_id, int $pos
            ON spt_any.id = pr.port_type
          LEFT JOIN switch_status ss
            ON ss.id = pr.status_id AND ss.company_id = pr.company_id
+         LEFT JOIN cable_colors cc_ss
+           ON cc_ss.id = ss.color_id
+          AND cc_ss.company_id = pr.company_id
          WHERE pr.company_id = {$company_id}
            AND pr.position_id IN ({$positionIdList})
          ORDER BY pr.port_no ASC"
