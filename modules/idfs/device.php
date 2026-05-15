@@ -638,6 +638,13 @@ if (empty($ports) && $position_id > 0) {
     }
 }
 
+if ($positionLinkedEquipmentId <= 0 && !empty($ports)) {
+    $inferredEquipmentId = idf_infer_equipment_id_after_ports_load($conn, $company_id, $ports, $pos);
+    if ($inferredEquipmentId > 0) {
+        $positionLinkedEquipmentId = $inferredEquipmentId;
+    }
+}
+
 if ($positionLinkedEquipmentId > 0 && !empty($ports)) {
     $equipmentDefaultPoeId = 0;
     $stmtEquipmentPoe = mysqli_prepare(
@@ -1762,6 +1769,15 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php endforeach; ?>
                 </select>
             </div>
+            <div data-link-default-field="vlan">
+                <label class="label">VLAN</label>
+                <select class="input" name="vlan">
+                    <option value="">-- None --</option>
+                    <?php foreach ($vlanOptions as $vlanId => $vlanLabel): ?>
+                        <option value="<?php echo (int)$vlanId; ?>"><?php echo sanitize($vlanLabel); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
                 <label class="label" id="linkCommentsLabel">Comments</label>
@@ -2053,11 +2069,14 @@ function findSwitchPortMatchForPortMeta(portMeta, switchPorts) {
     }
     const portNo = Number(portMeta.port_no || 0);
     const portType = String(portMeta.port_type_label || 'RJ45');
-    const compatible = switchPorts.filter((row) =>
-        portsAreLinkCompatible(portType, String(row.equipment_port_type || ''))
+    const byCompat = switchPorts.find((row) =>
+        Number(row.equipment_port) === portNo
+        && portsAreLinkCompatible(portType, String(row.equipment_port_type || ''))
     );
-    const pool = compatible.length ? compatible : switchPorts;
-    return pool.find((row) => Number(row.equipment_port) === portNo) || null;
+    if (byCompat) {
+        return byCompat;
+    }
+    return switchPorts.find((row) => Number(row.equipment_port) === portNo) || null;
 }
 
 let switchPortsByEquipmentCache = null;
@@ -2080,7 +2099,24 @@ async function fetchSwitchPortsForPositionEquipment() {
 }
 
 async function hydratePortMetaFromSwitchPorts(portMeta) {
-    if (!portMeta || !POSITION_EQUIPMENT_ID) {
+    if (!portMeta) {
+        return portMeta;
+    }
+    const sid = Number(portMeta.switch_port_id || 0);
+    if (sid > 0) {
+        try {
+            const data = await apiPost('switch_port_row.php', {
+                csrf_token: CSRF,
+                switch_port_id: sid,
+            });
+            if (data.port) {
+                return mergeSwitchPortApiRowIntoPortMeta(portMeta, data.port);
+            }
+        } catch (err) {
+            // Fall through to equipment-scoped fetch below.
+        }
+    }
+    if (!POSITION_EQUIPMENT_ID) {
         return portMeta;
     }
     try {
