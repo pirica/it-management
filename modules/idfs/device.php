@@ -1,5 +1,8 @@
 ﻿<?php
 require_once __DIR__ . '/../../config/config.php';
+if (!headers_sent()) {
+    header('Content-Type: text/html; charset=UTF-8');
+}
 require_once __DIR__ . '/port_visualizer_helper.php';
 require_once __DIR__ . '/idf_positions_schema.php';
 require_once __DIR__ . '/idf_ports_sync.php';
@@ -21,6 +24,12 @@ $embed_modal_only = $embed_mode && isset($_GET['embed_modal']) && (string)$_GET[
 
 function idf_sanitize_return_to(string $raw): string {
     $value = trim($raw);
+    if (isset($_GET['return_to']) && is_array($_GET['return_to'])) {
+        $value = trim((string)($_GET['return_to'][0] ?? ''));
+    }
+    if (strpos($value, '&return_to=') !== false) {
+        $value = trim((string)strstr($value, '&return_to=', true));
+    }
     if ($value === '') {
         return '';
     }
@@ -1256,14 +1265,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             ? $return_to
                             : ('view.php?id=' . (int)$pos['idf_id']);
                         ?>
-                        <a class="btn btn-sm" href="<?php echo sanitize($deviceBackHref); ?>">â† Back to rack</a>
+                        <a class="btn btn-sm" href="<?php echo sanitize($deviceBackHref); ?>">&larr; Back to rack</a>
                     <?php endif; ?>
                     <div style="display:flex; flex-direction:column;">
                         <div style="opacity:.85; font-size:13px; font-weight:600; margin-bottom:2px;">
-                            ðŸ—„ï¸ IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
+                            IDF <?php echo sanitize((string)$pos['idf_name']); ?> - <?php echo sanitize((string)$pos['location_name']); ?>
                         </div>
                         <div class="idf-rack-title">
-                            ðŸ”§ <?php echo sanitize($pos['device_name']); ?>
+                            <?php echo sanitize($pos['device_name']); ?>
                             <span class="idf-badge">Position <?php echo (int)$pos['position_no']; ?></span>
                             <span class="idf-badge"><?php echo sanitize((string)$pos['device_type']); ?></span>
                             <?php if (!empty($pos['equipment_id'])): ?>
@@ -1279,7 +1288,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
-                <h3 style="margin-top:0;">ðŸ‘ï¸ Port Visualization</h3>
+                <h3 style="margin-top:0;">Port Visualization</h3>
                 <div class="idf-device-port-visual">
                 <?php
                 $deviceGridPortType = 'rj45';
@@ -1306,7 +1315,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px; margin-bottom:14px;">
-                <h3 style="margin-top:0;">ðŸ”— Equipment Link Map</h3>
+                <h3 style="margin-top:0;">Equipment Link Map</h3>
                 <div style="opacity:.8; margin-bottom:10px; font-size:12px;">
                     Quick view of this device's patch links to other equipment, including selected equipment metadata.
                 </div>
@@ -1329,10 +1338,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 <td>
                                     <?php echo (int)$row['local_port_no']; ?>
                                     <?php if ($row['local_label'] !== ''): ?>
-                                        <span style="opacity:.75;">â€¢ <?php echo sanitize($row['local_label']); ?></span>
+                                        <span style="opacity:.75;"> &middot;  <?php echo sanitize($row['local_label']); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td>Pos <?php echo (int)$row['remote_position_no']; ?> â€¢ <?php echo sanitize($row['remote_device_name']); ?></td>
+                                <td>Pos <?php echo (int)$row['remote_position_no']; ?>  &middot;  <?php echo sanitize($row['remote_device_name']); ?></td>
                                 <td><?php echo (int)$row['remote_port_no']; ?></td>
                                 <td>
                                     <?php
@@ -1344,10 +1353,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                     <span class="idf-swatch" style="background:<?php echo sanitize($linkCableSwatchColor); ?>"></span>
                                     <?php echo sanitize($linkCableDisplay); ?>
                                     <?php if ($row['cable_label'] !== ''): ?>
-                                        <span style="opacity:.75;">â€¢ <?php echo sanitize($row['cable_label']); ?></span>
+                                        <span style="opacity:.75;"> &middot;  <?php echo sanitize($row['cable_label']); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo $row['link_notes'] !== '' ? sanitize($row['link_notes']) : '<span style="opacity:.75;">â€”</span>'; ?></td>
+                                <td><?php echo $row['link_notes'] !== '' ? sanitize($row['link_notes']) : '<span style="opacity:.75;">-</span>'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -1356,7 +1365,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
 
             <div class="card" style="padding:14px; border-radius:18px;">
-                <h3 style="margin-top:0;">ðŸ”Œ Ports</h3>
+                <h3 style="margin-top:0;">Ports</h3>
 
                 <?php if (count($ports) === 0): ?>
                     <div class="alert alert-error">Port list is empty. Ports sync from linked equipment on page load; use "Regenerate Ports" if they still do not appear.</div>
@@ -1422,13 +1431,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             }
                             if ($remoteDev !== '' || $remotePos > 0 || $remotePort > 0) {
                                 $color = (string)($p['cable_hex_color'] ?? '#ffff00');
-                                $label = !empty($p['cable_label']) ? (' â€¢ ' . sanitize((string)$p['cable_label'])) : '';
+                                $label = !empty($p['cable_label']) ? ('  &middot;  ' . sanitize((string)$p['cable_label'])) : '';
                                 $isLoopRisk = $o && ((int)($o['position_id'] ?? 0) === (int)$position_id);
                                 $linkText = '<span class="idf-swatch" style="background:' . sanitize($color) . '"></span>'
-                                    . 'Pos ' . $remotePos . ' â€¢ ' . sanitize($remoteDev) . ' â€¢ Port ' . $remotePort . $label
+                                    . 'Pos ' . $remotePos . '  &middot;  ' . sanitize($remoteDev) . '  &middot;  Port ' . $remotePort . $label
                                     . ($isLoopRisk ? ' <span class="badge badge-danger" title="Same-device link detected. This can create a Layer 2 loop on switches without STP.">Loop Risk</span>' : '');
                                 if ($connectedToText === '') {
-                                    $connectedToText = 'Pos ' . $remotePos . ' â€¢ ' . $remoteDev . ' â€¢ Port ' . $remotePort;
+                                    $connectedToText = 'Pos ' . $remotePos . '  &middot;  ' . $remoteDev . '  &middot;  Port ' . $remotePort;
                                 }
                                 $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                             }
@@ -1461,7 +1470,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
-                            <td><?php echo $linkText ?: '<span style="opacity:.75;">â€”</span>'; ?></td>
+                            <td><?php echo $linkText ?: '<span style="opacity:.75;">-</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
                                 <?php if ($canEditLinkedSwitch): ?>
@@ -1630,7 +1639,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $equipmentHostname = trim((string)($e['hostname'] ?? ''));
                             $equipmentLabel = $equipmentName;
                             if ($equipmentHostname !== '') {
-                                $equipmentLabel .= ' â€¢ ' . $equipmentHostname;
+                                $equipmentLabel .= '  &middot;  ' . $equipmentHostname;
                             }
                             echo sanitize($equipmentLabel);
                             ?>
@@ -2083,7 +2092,7 @@ function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
         const colorHexText = /^#?[0-9a-f]{6}$/i.test(rawColorHex)
             ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
             : '#808080';
-        option.textContent = `${idfName} â€¢ Pos ${port.position_no} â€¢ ${port.device_name} â€¢ Port ${port.port_no} â€¢ ${portType} â€¢ Status (${statusText}) â€¢ ${colorNameText} (${colorHexText})`;
+        option.textContent = `${idfName} | Pos ${port.position_no} | ${port.device_name} | Port ${port.port_no} | ${portType} | Status (${statusText}) | ${colorNameText} (${colorHexText})`;
         selectEl.appendChild(option);
     });
     if (!destinations.length) {
@@ -2393,7 +2402,7 @@ async function openLinkModal(portId) {
             ? (rawColorHex.charAt(0) === '#' ? rawColorHex.toUpperCase() : ('#' + rawColorHex.toUpperCase()))
             : '#808080';
         const portType = String(port.port_type_label || 'RJ45').toUpperCase();
-        option.textContent = `${idfName} â€¢ Pos ${port.position_no} â€¢ ${port.device_name} â€¢ ${portType} â€¢ Port ${port.port_no} â€¢ Status (${statusText}) â€¢ ${colorNameText} (${colorHexText})`;
+        option.textContent = `${idfName} | Pos ${port.position_no} | ${port.device_name} | ${portType} | Port ${port.port_no} | Status (${statusText}) | ${colorNameText} (${colorHexText})`;
         destinationSelect.appendChild(option);
     });
     if (!destinations.length) {
@@ -2410,7 +2419,7 @@ async function openLinkModal(portId) {
     const rawSourceLabel = String(source.label || '').trim();
     const showSourceLabel = rawSourceLabel !== '' && rawSourceLabel !== '0' && rawSourceLabel.toLowerCase() !== 'null';
     const sourcePortType = String(source.port_type_label || 'RJ45').toUpperCase();
-    f.source_display.value = `${sourcePortType} Port ${source.port_no}${showSourceLabel ? ` â€¢ ${rawSourceLabel}` : ''}`;
+    f.source_display.value = `${sourcePortType} Port ${source.port_no}${showSourceLabel ? ` | ${rawSourceLabel}` : ''}`;
     const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
         option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
     );
@@ -2598,7 +2607,7 @@ function formatSwitchPortOption(port) {
     const equipmentName = (port.equipment_name || '').trim();
     const equipmentHostname = (port.equipment_hostname || '').trim();
     const hostname = (equipmentName && equipmentHostname)
-        ? `${equipmentName} â€¢ ${equipmentHostname}`
+        ? `${equipmentName} | ${equipmentHostname}`
         : (equipmentName || equipmentHostname || '-');
     const portType = String(port.equipment_port_type || '-').toUpperCase();
     const portNumber = port.equipment_port || '-';
