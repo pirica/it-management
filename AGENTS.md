@@ -182,7 +182,8 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **New branch + New PR always (mandatory):**
-  * Package every requested implementation in a fresh branch and open a new PR.
+  * Package every requested implementation in a **fresh branch** and open a **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
+  * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
   * Do not reuse a previously opened PR for a new request, even if the files overlap.
   * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your ‘NEW PR always’ rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
