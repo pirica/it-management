@@ -5,8 +5,10 @@
  * Why: validates real HTTP flows used by modules/idfs/view.php and modules/idfs/device.php
  * and asserts synchronization across idf_ports, switch_ports, equipment, and idf_links.
  *
- * Usage:
+ * Usage (recommended — CLI):
  *   php scripts/idfs_sync_human_test.php
+ *
+ * Can also be opened in a browser for debugging; output is plain text.
  *
  * Optional env vars:
  *   ITM_BASE_URL   (default: http://localhost/it-management)
@@ -22,9 +24,57 @@
 
 declare(strict_types=1);
 
+function itm_test_is_cli()
+{
+    return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+}
+
+function itm_test_ensure_plain_text_response_headers()
+{
+    static $initialized = false;
+    if ($initialized || itm_test_is_cli() || headers_sent()) {
+        return;
+    }
+    header('Content-Type: text/plain; charset=UTF-8');
+    $initialized = true;
+}
+
+function itm_test_write_line($message, $isError = false)
+{
+    $line = rtrim((string)$message) . PHP_EOL;
+
+    if (itm_test_is_cli()) {
+        $stream = null;
+        if ($isError && defined('STDERR') && is_resource(STDERR)) {
+            $stream = STDERR;
+        } elseif (!$isError && defined('STDOUT') && is_resource(STDOUT)) {
+            $stream = STDOUT;
+        }
+        if ($stream !== null && @fwrite($stream, $line) !== false) {
+            return;
+        }
+        echo $line;
+        return;
+    }
+
+    itm_test_ensure_plain_text_response_headers();
+    if ($isError) {
+        @error_log(rtrim($line));
+    }
+    echo $line;
+    if (function_exists('flush')) {
+        @flush();
+    }
+}
+
 function itm_test_out($message)
 {
-    fwrite(STDOUT, $message . PHP_EOL);
+    itm_test_write_line($message, false);
+}
+
+function itm_test_err($message)
+{
+    itm_test_write_line($message, true);
 }
 
 function itm_test_fail($message)
@@ -480,6 +530,215 @@ function itm_test_find_mixed_family_unlinked_pair(array $ports)
     return null;
 }
 
+function itm_test_next_idf_position_no($db, $companyId, $idfId)
+{
+    $row = itm_test_db_one(
+        $db,
+        "SELECT COALESCE(MAX(position_no), 0) AS max_position
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ?",
+        'ii',
+        [$companyId, $idfId]
+    );
+    return ((int)($row['max_position'] ?? 0)) + 1;
+}
+
+function itm_test_unlinked_ports_have_rj45_switch_mirror(array $ports)
+{
+    foreach ($ports as $port) {
+        if (itm_test_port_type_family((string)($port['port_type_label'] ?? '')) !== 'rj45') {
+            continue;
+        }
+        if ((int)($port['has_switch_mirror'] ?? 0) === 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function itm_test_create_temp_switch_rack_position(
+    $db,
+    $baseUrl,
+    $cookieFile,
+    $csrf,
+    $companyId,
+    $idfId,
+    $positionNo,
+    $switchDeviceTypeId,
+    $rj45EightId,
+    $layoutVerticalId,
+    $statusUnknownId,
+    $colorGrayId,
+    $nameSuffix,
+    array &$createdTempEquipmentIds,
+    array &$createdTempPositionIds
+) {
+    itm_test_assert($positionNo <= 100, 'Temporary link seed position number is within allowed range');
+
+    $equipmentName = 'ITM Human Link Seed ' . $nameSuffix . ' ' . date('YmdHis') . ' ' . mt_rand(1000, 9999);
+    itm_test_db_exec(
+        $db,
+        "INSERT INTO equipment (
+            company_id, equipment_type_id, status_id, idf_id, name,
+            switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id, active
+         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)",
+        'iiisiii',
+        [$companyId, 37, 25, $equipmentName, $rj45EightId, $layoutVerticalId, 8]
+    );
+    $equipmentId = (int)mysqli_insert_id($db);
+    itm_test_assert($equipmentId > 0, 'Temporary link seed equipment created (' . $nameSuffix . ')');
+    $createdTempEquipmentIds[] = $equipmentId;
+
+    itm_test_db_exec(
+        $db,
+        "INSERT INTO switch_ports (
+            company_id, equipment_id, hostname, port_type, port_number,
+            to_patch_port, status_id, color_id, idf_id, management_id, comments
+         ) VALUES (?, ?, ?, 'RJ45', 1, '0', ?, ?, NULL, 8, '')",
+        'iisii',
+        [$companyId, $equipmentId, $equipmentName, $statusUnknownId, $colorGrayId]
+    );
+
+    itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_save.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'idf_id' => $idfId,
+            'position_no' => $positionNo,
+            'device_type' => $switchDeviceTypeId,
+            'device_name' => $equipmentName,
+            'equipment_id' => $equipmentId,
+            'switch_rj45_id' => $rj45EightId,
+            'switch_port_numbering_layout_id' => $layoutVerticalId,
+            'rj45_count' => 8,
+            'notes' => 'ITM HUMAN TEMP LINK SEED ' . strtoupper((string)$nameSuffix),
+        ]
+    );
+
+    $positionRow = itm_test_db_one(
+        $db,
+        "SELECT id
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ? AND position_no = ? AND equipment_id = ?
+         LIMIT 1",
+        'iiii',
+        [$companyId, $idfId, $positionNo, $equipmentId]
+    );
+    $positionId = (int)($positionRow['id'] ?? 0);
+    itm_test_assert($positionId > 0, 'Temporary link seed position created (' . $nameSuffix . ')');
+    $createdTempPositionIds[] = $positionId;
+    itm_test_out('[PASS] Seeded temporary switch position ' . (int)$positionNo . ' for link tests (' . $nameSuffix . ')');
+}
+
+function itm_test_ensure_rj45_link_test_pair(
+    $db,
+    $baseUrl,
+    $cookieFile,
+    $csrf,
+    $companyId,
+    $idfId,
+    $switchDeviceTypeId,
+    $rj45EightId,
+    $layoutVerticalId,
+    $statusUnknownId,
+    $colorGrayId,
+    array &$createdTempEquipmentIds,
+    array &$createdTempPositionIds
+) {
+    $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    $rj45Pair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', true);
+    if ($rj45Pair !== null) {
+        return $rj45Pair;
+    }
+
+    if (empty($unlinkedPorts)) {
+        $positionNo = itm_test_next_idf_position_no($db, $companyId, $idfId);
+        itm_test_create_temp_switch_rack_position(
+            $db,
+            $baseUrl,
+            $cookieFile,
+            $csrf,
+            $companyId,
+            $idfId,
+            $positionNo,
+            $switchDeviceTypeId,
+            $rj45EightId,
+            $layoutVerticalId,
+            $statusUnknownId,
+            $colorGrayId,
+            'A',
+            $createdTempEquipmentIds,
+            $createdTempPositionIds
+        );
+        $positionNoB = $positionNo + 1;
+        itm_test_assert($positionNoB <= 100, 'Second temporary link seed position number is within allowed range');
+        itm_test_create_temp_switch_rack_position(
+            $db,
+            $baseUrl,
+            $cookieFile,
+            $csrf,
+            $companyId,
+            $idfId,
+            $positionNoB,
+            $switchDeviceTypeId,
+            $rj45EightId,
+            $layoutVerticalId,
+            $statusUnknownId,
+            $colorGrayId,
+            'B',
+            $createdTempEquipmentIds,
+            $createdTempPositionIds
+        );
+    } else {
+        if (!itm_test_unlinked_ports_have_rj45_switch_mirror($unlinkedPorts)) {
+            $positionNo = itm_test_next_idf_position_no($db, $companyId, $idfId);
+            itm_test_create_temp_switch_rack_position(
+                $db,
+                $baseUrl,
+                $cookieFile,
+                $csrf,
+                $companyId,
+                $idfId,
+                $positionNo,
+                $switchDeviceTypeId,
+                $rj45EightId,
+                $layoutVerticalId,
+                $statusUnknownId,
+                $colorGrayId,
+                'SRC',
+                $createdTempEquipmentIds,
+                $createdTempPositionIds
+            );
+        }
+        $positionNo = itm_test_next_idf_position_no($db, $companyId, $idfId);
+        itm_test_create_temp_switch_rack_position(
+            $db,
+            $baseUrl,
+            $cookieFile,
+            $csrf,
+            $companyId,
+            $idfId,
+            $positionNo,
+            $switchDeviceTypeId,
+            $rj45EightId,
+            $layoutVerticalId,
+            $statusUnknownId,
+            $colorGrayId,
+            'DST',
+            $createdTempEquipmentIds,
+            $createdTempPositionIds
+        );
+    }
+
+    $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    itm_test_assert(!empty($unlinkedPorts), 'At least one unlinked IDF port exists for human link tests');
+    $rj45Pair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', true);
+    itm_test_assert($rj45Pair !== null, 'Found compatible RJ45 unlinked port pair for sync test');
+    return $rj45Pair;
+}
+
 function itm_test_assert_linked_ports_color_sync($db, $portAId, $portBId, $expectedHex)
 {
     $expectedHex = strtoupper(trim($expectedHex));
@@ -619,81 +878,21 @@ try {
     $switchDeviceTypeId = (int)($switchTypeRow['id'] ?? 0);
     itm_test_assert($switchDeviceTypeId > 0, 'IDF switch device type exists for temp create/delete sync test');
 
-    $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
-    itm_test_assert(!empty($unlinkedPorts), 'At least one unlinked IDF port exists for human link tests');
-
-    $rj45Pair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', true);
-    if ($rj45Pair === null) {
-        $fallbackPositionRow = itm_test_db_one(
-            $db,
-            "SELECT COALESCE(MAX(position_no), 0) AS max_position
-             FROM idf_positions
-             WHERE company_id = ? AND idf_id = ?",
-            'ii',
-            [$companyId, $idfId]
-        );
-        $fallbackPositionNo = ((int)($fallbackPositionRow['max_position'] ?? 0)) + 1;
-        itm_test_assert($fallbackPositionNo <= 100, 'Temporary link destination position number is within allowed range');
-
-        $fallbackEquipmentName = 'ITM Human Link Dest ' . date('YmdHis');
-        itm_test_db_exec(
-            $db,
-            "INSERT INTO equipment (
-                company_id, equipment_type_id, status_id, idf_id, name,
-                switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id, active
-             ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)",
-            'iiisiii',
-            [$companyId, 37, 25, $fallbackEquipmentName, $rj45EightId, $layoutVerticalId, 8]
-        );
-        $fallbackEquipmentId = (int)mysqli_insert_id($db);
-        $createdTempEquipmentIds[] = $fallbackEquipmentId;
-        itm_test_assert($fallbackEquipmentId > 0, 'Temporary destination equipment created for link sync test');
-
-        itm_test_db_exec(
-            $db,
-            "INSERT INTO switch_ports (
-                company_id, equipment_id, hostname, port_type, port_number,
-                to_patch_port, status_id, color_id, idf_id, management_id, comments
-             ) VALUES (?, ?, ?, 'RJ45', 1, '0', ?, ?, NULL, 8, '')",
-            'iisii',
-            [$companyId, $fallbackEquipmentId, $fallbackEquipmentName, $statusUnknownId, $colorGrayId]
-        );
-
-        itm_test_api_post_json(
-            $baseUrl,
-            '/modules/idfs/api/position_save.php',
-            $cookieFile,
-            [
-                'csrf_token' => $csrf,
-                'idf_id' => $idfId,
-                'position_no' => $fallbackPositionNo,
-                'device_type' => $switchDeviceTypeId,
-                'device_name' => $fallbackEquipmentName,
-                'equipment_id' => $fallbackEquipmentId,
-                'switch_rj45_id' => $rj45EightId,
-                'switch_port_numbering_layout_id' => $layoutVerticalId,
-                'rj45_count' => 8,
-                'notes' => 'ITM HUMAN TEMP LINK DESTINATION',
-            ]
-        );
-
-        $fallbackPosition = itm_test_db_one(
-            $db,
-            "SELECT id
-             FROM idf_positions
-             WHERE company_id = ? AND idf_id = ? AND position_no = ? AND equipment_id = ?
-             LIMIT 1",
-            'iiii',
-            [$companyId, $idfId, $fallbackPositionNo, $fallbackEquipmentId]
-        );
-        $fallbackPositionId = (int)($fallbackPosition['id'] ?? 0);
-        itm_test_assert($fallbackPositionId > 0, 'Temporary destination position created for link sync test');
-        $createdTempPositionIds[] = $fallbackPositionId;
-
-        $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
-        $rj45Pair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', true);
-    }
-    itm_test_assert($rj45Pair !== null, 'Found compatible RJ45 unlinked port pair for sync test');
+    $rj45Pair = itm_test_ensure_rj45_link_test_pair(
+        $db,
+        $baseUrl,
+        $cookieFile,
+        $csrf,
+        $companyId,
+        $idfId,
+        $switchDeviceTypeId,
+        $rj45EightId,
+        $layoutVerticalId,
+        $statusUnknownId,
+        $colorGrayId,
+        $createdTempEquipmentIds,
+        $createdTempPositionIds
+    );
     $portA = $rj45Pair['port_a'];
     $portB = $rj45Pair['port_b'];
 
@@ -1601,7 +1800,7 @@ try {
 
     itm_test_out(PHP_EOL . 'All human-style IDF sync tests passed.');
 } catch (Throwable $e) {
-    fwrite(STDERR, '[FAIL] ' . $e->getMessage() . PHP_EOL);
+    itm_test_err('[FAIL] ' . $e->getMessage());
     $itmTestExitCode = 1;
 } finally {
     if ($db instanceof mysqli) {
