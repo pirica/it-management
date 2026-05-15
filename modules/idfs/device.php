@@ -16,6 +16,29 @@ $open_link_port_id = (int)($_GET['open_link_port_id'] ?? 0);
 $embed_mode = isset($_GET['embed']) && (string)$_GET['embed'] === '1';
 $embed_modal_only = $embed_mode && isset($_GET['embed_modal']) && (string)$_GET['embed_modal'] === '1';
 
+function idf_sanitize_return_to(string $raw): string {
+    $value = trim($raw);
+    if ($value === '') {
+        return '';
+    }
+    if (preg_match('/^\s*javascript:/i', $value)) {
+        return '';
+    }
+    if (strpos($value, '://') !== false) {
+        $allowedPrefix = rtrim((string)BASE_URL, '/') . '/modules/idfs/';
+        if (stripos($value, $allowedPrefix) !== 0) {
+            return '';
+        }
+        return $value;
+    }
+    if (preg_match('/^view\.php\?id=\d+(&[a-zA-Z0-9_=%.\-+]*)?$/', $value)) {
+        return $value;
+    }
+    return '';
+}
+
+$return_to = idf_sanitize_return_to((string)($_GET['return_to'] ?? ''));
+
 function idf_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -1120,7 +1143,12 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php if ($embed_mode): ?>
                         <button class="btn btn-sm" type="button" onclick="closeEmbeddedDeviceView()">Close</button>
                     <?php else: ?>
-                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$pos['idf_id']; ?>">← Back</a>
+                        <?php
+                        $deviceBackHref = $return_to !== ''
+                            ? $return_to
+                            : ('view.php?id=' . (int)$pos['idf_id']);
+                        ?>
+                        <a class="btn btn-sm" href="<?php echo sanitize($deviceBackHref); ?>">← Back to rack</a>
                     <?php endif; ?>
                     <div style="display:flex; flex-direction:column;">
                         <div style="opacity:.85; font-size:13px; font-weight:600; margin-bottom:2px;">
@@ -1634,6 +1662,7 @@ const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
+const RETURN_TO = <?php echo json_encode($return_to, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const EMBED_MODE = <?php echo $embed_mode ? 'true' : 'false'; ?>;
 const EMBED_MODAL_ONLY = <?php echo $embed_modal_only ? 'true' : 'false'; ?>;
 const FIBER_SPEED_OPTIONS = <?php echo json_encode($fiberSpeedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
@@ -1681,6 +1710,10 @@ function closeEmbeddedDeviceView(eventType) {
             // fall through to same-window redirect fallback
         }
     }
+    if (RETURN_TO) {
+        window.location.href = RETURN_TO;
+        return;
+    }
     window.location.href = 'view.php?id=<?php echo (int)$pos['idf_id']; ?>';
 }
 const DESTINATION_PORTS = <?php echo json_encode($destinationPorts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
@@ -1690,6 +1723,12 @@ let activeCableColorSelect = null;
 function finishInlineMutationOrReload() {
     if (EMBED_MODE && EMBED_MODAL_ONLY) {
         closeEmbeddedDeviceView('idf_device_embed_updated');
+        return;
+    }
+    if (RETURN_TO) {
+        const returnUrl = new URL(RETURN_TO, window.location.href);
+        returnUrl.searchParams.set('_itm_refresh', String(Date.now()));
+        window.location.href = returnUrl.toString();
         return;
     }
     location.reload();

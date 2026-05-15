@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
 require_once __DIR__ . '/idf_positions_schema.php';
@@ -91,7 +91,7 @@ function idf_type_badge(string $t, array $idfDeviceTypeMap): string {
         return trim($emoji . ' ' . $label);
     }
 
-    return '📦 Other';
+    return 'ðŸ“¦ Other';
 }
 
 $csrf = idf_csrf_token();
@@ -143,18 +143,18 @@ if ($stmtDeviceTypes) {
 
 if (!$idfDeviceTypeOptions) {
     $idfDeviceTypeOptions = [
-        ['value' => 1, 'label' => '🔀 Switch'],
-        ['value' => 2, 'label' => '➰ Patch Panel'],
-        ['value' => 3, 'label' => '🔋 UPS'],
-        ['value' => 4, 'label' => '🖥️ Server'],
-        ['value' => 5, 'label' => '📦 Other'],
+        ['value' => 1, 'label' => 'ðŸ”€ Switch'],
+        ['value' => 2, 'label' => 'âž° Patch Panel'],
+        ['value' => 3, 'label' => 'ðŸ”‹ UPS'],
+        ['value' => 4, 'label' => 'ðŸ–¥ï¸ Server'],
+        ['value' => 5, 'label' => 'ðŸ“¦ Other'],
     ];
     $idfDeviceTypeMap = [
-        1 => ['emoji' => '🔀', 'label' => 'Switch', 'key' => 'switch'],
-        2 => ['emoji' => '➰', 'label' => 'Patch Panel', 'key' => 'patch_panel'],
-        3 => ['emoji' => '🔋', 'label' => 'UPS', 'key' => 'ups'],
-        4 => ['emoji' => '🖥️', 'label' => 'Server', 'key' => 'server'],
-        5 => ['emoji' => '📦', 'label' => 'Other', 'key' => 'other'],
+        1 => ['emoji' => 'ðŸ”€', 'label' => 'Switch', 'key' => 'switch'],
+        2 => ['emoji' => 'âž°', 'label' => 'Patch Panel', 'key' => 'patch_panel'],
+        3 => ['emoji' => 'ðŸ”‹', 'label' => 'UPS', 'key' => 'ups'],
+        4 => ['emoji' => 'ðŸ–¥ï¸', 'label' => 'Server', 'key' => 'server'],
+        5 => ['emoji' => 'ðŸ“¦', 'label' => 'Other', 'key' => 'other'],
     ];
     $switchDeviceTypeId = 1;
     $upsDeviceTypeId = 3;
@@ -879,34 +879,11 @@ foreach ($equipmentOptions as $equipmentOption) {
             box-shadow: var(--shadow-lg);
             padding:14px;
         }
-        .idf-inline-device-modal {
-            width:min(1240px, calc(100vw - 280px));
-            margin:14px auto;
-            border-radius:14px;
-            border:1px solid var(--border);
-            background:var(--bg-primary);
-            box-shadow: var(--shadow-lg);
-            padding:12px;
-            display:flex;
-            flex-direction:column;
-            gap:10px;
-            max-height:calc(100vh - 40px);
-        }
-        .idf-inline-device-frame {
-            width:100%;
-            min-height:560px;
-            height:78vh;
-            border:1px solid var(--border);
-            border-radius:10px;
-            background:var(--bg-primary);
-        }
         .idf-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; }
         body.sidebar-collapsed .idf-modal-backdrop { left:0; }
         @media (max-width: 768px) {
             .idf-modal-backdrop { left:0; padding:12px; }
             .idf-modal { width:100%; margin:10px auto; }
-            .idf-inline-device-modal { width:100%; margin:10px auto; max-height:none; }
-            .idf-inline-device-frame { min-height:420px; height:80vh; }
             .idf-grid-2 { grid-template-columns:1fr; }
         }
     </style>
@@ -922,9 +899,9 @@ foreach ($equipmentOptions as $equipmentOption) {
                 <section class="idf-command-bar">
                     <div class="idf-command-title">
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <a class="btn btn-sm" href="index.php">← Back</a>
+                            <a class="btn btn-sm" href="index.php">â† Back</a>
                             <div class="idf-rack-title">
-                                🗄️ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($locationNameLabel); ?>
+                                ðŸ—„ï¸ IDF <?php echo sanitize($idf['name']); ?> - <?php echo sanitize($locationNameLabel); ?>
                                 <?php if (!empty($idf['idf_code'])): ?><span class="idf-badge"><?php echo sanitize($idf['idf_code']); ?></span><?php endif; ?>
                             </div>
                         </div>
@@ -946,15 +923,15 @@ foreach ($equipmentOptions as $equipmentOption) {
                                 <div class="idf-rack-title">Rack Face (<span id="idfVisibleCount"><?php echo $displayMaxPos; ?></span> positions)</div>
                                 <div style="font-size:12px; opacity:.8; margin-top:2px;">
                                     <?php echo sanitize((string)($idf['company_name'] ?? 'Unknown Company')); ?>
-                                    · Location: <?php echo sanitize($locationNameLabel); ?>
-                                    · Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
-                                    · IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
-                                    · Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
+                                    Â· Location: <?php echo sanitize($locationNameLabel); ?>
+                                    Â· Name: <?php echo sanitize((string)($idf['name'] ?? '')); ?>
+                                    Â· IDF Code: <?php echo sanitize((string)($idf['idf_code'] ?? 'N/A')); ?>
+                                    Â· Rack: <?php echo sanitize((string)($idf['rack_name'] ?? 'N/A')); ?>
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm idf-mini" type="button" onclick="idfAddPosition()">&#10133;</button>
-                                <span class="idf-badge">Move ↑ ↓ • Drag • Copy • Ports</span>
+                                <span class="idf-badge">Move â†‘ â†“ â€¢ Drag â€¢ Copy â€¢ Ports</span>
                             </div>
                         </div>
 
@@ -981,13 +958,13 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <div class="idf-slot-sub">
                                                     <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)($pos['device_type'] ?? ''), $idfDeviceTypeMap)); ?></span>
                                                     <?php if ((int)($pos['rj45_count'] ?? 0) > 0): ?>
-                                                        <span class="idf-badge">🔌 <?php echo (int)$pos['rj45_count']; ?> RJ45</span>
+                                                        <span class="idf-badge">ðŸ”Œ <?php echo (int)$pos['rj45_count']; ?> RJ45</span>
                                                     <?php endif; ?>
                                                     <?php if ((int)($pos['sfp_count'] ?? 0) > 0): ?>
-                                                        <span class="idf-badge">🧬 <?php echo (int)$pos['sfp_count']; ?> SFP</span>
+                                                        <span class="idf-badge">ðŸ§¬ <?php echo (int)$pos['sfp_count']; ?> SFP</span>
                                                     <?php endif; ?>
                                                     <?php if (!empty($pos['equipment_id'])): ?>
-                                                        <span class="idf-badge">🧾 Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
+                                                        <span class="idf-badge">ðŸ§¾ Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
                                                     <?php endif; ?>
                                                 </div>
                                                 <div style="margin-top: 8px;">
@@ -1022,8 +999,8 @@ foreach ($equipmentOptions as $equipmentOption) {
 
                                     <div class="idf-slot-actions">
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition(<?php echo $i; ?>)">&#10134;</button>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">↑</button>
-                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'up')">â†‘</button>
+                                        <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">â†“</button>
 
                                         <?php if ($pos): ?>
                                             <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>">View</a>
@@ -1035,7 +1012,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                             <?php if ($idfShowEditLinked): ?>
                                                 <a class="btn btn-sm idf-mini" href="../equipment/index.php?switch_id=<?php echo (int)$idfEquipmentIdRaw; ?>&spm=1#switch-port-manager">Edit Linked</a>
                                             <?php endif; ?>
-                                            <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy toâ€¦</button>
                                             <button class="btn btn-sm idf-mini" type="button" data-device-name="<?php echo htmlspecialchars((string)($pos['device_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, this.dataset.deviceName)">Delete</button>
                                         <?php else: ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
@@ -1075,7 +1052,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title" id="idfModalTitle">Device</div>
-            <button class="btn btn-sm" type="button" onclick="closeModal()">✖</button>
+            <button class="btn btn-sm" type="button" onclick="closeModal()">âœ–</button>
         </div>
 
         <form id="idfDeviceForm" class="idf-grid-2">
@@ -1104,10 +1081,10 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <option value="">-- None --</option>
                     <?php foreach ($equipmentOptions as $e): ?>
                         <option value="<?php echo (int)$e['id']; ?>">
-                            <?php echo sanitize($e['name'] . (!empty($e['hostname']) ? (' • Host ' . $e['hostname']) : '')); ?>
+                            <?php echo sanitize($e['name'] . (!empty($e['hostname']) ? (' â€¢ Host ' . $e['hostname']) : '')); ?>
                         </option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">âž•</option>
                 </select>
             </div>
 
@@ -1133,7 +1110,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <?php foreach ($switchRj45Options as $switchRj45Option): ?>
                         <option value="<?php echo (int)$switchRj45Option['id']; ?>"><?php echo sanitize((string)$switchRj45Option['name']); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">âž•</option>
                 </select>
             </div>
 
@@ -1144,7 +1121,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                     <?php foreach ($switchFiberPortsNumberOptions as $switchFiberPortsNumberOption): ?>
                         <option value="<?php echo sanitize($switchFiberPortsNumberOption); ?>"><?php echo sanitize($switchFiberPortsNumberOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">➕</option>
+                    <option value="__add_new__">âž•</option>
                 </select>
             </div>
 
@@ -1165,7 +1142,7 @@ foreach ($equipmentOptions as $equipmentOption) {
     <div class="idf-modal" onclick="event.stopPropagation()">
         <div class="idf-modal-header">
             <div class="idf-modal-title">Copy device to position</div>
-            <button class="btn btn-sm" type="button" onclick="closeCopy()">✖</button>
+            <button class="btn btn-sm" type="button" onclick="closeCopy()">âœ–</button>
         </div>
 
         <form id="idfCopyForm" class="idf-grid-2">
@@ -1194,15 +1171,6 @@ foreach ($equipmentOptions as $equipmentOption) {
     </div>
 </div>
 
-<div class="idf-modal-backdrop" id="idfInlineDeviceBackdrop" onclick="closeInlineDeviceIfBackdrop(event)">
-    <div class="idf-inline-device-modal" onclick="event.stopPropagation()">
-        <div class="idf-modal-header" style="margin-bottom:0;">
-            <div class="idf-modal-title">Port Editor</div>
-            <button class="btn btn-sm" type="button" onclick="closeInlineDevice(false)">Close</button>
-        </div>
-        <iframe id="idfInlineDeviceFrame" class="idf-inline-device-frame" src="about:blank" loading="lazy"></iframe>
-    </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -1258,8 +1226,8 @@ function createEmptySlot(positionNo) {
         </div>
         <div class="idf-slot-actions">
             <button class="btn btn-sm idf-mini" type="button" onclick="idfRemovePosition(${positionNo})">&#10134;</button>
-            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">↑</button>
-            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">↓</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'up')">â†‘</button>
+            <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(${IDF_ID}, ${positionNo}, 'down')">â†“</button>
             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(${positionNo}, null)">Add device</button>
         </div>
     `;
@@ -1332,59 +1300,25 @@ function closeCopyIfBackdrop(e){ if(e.target.id === 'idfCopyBackdrop') closeCopy
 function closeCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'none'; }
 function openCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'flex'; }
 
-function closeInlineDeviceIfBackdrop(e){ if (e.target.id === 'idfInlineDeviceBackdrop') closeInlineDevice(false); }
-function openInlineDevice(url) {
-    const backdrop = document.getElementById('idfInlineDeviceBackdrop');
-    const frame = document.getElementById('idfInlineDeviceFrame');
-    if (!backdrop || !frame) {
-        window.location.href = url;
-        return;
+function buildDeviceEditorUrl(positionId, portId, action) {
+    const url = new URL('device.php', window.location.href);
+    url.searchParams.set('position_id', String(positionId));
+    url.searchParams.set('return_to', `view.php?id=${IDF_ID}`);
+    if (action === 'link' && portId > 0) {
+        url.searchParams.set('open_link_port_id', String(portId));
+    } else if (action === 'edit' && portId > 0) {
+        url.searchParams.set('open_edit_port_id', String(portId));
     }
-    const frameUrl = new URL(url, window.location.href);
-    frameUrl.searchParams.set('embed', '1');
-    frameUrl.searchParams.set('embed_modal', '1');
-    frame.src = frameUrl.toString();
-    backdrop.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    return url.toString();
 }
 
-function closeInlineDevice(shouldReload) {
-    const backdrop = document.getElementById('idfInlineDeviceBackdrop');
-    const frame = document.getElementById('idfInlineDeviceFrame');
-    if (frame) {
-        frame.src = 'about:blank';
+function navigateToDeviceEditor(positionId, portId, action) {
+    if (!positionId) {
+        alert('Position not found for this port.');
+        return;
     }
-    if (backdrop) {
-        backdrop.style.display = 'none';
-    }
-    document.body.style.overflow = '';
-    if (shouldReload) {
-        reloadIdfRackView();
-    }
+    window.location.href = buildDeviceEditorUrl(positionId, portId, action);
 }
-
-window.addEventListener('message', (event) => {
-    if (!event || !event.data || !event.data.type) {
-        return;
-    }
-    if (event.data.type === 'idf_device_embed_updated') {
-        closeInlineDevice(true);
-        return;
-    }
-    if (event.data.type === 'idf_device_embed_close') {
-        closeInlineDevice(false);
-    }
-});
-
-document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') {
-        return;
-    }
-    const backdrop = document.getElementById('idfInlineDeviceBackdrop');
-    if (backdrop && backdrop.style.display === 'flex') {
-        closeInlineDevice(false);
-    }
-});
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
@@ -1736,21 +1670,8 @@ function onPortClick(portId, portElement) {
     const portNode = portElement && portElement.dataset ? portElement : null;
     const statusLabelRaw = portNode ? String(portNode.dataset.portStatusLabel || '').trim().toLowerCase() : '';
     const positionId = portNode ? Number(portNode.dataset.positionId || 0) : 0;
-    if (!positionId) {
-        alert('Position not found for this port.');
-        return;
-    }
-
-    const url = new URL('device.php', window.location.href);
-    url.searchParams.set('position_id', String(positionId));
-
-    if (statusLabelRaw === 'unknown') {
-        url.searchParams.set('open_link_port_id', String(portId));
-    } else {
-        url.searchParams.set('open_edit_port_id', String(portId));
-    }
-
-    openInlineDevice(url.toString());
+    const action = statusLabelRaw === 'unknown' ? 'link' : 'edit';
+    navigateToDeviceEditor(positionId, Number(portId), action);
 }
 
 
@@ -1777,10 +1698,8 @@ function onPortDotClick(portElement) {
         return;
     }
 
-    const url = new URL('device.php', window.location.href);
-    url.searchParams.set('position_id', String(positionId));
     alert(`SFP port ${portNo > 0 ? portNo : ''} (${portType}) does not have an IDF port record yet. Opening device view so you can regenerate/save ports first.`);
-    openInlineDevice(url.toString());
+    navigateToDeviceEditor(positionId, 0, 'edit');
 }
 
 function idfExportExcel() {
