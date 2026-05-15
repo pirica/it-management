@@ -1182,6 +1182,60 @@ function idf_fetch_port_type_labels(mysqli $conn, int $company_id, array $portId
     return $labels;
 }
 
+function idf_resolve_port_position(mysqli $conn, int $company_id, int $port_id): ?array
+{
+    if ($company_id <= 0 || $port_id <= 0) {
+        return null;
+    }
+
+    $selectSql = "SELECT
+            pr.id AS port_id,
+            pr.port_no,
+            p.id AS position_id,
+            p.position_no,
+            p.device_name,
+            p.idf_id,
+            p.equipment_id AS position_equipment_id,
+            i.company_id
+         FROM idf_ports pr
+         JOIN idf_positions p
+           ON p.company_id = pr.company_id
+          AND %s
+         JOIN idfs i ON i.id = p.idf_id
+         WHERE pr.company_id = ?
+           AND pr.id = ?
+         LIMIT 1";
+
+    $matchModes = [
+        'p.id = pr.position_id',
+        'p.position_no = pr.position_id
+          AND NOT EXISTS (
+              SELECT 1
+              FROM idf_positions p_actual
+              WHERE p_actual.company_id = pr.company_id
+                AND p_actual.id = pr.position_id
+              LIMIT 1
+          )',
+    ];
+
+    foreach ($matchModes as $joinCondition) {
+        $stmt = mysqli_prepare($conn, sprintf($selectSql, $joinCondition));
+        if (!$stmt) {
+            continue;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $port_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if ($row && (int)($row['position_id'] ?? 0) > 0) {
+            return $row;
+        }
+    }
+
+    return null;
+}
+
 function idf_parse_linked_equipment_id($raw): int
 {
     $equipmentIdRaw = trim((string)$raw);

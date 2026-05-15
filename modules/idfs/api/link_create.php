@@ -52,57 +52,46 @@ if ($switchPortId > 0 && $equipmentId <= 0) {
     idf_fail('Equipment is required when selecting an equipment port');
 }
 
-$stmt = mysqli_prepare(
-    $conn,
-    "SELECT
-        pr.id AS port_id,
-        pr.port_no,
-        i.company_id,
-        p.id AS position_id,
-        p.position_no,
-        p.device_name,
-        p.equipment_id AS position_equipment_id
-     FROM idf_ports pr
-     JOIN idf_positions p
-       ON p.company_id = pr.company_id
-      AND (
-           p.id = pr.position_id
-           OR p.position_no = pr.position_id
-      )
-     JOIN idfs i ON i.id=p.idf_id
-     WHERE pr.id IN (?, ?)"
-);
-
-$seen = [];
-$positionSeen = [];
-$positionNoSeen = [];
-$portNoSeen = [];
-$deviceSeen = [];
-$positionEquipmentSeen = [];
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'ii', $portA, $portB);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    while ($res && ($r = mysqli_fetch_assoc($res))) {
-        $seen[(int)$r['port_id']] = (int)$r['company_id'];
-        $positionSeen[(int)$r['port_id']] = (int)$r['position_id'];
-        $positionNoSeen[(int)$r['port_id']] = (int)$r['position_no'];
-        $portNoSeen[(int)$r['port_id']] = (int)$r['port_no'];
-        $deviceSeen[(int)$r['port_id']] = (string)($r['device_name'] ?? '');
-        $positionEquipmentSeen[(int)$r['port_id']] = trim((string)($r['position_equipment_id'] ?? ''));
-    }
-    mysqli_stmt_close($stmt);
-}
-
-if (count($seen) !== 2) {
+$portMetaA = idf_resolve_port_position($conn, $company_id, $portA);
+$portMetaB = idf_resolve_port_position($conn, $company_id, $portB);
+if (!$portMetaA || !$portMetaB) {
     idf_fail('Port not found', 404);
 }
-if (($seen[$portA] ?? null) !== $company_id || ($seen[$portB] ?? null) !== $company_id) {
+if ((int)($portMetaA['company_id'] ?? 0) !== $company_id || (int)($portMetaB['company_id'] ?? 0) !== $company_id) {
     idf_fail('Forbidden', 403);
 }
-if (($positionSeen[$portA] ?? 0) === ($positionSeen[$portB] ?? 0)) {
+
+$positionSeen = [
+    $portA => (int)($portMetaA['position_id'] ?? 0),
+    $portB => (int)($portMetaB['position_id'] ?? 0),
+];
+$positionNoSeen = [
+    $portA => (int)($portMetaA['position_no'] ?? 0),
+    $portB => (int)($portMetaB['position_no'] ?? 0),
+];
+$portNoSeen = [
+    $portA => (int)($portMetaA['port_no'] ?? 0),
+    $portB => (int)($portMetaB['port_no'] ?? 0),
+];
+$deviceSeen = [
+    $portA => (string)($portMetaA['device_name'] ?? ''),
+    $portB => (string)($portMetaB['device_name'] ?? ''),
+];
+$positionEquipmentSeen = [
+    $portA => trim((string)($portMetaA['position_equipment_id'] ?? '')),
+    $portB => trim((string)($portMetaB['position_equipment_id'] ?? '')),
+];
+
+if ($positionSeen[$portA] === $positionSeen[$portB]) {
     $deviceName = trim((string)($deviceSeen[$portA] ?? 'this device'));
-    idf_fail('Cannot link two ports on the same device (' . $deviceName . '). Choose a port from another device to avoid switching loops.');
+    $positionNo = (int)($positionNoSeen[$portA] ?? 0);
+    $samePositionLabel = $positionNo > 0
+        ? 'Pos ' . $positionNo . ' • ' . $deviceName
+        : $deviceName;
+    idf_fail(
+        'Cannot link two ports on the same rack position (' . $samePositionLabel . '). '
+        . 'Choose a port on a different rack position to avoid switching loops.'
+    );
 }
 
 $portTypeLabels = idf_fetch_port_type_labels($conn, $company_id, [$portA, $portB]);
