@@ -1753,6 +1753,15 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="__add_new__">âž•</option>
                 </select>
             </div>
+            <div data-link-default-field="vlan">
+                <label class="label">VLAN</label>
+                <select class="input" name="vlan">
+                    <option value="">-- None --</option>
+                    <?php foreach ($vlanOptions as $vlanId => $vlanLabel): ?>
+                        <option value="<?php echo (int)$vlanId; ?>"><?php echo sanitize($vlanLabel); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
                 <label class="label" id="linkCommentsLabel">Comments</label>
@@ -2437,7 +2446,8 @@ function savePort() {
                     fiber_rack_id: payload.fiber_rack_id,
                     to_idf_id: payload.to_idf_id,
                     to_rack_id: payload.to_rack_id,
-                    to_location_id: payload.to_location_id
+                    to_location_id: payload.to_location_id,
+                    vlan_id: payload.vlan_id
                 });
             }
             return null;
@@ -2637,6 +2647,9 @@ async function openLinkModal(portId) {
         );
         f.status.value = unknownStatusOption ? unknownStatusOption.value : (f.status.value || '');
     }
+    if (f.vlan) {
+        applySelectValue(f.vlan, source.vlan_id);
+    }
     f.equipment_id.value = '';
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
@@ -2790,6 +2803,7 @@ function createLink() {
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
         linked_cable_color: linkedCableColorName,
         linked_cable_color_hex: linkedCableColorHex,
+        vlan_id: f.vlan && f.vlan.value ? Number(f.vlan.value) : null,
     };
 
     apiPost('link_create.php', payload)
