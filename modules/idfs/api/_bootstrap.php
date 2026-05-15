@@ -1,22 +1,26 @@
 <?php
 require_once __DIR__ . '/../../../config/config.php';
 
-header('Content-Type: application/json; charset=utf-8');
+if (!defined('IDF_INCLUDE_HELPERS_ONLY')) {
+    header('Content-Type: application/json; charset=utf-8');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    header('Allow: POST');
-    echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
-    exit;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
+        exit;
+    }
+
+    if (!isset($_SESSION['company_id'])) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
+        exit;
+    }
 }
 
-if (!isset($_SESSION['company_id'])) {
-    http_response_code(401);
-    echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
-    exit;
+if (!isset($company_id)) {
+    $company_id = (int)($_SESSION['company_id'] ?? 0);
 }
-
-$company_id = (int)($_SESSION['company_id'] ?? 0);
 
 function idf_read_json(): array {
     $raw = file_get_contents('php://input');
