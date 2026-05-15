@@ -233,6 +233,96 @@ if (empty($portRowsToInsert)) {
 
 mysqli_begin_transaction($conn);
 try {
+    /**
+     * Why: Regenerating ports deletes local idf_ports (CASCADE idf_links) but leaves peer endpoints with stale
+     * connection display and no unlink control; unlink peers first like link_delete.php.
+     */
+    $switchPortLabelColumnPeer = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+    if ($switchPortLabelColumnPeer === null) {
+        $switchPortLabelColumnPeer = 'to_patch_port';
+    }
+
+    $regenPortIds = [];
+    $stmtRegenIds = mysqli_prepare($conn, "SELECT id FROM idf_ports WHERE position_id = ? AND company_id = ?");
+    if ($stmtRegenIds) {
+        mysqli_stmt_bind_param($stmtRegenIds, 'ii', $position_id, $company_id);
+        mysqli_stmt_execute($stmtRegenIds);
+        $resRegenIds = mysqli_stmt_get_result($stmtRegenIds);
+        while ($resRegenIds && ($idRow = mysqli_fetch_assoc($resRegenIds))) {
+            $regenPortIds[] = (int)($idRow['id'] ?? 0);
+        }
+        mysqli_stmt_close($stmtRegenIds);
+    }
+
+    $safeRegenIds = [];
+    foreach ($regenPortIds as $rid) {
+        $rid = (int)$rid;
+        if ($rid > 0) {
+            $safeRegenIds[$rid] = true;
+        }
+    }
+    $safeRegenIds = array_keys($safeRegenIds);
+
+    if (!empty($safeRegenIds)) {
+        $syncPeer = idf_unlink_peer_sync_ids($conn, $company_id);
+        $unknownStatusIdPeer = (int)($syncPeer['unknown_status_id'] ?? 0);
+        $grayColorIdPeer = (int)($syncPeer['gray_color_id'] ?? 0);
+
+        $inPlaceholders = implode(',', array_fill(0, count($safeRegenIds), '?'));
+        $bindTypesPeer = str_repeat('i', 1 + 2 * count($safeRegenIds));
+        $bindValsPeer = array_merge([$company_id], $safeRegenIds, $safeRegenIds);
+
+        $peerById = [];
+        $linkSql =
+            'SELECT port_id_a, port_id_b
+             FROM idf_links
+             WHERE company_id = ?
+               AND (port_id_a IN (' . $inPlaceholders . ') OR port_id_b IN (' . $inPlaceholders . '))';
+
+        $stmtLinks = mysqli_prepare($conn, $linkSql);
+        if (!$stmtLinks) {
+            throw new RuntimeException('DB prepare failed loading idf_links for ports regen');
+        }
+        mysqli_stmt_bind_param($stmtLinks, $bindTypesPeer, ...$bindValsPeer);
+        if (!mysqli_stmt_execute($stmtLinks)) {
+            mysqli_stmt_close($stmtLinks);
+            throw new RuntimeException('DB error loading idf_links for ports regen: ' . mysqli_error($conn));
+        }
+        $resLinks = mysqli_stmt_get_result($stmtLinks);
+        $regenFlip = array_fill_keys($safeRegenIds, true);
+        while ($resLinks && ($linkRow = mysqli_fetch_assoc($resLinks))) {
+            $pa = (int)($linkRow['port_id_a'] ?? 0);
+            $pb = (int)($linkRow['port_id_b'] ?? 0);
+            if ($pa > 0 && isset($regenFlip[$pa]) && $pb > 0 && empty($regenFlip[$pb])) {
+                $peerById[$pb] = true;
+            }
+            if ($pb > 0 && isset($regenFlip[$pb]) && $pa > 0 && empty($regenFlip[$pa])) {
+                $peerById[$pa] = true;
+            }
+        }
+        mysqli_stmt_close($stmtLinks);
+
+        $delLinksSql =
+            'DELETE FROM idf_links
+             WHERE company_id = ?
+               AND (port_id_a IN (' . $inPlaceholders . ') OR port_id_b IN (' . $inPlaceholders . '))';
+
+        $stmtDelLinks = mysqli_prepare($conn, $delLinksSql);
+        if (!$stmtDelLinks) {
+            throw new RuntimeException('DB prepare failed deleting idf_links for ports regen');
+        }
+        mysqli_stmt_bind_param($stmtDelLinks, $bindTypesPeer, ...$bindValsPeer);
+        if (!mysqli_stmt_execute($stmtDelLinks)) {
+            mysqli_stmt_close($stmtDelLinks);
+            throw new RuntimeException('DB error deleting impacted idf_links for ports regen: ' . mysqli_stmt_error($stmtDelLinks));
+        }
+        mysqli_stmt_close($stmtDelLinks);
+
+        foreach (array_keys($peerById) as $peerIdfPortId) {
+            idf_reset_idf_port_visual_unlink_state($conn, $company_id, (int)$peerIdfPortId, $unknownStatusIdPeer, $grayColorIdPeer, $switchPortLabelColumnPeer);
+        }
+    }
+
     $stmtDel = mysqli_prepare($conn, "DELETE FROM idf_ports WHERE position_id=? AND company_id=?");
     if ($stmtDel) {
         mysqli_stmt_bind_param($stmtDel, 'ii', $position_id, $company_id);

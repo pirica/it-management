@@ -1134,6 +1134,163 @@ function idf_first_existing_column(mysqli $conn, string $table, array $candidate
     return null;
 }
 
+/**
+ * Why: Clearing idf_links (or CASCADE-delete from port removal) must still reset the survivor port's mirrored
+ * idf_ports + switch_ports visuals; otherwise peers keep link-colored state with no unlink affordance (regen UX).
+ *
+ * Mirrors the post-delete port/switch resets in link_delete.php for a single idf_ports.id endpoint.
+ *
+ * Call only after matching idf_links rows are deleted (explicitly or about to CASCADE).
+ */
+function idf_reset_idf_port_visual_unlink_state(
+    mysqli $conn,
+    int $company_id,
+    int $idfPortId,
+    int $unknownStatusId,
+    int $grayColorId,
+    string $switchPortLabelColumn
+): void {
+    if ($company_id <= 0 || $idfPortId <= 0 || $unknownStatusId <= 0) {
+        return;
+    }
+    if (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($switchPortLabelColumn)) {
+        throw new RuntimeException('Unsafe switch port patch column name');
+    }
+
+    $clearConnected = '';
+    $grayColorName = 'Gray';
+    $grayHexColor = '#808080';
+
+    $stmtPortClear = mysqli_prepare(
+        $conn,
+        "UPDATE idf_ports
+         SET connected_to = ?,
+             status_id = NULLIF(?, 0),
+             cable_color = ?,
+             hex_color = ?,
+             label = NULL,
+             notes = NULL
+         WHERE id = ?
+         LIMIT 1"
+    );
+    if (!$stmtPortClear) {
+        throw new RuntimeException('DB prepare failed clearing idf_ports link state');
+    }
+    mysqli_stmt_bind_param($stmtPortClear, 'sissi', $clearConnected, $unknownStatusId, $grayColorName, $grayHexColor, $idfPortId);
+    if (!mysqli_stmt_execute($stmtPortClear)) {
+        $sqlErr = mysqli_stmt_error($stmtPortClear);
+        mysqli_stmt_close($stmtPortClear);
+        throw new RuntimeException('DB error clearing idf_ports link state: ' . $sqlErr);
+    }
+    mysqli_stmt_close($stmtPortClear);
+
+    $stmtSwitchClear = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports sp
+         JOIN idf_ports pr ON pr.id = ?
+         JOIN idf_positions p
+           ON p.company_id = pr.company_id
+          AND (
+               p.id = pr.position_id
+               OR p.position_no = pr.position_id
+          )
+         LEFT JOIN switch_port_types spt
+           ON spt.id = pr.port_type
+          AND spt.company_id = pr.company_id
+         SET sp.status_id = NULLIF(?, 0),
+             sp.color_id = NULLIF(?, 0),
+             sp.comments = NULL,
+             sp.{$switchPortLabelColumn} = NULL
+         WHERE sp.company_id = ?
+           AND p.company_id = sp.company_id
+           AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           AND sp.port_number = pr.port_no
+           AND (
+                CONVERT(CAST(sp.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(CAST(pr.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR (
+                    sp.port_type REGEXP '^[0-9]+$'
+                    AND CAST(sp.port_type AS UNSIGNED) = pr.port_type
+                )
+                OR
+                CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                OR (
+                    sp.port_type REGEXP '^[0-9]+$'
+                    AND CAST(sp.port_type AS UNSIGNED) = spt.id
+                )
+                OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                   = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           )
+        "
+    );
+    if (!$stmtSwitchClear) {
+        throw new RuntimeException('DB prepare failed clearing switch port link state');
+    }
+    mysqli_stmt_bind_param($stmtSwitchClear, 'iiii', $idfPortId, $unknownStatusId, $grayColorId, $company_id);
+    if (!mysqli_stmt_execute($stmtSwitchClear)) {
+        $sqlErr = mysqli_stmt_error($stmtSwitchClear);
+        mysqli_stmt_close($stmtSwitchClear);
+        throw new RuntimeException('DB error clearing switch port link state: ' . $sqlErr);
+    }
+    mysqli_stmt_close($stmtSwitchClear);
+}
+
+/**
+ * Why: Ports regen deletes idf_ports (CASCADE idf_links) but peers must reuse the same status/gray anchors as unlink.
+ */
+function idf_unlink_peer_sync_ids(mysqli $conn, int $company_id): array {
+    $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
+    if ($unknownStatusId <= 0) {
+        throw new RuntimeException('Unable to resolve Unknown status for peer unlink cleanup');
+    }
+    $grayColorName = 'Gray';
+    $grayHexColor = '#808080';
+    $grayColorId = idf_resolve_named_lookup_id($conn, $company_id, 'cable_colors', 'color_name', $grayColorName);
+    if ($grayColorId === null || (int)$grayColorId <= 0) {
+        $stmtGrayByHex = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM cable_colors
+             WHERE company_id = ?
+               AND UPPER(hex_color) = UPPER(?)
+             ORDER BY id ASC
+             LIMIT 1"
+        );
+        if ($stmtGrayByHex) {
+            mysqli_stmt_bind_param($stmtGrayByHex, 'is', $company_id, $grayHexColor);
+            mysqli_stmt_execute($stmtGrayByHex);
+            $resGrayByHex = mysqli_stmt_get_result($stmtGrayByHex);
+            $grayRow = $resGrayByHex ? mysqli_fetch_assoc($resGrayByHex) : null;
+            mysqli_stmt_close($stmtGrayByHex);
+            if ($grayRow) {
+                $grayColorId = (int)($grayRow['id'] ?? 0);
+            }
+        }
+    }
+    if ($grayColorId === null || (int)$grayColorId <= 0) {
+        $stmtInsertGray = mysqli_prepare(
+            $conn,
+            "INSERT IGNORE INTO cable_colors (company_id, color_name, hex_color)
+             VALUES (?, ?, ?)"
+        );
+        if ($stmtInsertGray) {
+            mysqli_stmt_bind_param($stmtInsertGray, 'iss', $company_id, $grayColorName, $grayHexColor);
+            mysqli_stmt_execute($stmtInsertGray);
+            mysqli_stmt_close($stmtInsertGray);
+        }
+        $grayColorId = idf_resolve_named_lookup_id($conn, $company_id, 'cable_colors', 'color_name', $grayColorName);
+    }
+    $grayColorId = (int)($grayColorId ?? 0);
+    if ($grayColorId <= 0) {
+        throw new RuntimeException('Unable to resolve Gray cable_color for peer unlink cleanup');
+    }
+    return ['unknown_status_id' => $unknownStatusId, 'gray_color_id' => $grayColorId];
+}
+
 function idf_port_type_link_family(string $typeLabel): string {
     $normalized = preg_replace('/[^a-z0-9]+/i', '', strtolower(trim($typeLabel)));
     if ($normalized !== '' && strpos($normalized, 'sfp') !== false) {
