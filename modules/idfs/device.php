@@ -611,7 +611,35 @@ if (empty($ports) && $position_id > 0) {
 }
 
 if ($positionLinkedEquipmentId > 0 && !empty($ports)) {
-    idf_attach_switch_port_ids_to_ports($conn, $company_id, $positionLinkedEquipmentId, $ports);
+    $equipmentDefaultPoeId = 0;
+    $stmtEquipmentPoe = mysqli_prepare(
+        $conn,
+        'SELECT COALESCE(switch_poe_id, 0) AS switch_poe_id
+         FROM equipment
+         WHERE company_id = ? AND id = ?
+         LIMIT 1'
+    );
+    if ($stmtEquipmentPoe) {
+        mysqli_stmt_bind_param($stmtEquipmentPoe, 'ii', $company_id, $positionLinkedEquipmentId);
+        mysqli_stmt_execute($stmtEquipmentPoe);
+        $resEquipmentPoe = mysqli_stmt_get_result($stmtEquipmentPoe);
+        $equipmentPoeRow = $resEquipmentPoe ? mysqli_fetch_assoc($resEquipmentPoe) : null;
+        if ($equipmentPoeRow) {
+            $equipmentDefaultPoeId = (int)($equipmentPoeRow['switch_poe_id'] ?? 0);
+        }
+        mysqli_stmt_close($stmtEquipmentPoe);
+    }
+    idf_attach_switch_port_ids_to_ports(
+        $conn,
+        $company_id,
+        $positionLinkedEquipmentId,
+        $ports,
+        $equipmentDefaultPoeId
+    );
+    foreach ($ports as &$portRowAfterSwitchSync) {
+        $portRowAfterSwitchSync = $idfDeviceHydratePortRow($portRowAfterSwitchSync);
+    }
+    unset($portRowAfterSwitchSync);
 }
 
 if (!empty($ports)) {
@@ -2423,29 +2451,45 @@ async function openLinkModal(portId) {
     const showSourceLabel = rawSourceLabel !== '' && rawSourceLabel !== '0' && rawSourceLabel.toLowerCase() !== 'null';
     const sourcePortType = String(source.port_type_label || 'RJ45').toUpperCase();
     f.source_display.value = `${sourcePortType} Port ${source.port_no}${showSourceLabel ? ` | ${rawSourceLabel}` : ''}`;
-    const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
-        option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
-    );
-    f.cable_color_id.value = grayCableColorOption ? grayCableColorOption.value : '';
-    if (f.linked_cable_color_id) {
-        const grayLinkedCableColorOption = Array.from(f.linked_cable_color_id.options).find((option) =>
+    const sourceCableColorId = Number(source.cable_color_id || 0);
+    const sourceCableColorName = String(source.cable_color_name || source.cable_color || '').trim();
+    if (sourceCableColorId > 0 && Array.from(f.cable_color_id.options).some((option) => Number(option.value) === sourceCableColorId)) {
+        f.cable_color_id.value = String(sourceCableColorId);
+    } else if (sourceCableColorName !== '') {
+        const matchedSourceCableColor = Array.from(f.cable_color_id.options).find((option) =>
+            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === sourceCableColorName.toLowerCase()
+        );
+        f.cable_color_id.value = matchedSourceCableColor ? matchedSourceCableColor.value : '';
+    } else {
+        const grayCableColorOption = Array.from(f.cable_color_id.options).find((option) =>
             option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
         );
-        f.linked_cable_color_id.value = grayLinkedCableColorOption ? grayLinkedCableColorOption.value : '';
-        f.linked_cable_color_id.dataset.previousValue = f.linked_cable_color_id.value || '';
-        updateCableColorSwatch('', f.linked_cable_color_id);
+        f.cable_color_id.value = grayCableColorOption ? grayCableColorOption.value : '';
     }
-    f.cable_label.value = '';
-    f.notes.value = '';
-    const unknownStatusOption = Array.from(f.status.options).find((option) =>
-        option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'unknown'
-    );
-    f.status.value = unknownStatusOption ? unknownStatusOption.value : (f.status.value || '');
+    if (f.linked_cable_color_id) {
+        f.linked_cable_color_id.value = f.cable_color_id.value || '';
+        f.linked_cable_color_id.dataset.previousValue = f.linked_cable_color_id.value || '';
+        updateCableColorSwatch(source.cable_hex_color || sourceCableColorName || 'Gray', f.linked_cable_color_id);
+    }
+    f.cable_label.value = (source.label && String(source.label).trim() !== '0') ? String(source.label).trim() : '';
+    f.notes.value = source.notes ? String(source.notes).trim() : '';
+    const sourceStatusId = Number(source.status_id || 0);
+    if (sourceStatusId > 0 && Array.from(f.status.options).some((option) => Number(option.value) === sourceStatusId)) {
+        f.status.value = String(sourceStatusId);
+    } else {
+        const unknownStatusOption = Array.from(f.status.options).find((option) =>
+            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'unknown'
+        );
+        f.status.value = unknownStatusOption ? unknownStatusOption.value : (f.status.value || '');
+    }
     f.equipment_id.value = '';
     f.switch_port_id.innerHTML = '<option value="">Select equipment first</option>';
     f.switch_port_id.disabled = true;
     toggleLinkedEquipmentFields(false);
-    updateCableColorSwatch(f.cable_color_id.value || 'Gray', f.cable_color_id);
+    updateCableColorSwatch(
+        source.cable_hex_color || sourceCableColorName || f.cable_color_id.value || 'Gray',
+        f.cable_color_id
+    );
     destinationSelect.value = '';
     updateLinkFormTypePresentation(source);
     document.getElementById('linkBackdrop').style.display = 'flex';

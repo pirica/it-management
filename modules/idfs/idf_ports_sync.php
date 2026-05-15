@@ -168,18 +168,124 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
 }
 
 /**
- * Attach switch_ports.id to loaded port rows (port list query join can miss when port_type strings differ).
+ * Fill missing effective_* / display fields on an IDF port row from a switch_ports row.
  */
-function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int $equipmentId, array &$ports): void
+function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $switchRow, int $equipmentDefaultPoeId = 0): void
 {
+    $pickEffective = static function (string $effectiveKey, string $switchKey) use (&$portRow, $switchRow): void {
+        $current = (int)($portRow[$effectiveKey] ?? 0);
+        $incoming = (int)($switchRow[$switchKey] ?? 0);
+        if ($current <= 0 && $incoming > 0) {
+            $portRow[$effectiveKey] = $incoming;
+        }
+    };
+
+    $pickEffective('effective_status_id', 'status_id');
+    $pickEffective('effective_vlan_id', 'vlan_id');
+    $pickEffective('effective_rj45_speed_id', 'rj45_speed_id');
+    $pickEffective('effective_fiber_port_id', 'fiber_port_id');
+    $pickEffective('effective_fiber_patch_id', 'fiber_patch_id');
+    $pickEffective('effective_fiber_rack_id', 'fiber_rack_id');
+    $pickEffective('effective_to_idf_id', 'to_idf_id');
+    $pickEffective('effective_to_rack_id', 'to_rack_id');
+    $pickEffective('effective_to_location_id', 'to_location_id');
+
+    if ((int)($portRow['effective_poe_id'] ?? 0) <= 0) {
+        $switchPoeId = (int)($switchRow['poe_id'] ?? 0);
+        if ($switchPoeId > 0) {
+            $portRow['effective_poe_id'] = $switchPoeId;
+        } elseif ($equipmentDefaultPoeId > 0) {
+            $portRow['effective_poe_id'] = $equipmentDefaultPoeId;
+        }
+    }
+
+    $switchLabel = trim((string)($switchRow['switch_label'] ?? ''));
+    if ($switchLabel !== '' && $switchLabel !== '0') {
+        $currentLabel = trim((string)($portRow['label'] ?? ''));
+        if ($currentLabel === '' || $currentLabel === '0') {
+            $portRow['label'] = $switchLabel;
+        }
+    }
+
+    $switchHostname = trim((string)($switchRow['hostname'] ?? ''));
+    if ($switchHostname !== '') {
+        $currentConnectedTo = trim((string)($portRow['connected_to'] ?? ''));
+        if ($currentConnectedTo === '') {
+            $portRow['connected_to'] = $switchHostname;
+        }
+    }
+
+    $switchComments = trim((string)($switchRow['comments'] ?? ''));
+    if ($switchComments !== '') {
+        $currentNotes = trim((string)($portRow['notes'] ?? ''));
+        if ($currentNotes === '') {
+            $portRow['notes'] = $switchComments;
+        }
+    }
+
+    $switchColorId = (int)($switchRow['color_id'] ?? 0);
+    if ($switchColorId > 0 && (int)($portRow['cable_color_id'] ?? 0) <= 0) {
+        $portRow['cable_color_id'] = $switchColorId;
+    }
+    $switchColorName = trim((string)($switchRow['color_name'] ?? ''));
+    if ($switchColorName !== '') {
+        $currentColorName = trim((string)($portRow['cable_color_name'] ?? ''));
+        if ($currentColorName === '' || strcasecmp($currentColorName, 'Gray') === 0) {
+            $portRow['cable_color_name'] = $switchColorName;
+            $portRow['cable_color'] = $switchColorName;
+        }
+    }
+    $switchHexColor = trim((string)($switchRow['switch_hex_color'] ?? ''));
+    if ($switchHexColor !== '') {
+        if (trim((string)($portRow['cable_hex_color'] ?? '')) === '') {
+            $portRow['cable_hex_color'] = $switchHexColor;
+        }
+        if (trim((string)($portRow['status_color'] ?? '')) === '') {
+            $portRow['status_color'] = $switchHexColor;
+        }
+    }
+}
+
+/**
+ * Attach switch_ports.id and merge live switch_ports metadata (join can miss when port_type strings differ).
+ */
+function idf_attach_switch_port_ids_to_ports(
+    mysqli $conn,
+    int $company_id,
+    int $equipmentId,
+    array &$ports,
+    int $equipmentDefaultPoeId = 0
+): void {
     if ($company_id <= 0 || $equipmentId <= 0 || empty($ports)) {
         return;
     }
+
+    $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+    if ($switchPortLabelColumn === null) {
+        $switchPortLabelColumn = 'to_patch_port';
+    }
+    $hasSwitchPortPoeColumn = idf_first_existing_column($conn, 'switch_ports', ['poe_id']) !== null;
+    $switchPoeSelect = $hasSwitchPortPoeColumn ? 'sp.poe_id' : '0 AS poe_id';
 
     $stmtSwitchPorts = mysqli_prepare(
         $conn,
         "SELECT sp.id,
                 sp.port_number,
+                sp.status_id,
+                sp.vlan_id,
+                sp.rj45_speed_id,
+                sp.fiber_port_id,
+                sp.fiber_patch_id,
+                sp.fiber_rack_id,
+                sp.to_idf_id,
+                sp.to_rack_id,
+                sp.to_location_id,
+                sp.color_id,
+                {$switchPoeSelect},
+                sp.{$switchPortLabelColumn} AS switch_label,
+                sp.hostname,
+                sp.comments,
+                COALESCE(NULLIF(cc_sp.color_name, ''), '') AS color_name,
                 COALESCE(spt.id, 0) AS port_type_id,
                 LOWER(TRIM(COALESCE(spt.type, sp.port_type, 'RJ45'))) AS port_type_name,
                 COALESCE(NULLIF(cc_sp.hex_color, ''), NULLIF(cc_ss.hex_color, ''), '') AS switch_hex_color
@@ -210,26 +316,18 @@ function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int 
     $resSwitchPorts = mysqli_stmt_get_result($stmtSwitchPorts);
     $switchPortsByKey = [];
     $switchPortsByNumber = [];
-    $switchHexByKey = [];
-    $switchHexByNumber = [];
+    $switchMetaById = [];
     while ($resSwitchPorts && ($switchPortRow = mysqli_fetch_assoc($resSwitchPorts))) {
         $switchPortId = (int)($switchPortRow['id'] ?? 0);
         $portNo = (int)($switchPortRow['port_number'] ?? 0);
         $portTypeId = (int)($switchPortRow['port_type_id'] ?? 0);
         $portTypeName = strtolower(trim((string)($switchPortRow['port_type_name'] ?? '')));
-        $switchHexColor = trim((string)($switchPortRow['switch_hex_color'] ?? ''));
         if ($switchPortId <= 0 || $portNo <= 0) {
             continue;
         }
+        $switchMetaById[$switchPortId] = $switchPortRow;
         $switchPortsByKey[$portTypeId . ':' . $portNo] = $switchPortId;
         $switchPortsByKey[$portTypeName . ':' . $portNo] = $switchPortId;
-        if ($switchHexColor !== '') {
-            $switchHexByKey[$portTypeId . ':' . $portNo] = $switchHexColor;
-            $switchHexByKey[$portTypeName . ':' . $portNo] = $switchHexColor;
-            if (!isset($switchHexByNumber[$portNo])) {
-                $switchHexByNumber[$portNo] = $switchHexColor;
-            }
-        }
         if (!isset($switchPortsByNumber[$portNo])) {
             $switchPortsByNumber[$portNo] = $switchPortId;
         }
@@ -237,39 +335,31 @@ function idf_attach_switch_port_ids_to_ports(mysqli $conn, int $company_id, int 
     mysqli_stmt_close($stmtSwitchPorts);
 
     foreach ($ports as &$portRow) {
-        if (!empty($portRow['switch_port_live_id'])) {
-            continue;
-        }
         $portNo = (int)($portRow['port_no'] ?? 0);
         if ($portNo <= 0) {
             continue;
         }
         $portTypeId = (int)($portRow['port_type'] ?? 0);
         $portTypeLabel = strtolower(trim((string)($portRow['port_type_label'] ?? '')));
-        $resolvedSwitchPortId = 0;
-        if ($portTypeId > 0 && isset($switchPortsByKey[$portTypeId . ':' . $portNo])) {
-            $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeId . ':' . $portNo];
-        } elseif ($portTypeLabel !== '' && isset($switchPortsByKey[$portTypeLabel . ':' . $portNo])) {
-            $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeLabel . ':' . $portNo];
-        } elseif (isset($switchPortsByNumber[$portNo])) {
-            $resolvedSwitchPortId = (int)$switchPortsByNumber[$portNo];
-        }
-        if ($resolvedSwitchPortId > 0) {
-            $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
-        }
-        $resolvedHex = '';
-        if ($portTypeId > 0 && isset($switchHexByKey[$portTypeId . ':' . $portNo])) {
-            $resolvedHex = trim((string)$switchHexByKey[$portTypeId . ':' . $portNo]);
-        } elseif ($portTypeLabel !== '' && isset($switchHexByKey[$portTypeLabel . ':' . $portNo])) {
-            $resolvedHex = trim((string)$switchHexByKey[$portTypeLabel . ':' . $portNo]);
-        } elseif (isset($switchHexByNumber[$portNo])) {
-            $resolvedHex = trim((string)$switchHexByNumber[$portNo]);
-        }
-        if ($resolvedHex !== '') {
-            $portRow['cable_hex_color'] = $resolvedHex;
-            if (trim((string)($portRow['status_color'] ?? '')) === '') {
-                $portRow['status_color'] = $resolvedHex;
+        $resolvedSwitchPortId = (int)($portRow['switch_port_live_id'] ?? 0);
+        if ($resolvedSwitchPortId <= 0) {
+            if ($portTypeId > 0 && isset($switchPortsByKey[$portTypeId . ':' . $portNo])) {
+                $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeId . ':' . $portNo];
+            } elseif ($portTypeLabel !== '' && isset($switchPortsByKey[$portTypeLabel . ':' . $portNo])) {
+                $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeLabel . ':' . $portNo];
+            } elseif (isset($switchPortsByNumber[$portNo])) {
+                $resolvedSwitchPortId = (int)$switchPortsByNumber[$portNo];
             }
+            if ($resolvedSwitchPortId > 0) {
+                $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
+            }
+        }
+        if ($resolvedSwitchPortId > 0 && isset($switchMetaById[$resolvedSwitchPortId])) {
+            idf_merge_switch_port_metadata_into_port_row(
+                $portRow,
+                $switchMetaById[$resolvedSwitchPortId],
+                $equipmentDefaultPoeId
+            );
         }
     }
     unset($portRow);
