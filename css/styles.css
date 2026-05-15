@@ -977,6 +977,18 @@ input[type="color"] {
 }
 
 /* Port visualizer keeps contrast consistent in both light and dark themes. */
+.itm-port-visualizer-container--split {
+    justify-content: flex-start;
+}
+
+.itm-port-visualizer-split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+}
+
 .itm-port-visualizer-container {
     background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%, var(--bg-secondary) 100%);
     border: 1.5px solid var(--accent);
