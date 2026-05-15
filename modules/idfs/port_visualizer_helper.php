@@ -174,7 +174,9 @@ if (!function_exists('itm_render_port_visualizer')) {
         // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
         $gridPortType = strtolower(trim((string)($options['grid_port_type'] ?? 'all')));
-        if ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
+        if ($hasRj45Capacity && $hasFiberCapacity) {
+            $gridPortType = 'all';
+        } elseif ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
             $gridPortType = 'all';
         }
         if ($gridPortType === 'rj45') {
