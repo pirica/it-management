@@ -368,6 +368,14 @@ if (!function_exists('itm_render_port_visualizer')) {
 
                 // Why: dots must reflect cable_colors.hex_color from switch_ports / switch_status joins, not a hardcoded dark fill.
                 $statusColor = itm_resolve_port_display_color($p, '#808080');
+                $cableHexColor = itm_normalize_hex_color($p['cable_hex_color'] ?? '', '');
+                $isActive = false;
+                $statusLower = strtolower($statusColor);
+                if (in_array($statusColor, ['#007bff', '#58a6ff'], true) || $statusLower === 'blue') {
+                    $isActive = true;
+                } elseif (in_array($statusColor, ['#28a745', '#3fb950'], true) || $statusLower === 'green') {
+                    $isActive = true;
+                }
 
                 $titleParts = [];
                 $contextParts = [];
