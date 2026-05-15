@@ -10,7 +10,9 @@ $position_id = isset($data['position_id']) ? (int)$data['position_id'] : 0;
 
 $device_type_raw = trim((string)($data['device_type'] ?? ''));
 $device_name = trim((string)($data['device_name'] ?? ''));
-$equipment_id = isset($data['equipment_id']) ? (int)$data['equipment_id'] : 0;
+$linkedEquipmentId = isset($data['equipment_id']) ? idf_parse_linked_equipment_id($data['equipment_id']) : 0;
+$isIntentionallyUnlinked = $linkedEquipmentId <= 0;
+$equipment_id = $linkedEquipmentId;
 $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] : 0;
 $layout_id = isset($data['switch_port_numbering_layout_id']) ? (int)$data['switch_port_numbering_layout_id'] : 0;
 $switch_fiber_ports_number_submitted = array_key_exists('switch_fiber_ports_number', $data);
@@ -23,6 +25,19 @@ $notes = trim((string)($data['notes'] ?? ''));
 $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
 if ($switchPortLabelColumn === null) {
     $switchPortLabelColumn = 'to_patch_port';
+}
+
+if (!function_exists('idf_parse_linked_equipment_id')) {
+    function idf_parse_linked_equipment_id($raw): int
+    {
+        $equipmentIdRaw = trim((string)$raw);
+        if ($equipmentIdRaw === '' || !ctype_digit($equipmentIdRaw)) {
+            return 0;
+        }
+
+        $equipmentId = (int)$equipmentIdRaw;
+        return $equipmentId > 0 ? $equipmentId : 0;
+    }
 }
 
 if (!function_exists('idf_generate_unlinked_equipment_token')) {
@@ -583,7 +598,7 @@ if ($device_type_name === 'switch' && $switch_rj45_id <= 0) {
     idf_fail('RJ45 Ports are required for switch devices');
 }
 
-if ($equipment_id <= 0 && $device_type_name === 'switch' && $device_name !== '') {
+if (!$isIntentionallyUnlinked && $equipment_id <= 0 && $device_type_name === 'switch' && $device_name !== '') {
     $stmtEquipmentByName = mysqli_prepare(
         $conn,
         "SELECT e.id, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
@@ -778,7 +793,7 @@ if ($equipment_id > 0) {
             $portManagementId = (int)($portMetaRow['switch_environment_id'] ?? 0);
         }
     }
-} elseif ($switch_fiber_ports_number !== '') {
+} elseif ($isIntentionallyUnlinked && $switch_fiber_ports_number !== '') {
     $portFiberPortsNumberId = idf_ensure_equipment_fiber_count_id($conn, $company_id, $switch_fiber_ports_number);
 }
 if ($portManagementId <= 0) {
@@ -896,15 +911,17 @@ if ($pid > 0) {
         $seedPosMeta = $resSeedPosMeta ? mysqli_fetch_assoc($resSeedPosMeta) : null;
         mysqli_stmt_close($stmtSeedPosMeta);
         if ($seedPosMeta) {
-            $positionEquipmentId = (int)($seedPosMeta['equipment_id'] ?? 0);
+            $positionEquipmentId = idf_parse_linked_equipment_id($seedPosMeta['equipment_id'] ?? '');
             if ($positionEquipmentId > 0) {
                 // Why: Linked equipment persistence in idf_positions is the canonical source for sync and must override stale request payloads.
                 $equipment_id = $positionEquipmentId;
+                $linkedEquipmentId = $positionEquipmentId;
+                $isIntentionallyUnlinked = false;
             }
             if ($port_count <= 0) {
                 $port_count = (int)($seedPosMeta['port_count'] ?? 0);
             }
-            if ($equipment_id <= 0) {
+            if (!$isIntentionallyUnlinked && $equipment_id <= 0) {
                 $seedDeviceName = trim((string)($seedPosMeta['device_name'] ?? ''));
                 if ($seedDeviceName !== '') {
                     $stmtSeedEquipmentByName = mysqli_prepare(
@@ -923,6 +940,7 @@ if ($pid > 0) {
                         mysqli_stmt_close($stmtSeedEquipmentByName);
                         if ($seedEquipmentByName) {
                             $equipment_id = (int)($seedEquipmentByName['id'] ?? 0);
+                            $linkedEquipmentId = $equipment_id;
                         }
                     }
                 }
@@ -943,7 +961,7 @@ if ($pid > 0) {
     }
 
     $unlinkedFiberPortCount = 0;
-    if ($equipment_id <= 0 && $switch_fiber_ports_number !== '' && preg_match('/^\d+$/', $switch_fiber_ports_number)) {
+    if ($isIntentionallyUnlinked && $switch_fiber_ports_number !== '' && preg_match('/^\d+$/', $switch_fiber_ports_number)) {
         $unlinkedFiberPortCount = (int)$switch_fiber_ports_number;
     }
     if ($port_count > 0 || $equipment_id > 0 || $unlinkedFiberPortCount > 0) {

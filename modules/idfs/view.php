@@ -287,6 +287,10 @@ if ($stmtPos) {
         if ($posNo > $maxPosInDb) {
             $maxPosInDb = $posNo;
         }
+        $positionEquipmentIdRaw = trim((string)($row['equipment_id'] ?? ''));
+        $positionLinkedEquipmentId = ($positionEquipmentIdRaw !== '' && ctype_digit($positionEquipmentIdRaw))
+            ? (int)$positionEquipmentIdRaw
+            : 0;
         $row['ports'] = [];
 
         $stmtPorts = mysqli_prepare(
@@ -463,9 +467,9 @@ if ($stmtPos) {
             idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_prepare_failed=' . mysqli_error($conn));
         }
 
-        if (empty($row['ports']) && (int)($row['equipment_id'] ?? 0) > 0) {
+        if (empty($row['ports']) && $positionLinkedEquipmentId > 0) {
             // Why: Some legacy racks link switch hardware before IDF ports are synced, so render live switch ports as fallback.
-            $equipmentIdForFallback = (int)$row['equipment_id'];
+            $equipmentIdForFallback = $positionLinkedEquipmentId;
             $stmtLivePorts = mysqli_prepare(
                 $conn,
                 "SELECT sp.id,
@@ -538,7 +542,7 @@ if ($stmtPos) {
                 }
             }
         }
-        $equipmentIdForRj45 = (int)($row['equipment_id'] ?? 0);
+        $equipmentIdForRj45 = $positionLinkedEquipmentId;
         $switchPortsRj45Count = 0;
         if ($rj45PortCount <= 0 && $equipmentIdForRj45 > 0) {
             // Why: Some deployments keep detailed RJ45 rows only in switch_ports, while idf_ports contains partial (often fiber-only) links.
@@ -1104,7 +1108,7 @@ foreach ($equipmentOptions as $equipmentOption) {
             </div>
 
             <div id="idfSwitchRj45Wrap" style="display:none;">
-                <label class="label">RJ45 Ports *</label>
+                <label class="label">RJ45 Ports</label>
                 <select class="input" name="switch_rj45_id" data-addable-select="1" data-add-table="equipment_rj45" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="rj45 port option">
                     <option value="">-- Select --</option>
                     <?php foreach ($switchRj45Options as $switchRj45Option): ?>
@@ -1505,6 +1509,11 @@ function refreshPortCountInputs(form) {
     if (switchWrap) switchWrap.style.display = showManualPortFields ? 'block' : 'none';
     if (fiberWrap) fiberWrap.style.display = showManualPortFields ? 'block' : 'none';
     if (layoutWrap) layoutWrap.style.display = isUps ? 'none' : 'block';
+
+    const rj45Label = switchWrap ? switchWrap.querySelector('label') : null;
+    if (rj45Label) {
+        rj45Label.textContent = (isUnlinked && isSwitch) ? 'RJ45 Ports *' : 'RJ45 Ports';
+    }
 
     form.device_name.required = true;
     form.switch_rj45_id.required = isUnlinked && isSwitch;
