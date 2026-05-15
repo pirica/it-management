@@ -1582,12 +1582,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div style="grid-column: 1 / -1;">
-                <label class="label">Destination port</label>
-                <select class="input" name="port_id_b">
-                    <option value="">Select destination port</option>
-                </select>
-            </div>
             <div id="portTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div id="portPoeField">
                 <label class="label">PoE</label>
