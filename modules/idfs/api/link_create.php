@@ -28,6 +28,10 @@ $fiberRackId = isset($data['fiber_rack_id']) ? (int)$data['fiber_rack_id'] : 0;
 $toIdfId = isset($data['to_idf_id']) ? (int)$data['to_idf_id'] : 0;
 $toRackId = isset($data['to_rack_id']) ? (int)$data['to_rack_id'] : 0;
 $toLocationId = isset($data['to_location_id']) ? (int)$data['to_location_id'] : 0;
+$requestVlanId = (isset($data['vlan_id']) && is_numeric((string)$data['vlan_id'])) ? (int)$data['vlan_id'] : 0;
+if ($requestVlanId < 0) {
+    $requestVlanId = 0;
+}
 $requestCableColorName = trim((string)($data['cable_color_name'] ?? ''));
 $requestCableColorHexRaw = trim((string)($data['cable_color_hex'] ?? ''));
 $resolvedColorNameInput = $linkedCableColorName !== '' ? $linkedCableColorName : $requestCableColorName;
@@ -617,6 +621,23 @@ if ($statusSyncId <= 0) {
     $statusSyncId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown');
 }
 
+if ($requestVlanId > 0) {
+    $stmtVlanScope = mysqli_prepare(
+        $conn,
+        'SELECT id FROM vlans WHERE company_id = ? AND id = ? LIMIT 1'
+    );
+    if ($stmtVlanScope) {
+        mysqli_stmt_bind_param($stmtVlanScope, 'ii', $company_id, $requestVlanId);
+        mysqli_stmt_execute($stmtVlanScope);
+        $resVlanScope = mysqli_stmt_get_result($stmtVlanScope);
+        $vlanScopeRow = $resVlanScope ? mysqli_fetch_assoc($resVlanScope) : null;
+        mysqli_stmt_close($stmtVlanScope);
+        if ($vlanScopeRow) {
+            $equipmentVlanId_val = $requestVlanId;
+        }
+    }
+}
+
 $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
@@ -749,6 +770,19 @@ if (
         mysqli_stmt_close($stmtUpdatePort);
     }
 
+    $vlanForSwitchSync = ($equipmentVlanId_val !== null && (int)$equipmentVlanId_val > 0)
+        ? (int)$equipmentVlanId_val
+        : 0;
+
+    $switchSetSql = "sp.{$switchPortLabelColumn} = ?,
+             sp.status_id = NULLIF(?, 0),
+             sp.color_id = NULLIF(?, 0),
+             sp.comments = ?";
+    if ($vlanForSwitchSync > 0) {
+        $switchSetSql .= ",
+             sp.vlan_id = NULLIF(?, 0)";
+    }
+
     $stmtSwitchSync = mysqli_prepare(
         $conn,
         "UPDATE switch_ports sp
@@ -762,10 +796,7 @@ if (
          LEFT JOIN switch_port_types spt
            ON spt.id = pr.port_type
           AND spt.company_id = pr.company_id
-         SET sp.{$switchPortLabelColumn} = ?,
-             sp.status_id = NULLIF(?, 0),
-             sp.color_id = NULLIF(?, 0),
-             sp.comments = ?
+         SET {$switchSetSql}
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
            AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -789,11 +820,57 @@ if (
         $switchColorSyncId = $cableColorId > 0 ? $cableColorId : 0;
         $switchLabelSync = $labelSync ?? $label_val;
         $switchNoteSync = $notesSync ?? $notes_val;
-        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portA, $switchLabelSync, $statusSyncId, $switchColorSyncId, $switchNoteSync, $company_id);
+        if ($vlanForSwitchSync > 0) {
+            mysqli_stmt_bind_param(
+                $stmtSwitchSync,
+                'isiiisii',
+                $portA,
+                $switchLabelSync,
+                $statusSyncId,
+                $switchColorSyncId,
+                $switchNoteSync,
+                $vlanForSwitchSync,
+                $company_id
+            );
+        } else {
+            mysqli_stmt_bind_param(
+                $stmtSwitchSync,
+                'isiisi',
+                $portA,
+                $switchLabelSync,
+                $statusSyncId,
+                $switchColorSyncId,
+                $switchNoteSync,
+                $company_id
+            );
+        }
         if (!mysqli_stmt_execute($stmtSwitchSync)) {
             idf_fail('DB error syncing source switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
         }
-        mysqli_stmt_bind_param($stmtSwitchSync, 'isiisi', $portB, $switchLabelSync, $statusSyncId, $switchColorSyncId, $switchNoteSync, $company_id);
+        if ($vlanForSwitchSync > 0) {
+            mysqli_stmt_bind_param(
+                $stmtSwitchSync,
+                'isiiisii',
+                $portB,
+                $switchLabelSync,
+                $statusSyncId,
+                $switchColorSyncId,
+                $switchNoteSync,
+                $vlanForSwitchSync,
+                $company_id
+            );
+        } else {
+            mysqli_stmt_bind_param(
+                $stmtSwitchSync,
+                'isiisi',
+                $portB,
+                $switchLabelSync,
+                $statusSyncId,
+                $switchColorSyncId,
+                $switchNoteSync,
+                $company_id
+            );
+        }
         if (!mysqli_stmt_execute($stmtSwitchSync)) {
             idf_fail('DB error syncing destination switch port: ' . mysqli_stmt_error($stmtSwitchSync), 500);
         }
