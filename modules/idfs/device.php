@@ -342,9 +342,30 @@ $stmtPorts = mysqli_prepare(
        COALESCE(NULLIF(pr_live.fiber_port_id, 0), NULLIF(sp_link.fiber_port_id, 0), NULLIF(l.equipment_fiber_port_id, 0), NULLIF(pr.speed_id, 0), 0) AS effective_fiber_port_id,
        COALESCE(NULLIF(pr_live.fiber_patch_id, 0), NULLIF(sp_link.fiber_patch_id, 0), NULLIF(l.equipment_fiber_patch_id, 0), 0) AS effective_fiber_patch_id,
        COALESCE(NULLIF(pr_live.fiber_rack_id, 0), NULLIF(sp_link.fiber_rack_id, 0), NULLIF(l.equipment_fiber_rack_id, 0), 0) AS effective_fiber_rack_id,
-       COALESCE(NULLIF(pr_live.to_idf_id, 0), NULLIF(sp_link.to_idf_id, 0), NULLIF(l.equipment_to_idf_id, 0), 0) AS effective_to_idf_id,
-       COALESCE(NULLIF(pr_live.to_rack_id, 0), NULLIF(sp_link.to_rack_id, 0), NULLIF(l.equipment_to_rack_id, 0), 0) AS effective_to_rack_id,
-       COALESCE(NULLIF(pr_live.to_location_id, 0), NULLIF(sp_link.to_location_id, 0), NULLIF(l.equipment_to_location_id, 0), 0) AS effective_to_location_id,
+       COALESCE(
+           NULLIF(pr_live.to_idf_id, 0),
+           NULLIF(sp_link.to_idf_id, 0),
+           NULLIF(l.equipment_to_idf_id, 0),
+           NULLIF(pr_live.idf_id, 0),
+           NULLIF(sp_link.idf_id, 0),
+           0
+       ) AS effective_to_idf_id,
+       COALESCE(
+           NULLIF(pr_live.to_rack_id, 0),
+           NULLIF(sp_link.to_rack_id, 0),
+           NULLIF(l.equipment_to_rack_id, 0),
+           NULLIF(pr_live.rack_id, 0),
+           NULLIF(sp_link.rack_id, 0),
+           0
+       ) AS effective_to_rack_id,
+       COALESCE(
+           NULLIF(pr_live.to_location_id, 0),
+           NULLIF(sp_link.to_location_id, 0),
+           NULLIF(l.equipment_to_location_id, 0),
+           NULLIF(pr_live.location_id, 0),
+           NULLIF(sp_link.location_id, 0),
+           0
+       ) AS effective_to_location_id,
        COALESCE(NULLIF(pr_live.poe_id, 0), NULLIF(pr.poe_id, 0), 0) AS effective_poe_id,
        CASE
             WHEN v_live.id IS NOT NULL THEN
@@ -1977,6 +1998,16 @@ function mergeSwitchPortApiRowIntoPortMeta(portMeta, switchPort) {
     pick('to_location_id', 'equipment_to_location_id');
     pick('status_id', 'equipment_status_id');
     pick('cable_color_id', 'equipment_color_id');
+    // fallbacks when only legacy switch_ports columns are populated (see device.php COALESCE for effective_*)
+    if (Number(merged.to_idf_id || 0) <= 0 && Number(switchPort.idf_id || 0) > 0) {
+        merged.to_idf_id = Number(switchPort.idf_id);
+    }
+    if (Number(merged.to_rack_id || 0) <= 0 && Number(switchPort.rack_id || 0) > 0) {
+        merged.to_rack_id = Number(switchPort.rack_id);
+    }
+    if (Number(merged.to_location_id || 0) <= 0 && Number(switchPort.location_id || 0) > 0) {
+        merged.to_location_id = Number(switchPort.location_id);
+    }
     if (Number(merged.switch_port_id) <= 0 && Number(switchPort.id) > 0) {
         merged.switch_port_id = Number(switchPort.id);
     }
