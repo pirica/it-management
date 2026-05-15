@@ -122,8 +122,11 @@ function itm_test_assert_slot_contains($slotHtml, $needle, $message, $debug)
     itm_test_out('[PASS] ' . $message);
 }
 
-function itm_test_assert_idf_slot_rendered($html, $positionNo, $positionId, $portCount, $layoutName, $layoutSlug, $gridCols, $gridRows, $message)
+function itm_test_assert_idf_slot_rendered($html, $positionNo, $positionId, $rj45Count, $layoutName, $layoutSlug, $gridCols, $gridRows, $message, $sfpCount = 0, $visualizerPortTotal = null)
 {
+    $sfpCount = (int)$sfpCount;
+    $rj45Count = (int)$rj45Count;
+    $visualizerPortTotal = $visualizerPortTotal !== null ? (int)$visualizerPortTotal : ($rj45Count + $sfpCount);
     $slotHtml = itm_test_extract_position_slot_html($html, $positionNo);
     $slotDebug = '';
     if (preg_match_all('/data-(?:layout|port-total|grid-cols|grid-rows)="[^"]*"/i', $slotHtml, $slotMatches)) {
@@ -131,12 +134,21 @@ function itm_test_assert_idf_slot_rendered($html, $positionNo, $positionId, $por
     }
     itm_test_assert_slot_contains($slotHtml, 'data-has-device="1"', $message . ' has a device in rendered rack slot', $slotDebug);
     itm_test_assert_slot_contains($slotHtml, 'data-position-id="' . (int)$positionId . '"', $message . ' exposes rendered position id', $slotDebug);
-    itm_test_assert_slot_contains($slotHtml, 'data-port-count="' . (int)$portCount . '"', $message . ' exposes rendered port count', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-rj45-count="' . $rj45Count . '"', $message . ' exposes rendered RJ45 count', $slotDebug);
+    if ($sfpCount > 0) {
+        itm_test_assert_slot_contains($slotHtml, 'data-sfp-count="' . $sfpCount . '"', $message . ' exposes rendered SFP count', $slotDebug);
+    }
     itm_test_assert_slot_contains($slotHtml, 'data-layout-name="' . $layoutName . '"', $message . ' exposes rendered numbering layout', $slotDebug);
     itm_test_assert_slot_contains($slotHtml, 'data-layout="' . $layoutSlug . '"', $message . ' renders visualizer with selected layout', $slotDebug);
-    itm_test_assert_slot_contains($slotHtml, 'data-port-total="' . (int)$portCount . '"', $message . ' renders visualizer with selected port total', $slotDebug);
-    itm_test_assert_slot_contains($slotHtml, 'data-grid-cols="' . (int)$gridCols . '"', $message . ' renders expected visualizer columns', $slotDebug);
-    itm_test_assert_slot_contains($slotHtml, 'data-grid-rows="' . (int)$gridRows . '"', $message . ' renders expected visualizer rows', $slotDebug);
+    itm_test_assert_slot_contains($slotHtml, 'data-port-total="' . $visualizerPortTotal . '"', $message . ' renders visualizer with selected port total', $slotDebug);
+    if ($sfpCount <= 0) {
+        itm_test_assert_slot_contains($slotHtml, 'data-grid-cols="' . (int)$gridCols . '"', $message . ' renders expected visualizer columns', $slotDebug);
+        itm_test_assert_slot_contains($slotHtml, 'data-grid-rows="' . (int)$gridRows . '"', $message . ' renders expected visualizer rows', $slotDebug);
+    } elseif (strpos($slotHtml, 'itm-port-grid') === false && strpos($slotHtml, 'itm-device-icon') === false) {
+        itm_test_fail($message . ' did not render a port visualizer for mixed RJ45/SFP device');
+    } else {
+        itm_test_out('[PASS] ' . $message . ' renders mixed RJ45/SFP visualizer blocks');
+    }
 }
 
 function itm_test_assert_idf_slot_sfp_count($html, $positionNo, $expectedCount, $message)
@@ -153,6 +165,17 @@ function itm_test_assert_idf_slot_sfp_count($html, $positionNo, $expectedCount, 
 function itm_test_api_post_json($baseUrl, $path, $cookieFile, array $payload)
 {
     $statusCode = 0;
+    $decoded = itm_test_api_post_json_raw($baseUrl, $path, $cookieFile, $payload, $statusCode);
+    if ($statusCode >= 400 || empty($decoded['ok'])) {
+        $error = (string)($decoded['error'] ?? 'Unknown API error');
+        itm_test_fail("API {$path} failed (HTTP {$statusCode}): {$error}");
+    }
+    return $decoded;
+}
+
+function itm_test_api_post_json_raw($baseUrl, $path, $cookieFile, array $payload, &$statusCode)
+{
+    $statusCode = 0;
     $response = itm_test_http_request(
         'POST',
         rtrim($baseUrl, '/') . $path,
@@ -166,11 +189,17 @@ function itm_test_api_post_json($baseUrl, $path, $cookieFile, array $payload)
     if (!is_array($decoded)) {
         itm_test_fail("Invalid JSON response from {$path} (HTTP {$statusCode}): {$response}");
     }
-    if ($statusCode >= 400 || empty($decoded['ok'])) {
-        $error = (string)($decoded['error'] ?? 'Unknown API error');
-        itm_test_fail("API {$path} failed (HTTP {$statusCode}): {$error}");
-    }
     return $decoded;
+}
+
+function itm_test_api_post_json_expect_fail($baseUrl, $path, $cookieFile, array $payload)
+{
+    $statusCode = 0;
+    $decoded = itm_test_api_post_json_raw($baseUrl, $path, $cookieFile, $payload, $statusCode);
+    if (!empty($decoded['ok'])) {
+        itm_test_fail("API {$path} unexpectedly succeeded");
+    }
+    return (string)($decoded['error'] ?? '');
 }
 
 function itm_test_db_connect()
@@ -299,6 +328,207 @@ function itm_test_switch_label_column($db)
     return 'to_patch_port';
 }
 
+function itm_test_port_type_family($typeLabel)
+{
+    $raw = strtolower(trim((string)$typeLabel));
+    if (strpos($raw, 'sfp') !== false) {
+        return 'fiber';
+    }
+    return 'rj45';
+}
+
+function itm_test_lookup_device_type_id($db, $companyId, $typeName)
+{
+    $row = itm_test_db_one(
+        $db,
+        "SELECT id
+         FROM idf_device_type
+         WHERE company_id = ?
+           AND LOWER(idfdevicetype_name) = LOWER(?)
+         ORDER BY id ASC
+         LIMIT 1",
+        'is',
+        [$companyId, $typeName]
+    );
+    return (int)($row['id'] ?? 0);
+}
+
+function itm_test_lookup_color_hex($db, $companyId, $colorId)
+{
+    $row = itm_test_db_one(
+        $db,
+        "SELECT UPPER(hex_color) AS hex_color
+         FROM cable_colors
+         WHERE company_id = ? AND id = ?
+         LIMIT 1",
+        'ii',
+        [$companyId, $colorId]
+    );
+    return strtoupper(trim((string)($row['hex_color'] ?? '')));
+}
+
+function itm_test_fetch_unlinked_ports($db, $companyId, $idfId)
+{
+    $ports = [];
+    $sql = "SELECT pr.id AS port_id,
+                   pr.port_no,
+                   pr.port_type,
+                   p.id AS position_id,
+                   p.position_no,
+                   CAST(p.equipment_id AS UNSIGNED) AS equipment_id,
+                   COALESCE(spt.type, 'RJ45') AS port_type_label,
+                   CASE
+                     WHEN sp.id IS NOT NULL THEN 1
+                     ELSE 0
+                   END AS has_switch_mirror
+              FROM idf_ports pr
+              JOIN idf_positions p
+                ON p.id = pr.position_id
+               AND p.company_id = pr.company_id
+              LEFT JOIN idf_links l
+                ON l.company_id = pr.company_id
+               AND (l.port_id_a = pr.id OR l.port_id_b = pr.id)
+              LEFT JOIN switch_port_types spt
+                ON spt.id = pr.port_type
+               AND spt.company_id = pr.company_id
+              LEFT JOIN switch_ports sp
+                ON sp.company_id = p.company_id
+               AND sp.equipment_id = CAST(p.equipment_id AS UNSIGNED)
+               AND sp.port_number = pr.port_no
+             WHERE pr.company_id = ?
+               AND p.idf_id = ?
+               AND l.id IS NULL
+             ORDER BY p.position_no ASC, pr.port_no ASC";
+    $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) {
+        itm_test_fail('Prepare failed: ' . mysqli_error($db));
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $idfId);
+    if (!mysqli_stmt_execute($stmt)) {
+        itm_test_fail('Execute failed: ' . mysqli_stmt_error($stmt));
+    }
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $ports[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $ports;
+}
+
+function itm_test_find_compatible_unlinked_pair(array $ports, $family, $sourceRequiresSwitchMirror = false, array $excludePortIds = array())
+{
+    $excludePortIds = array_fill_keys(array_map('intval', $excludePortIds), true);
+    $filtered = [];
+    foreach ($ports as $port) {
+        if (isset($excludePortIds[(int)($port['port_id'] ?? 0)])) {
+            continue;
+        }
+        if (itm_test_port_type_family((string)($port['port_type_label'] ?? '')) !== $family) {
+            continue;
+        }
+        $filtered[] = $port;
+    }
+
+    $count = count($filtered);
+    for ($i = 0; $i < $count; $i++) {
+        if ($sourceRequiresSwitchMirror && (int)($filtered[$i]['has_switch_mirror'] ?? 0) !== 1) {
+            continue;
+        }
+        for ($j = 0; $j < $count; $j++) {
+            if ($i === $j) {
+                continue;
+            }
+            if (isset($excludePortIds[(int)($filtered[$j]['port_id'] ?? 0)])) {
+                continue;
+            }
+            if ((int)$filtered[$i]['position_id'] === (int)$filtered[$j]['position_id']) {
+                continue;
+            }
+            return [
+                'port_a' => $filtered[$i],
+                'port_b' => $filtered[$j],
+            ];
+        }
+    }
+    return null;
+}
+
+function itm_test_find_mixed_family_unlinked_pair(array $ports)
+{
+    $rj45Ports = [];
+    $fiberPorts = [];
+    foreach ($ports as $port) {
+        $family = itm_test_port_type_family((string)($port['port_type_label'] ?? ''));
+        if ($family === 'rj45') {
+            $rj45Ports[] = $port;
+        } elseif ($family === 'fiber') {
+            $fiberPorts[] = $port;
+        }
+    }
+
+    foreach ($rj45Ports as $rj45Port) {
+        foreach ($fiberPorts as $fiberPort) {
+            if ((int)$rj45Port['position_id'] === (int)$fiberPort['position_id']) {
+                continue;
+            }
+            return [
+                'port_a' => $rj45Port,
+                'port_b' => $fiberPort,
+            ];
+        }
+    }
+    return null;
+}
+
+function itm_test_assert_linked_ports_color_sync($db, $portAId, $portBId, $expectedHex)
+{
+    $expectedHex = strtoupper(trim($expectedHex));
+    $rowA = itm_test_db_one(
+        $db,
+        "SELECT UPPER(hex_color) AS hex_color, cable_color FROM idf_ports WHERE id = ?",
+        'i',
+        [$portAId]
+    );
+    $rowB = itm_test_db_one(
+        $db,
+        "SELECT UPPER(hex_color) AS hex_color, cable_color FROM idf_ports WHERE id = ?",
+        'i',
+        [$portBId]
+    );
+    itm_test_assert(strtoupper((string)($rowA['hex_color'] ?? '')) === $expectedHex, 'Source port hex_color matches selected cable color');
+    itm_test_assert(strtoupper((string)($rowB['hex_color'] ?? '')) === $expectedHex, 'Destination port hex_color matches selected cable color');
+
+    $linkRow = itm_test_db_one(
+        $db,
+        "SELECT UPPER(cable_color_hex) AS cable_color_hex, cable_color_id
+         FROM idf_links
+         WHERE (port_id_a = ? AND port_id_b = ?) OR (port_id_a = ? AND port_id_b = ?)
+         LIMIT 1",
+        'iiii',
+        [$portAId, $portBId, $portBId, $portAId]
+    );
+    itm_test_assert(strtoupper((string)($linkRow['cable_color_hex'] ?? '')) === $expectedHex, 'idf_links.cable_color_hex matches selected cable color');
+}
+
+function itm_test_assert_slot_shows_cable_hex($slotHtml, $expectedHex, $message)
+{
+    $needle = strtoupper(trim($expectedHex));
+    itm_test_assert(stripos($slotHtml, $needle) !== false, $message . ' shows cable hex ' . $needle . ' in rack visualizer');
+}
+
+function itm_test_assert_slot_port_shows_cable_hex($slotHtml, $portId, $expectedHex, $message)
+{
+    $portId = (int)$portId;
+    $needle = strtoupper(trim($expectedHex));
+    $pattern = '/data-port-id="' . $portId . '"[^>]*style="[^"]*background-color:\s*' . preg_quote($needle, '/') . '/i';
+    if (preg_match($pattern, $slotHtml) !== 1) {
+        $patternAlt = '/data-port-id="' . $portId . '"[^>]*style="[^"]*background:\s*' . preg_quote($needle, '/') . '/i';
+        itm_test_assert(preg_match($patternAlt, $slotHtml) === 1, $message . ' port ' . $portId . ' shows cable hex ' . $needle);
+        return;
+    }
+    itm_test_assert(true, $message . ' port ' . $portId . ' shows cable hex ' . $needle);
+}
+
 $baseUrl = getenv('ITM_BASE_URL') ?: 'http://localhost/it-management';
 $username = getenv('ITM_USER') ?: 'Admin';
 $password = getenv('ITM_PASS') ?: 'Admin';
@@ -310,6 +540,7 @@ $db = null;
 $createdTempEquipmentId = 0;
 $createdTempEquipmentIds = [];
 $createdTempPositionIds = [];
+$createdTempLinkIds = [];
 $itmTestExitCode = 0;
 
 try {
@@ -388,43 +619,11 @@ try {
     $switchDeviceTypeId = (int)($switchTypeRow['id'] ?? 0);
     itm_test_assert($switchDeviceTypeId > 0, 'IDF switch device type exists for temp create/delete sync test');
 
-    $portA = itm_test_db_one(
-        $db,
-        "SELECT pr.id AS port_id, pr.port_no, pr.port_type, p.id AS position_id, CAST(p.equipment_id AS UNSIGNED) AS equipment_id
-         FROM idf_ports pr
-         JOIN idf_positions p ON p.id = pr.position_id AND p.company_id = pr.company_id
-         LEFT JOIN idf_links l ON l.company_id = pr.company_id AND (l.port_id_a = pr.id OR l.port_id_b = pr.id)
-         JOIN switch_ports sp ON sp.company_id = p.company_id
-                              AND sp.equipment_id = CAST(p.equipment_id AS UNSIGNED)
-                              AND sp.port_number = pr.port_no
-         WHERE pr.company_id = ?
-           AND p.idf_id = ?
-           AND p.equipment_id REGEXP '^[0-9]+$'
-           AND l.id IS NULL
-         ORDER BY pr.id ASC
-         LIMIT 1",
-        'ii',
-        [$companyId, $idfId]
-    );
-    itm_test_assert($portA !== null, 'Found source IDF port with switch mirror for sync test');
+    $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    itm_test_assert(!empty($unlinkedPorts), 'At least one unlinked IDF port exists for human link tests');
 
-    $portB = itm_test_db_one(
-        $db,
-        "SELECT pr.id AS port_id, pr.port_no, pr.port_type, p.id AS position_id
-         FROM idf_ports pr
-         JOIN idf_positions p ON p.id = pr.position_id AND p.company_id = pr.company_id
-         LEFT JOIN idf_links l ON l.company_id = pr.company_id AND (l.port_id_a = pr.id OR l.port_id_b = pr.id)
-         WHERE pr.company_id = ?
-           AND p.idf_id = ?
-           AND l.id IS NULL
-           AND p.id <> ?
-           AND pr.id <> ?
-         ORDER BY pr.id ASC
-         LIMIT 1",
-        'iiii',
-        [$companyId, $idfId, (int)$portA['position_id'], (int)$portA['port_id']]
-    );
-    if ($portB === null) {
+    $rj45Pair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', true);
+    if ($rj45Pair === null) {
         $fallbackPositionRow = itm_test_db_one(
             $db,
             "SELECT COALESCE(MAX(position_no), 0) AS max_position
@@ -484,35 +683,27 @@ try {
              FROM idf_positions
              WHERE company_id = ? AND idf_id = ? AND position_no = ? AND equipment_id = ?
              LIMIT 1",
-            'iiis',
-            [$companyId, $idfId, $fallbackPositionNo, (string)$fallbackEquipmentId]
+            'iiii',
+            [$companyId, $idfId, $fallbackPositionNo, $fallbackEquipmentId]
         );
         $fallbackPositionId = (int)($fallbackPosition['id'] ?? 0);
         itm_test_assert($fallbackPositionId > 0, 'Temporary destination position created for link sync test');
         $createdTempPositionIds[] = $fallbackPositionId;
 
-        $portB = itm_test_db_one(
-            $db,
-            "SELECT pr.id AS port_id, pr.port_no, pr.port_type, p.id AS position_id
-             FROM idf_ports pr
-             JOIN idf_positions p ON p.id = pr.position_id AND p.company_id = pr.company_id
-             LEFT JOIN idf_links l ON l.company_id = pr.company_id AND (l.port_id_a = pr.id OR l.port_id_b = pr.id)
-             WHERE pr.company_id = ?
-               AND p.id = ?
-               AND l.id IS NULL
-             ORDER BY pr.id ASC
-             LIMIT 1",
-            'ii',
-            [$companyId, $fallbackPositionId]
-        );
+        $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+        $rj45Pair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', true);
     }
-    itm_test_assert($portB !== null, 'Found destination IDF port on a different position');
+    itm_test_assert($rj45Pair !== null, 'Found compatible RJ45 unlinked port pair for sync test');
+    $portA = $rj45Pair['port_a'];
+    $portB = $rj45Pair['port_b'];
 
     $portAId = (int)$portA['port_id'];
     $portBId = (int)$portB['port_id'];
     $portANumber = (int)$portA['port_no'];
     $portATypeId = (int)$portA['port_type'];
     $portAEquipmentId = (int)$portA['equipment_id'];
+    $portAPositionNo = (int)$portA['position_no'];
+    $portBPositionNo = (int)$portB['position_no'];
 
     $linkCreate = itm_test_api_post_json(
         $baseUrl,
@@ -530,6 +721,15 @@ try {
     );
     $linkId = (int)($linkCreate['link_id'] ?? 0);
     itm_test_assert($linkId > 0, 'Link created successfully');
+    $createdTempLinkIds[] = $linkId;
+
+    $greenHex = itm_test_lookup_color_hex($db, $companyId, $colorGreenId);
+    itm_test_assert_linked_ports_color_sync($db, $portAId, $portBId, $greenHex);
+    $rackAfterLinkHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+    $slotAfterLinkA = itm_test_extract_position_slot_html($rackAfterLinkHtml, $portAPositionNo);
+    $slotAfterLinkB = itm_test_extract_position_slot_html($rackAfterLinkHtml, $portBPositionNo);
+    itm_test_assert_slot_port_shows_cable_hex($slotAfterLinkA, $portAId, $greenHex, 'Source rack slot after Green link create');
+    itm_test_assert_slot_port_shows_cable_hex($slotAfterLinkB, $portBId, $greenHex, 'Destination rack slot after Green link create');
 
     $linkCountRow = itm_test_db_one(
         $db,
@@ -692,6 +892,176 @@ try {
     itm_test_assert((int)($switchAfterUnlink['status_id'] ?? 0) === $statusUnknownId, 'Source switch_ports status reset to Unknown after unlink');
     itm_test_assert((int)($switchAfterUnlink['color_id'] ?? 0) === $colorGrayId, 'Source switch_ports color reset to Gray after unlink');
 
+    $usedPortIds = [$portAId, $portBId];
+    $randomColorCases = [
+        ['name' => 'Green', 'id' => $colorGreenId],
+        ['name' => 'Red', 'id' => $colorRedId],
+        ['name' => 'Gray', 'id' => $colorGrayId],
+    ];
+    shuffle($randomColorCases);
+    foreach (array_slice($randomColorCases, 0, 2) as $randomColorCase) {
+        $unlinkedPorts = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+        $randomPair = itm_test_find_compatible_unlinked_pair($unlinkedPorts, 'rj45', false, $usedPortIds);
+        if ($randomPair === null) {
+            itm_test_out('[SKIP] No extra RJ45 pair available for random cable color link test (' . $randomColorCase['name'] . ')');
+            continue;
+        }
+
+        $randomPortA = $randomPair['port_a'];
+        $randomPortB = $randomPair['port_b'];
+        $randomPortAId = (int)$randomPortA['port_id'];
+        $randomPortBId = (int)$randomPortB['port_id'];
+        $randomColorId = (int)$randomColorCase['id'];
+        $randomHex = itm_test_lookup_color_hex($db, $companyId, $randomColorId);
+
+        $randomLinkCreate = itm_test_api_post_json(
+            $baseUrl,
+            '/modules/idfs/api/link_create.php',
+            $cookieFile,
+            [
+                'csrf_token' => $csrf,
+                'port_id_a' => $randomPortAId,
+                'port_id_b' => $randomPortBId,
+                'status_id' => $statusUpId,
+                'cable_color_id' => $randomColorId,
+                'cable_label' => 'ITM HUMAN RANDOM ' . $randomColorCase['name'],
+                'notes' => 'ITM HUMAN RANDOM LINK',
+            ]
+        );
+        $randomLinkId = (int)($randomLinkCreate['link_id'] ?? 0);
+        itm_test_assert($randomLinkId > 0, 'Random ' . $randomColorCase['name'] . ' link created successfully');
+        $createdTempLinkIds[] = $randomLinkId;
+        $usedPortIds[] = $randomPortAId;
+        $usedPortIds[] = $randomPortBId;
+
+        itm_test_assert_linked_ports_color_sync($db, $randomPortAId, $randomPortBId, $randomHex);
+        $rackRandomHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+        $randomSlotA = itm_test_extract_position_slot_html($rackRandomHtml, (int)$randomPortA['position_no']);
+        $randomSlotB = itm_test_extract_position_slot_html($rackRandomHtml, (int)$randomPortB['position_no']);
+        itm_test_assert_slot_port_shows_cable_hex(
+            $randomSlotA,
+            $randomPortAId,
+            $randomHex,
+            'Random ' . $randomColorCase['name'] . ' link source rack slot'
+        );
+        itm_test_assert_slot_port_shows_cable_hex(
+            $randomSlotB,
+            $randomPortBId,
+            $randomHex,
+            'Random ' . $randomColorCase['name'] . ' link destination rack slot'
+        );
+
+        itm_test_api_post_json(
+            $baseUrl,
+            '/modules/idfs/api/link_delete.php',
+            $cookieFile,
+            [
+                'csrf_token' => $csrf,
+                'link_id' => $randomLinkId,
+            ]
+        );
+        itm_test_out('[PASS] Random ' . $randomColorCase['name'] . ' link deleted after cable color sync assertion');
+    }
+
+    $unlinkedPortsForMismatch = itm_test_fetch_unlinked_ports($db, $companyId, $idfId);
+    $mixedPair = itm_test_find_mixed_family_unlinked_pair($unlinkedPortsForMismatch);
+    if ($mixedPair !== null) {
+        $mismatchError = itm_test_api_post_json_expect_fail(
+            $baseUrl,
+            '/modules/idfs/api/link_create.php',
+            $cookieFile,
+            [
+                'csrf_token' => $csrf,
+                'port_id_a' => (int)$mixedPair['port_a']['port_id'],
+                'port_id_b' => (int)$mixedPair['port_b']['port_id'],
+                'status_id' => $statusUpId,
+                'cable_color_id' => $colorGreenId,
+            ]
+        );
+        itm_test_assert(stripos($mismatchError, 'Cannot link') !== false, 'RJ45↔SFP link attempt is rejected with port-type message');
+    } else {
+        itm_test_out('[SKIP] No RJ45/SFP unlinked pair available for port-type mismatch rejection test');
+    }
+
+    $patchPanelTypeId = itm_test_lookup_device_type_id($db, $companyId, 'patch_panel');
+    itm_test_assert($patchPanelTypeId > 0, 'Patch panel IDF device type exists for unlinked fiber-only test');
+    $unlinkedPatchPositionRow = itm_test_db_one(
+        $db,
+        "SELECT COALESCE(MAX(position_no), 0) AS max_position
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ?",
+        'ii',
+        [$companyId, $idfId]
+    );
+    $unlinkedPatchPositionNo = ((int)($unlinkedPatchPositionRow['max_position'] ?? 0)) + 1;
+    itm_test_assert($unlinkedPatchPositionNo <= 100, 'Unlinked patch panel test position is within allowed range');
+    $unlinkedPatchName = 'ITM Human Unlinked Patch ' . date('YmdHis');
+
+    itm_test_api_post_json(
+        $baseUrl,
+        '/modules/idfs/api/position_save.php',
+        $cookieFile,
+        [
+            'csrf_token' => $csrf,
+            'idf_id' => $idfId,
+            'position_no' => $unlinkedPatchPositionNo,
+            'device_type' => $patchPanelTypeId,
+            'device_name' => $unlinkedPatchName,
+            'equipment_id' => '',
+            'switch_port_numbering_layout_id' => $layoutVerticalId,
+            'switch_fiber_ports_number' => '4',
+            'rj45_count' => 0,
+            'notes' => 'ITM HUMAN UNLINKED PATCH PANEL',
+        ]
+    );
+
+    $unlinkedPatchPosition = itm_test_db_one(
+        $db,
+        "SELECT id, equipment_id
+         FROM idf_positions
+         WHERE company_id = ? AND idf_id = ? AND position_no = ?
+         LIMIT 1",
+        'iii',
+        [$companyId, $idfId, $unlinkedPatchPositionNo]
+    );
+    itm_test_assert($unlinkedPatchPosition !== null, 'Unlinked patch panel position created');
+    $unlinkedPatchPositionId = (int)($unlinkedPatchPosition['id'] ?? 0);
+    $createdTempPositionIds[] = $unlinkedPatchPositionId;
+    $unlinkedPatchEquipmentRaw = trim((string)($unlinkedPatchPosition['equipment_id'] ?? ''));
+    itm_test_assert(
+        $unlinkedPatchEquipmentRaw === '' || !ctype_digit($unlinkedPatchEquipmentRaw),
+        'Unlinked patch panel position stores a token equipment_id instead of a linked asset'
+    );
+
+    $unlinkedPatchFiberCount = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM idf_ports ip
+         JOIN switch_port_types spt
+           ON spt.company_id = ip.company_id
+          AND spt.id = ip.port_type
+         WHERE ip.company_id = ?
+           AND ip.position_id = ?
+           AND LOWER(spt.type) LIKE '%sfp%'",
+        'ii',
+        [$companyId, $unlinkedPatchPositionId]
+    );
+    itm_test_assert((int)($unlinkedPatchFiberCount['c'] ?? 0) === 4, 'Unlinked fiber-only patch panel materialized four SFP ports');
+
+    $unlinkedPatchSwitchRows = itm_test_db_one(
+        $db,
+        "SELECT COUNT(*) AS c
+         FROM switch_ports
+         WHERE company_id = ?
+           AND hostname = ?",
+        'is',
+        [$companyId, $unlinkedPatchName]
+    );
+    itm_test_assert((int)($unlinkedPatchSwitchRows['c'] ?? 0) === 0, 'Unlinked patch panel did not create switch_ports rows');
+
+    $idfViewUnlinkedPatchHtml = itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile);
+    itm_test_assert_idf_slot_sfp_count($idfViewUnlinkedPatchHtml, $unlinkedPatchPositionNo, 4, 'Unlinked patch panel rack slot');
+
     $nextPositionRow = itm_test_db_one(
         $db,
         "SELECT COALESCE(MAX(position_no), 0) AS max_position
@@ -850,7 +1220,8 @@ try {
         'vertical',
         4,
         2,
-        'Position create UI'
+        'Position create UI',
+        2
     );
     itm_test_assert_idf_slot_sfp_count($idfViewAfterCreateHtml, $tempPositionNo, 2, 'Position create UI');
 
@@ -896,7 +1267,8 @@ try {
         'vertical',
         4,
         2,
-        'Position linked equipment legacy layout UI'
+        'Position linked equipment legacy layout UI',
+        2
     );
 
     itm_test_db_exec(
@@ -1064,7 +1436,8 @@ try {
         'horizontal',
         24,
         1,
-        'Position edit UI'
+        'Position edit UI',
+        4
     );
     itm_test_assert_idf_slot_sfp_count($idfViewAfterEditHtml, $tempPositionNo, 4, 'Position edit UI');
 
@@ -1178,7 +1551,8 @@ try {
         'horizontal',
         24,
         1,
-        'Position copy UI'
+        'Position copy UI',
+        4
     );
     itm_test_assert_idf_slot_sfp_count($idfViewAfterCopyHtml, $copyTargetPositionNo, 4, 'Position copy UI');
 
@@ -1231,6 +1605,14 @@ try {
     $itmTestExitCode = 1;
 } finally {
     if ($db instanceof mysqli) {
+        if (!empty($createdTempLinkIds)) {
+            foreach ($createdTempLinkIds as $tempLinkId) {
+                $tempLinkId = (int)$tempLinkId;
+                if ($tempLinkId > 0) {
+                    @mysqli_query($db, 'DELETE FROM idf_links WHERE id = ' . $tempLinkId . ' OR link_id = ' . $tempLinkId);
+                }
+            }
+        }
         if (!empty($createdTempPositionIds)) {
             foreach ($createdTempPositionIds as $positionId) {
                 $positionId = (int)$positionId;
