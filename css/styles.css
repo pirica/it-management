@@ -1009,6 +1009,11 @@ input[type="color"] {
     flex-shrink: 0;
 }
 
+.itm-port-item {
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
 .itm-port-item-empty {
     width: 14px;
     height: 14px;
