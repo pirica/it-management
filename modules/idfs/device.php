@@ -1453,7 +1453,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     if ($portSortField !== $field) {
                         return '';
                     }
-                    return $portSortDir === 'ASC' ? ' â–²' : ' â–¼';
+                    return $portSortDir === 'ASC' ? ' &#x25B2;' : ' &#x25BC;';
                 };
                 ?>
 
@@ -1604,7 +1604,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
                         <option value="<?php echo (int)$statusId; ?>" <?php echo strcasecmp($statusOption, 'Unknown') === 0 ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">âž•</option>
+                    <option value="__add_new__">&#x2795;</option>
                 </select>
             </div>
             <div>
@@ -1664,7 +1664,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 ?>
                             </option>
                         <?php endwhile; ?>
-                        <option value="__add_new__">âž•</option>
+                        <option value="__add_new__">&#x2795;</option>
                     </select>
                 </div>
             </div>
@@ -1743,7 +1743,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 ?>
                             </option>
                         <?php endwhile; ?>
-                        <option value="__add_new__">âž•</option>
+                        <option value="__add_new__">&#x2795;</option>
                     </select>
                 </div>
             </div>
@@ -1757,7 +1757,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
                         <option value="<?php echo (int)$statusId; ?>" <?php echo strcasecmp($statusOption, 'Unknown') === 0 ? 'selected' : ''; ?>><?php echo sanitize($statusOption); ?></option>
                     <?php endforeach; ?>
-                    <option value="__add_new__">âž•</option>
+                    <option value="__add_new__">&#x2795;</option>
                 </select>
             </div>
             <div data-link-default-field="vlan">
@@ -1798,7 +1798,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                         ?>
                                     </option>
                                 <?php endwhile; ?>
-                                <option value="__add_new__">âž•</option>
+                                <option value="__add_new__">&#x2795;</option>
                             </select>
                         </div>
                     </div>
