@@ -474,7 +474,8 @@ if ($stmtPos) {
             $equipmentIdForFallback = $positionLinkedEquipmentId;
             $stmtLivePorts = mysqli_prepare(
                 $conn,
-                "SELECT sp.id,
+                "SELECT COALESCE(pr_match.id, 0) AS id,
+                        sp.id AS switch_port_id,
                         sp.port_number AS port_no,
                         COALESCE(sp.port_type, 'RJ45') AS port_type_label,
                         " . ($hasSwitchPortsToPatchPortColumn ? "COALESCE(sp.to_patch_port, '')" : "''") . " AS label,
@@ -501,6 +502,22 @@ if ($stmtPos) {
                  LEFT JOIN cable_colors cc ON cc.id = sp.color_id AND cc.company_id = sp.company_id
                  LEFT JOIN vlans v ON v.id = sp.vlan_id AND v.company_id = sp.company_id
                  LEFT JOIN idf_positions p ON p.id = ? AND p.company_id = ?
+                 LEFT JOIN idf_ports pr_match
+                   ON pr_match.company_id = sp.company_id
+                  AND pr_match.port_no = sp.port_number
+                  AND (
+                       pr_match.position_id = p.id
+                       OR (
+                           pr_match.position_id = p.position_no
+                           AND NOT EXISTS (
+                               SELECT 1
+                               FROM idf_positions p_actual
+                               WHERE p_actual.company_id = pr_match.company_id
+                                 AND p_actual.id = pr_match.position_id
+                               LIMIT 1
+                           )
+                       )
+                  )
                  LEFT JOIN idfs i ON i.id = p.idf_id
                  LEFT JOIN equipment e ON e.id = p.equipment_id AND e.company_id = p.company_id
                  LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
@@ -1299,24 +1316,28 @@ function closeCopyIfBackdrop(e){ if(e.target.id === 'idfCopyBackdrop') closeCopy
 function closeCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'none'; }
 function openCopy(){ document.getElementById('idfCopyBackdrop').style.display = 'flex'; }
 
-function buildDeviceEditorUrl(positionId, portId, action) {
+function buildDeviceEditorUrl(positionId, portId, action, portNo) {
     const url = new URL('device.php', window.location.href);
     url.searchParams.set('position_id', String(positionId));
     url.searchParams.set('return_to', `view.php?id=${IDF_ID}`);
     if (action === 'link' && portId > 0) {
         url.searchParams.set('open_link_port_id', String(portId));
+    } else if (action === 'link' && portNo > 0) {
+        url.searchParams.set('open_link_port_no', String(portNo));
     } else if (action === 'edit' && portId > 0) {
         url.searchParams.set('open_edit_port_id', String(portId));
+    } else if (action === 'edit' && portNo > 0) {
+        url.searchParams.set('open_edit_port_no', String(portNo));
     }
     return url.toString();
 }
 
-function navigateToDeviceEditor(positionId, portId, action) {
+function navigateToDeviceEditor(positionId, portId, action, portNo) {
     if (!positionId) {
         alert('Position not found for this port.');
         return;
     }
-    window.location.href = buildDeviceEditorUrl(positionId, portId, action);
+    window.location.href = buildDeviceEditorUrl(positionId, portId, action, portNo);
 }
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
@@ -1669,8 +1690,9 @@ function onPortClick(portId, portElement) {
     const portNode = portElement && portElement.dataset ? portElement : null;
     const statusLabelRaw = portNode ? String(portNode.dataset.portStatusLabel || '').trim().toLowerCase() : '';
     const positionId = portNode ? Number(portNode.dataset.positionId || 0) : 0;
+    const portNo = portNode ? Number(portNode.dataset.portNumber || 0) : 0;
     const action = statusLabelRaw === 'unknown' ? 'link' : 'edit';
-    navigateToDeviceEditor(positionId, Number(portId), action);
+    navigateToDeviceEditor(positionId, Number(portId), action, portNo);
 }
 
 
