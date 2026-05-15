@@ -1804,6 +1804,32 @@ function normalizePortTypeLabel(value) {
     return 'rj45';
 }
 
+function portTypeLinkFamily(typeLabel) {
+    return normalizePortTypeLabel(typeLabel) === 'rj45' ? 'rj45' : 'fiber';
+}
+
+function portsAreLinkCompatible(typeLabelA, typeLabelB) {
+    return portTypeLinkFamily(typeLabelA) === portTypeLinkFamily(typeLabelB);
+}
+
+function portTypeLinkMismatchMessage(typeLabelA, typeLabelB) {
+    const displayA = String(typeLabelA || '').trim()
+        || (portTypeLinkFamily(typeLabelA) === 'fiber' ? 'SFP' : 'RJ45');
+    const displayB = String(typeLabelB || '').trim()
+        || (portTypeLinkFamily(typeLabelB) === 'fiber' ? 'SFP' : 'RJ45');
+    return `Cannot link ${displayA} to ${displayB}. RJ45 ports can only connect to RJ45 ports on another device. SFP/SFP+ ports can only connect to SFP/SFP+ ports on another device.`;
+}
+
+function filterLinkCompatibleDestinations(source, destinations) {
+    if (!source) {
+        return [];
+    }
+    const sourceType = String(source.port_type_label || 'RJ45');
+    return (Array.isArray(destinations) ? destinations : []).filter((port) =>
+        portsAreLinkCompatible(sourceType, String(port.port_type_label || 'RJ45'))
+    );
+}
+
 function buildSelectHtml(name, optionsMap, selectedValue, noneLabel) {
     const selectedNormalized = String(selectedValue || '');
     let html = `<select class="input" name="${name}">`;
@@ -1844,9 +1870,9 @@ function renderTypeSpecificFields(containerId, typeLabel, values, includePrimary
 function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
     if (!selectEl || !source) return;
     const currentOtherPortId = Number(source.other_port_id || 0);
-    const destinations = sortDestinationPorts(DESTINATION_PORTS.filter((p) =>
+    const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) =>
         Number(p.id) !== Number(source.id) && (!p.is_linked || (allowLinkedCurrent && Number(p.id) === currentOtherPortId))
-    ));
+    )));
     selectEl.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
         const option = document.createElement('option');
@@ -1867,7 +1893,10 @@ function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
     if (!destinations.length) {
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = 'No available destination ports';
+        const sourceFamily = portTypeLinkFamily(source.port_type_label || 'RJ45');
+        option.textContent = sourceFamily === 'fiber'
+            ? 'No available SFP/SFP+ destination ports'
+            : 'No available RJ45 destination ports';
         selectEl.appendChild(option);
     }
     if (currentOtherPortId > 0) {
@@ -1989,9 +2018,23 @@ function savePort() {
         to_rack_id: f.to_rack_id && f.to_rack_id.value ? Number(f.to_rack_id.value) : null,
         to_location_id: f.to_location_id && f.to_location_id.value ? Number(f.to_location_id.value) : null,
     };
+    const destinationPortId = f.port_id_b && f.port_id_b.value ? Number(f.port_id_b.value) : 0;
+    if (sourcePort && !sourcePort.is_linked && destinationPortId > 0) {
+        const destinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === destinationPortId);
+        if (destinationPort && !portsAreLinkCompatible(
+            String(sourcePort.port_type_label || 'RJ45'),
+            String(destinationPort.port_type_label || 'RJ45')
+        )) {
+            alert(portTypeLinkMismatchMessage(
+                String(sourcePort.port_type_label || 'RJ45'),
+                String(destinationPort.port_type_label || 'RJ45')
+            ));
+            return;
+        }
+    }
+
     apiPost('port_update.php', payload)
         .then(() => {
-            const destinationPortId = f.port_id_b && f.port_id_b.value ? Number(f.port_id_b.value) : 0;
             if (sourcePort && !sourcePort.is_linked && destinationPortId > 0) {
                 return apiPost('link_create.php', {
                     csrf_token: CSRF,
@@ -2093,9 +2136,9 @@ function openLinkModal(portId) {
     }
     const f = document.getElementById('linkForm');
     const destinationSelect = f.port_id_b;
-    const destinations = sortDestinationPorts(DESTINATION_PORTS.filter((p) =>
+    const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) =>
         Number(p.id) !== Number(source.id) && !p.is_linked
-    ));
+    )));
 
     destinationSelect.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
@@ -2121,7 +2164,10 @@ function openLinkModal(portId) {
     if (!destinations.length) {
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = 'No available ports on other equipment';
+        const sourceFamily = portTypeLinkFamily(source.port_type_label || 'RJ45');
+        option.textContent = sourceFamily === 'fiber'
+            ? 'No available SFP/SFP+ ports on other equipment'
+            : 'No available RJ45 ports on other equipment';
         destinationSelect.appendChild(option);
     }
 
@@ -2183,14 +2229,15 @@ function createLink() {
             alert('Unable to determine destination port from selected equipment port.');
             return;
         }
+        const sourcePortForLink = PORTS.find((port) => Number(port.id) === Number(f.port_id_a.value));
         const selectedEquipmentId = Number(f.equipment_id.value);
-        const allAvailableDestinationPorts = DESTINATION_PORTS.filter((port) =>
+        const allAvailableDestinationPorts = filterLinkCompatibleDestinations(sourcePortForLink, DESTINATION_PORTS.filter((port) =>
             Number(port.id) !== Number(f.port_id_a.value)
             && !port.is_linked
-        );
-        const allDestinationPorts = DESTINATION_PORTS.filter((port) =>
+        ));
+        const allDestinationPorts = filterLinkCompatibleDestinations(sourcePortForLink, DESTINATION_PORTS.filter((port) =>
             Number(port.id) !== Number(f.port_id_a.value)
-        );
+        ));
         const normalizedAvailableDestinationPorts = allAvailableDestinationPorts.length
             ? allAvailableDestinationPorts
             : allDestinationPorts;
@@ -2228,6 +2275,31 @@ function createLink() {
         return;
     }
 
+    const sourcePort = PORTS.find((port) => Number(port.id) === Number(f.port_id_a.value));
+    const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
+    if (sourcePort && selectedDestinationPort && !portsAreLinkCompatible(
+        String(sourcePort.port_type_label || 'RJ45'),
+        String(selectedDestinationPort.port_type_label || 'RJ45')
+    )) {
+        alert(portTypeLinkMismatchMessage(
+            String(sourcePort.port_type_label || 'RJ45'),
+            String(selectedDestinationPort.port_type_label || 'RJ45')
+        ));
+        return;
+    }
+
+    if (linkedMode && sourcePort) {
+        const selectedSwitchOption = f.switch_port_id.options[f.switch_port_id.selectedIndex];
+        if (selectedSwitchOption && selectedSwitchOption.dataset.portJson) {
+            const switchPort = JSON.parse(selectedSwitchOption.dataset.portJson);
+            const switchPortType = String(switchPort.equipment_port_type || '');
+            if (!portsAreLinkCompatible(String(sourcePort.port_type_label || 'RJ45'), switchPortType)) {
+                alert(portTypeLinkMismatchMessage(String(sourcePort.port_type_label || 'RJ45'), switchPortType));
+                return;
+            }
+        }
+    }
+
     const activeCableColorSelect = (linkedMode && f.linked_cable_color_id)
         ? f.linked_cable_color_id
         : f.cable_color_id;
@@ -2247,7 +2319,6 @@ function createLink() {
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
     const linkedCableColorName = selectedCableColorName;
     const linkedCableColorHex = selectedCableColorHex;
-    const selectedDestinationPort = DESTINATION_PORTS.find((port) => Number(port.id) === Number(destinationPortId));
     const linkedDestinationPort = selectedDestinationPort ? String(selectedDestinationPort.port_no || '') : '';
 
     const payload = {
@@ -2324,6 +2395,9 @@ async function loadEquipmentPorts(equipmentId) {
     select.disabled = true;
     select.innerHTML = '<option value="">Loading...</option>';
 
+    const sourcePort = PORTS.find((port) => Number(port.id) === Number(f.port_id_a.value));
+    const sourcePortType = sourcePort ? String(sourcePort.port_type_label || 'RJ45') : 'RJ45';
+
     try {
         const data = await apiPost('switch_ports_by_equipment.php', {
             csrf_token: CSRF,
@@ -2331,13 +2405,25 @@ async function loadEquipmentPorts(equipmentId) {
         });
 
         select.innerHTML = '<option value="">-- None --</option>';
-        (data.ports || []).forEach((port) => {
+        const compatiblePorts = (data.ports || []).filter((port) =>
+            portsAreLinkCompatible(sourcePortType, String(port.equipment_port_type || ''))
+        );
+        compatiblePorts.forEach((port) => {
             const option = document.createElement('option');
             option.value = String(port.id);
             option.textContent = formatSwitchPortOption(port);
             option.dataset.portJson = JSON.stringify(port);
             select.appendChild(option);
         });
+        if (!compatiblePorts.length) {
+            const option = document.createElement('option');
+            option.value = '';
+            const sourceFamily = portTypeLinkFamily(sourcePortType);
+            option.textContent = sourceFamily === 'fiber'
+                ? 'No compatible SFP/SFP+ equipment ports'
+                : 'No compatible RJ45 equipment ports';
+            select.appendChild(option);
+        }
         select.disabled = false;
         toggleLinkedEquipmentFields(false);
     } catch (err) {
