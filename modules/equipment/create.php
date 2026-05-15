@@ -349,6 +349,7 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
     $layoutId = (int)($equipmentData['switch_port_numbering_layout_id'] ?? 0);
     $notes = trim((string)($equipmentData['notes'] ?? ''));
     $switchEnvironmentId = (int)($equipmentData['switch_environment_id'] ?? 0);
+    $switchFiberPortsNumberRaw = trim((string)($equipmentData['switch_fiber_ports_number'] ?? ''));
 
     if ($equipmentId <= 0) {
         return '';
@@ -513,7 +514,10 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             }
         }
     }
-    mysqli_query($conn, "UPDATE idf_positions SET rj45_count = {$portCount} WHERE id = {$targetPositionId} LIMIT 1");
+    // Why: idf_positions.sfp_count feeds rack-summary badges alongside materialized fiber idf_ports; keep it aligned with Network Details Fiber Ports Number on every save path.
+    $sfpSummaryCount = max(0, (int)$switchFiberPortsNumberRaw);
+
+    mysqli_query($conn, "UPDATE idf_positions SET rj45_count = {$portCount}, sfp_count = {$sfpSummaryCount} WHERE id = {$targetPositionId} LIMIT 1");
 
     if ($portCount > 0) {
         $unknownStatusId = 0;
@@ -919,6 +923,16 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
             mysqli_stmt_close($stmtInsertSwitchPort);
         }
     }
+
+    mysqli_query(
+        $conn,
+        'UPDATE idf_positions
+         SET rj45_count = ' . (int)$portCount . ',
+             sfp_count = ' . (int)$fiberCount . '
+         WHERE company_id = ' . (int)$companyId . '
+           AND id = ' . (int)$positionId . '
+         LIMIT 1'
+    );
 
     return '';
 }
@@ -1434,6 +1448,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'switch_port_numbering_layout_id' => (int)$data['switch_port_numbering_layout_id'],
                 'switch_environment_id' => (int)$data['switch_environment_id'],
                 'notes' => (string)$data['notes'],
+                'switch_fiber_ports_number' => (string)$data['switch_fiber_ports_number'],
             ]);
             if ($idfSyncError !== '') {
                 $error = $idfSyncError;
