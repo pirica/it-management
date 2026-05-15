@@ -591,7 +591,14 @@ $idfDeviceLoadPorts = static function () use (&$ports, $stmtPorts, $pos, $positi
     }
 };
 
-$positionLinkedEquipmentId = idf_parse_linked_equipment_id($pos['equipment_id'] ?? '');
+$positionLinkedEquipmentId = idf_resolve_position_equipment_id(
+    $conn,
+    $company_id,
+    $position_id,
+    (int)($pos['position_no'] ?? 0),
+    (int)($pos['idf_id'] ?? 0),
+    idf_parse_linked_equipment_id($pos['equipment_id'] ?? '')
+);
 
 if ($position_id > 0) {
     idf_ensure_ports_for_position($conn, $company_id, $position_id);
@@ -1821,6 +1828,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
 const CSRF = '<?php echo sanitize($csrf); ?>';
 const POSITION_ID = <?php echo (int)$position_id; ?>;
+const POSITION_EQUIPMENT_ID = <?php echo (int)$positionLinkedEquipmentId; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
 const AUTO_OPEN_LINK_PORT_ID = <?php echo (int)$open_link_port_id; ?>;
 const AUTO_OPEN_EDIT_PORT_NO = <?php echo (int)$open_edit_port_no; ?>;
@@ -1947,8 +1955,118 @@ function applySelectValue(selectEl, value) {
     selectEl.value = '';
 }
 
-function openPortModal(portId) {
-    const portMeta = findPortMetaByRef(portId);
+function mergeSwitchPortApiRowIntoPortMeta(portMeta, switchPort) {
+    if (!portMeta || !switchPort) {
+        return portMeta;
+    }
+    const merged = Object.assign({}, portMeta);
+    const pick = (targetKey, sourceKey) => {
+        const current = Number(merged[targetKey] || 0);
+        const incoming = Number(switchPort[sourceKey] || 0);
+        if (current <= 0 && incoming > 0) {
+            merged[targetKey] = incoming;
+        }
+    };
+    pick('vlan_id', 'equipment_vlan_id');
+    pick('rj45_speed_id', 'equipment_rj45_speed_id');
+    pick('fiber_port_id', 'equipment_fiber_port_id');
+    pick('fiber_patch_id', 'equipment_fiber_patch_id');
+    pick('fiber_rack_id', 'equipment_fiber_rack_id');
+    pick('to_idf_id', 'equipment_to_idf_id');
+    pick('to_rack_id', 'equipment_to_rack_id');
+    pick('to_location_id', 'equipment_to_location_id');
+    pick('status_id', 'equipment_status_id');
+    pick('cable_color_id', 'equipment_color_id');
+    if (Number(merged.switch_port_id) <= 0 && Number(switchPort.id) > 0) {
+        merged.switch_port_id = Number(switchPort.id);
+    }
+    const switchLabel = String(switchPort.equipment_label || '').trim();
+    if ((!merged.label || merged.label === '0') && switchLabel !== '') {
+        merged.label = switchLabel;
+    }
+    const switchComments = String(switchPort.equipment_comments || '').trim();
+    if (!merged.notes && switchComments !== '') {
+        merged.notes = switchComments;
+    }
+    const switchColor = String(switchPort.equipment_color || '').trim();
+    if (switchColor !== '' && (!merged.cable_color_name || String(merged.cable_color_name).toLowerCase() === 'gray')) {
+        merged.cable_color_name = switchColor;
+        merged.cable_color = switchColor;
+    }
+    const switchHex = String(switchPort.equipment_color_hex || '').trim();
+    if (switchHex !== '' && !merged.cable_hex_color) {
+        merged.cable_hex_color = switchHex;
+    }
+    return merged;
+}
+
+function findSwitchPortMatchForPortMeta(portMeta, switchPorts) {
+    if (!portMeta || !Array.isArray(switchPorts) || !switchPorts.length) {
+        return null;
+    }
+    const switchPortId = Number(portMeta.switch_port_id || 0);
+    if (switchPortId > 0) {
+        const byId = switchPorts.find((row) => Number(row.id) === switchPortId);
+        if (byId) {
+            return byId;
+        }
+    }
+    const portNo = Number(portMeta.port_no || 0);
+    const portType = String(portMeta.port_type_label || 'RJ45');
+    const compatible = switchPorts.filter((row) =>
+        portsAreLinkCompatible(portType, String(row.equipment_port_type || ''))
+    );
+    const pool = compatible.length ? compatible : switchPorts;
+    return pool.find((row) => Number(row.equipment_port) === portNo) || null;
+}
+
+let switchPortsByEquipmentCache = null;
+let switchPortsByEquipmentCacheId = 0;
+
+async function fetchSwitchPortsForPositionEquipment() {
+    if (!POSITION_EQUIPMENT_ID) {
+        return [];
+    }
+    if (switchPortsByEquipmentCacheId === Number(POSITION_EQUIPMENT_ID) && Array.isArray(switchPortsByEquipmentCache)) {
+        return switchPortsByEquipmentCache;
+    }
+    const data = await apiPost('switch_ports_by_equipment.php', {
+        csrf_token: CSRF,
+        equipment_id: Number(POSITION_EQUIPMENT_ID),
+    });
+    switchPortsByEquipmentCache = Array.isArray(data.ports) ? data.ports : [];
+    switchPortsByEquipmentCacheId = Number(POSITION_EQUIPMENT_ID);
+    return switchPortsByEquipmentCache;
+}
+
+async function hydratePortMetaFromSwitchPorts(portMeta) {
+    if (!portMeta || !POSITION_EQUIPMENT_ID) {
+        return portMeta;
+    }
+    try {
+        const switchPorts = await fetchSwitchPortsForPositionEquipment();
+        const match = findSwitchPortMatchForPortMeta(portMeta, switchPorts);
+        if (!match) {
+            return portMeta;
+        }
+        return mergeSwitchPortApiRowIntoPortMeta(portMeta, match);
+    } catch (err) {
+        return portMeta;
+    }
+}
+
+function upsertPortMetaInPortsList(portMeta) {
+    if (!portMeta || !portMeta.id) {
+        return;
+    }
+    const idx = PORTS.findIndex((item) => Number(item.id) === Number(portMeta.id));
+    if (idx >= 0) {
+        PORTS[idx] = portMeta;
+    }
+}
+
+async function openPortModal(portId) {
+    let portMeta = findPortMetaByRef(portId);
     const resolvedPortId = portMeta ? Number(portMeta.id) : Number(portId);
     const row = document.querySelector(`tr[data-port-id="${resolvedPortId}"]`);
     const form = document.getElementById('portForm');
@@ -1958,6 +2076,8 @@ function openPortModal(portId) {
         alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click "Regenerate Ports" first.');
         return;
     }
+    portMeta = await hydratePortMetaFromSwitchPorts(portMeta);
+    upsertPortMetaInPortsList(portMeta);
     form.port_id.value = String(portMeta.id);
     const requestedPortTypeId = (portMeta && portMeta.port_type_id) ? String(portMeta.port_type_id) : (rowData.portTypeId || '');
     if (requestedPortTypeId && Array.from(form.port_type.options).some((option) => option.value === requestedPortTypeId)) {
@@ -2394,6 +2514,10 @@ function idfPortsExportExcel() {
 
 async function openLinkModal(portId) {
     let source = findPortMetaByRef(portId);
+    if (source) {
+        source = await hydratePortMetaFromSwitchPorts(source);
+        upsertPortMetaInPortsList(source);
+    }
     if (!source) {
         try {
             await syncPortsFromEquipment();
@@ -2884,6 +3008,13 @@ function populateLinkedEquipmentFields() {
 
     trySelectLinkedColor(f.linked_cable_color_id);
     trySelectLinkedColor(f.cable_color_id);
+
+    const sourcePort = findPortMetaByRef(f.port_id_a.value);
+    if (sourcePort) {
+        const enrichedSource = mergeSwitchPortApiRowIntoPortMeta(sourcePort, port);
+        upsertPortMetaInPortsList(enrichedSource);
+        updateLinkFormTypePresentation(enrichedSource);
+    }
 
     toggleLinkedEquipmentFields(true);
 }
