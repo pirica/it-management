@@ -1146,6 +1146,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <h3 style="margin-top:0;">👁️ Port Visualization</h3>
                 <div class="idf-device-port-visual">
                 <?php
+                $deviceGridPortType = 'rj45';
+                if (empty($rj45PortNumbers) && (!empty($sfpPortNumbers) || !empty($sfpPlusPortNumbers))) {
+                    $deviceGridPortType = 'all';
+                }
                 echo itm_render_port_visualizer($ports, [
                     'clickable' => true,
                     'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
@@ -1156,7 +1160,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     'idf_name' => (string)($pos['idf_name'] ?? ''),
                     'idf_code' => (string)($pos['idf_code'] ?? ''),
                     'rack_name' => (string)($pos['rack_name'] ?? ''),
-                    'grid_port_type' => 'rj45',
+                    'grid_port_type' => $deviceGridPortType,
                     'rj45_ports' => $rj45PortNumbers,
                     'sfp_ports' => $sfpPortNumbers,
                     'sfp_plus_ports' => $sfpPlusPortNumbers

@@ -535,7 +535,10 @@ if ($stmtPos) {
         }
 
 
-        $rj45PortCount = idf_extract_rj45_count((string)($row['switch_rj45_name'] ?? ''));
+        $rj45PortCount = (int)($row['rj45_count'] ?? 0);
+        if ($rj45PortCount <= 0) {
+            $rj45PortCount = idf_extract_rj45_count((string)($row['switch_rj45_name'] ?? ''));
+        }
         if ($rj45PortCount <= 0) {
             foreach (($row['ports'] ?? []) as $itmPortMeta) {
                 $itmTypeRaw = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? ''))));
@@ -989,6 +992,13 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 </div>
                                                 <div style="margin-top: 8px;">
                                                     <?php
+                                                    $rackRj45Ports = (array)($pos['rj45_ports'] ?? []);
+                                                    $rackSfpPorts = (array)($pos['sfp_ports'] ?? []);
+                                                    $rackSfpPlusPorts = (array)($pos['sfp_plus_ports'] ?? []);
+                                                    $rackGridPortType = 'rj45';
+                                                    if (empty($rackRj45Ports) && (!empty($rackSfpPorts) || !empty($rackSfpPlusPorts))) {
+                                                        $rackGridPortType = 'all';
+                                                    }
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [
                                                         'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                                                         'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
@@ -999,10 +1009,10 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'idf_name' => (string)($idf['name'] ?? ''),
                                                         'idf_code' => (string)($idf['idf_code'] ?? ''),
                                                         'rack_name' => (string)($idf['rack_name'] ?? ''),
-                                                        'grid_port_type' => 'rj45',
-                                                        'rj45_ports' => (array)($pos['rj45_ports'] ?? []),
-                                                        'sfp_ports' => (array)($pos['sfp_ports'] ?? []),
-                                                        'sfp_plus_ports' => (array)($pos['sfp_plus_ports'] ?? []),
+                                                        'grid_port_type' => $rackGridPortType,
+                                                        'rj45_ports' => $rackRj45Ports,
+                                                        'sfp_ports' => $rackSfpPorts,
+                                                        'sfp_plus_ports' => $rackSfpPlusPorts,
                                                     ]);
                                                     ?>
                                                 </div>

@@ -60,6 +60,91 @@ if (!function_exists('idf_generate_unlinked_equipment_token')) {
     }
 }
 
+if (!function_exists('idf_prune_position_port_capacity')) {
+    function idf_prune_position_port_capacity(
+        mysqli $conn,
+        int $companyId,
+        int $positionId,
+        int $rj45Count,
+        int $sfpCount,
+        int $rj45PortTypeId
+    ): void {
+        if ($companyId <= 0 || $positionId <= 0) {
+            return;
+        }
+
+        if ($rj45PortTypeId > 0) {
+            if ($rj45Count > 0) {
+                $stmtDeleteExtraRj45 = mysqli_prepare(
+                    $conn,
+                    "DELETE FROM idf_ports
+                     WHERE company_id = ?
+                       AND position_id = ?
+                       AND port_type = ?
+                       AND port_no > ?"
+                );
+                if ($stmtDeleteExtraRj45) {
+                    mysqli_stmt_bind_param($stmtDeleteExtraRj45, 'iiii', $companyId, $positionId, $rj45PortTypeId, $rj45Count);
+                    mysqli_stmt_execute($stmtDeleteExtraRj45);
+                    mysqli_stmt_close($stmtDeleteExtraRj45);
+                }
+            } else {
+                $stmtDeleteAllRj45 = mysqli_prepare(
+                    $conn,
+                    "DELETE FROM idf_ports
+                     WHERE company_id = ?
+                       AND position_id = ?
+                       AND port_type = ?"
+                );
+                if ($stmtDeleteAllRj45) {
+                    mysqli_stmt_bind_param($stmtDeleteAllRj45, 'iii', $companyId, $positionId, $rj45PortTypeId);
+                    mysqli_stmt_execute($stmtDeleteAllRj45);
+                    mysqli_stmt_close($stmtDeleteAllRj45);
+                }
+            }
+        }
+
+        if ($sfpCount > 0) {
+            $stmtDeleteExtraSfp = mysqli_prepare(
+                $conn,
+                "DELETE FROM idf_ports
+                 WHERE company_id = ?
+                   AND position_id = ?
+                   AND port_type IN (
+                        SELECT id
+                        FROM switch_port_types
+                        WHERE company_id = ?
+                          AND LOWER(type) LIKE '%sfp%'
+                   )
+                   AND port_no > ?"
+            );
+            if ($stmtDeleteExtraSfp) {
+                mysqli_stmt_bind_param($stmtDeleteExtraSfp, 'iiii', $companyId, $positionId, $companyId, $sfpCount);
+                mysqli_stmt_execute($stmtDeleteExtraSfp);
+                mysqli_stmt_close($stmtDeleteExtraSfp);
+            }
+        } else {
+            $stmtDeleteAllSfp = mysqli_prepare(
+                $conn,
+                "DELETE FROM idf_ports
+                 WHERE company_id = ?
+                   AND position_id = ?
+                   AND port_type IN (
+                        SELECT id
+                        FROM switch_port_types
+                        WHERE company_id = ?
+                          AND LOWER(type) LIKE '%sfp%'
+                   )"
+            );
+            if ($stmtDeleteAllSfp) {
+                mysqli_stmt_bind_param($stmtDeleteAllSfp, 'iii', $companyId, $positionId, $companyId);
+                mysqli_stmt_execute($stmtDeleteAllSfp);
+                mysqli_stmt_close($stmtDeleteAllSfp);
+            }
+        }
+    }
+}
+
 if (!function_exists('idf_ensure_equipment_fiber_count_id')) {
     function idf_ensure_equipment_fiber_count_id(mysqli $conn, int $companyId, string $fiberPortsNumber): int
     {
@@ -1432,6 +1517,8 @@ if ($pid > 0) {
             }
             mysqli_stmt_close($stmtInsertPort);
         }
+
+        idf_prune_position_port_capacity($conn, $company_id, $pid, $rj45_count, $sfp_count, $rj45PortTypeId);
 
         $layoutSyncValue = $layout_id > 0 ? $layout_id : 0;
         $stmtSyncPortLayout = mysqli_prepare(
