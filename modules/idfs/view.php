@@ -973,7 +973,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     $rackSfpPorts = (array)($pos['sfp_ports'] ?? []);
                                                     $rackSfpPlusPorts = (array)($pos['sfp_plus_ports'] ?? []);
                                                     $rackGridPortType = 'rj45';
-                                                    if (empty($rackRj45Ports) && (!empty($rackSfpPorts) || !empty($rackSfpPlusPorts))) {
+                                                    if (!empty($rackSfpPorts) || !empty($rackSfpPlusPorts)) {
                                                         $rackGridPortType = 'all';
                                                     }
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [

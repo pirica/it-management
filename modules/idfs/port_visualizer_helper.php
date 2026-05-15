@@ -54,6 +54,58 @@ if (!function_exists('itm_build_capacity_placeholder_ports')) {
     }
 }
 
+if (!function_exists('itm_port_visualizer_type_key')) {
+    function itm_port_visualizer_type_key(array $portMeta): string
+    {
+        $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? 'rj45'))));
+        if (strpos($typeRaw, 'sfp+') !== false || strpos($typeRaw, 'sfp plus') !== false) {
+            return 'sfp_plus';
+        }
+        if (strpos($typeRaw, 'sfp') !== false) {
+            return 'sfp';
+        }
+        return 'rj45';
+    }
+}
+
+if (!function_exists('itm_merge_capacity_placeholder_ports')) {
+    /**
+     * Why: Positions can declare RJ45 and SFP capacity while idf_ports only has one family materialized.
+     */
+    function itm_merge_capacity_placeholder_ports(array $ports, array $options): array
+    {
+        $hasCapacity = !empty($options['rj45_ports'])
+            || !empty($options['sfp_ports'])
+            || !empty($options['sfp_plus_ports']);
+        if (!$hasCapacity) {
+            return $ports;
+        }
+
+        $existing = [];
+        foreach ($ports as $portMeta) {
+            $portNo = (int)($portMeta['port_no'] ?? 0);
+            if ($portNo <= 0) {
+                continue;
+            }
+            $existing[itm_port_visualizer_type_key($portMeta) . ':' . $portNo] = true;
+        }
+
+        foreach (itm_build_capacity_placeholder_ports($options) as $placeholder) {
+            $portNo = (int)($placeholder['port_no'] ?? 0);
+            if ($portNo <= 0) {
+                continue;
+            }
+            $key = itm_port_visualizer_type_key($placeholder) . ':' . $portNo;
+            if (!isset($existing[$key])) {
+                $ports[] = $placeholder;
+                $existing[$key] = true;
+            }
+        }
+
+        return $ports;
+    }
+}
+
 if (!function_exists('itm_render_port_visualizer')) {
     /**
      * Renders the HTML for a port grid.
@@ -61,6 +113,9 @@ if (!function_exists('itm_render_port_visualizer')) {
     function itm_render_port_visualizer($ports, $options = []) {
         $hasRj45Capacity = !empty($options['rj45_ports']);
         $hasFiberCapacity = !empty($options['sfp_ports']) || !empty($options['sfp_plus_ports']);
+        if ($hasRj45Capacity || $hasFiberCapacity) {
+            $ports = itm_merge_capacity_placeholder_ports($ports, $options);
+        }
         if (empty($ports)) {
             $ports = itm_build_capacity_placeholder_ports($options);
         }
@@ -73,7 +128,9 @@ if (!function_exists('itm_render_port_visualizer')) {
         // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
         $gridPortType = strtolower(trim((string)($options['grid_port_type'] ?? 'all')));
-        if ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
+        if ($hasRj45Capacity && $hasFiberCapacity) {
+            $gridPortType = 'all';
+        } elseif ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
             $gridPortType = 'all';
         }
         if ($gridPortType === 'rj45') {
@@ -361,12 +418,15 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $glow = $isActive ? "box-shadow: 0 0 8px $statusColor;" : "";
                 $portStatusLabelAttr = sanitize($statusLabel);
                 $portPositionIdAttr = (int)($p['position_id'] ?? 0);
+                $portTypeKey = itm_port_visualizer_type_key($p);
+                $portBorderRadius = ($portTypeKey === 'sfp' || $portTypeKey === 'sfp_plus') ? '50%' : '3px';
+                $portTypeClass = $portTypeKey === 'rj45' ? '' : ' itm-port-item--' . sanitize($portTypeKey);
 
-                $html .= '<div class="itm-port-item" title="' . sanitize($title) . '" data-port-id="' . (int)$p['id'] . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" ' . $onClick . ' style="
+                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . (int)$p['id'] . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '" ' . $onClick . ' style="
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';
-                    border-radius: 3px;
+                    border-radius: ' . $portBorderRadius . ';
                     cursor: ' . $cursor . ';
                     ' . $glow . '
                     transition: all 0.2s;

@@ -1233,7 +1233,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <div class="idf-device-port-visual">
                 <?php
                 $deviceGridPortType = 'rj45';
-                if (empty($rj45PortNumbers) && (!empty($sfpPortNumbers) || !empty($sfpPlusPortNumbers))) {
+                if (!empty($sfpPortNumbers) || !empty($sfpPlusPortNumbers)) {
                     $deviceGridPortType = 'all';
                 }
                 echo itm_render_port_visualizer($ports, [
