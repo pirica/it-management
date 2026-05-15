@@ -1020,6 +1020,13 @@ input[type="color"] {
     border-radius: 2px;
 }
 
+.itm-port-item--sfp,
+.itm-port-item--sfp_plus,
+.itm-device-icon-dot[data-port-type="sfp"],
+.itm-device-icon-dot[data-port-type="sfp_plus"] {
+    border-radius: 50%;
+}
+
 /* Responsive hardening for legacy module layouts */
 img,
 svg,
