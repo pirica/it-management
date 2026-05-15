@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
+require_once __DIR__ . '/idf_positions_schema.php';
+idf_ensure_idf_positions_capacity_columns($conn);
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');
@@ -583,7 +585,10 @@ if ($stmtPos) {
             }
         }
         if ($fiberPortCount <= 0) {
-            // Why: Keep legacy equipment-level fallback only when no explicit SFP rows are present in IDF/switch port data.
+            $fiberPortCount = (int)($row['sfp_count'] ?? 0);
+        }
+        if ($fiberPortCount <= 0) {
+            // Why: Keep equipment-level fallback only when position SFP rows/count are not yet materialized in idf_ports.
             $fiberPortCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
         }
         $fiberPortHint = strtolower(trim(
@@ -956,7 +961,8 @@ foreach ($equipmentOptions as $equipmentOption) {
                                      data-position="<?php echo $i; ?>"
                                      data-has-device="<?php echo $pos ? '1' : '0'; ?>"
                                      data-position-id="<?php echo $pos ? (int)$pos['id'] : 0; ?>"
-                                     data-port-count="<?php echo $pos ? (int)$pos['port_count'] : 0; ?>"
+                                     data-rj45-count="<?php echo $pos ? (int)($pos['rj45_count'] ?? 0) : 0; ?>"
+                                     data-sfp-count="<?php echo $pos ? (int)($pos['sfp_count'] ?? 0) : 0; ?>"
                                      data-layout-name="<?php echo $pos ? sanitize((string)($pos['layout_name'] ?? 'Vertical')) : ''; ?>">
                                     <div class="idf-slot-left">
                                         <div class="idf-slot-no"><?php echo $i; ?></div>
@@ -971,8 +977,11 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <div class="idf-slot-name"><?php echo sanitize($pos['device_name']); ?></div>
                                                 <div class="idf-slot-sub">
                                                     <span class="idf-badge"><?php echo sanitize(idf_type_badge((string)($pos['device_type'] ?? ''), $idfDeviceTypeMap)); ?></span>
-                                                    <?php if ((int)$pos['port_count'] > 0): ?>
-                                                        <span class="idf-badge">🔌 <?php echo (int)$pos['port_count']; ?> ports</span>
+                                                    <?php if ((int)($pos['rj45_count'] ?? 0) > 0): ?>
+                                                        <span class="idf-badge">🔌 <?php echo (int)$pos['rj45_count']; ?> RJ45</span>
+                                                    <?php endif; ?>
+                                                    <?php if ((int)($pos['sfp_count'] ?? 0) > 0): ?>
+                                                        <span class="idf-badge">🧬 <?php echo (int)$pos['sfp_count']; ?> SFP</span>
                                                     <?php endif; ?>
                                                     <?php if (!empty($pos['equipment_id'])): ?>
                                                         <span class="idf-badge">🧾 Asset ID <?php echo sanitize((string)$pos['equipment_id']); ?></span>
@@ -1041,7 +1050,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                         <td><?php echo $i; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['device_type_name'] ?? '')) : ''; ?></td>
                         <td><?php echo $pos ? sanitize((string)$pos['device_name']) : ''; ?></td>
-                        <td><?php echo $pos ? (int)$pos['port_count'] : 0; ?></td>
+                        <td><?php echo $pos ? ((int)($pos['rj45_count'] ?? 0) . ' / ' . (int)($pos['sfp_count'] ?? 0)) : '0 / 0'; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['equipment_id'] ?? '')) : ''; ?></td>
                         <td><?php echo $pos ? sanitize((string)($pos['notes'] ?? '')) : ''; ?></td>
                     </tr>
@@ -1103,8 +1112,8 @@ foreach ($equipmentOptions as $equipmentOption) {
             </div>
 
             <div id="idfPortCountWrap">
-                <label class="label">Port Count</label>
-                <input class="input" name="port_count" type="number" min="0" max="9999" step="1">
+                <label class="label">RJ45 Count</label>
+                <input class="input" name="rj45_count" type="number" min="0" max="9999" step="1">
             </div>
 
             <div id="idfSwitchRj45Wrap" style="display:none;">
@@ -1400,7 +1409,9 @@ function applyEquipmentRelation(form) {
     form.switch_rj45_id.value = equipment.switch_rj45_id ? String(equipment.switch_rj45_id) : '';
     form.switch_port_numbering_layout_id.value = equipment.switch_port_numbering_layout_id ? String(equipment.switch_port_numbering_layout_id) : '';
     setFiberPortsNumberValue(form, equipment.switch_fiber_ports_number || '');
-    form.port_count.value = equipment.port_count ? String(equipment.port_count) : '';
+    if (form.rj45_count) {
+        form.rj45_count.value = equipment.rj45_count ? String(equipment.rj45_count) : (equipment.port_count ? String(equipment.port_count) : '');
+    }
     form.notes.value = equipment.notes || '';
     refreshPortCountInputs(form);
 }
@@ -1451,12 +1462,20 @@ function openDeviceModal(positionNo, positionId) {
             .then(({position}) => {
                 form.device_type.value = position.device_type;
                 form.device_name.value = position.device_name;
-                form.equipment_id.value = position.equipment_id || '';
+                const rawEquipmentId = String(position.equipment_id || '').trim();
+                form.equipment_id.value = (rawEquipmentId !== '' && /^\d+$/.test(rawEquipmentId)) ? rawEquipmentId : '';
                 form.equipment_id.dataset.previousValue = form.equipment_id.value || '';
                 form.switch_rj45_id.value = position.effective_switch_rj45_id || position.switch_rj45_id || '';
                 form.switch_port_numbering_layout_id.value = position.equipment_switch_port_numbering_layout_id || position.effective_switch_port_numbering_layout_id || position.switch_port_numbering_layout_id || '';
-                setFiberPortsNumberValue(form, position.equipment_switch_fiber_ports_number || '');
-                form.port_count.value = position.port_count || '';
+                const fiberEditValue = Number(position.sfp_count) > 0
+                    ? String(position.sfp_count)
+                    : (Number(position.effective_sfp_count) > 0
+                        ? String(position.effective_sfp_count)
+                        : (position.equipment_switch_fiber_ports_number || ''));
+                setFiberPortsNumberValue(form, fiberEditValue);
+                if (form.rj45_count) {
+                    form.rj45_count.value = position.rj45_count || position.port_count || '';
+                }
                 form.notes.value = position.notes || '';
                 refreshPortCountInputs(form);
                 openModal();
@@ -1478,7 +1497,9 @@ function syncFieldsFromEquipment(form, shouldAlert) {
     form.switch_rj45_id.value = meta.switch_rj45_id ? String(meta.switch_rj45_id) : '';
     form.switch_port_numbering_layout_id.value = meta.switch_port_numbering_layout_id ? String(meta.switch_port_numbering_layout_id) : '';
     setFiberPortsNumberValue(form, meta.switch_fiber_ports_number || '');
-    form.port_count.value = meta.port_count ? String(meta.port_count) : '';
+    if (form.rj45_count) {
+        form.rj45_count.value = meta.rj45_count ? String(meta.rj45_count) : (meta.port_count ? String(meta.port_count) : '');
+    }
     form.notes.value = meta.notes || '';
     refreshPortCountInputs(form);
 
@@ -1530,7 +1551,9 @@ function refreshPortCountInputs(form) {
         setFiberPortsNumberValue(form, '');
     }
     if (isUps) {
-        form.port_count.value = '0';
+        if (form.rj45_count) {
+            form.rj45_count.value = '0';
+        }
         form.switch_port_numbering_layout_id.value = '';
         if (isUnlinked) {
             form.switch_rj45_id.value = '';
@@ -1562,11 +1585,18 @@ function saveDevice() {
         position_id: form.position_id.value ? Number(form.position_id.value) : null,
         device_type: form.device_type.value,
         device_name: form.device_name.value.trim(),
-        equipment_id: form.equipment_id.value ? Number(form.equipment_id.value) : null,
+        equipment_id: hasLinkedEquipment ? Number(form.equipment_id.value) : null,
         switch_rj45_id: form.switch_rj45_id.value ? Number(form.switch_rj45_id.value) : null,
         switch_port_numbering_layout_id: form.switch_port_numbering_layout_id.value ? Number(form.switch_port_numbering_layout_id.value) : null,
         switch_fiber_ports_number: form.switch_fiber_ports_number ? form.switch_fiber_ports_number.value : null,
-        port_count: form.port_count.value === '' ? null : Number(form.port_count.value),
+        rj45_count: form.rj45_count && form.rj45_count.value !== '' ? Number(form.rj45_count.value) : null,
+        sfp_count: (() => {
+            const fiberRaw = form.switch_fiber_ports_number ? String(form.switch_fiber_ports_number.value || '').trim() : '';
+            if (fiberRaw === '' || fiberRaw === '__add_new__') {
+                return null;
+            }
+            return Number(fiberRaw);
+        })(),
         notes: form.notes.value.trim(),
     };
     apiPost('position_save.php', payload)

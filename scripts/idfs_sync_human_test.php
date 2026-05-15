@@ -473,7 +473,7 @@ try {
                 'equipment_id' => $fallbackEquipmentId,
                 'switch_rj45_id' => $rj45EightId,
                 'switch_port_numbering_layout_id' => $layoutVerticalId,
-                'port_count' => 8,
+                'rj45_count' => 8,
                 'notes' => 'ITM HUMAN TEMP LINK DESTINATION',
             ]
         );
@@ -742,7 +742,7 @@ try {
             'switch_rj45_id' => $rj45EightId,
             'switch_port_numbering_layout_id' => $layoutVerticalId,
             'switch_fiber_ports_number' => '2',
-            'port_count' => 8,
+            'rj45_count' => 8,
             'notes' => 'ITM HUMAN TEMP POSITION',
         ]
     );
@@ -763,14 +763,14 @@ try {
 
     $tempPositionMeta = itm_test_db_one(
         $db,
-        "SELECT port_count, switch_port_numbering_layout_id
+        "SELECT rj45_count, sfp_count, switch_port_numbering_layout_id
          FROM idf_positions
          WHERE id = ? AND company_id = ?
          LIMIT 1",
         'ii',
         [$tempPositionId, $companyId]
     );
-    itm_test_assert((int)($tempPositionMeta['port_count'] ?? 0) === 8, 'Position create persisted port_count');
+    itm_test_assert((int)($tempPositionMeta['rj45_count'] ?? 0) === 8, 'Position create persisted rj45_count');
     itm_test_assert((int)($tempPositionMeta['switch_port_numbering_layout_id'] ?? 0) === $layoutVerticalId, 'Position create persisted numbering layout');
 
     $tempIdfPortLayout = itm_test_db_one(
@@ -967,22 +967,22 @@ try {
             'switch_rj45_id' => $rj45TwentyFourId,
             'switch_port_numbering_layout_id' => $layoutHorizontalId,
             'switch_fiber_ports_number' => '4',
-            'port_count' => 24,
+            'rj45_count' => 24,
             'notes' => 'ITM HUMAN TEMP POSITION EDITED',
         ]
     );
-    itm_test_out('[PASS] Position edit API completed for layout/port_count sync');
+    itm_test_out('[PASS] Position edit API completed for layout/rj45_count sync');
 
     $tempPositionAfterEdit = itm_test_db_one(
         $db,
-        "SELECT port_count, switch_port_numbering_layout_id
+        "SELECT rj45_count, sfp_count, switch_port_numbering_layout_id
          FROM idf_positions
          WHERE id = ? AND company_id = ?
          LIMIT 1",
         'ii',
         [$tempPositionId, $companyId]
     );
-    itm_test_assert((int)($tempPositionAfterEdit['port_count'] ?? 0) === 24, 'Position edit persisted port_count');
+    itm_test_assert((int)($tempPositionAfterEdit['rj45_count'] ?? 0) === 24, 'Position edit persisted rj45_count');
     itm_test_assert((int)($tempPositionAfterEdit['switch_port_numbering_layout_id'] ?? 0) === $layoutHorizontalId, 'Position edit persisted numbering layout');
 
     $equipmentAfterEdit = itm_test_db_one(
@@ -1080,25 +1080,25 @@ try {
             'overwrite' => 0,
         ]
     );
-    itm_test_out('[PASS] Position copy API completed for layout/port_count sync');
+    itm_test_out('[PASS] Position copy API completed for layout/rj45_count sync');
 
     $copiedPosition = itm_test_db_one(
         $db,
-        "SELECT id, equipment_id, port_count, switch_port_numbering_layout_id
+        "SELECT id, equipment_id, rj45_count, sfp_count, switch_port_numbering_layout_id
          FROM idf_positions
          WHERE company_id = ? AND idf_id = ? AND position_no = ?
          LIMIT 1",
         'iii',
         [$companyId, $idfId, $copyTargetPositionNo]
     );
-    itm_test_assert($copiedPosition !== null, 'Copied position created for layout/port_count sync');
+    itm_test_assert($copiedPosition !== null, 'Copied position created for layout/rj45_count sync');
     $copiedPositionId = (int)($copiedPosition['id'] ?? 0);
     $createdTempPositionIds[] = $copiedPositionId;
     $copiedEquipmentId = (int)($copiedPosition['equipment_id'] ?? 0);
     if ($copiedEquipmentId > 0) {
         $createdTempEquipmentIds[] = $copiedEquipmentId;
     }
-    itm_test_assert((int)($copiedPosition['port_count'] ?? 0) === 24, 'Position copy preserved port_count');
+    itm_test_assert((int)($copiedPosition['rj45_count'] ?? 0) === 24, 'Position copy preserved rj45_count');
     itm_test_assert((int)($copiedPosition['switch_port_numbering_layout_id'] ?? 0) === $layoutHorizontalId, 'Position copy preserved numbering layout');
 
     $copiedPortLayout = itm_test_db_one(

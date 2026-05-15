@@ -163,8 +163,8 @@ $stmtSrc = mysqli_prepare(
       AND LOWER(p_layout_company_match.name) = LOWER(p_layout_any.name)
      LEFT JOIN equipment_rj45 er_count
        ON er_count.company_id = p.company_id
-      AND p.port_count > 0
-      AND er_count.name REGEXP CONCAT('(^|[^0-9])', p.port_count, '([^0-9]|$)')
+      AND p.rj45_count > 0
+      AND er_count.name REGEXP CONCAT('(^|[^0-9])', p.rj45_count, '([^0-9]|$)')
      LEFT JOIN (
         SELECT position_id, MIN(switch_port_numbering_layout_id) AS switch_port_numbering_layout_id
         FROM idf_ports
@@ -320,10 +320,11 @@ try {
     $equip_val = !empty($src['equipment_id']) ? (string)$src['equipment_id'] : null;
     $device_type = (int)$src['device_type'];
     $device_name = (string)$device_name;
-    $port_count = (int)$src['port_count'];
+    $rj45_count = (int)($src['rj45_count'] ?? $src['port_count'] ?? 0);
+    $sfp_count = (int)($src['sfp_count'] ?? 0);
     $actualRj45PortCount = (int)($src['actual_rj45_port_count'] ?? 0);
     if ($actualRj45PortCount > 0) {
-        $port_count = $actualRj45PortCount;
+        $rj45_count = $actualRj45PortCount;
     }
     $layout_val = (int)($src['effective_switch_port_numbering_layout_id'] ?? 0);
     if ($layout_val <= 0) {
@@ -427,11 +428,11 @@ try {
 
     $stmtIns = mysqli_prepare(
         $conn,
-        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, port_count, switch_port_numbering_layout_id, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?)"
+        "INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, rj45_count, sfp_count, switch_port_numbering_layout_id, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?)"
     );
     if ($stmtIns) {
-        mysqli_stmt_bind_param($stmtIns, 'iiiissiis', $company_id, $idf_id, $target_position, $device_type, $device_name, $equip_val, $port_count, $layout_val, $notes_val);
+        mysqli_stmt_bind_param($stmtIns, 'iiiissiiis', $company_id, $idf_id, $target_position, $device_type, $device_name, $equip_val, $rj45_count, $sfp_count, $layout_val, $notes_val);
         mysqli_stmt_execute($stmtIns);
         mysqli_stmt_close($stmtIns);
     }

@@ -13,7 +13,20 @@ $stmt = mysqli_prepare(
     $conn,
     "SELECT p.*, i.company_id,
             COALESCE(e.switch_rj45_id, er_count.id, 0) AS effective_switch_rj45_id,
-            COALESCE(e.switch_fiber_ports_number, '') AS equipment_switch_fiber_ports_number,
+            COALESCE(
+                NULLIF(p.sfp_count, 0),
+                CAST(NULLIF(TRIM(e.switch_fiber_ports_number), '') AS UNSIGNED),
+                COALESCE(sfp_ports.max_sfp_no, 0),
+                0
+            ) AS effective_sfp_count,
+            CAST(
+                COALESCE(
+                    NULLIF(p.sfp_count, 0),
+                    CAST(NULLIF(TRIM(e.switch_fiber_ports_number), '') AS UNSIGNED),
+                    COALESCE(sfp_ports.max_sfp_no, 0),
+                    0
+                ) AS CHAR
+            ) AS equipment_switch_fiber_ports_number,
             COALESCE(NULLIF(e_layout_scoped.id, 0), NULLIF(e_layout_company_match.id, 0), NULLIF(e.switch_port_numbering_layout_id, 0), 0) AS equipment_switch_port_numbering_layout_id,
             COALESCE(
                 NULLIF(e_layout_scoped.id, 0),
@@ -30,8 +43,9 @@ $stmt = mysqli_prepare(
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
      LEFT JOIN equipment e
-       ON e.id = p.equipment_id
-      AND e.company_id = p.company_id
+       ON e.company_id = p.company_id
+      AND p.equipment_id REGEXP '^[0-9]+$'
+      AND e.id = CAST(p.equipment_id AS UNSIGNED)
      LEFT JOIN switch_port_numbering_layout e_layout_scoped
        ON e_layout_scoped.id = e.switch_port_numbering_layout_id
       AND e_layout_scoped.company_id = e.company_id
@@ -50,8 +64,17 @@ $stmt = mysqli_prepare(
       AND LOWER(p_layout_company_match.name) = LOWER(p_layout_any.name)
      LEFT JOIN equipment_rj45 er_count
        ON er_count.company_id = p.company_id
-      AND p.port_count > 0
-      AND er_count.name REGEXP CONCAT('(^|[^0-9])', p.port_count, '([^0-9]|$)')
+      AND p.rj45_count > 0
+      AND er_count.name REGEXP CONCAT('(^|[^0-9])', p.rj45_count, '([^0-9]|$)')
+     LEFT JOIN (
+        SELECT ip.position_id, MAX(ip.port_no) AS max_sfp_no
+        FROM idf_ports ip
+        JOIN switch_port_types spt
+          ON spt.id = ip.port_type
+         AND spt.company_id = ip.company_id
+        WHERE LOWER(spt.type) LIKE '%sfp%'
+        GROUP BY ip.position_id
+     ) sfp_ports ON sfp_ports.position_id = p.id
      LEFT JOIN (
         SELECT position_id, MIN(switch_port_numbering_layout_id) AS switch_port_numbering_layout_id
         FROM idf_ports
@@ -84,4 +107,5 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
 }
 
 unset($row['company_id']);
+$row['port_count'] = (int)($row['rj45_count'] ?? 0);
 idf_ok(['position' => $row]);

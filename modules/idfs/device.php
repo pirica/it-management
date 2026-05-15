@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
+require_once __DIR__ . '/idf_positions_schema.php';
+idf_ensure_idf_positions_capacity_columns($conn);
 
 if (!isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'index.php');
@@ -543,8 +545,8 @@ if (empty($rj45PortNumbers)) {
     $rj45FallbackCount = 0;
     if ($rj45PortLabel !== '' && preg_match('/(\d+)/', $rj45PortLabel, $rj45Matches)) {
         $rj45FallbackCount = (int)$rj45Matches[1];
-    } elseif ((int)($pos['port_count'] ?? 0) > 0) {
-        $rj45FallbackCount = (int)$pos['port_count'];
+    } elseif ((int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0) > 0) {
+        $rj45FallbackCount = (int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0);
     }
     if ($rj45FallbackCount > 0) {
         $rj45PortNumbers = range(1, $rj45FallbackCount);
@@ -552,7 +554,10 @@ if (empty($rj45PortNumbers)) {
 }
 
 if (empty($sfpPortNumbers) && empty($sfpPlusPortNumbers)) {
-    $fiberFallbackCount = (int)($pos['equipment_fiber_ports_number'] ?? 0);
+    $fiberFallbackCount = (int)($pos['sfp_count'] ?? 0);
+    if ($fiberFallbackCount <= 0) {
+        $fiberFallbackCount = (int)($pos['equipment_fiber_ports_number'] ?? 0);
+    }
     if ($fiberFallbackCount > 0) {
         $fiberLabel = strtolower(trim((string)($pos['equipment_fiber_port_label'] ?? '')));
         if (strpos($fiberLabel, 'sfp+') !== false || strpos($fiberLabel, 'sfp plus') !== false) {
@@ -1163,7 +1168,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <div class="card" style="padding:14px; border-radius:18px;">
                 <h3 style="margin-top:0;">🔌 Ports</h3>
 
-                <?php if ((int)$pos['port_count'] > 0 && count($ports) === 0): ?>
+                <?php if ((int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0) > 0 && count($ports) === 0): ?>
                     <div class="alert alert-error">Port list is empty. Use “Regenerate Ports”.</div>
                 <?php endif; ?>
 

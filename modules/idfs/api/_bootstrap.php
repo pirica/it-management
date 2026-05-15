@@ -1131,3 +1131,5 @@ function idf_first_existing_column(mysqli $conn, string $table, array $candidate
 }
 
 idf_ensure_status_schema($conn);
+require_once __DIR__ . '/../idf_positions_schema.php';
+idf_ensure_idf_positions_capacity_columns($conn);

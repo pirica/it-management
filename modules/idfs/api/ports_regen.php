@@ -11,7 +11,7 @@ if ($position_id <= 0) {
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT p.port_count, p.id, p.equipment_id, p.switch_port_numbering_layout_id, i.company_id, i.id AS idf_id,
+    "SELECT p.rj45_count, p.sfp_count, p.id, p.equipment_id, p.switch_port_numbering_layout_id, i.company_id, i.id AS idf_id,
             COALESCE(e.hostname, '') AS equipment_hostname
      FROM idf_positions p
      JOIN idfs i ON i.id=p.idf_id
@@ -34,7 +34,8 @@ if (!$row || (int)$row['company_id'] !== $company_id) {
     idf_fail('Not found', 404);
 }
 
-$count = (int)$row['port_count'];
+$count = (int)($row['rj45_count'] ?? 0);
+$sfpCount = (int)($row['sfp_count'] ?? 0);
 $equipmentIdRaw = trim((string)($row['equipment_id'] ?? ''));
 $equipmentId = ctype_digit($equipmentIdRaw) ? (int)$equipmentIdRaw : 0;
 $idfId = (int)($row['idf_id'] ?? 0);
@@ -184,6 +185,19 @@ if ($equipmentId > 0) {
             }
         }
     }
+} elseif ($sfpCount > 0) {
+    $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, 'sfp', 'sfp');
+    if ($fiberTypeId > 0) {
+        for ($fiberPortNo = 1; $fiberPortNo <= $sfpCount; $fiberPortNo++) {
+            $fiberPortKey = $fiberTypeId . ':' . $fiberPortNo;
+            if (!isset($fiberPortsToInsert[$fiberPortKey])) {
+                $fiberPortsToInsert[$fiberPortKey] = [
+                    'port_no' => $fiberPortNo,
+                    'port_type' => $fiberTypeId,
+                ];
+            }
+        }
+    }
 }
 if ($managementId <= 0) {
     $stmtUnmanaged = mysqli_prepare(
@@ -214,7 +228,7 @@ if (!empty($fiberPortsToInsert)) {
 }
 
 if (empty($portRowsToInsert)) {
-    idf_fail('This device has port_count=0 and no SFP/SFP+ ports configured');
+    idf_fail('This device has rj45_count=0 and no SFP/SFP+ ports configured');
 }
 
 mysqli_begin_transaction($conn);
