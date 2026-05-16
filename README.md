@@ -46,6 +46,7 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 - Equipment — Manage IT equipment
 - IDFs — Rack layout, positions, ports, and cable links
+- IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment
 - Rack planner — Visual rack elevation and component placement
 - Printers — Track printers and supplies
 - Workstations — Manage workstations

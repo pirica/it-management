@@ -36,6 +36,15 @@ function itm_sidebar_base_structure() {
             ],
         ],
         [
+            'id' => 'ipam',
+            'title' => '🌐 IPAM',
+            'items' => [
+                ['id' => 'vlans', 'label' => '🏷️ VLANs', 'href' => 'modules/vlans/', 'match_dir' => 'vlans'],
+                ['id' => 'ip_subnets', 'label' => '🧭 IP Subnets', 'href' => 'modules/ip_subnets/', 'match_dir' => 'ip_subnets'],
+                ['id' => 'ip_addresses', 'label' => '📍 IP Addresses', 'href' => 'modules/ip_addresses/', 'match_dir' => 'ip_addresses'],
+            ],
+        ],
+        [
             'id' => 'employee',
             'title' => '👤 Employee',
             'items' => [
