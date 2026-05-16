@@ -947,6 +947,30 @@ foreach ($ports as $p) {
 }
 
 $destinationPorts = [];
+$destinationIdfId = (int)($pos['idf_id'] ?? 0);
+if ($destinationIdfId > 0 && $company_id > 0) {
+    // Why: Link modal lists ports from every rack position in this IDF; materialize peers (e.g. patch panel SFP) before building DESTINATION_PORTS.
+    $stmtPeerPositions = mysqli_prepare(
+        $conn,
+        "SELECT p.id
+         FROM idf_positions p
+         INNER JOIN idfs i ON i.id = p.idf_id AND i.company_id = ?
+         WHERE p.idf_id = ?"
+    );
+    if ($stmtPeerPositions) {
+        mysqli_stmt_bind_param($stmtPeerPositions, 'ii', $company_id, $destinationIdfId);
+        mysqli_stmt_execute($stmtPeerPositions);
+        $resPeerPositions = mysqli_stmt_get_result($stmtPeerPositions);
+        while ($resPeerPositions && ($peerPositionRow = mysqli_fetch_assoc($resPeerPositions))) {
+            $peerPositionId = (int)($peerPositionRow['id'] ?? 0);
+            if ($peerPositionId > 0) {
+                idf_ensure_ports_for_position($conn, $company_id, $peerPositionId);
+            }
+        }
+        mysqli_stmt_close($stmtPeerPositions);
+    }
+}
+
 $stmtDestinationPorts = mysqli_prepare(
     $conn,
     "SELECT
@@ -968,8 +992,8 @@ $stmtDestinationPorts = mysqli_prepare(
             WHEN EXISTS (
                 SELECT 1
                 FROM idf_links l
-                WHERE l.port_id_a = pr.id
-                   OR l.port_id_b = pr.id
+                WHERE l.company_id = pr.company_id
+                  AND (l.port_id_a = pr.id OR l.port_id_b = pr.id)
             ) THEN 1
             ELSE 0
         END AS is_linked
@@ -978,10 +1002,7 @@ $stmtDestinationPorts = mysqli_prepare(
        ON " . itm_idf_positions_resolve_join_sql('pr', 'p') . "
      JOIN idfs i ON i.id = p.idf_id
      JOIN it_locations l ON l.id = i.location_id
-     LEFT JOIN switch_ports sp_dest
-       ON sp_dest.company_id = pr.company_id
-      AND sp_dest.equipment_id = p.equipment_id
-      AND sp_dest.port_number = pr.port_no
+     " . itm_idf_destination_switch_ports_join_sql('pr', 'p') . "
      LEFT JOIN switch_status ss
        ON ss.id = pr.status_id
       AND ss.company_id = pr.company_id
@@ -991,8 +1012,11 @@ $stmtDestinationPorts = mysqli_prepare(
      LEFT JOIN switch_port_types spt
        ON spt.id = pr.port_type
       AND spt.company_id = pr.company_id
+     LEFT JOIN switch_port_types spt_any
+       ON spt_any.id = pr.port_type
      LEFT JOIN switch_port_types spt_sp
        ON spt_sp.company_id = pr.company_id
+      AND sp_dest.id IS NOT NULL
       AND (
             spt_sp.id = sp_dest.port_type
             OR spt_sp.type = sp_dest.port_type
@@ -1019,7 +1043,8 @@ if ($stmtDestinationPorts) {
             'position_no' => (int)($row['position_no'] ?? 0),
             'device_name' => (string)($row['device_name'] ?? ''),
             'device_type' => (string)($row['device_type'] ?? ''),
-            'equipment_id' => isset($row['equipment_id']) ? (int)$row['equipment_id'] : 0,
+            'equipment_id' => idf_parse_linked_equipment_id($row['equipment_id'] ?? ''),
+            'equipment_asset_id' => trim((string)($row['equipment_id'] ?? '')),
             'status_label' => (string)($row['status_label'] ?? 'Unknown'),
             'color_name' => (string)($row['color_name'] ?? 'Gray'),
             'color_hex' => (string)($row['color_hex'] ?? '#808080'),
@@ -2576,6 +2601,23 @@ function filterLinkCompatibleDestinations(source, destinations) {
     );
 }
 
+function isEligibleCableLinkDestination(port, source) {
+    if (!port || !source) {
+        return false;
+    }
+    if (Number(port.id) <= 0 || Number(port.id) === Number(source.id) || port.is_linked) {
+        return false;
+    }
+    if (Number(port.position_id) > 0 && Number(port.position_id) === Number(POSITION_ID)) {
+        return false;
+    }
+    const positionEquipId = Number(POSITION_EQUIPMENT_ID);
+    if (positionEquipId > 0 && Number(port.equipment_id) === positionEquipId) {
+        return false;
+    }
+    return Number(port.position_id) > 0;
+}
+
 function buildSelectHtml(name, optionsMap, selectedValue, noneLabel, addableConfigKey) {
     const selectedNormalized = coercePositiveSelectValue(selectedValue);
     let html = `<select class="input" name="${escapeSelectOptionHtml(name)}">`;
@@ -2657,7 +2699,8 @@ function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
     if (!selectEl || !source) return;
     const currentOtherPortId = Number(source.other_port_id || 0);
     const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) =>
-        Number(p.id) !== Number(source.id) && (!p.is_linked || (allowLinkedCurrent && Number(p.id) === currentOtherPortId))
+        (allowLinkedCurrent && Number(p.id) === currentOtherPortId)
+            || (isEligibleCableLinkDestination(p, source) && (!p.is_linked || Number(p.id) === currentOtherPortId))
     )));
     selectEl.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
@@ -3019,16 +3062,9 @@ async function openLinkModal(portId) {
     }
     const f = document.getElementById('linkForm');
     const destinationSelect = f.port_id_b;
-    const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) => {
-        if (Number(p.id) === Number(source.id) || p.is_linked) {
-            return false;
-        }
-        // Why: destination list is for patch links to a different rack asset, not another port on this position.
-        if (Number(POSITION_EQUIPMENT_ID) > 0 && Number(p.equipment_id) === Number(POSITION_EQUIPMENT_ID)) {
-            return false;
-        }
-        return Number(p.equipment_id) > 0;
-    })));
+    const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) =>
+        isEligibleCableLinkDestination(p, source)
+    )));
 
     destinationSelect.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
@@ -3056,16 +3092,10 @@ async function openLinkModal(portId) {
         option.value = '';
         option.disabled = true;
         const sourceFamily = portTypeLinkFamily(source.port_type_label || 'RJ45');
-        const compatibleOnOtherEquipment = DESTINATION_PORTS.filter((p) => {
-            if (Number(p.id) === Number(source.id) || p.is_linked) {
-                return false;
-            }
-            if (Number(POSITION_EQUIPMENT_ID) > 0 && Number(p.equipment_id) === Number(POSITION_EQUIPMENT_ID)) {
-                return false;
-            }
-            return Number(p.equipment_id) > 0
-                && portsAreLinkCompatible(source.port_type_label || 'RJ45', p.port_type_label || 'RJ45');
-        });
+        const compatibleOnOtherEquipment = DESTINATION_PORTS.filter((p) =>
+            isEligibleCableLinkDestination(p, source)
+            && portsAreLinkCompatible(source.port_type_label || 'RJ45', p.port_type_label || 'RJ45')
+        );
         option.textContent = compatibleOnOtherEquipment.length
             ? 'All matching ports on other equipment are already linked'
             : (sourceFamily === 'fiber'
