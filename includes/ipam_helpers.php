@@ -160,6 +160,73 @@ function itm_ipam_can_bulk_generate_subnet(int $prefixLength): bool
 }
 
 /**
+ * Why: Subnet view should show the same totals/range users see in external CIDR calculators.
+ *
+ * @return array<string, mixed>|null
+ */
+function itm_ipam_subnet_statistics(string $networkIp, int $prefixLength): ?array
+{
+    if (!itm_ipam_is_valid_ipv4($networkIp) || $prefixLength < 0 || $prefixLength > 32) {
+        return null;
+    }
+
+    $networkLong = ip2long($networkIp);
+    if ($networkLong === false) {
+        return null;
+    }
+
+    if ($prefixLength < 32) {
+        $mask = (0xFFFFFFFF << (32 - $prefixLength)) & 0xFFFFFFFF;
+        $networkLong = $networkLong & $mask;
+    }
+
+    $networkIpNormalized = long2ip($networkLong);
+    if ($networkIpNormalized === false) {
+        return null;
+    }
+
+    $totalAddresses = (int)(2 ** (32 - $prefixLength));
+    $broadcastLong = $networkLong + $totalAddresses - 1;
+    $broadcastIp = long2ip($broadcastLong);
+    if ($broadcastIp === false) {
+        return null;
+    }
+
+    if ($prefixLength >= 31) {
+        $usableHosts = $totalAddresses;
+        $firstUsable = $networkIpNormalized;
+        $lastUsable = $broadcastIp;
+    } else {
+        $usableHosts = max(0, $totalAddresses - 2);
+        $firstUsable = $usableHosts > 0 ? long2ip($networkLong + 1) : '';
+        $lastUsable = $usableHosts > 0 ? long2ip($broadcastLong - 1) : '';
+    }
+
+    if ($firstUsable === false) {
+        $firstUsable = '';
+    }
+    if ($lastUsable === false) {
+        $lastUsable = '';
+    }
+
+    $usableRange = ($firstUsable !== '' && $lastUsable !== '')
+        ? $firstUsable . ' → ' . $lastUsable
+        : '—';
+
+    return [
+        'cidr' => $networkIpNormalized . '/' . $prefixLength,
+        'total_ips' => $totalAddresses,
+        'usable_ips' => $usableHosts,
+        'network' => $networkIpNormalized,
+        'broadcast' => $broadcastIp,
+        'first_usable' => (string)$firstUsable,
+        'last_usable' => (string)$lastUsable,
+        'usable_range' => $usableRange,
+        'bulk_generate_cap' => itm_ipam_subnet_bulk_generate_max_hosts($prefixLength),
+    ];
+}
+
+/**
  * Why: Bulk generation skips network/broadcast and caps very large prefixes.
  */
 function itm_ipam_host_addresses_for_subnet(string $networkIp, int $prefixLength, int $maxHosts = 512): array

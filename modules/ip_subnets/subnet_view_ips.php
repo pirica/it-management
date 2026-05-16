@@ -47,12 +47,12 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_fetch_subnet_addresses')) 
         </div>
         </div>
     <p style="margin:0 0 12px;color:#57606a;">
-        <?php echo (int)$itmSubnetAddressTotal; ?> total
+        <strong><?php echo number_format((int)$itmSubnetAddressTotal); ?></strong> IP record(s) stored in this subnet
         <?php if ($itmSubnetAddressTotal > count($itmSubnetAddressRows)): ?>
-            (showing first <?php echo count($itmSubnetAddressRows); ?>)
+            (preview shows first <?php echo count($itmSubnetAddressRows); ?>)
         <?php endif; ?>
-        <?php if ($itmSubnetBulkIsCapped): ?>
-            — bulk generate creates up to <?php echo (int)$itmSubnetBulkMaxHosts; ?> host IPs (first usable addresses).
+        <?php if ($itmSubnetBulkIsCapped && $itmSubnetBulkHostTotal > 0): ?>
+            — CIDR has <?php echo number_format($itmSubnetBulkHostTotal); ?> usable addresses; each generate adds up to <?php echo number_format((int)$itmSubnetBulkMaxHosts); ?> rows starting at the network + 1.
         <?php endif; ?>
     </p>
     <div style="overflow:auto;">
