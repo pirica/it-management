@@ -319,6 +319,7 @@ try {
     $notes_val = !empty($src['notes']) ? (string)$src['notes'] : null;
     $equip_val = !empty($src['equipment_id']) ? (string)$src['equipment_id'] : null;
     $device_type = (int)$src['device_type'];
+    $device_type_name = idf_lookup_idf_device_type_name($conn, $company_id, $device_type);
     $device_name = (string)$device_name;
     $rj45_count = (int)($src['rj45_count'] ?? $src['port_count'] ?? 0);
     $sfp_count = (int)($src['sfp_count'] ?? 0);
@@ -326,10 +327,13 @@ try {
     if ($actualRj45PortCount > 0) {
         $rj45_count = $actualRj45PortCount;
     }
-    $layout_val = (int)($src['effective_switch_port_numbering_layout_id'] ?? 0);
-    if ($layout_val <= 0) {
-        $layout_val = (int)($src['switch_port_numbering_layout_id'] ?? 0);
-    }
+    $layout_val = idf_resolve_position_switch_port_numbering_layout_id(
+        $conn,
+        $company_id,
+        $device_type_name,
+        $src['effective_switch_port_numbering_layout_id'] ?? 0,
+        $src['switch_port_numbering_layout_id'] ?? 0
+    );
     $effectiveSwitchRj45Id = (int)($src['effective_switch_rj45_id'] ?? 0);
 
     // If this is a linked equipment row, clone equipment + switch ports so copied position gets a new Asset ID.
@@ -374,6 +378,12 @@ try {
             }
             if ($layout_val > 0) {
                 $newEquipment['switch_port_numbering_layout_id'] = $layout_val;
+            } elseif (!empty($newEquipment['switch_port_numbering_layout_id'])) {
+                $newEquipment['switch_port_numbering_layout_id'] = idf_normalize_switch_port_numbering_layout_id(
+                    $conn,
+                    $company_id,
+                    $newEquipment['switch_port_numbering_layout_id']
+                );
             }
             // Keep nullable-unique fields safe for cloned records.
             $newEquipment['serial_number'] = null;
