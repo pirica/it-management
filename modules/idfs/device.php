@@ -50,7 +50,15 @@ function idf_sanitize_return_to(string $raw): string {
     return '';
 }
 
-$return_to = idf_sanitize_return_to((string)($_GET['return_to'] ?? ''));
+function idf_resolve_return_to(int $returnIdfId, string $rawReturnTo): string {
+    if ($returnIdfId > 0) {
+        return 'view.php?id=' . $returnIdfId;
+    }
+    return idf_sanitize_return_to($rawReturnTo);
+}
+
+$return_idf_id = (int)($_GET['return_idf'] ?? 0);
+$return_to = idf_resolve_return_to($return_idf_id, (string)($_GET['return_to'] ?? ''));
 
 function idf_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
@@ -3471,15 +3479,32 @@ document.addEventListener('DOMContentLoaded', () => {
     wireIdfDeviceAddableSelects(document.getElementById('portForm'));
     wireIdfDeviceAddableSelects(document.getElementById('linkForm'));
 
+    // Why: Prefer return_idf=4 over return_to=view.php%3Fid%3D4 so rack navigation URLs stay readable.
+    (function canonicalizeDevicePageUrl() {
+        const pageUrl = new URL(window.location.href);
+        let changed = false;
+        const legacyReturnTo = String(pageUrl.searchParams.get('return_to') || '').trim();
+        if (legacyReturnTo !== '' && !pageUrl.searchParams.has('return_idf')) {
+            const legacyMatch = legacyReturnTo.match(/^view\.php\?id=(\d+)/i);
+            if (legacyMatch) {
+                pageUrl.searchParams.set('return_idf', legacyMatch[1]);
+                pageUrl.searchParams.delete('return_to');
+                changed = true;
+            }
+        }
+        if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0 || AUTO_OPEN_LINK_PORT_NO > 0 || AUTO_OPEN_EDIT_PORT_NO > 0) {
+            pageUrl.searchParams.delete('open_link_port_id');
+            pageUrl.searchParams.delete('open_edit_port_id');
+            pageUrl.searchParams.delete('open_link_port_no');
+            pageUrl.searchParams.delete('open_edit_port_no');
+            changed = true;
+        }
+        if (changed) {
+            window.history.replaceState({}, document.title, pageUrl.toString());
+        }
+    })();
+
     // Why: Once the deep-link modal is consumed, removing query flags prevents a stale auto-open after save/reload.
-    if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0 || AUTO_OPEN_LINK_PORT_NO > 0 || AUTO_OPEN_EDIT_PORT_NO > 0) {
-        const deepLinkUrl = new URL(window.location.href);
-        deepLinkUrl.searchParams.delete('open_link_port_id');
-        deepLinkUrl.searchParams.delete('open_edit_port_id');
-        deepLinkUrl.searchParams.delete('open_link_port_no');
-        deepLinkUrl.searchParams.delete('open_edit_port_no');
-        window.history.replaceState({}, document.title, deepLinkUrl.toString());
-    }
 
     // Why: IDF rack clicks route to this page with an explicit action so users land directly in the expected modal.
     if (AUTO_OPEN_LINK_PORT_ID > 0) {

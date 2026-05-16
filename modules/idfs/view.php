@@ -1050,7 +1050,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
 
                                         <?php if ($pos): ?>
-                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>&amp;return_to=<?php echo urlencode('view.php?id=' . (int)$idf_id); ?>">View</a>
+                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>&amp;return_idf=<?php echo (int)$idf_id; ?>">View</a>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Edit</button>
                                             <?php
                                             $idfEquipmentIdRaw = isset($pos['equipment_id']) ? trim((string)$pos['equipment_id']) : '';
@@ -1348,10 +1348,10 @@ function openCopy(){ document.getElementById('idfCopyBackdrop').style.display = 
 
 function buildDeviceEditorUrl(positionId, portId, action, portNo) {
     const url = new URL('device.php', window.location.href);
-    // Why: resolving device.php against an existing device URL inherits stale query params (duplicate return_to).
+    // Why: resolving device.php against an existing device URL inherits stale query params (duplicate return_idf).
     url.search = '';
     url.searchParams.set('position_id', String(positionId));
-    url.searchParams.set('return_to', `view.php?id=${IDF_ID}`);
+    url.searchParams.set('return_idf', String(IDF_ID));
     if (action === 'link' && portId > 0) {
         url.searchParams.set('open_link_port_id', String(portId));
     } else if (action === 'link' && portNo > 0) {
