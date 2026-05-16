@@ -98,6 +98,9 @@ $normalizedPortTypeName = preg_replace('/[^a-z0-9]+/i', '', strtolower((string)$
 $isFiberPortType = strpos($normalizedPortTypeName, 'sfp') !== false;
 
 $label = trim((string)($data['label'] ?? ''));
+if ($label === '0' || strcasecmp($label, 'null') === 0) {
+    $label = '';
+}
 $connected_to = trim((string)($data['connected_to'] ?? ''));
 $vlan_id = idf_resolve_vlan_id($conn, $company_id, $data['vlan_id'] ?? ($data['vlan'] ?? ''));
 $speedLookupTable = $isFiberPortType ? 'equipment_fiber' : 'rj45_speed';

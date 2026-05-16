@@ -15,6 +15,9 @@ if ($equipmentIdRaw !== '' && $equipmentId === 0 && preg_match('/^[0-9]{4}-[0-9]
 $switchPortId = isset($data['switch_port_id']) && $data['switch_port_id'] !== null ? (int)$data['switch_port_id'] : 0;
 $cableColorId = isset($data['cable_color_id']) ? (int)$data['cable_color_id'] : 0;
 $label = trim((string)($data['cable_label'] ?? ''));
+if ($label === '0' || strcasecmp($label, 'null') === 0) {
+    $label = '';
+}
 $notes = trim((string)($data['notes'] ?? ''));
 $status_id = idf_resolve_status_id($conn, $company_id, $data['status_id'] ?? ($data['status'] ?? ''), 'Used');
 $linkedEquipmentPort = trim((string)($data['linked_equipment_port'] ?? ''));
