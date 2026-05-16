@@ -98,6 +98,25 @@ if ($portTypeName === '') {
 $normalizedPortTypeName = preg_replace('/[^a-z0-9]+/i', '', strtolower((string)$portTypeName));
 $isFiberPortType = strpos($normalizedPortTypeName, 'sfp') !== false;
 
+$idfJsonPositiveInt = static function (array $payload, string $key): int {
+    if (!array_key_exists($key, $payload)) {
+        return 0;
+    }
+    $raw = $payload[$key];
+    if ($raw === null || $raw === '') {
+        return 0;
+    }
+    if (!is_numeric((string)$raw)) {
+        return 0;
+    }
+    $value = (int)$raw;
+    return $value > 0 ? $value : 0;
+};
+
+$fiber_port_id = $idfJsonPositiveInt($data, 'fiber_port_id');
+$fiber_patch_id = $idfJsonPositiveInt($data, 'fiber_patch_id');
+$fiber_rack_id = $idfJsonPositiveInt($data, 'fiber_rack_id');
+
 $label = trim((string)($data['label'] ?? ''));
 if ($label === '0' || strcasecmp($label, 'null') === 0) {
     $label = '';
@@ -127,6 +146,10 @@ if ($speedInputString !== '' && $speedInputString !== '0') {
         }
     }
 }
+if ($isFiberPortType && $fiber_port_id > 0 && ($speed_id === null || (int)$speed_id <= 0)) {
+    // Why: Edit Port stores SFP speed in the main speed field while the API also accepts fiber_port_id.
+    $speed_id = $fiber_port_id;
+}
 $rawPoeInput = $data['poe_id'] ?? ($data['poe'] ?? '');
 $poeInputString = trim((string)$rawPoeInput);
 $poe_id = null;
@@ -151,9 +174,6 @@ if ($managementInputString !== '') {
     $resolvedManagementId = idf_resolve_named_lookup_id($conn, $company_id, 'equipment_environment', 'name', $rawManagementInput);
     $portManagementId = $resolvedManagementId !== null ? (int)$resolvedManagementId : 0;
 }
-$fiber_port_id = isset($data['fiber_port_id']) && is_numeric((string)$data['fiber_port_id']) ? (int)$data['fiber_port_id'] : 0;
-$fiber_patch_id = isset($data['fiber_patch_id']) && is_numeric((string)$data['fiber_patch_id']) ? (int)$data['fiber_patch_id'] : 0;
-$fiber_rack_id = isset($data['fiber_rack_id']) && is_numeric((string)$data['fiber_rack_id']) ? (int)$data['fiber_rack_id'] : 0;
 $to_idf_id = isset($data['to_idf_id']) && is_numeric((string)$data['to_idf_id']) ? (int)$data['to_idf_id'] : 0;
 $to_rack_id = isset($data['to_rack_id']) && is_numeric((string)$data['to_rack_id']) ? (int)$data['to_rack_id'] : 0;
 $to_location_id = isset($data['to_location_id']) && is_numeric((string)$data['to_location_id']) ? (int)$data['to_location_id'] : 0;
@@ -242,42 +262,43 @@ $sql .= "
         LIMIT 1";
 
 $stmtUpd = mysqli_prepare($conn, $sql);
-if ($stmtUpd) {
-    $bindTypes = 'isisii';
-    $bindValues = [$port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val];
-    if ($hasRj45SpeedIdColumn) {
-        $bindTypes .= 'i';
-        $bindValues[] = $rj45SpeedVal;
-    }
-    if ($hasFiberPatchIdColumn) {
-        $bindTypes .= 'i';
-        $bindValues[] = $fiber_patch_id;
-    }
-    if ($hasFiberRackIdColumn) {
-        $bindTypes .= 'i';
-        $bindValues[] = $fiber_rack_id;
-    }
-    if ($hasToIdfIdColumn) {
-        $bindTypes .= 'iii';
-        $bindValues[] = $to_idf_id;
-        $bindValues[] = $to_rack_id;
-        $bindValues[] = $to_location_id;
-    }
-    $bindTypes .= 'iiiisssi';
-    $bindValues[] = $poe_val;
-    $bindValues[] = $fiberPortsNumberVal;
-    $bindValues[] = $layoutVal;
-    $bindValues[] = $portManagementId;
-    $bindValues[] = $cable_color_name;
-    $bindValues[] = $cable_hex_color;
-    $bindValues[] = $notes_val;
-    $bindValues[] = $port_id;
-    mysqli_stmt_bind_param($stmtUpd, $bindTypes, ...$bindValues);
-    if (!mysqli_stmt_execute($stmtUpd)) {
-        idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
-    }
-    mysqli_stmt_close($stmtUpd);
+if (!$stmtUpd) {
+    idf_fail('DB error preparing port update: ' . mysqli_error($conn), 500);
 }
+$bindTypes = 'isisii';
+$bindValues = [$port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val];
+if ($hasRj45SpeedIdColumn) {
+    $bindTypes .= 'i';
+    $bindValues[] = $rj45SpeedVal;
+}
+if ($hasFiberPatchIdColumn) {
+    $bindTypes .= 'i';
+    $bindValues[] = $fiber_patch_id;
+}
+if ($hasFiberRackIdColumn) {
+    $bindTypes .= 'i';
+    $bindValues[] = $fiber_rack_id;
+}
+if ($hasToIdfIdColumn) {
+    $bindTypes .= 'iii';
+    $bindValues[] = $to_idf_id;
+    $bindValues[] = $to_rack_id;
+    $bindValues[] = $to_location_id;
+}
+$bindTypes .= 'iiiisssi';
+$bindValues[] = $poe_val;
+$bindValues[] = $fiberPortsNumberVal;
+$bindValues[] = $layoutVal;
+$bindValues[] = $portManagementId;
+$bindValues[] = $cable_color_name;
+$bindValues[] = $cable_hex_color;
+$bindValues[] = $notes_val;
+$bindValues[] = $port_id;
+mysqli_stmt_bind_param($stmtUpd, $bindTypes, ...$bindValues);
+if (!mysqli_stmt_execute($stmtUpd)) {
+    idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
+}
+mysqli_stmt_close($stmtUpd);
 
 if ($linkedEquipmentId > 0) {
     $stmtEquipmentSync = mysqli_prepare(
@@ -426,22 +447,54 @@ if ($stmtPeerPorts) {
 $linkedPeerPortIds = array_values(array_unique($linkedPeerPortIds));
 
 if ($linkedPeerPortIds) {
-    $stmtPeerPortUpdate = mysqli_prepare(
-        $conn,
-        "UPDATE idf_ports
+    $peerPortSql = "UPDATE idf_ports
          SET status_id = ?,
              cable_color = ?,
-             hex_color = ?
-         WHERE id = ?
-         LIMIT 1"
-    );
-    if ($stmtPeerPortUpdate) {
-        foreach ($linkedPeerPortIds as $peerPortId) {
-            mysqli_stmt_bind_param($stmtPeerPortUpdate, 'issi', $status_id, $cable_color_name, $cable_hex_color, $peerPortId);
-            mysqli_stmt_execute($stmtPeerPortUpdate);
-        }
-        mysqli_stmt_close($stmtPeerPortUpdate);
+             hex_color = ?,
+             vlan_id = NULLIF(?, 0),
+             speed_id = NULLIF(?, 0)";
+    if ($hasRj45SpeedIdColumn) {
+        $peerPortSql .= ",
+             rj45_speed_id = NULLIF(?, 0)";
     }
+    if ($hasFiberPatchIdColumn) {
+        $peerPortSql .= ",
+             fiber_patch_id = NULLIF(?, 0)";
+    }
+    if ($hasFiberRackIdColumn) {
+        $peerPortSql .= ",
+             fiber_rack_id = NULLIF(?, 0)";
+    }
+    $peerPortSql .= "
+         WHERE id = ?
+         LIMIT 1";
+    $stmtPeerPortUpdate = mysqli_prepare($conn, $peerPortSql);
+    if (!$stmtPeerPortUpdate) {
+        idf_fail('DB error preparing peer port update: ' . mysqli_error($conn), 500);
+    }
+    foreach ($linkedPeerPortIds as $peerPortId) {
+        $peerBindTypes = 'issii';
+        $peerBindValues = [$status_id, $cable_color_name, $cable_hex_color, $vlan_val, $speed_val];
+        if ($hasRj45SpeedIdColumn) {
+            $peerBindTypes .= 'i';
+            $peerBindValues[] = $rj45SpeedVal;
+        }
+        if ($hasFiberPatchIdColumn) {
+            $peerBindTypes .= 'i';
+            $peerBindValues[] = $fiber_patch_id;
+        }
+        if ($hasFiberRackIdColumn) {
+            $peerBindTypes .= 'i';
+            $peerBindValues[] = $fiber_rack_id;
+        }
+        $peerBindTypes .= 'i';
+        $peerBindValues[] = $peerPortId;
+        mysqli_stmt_bind_param($stmtPeerPortUpdate, $peerBindTypes, ...$peerBindValues);
+        if (!mysqli_stmt_execute($stmtPeerPortUpdate)) {
+            idf_fail('DB error updating linked peer port: ' . mysqli_stmt_error($stmtPeerPortUpdate), 500);
+        }
+    }
+    mysqli_stmt_close($stmtPeerPortUpdate);
 
     $stmtPeerSwitchSync = mysqli_prepare(
         $conn,
