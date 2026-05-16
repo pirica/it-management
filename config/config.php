@@ -236,6 +236,18 @@ if (isset($_SESSION['user_id']) && !isset($_SESSION['company_id']) && !$isReadOn
 
 $company_id = $_SESSION['company_id'] ?? 0;
 
+if ($company_id > 0 && isset($conn) && $conn instanceof mysqli) {
+    $itmIpamHelpersPath = ROOT_PATH . 'includes/ipam_helpers.php';
+    if (is_file($itmIpamHelpersPath)) {
+        require_once $itmIpamHelpersPath;
+        try {
+            itm_ipam_ensure_legacy_vlan_subnets_migrated($conn, (int)$company_id);
+        } catch (Throwable $itmIpamMigrateError) {
+            error_log('IPAM VLAN subnet migration skipped: ' . $itmIpamMigrateError->getMessage());
+        }
+    }
+}
+
 // Load UI preferences and fall back safely if configuration bootstrap fails.
 try {
     $ui_config = itm_get_ui_configuration($conn, $company_id);

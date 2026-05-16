@@ -697,10 +697,41 @@ if ($crud_action === 'delete') {
     exit;
 }
 
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && $crud_action === 'view'
+    && isset($_POST['generate_subnet_ips'])
+) {
+    cr_require_valid_csrf_token();
+    $subnetId = (int)($_POST['subnet_id'] ?? 0);
+    $createdCount = 0;
+    $skippedCount = 0;
+    $generateError = '';
+
+    if ($subnetId > 0 && function_exists('itm_ipam_bulk_generate_subnet_ips')) {
+        $ok = itm_ipam_bulk_generate_subnet_ips($conn, (int)$company_id, $subnetId, $createdCount, $skippedCount, $generateError);
+        if ($ok) {
+            $_SESSION['crud_success'] = 'Generated ' . (int)$createdCount . ' IP(s); skipped ' . (int)$skippedCount . ' existing.';
+        } else {
+            $_SESSION['crud_error'] = $generateError !== '' ? $generateError : 'Unable to generate subnet IPs.';
+        }
+    } else {
+        $_SESSION['crud_error'] = 'Invalid subnet selected for bulk generate.';
+    }
+
+    header('Location: ' . $modulePath . '/view.php?id=' . max(1, $subnetId));
+    exit;
+}
+
 $errors = [];
 if (!empty($_SESSION['crud_error'])) {
     $errors[] = (string)$_SESSION['crud_error'];
     unset($_SESSION['crud_error']);
+}
+$crudSuccessMessage = '';
+if (!empty($_SESSION['crud_success'])) {
+    $crudSuccessMessage = (string)$_SESSION['crud_success'];
+    unset($_SESSION['crud_success']);
 }
 $data = [];
 foreach ($fieldColumns as $col) {
@@ -1160,6 +1191,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- READ-ONLY VIEW -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
+                <?php if ($crudSuccessMessage !== ''): ?>
+                    <div class="alert alert-success"><?php echo sanitize($crudSuccessMessage); ?></div>
+                <?php endif; ?>
                 <div class="card">
                     <table>
                         <tbody>
@@ -1176,6 +1210,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
                     </p>
                 </div>
+                <?php require __DIR__ . '/subnet_view_ips.php'; ?>
             <?php endif; ?>
         </div>
     </div>
