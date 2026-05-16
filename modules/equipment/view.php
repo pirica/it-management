@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once __DIR__ . '/../../includes/ipam_helpers.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 function equipment_view_table_has_column(mysqli $conn, string $table, string $column): bool
@@ -53,6 +54,10 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+$itmEquipmentIpAssignments = [];
+if ($item && $id > 0 && function_exists('itm_ipam_fetch_equipment_ip_assignments')) {
+    $itmEquipmentIpAssignments = itm_ipam_fetch_equipment_ip_assignments($conn, (int)$company_id, $id);
+}
 $equipmentViewBackPath = (string)($equipmentViewBackPath ?? 'index.php');
 $equipmentViewEditPath = (string)($equipmentViewEditPath ?? 'edit.php');
 $equipmentTypeNameFilter = trim((string)($equipmentTypeNameFilter ?? ''));
@@ -203,5 +208,40 @@ function equipment_field_matches_context($key, $item) {
 </tbody></table>
 <p style="margin-top:16px;"><a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
 </div>
+
+<?php if (function_exists('itm_ipam_table_exists') && itm_ipam_table_exists($conn, 'ip_addresses')): ?>
+<div class="card" style="margin-top:20px;">
+    <h2 style="margin-top:0;">IPAM assignments</h2>
+    <p style="margin:0 0 12px;color:#57606a;">Read-only links to IP address records for this equipment.</p>
+    <div style="overflow:auto;">
+        <table>
+            <thead>
+            <tr>
+                <th>IP</th>
+                <th>Status</th>
+                <th>Subnet</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php if ($itmEquipmentIpAssignments): ?>
+                <?php foreach ($itmEquipmentIpAssignments as $itmEquipmentIpRow): ?>
+                    <tr>
+                        <td><?php echo sanitize((string)($itmEquipmentIpRow['ip_text'] ?? '')); ?></td>
+                        <td><?php echo sanitize(ucfirst((string)($itmEquipmentIpRow['status'] ?? ''))); ?></td>
+                        <td><?php echo sanitize((string)($itmEquipmentIpRow['subnet_cidr'] ?? '')); ?></td>
+                        <td>
+                            <a class="btn btn-sm" href="../ip_addresses/view.php?id=<?php echo (int)($itmEquipmentIpRow['id'] ?? 0); ?>">View IP record</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr><td colspan="4" style="text-align:center;">No IPAM assignments linked to this equipment.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
 <?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script></body></html>
