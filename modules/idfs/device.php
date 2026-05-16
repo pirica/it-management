@@ -365,10 +365,11 @@ $stmtPorts = mysqli_prepare(
        COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
        COALESCE(NULLIF(pr_live.vlan_id, 0), NULLIF(pr.vlan_id, 0), NULLIF(sp_link.vlan_id, 0), NULLIF(l.equipment_vlan_id, 0), 0) AS effective_vlan_id,
        COALESCE(NULLIF(pr_live.rj45_speed_id, 0), NULLIF(sp_link.rj45_speed_id, 0), NULLIF(l.equipment_rj45_speed_id, 0), NULLIF({$rj45SpeedIdExpr}, 0), NULLIF(pr.speed_id, 0), 0) AS effective_rj45_speed_id,
-       COALESCE(NULLIF(pr_live.fiber_port_id, 0), NULLIF(sp_link.fiber_port_id, 0), NULLIF(l.equipment_fiber_port_id, 0), NULLIF(pr.speed_id, 0), 0) AS effective_fiber_port_id,
-       COALESCE(NULLIF(pr_live.fiber_patch_id, 0), NULLIF(sp_link.fiber_patch_id, 0), NULLIF(l.equipment_fiber_patch_id, 0), 0) AS effective_fiber_patch_id,
-       COALESCE(NULLIF(pr_live.fiber_rack_id, 0), NULLIF(sp_link.fiber_rack_id, 0), NULLIF(l.equipment_fiber_rack_id, 0), 0) AS effective_fiber_rack_id,
+       COALESCE(NULLIF(pr.fiber_port_id, 0), NULLIF(pr_live.fiber_port_id, 0), NULLIF(sp_link.fiber_port_id, 0), NULLIF(l.equipment_fiber_port_id, 0), NULLIF(pr.speed_id, 0), 0) AS effective_fiber_port_id,
+       COALESCE(NULLIF(pr.fiber_patch_id, 0), NULLIF(pr_live.fiber_patch_id, 0), NULLIF(sp_link.fiber_patch_id, 0), NULLIF(l.equipment_fiber_patch_id, 0), 0) AS effective_fiber_patch_id,
+       COALESCE(NULLIF(pr.fiber_rack_id, 0), NULLIF(pr_live.fiber_rack_id, 0), NULLIF(sp_link.fiber_rack_id, 0), NULLIF(l.equipment_fiber_rack_id, 0), 0) AS effective_fiber_rack_id,
        COALESCE(
+           NULLIF(pr.to_idf_id, 0),
            NULLIF(pr_live.to_idf_id, 0),
            NULLIF(sp_link.to_idf_id, 0),
            NULLIF(l.equipment_to_idf_id, 0),
@@ -377,6 +378,7 @@ $stmtPorts = mysqli_prepare(
            0
        ) AS effective_to_idf_id,
        COALESCE(
+           NULLIF(pr.to_rack_id, 0),
            NULLIF(pr_live.to_rack_id, 0),
            NULLIF(sp_link.to_rack_id, 0),
            NULLIF(l.equipment_to_rack_id, 0),
@@ -385,6 +387,7 @@ $stmtPorts = mysqli_prepare(
            0
        ) AS effective_to_rack_id,
        COALESCE(
+           NULLIF(pr.to_location_id, 0),
            NULLIF(pr_live.to_location_id, 0),
            NULLIF(sp_link.to_location_id, 0),
            NULLIF(l.equipment_to_location_id, 0),
@@ -486,7 +489,7 @@ $stmtPorts = mysqli_prepare(
         ON spt_any.id = pr.port_type
       LEFT JOIN switch_ports pr_live
         ON pr_live.company_id = pr.company_id
-       AND pr_live.equipment_id = p_local.equipment_id
+       AND " . itm_idf_position_numeric_equipment_match_sql('p_local', 'pr_live.equipment_id') . "
        AND pr_live.port_number = pr.port_no
        AND (
             CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -2284,6 +2287,8 @@ function collectPortEditSeed(portMeta, rowDataset) {
             normalizedType === 'sfp' ? row.speedId : ''
         ),
         fiber_speed_label: String(row.speed || ''),
+        fiber_patch_id: firstPositivePortId(portMeta && portMeta.fiber_patch_id, row.fiberPatchId),
+        fiber_rack_id: firstPositivePortId(portMeta && portMeta.fiber_rack_id, row.fiberRackId),
         port_type_label: portTypeLabel,
         cable_color_id: portMeta && portMeta.cable_color_id ? portMeta.cable_color_id : 0,
         cable_color_name: portMeta ? (portMeta.cable_color_name || portMeta.cable_color || '') : '',
@@ -2558,6 +2563,22 @@ async function openPortModal(portId) {
     );
     updatePortFormTypePresentation(portMeta);
     applyPortEditTextFields(form, editSeed);
+    const fiberPatchSelect = portFormControl(form, 'fiber_patch_id');
+    const fiberRackSelect = portFormControl(form, 'fiber_rack_id');
+    if (fiberPatchSelect) {
+        applySelectValueOrLabel(
+            fiberPatchSelect,
+            firstPositivePortId(editSeed.fiber_patch_id, portMeta && portMeta.fiber_patch_id),
+            ''
+        );
+    }
+    if (fiberRackSelect) {
+        applySelectValueOrLabel(
+            fiberRackSelect,
+            firstPositivePortId(editSeed.fiber_rack_id, portMeta && portMeta.fiber_rack_id),
+            ''
+        );
+    }
     wireIdfDeviceAddableSelects(form);
 
     document.getElementById('portBackdrop').style.display = 'flex';
