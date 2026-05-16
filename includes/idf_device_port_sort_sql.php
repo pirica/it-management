@@ -47,7 +47,22 @@ if (!function_exists('itm_idf_port_type_label_with_switch_sql')) {
      */
     function itm_idf_port_type_label_with_switch_sql(): string
     {
-        return "COALESCE(spt.type, spt_sp.type, 'RJ45')";
+        return "COALESCE(spt.type, spt_sp.type, spt_any.type, 'RJ45')";
+    }
+}
+
+if (!function_exists('itm_idf_destination_switch_ports_join_sql')) {
+
+    /**
+     * switch_ports fallback only when position equipment_id is a numeric FK (patch panels may use asset tokens).
+     */
+    function itm_idf_destination_switch_ports_join_sql(string $portAlias = 'pr', string $positionAlias = 'p'): string
+    {
+        return "LEFT JOIN switch_ports sp_dest
+       ON sp_dest.company_id = {$portAlias}.company_id
+      AND sp_dest.port_number = {$portAlias}.port_no
+      AND {$positionAlias}.equipment_id REGEXP '^[0-9]+$'
+      AND sp_dest.equipment_id = CAST({$positionAlias}.equipment_id AS UNSIGNED)";
     }
 }
 
