@@ -933,7 +933,9 @@ function idf_fetch_position_ports_simple(mysqli $conn, int $company_id, int $pos
                 COALESCE(pr.vlan_id, 0) AS effective_vlan_id,
                 COALESCE(pr.poe_id, 0) AS effective_poe_id,
                 COALESCE(pr.rj45_speed_id, 0) AS effective_rj45_speed_id,
-                COALESCE(pr.speed_id, 0) AS effective_fiber_port_id
+                COALESCE(pr.speed_id, 0) AS effective_fiber_port_id,
+                COALESCE(pr.fiber_patch_id, 0) AS effective_fiber_patch_id,
+                COALESCE(pr.fiber_rack_id, 0) AS effective_fiber_rack_id
          FROM idf_ports pr
          LEFT JOIN switch_port_types spt
            ON spt.id = pr.port_type AND spt.company_id = pr.company_id
@@ -1000,14 +1002,20 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
            l.equipment_id AS linked_equipment_id,
            COALESCE(l.equipment_vlan_id, 0) AS equipment_vlan_id,
            COALESCE(l.equipment_rj45_speed_id, 0) AS equipment_rj45_speed_id,
-           COALESCE(l.equipment_fiber_port_id, 0) AS equipment_fiber_port_id
+           COALESCE(l.equipment_fiber_port_id, 0) AS equipment_fiber_port_id,
+           COALESCE(l.equipment_fiber_patch_id, 0) AS equipment_fiber_patch_id,
+           COALESCE(l.equipment_fiber_rack_id, 0) AS equipment_fiber_rack_id
       FROM idf_ports pr
       LEFT JOIN idf_links l ON l.id = (
           SELECT l2.id
           FROM idf_links l2
           WHERE (l2.port_id_a = pr.id OR l2.port_id_b = pr.id)
             AND l2.company_id = pr.company_id
-          ORDER BY l2.id ASC
+          ORDER BY
+            CASE WHEN COALESCE(l2.equipment_fiber_patch_id, 0) > 0 THEN 0 ELSE 1 END,
+            CASE WHEN COALESCE(l2.equipment_fiber_rack_id, 0) > 0 THEN 0 ELSE 1 END,
+            CASE WHEN COALESCE(l2.equipment_fiber_port_id, 0) > 0 THEN 0 ELSE 1 END,
+            l2.id ASC
           LIMIT 1
       )
       LEFT JOIN switch_ports sp_link
@@ -1089,6 +1097,20 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
             $linkFiberPortId = (int)($byId[$pid]['equipment_fiber_port_id'] ?? 0);
             if ($linkFiberPortId > 0) {
                 $ports[$idx]['effective_fiber_port_id'] = $linkFiberPortId;
+            }
+        }
+        if ((int)($ports[$idx]['effective_fiber_patch_id'] ?? 0) <= 0) {
+            $linkFiberPatchId = (int)($byId[$pid]['equipment_fiber_patch_id'] ?? 0);
+            if ($linkFiberPatchId > 0) {
+                $ports[$idx]['effective_fiber_patch_id'] = $linkFiberPatchId;
+                $ports[$idx]['fiber_patch_id'] = $linkFiberPatchId;
+            }
+        }
+        if ((int)($ports[$idx]['effective_fiber_rack_id'] ?? 0) <= 0) {
+            $linkFiberRackId = (int)($byId[$pid]['equipment_fiber_rack_id'] ?? 0);
+            if ($linkFiberRackId > 0) {
+                $ports[$idx]['effective_fiber_rack_id'] = $linkFiberRackId;
+                $ports[$idx]['fiber_rack_id'] = $linkFiberRackId;
             }
         }
     }
