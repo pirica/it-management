@@ -3426,6 +3426,74 @@ INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL;
 
+-- Table structure for `ip_subnets`
+DROP TABLE IF EXISTS `ip_addresses`;
+DROP TABLE IF EXISTS `ip_subnets`;
+CREATE TABLE `ip_subnets` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `vlan_id` int DEFAULT NULL,
+  `cidr` varchar(43) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `network_ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `prefix_length` tinyint unsigned NOT NULL,
+  `gateway_ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dns1_ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dns2_ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dhcp_enabled` tinyint DEFAULT '0',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ip_subnets_company_cidr` (`company_id`,`cidr`),
+  KEY `vlan_id` (`vlan_id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `ip_subnets_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ip_subnets_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `ip_addresses`
+CREATE TABLE `ip_addresses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `subnet_id` int NOT NULL,
+  `ip_text` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('free','used','reserved','gateway','dns','dhcp','other') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'free',
+  `equipment_id` int DEFAULT NULL,
+  `hostname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_gateway` tinyint DEFAULT '0',
+  `is_dns` tinyint DEFAULT '0',
+  `dhcp_managed` tinyint DEFAULT '0',
+  `notes` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ip_addresses_subnet_ip` (`subnet_id`,`ip_text`),
+  KEY `equipment_id` (`equipment_id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `ip_addresses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ip_addresses_ibfk_subnet` FOREIGN KEY (`subnet_id`) REFERENCES `ip_subnets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ip_addresses_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data for `ip_subnets` (aligned with seeded Factory Default VLAN subnets)
+INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix_length`, `gateway_ip`, `dns1_ip`, `dns2_ip`, `dhcp_enabled`, `description`, `active`) VALUES
+('1', '1', '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
+('2', '2', '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
+('3', '3', '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
+('4', '4', '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
+('5', '5', '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1');
+
+-- Data for `ip_addresses` (gateway + sample equipment assignment)
+INSERT INTO `ip_addresses` (`company_id`, `subnet_id`, `ip_text`, `status`, `equipment_id`, `hostname`, `is_gateway`, `is_dns`, `dhcp_managed`, `notes`, `active`) VALUES
+('1', '1', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
+('1', '1', '192.168.10.20', 'used', '1', 'srv-file-01', '0', '0', '0', 'Primary file server', '1'),
+('2', '2', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
+('3', '3', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
+('4', '4', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
+('5', '5', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1');
+
 -- Table structure for `warranty_types`
 DROP TABLE IF EXISTS `warranty_types`;
 CREATE TABLE `warranty_types` (
