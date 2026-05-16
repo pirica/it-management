@@ -504,8 +504,8 @@ if (!empty($_SESSION['crud_success'])) {
                                 </div>
                             </label>
                             <label id="patchPortRow">
-                                Patch port:
-                                <input type="text" id="labelInput" placeholder="Patch port">
+                                Label:
+                                <input type="text" id="labelInput" placeholder="Label">
                             </label>
                             <label id="vlanRow">
                                 VLAN:
@@ -611,8 +611,8 @@ if (!empty($_SESSION['crud_success'])) {
                             </label>
                             <input type="hidden" id="switchMetaIdfInput" value="<?php echo (int)($selectedSwitchData['idf_id'] ?? 0); ?>">
                             <label>
-                                Comments:
-                                <input type="text" id="commentsInput" placeholder="Comments">
+                                Notes:
+                                <input type="text" id="commentsInput" placeholder="Notes">
                             </label>
                             <button class="btn btn-primary" id="savePortBtn" type="button">💾</button>
                         </div>
@@ -980,10 +980,10 @@ if (!empty($_SESSION['crud_success'])) {
             const portToken = normalizePortType(el.dataset.portType).replace('_', '+').toUpperCase();
             const tooltipParts = [
                 '<strong>' + escapeHtml(portToken === 'RJ45' ? 'RJ45' : 'Fiber (SFP)') + ' Port ' + el.dataset.portNumber + '</strong>',
-                'Patch port: ' + escapeHtml(label),
+                'Label: ' + escapeHtml(label),
                 'Status: ' + escapeHtml(status),
                 'VLAN: ' + escapeHtml(vlanName),
-                'Comments: ' + escapeHtml(comments)
+                'Notes: ' + escapeHtml(comments)
             ];
 
             const isFiberPort = normalizePortType(el.dataset.portType) === 'sfp';
