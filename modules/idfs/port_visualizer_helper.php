@@ -202,26 +202,11 @@ if (!function_exists('itm_filter_ports_by_type_keys')) {
 
 if (!function_exists('itm_port_visualizer_click_has_explicit_connection')) {
     /**
-     * Why: Mirrors device.php Ports "Connected To" intent: cables/links and IDF annotations count; echoed switch hostname only does not match a filled cable endpoint column.
+     * Why: Rack port clicks open Edit Port only when an idf_links row exists; hostname/Connected To alone must still offer Create Cable Link.
      */
     function itm_port_visualizer_click_has_explicit_connection(array $p): bool
     {
-        if (!empty($p['link_id']) && (int)$p['link_id'] > 0) {
-            return true;
-        }
-        $idfConn = trim((string)($p['idf_port_connected_for_routing'] ?? ''));
-        if ($idfConn !== '') {
-            return true;
-        }
-        $merged = trim((string)($p['connected_to'] ?? ''));
-        if ($merged === '') {
-            return false;
-        }
-        $mirror = trim((string)($p['mirror_switch_hostname'] ?? ''));
-        if ($mirror === '') {
-            return true;
-        }
-        return strcasecmp($merged, $mirror) !== 0;
+        return !empty($p['link_id']) && (int)$p['link_id'] > 0;
     }
 }
 
@@ -605,7 +590,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portTypeKey = itm_port_visualizer_type_key($p);
                 $portBorderRadius = $portTypeKey === 'sfp' ? '50%' : '3px';
                 $portTypeClass = $portTypeKey === 'rj45' ? '' : ' itm-port-item--' . sanitize($portTypeKey);
-                // Why: Tooltip still uses merged `connected_to`; click routing aligns with device.php Ports table semantics via itm_port_visualizer_click_has_explicit_connection().
+                // Why: Tooltip still uses merged `connected_to`; click routing uses idf_links only via itm_port_visualizer_click_has_explicit_connection().
                 $portConnectedToAttr = sanitize(trim((string)($p['idf_port_connected_for_routing'] ?? '')));
                 $portLinkIdAttr = isset($p['link_id']) ? (int)$p['link_id'] : 0;
                 $portExplicitConnAttr = itm_port_visualizer_click_has_explicit_connection($p) ? '1' : '0';
@@ -834,7 +819,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotFallbackPositionId = isset($options['position_id']) ? (int)$options['position_id'] : 0;
                 $dotPositionIdAttr = isset($dotPort['position_id']) ? (int)$dotPort['position_id'] : $dotFallbackPositionId;
                 $dotRoutingConnectedTo = $dotPort ? trim((string)($dotPort['idf_port_connected_for_routing'] ?? '')) : '';
-                // Why: Compact fiber dots use the same device.php Connected To rule as RJ45 rack cells.
+                // Why: Compact fiber dots use the same idf_links-only rack click rule as RJ45 cells.
                 $dotExplicitConnAttr = ($dotPort && itm_port_visualizer_click_has_explicit_connection($dotPort)) ? '1' : '0';
                 $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '" data-port-connected-to="' . sanitize($dotRoutingConnectedTo) . '" data-port-link-id="' . (int)$dotLinkId . '" data-has-explicit-connection="' . $dotExplicitConnAttr . '"';
                 $dotOnClick = '';

@@ -2917,7 +2917,11 @@ function onPortClick(portId) {
         alert('Port not found. Use "Regenerate Ports" on this device if switch ports exist but IDF ports are missing.');
         return;
     }
-    openPortModal(port.id);
+    if (port.is_linked || Number(port.link_id) > 0) {
+        openPortModal(port.id);
+        return;
+    }
+    void openLinkModal(port.id);
 }
 
 function sortDestinationPorts(ports) {
