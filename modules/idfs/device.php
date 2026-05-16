@@ -1712,7 +1712,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </select>
             </div>
             <div>
-                <label class="label" id="portPatchPortLabel">Patch port</label>
+                <label class="label" id="portPatchPortLabel">Label</label>
                 <input class="input" name="label">
             </div>
             <div>
@@ -1782,7 +1782,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
             <div style="grid-column: 1 / -1;">
-                <label class="label" id="portCommentsLabel">Comments</label>
+                <label class="label" id="portCommentsLabel">Notes</label>
                 <input class="input" name="notes">
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
@@ -1861,7 +1861,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
             <div data-link-default-field="cable_label">
-                <label class="label" id="linkPatchPortLabel">Patch port</label>
+                <label class="label" id="linkPatchPortLabel">Label</label>
                 <input class="input" name="cable_label" placeholder="e.g. FIB-12 / CAT6-34">
             </div>
             <div data-link-default-field="status">
@@ -1892,7 +1892,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div style="grid-column: 1 / -1;" data-link-default-field="notes">
-                <label class="label" id="linkCommentsLabel">Comments</label>
+                <label class="label" id="linkCommentsLabel">Notes</label>
                 <input class="input" name="notes" placeholder="Optional">
             </div>
             <div style="grid-column: 1 / -1; display:none;" id="linkedEquipmentFields">
@@ -2541,8 +2541,8 @@ function updatePortFormTypePresentation(portMeta) {
     const patchLabelEl = document.getElementById('portPatchPortLabel');
     const commentsLabelEl = document.getElementById('portCommentsLabel');
     if (speedLabelEl) speedLabelEl.textContent = normalizedType === 'rj45' ? 'RJ45 Cable' : 'Fiber Ports';
-    if (patchLabelEl) patchLabelEl.textContent = 'Patch port';
-    if (commentsLabelEl) commentsLabelEl.textContent = 'Comments';
+    if (patchLabelEl) patchLabelEl.textContent = 'Label';
+    if (commentsLabelEl) commentsLabelEl.textContent = 'Notes';
     renderTypeSpecificFields('portTypeSpecificFields', portTypeLabel, portMeta || {}, false);
 }
 
@@ -2550,8 +2550,8 @@ function updateLinkFormTypePresentation(portMeta) {
     const portTypeLabel = portMeta ? (portMeta.port_type_label || 'RJ45') : 'RJ45';
     const patchLabelEl = document.getElementById('linkPatchPortLabel');
     const commentsLabelEl = document.getElementById('linkCommentsLabel');
-    if (patchLabelEl) patchLabelEl.textContent = 'Patch port';
-    if (commentsLabelEl) commentsLabelEl.textContent = 'Comments';
+    if (patchLabelEl) patchLabelEl.textContent = 'Label';
+    if (commentsLabelEl) commentsLabelEl.textContent = 'Notes';
     renderTypeSpecificFields('linkTypeSpecificFields', portTypeLabel, portMeta || {}, true);
 }
 
@@ -3128,7 +3128,7 @@ function formatSwitchPortOption(port) {
         ? `${port.equipment_color}${port.equipment_color_id ? ` (#${port.equipment_color_id})` : ''}`
         : '-';
 
-    return `EQ ${port.equipment_id} | Host: ${hostname} | Type: ${portType} | Port: ${portNumber} | VLAN: ${vlanText} | Label: ${label} | Comments: ${comments} | Status: ${statusText} | Color: ${colorText}`;
+    return `EQ ${port.equipment_id} | Host: ${hostname} | Type: ${portType} | Port: ${portNumber} | VLAN: ${vlanText} | Label: ${label} | Notes: ${comments} | Status: ${statusText} | Color: ${colorText}`;
 }
 
 async function loadEquipmentPorts(equipmentId) {
