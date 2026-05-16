@@ -3479,20 +3479,11 @@ CREATE TABLE `ip_addresses` (
 
 -- Data for `ip_subnets` (synced from local dev database sample rows)
 INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix_length`, `gateway_ip`, `dns1_ip`, `dns2_ip`, `dhcp_enabled`, `description`, `active`) VALUES
-('1', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
-('2', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
-('3', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1'),
+('1', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
+('2', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
+('3', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
 ('4', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
-('5', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '0', 'Factory Default office subnet', '1');
-
--- Data for `ip_addresses` (gateway + sample equipment assignment)
-INSERT INTO `ip_addresses` (`company_id`, `subnet_id`, `ip_text`, `status`, `equipment_id`, `hostname`, `is_gateway`, `is_dns`, `dhcp_managed`, `notes`, `active`) VALUES
-('1', '1', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
-('1', '1', '192.168.10.20', 'used', '1', 'srv-file-01', '0', '0', '0', 'Primary file server', '1'),
-('2', '2', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
-('3', '3', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
-('4', '4', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
-('5', '5', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1');
+('5', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1');
 
 -- Table structure for `warranty_types`
 DROP TABLE IF EXISTS `warranty_types`;
