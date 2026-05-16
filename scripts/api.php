@@ -8,7 +8,8 @@
  * IDF rack Edit Device now maps linked equipment numbering layouts from legacy/global IDs to the active company's matching layout option so the modal preselects correctly.
  * IDF rack Edit Device now renders saved position Numbering Layout first, avoids legacy position-number port bleed-through, and cache-busts the rack refresh after modal saves.
  * IDF rack Edit Device RJ45 capacity updates now enforce linked switch RJ45 row count parity in switch_ports and prune/regenerate matching RJ45 rows in idf_ports.
- * IDF rack/device port grids now prune hydrated fiber rows outside the computed `sfp_ports` footprint and cap footprint lists with `idf_positions.sfp_count`, so stray idf_ports rows cannot outnumber badge-declared fiber slots on the rack without opening Device View.
+ * IDF `idf_collect_port_slots_for_position` now synthesizes only fiber slots missing after counting live typed SFP rows in `switch_ports`, preventing duplicate RJ45-tail placeholders when `switch_ports` already defines SFP 1..N beside higher RJ45 numbers.
+ * IDF rack `view.php`, `device.php`, and Ports metadata prefer `switch_ports` fiber numbering for linked equipment (`idf_switch_fiber_port_numbers_for_equipment`) with switch-port-merge filtering in `device.php` so hostname-backed SFP rows win over orphaned tail placeholders; port grids still prune/cap hydration to declared `sfp_count`.
  * IDF rack/device compact icon rendering no longer injects synthetic Port 0 SFP placeholders when no fiber ports are configured.
  * IDF Port Editor now includes destination-port selection plus type-aware RJ45/SFP link metadata fields, and cable-link create flow persists destination rack/IDF/location + RJ45/fiber metadata on idf_links/switch_ports sync paths.
  * Equipment edit switch sync now resolves idf_ports.fiber_ports_number via tenant equipment_fiber_count ids and treats sync query failures as transaction errors.

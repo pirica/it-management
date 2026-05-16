@@ -608,8 +608,7 @@ if ($stmtPos) {
             $itmFiberTk = itm_port_visualizer_type_key($itmPortFiberMeta);
             if ($itmFiberTk === 'sfp') {
                 $itmFiberNo = (int)($itmPortFiberMeta['port_no'] ?? 0);
-                // Why: Stray synced rows occasionally tag fiber ports with numbers inside the RJ45 footprint; those clash with RJ45 placeholders and visually double SFP dots while badges still honor sfp_count.
-                if ($itmFiberNo > 0 && $itmFiberNo > $rj45PortCount) {
+                if ($itmFiberNo > 0) {
                     $explicitSfpPorts[$itmFiberNo] = $itmFiberNo;
                 }
             }
@@ -622,10 +621,25 @@ if ($stmtPos) {
         $fiberPortHint = strtolower(trim(
             (string)($row['equipment_fiber_port_label'] ?? '') . ' ' . (string)($row['equipment_fiber_name'] ?? '')
         ));
-        $row['sfp_ports'] = array_values($explicitSfpPorts);
-        sort($row['sfp_ports']);
+        $row['sfp_ports'] = [];
+        if ($positionLinkedEquipmentId > 0) {
+            $rackSwitchFibers = idf_switch_fiber_port_numbers_for_equipment($conn, $company_id, $positionLinkedEquipmentId);
+            if (!empty($rackSwitchFibers)) {
+                // Why: switch_ports defines real SFP numbering (often 1..N beside RJ45); avoid favoring synthesized RJ45-tail placeholders (25+) in rack capacity options.
+                if ($fiberSlotCount > 0) {
+                    $row['sfp_ports'] = array_slice($rackSwitchFibers, 0, $fiberSlotCount);
+                } else {
+                    $row['sfp_ports'] = $rackSwitchFibers;
+                }
+                sort($row['sfp_ports']);
+            }
+        }
+        if (empty($row['sfp_ports'])) {
+            $row['sfp_ports'] = array_values($explicitSfpPorts);
+            sort($row['sfp_ports']);
+        }
         if (empty($row['sfp_ports']) && $fiberSlotCount > 0) {
-            // Why: Match position_save/sync fiber synthesis: RJ45 footprints own 1..N; placeholders must number baseline+ordinal, not range(1, fiberCount).
+            // Why: Match position_save/sync fiber synthesis when neither switch nor hydrated idf rows define fiber yet.
             $baselineFromHydratedRj = 0;
             foreach (($row['ports'] ?? []) as $itmHydr) {
                 if (itm_port_visualizer_type_key($itmHydr) !== 'rj45') {

@@ -724,6 +724,24 @@ sort($rj45PortNumbers);
 $sfpPortNumbers = array_values(array_unique($sfpPortNumbers));
 sort($sfpPortNumbers);
 
+$fiberDeclaredCapDevice = (int)($pos['sfp_count'] ?? 0);
+if ($fiberDeclaredCapDevice <= 0) {
+    $fiberDeclaredCapDevice = (int)($pos['equipment_fiber_ports_number'] ?? 0);
+}
+$fiberAuthoritativeSwitchList = false;
+if ($positionLinkedEquipmentId > 0) {
+    $switchFiberNosFromEquipment = idf_switch_fiber_port_numbers_for_equipment($conn, $company_id, $positionLinkedEquipmentId);
+    $fiberAuthoritativeSwitchList = !empty($switchFiberNosFromEquipment);
+    if ($fiberAuthoritativeSwitchList) {
+        // Why: Prefer live switch numbering (e.g. SFP 1-4 beside RJ45 22+) over idf placeholders that duplicated RJ45-tail slots.
+        $capSlice = ($fiberDeclaredCapDevice > 0 && $fiberDeclaredCapDevice < count($switchFiberNosFromEquipment))
+            ? $fiberDeclaredCapDevice
+            : count($switchFiberNosFromEquipment);
+        $sfpPortNumbers = array_slice($switchFiberNosFromEquipment, 0, (int)$capSlice);
+        sort($sfpPortNumbers);
+    }
+}
+
 if (empty($rj45PortNumbers)) {
     $rj45PortLabel = (string)($pos['switch_rj45_name'] ?? '');
     $rj45FallbackCount = 0;
@@ -735,26 +753,6 @@ if (empty($rj45PortNumbers)) {
     if ($rj45FallbackCount > 0) {
         $rj45PortNumbers = range(1, $rj45FallbackCount);
     }
-}
-
-$rj45FootprintCap = 0;
-if (!empty($rj45PortNumbers)) {
-    $rj45FootprintCap = (int)max($rj45PortNumbers);
-}
-if ($rj45FootprintCap <= 0) {
-    $rj45FootprintCap = (int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0);
-}
-if ($rj45FootprintCap > 0 && !empty($sfpPortNumbers)) {
-    // Why: Avoid rendering duplicate-looking fiber placeholders when malformed idf/sync rows numbered SFP ports inside the RJ45 footprint alongside tail-numbered fiber slots (matches rack view pruning).
-    $sfpFiltered = [];
-    foreach ($sfpPortNumbers as $fiberNo) {
-        $fiberNo = (int)$fiberNo;
-        if ($fiberNo > $rj45FootprintCap) {
-            $sfpFiltered[] = $fiberNo;
-        }
-    }
-    $sfpPortNumbers = array_values(array_unique($sfpFiltered));
-    sort($sfpPortNumbers);
 }
 
 if (empty($sfpPortNumbers)) {
@@ -779,12 +777,44 @@ if (empty($sfpPortNumbers)) {
     }
 }
 
-$fiberDeclaredCapDevice = (int)($pos['sfp_count'] ?? 0);
-if ($fiberDeclaredCapDevice <= 0) {
-    $fiberDeclaredCapDevice = (int)($pos['equipment_fiber_ports_number'] ?? 0);
-}
 if ($fiberDeclaredCapDevice > 0 && count($sfpPortNumbers) > $fiberDeclaredCapDevice) {
     $sfpPortNumbers = array_slice($sfpPortNumbers, 0, $fiberDeclaredCapDevice);
+}
+
+// Why: Linked equipment with live typed SFP switch rows should mirror switch_ports rows (hostname-backed idf merges). Otherwise keep capped idf footprints for unlinked / switch-not-ready positions.
+if (!empty($ports)) {
+    $allowedSfpNosFlip = [];
+    foreach ($sfpPortNumbers as $allowNoRaw) {
+        $allowNo = (int)$allowNoRaw;
+        if ($allowNo > 0) {
+            $allowedSfpNosFlip[$allowNo] = true;
+        }
+    }
+    $ports = array_values(array_filter($ports, static function (array $p) use ($positionLinkedEquipmentId, $fiberAuthoritativeSwitchList, $allowedSfpNosFlip): bool {
+        if (itm_port_visualizer_type_key($p) !== 'sfp') {
+            return true;
+        }
+        $pn = (int)($p['port_no'] ?? 0);
+        if ($pn <= 0) {
+            return false;
+        }
+        if ($positionLinkedEquipmentId > 0 && $fiberAuthoritativeSwitchList) {
+            return (int)($p['switch_port_live_id'] ?? 0) > 0;
+        }
+        if ($allowedSfpNosFlip && !isset($allowedSfpNosFlip[$pn])) {
+            return false;
+        }
+
+        return true;
+    }));
+}
+if (!empty($ports)) {
+    usort(
+        $ports,
+        static function (array $a, array $b) use ($portSortField, $portSortDir): int {
+            return itm_idf_ports_device_list_compare_rows($a, $b, $portSortField, $portSortDir);
+        }
+    );
 }
 
 $otherIds = [];

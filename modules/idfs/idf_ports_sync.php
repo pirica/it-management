@@ -69,6 +69,58 @@ function idf_resolve_synthetic_fiber_port_no(int $rj45BaselineIncludingSlots, in
 }
 
 /**
+ * Why: switch_ports is authoritative for numbered SFP rows (often 1..N even when RJ45 spans higher numbers); UI must not synthesize parallel RJ45-tail fibers when this list already satisfies capacity.
+ *
+ * @return int[] Sorted unique fiber port_numbers from switch_ports
+ */
+function idf_switch_fiber_port_numbers_for_equipment(mysqli $conn, int $company_id, int $equipmentId): array
+{
+    if ($company_id <= 0 || $equipmentId <= 0) {
+        return [];
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT sp.port_number,
+                LOWER(TRIM(COALESCE(spt.type, sp.port_type))) AS port_type_name
+         FROM switch_ports sp
+         LEFT JOIN switch_port_types spt
+           ON spt.company_id = sp.company_id
+          AND (
+               spt.type = sp.port_type
+               OR spt.id = CAST(sp.port_type AS UNSIGNED)
+           )
+         WHERE sp.company_id = ? AND sp.equipment_id = ?
+         ORDER BY sp.port_number ASC"
+    );
+    if (!$stmt) {
+        return [];
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $equipmentId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $out = [];
+    while ($res && ($switchPortRow = mysqli_fetch_assoc($res))) {
+        $portNo = (int)($switchPortRow['port_number'] ?? 0);
+        if ($portNo <= 0) {
+            continue;
+        }
+        $portTypeName = strtolower(trim((string)($switchPortRow['port_type_name'] ?? '')));
+        if (strpos($portTypeName, 'sfp') === false) {
+            continue;
+        }
+        $out[$portNo] = $portNo;
+    }
+    mysqli_stmt_close($stmt);
+
+    $list = array_values($out);
+    sort($list);
+
+    return $list;
+}
+
+/**
  * Build the port slots that should exist for a rack position (RJ45 capacity, SFP capacity, and live switch_ports).
  *
  * @return array<string, array{port_no:int, port_type:int}>
@@ -204,17 +256,31 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
                         : 'sfp';
                     $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
                     if ($fiberTypeId > 0) {
-                        $fiberBaseline = idf_resolve_fiber_number_baseline_after_rj45($portSlots, $rj45PortTypeId, $rj45FootprintForFiberMath);
-                        for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberCount; $fiberOrdinal++) {
-                            $fiberPortNo = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrdinal);
-                            $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
-                            if (!isset($portSlots[$fiberKey])) {
-                                $portSlots[$fiberKey] = [
-                                    'port_no' => $fiberPortNo,
-                                    'port_type' => $fiberTypeId,
-                                ];
+                        $fiberSlotsPresent = 0;
+                        foreach ($portSlots as $slotScanFiber) {
+                            if (!is_array($slotScanFiber)) {
+                                continue;
+                            }
+                            if ((int)($slotScanFiber['port_type'] ?? 0) !== $rj45PortTypeId) {
+                                $fiberSlotsPresent++;
                             }
                         }
+                        $fiberSynthRemaining = max(0, $fiberCount - $fiberSlotsPresent);
+                        if ($fiberSynthRemaining > 0) {
+                            // Why: switch_ports already satisfies part of fiberCount; synthesize only the remaining RJ45-tail slots when needed.
+                            $fiberBaseline = idf_resolve_fiber_number_baseline_after_rj45($portSlots, $rj45PortTypeId, $rj45FootprintForFiberMath);
+                            for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberSynthRemaining; $fiberOrdinal++) {
+                                $fiberPortNo = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrdinal);
+                                $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
+                                if (!isset($portSlots[$fiberKey])) {
+                                    $portSlots[$fiberKey] = [
+                                        'port_no' => $fiberPortNo,
+                                        'port_type' => $fiberTypeId,
+                                    ];
+                                }
+                            }
+                        }
+                        // Else: fiber footprint entirely defined by switch_ports; skip duplicate RJ45-tail synthesis.
                     }
                 }
             }
