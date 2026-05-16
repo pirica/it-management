@@ -25,6 +25,10 @@ $linkedDestinationPort = trim((string)($data['linked_destination_port'] ?? ''));
 $linkedCableColorName = trim((string)($data['linked_cable_color'] ?? ''));
 $linkedCableColorHexRaw = trim((string)($data['linked_cable_color_hex'] ?? ''));
 $rj45SpeedId = isset($data['rj45_speed_id']) ? (int)$data['rj45_speed_id'] : 0;
+$poeId = isset($data['poe_id']) && is_numeric((string)$data['poe_id']) ? (int)$data['poe_id'] : 0;
+if ($poeId < 0) {
+    $poeId = 0;
+}
 $fiberPortId = isset($data['fiber_port_id']) ? (int)$data['fiber_port_id'] : 0;
 $fiberPatchId = isset($data['fiber_patch_id']) ? (int)$data['fiber_patch_id'] : 0;
 $fiberRackId = isset($data['fiber_rack_id']) ? (int)$data['fiber_rack_id'] : 0;
@@ -641,6 +645,24 @@ if ($requestVlanId > 0) {
     }
 }
 
+$poeSyncId = 0;
+if ($poeId > 0) {
+    $stmtPoeScope = mysqli_prepare(
+        $conn,
+        'SELECT id FROM equipment_poe WHERE company_id = ? AND id = ? LIMIT 1'
+    );
+    if ($stmtPoeScope) {
+        mysqli_stmt_bind_param($stmtPoeScope, 'ii', $company_id, $poeId);
+        mysqli_stmt_execute($stmtPoeScope);
+        $resPoeScope = mysqli_stmt_get_result($stmtPoeScope);
+        $poeScopeRow = $resPoeScope ? mysqli_fetch_assoc($resPoeScope) : null;
+        mysqli_stmt_close($stmtPoeScope);
+        if ($poeScopeRow) {
+            $poeSyncId = $poeId;
+        }
+    }
+}
+
 $stmtFinal = mysqli_prepare(
     $conn,
     "INSERT INTO idf_links (
@@ -734,6 +756,9 @@ if (
     if ($equipmentVlanId_val !== null && $equipmentVlanId_val > 0) {
         $stmtUpdatePortSql .= ", vlan_id = ?";
     }
+    if ($poeSyncId > 0) {
+        $stmtUpdatePortSql .= ", poe_id = ?";
+    }
     if ($labelSync !== null) {
         $stmtUpdatePortSql .= ", label = ?";
     }
@@ -751,6 +776,11 @@ if (
             $vlanSyncId = (int)$equipmentVlanId_val;
             $updateValuesA[] = $vlanSyncId;
             $updateValuesB[] = $vlanSyncId;
+        }
+        if ($poeSyncId > 0) {
+            $updateTypes .= 'i';
+            $updateValuesA[] = $poeSyncId;
+            $updateValuesB[] = $poeSyncId;
         }
         if ($labelSync !== null) {
             $updateTypes .= 's';
