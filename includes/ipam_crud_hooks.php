@@ -110,54 +110,77 @@ function itm_ipam_fk_label_by_id(mysqli $conn, array $fk, int $company_id, int $
 }
 
 /**
- * Normalize/validate IPAM rows before INSERT/UPDATE SQL is built.
- *
- * @param array<string, string> $data  Column => SQL fragment values ('NULL', quoted strings, numbers)
- * @param array<int, string>    $errors
+ * Why: Failed saves must re-render raw POST values, not SQL fragments like '10.0.0.0/24'.
  */
-function itm_ipam_normalize_crud_row(
+function itm_ipam_form_display_value(string $fieldName, $dataValue, bool $preferPost): string
+{
+    if ($preferPost && isset($_POST[$fieldName]) && !is_array($_POST[$fieldName])) {
+        return itm_ipam_trim_user_input((string)$_POST[$fieldName]);
+    }
+
+    $val = (string)$dataValue;
+    if ($val === 'NULL' || $val === '') {
+        return '';
+    }
+    if (strlen($val) >= 2 && $val[0] === "'" && substr($val, -1) === "'") {
+        return stripcslashes(substr($val, 1, -1));
+    }
+
+    return $val;
+}
+
+/**
+ * Validate/normalize POST before the generic CRUD loop builds SQL fragments.
+ */
+function itm_ipam_prepare_post_before_crud(
     mysqli $conn,
     string $table,
     int $company_id,
-    array &$data,
-    array $post,
+    array &$post,
     string $action,
     int $editId,
     array &$errors
 ): void {
     if ($table === 'ip_subnets') {
-        $cidrRaw = trim((string)($post['cidr'] ?? ''));
-        $parsed = itm_ipam_parse_cidr($cidrRaw);
+        $post['cidr'] = itm_ipam_trim_user_input($post['cidr'] ?? '');
+        $parsed = itm_ipam_parse_cidr((string)$post['cidr']);
         if (!$parsed['ok']) {
             $errors[] = (string)$parsed['error'];
             return;
         }
 
-        $data['cidr'] = "'" . mysqli_real_escape_string($conn, (string)$parsed['cidr']) . "'";
-        $data['network_ip'] = "'" . mysqli_real_escape_string($conn, (string)$parsed['network_ip']) . "'";
-        $data['prefix_length'] = (string)(int)$parsed['prefix_length'];
+        $post['cidr'] = (string)$parsed['cidr'];
+
+        if (!empty($parsed['normalized_from'])) {
+            $_SESSION['crud_success'] = 'CIDR was adjusted to the network address '
+                . (string)$parsed['cidr']
+                . ' (you entered '
+                . (string)$parsed['normalized_from']
+                . ').';
+        }
 
         foreach (['gateway_ip', 'dns1_ip', 'dns2_ip'] as $ipField) {
-            $raw = trim((string)($post[$ipField] ?? ''));
+            if (!array_key_exists($ipField, $post)) {
+                continue;
+            }
+            $raw = itm_ipam_trim_user_input($post[$ipField] ?? '');
+            $post[$ipField] = $raw;
             if ($raw === '') {
-                $data[$ipField] = 'NULL';
                 continue;
             }
             if (!itm_ipam_is_valid_ipv4($raw)) {
                 $errors[] = ucwords(str_replace('_', ' ', $ipField)) . ' must be a valid IPv4 address.';
-                continue;
             }
-            $data[$ipField] = "'" . mysqli_real_escape_string($conn, $raw) . "'";
         }
 
-        if ($company_id > 0 && $parsed['cidr'] !== '') {
+        if ($company_id > 0 && !$errors) {
             $exclude = ($action === 'edit' && $editId > 0) ? $editId : 0;
             $stmtDup = mysqli_prepare(
                 $conn,
                 'SELECT id FROM ip_subnets WHERE company_id = ? AND cidr = ? AND id <> ? LIMIT 1'
             );
             if ($stmtDup) {
-                mysqli_stmt_bind_param($stmtDup, 'isi', $company_id, $parsed['cidr'], $exclude);
+                mysqli_stmt_bind_param($stmtDup, 'isi', $company_id, $post['cidr'], $exclude);
                 mysqli_stmt_execute($stmtDup);
                 $resDup = mysqli_stmt_get_result($stmtDup);
                 $dup = $resDup && mysqli_num_rows($resDup) > 0;
@@ -172,23 +195,22 @@ function itm_ipam_normalize_crud_row(
     }
 
     if ($table === 'ip_addresses') {
-        $ipText = trim((string)($post['ip_text'] ?? ''));
-        if ($ipText === '') {
+        $post['ip_text'] = itm_ipam_trim_user_input($post['ip_text'] ?? '');
+        if ($post['ip_text'] === '') {
             $errors[] = 'IP address is required.';
             return;
         }
-        if (!itm_ipam_is_valid_ipv4($ipText)) {
+        if (!itm_ipam_is_valid_ipv4($post['ip_text'])) {
             $errors[] = 'IP address must be a valid IPv4 address.';
             return;
         }
-        $data['ip_text'] = "'" . mysqli_real_escape_string($conn, $ipText) . "'";
 
-        $status = strtolower(trim((string)($post['status'] ?? 'free')));
+        $status = strtolower(itm_ipam_trim_user_input($post['status'] ?? 'free'));
         $allowed = ['free', 'used', 'reserved', 'gateway', 'dns', 'dhcp', 'other'];
         if (!in_array($status, $allowed, true)) {
             $status = 'free';
         }
-        $data['status'] = "'" . mysqli_real_escape_string($conn, $status) . "'";
+        $post['status'] = $status;
 
         $subnetId = (int)($post['subnet_id'] ?? 0);
         if ($subnetId > 0 && $company_id > 0) {
@@ -214,7 +236,7 @@ function itm_ipam_normalize_crud_row(
                 'SELECT id FROM ip_addresses WHERE subnet_id = ? AND ip_text = ? AND id <> ? LIMIT 1'
             );
             if ($stmtDup) {
-                mysqli_stmt_bind_param($stmtDup, 'isi', $subnetId, $ipText, $exclude);
+                mysqli_stmt_bind_param($stmtDup, 'isi', $subnetId, $post['ip_text'], $exclude);
                 mysqli_stmt_execute($stmtDup);
                 $resDup = mysqli_stmt_get_result($stmtDup);
                 $dup = $resDup && mysqli_num_rows($resDup) > 0;
@@ -225,6 +247,24 @@ function itm_ipam_normalize_crud_row(
             }
         }
     }
+}
+
+/**
+ * Add hidden/derived subnet columns to SQL payload after the generic loop.
+ */
+function itm_ipam_apply_derived_sql_to_data(mysqli $conn, string $table, array &$data, array $post): void
+{
+    if ($table !== 'ip_subnets') {
+        return;
+    }
+
+    $parsed = itm_ipam_parse_cidr(itm_ipam_trim_user_input($post['cidr'] ?? ''));
+    if (!$parsed['ok']) {
+        return;
+    }
+
+    $data['network_ip'] = "'" . mysqli_real_escape_string($conn, (string)$parsed['network_ip']) . "'";
+    $data['prefix_length'] = (string)(int)$parsed['prefix_length'];
 }
 
 /**
@@ -243,7 +283,7 @@ function itm_ipam_after_crud_save(
 
     if ($table === 'ip_addresses') {
         $equipmentId = (int)($post['equipment_id'] ?? 0);
-        $ipText = trim((string)($post['ip_text'] ?? ''));
+        $ipText = itm_ipam_trim_user_input($post['ip_text'] ?? '');
         $status = strtolower(trim((string)($post['status'] ?? 'free')));
         if ($equipmentId > 0) {
             itm_ipam_sync_equipment_ip_address($conn, $company_id, $equipmentId, $ipText, $status);
@@ -252,7 +292,7 @@ function itm_ipam_after_crud_save(
     }
 
     if ($table === 'ip_subnets') {
-        $gatewayIp = trim((string)($post['gateway_ip'] ?? ''));
+        $gatewayIp = itm_ipam_trim_user_input($post['gateway_ip'] ?? '');
         $subnetId = $recordId;
         if ($gatewayIp !== '' && itm_ipam_is_valid_ipv4($gatewayIp)) {
             $stmtExists = mysqli_prepare(
