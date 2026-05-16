@@ -603,33 +603,28 @@ if ($stmtPos) {
             );
         }
 
-        $fiberPortCount = 0;
         $explicitSfpPorts = [];
         foreach (($row['ports'] ?? []) as $itmPortFiberMeta) {
             $itmFiberTk = itm_port_visualizer_type_key($itmPortFiberMeta);
             if ($itmFiberTk === 'sfp') {
                 $itmFiberNo = (int)($itmPortFiberMeta['port_no'] ?? 0);
-                if ($itmFiberNo > $fiberPortCount) {
-                    $fiberPortCount = $itmFiberNo;
-                }
-                if ($itmFiberNo > 0) {
+                // Why: Stray synced rows occasionally tag fiber ports with numbers inside the RJ45 footprint; those clash with RJ45 placeholders and visually double SFP dots while badges still honor sfp_count.
+                if ($itmFiberNo > 0 && $itmFiberNo > $rj45PortCount) {
                     $explicitSfpPorts[$itmFiberNo] = $itmFiberNo;
                 }
             }
         }
-        if ($fiberPortCount <= 0) {
-            $fiberPortCount = (int)($row['sfp_count'] ?? 0);
-        }
-        if ($fiberPortCount <= 0) {
+        $fiberSlotCount = (int)($row['sfp_count'] ?? 0);
+        if ($fiberSlotCount <= 0) {
             // Why: Keep equipment-level fallback only when position SFP rows/count are not yet materialized in idf_ports.
-            $fiberPortCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
+            $fiberSlotCount = (int)($row['equipment_fiber_ports_number'] ?? 0);
         }
         $fiberPortHint = strtolower(trim(
             (string)($row['equipment_fiber_port_label'] ?? '') . ' ' . (string)($row['equipment_fiber_name'] ?? '')
         ));
         $row['sfp_ports'] = array_values($explicitSfpPorts);
         sort($row['sfp_ports']);
-        if (empty($row['sfp_ports']) && $fiberPortCount > 0) {
+        if (empty($row['sfp_ports']) && $fiberSlotCount > 0) {
             // Why: Match position_save/sync fiber synthesis: RJ45 footprints own 1..N; placeholders must number baseline+ordinal, not range(1, fiberCount).
             $baselineFromHydratedRj = 0;
             foreach (($row['ports'] ?? []) as $itmHydr) {
@@ -640,7 +635,7 @@ if ($stmtPos) {
             }
             $fiberBaseline = max($rj45PortCount, $baselineFromHydratedRj);
             $synthFiber = [];
-            for ($fiberOrd = 1; $fiberOrd <= $fiberPortCount; $fiberOrd++) {
+            for ($fiberOrd = 1; $fiberOrd <= $fiberSlotCount; $fiberOrd++) {
                 $synthFiber[] = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrd);
             }
             $row['sfp_ports'] = $synthFiber;

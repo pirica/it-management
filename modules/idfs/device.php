@@ -737,6 +737,26 @@ if (empty($rj45PortNumbers)) {
     }
 }
 
+$rj45FootprintCap = 0;
+if (!empty($rj45PortNumbers)) {
+    $rj45FootprintCap = (int)max($rj45PortNumbers);
+}
+if ($rj45FootprintCap <= 0) {
+    $rj45FootprintCap = (int)($pos['rj45_count'] ?? $pos['port_count'] ?? 0);
+}
+if ($rj45FootprintCap > 0 && !empty($sfpPortNumbers)) {
+    // Why: Avoid rendering duplicate-looking fiber placeholders when malformed idf/sync rows numbered SFP ports inside the RJ45 footprint alongside tail-numbered fiber slots (matches rack view pruning).
+    $sfpFiltered = [];
+    foreach ($sfpPortNumbers as $fiberNo) {
+        $fiberNo = (int)$fiberNo;
+        if ($fiberNo > $rj45FootprintCap) {
+            $sfpFiltered[] = $fiberNo;
+        }
+    }
+    $sfpPortNumbers = array_values(array_unique($sfpFiltered));
+    sort($sfpPortNumbers);
+}
+
 if (empty($sfpPortNumbers)) {
     $fiberFallbackCount = (int)($pos['sfp_count'] ?? 0);
     if ($fiberFallbackCount <= 0) {
