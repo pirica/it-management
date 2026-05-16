@@ -49,8 +49,11 @@ if (!function_exists('itm_build_capacity_placeholder_ports')) {
         };
 
         $append($ports, (array)($options['rj45_ports'] ?? []), 'RJ45');
-        $append($ports, (array)($options['sfp_ports'] ?? []), 'SFP');
-        $append($ports, (array)($options['sfp_plus_ports'] ?? []), 'SFP+');
+        $sfpSlots = array_merge(
+            (array)($options['sfp_ports'] ?? []),
+            (array)($options['sfp_plus_ports'] ?? [])
+        );
+        $append($ports, $sfpSlots, 'SFP');
 
         return $ports;
     }
@@ -99,9 +102,6 @@ if (!function_exists('itm_port_visualizer_type_key')) {
     function itm_port_visualizer_type_key(array $portMeta): string
     {
         $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? 'rj45'))));
-        if (strpos($typeRaw, 'sfp+') !== false || strpos($typeRaw, 'sfp plus') !== false) {
-            return 'sfp_plus';
-        }
         if (strpos($typeRaw, 'sfp') !== false) {
             return 'sfp';
         }
@@ -117,7 +117,7 @@ if (!function_exists('itm_merge_capacity_placeholder_ports')) {
     {
         $hasCapacity = !empty($options['rj45_ports'])
             || !empty($options['sfp_ports'])
-            || !empty($options['sfp_plus_ports']);
+            || !empty($options['sfp_plus_ports']); // Legacy callers may still pass capacity here; merged when building placeholders.
         if (!$hasCapacity) {
             return $ports;
         }
@@ -235,7 +235,7 @@ if (!function_exists('itm_render_port_visualizer')) {
 
         $allPortsForMeta = $ports;
         $renderPorts = $ports;
-        // Why: SFP/SFP+ ports must stay clickable in rack view for create/link/edit workflows;
+        // Why: Fiber (SFP family) ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
         $gridPortType = strtolower(trim((string)($options['grid_port_type'] ?? 'all')));
         if ($gridPortType === 'rj45' && !$hasRj45Capacity && $hasFiberCapacity) {
@@ -244,7 +244,7 @@ if (!function_exists('itm_render_port_visualizer')) {
         if ($gridPortType === 'rj45') {
             $renderPorts = itm_filter_ports_by_type_keys($ports, ['rj45']);
         } elseif ($gridPortType === 'fiber') {
-            $renderPorts = itm_filter_ports_by_type_keys($ports, ['sfp', 'sfp_plus']);
+            $renderPorts = itm_filter_ports_by_type_keys($ports, ['sfp']);
         }
         if (empty($renderPorts) && $hasFiberCapacity && $gridPortType !== 'rj45') {
             $renderPorts = itm_build_capacity_placeholder_ports($options);
@@ -279,19 +279,14 @@ if (!function_exists('itm_render_port_visualizer')) {
         } else {
             // Why: IDF cards can store RJ45 and SFP rows with overlapping numeric port_no values (e.g., RJ45 1 and SFP 1).
             // Build type-local offsets from the rendered dataset itself so each physical port stays on a stable, non-overlapping dot.
-            $maxByType = ['rj45' => 0, 'sfp' => 0, 'sfp_plus' => 0];
+            $maxByType = ['rj45' => 0, 'sfp' => 0];
             foreach ($renderPorts as $itmPortMetaScan) {
                 $scanNo = (int)($itmPortMetaScan['port_no'] ?? 0);
                 if ($scanNo <= 0) {
                     continue;
                 }
                 $scanTypeRaw = strtolower(trim((string)($itmPortMetaScan['port_type_label'] ?? ($itmPortMetaScan['port_type'] ?? 'rj45'))));
-                $scanType = 'rj45';
-                if (strpos($scanTypeRaw, 'sfp+') !== false || strpos($scanTypeRaw, 'sfp plus') !== false) {
-                    $scanType = 'sfp_plus';
-                } elseif (strpos($scanTypeRaw, 'sfp') !== false) {
-                    $scanType = 'sfp';
-                }
+                $scanType = strpos($scanTypeRaw, 'sfp') !== false ? 'sfp' : 'rj45';
                 if ($scanNo > $maxByType[$scanType]) {
                     $maxByType[$scanType] = $scanNo;
                 }
@@ -299,16 +294,13 @@ if (!function_exists('itm_render_port_visualizer')) {
             $typeOffset = [
                 'rj45' => 0,
                 'sfp' => max(0, $maxByType['rj45']),
-                'sfp_plus' => max(0, $maxByType['rj45']) + max(0, $maxByType['sfp']),
             ];
 
             foreach ($renderPorts as &$itmPortMeta) {
                 $rawPortNo = (int)($itmPortMeta['port_no'] ?? 0);
                 $normalizedType = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? 'rj45'))));
                 $visualPortNo = $rawPortNo > 0 ? $rawPortNo : 1;
-                if (strpos($normalizedType, 'sfp+') !== false || strpos($normalizedType, 'sfp plus') !== false) {
-                    $visualPortNo += $typeOffset['sfp_plus'];
-                } elseif (strpos($normalizedType, 'sfp') !== false) {
+                if (strpos($normalizedType, 'sfp') !== false) {
                     $visualPortNo += $typeOffset['sfp'];
                 }
                 $itmPortMeta['_visual_port_no'] = $visualPortNo;
@@ -567,7 +559,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portStatusLabelAttr = sanitize($statusLabel);
                 $portPositionIdAttr = (int)($p['position_id'] ?? 0);
                 $portTypeKey = itm_port_visualizer_type_key($p);
-                $portBorderRadius = ($portTypeKey === 'sfp' || $portTypeKey === 'sfp_plus') ? '50%' : '3px';
+                $portBorderRadius = $portTypeKey === 'sfp' ? '50%' : '3px';
                 $portTypeClass = $portTypeKey === 'rj45' ? '' : ' itm-port-item--' . sanitize($portTypeKey);
                 // Why: Tooltip still uses merged `connected_to`; click routing aligns with device.php Ports table semantics via itm_port_visualizer_click_has_explicit_connection().
                 $portConnectedToAttr = sanitize(trim((string)($p['idf_port_connected_for_routing'] ?? '')));
@@ -597,20 +589,14 @@ if (!function_exists('itm_render_port_visualizer')) {
             $portMetaByTypeAndNo = [];
             $rj45Ports = [];
             $sfpPorts = [];
-            $sfpPlusPorts = [];
 
             foreach ($allPortsForMeta as $portMeta) {
                 $portNo = (int)($portMeta['port_no'] ?? 0);
                 if ($portNo <= 0) {
                     continue;
                 }
-                $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? ''))));
-                $typeKey = 'rj45';
-                if (strpos($typeRaw, 'sfp+') !== false || strpos($typeRaw, 'sfp plus') !== false) {
-                    $typeKey = 'sfp_plus';
-                    $sfpPlusPorts[] = $portNo;
-                } elseif (strpos($typeRaw, 'sfp') !== false) {
-                    $typeKey = 'sfp';
+                $typeKey = itm_port_visualizer_type_key($portMeta);
+                if ($typeKey === 'sfp') {
                     $sfpPorts[] = $portNo;
                 } else {
                     $rj45Ports[] = $portNo;
@@ -627,38 +613,37 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $rj45Ports[] = (int)$rj45PortNo;
                 }
             }
+            $sfpSlotsOverride = [];
             if (!empty($options['sfp_ports']) && is_array($options['sfp_ports'])) {
-                $sfpPorts = [];
                 foreach ($options['sfp_ports'] as $sfpPortNo) {
-                    $sfpPorts[] = (int)$sfpPortNo;
+                    $sfpSlotsOverride[] = (int)$sfpPortNo;
                 }
             }
             if (!empty($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports'])) {
-                $sfpPlusPorts = [];
-                foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
-                    $sfpPlusPorts[] = (int)$sfpPlusPortNo;
+                foreach ($options['sfp_plus_ports'] as $legacyPlusNo) {
+                    $sfpSlotsOverride[] = (int)$legacyPlusNo;
                 }
+            }
+            if (!empty($sfpSlotsOverride)) {
+                $sfpPorts = array_values(array_unique($sfpSlotsOverride));
             }
 
             sort($rj45Ports);
             sort($sfpPorts);
-            sort($sfpPlusPorts);
 
             $iconTitleParts = [];
             if (!empty($rj45Ports)) {
                 $iconTitleParts[] = 'RJ45 Ports: ' . implode(', ', $rj45Ports);
             }
             if (!empty($sfpPorts)) {
-                $iconTitleParts[] = 'SFP Ports: ' . implode(', ', $sfpPorts);
-            }
-            if (!empty($sfpPlusPorts)) {
-                $iconTitleParts[] = 'SFP+ Ports: ' . implode(', ', $sfpPlusPorts);
+                $iconTitleParts[] = 'Fiber (SFP) Ports: ' . implode(', ', $sfpPorts);
             }
             $iconTitle = empty($iconTitleParts) ? 'Ports not configured' : implode(' • ', $iconTitleParts);
 
             $iconDots = [];
-            foreach ($sfpPorts as $portNo) { $iconDots[] = ['type' => 'sfp', 'no' => (int)$portNo]; }
-            foreach ($sfpPlusPorts as $portNo) { $iconDots[] = ['type' => 'sfp_plus', 'no' => (int)$portNo]; }
+            foreach ($sfpPorts as $portNo) {
+                $iconDots[] = ['type' => 'sfp', 'no' => (int)$portNo];
+            }
 
             usort($iconDots, function ($a, $b) use ($layout) {
                 $aNo = (int)($a['no'] ?? 0);
@@ -706,8 +691,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                     if ($dotColor !== '') {
                         $dotStyleRules[] = 'background:' . sanitize($dotColor);
                     }
-                    if ($dotType === 'sfp' || $dotType === 'sfp_plus') {
-                        // Why: Keep SFP/SFP+ color previews fully solid so selected cable/status colors are not visually faded.
+                    if ($dotType === 'sfp') {
+                        // Why: Keep fiber (SFP family) color previews fully solid so selected cable/status colors are not visually faded.
                         $dotStyleRules[] = 'background-image:none';
                     }
                     if ($dotIsClickable) {
@@ -801,7 +786,7 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotPortId = isset($dotPort['id']) ? (int)$dotPort['id'] : 0;
                 $dotStatusRaw = ($dotPort && array_key_exists('status_label', $dotPort)) ? trim((string)$dotPort['status_label']) : '';
                 $dotStatusAttr = sanitize($dotStatusRaw !== '' ? $dotStatusRaw : 'Unknown');
-                // Why: SFP/SFP+ placeholder dots can be rendered before an IDF port row exists; keep routing by falling back to the card position id.
+                // Why: Fiber placeholder dots can be rendered before an IDF port row exists; keep routing by falling back to the card position id.
                 $dotFallbackPositionId = isset($options['position_id']) ? (int)$options['position_id'] : 0;
                 $dotPositionIdAttr = isset($dotPort['position_id']) ? (int)$dotPort['position_id'] : $dotFallbackPositionId;
                 $dotRoutingConnectedTo = $dotPort ? trim((string)($dotPort['idf_port_connected_for_routing'] ?? '')) : '';

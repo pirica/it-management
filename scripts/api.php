@@ -60,6 +60,7 @@
  * Database seed data now includes QSFP switch port type entries for companies 1 through 5 in `switch_port_types`.
  * `switch_port_types` table definition now sets AUTO_INCREMENT to 21 so inserts continue correctly after seeded IDs 1-20.
  * includes/get_ports.php now avoids PHP 8-only string helpers so the switch-port loader returns JSON correctly on PHP 7.4 environments.
+ * Switch tooling and rack/device port visualizers now treat SFP+ as part of the single fiber bucket `sfp` (`includes/get_ports.php`, `modules/idfs/port_visualizer_helper.php`, `modules/equipment/index.php`, IDF rack/device views); rack/device fallback fiber placeholders use `idf_resolve_synthetic_fiber_port_no` so numbering stays RJ45-tail aligned when hydration is incomplete.
  * includes/get_ports.php now guards equipment_fiber table-existence checks when shared helpers are unavailable, preventing fatal errors that returned empty AJAX bodies.
  * Equipment create/edit switch form now hides Fiber Ports/Fiber Patch/Fiber Rack/Fiber Port Label inputs while keeping Fiber Ports Number visible for switch sizing.
  * Switch port seeding now resolves Fiber Ports Number-only fallback types from equipment_fiber.name (tenant-first, global fallback) when no fiber type is saved, so fiber ports are still auto-created without hardcoded labels.

@@ -166,9 +166,8 @@ function fetch_default_fiber_name(mysqli $conn, int $companyId): string
     $hasCompanyId = itm_table_has_column($conn, 'equipment_fiber', 'company_id');
     $orderSql = "ORDER BY
         CASE
-            WHEN LOWER(name) LIKE '%sfp+%' THEN 1
             WHEN LOWER(name) LIKE '%sfp%' THEN 0
-            ELSE 2
+            ELSE 1
         END,
         id ASC
         LIMIT 1";
@@ -219,9 +218,6 @@ function normalize_port_type(string $portType): string
     $normalized = str_replace(['+', '-', '/'], [' plus ', ' ', ' '], $normalized);
     $normalized = preg_replace('/\s+/', ' ', $normalized);
 
-    if (strpos($normalized, 'sfp') !== false && strpos($normalized, 'plus') !== false) {
-        return 'sfp_plus';
-    }
     if (strpos($normalized, 'sfp') !== false) {
         return 'sfp';
     }
@@ -285,7 +281,7 @@ if ($stmtTable) {
 
 $availablePortTypes = $hasPortTypesTable
     ? fetch_available_port_types($conn)
-    : ['rj45', 'sfp', 'sfp_plus'];
+    : ['rj45', 'sfp'];
 if (!in_array('rj45', $availablePortTypes, true)) {
     $availablePortTypes[] = 'rj45';
 }
@@ -367,7 +363,7 @@ if ($rj45Count <= 0) {
     $rj45Count = 24; // Standard fallback
 }
 
-// Calculate SFP/SFP+ port counts
+// Calculate fiber (SFP/SFP+) port counts as one internal family (`sfp`).
 $fiberPortsNumber = (int)preg_replace('/\D+/', '', (string)$switch['fiber_ports_number']);
 $legacyFiberCount = (int)preg_replace('/\D+/', '', (string)$switch['fiber_count']);
 $fiberCount = $fiberPortsNumber > 0 ? $fiberPortsNumber : $legacyFiberCount;
@@ -380,12 +376,11 @@ if ($fiberCount > 0 && $fiberName === '') {
     $fiberName = fetch_default_fiber_name($conn, (int)$company_id);
     $fiberHint = trim($fiberLabel . ' ' . $fiberName);
 }
-$hasSfpPlusLabel = strpos($fiberHint, 'sfp+') !== false;
-$hasSfpLabel = strpos($fiberHint, 'sfp') !== false;
-$sfpCount = $hasSfpPlusLabel ? 0 : ($hasSfpLabel ? $fiberCount : 0);
-$sfpPlusCount = $hasSfpPlusLabel ? $fiberCount : 0;
-if (!in_array('sfp', $availablePortTypes, true)) { $sfpCount = 0; }
-if (!in_array('sfp_plus', $availablePortTypes, true)) { $sfpPlusCount = 0; }
+$hasFiberHint = strpos($fiberHint, 'sfp') !== false;
+$sfpCount = $hasFiberHint ? $fiberCount : 0;
+if (!in_array('sfp', $availablePortTypes, true)) {
+    $sfpCount = 0;
+}
 
 $hasManagementIdColumn = false;
 $managementIdColumnRes = mysqli_query($conn, "SHOW COLUMNS FROM `switch_ports` LIKE 'management_id'");
@@ -567,7 +562,6 @@ function remove_duplicate_ports(mysqli $conn, int $companyId, int $switchId, boo
 $portTypeIdMap = $isNumericPortTypeColumn ? fetch_port_type_id_map($conn, (int)$company_id) : [];
 seed_ports($conn, (int)$company_id, $switchId, 'rj45', $rj45Count, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId, $hasManagementIdColumn, $defaultManagementId);
 seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId, $hasManagementIdColumn, $defaultManagementId);
-seed_ports($conn, (int)$company_id, $switchId, 'sfp_plus', $sfpPlusCount, $hasEquipmentId, $hasPortType, $isNumericPortTypeColumn, $portTypeIdMap, $defaultStatusId, $defaultColorId, $hasManagementIdColumn, $defaultManagementId);
 remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
 // Fetch all port details including status, color, and VLAN
@@ -594,7 +588,7 @@ if ($hasEquipmentId && $hasPortType) {
             {$portTypeJoinSql}
             WHERE sp.company_id = ?
               AND sp.equipment_id = ?
-            ORDER BY FIELD(LOWER({$portTypeSelectSql}), 'rj45', 'sfp', 'sfp+'), sp.port_number ASC";
+            ORDER BY CASE WHEN LOWER(TRIM(COALESCE({$portTypeSelectSql}, 'RJ45'))) LIKE 'sfp%' THEN 1 ELSE 0 END ASC, sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);
     $result = false;
     if ($stmt) {
@@ -671,21 +665,6 @@ if (!($hasEquipmentId && $hasPortType)) {
         ];
     }
 
-    for ($n = 1; $n <= $sfpPlusCount; $n++) {
-        $ports[] = [
-            'id' => 'virtual-sfp-plus-' . $n,
-            'port_type' => 'sfp_plus',
-            'port_number' => $n,
-            'label' => 'SFP+ ' . $n,
-            'status' => 'Unknown',
-            'color' => 'grey',
-            'color_hex' => '#9ca3af',
-            'vlan_id' => null,
-            'vlan_name' => null,
-            'vlan_color' => null,
-            'comments' => '',
-        ];
-    }
 }
 
 // Return final JSON payload
@@ -705,7 +684,6 @@ echo json_encode([
     'layout' => [
         'rj45' => $rj45Count,
         'sfp' => $sfpCount,
-        'sfp_plus' => $sfpPlusCount,
     ],
     'port_types' => $availablePortTypes,
 ]);

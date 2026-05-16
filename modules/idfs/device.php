@@ -176,7 +176,6 @@ if (!$pos) {
 $ports = [];
 $rj45PortNumbers = [];
 $sfpPortNumbers = [];
-$sfpPlusPortNumbers = [];
 
 $hasSwitchPortsLabelColumn = false;
 $hasSwitchPortsToPatchPortColumn = false;
@@ -713,9 +712,7 @@ foreach ($ports as $portMeta) {
         continue;
     }
     $typeRaw = strtolower(trim((string)($portMeta['port_type_label'] ?? ($portMeta['port_type'] ?? ''))));
-    if (strpos($typeRaw, 'sfp+') !== false || strpos($typeRaw, 'sfp plus') !== false) {
-        $sfpPlusPortNumbers[] = $portNo;
-    } elseif (strpos($typeRaw, 'sfp') !== false) {
+    if (strpos($typeRaw, 'sfp') !== false) {
         $sfpPortNumbers[] = $portNo;
     } else {
         $rj45PortNumbers[] = $portNo;
@@ -726,8 +723,6 @@ $rj45PortNumbers = array_values(array_unique($rj45PortNumbers));
 sort($rj45PortNumbers);
 $sfpPortNumbers = array_values(array_unique($sfpPortNumbers));
 sort($sfpPortNumbers);
-$sfpPlusPortNumbers = array_values(array_unique($sfpPlusPortNumbers));
-sort($sfpPlusPortNumbers);
 
 if (empty($rj45PortNumbers)) {
     $rj45PortLabel = (string)($pos['switch_rj45_name'] ?? '');
@@ -742,18 +737,25 @@ if (empty($rj45PortNumbers)) {
     }
 }
 
-if (empty($sfpPortNumbers) && empty($sfpPlusPortNumbers)) {
+if (empty($sfpPortNumbers)) {
     $fiberFallbackCount = (int)($pos['sfp_count'] ?? 0);
     if ($fiberFallbackCount <= 0) {
         $fiberFallbackCount = (int)($pos['equipment_fiber_ports_number'] ?? 0);
     }
     if ($fiberFallbackCount > 0) {
-        $fiberLabel = strtolower(trim((string)($pos['equipment_fiber_port_label'] ?? '')));
-        if (strpos($fiberLabel, 'sfp+') !== false || strpos($fiberLabel, 'sfp plus') !== false) {
-            $sfpPlusPortNumbers = range(1, $fiberFallbackCount);
-        } else {
-            $sfpPortNumbers = range(1, $fiberFallbackCount);
+        $fiberBaseline = (int)($pos['rj45_count'] ?? 0);
+        if (!empty($rj45PortNumbers)) {
+            $fiberBaseline = max($fiberBaseline, max($rj45PortNumbers));
         }
+        $switchRjNameHint = trim((string)($pos['switch_rj45_name'] ?? ''));
+        if ($switchRjNameHint !== '' && preg_match('/(\d+)/', $switchRjNameHint, $rjDigits)) {
+            $fiberBaseline = max($fiberBaseline, (int)$rjDigits[1]);
+        }
+        $synthFiber = [];
+        for ($fiberOrd = 1; $fiberOrd <= $fiberFallbackCount; $fiberOrd++) {
+            $synthFiber[] = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrd);
+        }
+        $sfpPortNumbers = $synthFiber;
     }
 }
 
@@ -1336,7 +1338,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <div class="idf-device-port-visual">
                 <?php
                 $deviceGridPortType = 'rj45';
-                if (!empty($sfpPortNumbers) || !empty($sfpPlusPortNumbers)) {
+                if (!empty($sfpPortNumbers)) {
                     $deviceGridPortType = 'all';
                 }
                 echo itm_render_port_visualizer($ports, [
@@ -1352,7 +1354,6 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     'grid_port_type' => $deviceGridPortType,
                     'rj45_ports' => $rj45PortNumbers,
                     'sfp_ports' => $sfpPortNumbers,
-                    'sfp_plus_ports' => $sfpPlusPortNumbers
                 ]);
                 ?>
                 </div>
@@ -2188,7 +2189,7 @@ function normalizePortTypeLabel(value) {
         .replace(/\s+/g, '')
         .replace(/\+/g, 'plus');
     if (normalized.indexOf('sfp') !== -1) {
-        return normalized.indexOf('plus') !== -1 ? 'sfp_plus' : 'sfp';
+        return 'sfp';
     }
     return 'rj45';
 }
@@ -2206,7 +2207,7 @@ function portTypeLinkMismatchMessage(typeLabelA, typeLabelB) {
         || (portTypeLinkFamily(typeLabelA) === 'fiber' ? 'SFP' : 'RJ45');
     const displayB = String(typeLabelB || '').trim()
         || (portTypeLinkFamily(typeLabelB) === 'fiber' ? 'SFP' : 'RJ45');
-    return `Cannot link ${displayA} to ${displayB}. RJ45 ports can only connect to RJ45 ports on another device. SFP/SFP+ ports can only connect to SFP/SFP+ ports on another device.`;
+    return `Cannot link ${displayA} to ${displayB}. RJ45 ports can only connect to RJ45 ports on another device. Fiber (SFP) ports can only connect to fiber ports on another device.`;
 }
 
 function filterLinkCompatibleDestinations(source, destinations) {
@@ -2300,7 +2301,7 @@ function fillDestinationSelect(selectEl, source, allowLinkedCurrent) {
         option.value = '';
         const sourceFamily = portTypeLinkFamily(source.port_type_label || 'RJ45');
         option.textContent = sourceFamily === 'fiber'
-            ? 'No available SFP/SFP+ destination ports'
+            ? 'No available fiber destination ports'
             : 'No available RJ45 destination ports';
         selectEl.appendChild(option);
     }
@@ -2614,7 +2615,7 @@ async function openLinkModal(portId) {
         option.value = '';
         const sourceFamily = portTypeLinkFamily(source.port_type_label || 'RJ45');
         option.textContent = sourceFamily === 'fiber'
-            ? 'No available SFP/SFP+ ports on other equipment'
+            ? 'No available fiber ports on other equipment'
             : 'No available RJ45 ports on other equipment';
         destinationSelect.appendChild(option);
     }
@@ -2886,7 +2887,7 @@ async function loadEquipmentPorts(equipmentId) {
             option.value = '';
             const sourceFamily = portTypeLinkFamily(sourcePortType);
             option.textContent = sourceFamily === 'fiber'
-                ? 'No compatible SFP/SFP+ equipment ports'
+                ? 'No compatible fiber equipment ports'
                 : 'No compatible RJ45 equipment ports';
             select.appendChild(option);
         }

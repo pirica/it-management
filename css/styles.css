@@ -1038,9 +1038,7 @@ input[type="color"] {
 }
 
 .itm-port-item--sfp,
-.itm-port-item--sfp_plus,
-.itm-device-icon-dot[data-port-type="sfp"],
-.itm-device-icon-dot[data-port-type="sfp_plus"] {
+.itm-device-icon-dot[data-port-type="sfp"] {
     border-radius: 50%;
 }
 

@@ -1308,7 +1308,7 @@ function idf_port_type_link_mismatch_message(string $typeLabelA, string $typeLab
     $displayB = trim($typeLabelB) !== '' ? trim($typeLabelB) : (idf_port_type_link_family($typeLabelB) === 'fiber' ? 'SFP' : 'RJ45');
     return 'Cannot link ' . $displayA . ' to ' . $displayB
         . '. RJ45 ports can only connect to RJ45 ports on another device.'
-        . ' SFP/SFP+ ports can only connect to SFP/SFP+ ports on another device.';
+        . ' Fiber (SFP) ports can only connect to fiber ports on another device.';
 }
 
 function idf_fetch_port_type_labels(mysqli $conn, int $company_id, array $portIds): array {
