@@ -50,35 +50,11 @@ $unknownStatusId = idf_resolve_status_id($conn, $company_id, 'Unknown', 'Unknown
 if ($unknownStatusId <= 0) {
     idf_fail('Unable to resolve default status for company', 500);
 }
-$rj45PortTypeId = idf_resolve_port_type_id($conn, $company_id, 'RJ45', 'RJ45');
-if ($rj45PortTypeId <= 0) {
-    idf_fail('Unable to resolve default port type for company', 500);
-}
-
-$portRowsToInsert = [];
-if ($count > 0) {
-    for ($n = 1; $n <= $count; $n++) {
-        $rj45PortKey = $rj45PortTypeId . ':' . $n;
-        $portRowsToInsert[$rj45PortKey] = [
-            'port_no' => $n,
-            'port_type' => $rj45PortTypeId,
-        ];
-    }
-}
-
-$fiberPortsToInsert = [];
 if ($equipmentId > 0) {
     $stmtPortMeta = mysqli_prepare(
         $conn,
-        "SELECT
-            COALESCE(e.switch_fiber_ports_number, '') AS switch_fiber_ports_number,
-            COALESCE(e.switch_port_numbering_layout_id, 0) AS equipment_layout_id,
-            COALESCE(e.switch_environment_id, 0) AS switch_environment_id,
-            efc.id AS fiber_ports_number_id
+        "SELECT COALESCE(e.switch_environment_id, 0) AS switch_environment_id
          FROM equipment e
-         LEFT JOIN equipment_fiber_count efc
-           ON efc.company_id = e.company_id
-          AND efc.name = e.switch_fiber_ports_number
          WHERE e.company_id = ? AND e.id = ?
          LIMIT 1"
     );
@@ -89,123 +65,11 @@ if ($equipmentId > 0) {
         $portMetaRow = $resPortMeta ? mysqli_fetch_assoc($resPortMeta) : null;
         mysqli_stmt_close($stmtPortMeta);
         if ($portMetaRow) {
-            $fiberPortsNumberId = (int)($portMetaRow['fiber_ports_number_id'] ?? 0);
-            if ($switchPortNumberingLayoutId <= 0) {
-                $switchPortNumberingLayoutId = (int)($portMetaRow['equipment_layout_id'] ?? 0);
-            }
             $managementId = (int)($portMetaRow['switch_environment_id'] ?? 0);
         }
     }
-
-    $stmtFiberSwitchPorts = mysqli_prepare(
-        $conn,
-        "SELECT sp.port_number,
-                COALESCE(spt.id, 0) AS port_type_id,
-                COALESCE(spt.type, sp.port_type) AS port_type_name
-         FROM switch_ports sp
-         LEFT JOIN switch_port_types spt
-           ON spt.company_id = sp.company_id
-          AND spt.type = sp.port_type
-         WHERE sp.company_id = ? AND sp.equipment_id = ?
-         ORDER BY sp.port_number ASC"
-    );
-    if ($stmtFiberSwitchPorts) {
-        mysqli_stmt_bind_param($stmtFiberSwitchPorts, 'ii', $company_id, $equipmentId);
-        mysqli_stmt_execute($stmtFiberSwitchPorts);
-        $resFiberSwitchPorts = mysqli_stmt_get_result($stmtFiberSwitchPorts);
-        while ($resFiberSwitchPorts && ($fiberSwitchPortRow = mysqli_fetch_assoc($resFiberSwitchPorts))) {
-            $fiberPortNo = (int)($fiberSwitchPortRow['port_number'] ?? 0);
-            if ($fiberPortNo <= 0) {
-                continue;
-            }
-
-            $portTypeNameRaw = trim((string)($fiberSwitchPortRow['port_type_name'] ?? ''));
-            $portTypeNameNormalized = strtolower($portTypeNameRaw);
-            $resolvedPortTypeId = (int)($fiberSwitchPortRow['port_type_id'] ?? 0);
-            if ($resolvedPortTypeId <= 0) {
-                $fiberPortTypeFallback = (strpos($portTypeNameNormalized, 'sfp+') !== false || strpos($portTypeNameNormalized, 'sfp plus') !== false)
-                    ? 'sfp+'
-                    : ((strpos($portTypeNameNormalized, 'sfp') !== false) ? 'sfp' : 'RJ45');
-                $resolvedPortTypeId = idf_resolve_port_type_id($conn, $company_id, $portTypeNameRaw, $fiberPortTypeFallback);
-            }
-            if ($resolvedPortTypeId <= 0) {
-                continue;
-            }
-
-            $portKey = $resolvedPortTypeId . ':' . $fiberPortNo;
-            $portMeta = [
-                'port_no' => $fiberPortNo,
-                'port_type' => $resolvedPortTypeId,
-            ];
-            $portRowsToInsert[$portKey] = $portMeta;
-            if (strpos($portTypeNameNormalized, 'sfp') !== false) {
-                $fiberPortsToInsert[$portKey] = $portMeta;
-            }
-        }
-        mysqli_stmt_close($stmtFiberSwitchPorts);
-    }
-
-    $stmtFiberMeta = mysqli_prepare(
-        $conn,
-        "SELECT COALESCE(e.switch_fiber_ports_number, 0) AS switch_fiber_ports_number,
-                COALESCE(e.switch_fiber_port_label, '') AS switch_fiber_port_label,
-                COALESCE(ef.name, '') AS switch_fiber_name
-         FROM equipment e
-         LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-         WHERE e.company_id = ? AND e.id = ?
-         LIMIT 1"
-    );
-    if ($stmtFiberMeta) {
-        mysqli_stmt_bind_param($stmtFiberMeta, 'ii', $company_id, $equipmentId);
-        mysqli_stmt_execute($stmtFiberMeta);
-        $resFiberMeta = mysqli_stmt_get_result($stmtFiberMeta);
-        $fiberMetaRow = $resFiberMeta ? mysqli_fetch_assoc($resFiberMeta) : null;
-        mysqli_stmt_close($stmtFiberMeta);
-
-        if ($fiberMetaRow) {
-            $fiberCount = (int)($fiberMetaRow['switch_fiber_ports_number'] ?? 0);
-            if ($fiberCount > 0) {
-                $fiberHint = strtolower(trim(
-                    (string)($fiberMetaRow['switch_fiber_port_label'] ?? '') . ' ' . (string)($fiberMetaRow['switch_fiber_name'] ?? '')
-                ));
-                $fiberTypeFallback = (strpos($fiberHint, 'sfp+') !== false || strpos($fiberHint, 'sfp plus') !== false)
-                    ? 'sfp+'
-                    : 'sfp';
-                $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
-                if ($fiberTypeId > 0) {
-                    $rjFootprintHint = max(0, (int)$count);
-                    if ($rjFootprintHint <= 0 && $equipmentId > 0) {
-                        $rjFootprintHint = idf_equipment_switch_rj45_capacity_hint($conn, $company_id, $equipmentId);
-                    }
-                    $fiberBaselineResolved = idf_resolve_fiber_number_baseline_after_rj45($portRowsToInsert, $rj45PortTypeId, $rjFootprintHint);
-                    for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberCount; $fiberOrdinal++) {
-                        $fiberPortNoSynth = idf_resolve_synthetic_fiber_port_no($fiberBaselineResolved, $fiberOrdinal);
-                        $fiberPortKey = $fiberTypeId . ':' . $fiberPortNoSynth;
-                        if (!isset($fiberPortsToInsert[$fiberPortKey])) {
-                            $fiberPortsToInsert[$fiberPortKey] = [
-                                'port_no' => $fiberPortNoSynth,
-                                'port_type' => $fiberTypeId,
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-    }
-} elseif ($sfpCount > 0) {
-    $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, 'sfp', 'sfp');
-    if ($fiberTypeId > 0) {
-        for ($fiberPortNo = 1; $fiberPortNo <= $sfpCount; $fiberPortNo++) {
-            $fiberPortKey = $fiberTypeId . ':' . $fiberPortNo;
-            if (!isset($fiberPortsToInsert[$fiberPortKey])) {
-                $fiberPortsToInsert[$fiberPortKey] = [
-                    'port_no' => $fiberPortNo,
-                    'port_type' => $fiberTypeId,
-                ];
-            }
-        }
-    }
 }
+
 if ($managementId <= 0) {
     $stmtUnmanaged = mysqli_prepare(
         $conn,
@@ -226,16 +90,6 @@ if ($managementId <= 0) {
             $managementId = (int)($unmanagedRow['id'] ?? 0);
         }
     }
-}
-
-if (!empty($fiberPortsToInsert)) {
-    foreach ($fiberPortsToInsert as $fiberPortKey => $fiberPortMeta) {
-        $portRowsToInsert[$fiberPortKey] = $fiberPortMeta;
-    }
-}
-
-if (empty($portRowsToInsert)) {
-    idf_fail('This device has rj45_count=0 and no fiber (SFP) ports configured');
 }
 
 mysqli_begin_transaction($conn);
@@ -330,6 +184,33 @@ try {
         }
     }
 
+    // Why: Regen rebuilds from equipment + position capacity; stale switch_ports SFP 1..N must not stack onto RJ45-tail synthesis.
+    if ($equipmentId > 0) {
+        $stmtDeleteSwitchPortsEarly = mysqli_prepare($conn, "DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ?");
+        if ($stmtDeleteSwitchPortsEarly) {
+            mysqli_stmt_bind_param($stmtDeleteSwitchPortsEarly, 'ii', $company_id, $equipmentId);
+            mysqli_stmt_execute($stmtDeleteSwitchPortsEarly);
+            mysqli_stmt_close($stmtDeleteSwitchPortsEarly);
+        }
+    }
+
+    $positionRowForSlots = [
+        'id' => $position_id,
+        'rj45_count' => $count,
+        'sfp_count' => $sfpCount,
+        'equipment_id' => $equipmentId > 0 ? (string)$equipmentId : '',
+        'switch_port_numbering_layout_id' => $switchPortNumberingLayoutId,
+    ];
+    $portRowsToInsert = idf_collect_port_slots_for_position($conn, $company_id, $positionRowForSlots);
+    $fiberPortsNumberId = (int)($positionRowForSlots['_fiber_ports_number_id'] ?? 0);
+    if ((int)($positionRowForSlots['_switch_port_numbering_layout_id'] ?? 0) > 0) {
+        $switchPortNumberingLayoutId = (int)$positionRowForSlots['_switch_port_numbering_layout_id'];
+    }
+
+    if (empty($portRowsToInsert)) {
+        throw new RuntimeException('This device has rj45_count=0 and no fiber (SFP) ports configured');
+    }
+
     $stmtDel = mysqli_prepare($conn, "DELETE FROM idf_ports WHERE position_id=? AND company_id=?");
     if ($stmtDel) {
         mysqli_stmt_bind_param($stmtDel, 'ii', $position_id, $company_id);
@@ -355,13 +236,6 @@ try {
     }
 
     if ($equipmentId > 0) {
-        $stmtDeleteSwitchPorts = mysqli_prepare($conn, "DELETE FROM switch_ports WHERE company_id = ? AND equipment_id = ?");
-        if ($stmtDeleteSwitchPorts) {
-            mysqli_stmt_bind_param($stmtDeleteSwitchPorts, 'ii', $company_id, $equipmentId);
-            mysqli_stmt_execute($stmtDeleteSwitchPorts);
-            mysqli_stmt_close($stmtDeleteSwitchPorts);
-        }
-
         $portTypeNameById = [];
         $stmtPortTypes = mysqli_prepare($conn, "SELECT id, type FROM switch_port_types WHERE company_id = ?");
         if ($stmtPortTypes) {
