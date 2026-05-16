@@ -3,6 +3,27 @@
  * PoE reference helpers — split legacy combined names and build display labels.
  */
 
+if (!function_exists('itm_equipment_poe_has_column')) {
+    /**
+     * Cached schema probe for optional equipment_poe columns on mixed DB versions.
+     */
+    function itm_equipment_poe_has_column(mysqli $conn, $column) {
+        static $cache = [];
+        $column = (string)$column;
+        $allowed = ['watts', 'active'];
+        if (!in_array($column, $allowed, true)) {
+            return false;
+        }
+        if (array_key_exists($column, $cache)) {
+            return $cache[$column];
+        }
+        $colEsc = mysqli_real_escape_string($conn, $column);
+        $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment_poe` LIKE '{$colEsc}'");
+        $cache[$column] = ($colRes && mysqli_num_rows($colRes) > 0);
+        return $cache[$column];
+    }
+}
+
 if (!function_exists('itm_equipment_poe_split_legacy_name')) {
     /**
      * Split "PoE (802.3af) - up to 15.4W" into protocol name and watts label.
@@ -64,15 +85,17 @@ if (!function_exists('itm_equipment_poe_load_options')) {
             return $options;
         }
 
-        $hasWatts = false;
-        $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment_poe` LIKE 'watts'");
-        if ($colRes && mysqli_num_rows($colRes) > 0) {
-            $hasWatts = true;
+        $hasWatts = itm_equipment_poe_has_column($conn, 'watts');
+        $hasActive = itm_equipment_poe_has_column($conn, 'active');
+
+        $where = 'company_id = ' . $company_id;
+        if ($hasActive) {
+            $where .= ' AND active = 1';
         }
 
         $select = $hasWatts
-            ? 'SELECT id, name, watts FROM equipment_poe WHERE company_id = ' . $company_id . ' ORDER BY name ASC, watts ASC'
-            : 'SELECT id, name FROM equipment_poe WHERE company_id = ' . $company_id . ' ORDER BY name ASC';
+            ? 'SELECT id, name, watts FROM equipment_poe WHERE ' . $where . ' ORDER BY name ASC, watts ASC'
+            : 'SELECT id, name FROM equipment_poe WHERE ' . $where . ' ORDER BY name ASC';
 
         $res = mysqli_query($conn, $select);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -123,11 +146,7 @@ if (!function_exists('itm_equipment_poe_append_persisted_row')) {
             }
         }
 
-        $hasWatts = false;
-        $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment_poe` LIKE 'watts'");
-        if ($colRes && mysqli_num_rows($colRes) > 0) {
-            $hasWatts = true;
-        }
+        $hasWatts = itm_equipment_poe_has_column($conn, 'watts');
 
         $found = null;
         if ($companyId > 0) {
