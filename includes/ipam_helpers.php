@@ -387,6 +387,33 @@ function itm_ipam_sql_equipment_select(): string
 }
 
 /**
+ * Why: List queries must not show Free when an equipment link exists (FK or matching ip_address).
+ */
+function itm_ipam_sql_status_select(): string
+{
+    return "CASE
+        WHEN ia.status = 'free'
+             AND COALESCE(NULLIF(ia.equipment_id, 0), e_ip.id) IS NOT NULL
+             AND COALESCE(NULLIF(ia.equipment_id, 0), e_ip.id) > 0
+        THEN 'used'
+        ELSE ia.status
+    END AS status";
+}
+
+/**
+ * Why: View/edit screens reuse the same effective status rules as the focused IP list.
+ */
+function itm_ipam_effective_status_from_row(array $row): string
+{
+    $status = strtolower(trim((string)($row['status'] ?? 'free')));
+    if ($status !== 'free') {
+        return $status;
+    }
+
+    return (int)($row['equipment_id'] ?? 0) > 0 ? 'used' : 'free';
+}
+
+/**
  * @return array{id: int, name: string, hostname: string}|null
  */
 function itm_ipam_find_equipment_by_ip_text(mysqli $conn, int $company_id, string $ip_text): ?array
@@ -452,6 +479,22 @@ function itm_ipam_backfill_equipment_links_from_ip_address(mysqli $conn, int $co
     $updated = mysqli_stmt_affected_rows($stmt);
     mysqli_stmt_close($stmt);
 
+    $stmtStatus = mysqli_prepare(
+        $conn,
+        "UPDATE ip_addresses
+         SET status = 'used'
+         WHERE company_id = ?
+           AND status = 'free'
+           AND equipment_id IS NOT NULL
+           AND equipment_id > 0"
+    );
+    if ($stmtStatus) {
+        mysqli_stmt_bind_param($stmtStatus, 'i', $company_id);
+        mysqli_stmt_execute($stmtStatus);
+        $updated += max(0, mysqli_stmt_affected_rows($stmtStatus));
+        mysqli_stmt_close($stmtStatus);
+    }
+
     return max(0, $updated);
 }
 
@@ -467,9 +510,10 @@ function itm_ipam_fetch_subnet_addresses(mysqli $conn, int $company_id, int $sub
     $limit = max(1, min(1000, $limit));
     $equipmentJoins = itm_ipam_sql_equipment_joins();
     $equipmentSelect = itm_ipam_sql_equipment_select();
+    $statusSelect = itm_ipam_sql_status_select();
     $stmt = mysqli_prepare(
         $conn,
-        "SELECT ia.id, ia.ip_text, ia.status, ia.hostname,
+        "SELECT ia.id, ia.ip_text, {$statusSelect}, ia.hostname,
                 {$equipmentSelect}
          FROM ip_addresses ia
          {$equipmentJoins}
@@ -627,9 +671,17 @@ function itm_ipam_address_list_where_clause(int $company_id, int $subnet_id, str
 
 function itm_ipam_address_list_sort_sql(string $sort, string $dir): string
 {
+    $statusSort = "CASE
+        WHEN ia.status = 'free'
+             AND COALESCE(NULLIF(ia.equipment_id, 0), e_ip.id) IS NOT NULL
+             AND COALESCE(NULLIF(ia.equipment_id, 0), e_ip.id) > 0
+        THEN 'used'
+        ELSE ia.status
+    END";
+
     $sortMap = [
         'ip_text' => 'INET_ATON(ia.ip_text)',
-        'status' => 'ia.status',
+        'status' => $statusSort,
         'subnet' => 's.cidr',
         'subnet_cidr' => 's.cidr',
         'equipment' => "COALESCE(NULLIF(TRIM(e_fk.hostname), ''), NULLIF(TRIM(e_ip.hostname), ''), NULLIF(TRIM(e_fk.name), ''), NULLIF(TRIM(e_ip.name), ''), '')",
@@ -702,13 +754,16 @@ function itm_ipam_fetch_address_list(
         return [];
     }
 
+    itm_ipam_backfill_equipment_links_from_ip_address($conn, $company_id);
+
     $limit = max(1, min(500, $limit));
     $offset = max(0, $offset);
     $where = itm_ipam_address_list_where_clause($company_id, $subnet_id, $searchRaw);
     $orderSql = itm_ipam_address_list_sort_sql($sort, $dir);
     $equipmentJoins = itm_ipam_sql_equipment_joins();
     $equipmentSelect = itm_ipam_sql_equipment_select();
-    $sql = "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.notes, ia.is_gateway,
+    $statusSelect = itm_ipam_sql_status_select();
+    $sql = "SELECT ia.id, ia.ip_text, {$statusSelect}, ia.hostname, ia.notes, ia.is_gateway,
                    s.id AS subnet_id, s.cidr AS subnet_cidr,
                    {$equipmentSelect}
             FROM ip_addresses ia
