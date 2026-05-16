@@ -24,6 +24,10 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 ![Equipment module list](docs/readme/equipment-list.png)
 
+**IDF rack** — visual rack layout with positions, port grid, and linked device management.
+
+![IDF rack view](docs/readme/idf.png)
+
 ## Installation
 
 1. Extract the project files into your web root.
@@ -37,6 +41,7 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 ## Modules
 
 - Equipment — Manage IT equipment
+- IDFs — Rack layout, positions, ports, and cable links
 - Printers — Track printers and supplies
 - Workstations — Manage workstations
 - Tickets — Support ticket system
