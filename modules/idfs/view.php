@@ -935,48 +935,6 @@ foreach ($equipmentOptions as $equipmentOption) {
             .idf-modal { width:100%; margin:10px auto; }
             .idf-grid-2 { grid-template-columns:1fr; }
         }
-        .idf-device-embed-backdrop {
-            display:none;
-            position:fixed;
-            inset:0;
-            left:250px;
-            z-index:1300;
-            background:rgba(0, 0, 0, .5);
-            padding:14px;
-            align-items:center;
-            justify-content:center;
-        }
-        .idf-device-embed-shell {
-            width:min(1200px, calc(100vw - 278px));
-            max-height:min(92vh, 920px);
-            margin:auto;
-            background:var(--bg-primary);
-            border-radius:16px;
-            border:1px solid var(--border);
-            box-shadow: var(--shadow-lg);
-            display:flex;
-            flex-direction:column;
-            overflow:hidden;
-            flex:1;
-            min-height:0;
-        }
-        .idf-device-embed-header {
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:8px;
-            padding:10px 14px;
-            border-bottom:1px solid var(--border);
-            flex-shrink:0;
-        }
-        .idf-device-embed-title { font-weight:600; font-size:14px; }
-        .idf-device-embed-frame { flex:1; width:100%; min-height:min(82vh, 820px); border:0; background:var(--bg-primary); }
-        body.sidebar-collapsed .idf-device-embed-backdrop { left:0; }
-        @media (max-width: 768px) {
-            .idf-device-embed-backdrop { left:0; padding:8px; }
-            .idf-device-embed-shell { width:100%; max-height:calc(100vh - 24px); }
-            .idf-device-embed-frame { min-height:70vh; }
-        }
     </style>
 </head>
 <body>
@@ -1066,16 +1024,11 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     if (!empty($rackSfpPorts)) {
                                                         $rackGridPortType = 'all';
                                                     }
-                                                    $rackEquipRawForPorts = isset($pos['equipment_id']) ? trim((string)$pos['equipment_id']) : '';
-                                                    $rackLinkedEquipmentIdForPorts = ($rackEquipRawForPorts !== '' && ctype_digit($rackEquipRawForPorts))
-                                                        ? (int)$rackEquipRawForPorts
-                                                        : 0;
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [
                                                         'layout' => (string)($pos['layout_name'] ?? 'Vertical'),
                                                         'show_device_icon' => ((int)($pos['equipment_is_switch'] ?? 0) === 1),
                                                         'clickable' => true,
                                                         'position_id' => (int)($pos['id'] ?? 0),
-                                                        'linked_equipment_id' => $rackLinkedEquipmentIdForPorts,
                                                         'company_name' => (string)($idf['company_name'] ?? ''),
                                                         'location_name' => $locationNameLabel,
                                                         'idf_name' => (string)($idf['name'] ?? ''),
@@ -1265,16 +1218,6 @@ foreach ($equipmentOptions as $equipmentOption) {
     </div>
 </div>
 
-<div class="idf-modal-backdrop idf-device-embed-backdrop" id="idfDeviceEmbedBackdrop" onclick="closeDeviceEmbedIfBackdrop(event)">
-    <div class="idf-device-embed-shell" onclick="event.stopPropagation();">
-        <div class="idf-device-embed-header">
-            <div class="idf-device-embed-title" id="idfDeviceEmbedTitle">Port</div>
-            <button class="btn btn-sm" type="button" onclick="closeDeviceEmbed()">✖</button>
-        </div>
-        <iframe class="idf-device-embed-frame" id="idfDeviceEmbedFrame" title="IDF device"></iframe>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
@@ -1421,40 +1364,12 @@ function buildDeviceEditorUrl(positionId, portId, action, portNo) {
     return url.toString();
 }
 
-function buildEmbeddedDeviceEditorUrl(positionId, portId, action, portNo) {
-    const url = new URL(buildDeviceEditorUrl(positionId, portId, action, portNo), window.location.href);
-    url.searchParams.set('embed', '1');
-    url.searchParams.set('embed_modal', '1');
-    return url.toString();
-}
-
-function closeDeviceEmbed() {
-    const frame = document.getElementById('idfDeviceEmbedFrame');
-    const bd = document.getElementById('idfDeviceEmbedBackdrop');
-    if (frame) frame.src = 'about:blank';
-    if (bd) bd.style.display = 'none';
-}
-
-function closeDeviceEmbedIfBackdrop(e) {
-    if (e.target.id === 'idfDeviceEmbedBackdrop') closeDeviceEmbed();
-}
-
 function navigateToDeviceEditor(positionId, portId, action, portNo) {
     if (!positionId) {
         alert('Position not found for this port.');
         return;
     }
-    const embeddedUrl = buildEmbeddedDeviceEditorUrl(positionId, portId, action, portNo);
-    const frame = document.getElementById('idfDeviceEmbedFrame');
-    const bd = document.getElementById('idfDeviceEmbedBackdrop');
-    const titleEl = document.getElementById('idfDeviceEmbedTitle');
-    if (!frame || !bd) {
-        window.location.href = buildDeviceEditorUrl(positionId, portId, action, portNo);
-        return;
-    }
-    if (titleEl) titleEl.textContent = action === 'link' ? 'Create cable link' : 'Edit port';
-    frame.src = embeddedUrl;
-    bd.style.display = 'flex';
+    window.location.href = buildDeviceEditorUrl(positionId, portId, action, portNo);
 }
 
 const EQUIPMENT_LOOKUP = <?php echo json_encode($equipmentLookup, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
@@ -1807,9 +1722,9 @@ function onPortClick(portId, portElement) {
     const portNode = portElement && portElement.dataset ? portElement : null;
     const positionId = portNode ? Number(portNode.dataset.positionId || 0) : 0;
     const portNo = portNode ? Number(portNode.dataset.portNumber || 0) : 0;
-    // Why: Linked equipment exposes switch mirror rows; unracked hardware should land in Create Cable Link first.
-    const hasEquipmentLinked = !!(portNode && portNode.dataset.hasEquipmentLinked === '1');
-    const action = hasEquipmentLinked ? 'edit' : 'link';
+    // Why: Same notion as device.php Ports "Connected To": no idf_links / routed cable text ⇒ Create Cable Link; otherwise Edit Port (`finishInlineMutationOrReload` returns to `return_to` view.php).
+    const hasExplicitConnection = !!(portNode && portNode.dataset.hasExplicitConnection === '1');
+    const action = hasExplicitConnection ? 'edit' : 'link';
     navigateToDeviceEditor(positionId, Number(portId), action, portNo);
 }
 
@@ -1835,8 +1750,8 @@ function onPortDotClick(portElement) {
         alert('Position not found for this port.');
         return;
     }
-    const hasEquipmentLinked = portNode.dataset.hasEquipmentLinked === '1';
-    const action = hasEquipmentLinked ? 'edit' : 'link';
+    const hasExplicitConnection = portNode.dataset.hasExplicitConnection === '1';
+    const action = hasExplicitConnection ? 'edit' : 'link';
     navigateToDeviceEditor(positionId, 0, action, portNo);
 }
 
@@ -1881,19 +1796,6 @@ async function idfExportPdf() {
     }
     pdf.save(`idf-<?php echo (int)$idf_id; ?>.pdf`);
 }
-
-window.addEventListener('message', (event) => {
-    const payload = event.data;
-    if (!payload || typeof payload.type !== 'string') return;
-    if (payload.type === 'idf_device_embed_updated') {
-        closeDeviceEmbed();
-        reloadIdfRackView();
-        return;
-    }
-    if (payload.type === 'idf_device_embed_close') {
-        closeDeviceEmbed();
-    }
-});
 
 (function initSortable() {
     const el = document.getElementById('idfSlots');
