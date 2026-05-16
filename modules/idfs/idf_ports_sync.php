@@ -61,11 +61,11 @@ function idf_resolve_fiber_number_baseline_after_rj45(array $slotMap, int $rj45P
 }
 
 /**
- * RJ45 footprints already consume 1..baseline; synthesized fiber fills baseline+idx (pure-fiber installs keep 1..N).
+ * SFP port_no is per-type 1..N; idf_ports uniqueness is (position_id, port_no, port_type) so it does not collide with RJ45 1..N.
  */
 function idf_resolve_synthetic_fiber_port_no(int $rj45BaselineIncludingSlots, int $fiberOrdinalOneBased): int
 {
-    return $rj45BaselineIncludingSlots > 0 ? ($rj45BaselineIncludingSlots + $fiberOrdinalOneBased) : $fiberOrdinalOneBased;
+    return max(1, $fiberOrdinalOneBased);
 }
 
 /**
@@ -256,31 +256,22 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
                         : 'sfp';
                     $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
                     if ($fiberTypeId > 0) {
-                        $fiberSlotsPresent = 0;
-                        foreach ($portSlots as $slotScanFiber) {
+                        // Why: Fiber port_no is always 1..fiberCount per port_type (RJ45+SFP combo and pure-fiber installs).
+                        foreach ($portSlots as $slotKey => $slotScanFiber) {
                             if (!is_array($slotScanFiber)) {
                                 continue;
                             }
                             if ((int)($slotScanFiber['port_type'] ?? 0) !== $rj45PortTypeId) {
-                                $fiberSlotsPresent++;
+                                unset($portSlots[$slotKey]);
                             }
                         }
-                        $fiberSynthRemaining = max(0, $fiberCount - $fiberSlotsPresent);
-                        if ($fiberSynthRemaining > 0) {
-                            // Why: switch_ports already satisfies part of fiberCount; synthesize only the remaining RJ45-tail slots when needed.
-                            $fiberBaseline = idf_resolve_fiber_number_baseline_after_rj45($portSlots, $rj45PortTypeId, $rj45FootprintForFiberMath);
-                            for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberSynthRemaining; $fiberOrdinal++) {
-                                $fiberPortNo = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrdinal);
-                                $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
-                                if (!isset($portSlots[$fiberKey])) {
-                                    $portSlots[$fiberKey] = [
-                                        'port_no' => $fiberPortNo,
-                                        'port_type' => $fiberTypeId,
-                                    ];
-                                }
-                            }
+                        for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberCount; $fiberOrdinal++) {
+                            $fiberKey = $fiberTypeId . ':' . $fiberOrdinal;
+                            $portSlots[$fiberKey] = [
+                                'port_no' => $fiberOrdinal,
+                                'port_type' => $fiberTypeId,
+                            ];
                         }
-                        // Else: fiber footprint entirely defined by switch_ports; skip duplicate RJ45-tail synthesis.
                     }
                 }
             }
@@ -1065,5 +1056,56 @@ function idf_ensure_ports_for_position(mysqli $conn, int $company_id, int $posit
     }
     mysqli_stmt_close($stmtInsert);
 
+    $fiberCapPrune = (int)($positionRow['sfp_count'] ?? 0);
+    if ($fiberCapPrune <= 0 && $equipmentId > 0) {
+        $stmtFiberCap = mysqli_prepare(
+            $conn,
+            "SELECT COALESCE(e.switch_fiber_ports_number, 0) AS switch_fiber_ports_number
+             FROM equipment e
+             WHERE e.company_id = ? AND e.id = ?
+             LIMIT 1"
+        );
+        if ($stmtFiberCap) {
+            mysqli_stmt_bind_param($stmtFiberCap, 'ii', $company_id, $equipmentId);
+            mysqli_stmt_execute($stmtFiberCap);
+            $resFiberCap = mysqli_stmt_get_result($stmtFiberCap);
+            $fiberCapRow = $resFiberCap ? mysqli_fetch_assoc($resFiberCap) : null;
+            mysqli_stmt_close($stmtFiberCap);
+            $fiberCapPrune = (int)($fiberCapRow['switch_fiber_ports_number'] ?? 0);
+        }
+    }
+    if ($fiberCapPrune > 0) {
+        idf_prune_fiber_idf_ports_above_capacity($conn, $company_id, $positionId, $fiberCapPrune);
+    }
+
     return $inserted + $claimed;
+}
+
+/**
+ * Remove legacy RJ45-tail SFP rows (port_no > capacity) after switching to per-type 1..N numbering.
+ */
+function idf_prune_fiber_idf_ports_above_capacity(mysqli $conn, int $company_id, int $positionId, int $maxFiberPortNo): void
+{
+    if ($company_id <= 0 || $positionId <= 0 || $maxFiberPortNo <= 0) {
+        return;
+    }
+
+    $stmtDeleteExtraSfp = mysqli_prepare(
+        $conn,
+        "DELETE FROM idf_ports
+         WHERE company_id = ?
+           AND position_id = ?
+           AND port_type IN (
+                SELECT id
+                FROM switch_port_types
+                WHERE company_id = ?
+                  AND LOWER(type) LIKE '%sfp%'
+           )
+           AND port_no > ?"
+    );
+    if ($stmtDeleteExtraSfp) {
+        mysqli_stmt_bind_param($stmtDeleteExtraSfp, 'iiii', $company_id, $positionId, $company_id, $maxFiberPortNo);
+        mysqli_stmt_execute($stmtDeleteExtraSfp);
+        mysqli_stmt_close($stmtDeleteExtraSfp);
+    }
 }

@@ -639,20 +639,8 @@ if ($stmtPos) {
             sort($row['sfp_ports']);
         }
         if (empty($row['sfp_ports']) && $fiberSlotCount > 0) {
-            // Why: Match position_save/sync fiber synthesis when neither switch nor hydrated idf rows define fiber yet.
-            $baselineFromHydratedRj = 0;
-            foreach (($row['ports'] ?? []) as $itmHydr) {
-                if (itm_port_visualizer_type_key($itmHydr) !== 'rj45') {
-                    continue;
-                }
-                $baselineFromHydratedRj = max($baselineFromHydratedRj, (int)($itmHydr['port_no'] ?? 0));
-            }
-            $fiberBaseline = max($rj45PortCount, $baselineFromHydratedRj);
-            $synthFiber = [];
-            for ($fiberOrd = 1; $fiberOrd <= $fiberSlotCount; $fiberOrd++) {
-                $synthFiber[] = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrd);
-            }
-            $row['sfp_ports'] = $synthFiber;
+            // Why: Fiber slots use per-type numbering 1..fiberSlotCount (same as device.php and idf_collect_port_slots_for_position).
+            $row['sfp_ports'] = range(1, $fiberSlotCount);
         }
         // Why: idf/sync can accumulate more fiber rows than position sfp_count; options drive merge + pruning in the visualizer so dots match the badge.
         if ($fiberSlotCount > 0 && count($row['sfp_ports']) > $fiberSlotCount) {
