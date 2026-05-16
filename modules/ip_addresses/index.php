@@ -764,6 +764,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
+    if (function_exists('itm_ipam_prepare_post_before_crud')) {
+        itm_ipam_prepare_post_before_crud($conn, $crud_table, (int)$company_id, $_POST, $crud_action, (int)$editId, $errors);
+    }
+
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
@@ -856,8 +860,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
-    if (function_exists('itm_ipam_normalize_crud_row')) {
-        itm_ipam_normalize_crud_row($conn, $crud_table, (int)$company_id, $data, $_POST, $crud_action, (int)$editId, $errors);
+    if (function_exists('itm_ipam_apply_derived_sql_to_data')) {
+        itm_ipam_apply_derived_sql_to_data($conn, $crud_table, $data, $_POST);
     }
 
     if (empty($errors)) {
@@ -1085,7 +1089,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
                         $val = $data[$name] ?? '';
-                        $displayVal = ($val === 'NULL') ? '' : (string)$val;
+                        $itmPreferPostValues = $_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true);
+                        $displayVal = function_exists('itm_ipam_form_display_value')
+                            ? itm_ipam_form_display_value($name, $val, $itmPreferPostValues)
+                            : (($val === 'NULL') ? '' : (string)$val);
                     ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>

@@ -53,6 +53,21 @@ function itm_ipam_parse_cidr(string $cidr): array
     ];
 }
 
+/**
+ * Why: Users sometimes paste quoted values; strip wrappers before validation/display.
+ */
+function itm_ipam_trim_user_input($value): string
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+    if (($value[0] === "'" && substr($value, -1) === "'") || ($value[0] === '"' && substr($value, -1) === '"')) {
+        $value = substr($value, 1, -1);
+    }
+    return trim($value);
+}
+
 function itm_ipam_is_valid_ipv4(string $ip): bool
 {
     $ip = trim($ip);
