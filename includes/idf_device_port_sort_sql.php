@@ -7,12 +7,47 @@
  * primary sort column, otherwise duplex rows sharing the same port_no interleave oddly.
  */
 
+if (!function_exists('itm_idf_positions_resolve_join_sql')) {
+
+    /**
+     * JOIN condition matching idf_resolve_port_position(): prefer position id, else legacy position_no.
+     */
+    function itm_idf_positions_resolve_join_sql(string $portAlias = 'pr', string $positionAlias = 'p'): string
+    {
+        return "{$positionAlias}.company_id = {$portAlias}.company_id
+      AND (
+            {$positionAlias}.id = {$portAlias}.position_id
+            OR (
+                {$positionAlias}.position_no = {$portAlias}.position_id
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM idf_positions p_actual
+                    WHERE p_actual.company_id = {$portAlias}.company_id
+                      AND p_actual.id = {$portAlias}.position_id
+                    LIMIT 1
+                )
+            )
+      )";
+    }
+}
+
 if (!function_exists('itm_idf_port_type_label_sql')) {
 
     /** @return string SQL expression for resolved switch port type label (matches device.php SELECT alias). */
     function itm_idf_port_type_label_sql(): string
     {
         return "COALESCE(spt.type, spt_any.type, 'RJ45')";
+    }
+}
+
+if (!function_exists('itm_idf_port_type_label_with_switch_sql')) {
+
+    /**
+     * Company-scoped type label with switch_ports fallback (avoids cross-tenant spt_any mislabels).
+     */
+    function itm_idf_port_type_label_with_switch_sql(): string
+    {
+        return "COALESCE(spt.type, spt_sp.type, 'RJ45')";
     }
 }
 
