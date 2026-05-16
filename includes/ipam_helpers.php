@@ -368,6 +368,94 @@ function itm_ipam_bulk_generate_subnet_ips(
 }
 
 /**
+ * Why: Legacy equipment rows store IP in equipment.ip_address before ip_addresses.equipment_id is set.
+ */
+function itm_ipam_sql_equipment_joins(): string
+{
+    return 'LEFT JOIN equipment e_fk ON e_fk.id = ia.equipment_id AND e_fk.company_id = ia.company_id
+            LEFT JOIN equipment e_ip ON e_ip.company_id = ia.company_id
+                AND (ia.equipment_id IS NULL OR ia.equipment_id = 0)
+                AND TRIM(COALESCE(e_ip.ip_address, \'\')) <> \'\'
+                AND TRIM(e_ip.ip_address) = ia.ip_text';
+}
+
+function itm_ipam_sql_equipment_select(): string
+{
+    return 'COALESCE(ia.equipment_id, e_ip.id) AS equipment_id,
+            COALESCE(e_fk.name, e_ip.name) AS equipment_name,
+            COALESCE(e_fk.hostname, e_ip.hostname) AS equipment_hostname';
+}
+
+/**
+ * @return array{id: int, name: string, hostname: string}|null
+ */
+function itm_ipam_find_equipment_by_ip_text(mysqli $conn, int $company_id, string $ip_text): ?array
+{
+    $ip_text = trim($ip_text);
+    if ($company_id <= 0 || $ip_text === '' || !itm_ipam_table_exists($conn, 'equipment')) {
+        return null;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, name, hostname
+         FROM equipment
+         WHERE company_id = ? AND TRIM(COALESCE(ip_address, \'\')) = ?
+         ORDER BY id ASC
+         LIMIT 1'
+    );
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'is', $company_id, $ip_text);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return null;
+    }
+
+    return [
+        'id' => (int)($row['id'] ?? 0),
+        'name' => (string)($row['name'] ?? ''),
+        'hostname' => (string)($row['hostname'] ?? ''),
+    ];
+}
+
+/**
+ * Why: One-time backfill links IPAM rows when equipment already has the same ip_address value.
+ */
+function itm_ipam_backfill_equipment_links_from_ip_address(mysqli $conn, int $company_id): int
+{
+    if ($company_id <= 0 || !itm_ipam_table_exists($conn, 'ip_addresses') || !itm_ipam_table_exists($conn, 'equipment')) {
+        return 0;
+    }
+
+    $sql = 'UPDATE ip_addresses ia
+            INNER JOIN (
+                SELECT company_id, TRIM(ip_address) AS ip_text, MIN(id) AS equipment_id
+                FROM equipment
+                WHERE company_id = ? AND TRIM(COALESCE(ip_address, \'\')) <> \'\'
+                GROUP BY company_id, TRIM(ip_address)
+            ) em ON em.company_id = ia.company_id AND em.ip_text = ia.ip_text
+            SET ia.equipment_id = em.equipment_id,
+                ia.status = CASE WHEN ia.status = \'free\' THEN \'used\' ELSE ia.status END
+            WHERE ia.company_id = ?
+              AND (ia.equipment_id IS NULL OR ia.equipment_id = 0)';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $company_id);
+    mysqli_stmt_execute($stmt);
+    $updated = mysqli_stmt_affected_rows($stmt);
+    mysqli_stmt_close($stmt);
+
+    return max(0, $updated);
+}
+
+/**
  * @return array<int, array<string, mixed>>
  */
 function itm_ipam_fetch_subnet_addresses(mysqli $conn, int $company_id, int $subnet_id, int $limit = 300): array
@@ -377,12 +465,14 @@ function itm_ipam_fetch_subnet_addresses(mysqli $conn, int $company_id, int $sub
     }
 
     $limit = max(1, min(1000, $limit));
+    $equipmentJoins = itm_ipam_sql_equipment_joins();
+    $equipmentSelect = itm_ipam_sql_equipment_select();
     $stmt = mysqli_prepare(
         $conn,
-        "SELECT ia.id, ia.ip_text, ia.status, ia.equipment_id, ia.hostname,
-                e.name AS equipment_name, e.hostname AS equipment_hostname
+        "SELECT ia.id, ia.ip_text, ia.status, ia.hostname,
+                {$equipmentSelect}
          FROM ip_addresses ia
-         LEFT JOIN equipment e ON e.id = ia.equipment_id AND e.company_id = ia.company_id
+         {$equipmentJoins}
          WHERE ia.company_id = ? AND ia.subnet_id = ?
          ORDER BY INET_ATON(ia.ip_text) ASC
          LIMIT {$limit}"
@@ -496,8 +586,8 @@ function itm_ipam_address_list_where_clause(int $company_id, int $subnet_id, str
             OR ia.status LIKE ?
             OR ia.hostname LIKE ?
             OR s.cidr LIKE ?
-            OR e.name LIKE ?
-            OR e.hostname LIKE ?
+            OR COALESCE(e_fk.name, e_ip.name, '') LIKE ?
+            OR COALESCE(e_fk.hostname, e_ip.hostname, '') LIKE ?
         )";
         $types .= str_repeat('s', 7);
         for ($i = 0; $i < 7; $i++) {
@@ -515,7 +605,7 @@ function itm_ipam_address_list_sort_sql(string $sort, string $dir): string
         'status' => 'ia.status',
         'subnet' => 's.cidr',
         'subnet_cidr' => 's.cidr',
-        'equipment' => "COALESCE(NULLIF(TRIM(e.hostname), ''), NULLIF(TRIM(e.name), ''), '')",
+        'equipment' => "COALESCE(NULLIF(TRIM(e_fk.hostname), ''), NULLIF(TRIM(e_ip.hostname), ''), NULLIF(TRIM(e_fk.name), ''), NULLIF(TRIM(e_ip.name), ''), '')",
         'hostname' => 'ia.hostname',
         'id' => 'ia.id',
     ];
@@ -548,10 +638,11 @@ function itm_ipam_count_address_list(mysqli $conn, int $company_id, int $subnet_
     }
 
     $where = itm_ipam_address_list_where_clause($company_id, $subnet_id, $searchRaw);
+    $equipmentJoins = itm_ipam_sql_equipment_joins();
     $sql = 'SELECT COUNT(*) AS c
             FROM ip_addresses ia
             INNER JOIN ip_subnets s ON s.id = ia.subnet_id AND s.company_id = ia.company_id
-            LEFT JOIN equipment e ON e.id = ia.equipment_id AND e.company_id = ia.company_id'
+            ' . $equipmentJoins
         . $where['sql'];
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -587,12 +678,14 @@ function itm_ipam_fetch_address_list(
     $offset = max(0, $offset);
     $where = itm_ipam_address_list_where_clause($company_id, $subnet_id, $searchRaw);
     $orderSql = itm_ipam_address_list_sort_sql($sort, $dir);
-    $sql = "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.equipment_id, ia.is_gateway,
+    $equipmentJoins = itm_ipam_sql_equipment_joins();
+    $equipmentSelect = itm_ipam_sql_equipment_select();
+    $sql = "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.is_gateway,
                    s.id AS subnet_id, s.cidr AS subnet_cidr,
-                   e.name AS equipment_name, e.hostname AS equipment_hostname
+                   {$equipmentSelect}
             FROM ip_addresses ia
             INNER JOIN ip_subnets s ON s.id = ia.subnet_id AND s.company_id = ia.company_id
-            LEFT JOIN equipment e ON e.id = ia.equipment_id AND e.company_id = ia.company_id"
+            {$equipmentJoins}"
         . $where['sql']
         . ' ORDER BY ' . $orderSql
         . ' LIMIT ' . $limit . ' OFFSET ' . $offset;
