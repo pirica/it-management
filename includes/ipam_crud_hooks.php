@@ -269,6 +269,7 @@ function itm_ipam_apply_derived_sql_to_data(mysqli $conn, string $table, array &
 
 /**
  * Post-save side effects (equipment.ip_address sync, gateway row hints).
+ * Does not read or write equipment.notes or ip_addresses.notes except via normal CRUD fields.
  */
 function itm_ipam_after_crud_save(
     mysqli $conn,

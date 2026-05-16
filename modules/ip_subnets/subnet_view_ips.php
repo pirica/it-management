@@ -63,6 +63,7 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_fetch_subnet_addresses')) 
                 <th>Status</th>
                 <th>Equipment</th>
                 <th>Hostname</th>
+                <th>IP Notes</th>
                 <th>Actions</th>
             </tr>
             </thead>
@@ -86,14 +87,84 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_fetch_subnet_addresses')) 
                         </td>
                         <td><?php echo sanitize((string)($itmSubnetIpRow['hostname'] ?? '')); ?></td>
                         <td>
+                            <input
+                                type="text"
+                                class="itm-ip-inline-notes"
+                                data-ip-address-id="<?php echo (int)($itmSubnetIpRow['id'] ?? 0); ?>"
+                                value="<?php echo sanitize((string)($itmSubnetIpRow['notes'] ?? '')); ?>"
+                                maxlength="255"
+                                placeholder="IP-only note…"
+                                style="width:100%;min-width:140px;"
+                            >
+                            <span class="itm-ip-inline-notes-status" style="display:block;font-size:12px;color:#57606a;min-height:16px;"></span>
+                        </td>
+                        <td>
                             <a class="btn btn-sm" href="../ip_addresses/view.php?id=<?php echo (int)($itmSubnetIpRow['id'] ?? 0); ?>">🔎</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td colspan="5" style="text-align:center;">No IP addresses yet.<?php if ($itmSubnetCanBulkGenerate): ?> Use <?php echo sanitize($itmSubnetBulkIsCapped ? 'Generate host IPs (up to ' . (int)$itmSubnetBulkMaxHosts . ')' : 'Generate host IPs'); ?> to populate this subnet.<?php endif; ?></td></tr>
+                <tr><td colspan="6" style="text-align:center;">No IP addresses yet.<?php if ($itmSubnetCanBulkGenerate): ?> Use <?php echo sanitize($itmSubnetBulkIsCapped ? 'Generate host IPs (up to ' . (int)$itmSubnetBulkMaxHosts . ')' : 'Generate host IPs'); ?> to populate this subnet.<?php endif; ?></td></tr>
             <?php endif; ?>
             </tbody>
         </table>
     </div>
 </div>
+<script>
+(function () {
+    const inlineNotesEndpoint = <?php echo json_encode('../ip_addresses/index.php'); ?>;
+    const inlineNotesCsrf = <?php echo json_encode($csrfToken ?? ''); ?>;
+    if (!inlineNotesCsrf) { return; }
+    const inlineNotesSaving = new Set();
+
+    function setInlineNotesStatus(input, message, tone) {
+        const status = input.parentElement ? input.parentElement.querySelector('.itm-ip-inline-notes-status') : null;
+        if (!status) { return; }
+        status.textContent = message || '';
+        status.style.color = tone === 'ok' ? '#1a7f37' : (tone === 'error' ? '#cf222e' : '#57606a');
+    }
+
+    function saveInlineNotes(input) {
+        const addressId = parseInt(input.getAttribute('data-ip-address-id') || '0', 10);
+        if (!addressId || inlineNotesSaving.has(addressId)) { return; }
+        const nextValue = (input.value || '').trim();
+        const lastSaved = input.getAttribute('data-last-saved') ?? '';
+        if (nextValue === lastSaved) { return; }
+
+        inlineNotesSaving.add(addressId);
+        setInlineNotesStatus(input, 'Saving…', 'pending');
+        const body = new URLSearchParams();
+        body.set('inline_notes_save', '1');
+        body.set('id', String(addressId));
+        body.set('notes', nextValue);
+        body.set('csrf_token', inlineNotesCsrf);
+
+        fetch(inlineNotesEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: body.toString(),
+            credentials: 'same-origin'
+        })
+            .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.ok) {
+                    throw new Error((result.data && result.data.error) ? result.data.error : 'Save failed');
+                }
+                input.setAttribute('data-last-saved', nextValue);
+                setInlineNotesStatus(input, 'Saved', 'ok');
+            })
+            .catch(function (error) {
+                setInlineNotesStatus(input, error && error.message ? error.message : 'Save failed', 'error');
+            })
+            .finally(function () { inlineNotesSaving.delete(addressId); });
+    }
+
+    document.querySelectorAll('.itm-ip-inline-notes').forEach(function (input) {
+        input.setAttribute('data-last-saved', (input.value || '').trim());
+        input.addEventListener('blur', function () { saveInlineNotes(input); });
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+        });
+    });
+})();
+</script>

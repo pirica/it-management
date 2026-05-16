@@ -3488,7 +3488,7 @@ INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix
 -- Data for `ip_addresses` (gateway + sample equipment assignment)
 INSERT INTO `ip_addresses` (`company_id`, `subnet_id`, `ip_text`, `status`, `equipment_id`, `hostname`, `is_gateway`, `is_dns`, `dhcp_managed`, `notes`, `active`) VALUES
 ('1', '1', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
-('1', '1', '192.168.10.20', 'used', '1', 'srv-file-01', '0', '0', '0', 'Primary file server', '1'),
+('1', '1', '192.168.10.20', 'used', '1', 'srv-file-01', '0', '0', '0', NULL, '1'),
 ('2', '2', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
 ('3', '3', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),
 ('4', '4', '192.168.10.1', 'gateway', NULL, NULL, '1', '0', '0', 'Default gateway', '1'),

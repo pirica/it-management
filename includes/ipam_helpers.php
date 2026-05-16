@@ -91,6 +91,7 @@ function itm_ipam_is_valid_ipv4(string $ip): bool
 
 /**
  * Why: Keep equipment.ip_address aligned when an IPAM row is assigned to an asset.
+ * Only updates equipment.ip_address — never equipment.notes or ip_addresses.notes.
  */
 function itm_ipam_sync_equipment_ip_address(
     mysqli $conn,
@@ -469,7 +470,7 @@ function itm_ipam_fetch_subnet_addresses(mysqli $conn, int $company_id, int $sub
     $equipmentSelect = itm_ipam_sql_equipment_select();
     $stmt = mysqli_prepare(
         $conn,
-        "SELECT ia.id, ia.ip_text, ia.status, ia.hostname,
+        "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.notes,
                 {$equipmentSelect}
          FROM ip_addresses ia
          {$equipmentJoins}
@@ -588,9 +589,10 @@ function itm_ipam_address_list_where_clause(int $company_id, int $subnet_id, str
             OR s.cidr LIKE ?
             OR COALESCE(e_fk.name, e_ip.name, '') LIKE ?
             OR COALESCE(e_fk.hostname, e_ip.hostname, '') LIKE ?
+            OR COALESCE(ia.notes, '') LIKE ?
         )";
-        $types .= str_repeat('s', 7);
-        for ($i = 0; $i < 7; $i++) {
+        $types .= str_repeat('s', 8);
+        for ($i = 0; $i < 8; $i++) {
             $params[] = $searchPattern;
         }
     }
@@ -607,6 +609,7 @@ function itm_ipam_address_list_sort_sql(string $sort, string $dir): string
         'subnet_cidr' => 's.cidr',
         'equipment' => "COALESCE(NULLIF(TRIM(e_fk.hostname), ''), NULLIF(TRIM(e_ip.hostname), ''), NULLIF(TRIM(e_fk.name), ''), NULLIF(TRIM(e_ip.name), ''), '')",
         'hostname' => 'ia.hostname',
+        'notes' => 'ia.notes',
         'id' => 'ia.id',
     ];
     $sortKey = array_key_exists($sort, $sortMap) ? $sort : 'ip_text';
@@ -680,7 +683,7 @@ function itm_ipam_fetch_address_list(
     $orderSql = itm_ipam_address_list_sort_sql($sort, $dir);
     $equipmentJoins = itm_ipam_sql_equipment_joins();
     $equipmentSelect = itm_ipam_sql_equipment_select();
-    $sql = "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.is_gateway,
+    $sql = "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.notes, ia.is_gateway,
                    s.id AS subnet_id, s.cidr AS subnet_cidr,
                    {$equipmentSelect}
             FROM ip_addresses ia
@@ -703,6 +706,34 @@ function itm_ipam_fetch_address_list(
     mysqli_stmt_close($stmt);
 
     return $rows;
+}
+
+/**
+ * Why: IP list inline note edits update ip_addresses.notes only (not equipment.notes).
+ */
+function itm_ipam_save_address_notes(mysqli $conn, int $company_id, int $address_id, string $notes): bool
+{
+    if ($company_id <= 0 || $address_id <= 0 || !itm_ipam_table_exists($conn, 'ip_addresses')) {
+        return false;
+    }
+
+    $notes = trim($notes);
+    if (strlen($notes) > 255) {
+        $notes = substr($notes, 0, 255);
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'UPDATE ip_addresses SET notes = ? WHERE id = ? AND company_id = ? LIMIT 1'
+    );
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'sii', $notes, $address_id, $company_id);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    return (bool)$ok;
 }
 
 /**
