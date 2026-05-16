@@ -1265,6 +1265,20 @@ while ($resPoeOptions && ($row = mysqli_fetch_assoc($resPoeOptions))) {
     }
 }
 
+if (!empty($ports)) {
+    foreach ($ports as &$portRowDisplayRelabel) {
+        $portRowDisplayRelabel = $idfDeviceHydratePortRow($portRowDisplayRelabel);
+        idf_refresh_port_row_display_labels(
+            $portRowDisplayRelabel,
+            $vlanOptions,
+            $rj45SpeedOptions,
+            $fiberSpeedOptions,
+            $poeOptions
+        );
+    }
+    unset($portRowDisplayRelabel);
+}
+
 $equipmentTypeOptions = [];
 $resEqTypes = mysqli_query(
     $conn,
@@ -1621,6 +1635,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $connectedToPlain = trim((string)($p['connected_to'] ?? ''));
                         }
                         $speedValueId = isset($p['speed_value_id']) ? (int)$p['speed_value_id'] : (isset($p['speed_id']) ? (int)$p['speed_id'] : 0);
+                        $effectiveVlanIdRow = (int)($p['effective_vlan_id'] ?? $p['vlan_id'] ?? 0);
+                        $effectiveRj45SpeedIdRow = (int)($p['effective_rj45_speed_id'] ?? $p['rj45_speed_id'] ?? 0);
+                        $effectiveFiberPortIdRow = (int)($p['effective_fiber_port_id'] ?? 0);
+                        $effectivePoeIdRow = (int)($p['effective_poe_id'] ?? $p['poe_id'] ?? 0);
                         ?>
                         <tr
                             data-port-id="<?php echo (int)$p['id']; ?>"
@@ -1630,11 +1648,14 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             data-status-id="<?php echo (int)($p['status_id'] ?? 0); ?>"
                             data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
                             data-connected-to="<?php echo sanitize($connectedToPlain); ?>"
-                            data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
+                            data-vlan-id="<?php echo $effectiveVlanIdRow > 0 ? (string)$effectiveVlanIdRow : ''; ?>"
                             data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
-                            data-speed-id="<?php echo $speedValueId > 0 ? (string)$speedValueId : ''; ?>"
+                            data-rj45-speed-id="<?php echo $effectiveRj45SpeedIdRow > 0 ? (string)$effectiveRj45SpeedIdRow : ''; ?>"
+                            data-rj45-speed="<?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?>"
+                            data-fiber-port-id="<?php echo $effectiveFiberPortIdRow > 0 ? (string)$effectiveFiberPortIdRow : ''; ?>"
+                            data-speed-id="<?php echo $effectiveFiberPortIdRow > 0 ? (string)$effectiveFiberPortIdRow : ($speedValueId > 0 ? (string)$speedValueId : ''); ?>"
                             data-speed="<?php echo sanitize((string)($p['speed_label'] ?? '')); ?>"
-                            data-poe-id="<?php echo (int)($p['poe_id'] ?? 0); ?>"
+                            data-poe-id="<?php echo $effectivePoeIdRow > 0 ? (string)$effectivePoeIdRow : ''; ?>"
                             data-poe="<?php echo sanitize((string)($p['poe_label'] ?? '')); ?>"
                             data-notes="<?php echo sanitize((string)($p['notes'] ?? '')); ?>"
                         >
@@ -2177,6 +2198,33 @@ function applySelectValue(selectEl, value) {
     selectEl.value = '';
 }
 
+function applySelectValueOrLabel(selectEl, valueId, labelText) {
+    applySelectValue(selectEl, valueId);
+    if (!selectEl || selectEl.value !== '') {
+        return;
+    }
+    const normalizedLabel = String(labelText || '').trim().toLowerCase();
+    if (normalizedLabel === '') {
+        return;
+    }
+    const matched = Array.from(selectEl.options).find((option) =>
+        option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === normalizedLabel
+    );
+    if (matched) {
+        selectEl.value = matched.value;
+    }
+}
+
+function firstPositivePortId(...candidates) {
+    for (let i = 0; i < candidates.length; i++) {
+        const normalized = coercePositiveSelectValue(candidates[i]);
+        if (normalized !== '') {
+            return normalized;
+        }
+    }
+    return '';
+}
+
 function portFormControl(form, fieldName) {
     if (!form || !fieldName) {
         return null;
@@ -2192,17 +2240,28 @@ function portFormControl(form, fieldName) {
 
 function collectPortEditSeed(portMeta, rowDataset) {
     const row = rowDataset || {};
+    const portTypeLabel = (portMeta && portMeta.port_type_label) ? portMeta.port_type_label : (row.portType || 'RJ45');
+    const normalizedType = normalizePortTypeLabel(portTypeLabel);
     return {
         label: normalizeLabelDisplayValue((portMeta && portMeta.label) ? portMeta.label : (row.label || '')),
         notes: String((portMeta && portMeta.notes) ? portMeta.notes : (row.notes || '')).trim(),
         connected_to: String(
             (portMeta && portMeta.connected_to) ? portMeta.connected_to : (row.connectedTo || '')
         ).trim(),
-        status_id: portMeta && portMeta.status_id ? portMeta.status_id : (row.statusId || ''),
-        vlan_id: portMeta && portMeta.vlan_id ? portMeta.vlan_id : (row.vlanId || ''),
-        poe_id: portMeta && portMeta.poe_id ? portMeta.poe_id : (row.poeId || ''),
-        rj45_speed_id: portMeta && portMeta.rj45_speed_id ? portMeta.rj45_speed_id : (row.speedId || ''),
-        fiber_port_id: portMeta && portMeta.fiber_port_id ? portMeta.fiber_port_id : (row.speedId || ''),
+        status_id: firstPositivePortId(portMeta && portMeta.status_id, row.statusId),
+        vlan_id: firstPositivePortId(portMeta && portMeta.vlan_id, row.vlanId),
+        vlan_label: String(row.vlan || ''),
+        poe_id: firstPositivePortId(portMeta && portMeta.poe_id, row.poeId),
+        poe_label: String(row.poe || ''),
+        rj45_speed_id: firstPositivePortId(portMeta && portMeta.rj45_speed_id, row.rj45SpeedId),
+        rj45_speed_label: String(row.rj45Speed || ''),
+        fiber_port_id: firstPositivePortId(
+            portMeta && portMeta.fiber_port_id,
+            row.fiberPortId,
+            normalizedType === 'sfp' ? row.speedId : ''
+        ),
+        fiber_speed_label: String(row.speed || ''),
+        port_type_label: portTypeLabel,
         cable_color_id: portMeta && portMeta.cable_color_id ? portMeta.cable_color_id : 0,
         cable_color_name: portMeta ? (portMeta.cable_color_name || portMeta.cable_color || '') : '',
         cable_hex_color: portMeta ? (portMeta.cable_hex_color || '') : '',
@@ -2242,6 +2301,7 @@ function mergeSwitchPortApiRowIntoPortMeta(portMeta, switchPort) {
     pick('vlan_id', 'equipment_vlan_id');
     pick('rj45_speed_id', 'equipment_rj45_speed_id');
     pick('fiber_port_id', 'equipment_fiber_port_id');
+    pick('poe_id', 'equipment_poe_id');
     pick('fiber_patch_id', 'equipment_fiber_patch_id');
     pick('fiber_rack_id', 'equipment_fiber_rack_id');
     pick('to_idf_id', 'equipment_to_idf_id');
@@ -2379,7 +2439,9 @@ async function openPortModal(portId) {
     }
 
     let editSeed = collectPortEditSeed(portMeta, rowData);
-    portMeta = await hydratePortMetaFromSwitchPorts(portMeta);
+    if (!Number(portMeta.switch_port_id || 0)) {
+        portMeta = await hydratePortMetaFromSwitchPorts(portMeta);
+    }
     upsertPortMetaInPortsList(portMeta);
     editSeed = collectPortEditSeed(portMeta, rowData);
     editSeed.label = normalizeLabelDisplayValue(editSeed.label || (portMeta && portMeta.label) || rowData.label || '');
@@ -2417,18 +2479,30 @@ async function openPortModal(portId) {
         }
     }
     applyPortEditTextFields(form, editSeed);
-    applySelectValue(portFormControl(form, 'vlan'), editSeed.vlan_id || (portMeta ? portMeta.vlan_id : rowData.vlanId));
+    applySelectValueOrLabel(
+        portFormControl(form, 'vlan'),
+        editSeed.vlan_id || firstPositivePortId(portMeta && portMeta.vlan_id, rowData.vlanId),
+        editSeed.vlan_label || rowData.vlan || ''
+    );
     const selectedPortTypeLabel = (portMeta && portMeta.port_type_label)
         ? portMeta.port_type_label
-        : ((portTypeSelect && portTypeSelect.selectedOptions && portTypeSelect.selectedOptions[0])
+        : (editSeed.port_type_label || ((portTypeSelect && portTypeSelect.selectedOptions && portTypeSelect.selectedOptions[0])
             ? portTypeSelect.selectedOptions[0].textContent
-            : 'RJ45');
+            : 'RJ45'));
     const normalizedType = normalizePortTypeLabel(selectedPortTypeLabel);
     const speedSourceId = normalizedType === 'rj45'
-        ? (editSeed.rj45_speed_id || (portMeta ? portMeta.rj45_speed_id : rowData.speedId))
-        : (editSeed.fiber_port_id || (portMeta ? portMeta.fiber_port_id : rowData.speedId));
+        ? firstPositivePortId(editSeed.rj45_speed_id, portMeta && portMeta.rj45_speed_id, rowData.rj45SpeedId)
+        : firstPositivePortId(editSeed.fiber_port_id, portMeta && portMeta.fiber_port_id, rowData.fiberPortId, rowData.speedId);
+    const speedLabelHint = normalizedType === 'rj45'
+        ? (editSeed.rj45_speed_label || rowData.rj45Speed || '')
+        : (editSeed.fiber_speed_label || rowData.speed || '');
     rebuildSpeedOptionsForPortType(selectedPortTypeLabel, coercePositiveSelectValue(speedSourceId));
-    applySelectValue(portFormControl(form, 'poe'), editSeed.poe_id || (portMeta ? portMeta.poe_id : rowData.poeId));
+    applySelectValueOrLabel(portFormControl(form, 'speed'), speedSourceId, speedLabelHint);
+    applySelectValueOrLabel(
+        portFormControl(form, 'poe'),
+        firstPositivePortId(editSeed.poe_id, portMeta && portMeta.poe_id, rowData.poeId),
+        editSeed.poe_label || rowData.poe || ''
+    );
     togglePoeFieldForPortType(selectedPortTypeLabel);
     const destinationSelect = portFormControl(form, 'port_id_b');
     if (destinationSelect) {
