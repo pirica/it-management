@@ -210,6 +210,19 @@ function itm_ipam_prepare_post_before_crud(
         if (!in_array($status, $allowed, true)) {
             $status = 'free';
         }
+
+        $equipmentId = (int)($post['equipment_id'] ?? 0);
+        if ($equipmentId <= 0 && $post['ip_text'] !== '') {
+            $equipMatch = itm_ipam_find_equipment_by_ip_text($conn, $company_id, (string)$post['ip_text']);
+            if ($equipMatch) {
+                $equipmentId = (int)($equipMatch['id'] ?? 0);
+                $post['equipment_id'] = (string)$equipmentId;
+            }
+        }
+        if ($equipmentId > 0 && $status === 'free') {
+            $status = 'used';
+        }
+
         $post['status'] = $status;
 
         $subnetId = (int)($post['subnet_id'] ?? 0);
@@ -285,8 +298,37 @@ function itm_ipam_after_crud_save(
         $equipmentId = (int)($post['equipment_id'] ?? 0);
         $ipText = itm_ipam_trim_user_input($post['ip_text'] ?? '');
         $status = strtolower(trim((string)($post['status'] ?? 'free')));
+        if ($equipmentId <= 0 && $ipText !== '') {
+            $equipMatch = itm_ipam_find_equipment_by_ip_text($conn, $company_id, $ipText);
+            if ($equipMatch) {
+                $equipmentId = (int)($equipMatch['id'] ?? 0);
+            }
+        }
+        if ($equipmentId > 0 && $status === 'free') {
+            $status = 'used';
+            $stmtStatus = mysqli_prepare(
+                $conn,
+                "UPDATE ip_addresses SET status = 'used' WHERE id = ? AND company_id = ? AND status = 'free' LIMIT 1"
+            );
+            if ($stmtStatus) {
+                mysqli_stmt_bind_param($stmtStatus, 'ii', $recordId, $company_id);
+                mysqli_stmt_execute($stmtStatus);
+                mysqli_stmt_close($stmtStatus);
+            }
+        }
         if ($equipmentId > 0) {
             itm_ipam_sync_equipment_ip_address($conn, $company_id, $equipmentId, $ipText, $status);
+            if ((int)($post['equipment_id'] ?? 0) <= 0) {
+                $stmtEquip = mysqli_prepare(
+                    $conn,
+                    'UPDATE ip_addresses SET equipment_id = ? WHERE id = ? AND company_id = ? LIMIT 1'
+                );
+                if ($stmtEquip) {
+                    mysqli_stmt_bind_param($stmtEquip, 'iii', $equipmentId, $recordId, $company_id);
+                    mysqli_stmt_execute($stmtEquip);
+                    mysqli_stmt_close($stmtEquip);
+                }
+            }
         }
         return;
     }

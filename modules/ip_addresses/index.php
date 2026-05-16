@@ -799,6 +799,9 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
             $data['equipment_id'] = (int)$itmEquipMatch['id'];
         }
     }
+    if ($crud_table === 'ip_addresses' && $data && function_exists('itm_ipam_effective_status_from_row')) {
+        $data['status'] = itm_ipam_effective_status_from_row($data);
+    }
 }
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
@@ -1202,6 +1205,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     $itmHostnameDisplay = function_exists('itm_ipam_hostname_display_from_row')
                                         ? itm_ipam_hostname_display_from_row($row)
                                         : trim((string)($row['hostname'] ?? ''));
+                                    $itmStatusDisplay = function_exists('itm_ipam_effective_status_from_row')
+                                        ? itm_ipam_effective_status_from_row($row)
+                                        : (string)($row['status'] ?? '');
                                 ?>
                                 <tr>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
@@ -1218,7 +1224,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     </td>
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                     <td><?php echo sanitize((string)($row['ip_text'] ?? '')); ?></td>
-                                    <td><?php echo cr_render_cell_value($crud_table, 'status', $row['status'] ?? ''); ?></td>
+                                    <td><?php echo cr_render_cell_value($crud_table, 'status', $itmStatusDisplay); ?></td>
                                     <td>
                                         <?php if ((int)($row['subnet_id'] ?? 0) > 0): ?>
                                             <a href="../ip_subnets/view.php?id=<?php echo (int)$row['subnet_id']; ?>"><?php echo sanitize((string)($row['subnet_cidr'] ?? '')); ?></a>
