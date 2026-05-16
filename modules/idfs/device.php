@@ -779,6 +779,14 @@ if (empty($sfpPortNumbers)) {
     }
 }
 
+$fiberDeclaredCapDevice = (int)($pos['sfp_count'] ?? 0);
+if ($fiberDeclaredCapDevice <= 0) {
+    $fiberDeclaredCapDevice = (int)($pos['equipment_fiber_ports_number'] ?? 0);
+}
+if ($fiberDeclaredCapDevice > 0 && count($sfpPortNumbers) > $fiberDeclaredCapDevice) {
+    $sfpPortNumbers = array_slice($sfpPortNumbers, 0, $fiberDeclaredCapDevice);
+}
+
 $otherIds = [];
 foreach ($ports as $p) {
     if (!empty($p['other_port_id'])) {

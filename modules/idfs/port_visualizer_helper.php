@@ -109,6 +109,44 @@ if (!function_exists('itm_port_visualizer_type_key')) {
     }
 }
 
+if (!function_exists('itm_prune_hydrated_ports_to_sfp_capacity')) {
+    /**
+     * Why: Capacity merge fills missing placeholders only; surplus idf_ports fiber rows beyond the capacity list would still paint extra dots so rack badges disagree with the grid.
+     */
+    function itm_prune_hydrated_ports_to_sfp_capacity(array $ports, array $options): array
+    {
+        $allowedPortNos = [];
+        foreach ((array)($options['sfp_ports'] ?? []) as $raw) {
+            $n = (int)$raw;
+            if ($n > 0) {
+                $allowedPortNos[$n] = true;
+            }
+        }
+        foreach ((array)($options['sfp_plus_ports'] ?? []) as $raw) {
+            $n = (int)$raw;
+            if ($n > 0) {
+                $allowedPortNos[$n] = true;
+            }
+        }
+        if (!$allowedPortNos) {
+            return $ports;
+        }
+        $trimmed = [];
+        foreach ($ports as $meta) {
+            if (itm_port_visualizer_type_key($meta) !== 'sfp') {
+                $trimmed[] = $meta;
+                continue;
+            }
+            $pn = (int)($meta['port_no'] ?? 0);
+            if ($pn > 0 && isset($allowedPortNos[$pn])) {
+                $trimmed[] = $meta;
+            }
+        }
+
+        return $trimmed;
+    }
+}
+
 if (!function_exists('itm_merge_capacity_placeholder_ports')) {
     /**
      * Why: Positions can declare RJ45 and SFP capacity while idf_ports only has one family materialized.
@@ -194,6 +232,9 @@ if (!function_exists('itm_render_port_visualizer')) {
     function itm_render_port_visualizer($ports, $options = []) {
         $hasRj45Capacity = !empty($options['rj45_ports']);
         $hasFiberCapacity = !empty($options['sfp_ports']) || !empty($options['sfp_plus_ports']);
+        if ($hasFiberCapacity) {
+            $ports = itm_prune_hydrated_ports_to_sfp_capacity($ports, $options);
+        }
         if ($hasRj45Capacity || $hasFiberCapacity) {
             $ports = itm_merge_capacity_placeholder_ports($ports, $options);
         }

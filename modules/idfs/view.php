@@ -640,6 +640,10 @@ if ($stmtPos) {
             }
             $row['sfp_ports'] = $synthFiber;
         }
+        // Why: idf/sync can accumulate more fiber rows than position sfp_count; options drive merge + pruning in the visualizer so dots match the badge.
+        if ($fiberSlotCount > 0 && count($row['sfp_ports']) > $fiberSlotCount) {
+            $row['sfp_ports'] = array_slice($row['sfp_ports'], 0, $fiberSlotCount);
+        }
 
         $positions[$posNo] = $row;
     }
