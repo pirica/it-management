@@ -2088,6 +2088,7 @@ const RJ45_SPEED_OPTIONS = <?php echo json_encode($rj45SpeedOptions, JSON_UNESCA
 const VLAN_OPTIONS = <?php echo json_encode($vlanOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const FIBER_PATCH_OPTIONS = <?php echo json_encode($fiberPatchOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const FIBER_RACK_OPTIONS = <?php echo json_encode($fiberRackOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const POE_OPTIONS = <?php echo json_encode($poeOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const PORTS = <?php
 $portsMeta = array_map(static function (array $port): array {
     return [
@@ -2717,6 +2718,7 @@ function renderTypeSpecificFields(containerId, typeLabel, values, includePrimary
     if (normalizedType === 'rj45') {
         if (includePrimaryCableField) {
             parts.push('<div><label class="label">RJ45 Cable</label>' + buildSelectHtml('rj45_speed_id', RJ45_SPEED_OPTIONS, currentValues.rj45_speed_id || '', '-- None --', 'rj45_speed') + '</div>');
+            parts.push('<div><label class="label">PoE</label>' + buildSelectHtml('poe', POE_OPTIONS, currentValues.poe_id || '', '-- None --', 'equipment_poe') + '</div>');
         }
     } else {
         if (includePrimaryCableField) {
@@ -2980,7 +2982,8 @@ function savePort() {
                     to_idf_id: payload.to_idf_id,
                     to_rack_id: payload.to_rack_id,
                     to_location_id: payload.to_location_id,
-                    vlan_id: payload.vlan_id
+                    vlan_id: payload.vlan_id,
+                    poe_id: payload.poe_id
                 });
             }
             return null;
@@ -3363,6 +3366,10 @@ function createLink() {
         vlan_id: (() => {
             const vlanValue = coercePositiveSelectValue(f.vlan && f.vlan.value);
             return vlanValue ? Number(vlanValue) : null;
+        })(),
+        poe_id: (() => {
+            const poeValue = coercePositiveSelectValue(f.poe && f.poe.value);
+            return poeValue ? Number(poeValue) : null;
         })(),
     };
 
