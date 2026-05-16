@@ -1959,7 +1959,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <option value="__add_new__">&#x2795;</option>
                 </select>
             </div>
-            <div data-link-default-field="vlan">
+            <div data-link-default-field="vlan" data-link-keep-visible-when-linked="1">
                 <label class="label">VLAN</label>
                 <select class="input" name="vlan"
                     data-addable-select="1"
@@ -1985,7 +1985,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <div class="idf-grid-2">
                     <div>
                         <label class="label">Equipment port</label>
-                        <input class="input" name="linked_equipment_port" placeholder="e.g. 12">
+                        <input class="input" name="linked_equipment_port" placeholder="e.g. 12" readonly>
                     </div>
                     <div>
                         <label class="label">Cable color</label>
@@ -2010,7 +2010,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         </div>
                     </div>
                     <div>
-                        <label class="label">Cable label</label>
+                        <label class="label">Label</label>
                         <input class="input" name="linked_cable_label" placeholder="e.g. FIB-12 / CAT6-34">
                     </div>
                     <div style="grid-column: 1 / -1;">
@@ -3417,6 +3417,7 @@ async function loadEquipmentPorts(equipmentId) {
     if (!equipmentId) {
         select.innerHTML = '<option value="">Select equipment first</option>';
         select.disabled = true;
+        resetLinkedEquipmentPortField(f);
         return;
     }
 
@@ -3453,6 +3454,7 @@ async function loadEquipmentPorts(equipmentId) {
             select.appendChild(option);
         }
         select.disabled = false;
+        resetLinkedEquipmentPortField(f);
         toggleLinkedEquipmentFields(false);
     } catch (err) {
         select.innerHTML = '<option value="">Failed to load equipment ports</option>';
@@ -3562,9 +3564,13 @@ function updateCableColorSwatch(colorValue, cableColorSelect = null) {
 }
 
 function toggleLinkedEquipmentFields(isLinked) {
+    const f = document.getElementById('linkForm');
     const linkedFields = document.getElementById('linkedEquipmentFields');
     if (linkedFields) {
         linkedFields.style.display = isLinked ? 'block' : 'none';
+    }
+    if (!isLinked) {
+        resetLinkedEquipmentPortField(f);
     }
     document.querySelectorAll('[data-link-default-field]').forEach((field) => {
         const keepVisibleWhenLinked = field.getAttribute('data-link-keep-visible-when-linked') === '1';
@@ -3572,10 +3578,19 @@ function toggleLinkedEquipmentFields(isLinked) {
     });
 }
 
+function resetLinkedEquipmentPortField(form) {
+    if (!form || !form.linked_equipment_port) {
+        return;
+    }
+    form.linked_equipment_port.value = '';
+    form.linked_equipment_port.readOnly = false;
+}
+
 function populateLinkedEquipmentFields() {
     const f = document.getElementById('linkForm');
     const selectedOption = f.switch_port_id.options[f.switch_port_id.selectedIndex];
     if (!selectedOption || !selectedOption.dataset.portJson) {
+        resetLinkedEquipmentPortField(f);
         toggleLinkedEquipmentFields(false);
         return;
     }
@@ -3584,6 +3599,7 @@ function populateLinkedEquipmentFields() {
     const linkedColorName = (port.equipment_color || '').trim() || 'Gray';
     const linkedColorHex = (port.equipment_color_hex || '').trim();
     f.linked_equipment_port.value = port.equipment_port || '';
+    f.linked_equipment_port.readOnly = true;
     f.linked_cable_label.value = normalizeLabelDisplayValue(port.equipment_label || '');
     f.linked_notes.value = port.equipment_comments || '';
 
@@ -3635,6 +3651,10 @@ function populateLinkedEquipmentFields() {
                 f.status.value = unknownStatusOption.value;
             }
         }
+    }
+
+    if (f.vlan) {
+        applySelectValueOrLabel(f.vlan, port.equipment_vlan_id, port.equipment_vlan_name);
     }
 
     const sourcePort = findPortMetaByRef(f.port_id_a.value);
