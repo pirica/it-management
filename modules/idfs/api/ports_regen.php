@@ -235,7 +235,7 @@ if (!empty($fiberPortsToInsert)) {
 }
 
 if (empty($portRowsToInsert)) {
-    idf_fail('This device has rj45_count=0 and no SFP/SFP+ ports configured');
+    idf_fail('This device has rj45_count=0 and no fiber (SFP) ports configured');
 }
 
 mysqli_begin_transaction($conn);

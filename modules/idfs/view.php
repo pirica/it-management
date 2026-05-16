@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
+require_once __DIR__ . '/idf_ports_sync.php';
 require_once __DIR__ . '/idf_positions_schema.php';
 idf_ensure_idf_positions_capacity_columns($conn);
 
@@ -576,7 +577,7 @@ if ($stmtPos) {
         if ($rj45PortCount <= 0) {
             foreach (($row['ports'] ?? []) as $itmPortMeta) {
                 $itmTk = itm_port_visualizer_type_key($itmPortMeta);
-                if ($itmTk !== 'sfp' && $itmTk !== 'sfp_plus') {
+                if ($itmTk !== 'sfp') {
                     $rj45PortCount++;
                 }
             }
@@ -604,20 +605,15 @@ if ($stmtPos) {
 
         $fiberPortCount = 0;
         $explicitSfpPorts = [];
-        $explicitSfpPlusPorts = [];
         foreach (($row['ports'] ?? []) as $itmPortFiberMeta) {
             $itmFiberTk = itm_port_visualizer_type_key($itmPortFiberMeta);
-            if ($itmFiberTk === 'sfp' || $itmFiberTk === 'sfp_plus') {
+            if ($itmFiberTk === 'sfp') {
                 $itmFiberNo = (int)($itmPortFiberMeta['port_no'] ?? 0);
                 if ($itmFiberNo > $fiberPortCount) {
                     $fiberPortCount = $itmFiberNo;
                 }
                 if ($itmFiberNo > 0) {
-                    if ($itmFiberTk === 'sfp_plus') {
-                        $explicitSfpPlusPorts[$itmFiberNo] = $itmFiberNo;
-                    } else {
-                        $explicitSfpPorts[$itmFiberNo] = $itmFiberNo;
-                    }
+                    $explicitSfpPorts[$itmFiberNo] = $itmFiberNo;
                 }
             }
         }
@@ -632,16 +628,22 @@ if ($stmtPos) {
             (string)($row['equipment_fiber_port_label'] ?? '') . ' ' . (string)($row['equipment_fiber_name'] ?? '')
         ));
         $row['sfp_ports'] = array_values($explicitSfpPorts);
-        $row['sfp_plus_ports'] = array_values($explicitSfpPlusPorts);
         sort($row['sfp_ports']);
-        sort($row['sfp_plus_ports']);
-        if (empty($row['sfp_ports']) && empty($row['sfp_plus_ports']) && $fiberPortCount > 0) {
-            if (strpos($fiberPortHint, 'sfp+') !== false) {
-                $row['sfp_plus_ports'] = range(1, $fiberPortCount);
-            } else {
-                // Why: Fiber port count must always surface in rack preview even when legacy labels are blank/non-standard.
-                $row['sfp_ports'] = range(1, $fiberPortCount);
+        if (empty($row['sfp_ports']) && $fiberPortCount > 0) {
+            // Why: Match position_save/sync fiber synthesis: RJ45 footprints own 1..N; placeholders must number baseline+ordinal, not range(1, fiberCount).
+            $baselineFromHydratedRj = 0;
+            foreach (($row['ports'] ?? []) as $itmHydr) {
+                if (itm_port_visualizer_type_key($itmHydr) !== 'rj45') {
+                    continue;
+                }
+                $baselineFromHydratedRj = max($baselineFromHydratedRj, (int)($itmHydr['port_no'] ?? 0));
             }
+            $fiberBaseline = max($rj45PortCount, $baselineFromHydratedRj);
+            $synthFiber = [];
+            for ($fiberOrd = 1; $fiberOrd <= $fiberPortCount; $fiberOrd++) {
+                $synthFiber[] = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrd);
+            }
+            $row['sfp_ports'] = $synthFiber;
         }
 
         $positions[$posNo] = $row;
@@ -1005,9 +1007,8 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                     <?php
                                                     $rackRj45Ports = (array)($pos['rj45_ports'] ?? []);
                                                     $rackSfpPorts = (array)($pos['sfp_ports'] ?? []);
-                                                    $rackSfpPlusPorts = (array)($pos['sfp_plus_ports'] ?? []);
                                                     $rackGridPortType = 'rj45';
-                                                    if (!empty($rackSfpPorts) || !empty($rackSfpPlusPorts)) {
+                                                    if (!empty($rackSfpPorts)) {
                                                         $rackGridPortType = 'all';
                                                     }
                                                     echo itm_render_port_visualizer($pos['ports'] ?? [], [
@@ -1023,7 +1024,6 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                         'grid_port_type' => $rackGridPortType,
                                                         'rj45_ports' => $rackRj45Ports,
                                                         'sfp_ports' => $rackSfpPorts,
-                                                        'sfp_plus_ports' => $rackSfpPlusPorts,
                                                     ]);
                                                     ?>
                                                 </div>
