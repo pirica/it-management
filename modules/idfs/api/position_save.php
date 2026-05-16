@@ -798,6 +798,10 @@ if ($device_type_name === 'ups') {
     $sfp_count = 0;
 }
 
+if ($layout_id <= 0 && $device_type_name !== '' && $device_type_name !== 'ups') {
+    $layout_id = idf_default_switch_port_numbering_layout_id($conn, $company_id, $device_type_name);
+}
+
 $stmtIdf = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
 if ($stmtIdf) {
     mysqli_stmt_bind_param($stmtIdf, 'ii', $idf_id, $company_id);

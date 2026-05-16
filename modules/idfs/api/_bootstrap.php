@@ -1236,6 +1236,112 @@ function idf_normalize_switch_port_numbering_layout_id(mysqli $conn, int $compan
 }
 
 /**
+ * Why: Rack UI defaults Numbering Layout to Vertical (switch) or Horizontal (other devices) per tenant;
+ * API copy/save must match so positions are not left NULL when the form would show a default.
+ */
+function idf_default_switch_port_numbering_layout_id(mysqli $conn, int $company_id, string $device_type_name): int
+{
+    if ($company_id <= 0) {
+        return 0;
+    }
+    $deviceType = strtolower(trim($device_type_name));
+    if ($deviceType === '' || $deviceType === 'ups') {
+        return 0;
+    }
+    $preferredName = ($deviceType === 'switch') ? 'vertical' : 'horizontal';
+
+    $stmtPreferred = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM switch_port_numbering_layout
+         WHERE company_id = ?
+           AND LOWER(TRIM(name)) = ?
+         ORDER BY id ASC
+         LIMIT 1"
+    );
+    if ($stmtPreferred) {
+        mysqli_stmt_bind_param($stmtPreferred, 'is', $company_id, $preferredName);
+        mysqli_stmt_execute($stmtPreferred);
+        $resPreferred = mysqli_stmt_get_result($stmtPreferred);
+        $rowPreferred = $resPreferred ? mysqli_fetch_assoc($resPreferred) : null;
+        mysqli_stmt_close($stmtPreferred);
+        if ($rowPreferred) {
+            return (int)($rowPreferred['id'] ?? 0);
+        }
+    }
+
+    $stmtAny = mysqli_prepare(
+        $conn,
+        "SELECT id
+         FROM switch_port_numbering_layout
+         WHERE company_id = ?
+         ORDER BY name ASC, id ASC
+         LIMIT 1"
+    );
+    if (!$stmtAny) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmtAny, 'i', $company_id);
+    mysqli_stmt_execute($stmtAny);
+    $resAny = mysqli_stmt_get_result($stmtAny);
+    $rowAny = $resAny ? mysqli_fetch_assoc($resAny) : null;
+    mysqli_stmt_close($stmtAny);
+
+    return (int)($rowAny['id'] ?? 0);
+}
+
+/**
+ * Why: Copy/save may receive 0 from COALESCE joins; normalize each candidate then tenant default.
+ */
+function idf_resolve_position_switch_port_numbering_layout_id(
+    mysqli $conn,
+    int $company_id,
+    string $device_type_name,
+    $effectiveRaw,
+    $positionRaw = null
+): int {
+    foreach ([$effectiveRaw, $positionRaw] as $raw) {
+        if ($raw === null || $raw === '') {
+            continue;
+        }
+        $normalized = idf_normalize_switch_port_numbering_layout_id($conn, $company_id, $raw);
+        if ($normalized > 0) {
+            return $normalized;
+        }
+    }
+
+    return idf_default_switch_port_numbering_layout_id($conn, $company_id, $device_type_name);
+}
+
+/**
+ * Why: Copy/save handlers need the same device-type labels the rack modal uses for layout defaults.
+ */
+function idf_lookup_idf_device_type_name(mysqli $conn, int $company_id, int $device_type_id): string
+{
+    if ($company_id <= 0 || $device_type_id <= 0) {
+        return '';
+    }
+
+    $stmtType = mysqli_prepare(
+        $conn,
+        "SELECT idfdevicetype_name
+         FROM idf_device_type
+         WHERE company_id = ? AND id = ?
+         LIMIT 1"
+    );
+    if (!$stmtType) {
+        return '';
+    }
+    mysqli_stmt_bind_param($stmtType, 'ii', $company_id, $device_type_id);
+    mysqli_stmt_execute($stmtType);
+    $resType = mysqli_stmt_get_result($stmtType);
+    $rowType = $resType ? mysqli_fetch_assoc($resType) : null;
+    mysqli_stmt_close($stmtType);
+
+    return strtolower(trim((string)($rowType['idfdevicetype_name'] ?? '')));
+}
+
+/**
  * SQL fragment: blank out placeholder patch-port labels before COALESCE/INSERT.
  */
 function idf_sql_normalize_port_label_expr(string $columnSql): string
