@@ -1117,8 +1117,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php if ($itmIpAddressFocusedList): ?>
+                                <th data-itm-actions-origin="1">Actions</th>
+                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                                 <?php
                                     $itmIpListHeaders = [
                                         'ip_text' => 'IP',
@@ -1138,6 +1139,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     </th>
                                 <?php endforeach; ?>
                             <?php else: ?>
+                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                                 <?php foreach ($uiColumns as $col): ?>
                                     <?php $field = (string)$col['Field']; ?>
                                     <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -1148,8 +1150,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                         </a>
                                     </th>
                                 <?php endforeach; ?>
+                                <th data-itm-actions-origin="1">Actions</th>
                             <?php endif; ?>
-                            <th data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1157,11 +1159,26 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <?php foreach ($itmIpAddressListRows as $row): ?>
                                 <?php
                                     $itmEquipId = (int)($row['equipment_id'] ?? 0);
-                                    $itmEquipLabel = function_exists('itm_ipam_equipment_label_from_row')
-                                        ? itm_ipam_equipment_label_from_row($row)
-                                        : '';
+                                    $itmEquipLabel = function_exists('itm_ipam_equipment_name_label_from_row')
+                                        ? itm_ipam_equipment_name_label_from_row($row)
+                                        : (function_exists('itm_ipam_equipment_label_from_row') ? itm_ipam_equipment_label_from_row($row) : '');
+                                    $itmHostnameDisplay = function_exists('itm_ipam_hostname_display_from_row')
+                                        ? itm_ipam_hostname_display_from_row($row)
+                                        : trim((string)($row['hostname'] ?? ''));
                                 ?>
                                 <tr>
+                                    <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                        <div class="itm-actions-wrap">
+                                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                            <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                                <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                                <input type="hidden" name="bulk_action" value="single_delete">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                     <td><?php echo sanitize((string)($row['ip_text'] ?? '')); ?></td>
                                     <td><?php echo cr_render_cell_value($crud_table, 'status', $row['status'] ?? ''); ?></td>
@@ -1179,19 +1196,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                             —
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo sanitize((string)($row['hostname'] ?? '')); ?></td>
-                                    <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                        <div class="itm-actions-wrap">
-                                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                            <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                                <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                                <input type="hidden" name="bulk_action" value="single_delete">
-                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                                <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                    <td><?php echo $itmHostnameDisplay !== '' ? sanitize($itmHostnameDisplay) : '—'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php elseif (!$itmIpAddressFocusedList && $rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
