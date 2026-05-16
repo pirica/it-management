@@ -87,14 +87,14 @@ if (!function_exists('idf_prune_position_port_capacity')) {
         }
 
         if ($sfpCount > 0) {
-            // Why: Matches switch/SFPPhysical numbering — fiber rows live after RJ45 footprints; pruning with port_no > sfp_count alone wipes 9–10-style slots.
+            // Why: SFP port_no is per port_type (1..N); also drop legacy RJ45-tail slots (for example 9–10 after eight RJ45 ports).
             $fiberBaselinePrune = max(0, (int)$rj45Count);
             if ($fiberBaselinePrune <= 0 && $equipmentId > 0) {
                 $fiberBaselinePrune = idf_equipment_switch_rj45_capacity_hint($conn, $companyId, $equipmentId);
             }
-            $fiberCeilingExclusive = ($fiberBaselinePrune > 0)
+            $fiberLegacyTailCeiling = ($fiberBaselinePrune > 0)
                 ? ($fiberBaselinePrune + $sfpCount)
-                : $sfpCount;
+                : 0;
 
             $stmtDeleteExtraSfp = mysqli_prepare(
                 $conn,
@@ -109,7 +109,7 @@ if (!function_exists('idf_prune_position_port_capacity')) {
                    )
                    AND (
                         port_no > ?
-                        OR (? > 0 AND port_no <= ?)
+                        OR (? > 0 AND port_no > ?)
                    )"
             );
             if ($stmtDeleteExtraSfp) {
@@ -119,9 +119,9 @@ if (!function_exists('idf_prune_position_port_capacity')) {
                     $companyId,
                     $positionId,
                     $companyId,
-                    $fiberCeilingExclusive,
-                    $fiberBaselinePrune,
-                    $fiberBaselinePrune
+                    $sfpCount,
+                    $fiberLegacyTailCeiling,
+                    $fiberLegacyTailCeiling
                 );
                 mysqli_stmt_execute($stmtDeleteExtraSfp);
                 mysqli_stmt_close($stmtDeleteExtraSfp);
