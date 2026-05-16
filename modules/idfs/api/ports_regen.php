@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
+require_once dirname(__DIR__) . '/idf_ports_sync.php';
 
 $data = idf_read_json();
 idf_require_csrf($data);
@@ -172,11 +173,17 @@ if ($equipmentId > 0) {
                     : 'sfp';
                 $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
                 if ($fiberTypeId > 0) {
-                    for ($fiberPortNo = 1; $fiberPortNo <= $fiberCount; $fiberPortNo++) {
-                        $fiberPortKey = $fiberTypeId . ':' . $fiberPortNo;
+                    $rjFootprintHint = max(0, (int)$count);
+                    if ($rjFootprintHint <= 0 && $equipmentId > 0) {
+                        $rjFootprintHint = idf_equipment_switch_rj45_capacity_hint($conn, $company_id, $equipmentId);
+                    }
+                    $fiberBaselineResolved = idf_resolve_fiber_number_baseline_after_rj45($portRowsToInsert, $rj45PortTypeId, $rjFootprintHint);
+                    for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberCount; $fiberOrdinal++) {
+                        $fiberPortNoSynth = idf_resolve_synthetic_fiber_port_no($fiberBaselineResolved, $fiberOrdinal);
+                        $fiberPortKey = $fiberTypeId . ':' . $fiberPortNoSynth;
                         if (!isset($fiberPortsToInsert[$fiberPortKey])) {
                             $fiberPortsToInsert[$fiberPortKey] = [
-                                'port_no' => $fiberPortNo,
+                                'port_no' => $fiberPortNoSynth,
                                 'port_type' => $fiberTypeId,
                             ];
                         }

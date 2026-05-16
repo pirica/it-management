@@ -253,7 +253,25 @@ if (!function_exists('itm_render_port_visualizer')) {
             return '';
         }
 
-        if ($fragmentMode !== '' || $gridPortType === 'rj45' || $gridPortType === 'fiber') {
+        if ($fragmentMode !== '') {
+            // Why: Split RJ45/fiber grids size rows/cols from COUNT and allocate cells from _visual coords (pairing/layout math).
+            // RJ45 footprints end around N while fiber stays on physical numbering (baseline+ordinal), so copying port_no blindly
+            // places fibers off-grid (high row/col). Use dense ordering inside each fragment instead.
+            usort($renderPorts, static function (array $a, array $b): int {
+                $noA = (int)($a['port_no'] ?? 0);
+                $noB = (int)($b['port_no'] ?? 0);
+                if ($noA === $noB) {
+                    return (int)($a['id'] ?? 0) <=> (int)($b['id'] ?? 0);
+                }
+                return $noA <=> $noB;
+            });
+            $fragmentOrdinal = 0;
+            foreach ($renderPorts as &$itmPortMeta) {
+                $fragmentOrdinal++;
+                $itmPortMeta['_visual_port_no'] = $fragmentOrdinal;
+            }
+            unset($itmPortMeta);
+        } elseif ($gridPortType === 'rj45' || $gridPortType === 'fiber') {
             foreach ($renderPorts as &$itmPortMeta) {
                 $itmPortMeta['_visual_port_no'] = (int)($itmPortMeta['port_no'] ?? 0);
             }
@@ -602,19 +620,20 @@ if (!function_exists('itm_render_port_visualizer')) {
 
 
             // Why: Equipment master fields define physical port capacity; always prefer those configured ranges over sparse/legacy IDF port rows.
-            if (array_key_exists('rj45_ports', $options) && is_array($options['rj45_ports'])) {
+            // Passing [] must not discard fiber rows mined from hydrated ports — only non-empty overrides should replace slot lists.
+            if (!empty($options['rj45_ports']) && is_array($options['rj45_ports'])) {
                 $rj45Ports = [];
                 foreach ($options['rj45_ports'] as $rj45PortNo) {
                     $rj45Ports[] = (int)$rj45PortNo;
                 }
             }
-            if (array_key_exists('sfp_ports', $options) && is_array($options['sfp_ports'])) {
+            if (!empty($options['sfp_ports']) && is_array($options['sfp_ports'])) {
                 $sfpPorts = [];
                 foreach ($options['sfp_ports'] as $sfpPortNo) {
                     $sfpPorts[] = (int)$sfpPortNo;
                 }
             }
-            if (array_key_exists('sfp_plus_ports', $options) && is_array($options['sfp_plus_ports'])) {
+            if (!empty($options['sfp_plus_ports']) && is_array($options['sfp_plus_ports'])) {
                 $sfpPlusPorts = [];
                 foreach ($options['sfp_plus_ports'] as $sfpPlusPortNo) {
                     $sfpPlusPorts[] = (int)$sfpPlusPortNo;

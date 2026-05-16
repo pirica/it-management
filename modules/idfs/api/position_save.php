@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
+require_once dirname(__DIR__) . '/idf_ports_sync.php';
 
 $data = idf_read_json();
 idf_require_csrf($data);
@@ -47,7 +48,8 @@ if (!function_exists('idf_prune_position_port_capacity')) {
         int $positionId,
         int $rj45Count,
         int $sfpCount,
-        int $rj45PortTypeId
+        int $rj45PortTypeId,
+        int $equipmentId = 0
     ): void {
         if ($companyId <= 0 || $positionId <= 0) {
             return;
@@ -85,6 +87,15 @@ if (!function_exists('idf_prune_position_port_capacity')) {
         }
 
         if ($sfpCount > 0) {
+            // Why: Matches switch/SFPPhysical numbering — fiber rows live after RJ45 footprints; pruning with port_no > sfp_count alone wipes 9–10-style slots.
+            $fiberBaselinePrune = max(0, (int)$rj45Count);
+            if ($fiberBaselinePrune <= 0 && $equipmentId > 0) {
+                $fiberBaselinePrune = idf_equipment_switch_rj45_capacity_hint($conn, $companyId, $equipmentId);
+            }
+            $fiberCeilingExclusive = ($fiberBaselinePrune > 0)
+                ? ($fiberBaselinePrune + $sfpCount)
+                : $sfpCount;
+
             $stmtDeleteExtraSfp = mysqli_prepare(
                 $conn,
                 "DELETE FROM idf_ports
@@ -96,10 +107,22 @@ if (!function_exists('idf_prune_position_port_capacity')) {
                         WHERE company_id = ?
                           AND LOWER(type) LIKE '%sfp%'
                    )
-                   AND port_no > ?"
+                   AND (
+                        port_no > ?
+                        OR (? > 0 AND port_no <= ?)
+                   )"
             );
             if ($stmtDeleteExtraSfp) {
-                mysqli_stmt_bind_param($stmtDeleteExtraSfp, 'iiii', $companyId, $positionId, $companyId, $sfpCount);
+                mysqli_stmt_bind_param(
+                    $stmtDeleteExtraSfp,
+                    'iiiiii',
+                    $companyId,
+                    $positionId,
+                    $companyId,
+                    $fiberCeilingExclusive,
+                    $fiberBaselinePrune,
+                    $fiberBaselinePrune
+                );
                 mysqli_stmt_execute($stmtDeleteExtraSfp);
                 mysqli_stmt_close($stmtDeleteExtraSfp);
             }
@@ -260,6 +283,8 @@ if (!function_exists('idf_sync_switch_rj45_capacity')) {
         }
 
         $updateAssignments = [
+            // Why: Re-selecting RJ45 presets can upsert overlapping port_numbers that were previously synthesized as fiber; flip port_family on duplicate unique keys instead of accumulating parallel rows.
+            'port_type = VALUES(port_type)',
             'idf_id = COALESCE(VALUES(idf_id), switch_ports.idf_id)',
             'hostname = COALESCE(VALUES(hostname), switch_ports.hostname)',
         ];
@@ -366,6 +391,7 @@ if (!function_exists('idf_sync_switch_fiber_capacity')) {
         int $unknownStatusId,
         int $defaultColorId,
         int $managementId,
+        int $fiberPhysicalNumberBase,
         string $hostname,
         string $labelColumn,
         bool $hasManagementColumn,
@@ -397,13 +423,49 @@ if (!function_exists('idf_sync_switch_fiber_capacity')) {
         if (!$stmtDeleteExtra) {
             idf_fail('DB error preparing switch fiber capacity sync', 500);
         }
-        mysqli_stmt_bind_param($stmtDeleteExtra, 'iiii', $companyId, $equipmentId, $targetFiberCount, $targetFiberCount);
+        $fiberCeilingExclusive = ($fiberPhysicalNumberBase > 0)
+            ? ($fiberPhysicalNumberBase + $targetFiberCount)
+            : ($targetFiberCount);
+        mysqli_stmt_bind_param($stmtDeleteExtra, 'iiii', $companyId, $equipmentId, $targetFiberCount, $fiberCeilingExclusive);
         if (!mysqli_stmt_execute($stmtDeleteExtra)) {
             $err = mysqli_stmt_error($stmtDeleteExtra);
             mysqli_stmt_close($stmtDeleteExtra);
             idf_fail('DB error deleting extra switch fiber ports: ' . $err, 500);
         }
         mysqli_stmt_close($stmtDeleteExtra);
+
+        // Why: After RJ45 growth, stale SFP/SFP+ may still occupy port_numbers inside the RJ45 footprint (composite unique permits SFP alongside RJ45 for the same number).
+        // Those rows must disappear before inserting synthetic fiber ports after baseline+ordinal.
+        if ($fiberPhysicalNumberBase > 0) {
+            $stmtDeleteStaleFiberFootprint = mysqli_prepare(
+                $conn,
+                "DELETE sp
+                 FROM switch_ports sp
+                 LEFT JOIN switch_port_types spt
+                   ON spt.company_id = sp.company_id
+                  AND (
+                        spt.type = sp.port_type
+                        OR (
+                            sp.port_type REGEXP '^[0-9]+$'
+                            AND spt.id = CAST(sp.port_type AS UNSIGNED)
+                        )
+                  )
+                 WHERE sp.company_id = ?
+                   AND sp.equipment_id = ?
+                   AND LOWER(TRIM(COALESCE(spt.type, sp.port_type, ''))) LIKE '%sfp%'
+                   AND sp.port_number <= ?"
+            );
+            if (!$stmtDeleteStaleFiberFootprint) {
+                idf_fail('DB error preparing switch fiber RJ45-footprint prune', 500);
+            }
+            mysqli_stmt_bind_param($stmtDeleteStaleFiberFootprint, 'iii', $companyId, $equipmentId, $fiberPhysicalNumberBase);
+            if (!mysqli_stmt_execute($stmtDeleteStaleFiberFootprint)) {
+                $err = mysqli_stmt_error($stmtDeleteStaleFiberFootprint);
+                mysqli_stmt_close($stmtDeleteStaleFiberFootprint);
+                idf_fail('DB error deleting switch fiber RJ45 footprint overlap: ' . $err, 500);
+            }
+            mysqli_stmt_close($stmtDeleteStaleFiberFootprint);
+        }
 
         if ($targetFiberCount <= 0 || $fiberPortTypeId <= 0 || trim($fiberPortTypeName) === '') {
             return;
@@ -462,18 +524,19 @@ if (!function_exists('idf_sync_switch_fiber_capacity')) {
             idf_fail('DB error preparing switch fiber upsert', 500);
         }
 
-        for ($portNo = 1; $portNo <= $targetFiberCount; $portNo++) {
+        for ($ordinal = 1; $ordinal <= $targetFiberCount; $ordinal++) {
+            $fiberPhysicalPortNumber = idf_resolve_synthetic_fiber_port_no((int)$fiberPhysicalNumberBase, $ordinal);
             $defaultLabel = '';
             $defaultComments = '';
 
             if ($hasManagementColumn && $hasCommentsColumn) {
-                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $managementId, $defaultComments);
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $fiberPhysicalPortNumber, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $managementId, $defaultComments);
             } elseif ($hasManagementColumn) {
-                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $managementId);
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $fiberPhysicalPortNumber, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $managementId);
             } elseif ($hasCommentsColumn) {
-                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $defaultComments);
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $fiberPhysicalPortNumber, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId, $defaultComments);
             } else {
-                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $portNo, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId);
+                mysqli_stmt_bind_param($stmtUpsert, $bindTypes, $companyId, $equipmentId, $hostname, $fiberPortTypeName, $fiberPhysicalPortNumber, $defaultLabel, $unknownStatusId, $defaultColorId, $idfId);
             }
 
             if (!mysqli_stmt_execute($stmtUpsert)) {
@@ -1238,6 +1301,11 @@ if ($pid > 0) {
                 }
             }
 
+            $fiberSwitchPhysicalBase = max(0, (int)$rj45_count);
+            if ($fiberSwitchPhysicalBase <= 0 && $equipment_id > 0) {
+                $fiberSwitchPhysicalBase = idf_equipment_switch_rj45_capacity_hint($conn, $company_id, $equipment_id);
+            }
+
             idf_sync_switch_fiber_capacity(
                 $conn,
                 $company_id,
@@ -1249,6 +1317,7 @@ if ($pid > 0) {
                 $unknownStatusId,
                 $defaultCableColorId,
                 $portManagementId,
+                $fiberSwitchPhysicalBase,
                 (string)($switchHostnameForSync ?? ''),
                 $switchPortLabelColumn,
                 idf_table_has_column($conn, 'switch_ports', 'management_id'),
@@ -1269,7 +1338,10 @@ if ($pid > 0) {
                    AND (? <= 0 OR port_no > ?)"
             );
             if ($stmtDeleteExtraIdfFiber) {
-                mysqli_stmt_bind_param($stmtDeleteExtraIdfFiber, 'iiiii', $company_id, $pid, $company_id, $fiberCountForSync, $fiberCountForSync);
+                $fiberIdfCeilingExclusive = ($fiberSwitchPhysicalBase > 0)
+                    ? ($fiberSwitchPhysicalBase + $fiberCountForSync)
+                    : $fiberCountForSync;
+                mysqli_stmt_bind_param($stmtDeleteExtraIdfFiber, 'iiiii', $company_id, $pid, $company_id, $fiberCountForSync, $fiberIdfCeilingExclusive);
                 if (!mysqli_stmt_execute($stmtDeleteExtraIdfFiber)) {
                     $err = mysqli_stmt_error($stmtDeleteExtraIdfFiber);
                     mysqli_stmt_close($stmtDeleteExtraIdfFiber);
@@ -1371,7 +1443,13 @@ if ($pid > 0) {
                         $fiberTypeFallback = strpos($fiberHint, 'sfp+') !== false ? 'sfp+' : 'sfp';
                         $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
                         if ($fiberTypeId > 0) {
-                            for ($fiberPortNo = 1; $fiberPortNo <= $fiberCount; $fiberPortNo++) {
+                            $rjHintForFiberIdfSeed = max(0, (int)$rj45_count);
+                            if ($rjHintForFiberIdfSeed <= 0 && $equipment_id > 0) {
+                                $rjHintForFiberIdfSeed = idf_equipment_switch_rj45_capacity_hint($conn, $company_id, $equipment_id);
+                            }
+                            $fiberBaselineForSeed = idf_resolve_fiber_number_baseline_after_rj45($portTypeByNumber, $rj45PortTypeId, $rjHintForFiberIdfSeed);
+                            for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberCount; $fiberOrdinal++) {
+                                $fiberPortNo = idf_resolve_synthetic_fiber_port_no($fiberBaselineForSeed, $fiberOrdinal);
                                 $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
                                 if (!isset($portTypeByNumber[$fiberKey])) {
                                     // Why: Equipment can declare SFP/SFP+ capacity even when switch_ports rows are incomplete; preserve those ports in IDF generation.
@@ -1498,7 +1576,7 @@ if ($pid > 0) {
             mysqli_stmt_close($stmtInsertPort);
         }
 
-        idf_prune_position_port_capacity($conn, $company_id, $pid, $rj45_count, $sfp_count, $rj45PortTypeId);
+        idf_prune_position_port_capacity($conn, $company_id, $pid, $rj45_count, $sfp_count, $rj45PortTypeId, $equipment_id);
 
         $layoutSyncValue = $layout_id > 0 ? $layout_id : 0;
         $stmtSyncPortLayout = mysqli_prepare(

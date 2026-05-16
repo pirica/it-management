@@ -575,8 +575,8 @@ if ($stmtPos) {
         }
         if ($rj45PortCount <= 0) {
             foreach (($row['ports'] ?? []) as $itmPortMeta) {
-                $itmTypeRaw = strtolower(trim((string)($itmPortMeta['port_type_label'] ?? ($itmPortMeta['port_type'] ?? ''))));
-                if (strpos($itmTypeRaw, 'sfp') === false) {
+                $itmTk = itm_port_visualizer_type_key($itmPortMeta);
+                if ($itmTk !== 'sfp' && $itmTk !== 'sfp_plus') {
                     $rj45PortCount++;
                 }
             }
@@ -606,14 +606,14 @@ if ($stmtPos) {
         $explicitSfpPorts = [];
         $explicitSfpPlusPorts = [];
         foreach (($row['ports'] ?? []) as $itmPortFiberMeta) {
-            $itmFiberTypeRaw = strtolower(trim((string)($itmPortFiberMeta['port_type_label'] ?? ($itmPortFiberMeta['port_type'] ?? ''))));
-            if (strpos($itmFiberTypeRaw, 'sfp') !== false) {
+            $itmFiberTk = itm_port_visualizer_type_key($itmPortFiberMeta);
+            if ($itmFiberTk === 'sfp' || $itmFiberTk === 'sfp_plus') {
                 $itmFiberNo = (int)($itmPortFiberMeta['port_no'] ?? 0);
                 if ($itmFiberNo > $fiberPortCount) {
                     $fiberPortCount = $itmFiberNo;
                 }
                 if ($itmFiberNo > 0) {
-                    if (strpos($itmFiberTypeRaw, 'sfp+') !== false) {
+                    if ($itmFiberTk === 'sfp_plus') {
                         $explicitSfpPlusPorts[$itmFiberNo] = $itmFiberNo;
                     } else {
                         $explicitSfpPorts[$itmFiberNo] = $itmFiberNo;

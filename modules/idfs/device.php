@@ -637,6 +637,7 @@ $positionLinkedEquipmentId = idf_resolve_position_equipment_id(
 );
 
 if ($position_id > 0) {
+    // Why: Materialize missing idf_ports from equipment + switch capacity on every GET so the Ports table fills without forcing Regenerate — see idf_collect_port_slots_for_position().
     idf_ensure_ports_for_position($conn, $company_id, $position_id);
 }
 

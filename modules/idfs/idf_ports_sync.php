@@ -8,6 +8,67 @@ if (!defined('IDF_INCLUDE_HELPERS_ONLY')) {
 }
 
 /**
+ * When idf_positions.rj45_count is 0 but linked equipment declares an RJ45 switch profile (digits in name),
+ * synthesized fiber ports should avoid colliding by numbering RJ45 footprints 1..N first.
+ *
+ * @return int First digit group from equipment_rj45.name (0 when unknown).
+ */
+function idf_equipment_switch_rj45_capacity_hint(mysqli $conn, int $company_id, int $equipmentId): int
+{
+    if ($equipmentId <= 0) {
+        return 0;
+    }
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT COALESCE(er.name, '') AS profile_name
+         FROM equipment e
+         LEFT JOIN equipment_rj45 er
+           ON er.company_id = e.company_id AND er.id = e.switch_rj45_id
+         WHERE e.company_id = ? AND e.id = ?
+         LIMIT 1"
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $equipmentId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    $hint = trim((string)($row['profile_name'] ?? ''));
+    if ($hint !== '' && preg_match('/(\d+)/', $hint, $matches)) {
+        return min(9999, max(0, (int)$matches[1]));
+    }
+    return 0;
+}
+
+/**
+ * @param array<string,array{port_no:int,port_type:int}|array<string,mixed>> $slotMap
+ */
+function idf_resolve_fiber_number_baseline_after_rj45(array $slotMap, int $rj45PortTypeId, int $rj45DeclaredFootprintHint): int
+{
+    $baseline = max(0, (int)$rj45DeclaredFootprintHint);
+    foreach ($slotMap as $slot) {
+        if (!is_array($slot)) {
+            continue;
+        }
+        if ((int)($slot['port_type'] ?? 0) !== $rj45PortTypeId) {
+            continue;
+        }
+        $baseline = max($baseline, (int)($slot['port_no'] ?? 0));
+    }
+    return $baseline;
+}
+
+/**
+ * RJ45 footprints already consume 1..baseline; synthesized fiber fills baseline+idx (pure-fiber installs keep 1..N).
+ */
+function idf_resolve_synthetic_fiber_port_no(int $rj45BaselineIncludingSlots, int $fiberOrdinalOneBased): int
+{
+    return $rj45BaselineIncludingSlots > 0 ? ($rj45BaselineIncludingSlots + $fiberOrdinalOneBased) : $fiberOrdinalOneBased;
+}
+
+/**
  * Build the port slots that should exist for a rack position (RJ45 capacity, SFP capacity, and live switch_ports).
  *
  * @return array<string, array{port_no:int, port_type:int}>
@@ -29,14 +90,22 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
     }
 
     $portSlots = [];
-    if ($rj45Count > 0) {
-        for ($portNo = 1; $portNo <= $rj45Count; $portNo++) {
+    // Why: RJ45 placeholders come from persisted idf_positions.rj45_count; only when unset do we hydrate from linked equipment RJ45 masters.
+    $rj45PlaceholderCount = (int)$rj45Count;
+    if ($rj45PlaceholderCount <= 0 && $equipmentId > 0) {
+        $rj45PlaceholderCount = idf_equipment_switch_rj45_capacity_hint($conn, $company_id, $equipmentId);
+    }
+    if ($rj45PlaceholderCount > 0) {
+        for ($portNo = 1; $portNo <= $rj45PlaceholderCount; $portNo++) {
             $portSlots[$rj45PortTypeId . ':' . $portNo] = [
                 'port_no' => $portNo,
                 'port_type' => $rj45PortTypeId,
             ];
         }
     }
+
+    // Why: Stored rj45_count may be 0 while switch rows still imply a larger RJ45 footprint — keep fiber numbering after RJ45 numbering either way.
+    $rj45FootprintForFiberMath = max((int)$rj45Count, (int)$rj45PlaceholderCount);
 
     $fiberPortsNumberId = 0;
     $switchPortNumberingLayoutId = (int)($positionRow['switch_port_numbering_layout_id'] ?? 0);
@@ -135,7 +204,9 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
                         : 'sfp';
                     $fiberTypeId = idf_resolve_port_type_id($conn, $company_id, $fiberTypeFallback, $fiberTypeFallback);
                     if ($fiberTypeId > 0) {
-                        for ($fiberPortNo = 1; $fiberPortNo <= $fiberCount; $fiberPortNo++) {
+                        $fiberBaseline = idf_resolve_fiber_number_baseline_after_rj45($portSlots, $rj45PortTypeId, $rj45FootprintForFiberMath);
+                        for ($fiberOrdinal = 1; $fiberOrdinal <= $fiberCount; $fiberOrdinal++) {
+                            $fiberPortNo = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrdinal);
                             $fiberKey = $fiberTypeId . ':' . $fiberPortNo;
                             if (!isset($portSlots[$fiberKey])) {
                                 $portSlots[$fiberKey] = [
