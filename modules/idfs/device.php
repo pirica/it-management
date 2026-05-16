@@ -964,7 +964,7 @@ $stmtDestinationPorts = mysqli_prepare(
         p.device_name,
         p.device_type,
         p.equipment_id,
-        COALESCE(spt.type, spt_any.type, 'RJ45') AS port_type_label,
+        " . itm_idf_port_type_label_with_switch_sql() . " AS port_type_label,
         CASE
             WHEN EXISTS (
                 SELECT 1
@@ -976,12 +976,13 @@ $stmtDestinationPorts = mysqli_prepare(
         END AS is_linked
      FROM idf_ports pr
      JOIN idf_positions p
-       ON p.company_id = pr.company_id
-      AND (
-           p.id = pr.position_id
-           OR p.position_no = pr.position_id
-      )
-     JOIN idfs i ON i.id = p.idf_id JOIN it_locations l ON l.id = i.location_id
+       ON " . itm_idf_positions_resolve_join_sql('pr', 'p') . "
+     JOIN idfs i ON i.id = p.idf_id
+     JOIN it_locations l ON l.id = i.location_id
+     LEFT JOIN switch_ports sp_dest
+       ON sp_dest.company_id = pr.company_id
+      AND sp_dest.equipment_id = p.equipment_id
+      AND sp_dest.port_number = pr.port_no
      LEFT JOIN switch_status ss
        ON ss.id = pr.status_id
       AND ss.company_id = pr.company_id
@@ -991,8 +992,16 @@ $stmtDestinationPorts = mysqli_prepare(
      LEFT JOIN switch_port_types spt
        ON spt.id = pr.port_type
       AND spt.company_id = pr.company_id
-     LEFT JOIN switch_port_types spt_any
-       ON spt_any.id = pr.port_type
+     LEFT JOIN switch_port_types spt_sp
+       ON spt_sp.company_id = pr.company_id
+      AND (
+            spt_sp.id = sp_dest.port_type
+            OR spt_sp.type = sp_dest.port_type
+            OR (
+                sp_dest.port_type REGEXP '^[0-9]+$'
+                AND spt_sp.id = CAST(sp_dest.port_type AS UNSIGNED)
+            )
+      )
      WHERE i.company_id = ?
      ORDER BY p.position_no ASC, pr.port_no ASC"
 );
@@ -3007,9 +3016,16 @@ async function openLinkModal(portId) {
     }
     const f = document.getElementById('linkForm');
     const destinationSelect = f.port_id_b;
-    const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) =>
-        Number(p.id) !== Number(source.id) && !p.is_linked
-    )));
+    const destinations = sortDestinationPorts(filterLinkCompatibleDestinations(source, DESTINATION_PORTS.filter((p) => {
+        if (Number(p.id) === Number(source.id) || p.is_linked) {
+            return false;
+        }
+        // Why: destination list is for patch links to a different rack asset, not another port on this position.
+        if (Number(POSITION_EQUIPMENT_ID) > 0 && Number(p.equipment_id) === Number(POSITION_EQUIPMENT_ID)) {
+            return false;
+        }
+        return Number(p.equipment_id) > 0;
+    })));
 
     destinationSelect.innerHTML = '<option value="">Select destination port</option>';
     destinations.forEach((port) => {
@@ -3035,10 +3051,23 @@ async function openLinkModal(portId) {
     if (!destinations.length) {
         const option = document.createElement('option');
         option.value = '';
+        option.disabled = true;
         const sourceFamily = portTypeLinkFamily(source.port_type_label || 'RJ45');
-        option.textContent = sourceFamily === 'fiber'
-            ? 'No available fiber ports on other equipment'
-            : 'No available RJ45 ports on other equipment';
+        const compatibleOnOtherEquipment = DESTINATION_PORTS.filter((p) => {
+            if (Number(p.id) === Number(source.id) || p.is_linked) {
+                return false;
+            }
+            if (Number(POSITION_EQUIPMENT_ID) > 0 && Number(p.equipment_id) === Number(POSITION_EQUIPMENT_ID)) {
+                return false;
+            }
+            return Number(p.equipment_id) > 0
+                && portsAreLinkCompatible(source.port_type_label || 'RJ45', p.port_type_label || 'RJ45');
+        });
+        option.textContent = compatibleOnOtherEquipment.length
+            ? 'All matching ports on other equipment are already linked'
+            : (sourceFamily === 'fiber'
+                ? 'No available fiber ports on other equipment'
+                : 'No available RJ45 ports on other equipment');
         destinationSelect.appendChild(option);
     }
 
