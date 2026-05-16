@@ -162,6 +162,31 @@ if (!function_exists('itm_filter_ports_by_type_keys')) {
     }
 }
 
+if (!function_exists('itm_port_visualizer_click_has_explicit_connection')) {
+    /**
+     * Why: Mirrors device.php Ports "Connected To" intent: cables/links and IDF annotations count; echoed switch hostname only does not match a filled cable endpoint column.
+     */
+    function itm_port_visualizer_click_has_explicit_connection(array $p): bool
+    {
+        if (!empty($p['link_id']) && (int)$p['link_id'] > 0) {
+            return true;
+        }
+        $idfConn = trim((string)($p['idf_port_connected_for_routing'] ?? ''));
+        if ($idfConn !== '') {
+            return true;
+        }
+        $merged = trim((string)($p['connected_to'] ?? ''));
+        if ($merged === '') {
+            return false;
+        }
+        $mirror = trim((string)($p['mirror_switch_hostname'] ?? ''));
+        if ($mirror === '') {
+            return true;
+        }
+        return strcasecmp($merged, $mirror) !== 0;
+    }
+}
+
 if (!function_exists('itm_render_port_visualizer')) {
     /**
      * Renders the HTML for a port grid.
@@ -402,7 +427,11 @@ if (!function_exists('itm_render_port_visualizer')) {
                 if (!empty($contextParts)) {
                     $titleParts[] = implode(' • ', $contextParts);
                 }
-                $statusLabel = trim((string)($p['status_label'] ?? 'Unknown'));
+                // Why: SQL may yield '' when switch_status.status is blank; COALESCE does not skip empty strings, so normalize for tooltips and data-port-status-label.
+                $statusLabel = trim((string)($p['status_label'] ?? ''));
+                if ($statusLabel === '') {
+                    $statusLabel = 'Unknown';
+                }
 
                 $portTypeLabel = trim((string)($p['port_type_label'] ?? ''));
                 if ($portTypeLabel !== '') {
@@ -522,8 +551,12 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portTypeKey = itm_port_visualizer_type_key($p);
                 $portBorderRadius = ($portTypeKey === 'sfp' || $portTypeKey === 'sfp_plus') ? '50%' : '3px';
                 $portTypeClass = $portTypeKey === 'rj45' ? '' : ' itm-port-item--' . sanitize($portTypeKey);
+                // Why: Tooltip still uses merged `connected_to`; click routing aligns with device.php Ports table semantics via itm_port_visualizer_click_has_explicit_connection().
+                $portConnectedToAttr = sanitize(trim((string)($p['idf_port_connected_for_routing'] ?? '')));
+                $portLinkIdAttr = isset($p['link_id']) ? (int)$p['link_id'] : 0;
+                $portExplicitConnAttr = itm_port_visualizer_click_has_explicit_connection($p) ? '1' : '0';
 
-                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . $portId . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '"' . $portNumberAttr . ' ' . $onClick . ' style="
+                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . $portId . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '" data-port-connected-to="' . $portConnectedToAttr . '" data-port-link-id="' . $portLinkIdAttr . '" data-has-explicit-connection="' . $portExplicitConnAttr . '"' . $portNumberAttr . ' ' . $onClick . ' style="
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';
@@ -641,6 +674,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotTypeRaw = (string)($dotMeta['type'] ?? '');
                 $dotKey = $dotTypeRaw . ':' . $dotNo;
                 $dotTitle = 'Port ' . $dotNo;
+                // Why: Default empty so dots without port rows still expose a predictable data attribute for view.php routing.
+                $dotConnectedTo = '';
+                $dotLinkId = 0;
                 // Why: Virtual SFP dots without persisted rows should not route users to edit flows.
                 $dotIsClickable = !empty($options['clickable']) && $dotNo > 0 && $dotTypeRaw !== '';
                 if (isset($portMetaByTypeAndNo[$dotKey])) {
@@ -663,7 +699,10 @@ if (!function_exists('itm_render_port_visualizer')) {
                         $dotStyle = ' style="' . implode(';', $dotStyleRules) . ';"';
                     }
                     $dotTypeLabel = trim((string)($dotPort['port_type_label'] ?? strtoupper((string)($dotMeta['type'] ?? 'SFP'))));
-                    $dotStatusLabel = trim((string)($dotPort['status_label'] ?? 'Unknown'));
+                    $dotStatusLabel = trim((string)($dotPort['status_label'] ?? ''));
+                    if ($dotStatusLabel === '') {
+                        $dotStatusLabel = 'Unknown';
+                    }
                     $dotLabel = trim((string)($dotPort['label'] ?? ''));
                     $dotVlanLabel = trim((string)($dotPort['vlan_label'] ?? ''));
                     $dotVlan = (int)($dotPort['vlan_id'] ?? 0);
@@ -741,11 +780,15 @@ if (!function_exists('itm_render_port_visualizer')) {
                     $dotTitle = implode(' • ', $dotTitleParts);
                 }
                 $dotPortId = isset($dotPort['id']) ? (int)$dotPort['id'] : 0;
-                $dotStatusAttr = isset($dotPort['status_label']) ? sanitize((string)$dotPort['status_label']) : 'Unknown';
+                $dotStatusRaw = ($dotPort && array_key_exists('status_label', $dotPort)) ? trim((string)$dotPort['status_label']) : '';
+                $dotStatusAttr = sanitize($dotStatusRaw !== '' ? $dotStatusRaw : 'Unknown');
                 // Why: SFP/SFP+ placeholder dots can be rendered before an IDF port row exists; keep routing by falling back to the card position id.
                 $dotFallbackPositionId = isset($options['position_id']) ? (int)$options['position_id'] : 0;
                 $dotPositionIdAttr = isset($dotPort['position_id']) ? (int)$dotPort['position_id'] : $dotFallbackPositionId;
-                $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '"';
+                $dotRoutingConnectedTo = $dotPort ? trim((string)($dotPort['idf_port_connected_for_routing'] ?? '')) : '';
+                // Why: Compact fiber dots use the same device.php Connected To rule as RJ45 rack cells.
+                $dotExplicitConnAttr = ($dotPort && itm_port_visualizer_click_has_explicit_connection($dotPort)) ? '1' : '0';
+                $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '" data-port-connected-to="' . sanitize($dotRoutingConnectedTo) . '" data-port-link-id="' . (int)$dotLinkId . '" data-has-explicit-connection="' . $dotExplicitConnAttr . '"';
                 $dotOnClick = '';
                 if ($dotIsClickable) {
                     $dotOnClick = ' onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';

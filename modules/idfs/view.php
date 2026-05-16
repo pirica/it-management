@@ -243,6 +243,13 @@ $switchPortsFallbackHostnameSelect = $hasSwitchPortsHostnameColumn
 $switchPortsFallbackCommentsSelect = $hasSwitchPortsCommentsColumn
     ? "COALESCE(sp.comments, '')"
     : "''";
+// Why: Connected To merges switch hostname (`connected_to`). Mirror hostname exposes hostname-only rows that should route like unset cable text (device.php user expectation).
+$mirrorHostnameSqlMain = $hasSwitchPortsHostnameColumn
+    ? "NULLIF(TRIM(pr_live.hostname), '') AS mirror_switch_hostname"
+    : "'' AS mirror_switch_hostname";
+$mirrorHostnameSqlFallback = $hasSwitchPortsHostnameColumn
+    ? "NULLIF(TRIM(sp.hostname), '') AS mirror_switch_hostname"
+    : "'' AS mirror_switch_hostname";
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name,
@@ -300,10 +307,18 @@ if ($stmtPos) {
             "SELECT pr.*,
                     COALESCE(spt.type, 'RJ45') AS port_type_label,
                     COALESCE(pr_live.status_id, sp_link.status_id, pr.status_id, l.equipment_status_id) AS effective_status_id,
-                    COALESCE(ss_live.status, ss_link.status, ss.status, ss_link_meta.status, 'Unknown') AS status_label,
+                    COALESCE(
+                        NULLIF(TRIM(ss_live.status), ''),
+                        NULLIF(TRIM(ss_link.status), ''),
+                        NULLIF(TRIM(ss.status), ''),
+                        NULLIF(TRIM(ss_link_meta.status), ''),
+                        'Unknown'
+                    ) AS status_label,
                     COALESCE(cc_live.hex_color, cc_sp_link_direct.hex_color, cc_ss_link.hex_color, cc_ss.hex_color, cc_ss_link_meta.hex_color, cc_l.hex_color, pr.hex_color, '#808080') AS status_color,
                     COALESCE({$switchPortsLiveLabelSelect}, pr.label) AS label,
                     COALESCE({$switchPortsLiveHostnameSelect}, pr.connected_to) AS connected_to,
+                    TRIM(COALESCE(pr.connected_to, '')) AS idf_port_connected_for_routing,
+                    {$mirrorHostnameSqlMain},
                     COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS effective_vlan_id,
                     COALESCE(pr_live.vlan_id, pr.vlan_id, sp_link.vlan_id, l.equipment_vlan_id) AS vlan_id,
                     CASE
@@ -480,8 +495,10 @@ if ($stmtPos) {
                         COALESCE(sp.port_type, 'RJ45') AS port_type_label,
                         " . ($hasSwitchPortsToPatchPortColumn ? "COALESCE(sp.to_patch_port, '')" : "''") . " AS label,
                         {$switchPortsFallbackHostnameSelect} AS connected_to,
+                        {$mirrorHostnameSqlFallback},
+                        TRIM(COALESCE(pr_match.connected_to, '')) AS idf_port_connected_for_routing,
                         {$switchPortsFallbackCommentsSelect} AS notes,
-                        COALESCE(ss.status, 'Unknown') AS status_label,
+                        COALESCE(NULLIF(TRIM(ss.status), ''), 'Unknown') AS status_label,
                         COALESCE(cc.hex_color, '#808080') AS status_color,
                         COALESCE(cc.hex_color, '') AS cable_hex_color,
                         COALESCE(cc.color_name, '') AS cable_color_name,
@@ -1693,7 +1710,11 @@ function onPortClick(portId, portElement) {
     const statusLabelRaw = portNode ? String(portNode.dataset.portStatusLabel || '').trim().toLowerCase() : '';
     const positionId = portNode ? Number(portNode.dataset.positionId || 0) : 0;
     const portNo = portNode ? Number(portNode.dataset.portNumber || 0) : 0;
-    const action = statusLabelRaw === 'unknown' ? 'link' : 'edit';
+    // Why: `data-has-explicit-connection` matches device.php Ports "Connected To": links/IDF text count; echoed hostname-only does not resolve as a filled cable endpoint.
+    const hasExplicitConnection = !!(portNode && portNode.dataset.hasExplicitConnection === '1');
+    // Why: Blank status_label happens when switch_status rows use empty strings; COALESCE(...,'Unknown') does not replace '' — same intent as Unknown for opening the link flow.
+    const routeAsUnknownStatus = !statusLabelRaw || statusLabelRaw === 'unknown';
+    const action = (routeAsUnknownStatus && !hasExplicitConnection) ? 'link' : 'edit';
     navigateToDeviceEditor(positionId, Number(portId), action, portNo);
 }
 
