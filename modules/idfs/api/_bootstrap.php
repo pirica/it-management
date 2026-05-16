@@ -1167,6 +1167,26 @@ function idf_normalize_port_label_value($value): string
 }
 
 /**
+ * Why: switch_ports.comments and legacy mirrors often store literal "0" instead of an empty note.
+ */
+function idf_normalize_port_notes_value($value): string
+{
+    $normalized = trim((string)$value);
+    if ($normalized === '' || $normalized === '0' || strcasecmp($normalized, 'null') === 0) {
+        return '';
+    }
+    return $normalized;
+}
+
+/**
+ * Cable link rows in idf_links drive the Link column and peer sync — not merely linked equipment on the position.
+ */
+function idf_port_has_cable_link(array $portRow): bool
+{
+    return (int)($portRow['link_id'] ?? 0) > 0;
+}
+
+/**
  * SQL fragment: blank out placeholder patch-port labels before COALESCE/INSERT.
  */
 function idf_sql_normalize_port_label_expr(string $columnSql): string
