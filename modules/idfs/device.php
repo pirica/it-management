@@ -6,6 +6,7 @@ if (!headers_sent()) {
 require_once __DIR__ . '/port_visualizer_helper.php';
 require_once __DIR__ . '/idf_positions_schema.php';
 require_once __DIR__ . '/idf_ports_sync.php';
+require_once ROOT_PATH . 'includes/idf_device_port_sort_sql.php';
 idf_ensure_idf_positions_capacity_columns($conn);
 
 if (!isset($_SESSION['company_id'])) {
@@ -239,7 +240,7 @@ if ($idfPortsRj45SpeedColumnRes && mysqli_num_rows($idfPortsRj45SpeedColumnRes) 
     $hasIdfPortsRj45SpeedColumn = true;
 }
 $rj45SpeedIdExpr = $hasIdfPortsRj45SpeedColumn ? 'pr.rj45_speed_id' : 'NULL';
-$normalizedPortTypeExpr = "UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS'))";
+$normalizedPortTypeExpr = "UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, spt_any.type, 'RJ45')), ' ', ''), '+', 'PLUS'))";
 $speedLabelExpr = $hasRj45SpeedTable
     ? "CASE
           WHEN {$normalizedPortTypeExpr} = 'RJ45' THEN COALESCE(rs.cable_type, '')
@@ -289,7 +290,7 @@ $vlanSortExpr = "CASE
 END";
 $labelSortExpr = "COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
 $notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
-$normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'plus'))";
+$normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, spt_any.type, 'RJ45')), ' ', ''), '+', 'plus'))";
 $speedLabelExpr = $hasRj45SpeedTable
     ? "CASE
     WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(ef.name, '')
@@ -303,9 +304,12 @@ $rj45SpeedLabelExpr = $hasRj45SpeedTable
 END"
     : "''";
 
+$idfPortTypeLabelSql = itm_idf_port_type_label_sql();
+$portFiberFamilyRankExpr = itm_idf_port_fiber_family_rank_sql();
+
 $portSortMap = [
     'port_no' => 'pr.port_no',
-    'port_type' => "COALESCE(spt.type, 'RJ45')",
+    'port_type' => $idfPortTypeLabelSql,
     'label' => $labelSortExpr,
     'status' => "COALESCE(ss_live.status, ss_link.status, ss.status, 'Unknown')",
     'connected_to' => 'pr.connected_to',
@@ -319,7 +323,12 @@ $portSortMap = [
 if (!isset($portSortMap[$portSortField])) {
     $portSortField = 'port_type';
 }
-$portOrderSql = $portSortMap[$portSortField] . ' ' . $portSortDir . ', pr.port_no ASC';
+// Fiber family first for every chosen sort column so RJ45/SFP duplex rows (same port_no) never interleave (e.g. 1RJ45 / 1SFP / 2RJ45).
+$portOrderSql = itm_idf_ports_device_list_order_sql(
+    $portFiberFamilyRankExpr,
+    $portSortMap[$portSortField],
+    $portSortDir
+);
 
 $stmtPorts = mysqli_prepare(
     $conn,
@@ -460,7 +469,7 @@ $stmtPorts = mysqli_prepare(
        AND pr_live.port_number = pr.port_no
        AND (
             CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                = CONVERT(COALESCE(spt.type, spt_any.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
             OR CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
             OR (
@@ -468,7 +477,7 @@ $stmtPorts = mysqli_prepare(
                 AND CAST(pr_live.port_type AS UNSIGNED) = spt.id
             )
             OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(pr_live.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
-               = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, spt_any.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
        )
       LEFT JOIN switch_status ss
         ON ss.id = pr.status_id
@@ -675,6 +684,16 @@ if ($positionLinkedEquipmentId > 0 && !empty($ports)) {
         $portRowAfterSwitchSync = $idfDeviceHydratePortRow($portRowAfterSwitchSync);
     }
     unset($portRowAfterSwitchSync);
+}
+
+// Re-sort in PHP so list order always matches shared fiber-first rules (covers MySQL tie/order drift on large joins).
+if (!empty($ports)) {
+    usort(
+        $ports,
+        static function (array $a, array $b) use ($portSortField, $portSortDir): int {
+            return itm_idf_ports_device_list_compare_rows($a, $b, $portSortField, $portSortDir);
+        }
+    );
 }
 
 if (!empty($ports)) {
