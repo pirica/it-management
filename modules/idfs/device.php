@@ -1616,6 +1616,10 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                                 $unlinkBtn = '<button class="btn btn-sm" type="button" onclick="unlinkPort(' . (int)$p['link_id'] . ')">Unlink</button>';
                             }
                         }
+                        $connectedToPlain = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($connectedToText), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                        if ($connectedToPlain === '') {
+                            $connectedToPlain = trim((string)($p['connected_to'] ?? ''));
+                        }
                         $speedValueId = isset($p['speed_value_id']) ? (int)$p['speed_value_id'] : (isset($p['speed_id']) ? (int)$p['speed_id'] : 0);
                         ?>
                         <tr
@@ -1625,7 +1629,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             data-label="<?php echo sanitize(idf_normalize_label_display($p['label'] ?? '')); ?>"
                             data-status-id="<?php echo (int)($p['status_id'] ?? 0); ?>"
                             data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
-                            data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
+                            data-connected-to="<?php echo sanitize($connectedToPlain); ?>"
                             data-vlan-id="<?php echo (int)($p['vlan_id'] ?? 0); ?>"
                             data-vlan="<?php echo sanitize((string)($p['vlan_label'] ?? '')); ?>"
                             data-speed-id="<?php echo $speedValueId > 0 ? (string)$speedValueId : ''; ?>"
@@ -2173,11 +2177,61 @@ function applySelectValue(selectEl, value) {
     selectEl.value = '';
 }
 
+function portFormControl(form, fieldName) {
+    if (!form || !fieldName) {
+        return null;
+    }
+    if (form.elements && typeof form.elements.namedItem === 'function') {
+        const named = form.elements.namedItem(fieldName);
+        if (named) {
+            return named;
+        }
+    }
+    return form.querySelector('[name="' + String(fieldName).replace(/"/g, '\\"') + '"]');
+}
+
+function collectPortEditSeed(portMeta, rowDataset) {
+    const row = rowDataset || {};
+    return {
+        label: normalizeLabelDisplayValue((portMeta && portMeta.label) ? portMeta.label : (row.label || '')),
+        notes: String((portMeta && portMeta.notes) ? portMeta.notes : (row.notes || '')).trim(),
+        connected_to: String(
+            (portMeta && portMeta.connected_to) ? portMeta.connected_to : (row.connectedTo || '')
+        ).trim(),
+        status_id: portMeta && portMeta.status_id ? portMeta.status_id : (row.statusId || ''),
+        vlan_id: portMeta && portMeta.vlan_id ? portMeta.vlan_id : (row.vlanId || ''),
+        poe_id: portMeta && portMeta.poe_id ? portMeta.poe_id : (row.poeId || ''),
+        rj45_speed_id: portMeta && portMeta.rj45_speed_id ? portMeta.rj45_speed_id : (row.speedId || ''),
+        fiber_port_id: portMeta && portMeta.fiber_port_id ? portMeta.fiber_port_id : (row.speedId || ''),
+        cable_color_id: portMeta && portMeta.cable_color_id ? portMeta.cable_color_id : 0,
+        cable_color_name: portMeta ? (portMeta.cable_color_name || portMeta.cable_color || '') : '',
+        cable_hex_color: portMeta ? (portMeta.cable_hex_color || '') : '',
+    };
+}
+
+function applyPortEditTextFields(form, seed) {
+    const labelInput = portFormControl(form, 'label');
+    const notesInput = portFormControl(form, 'notes');
+    const connectedInput = portFormControl(form, 'connected_to');
+    if (labelInput) {
+        labelInput.value = normalizeLabelDisplayValue(seed.label || '');
+    }
+    if (notesInput) {
+        notesInput.value = String(seed.notes || '');
+    }
+    if (connectedInput) {
+        connectedInput.value = String(seed.connected_to || '');
+    }
+}
+
 function mergeSwitchPortApiRowIntoPortMeta(portMeta, switchPort) {
     if (!portMeta || !switchPort) {
         return portMeta;
     }
     const merged = Object.assign({}, portMeta);
+    const preservedLabel = normalizeLabelDisplayValue(portMeta.label || '');
+    const preservedNotes = String(portMeta.notes || '').trim();
+    const preservedConnectedTo = String(portMeta.connected_to || '').trim();
     const pick = (targetKey, sourceKey) => {
         const current = Number(merged[targetKey] || 0);
         const incoming = Number(switchPort[sourceKey] || 0);
@@ -2209,13 +2263,11 @@ function mergeSwitchPortApiRowIntoPortMeta(portMeta, switchPort) {
         merged.switch_port_id = Number(switchPort.id);
     }
     const switchLabel = normalizeLabelDisplayValue(switchPort.equipment_label || '');
-    if (!normalizeLabelDisplayValue(merged.label) && switchLabel !== '') {
-        merged.label = switchLabel;
-    }
-    merged.label = normalizeLabelDisplayValue(merged.label || '');
+    merged.label = preservedLabel !== '' ? preservedLabel : (switchLabel !== '' ? switchLabel : normalizeLabelDisplayValue(merged.label || ''));
     const switchComments = String(switchPort.equipment_comments || '').trim();
-    if (!merged.notes && switchComments !== '') {
-        merged.notes = switchComments;
+    merged.notes = preservedNotes !== '' ? preservedNotes : (switchComments !== '' ? switchComments : String(merged.notes || '').trim());
+    if (preservedConnectedTo !== '') {
+        merged.connected_to = preservedConnectedTo;
     }
     const switchColor = String(switchPort.equipment_color || '').trim();
     if (switchColor !== '' && (!merged.cable_color_name || String(merged.cable_color_name).toLowerCase() === 'gray')) {
@@ -2325,73 +2377,90 @@ async function openPortModal(portId) {
         alert('Port not found. If this device has switch_ports rows but no IDF ports yet, click "Regenerate Ports" first.');
         return;
     }
+
+    let editSeed = collectPortEditSeed(portMeta, rowData);
     portMeta = await hydratePortMetaFromSwitchPorts(portMeta);
     upsertPortMetaInPortsList(portMeta);
-    form.port_id.value = String(portMeta.id);
+    editSeed = collectPortEditSeed(portMeta, rowData);
+    editSeed.label = normalizeLabelDisplayValue(editSeed.label || (portMeta && portMeta.label) || rowData.label || '');
+    editSeed.notes = String(editSeed.notes || (portMeta && portMeta.notes) || rowData.notes || '').trim();
+    editSeed.connected_to = String(editSeed.connected_to || (portMeta && portMeta.connected_to) || rowData.connectedTo || '').trim();
+
+    const portIdInput = portFormControl(form, 'port_id');
+    if (portIdInput) {
+        portIdInput.value = String(portMeta.id);
+    }
+    const portTypeSelect = portFormControl(form, 'port_type');
     const requestedPortTypeId = (portMeta && portMeta.port_type_id) ? String(portMeta.port_type_id) : (rowData.portTypeId || '');
-    if (requestedPortTypeId && Array.from(form.port_type.options).some((option) => option.value === requestedPortTypeId)) {
-        form.port_type.value = requestedPortTypeId;
-    } else {
-        const requestedPortType = ((portMeta && portMeta.port_type_label) || rowData.portType || 'RJ45').trim();
-        const portTypeOption = Array.from(form.port_type.options).find((option) =>
-            option.textContent.trim().toLowerCase() === requestedPortType.toLowerCase()
-        );
-        form.port_type.value = portTypeOption ? portTypeOption.value : (form.port_type.value || '');
+    if (portTypeSelect) {
+        if (requestedPortTypeId && Array.from(portTypeSelect.options).some((option) => option.value === requestedPortTypeId)) {
+            portTypeSelect.value = requestedPortTypeId;
+        } else {
+            const requestedPortType = ((portMeta && portMeta.port_type_label) || rowData.portType || 'RJ45').trim();
+            const portTypeOption = Array.from(portTypeSelect.options).find((option) =>
+                option.textContent.trim().toLowerCase() === requestedPortType.toLowerCase()
+            );
+            portTypeSelect.value = portTypeOption ? portTypeOption.value : (portTypeSelect.value || '');
+        }
     }
-    form.label.value = normalizeLabelDisplayValue(
-        (portMeta && portMeta.label) ? portMeta.label : (rowData.label || '')
-    );
-    const requestedStatusId = portMeta ? portMeta.status_id : rowData.statusId;
-    if (requestedStatusId && Array.from(form.status.options).some((option) => option.value === String(requestedStatusId))) {
-        form.status.value = String(requestedStatusId);
-    } else {
-        const requestedStatus = (rowData.status || 'Unknown').trim();
-        const statusOption = Array.from(form.status.options).find((option) =>
-            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === requestedStatus.toLowerCase()
-        );
-        form.status.value = statusOption ? statusOption.value : (form.status.value || '');
+    const statusSelect = portFormControl(form, 'status');
+    const requestedStatusId = editSeed.status_id || (portMeta ? portMeta.status_id : rowData.statusId);
+    if (statusSelect) {
+        if (requestedStatusId && Array.from(statusSelect.options).some((option) => option.value === String(requestedStatusId))) {
+            statusSelect.value = String(requestedStatusId);
+        } else {
+            const requestedStatus = (rowData.status || 'Unknown').trim();
+            const statusOption = Array.from(statusSelect.options).find((option) =>
+                option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === requestedStatus.toLowerCase()
+            );
+            statusSelect.value = statusOption ? statusOption.value : (statusSelect.value || '');
+        }
     }
-    form.connected_to.value = (portMeta && portMeta.connected_to) ? portMeta.connected_to : (rowData.connectedTo || '');
-    applySelectValue(form.vlan, portMeta ? portMeta.vlan_id : rowData.vlanId);
+    applyPortEditTextFields(form, editSeed);
+    applySelectValue(portFormControl(form, 'vlan'), editSeed.vlan_id || (portMeta ? portMeta.vlan_id : rowData.vlanId));
     const selectedPortTypeLabel = (portMeta && portMeta.port_type_label)
         ? portMeta.port_type_label
-        : ((form.port_type.selectedOptions && form.port_type.selectedOptions[0])
-            ? form.port_type.selectedOptions[0].textContent
+        : ((portTypeSelect && portTypeSelect.selectedOptions && portTypeSelect.selectedOptions[0])
+            ? portTypeSelect.selectedOptions[0].textContent
             : 'RJ45');
     const normalizedType = normalizePortTypeLabel(selectedPortTypeLabel);
     const speedSourceId = normalizedType === 'rj45'
-        ? (portMeta ? portMeta.rj45_speed_id : rowData.speedId)
-        : (portMeta ? portMeta.fiber_port_id : rowData.speedId);
+        ? (editSeed.rj45_speed_id || (portMeta ? portMeta.rj45_speed_id : rowData.speedId))
+        : (editSeed.fiber_port_id || (portMeta ? portMeta.fiber_port_id : rowData.speedId));
     rebuildSpeedOptionsForPortType(selectedPortTypeLabel, coercePositiveSelectValue(speedSourceId));
-    applySelectValue(form.poe, portMeta ? portMeta.poe_id : rowData.poeId);
+    applySelectValue(portFormControl(form, 'poe'), editSeed.poe_id || (portMeta ? portMeta.poe_id : rowData.poeId));
     togglePoeFieldForPortType(selectedPortTypeLabel);
-    form.notes.value = (portMeta && portMeta.notes) ? portMeta.notes : (rowData.notes || '');
-    if (form.port_id_b) {
-        fillDestinationSelect(form.port_id_b, portMeta, true);
-        form.port_id_b.disabled = Boolean(portMeta && portMeta.is_linked);
+    const destinationSelect = portFormControl(form, 'port_id_b');
+    if (destinationSelect) {
+        fillDestinationSelect(destinationSelect, portMeta, true);
+        destinationSelect.disabled = Boolean(portMeta && portMeta.is_linked);
     }
-    const requestedCableColorId = portMeta ? (portMeta.cable_color_id || 0) : 0;
-    const requestedCableColorName = portMeta ? ((portMeta.cable_color_name || portMeta.cable_color || '').trim()) : '';
-    if (requestedCableColorId > 0 && Array.from(form.cable_color_id.options).some((option) => Number(option.value) === requestedCableColorId)) {
-        form.cable_color_id.value = String(requestedCableColorId);
-    } else {
-        const normalizedRequestedCableColor = requestedCableColorName.toLowerCase();
-        const matchedCableColorOption = Array.from(form.cable_color_id.options).find((option) =>
-            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === normalizedRequestedCableColor
-        );
-        const grayCableColorOption = Array.from(form.cable_color_id.options).find((option) =>
-            option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
-        );
-        form.cable_color_id.value = matchedCableColorOption
-            ? matchedCableColorOption.value
-            : (grayCableColorOption ? grayCableColorOption.value : '');
+    const cableColorSelect = portFormControl(form, 'cable_color_id');
+    const requestedCableColorId = editSeed.cable_color_id || (portMeta ? (portMeta.cable_color_id || 0) : 0);
+    const requestedCableColorName = editSeed.cable_color_name || (portMeta ? ((portMeta.cable_color_name || portMeta.cable_color || '').trim()) : '');
+    if (cableColorSelect) {
+        if (requestedCableColorId > 0 && Array.from(cableColorSelect.options).some((option) => Number(option.value) === requestedCableColorId)) {
+            cableColorSelect.value = String(requestedCableColorId);
+        } else {
+            const normalizedRequestedCableColor = requestedCableColorName.toLowerCase();
+            const matchedCableColorOption = Array.from(cableColorSelect.options).find((option) =>
+                option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === normalizedRequestedCableColor
+            );
+            const grayCableColorOption = Array.from(cableColorSelect.options).find((option) =>
+                option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'gray'
+            );
+            cableColorSelect.value = matchedCableColorOption
+                ? matchedCableColorOption.value
+                : (grayCableColorOption ? grayCableColorOption.value : '');
+        }
     }
-    const requestedCableHex = portMeta ? (portMeta.cable_hex_color || '') : '';
+    const requestedCableHex = editSeed.cable_hex_color || (portMeta ? (portMeta.cable_hex_color || '') : '');
     updateCableColorSwatch(
-        form.cable_color_id.value || requestedCableColorName || requestedCableHex || 'Gray',
-        form.cable_color_id
+        (cableColorSelect && cableColorSelect.value) || requestedCableColorName || requestedCableHex || 'Gray',
+        cableColorSelect
     );
     updatePortFormTypePresentation(portMeta);
+    applyPortEditTextFields(form, editSeed);
     wireIdfDeviceAddableSelects(form);
 
     document.getElementById('portBackdrop').style.display = 'flex';
@@ -2572,7 +2641,10 @@ function updateLinkFormTypePresentation(portMeta) {
 
 function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
     const form = document.getElementById('portForm');
-    const speedSelect = form.speed;
+    const speedSelect = portFormControl(form, 'speed');
+    if (!speedSelect) {
+        return;
+    }
     const normalizedType = normalizePortTypeLabel(portTypeLabel);
     const sourceMap = normalizedType === 'rj45' ? RJ45_SPEED_OPTIONS : FIBER_SPEED_OPTIONS;
     const desiredValueRaw = String(selectedValue || '').trim();
@@ -2633,25 +2705,30 @@ function closePortModal(shouldCloseHost) {
 
 function savePort() {
     const f = document.getElementById('portForm');
-    const sourcePort = findPortMetaByRef(f.port_id.value) || null;
+    const portIdInput = portFormControl(f, 'port_id');
+    const labelInput = portFormControl(f, 'label');
+    const connectedInput = portFormControl(f, 'connected_to');
+    const notesInput = portFormControl(f, 'notes');
+    const portTypeSelect = portFormControl(f, 'port_type');
+    const sourcePort = findPortMetaByRef(portIdInput ? portIdInput.value : '') || null;
     const normalizedStatus = getNormalizedStatusValue(f);
     if (!normalizedStatus) {
         alert('Please enter a status value.');
         return;
     }
-    const selectedPortTypeLabel = (f.port_type.selectedOptions && f.port_type.selectedOptions[0])
-        ? f.port_type.selectedOptions[0].textContent
+    const selectedPortTypeLabel = (portTypeSelect && portTypeSelect.selectedOptions && portTypeSelect.selectedOptions[0])
+        ? portTypeSelect.selectedOptions[0].textContent
         : '';
     const normalizedPortType = normalizePortTypeLabel(selectedPortTypeLabel);
     const routingPreserve = routingFkPayloadFromPortMeta(sourcePort);
     const payload = {
         csrf_token: CSRF,
-        port_id: Number(f.port_id.value),
-        port_type_id: Number(f.port_type.value),
+        port_id: Number(portIdInput ? portIdInput.value : 0),
+        port_type_id: Number(portTypeSelect ? portTypeSelect.value : 0),
         port_type_label: selectedPortTypeLabel.trim(),
-        label: normalizeLabelDisplayValue(f.label.value),
+        label: normalizeLabelDisplayValue(labelInput ? labelInput.value : ''),
         status_id: Number(normalizedStatus),
-        connected_to: f.connected_to.value.trim(),
+        connected_to: String(connectedInput ? connectedInput.value : '').trim(),
         vlan_id: (() => {
             const vlanValue = coercePositiveSelectValue(f.vlan && f.vlan.value);
             return vlanValue ? Number(vlanValue) : null;
@@ -2666,7 +2743,7 @@ function savePort() {
                 return poeValue ? Number(poeValue) : null;
             })()
             : null,
-        notes: f.notes.value.trim(),
+        notes: String(notesInput ? notesInput.value : '').trim(),
         cable_color_id: (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
             ? Number(f.cable_color_id.value)
             : null,
@@ -3509,9 +3586,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function getNormalizedStatusValue(form) {
-    if (!form || !form.status) return '';
-    if (form.status.value === '__add_new__') return '';
-    return (form.status.value || '').trim();
+    const statusSelect = portFormControl(form, 'status');
+    if (!statusSelect) return '';
+    if (statusSelect.value === '__add_new__') return '';
+    return (statusSelect.value || '').trim();
 }
 
 function openStatusModal(statusSelect) {
