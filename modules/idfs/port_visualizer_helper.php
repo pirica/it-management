@@ -275,6 +275,8 @@ if (!function_exists('itm_render_port_visualizer')) {
         }
 
         $allPortsForMeta = $ports;
+        // Why: Placeholder dots may omit SQL join fields while the rack position still resolves an equipment FK; propagate that for modal routing without re-querying.
+        $linkedEquipmentIdOption = (int)($options['linked_equipment_id'] ?? 0);
         $renderPorts = $ports;
         // Why: Fiber (SFP family) ports must stay clickable in rack view for create/link/edit workflows;
         // filtering them out here prevented direct actions when RJ45 and fiber rows coexist.
@@ -606,8 +608,9 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portConnectedToAttr = sanitize(trim((string)($p['idf_port_connected_for_routing'] ?? '')));
                 $portLinkIdAttr = isset($p['link_id']) ? (int)$p['link_id'] : 0;
                 $portExplicitConnAttr = itm_port_visualizer_click_has_explicit_connection($p) ? '1' : '0';
+                $portHasEquipmentLinkedAttr = (((int)($p['local_equipment_id'] ?? 0) > 0) || $linkedEquipmentIdOption > 0) ? '1' : '0';
 
-                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . $portId . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '" data-port-connected-to="' . $portConnectedToAttr . '" data-port-link-id="' . $portLinkIdAttr . '" data-has-explicit-connection="' . $portExplicitConnAttr . '"' . $portNumberAttr . ' ' . $onClick . ' style="
+                $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . $portId . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '" data-port-connected-to="' . $portConnectedToAttr . '" data-port-link-id="' . $portLinkIdAttr . '" data-has-explicit-connection="' . $portExplicitConnAttr . '" data-has-equipment-linked="' . $portHasEquipmentLinkedAttr . '"' . $portNumberAttr . ' ' . $onClick . ' style="
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';
@@ -833,7 +836,8 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $dotRoutingConnectedTo = $dotPort ? trim((string)($dotPort['idf_port_connected_for_routing'] ?? '')) : '';
                 // Why: Compact fiber dots use the same device.php Connected To rule as RJ45 rack cells.
                 $dotExplicitConnAttr = ($dotPort && itm_port_visualizer_click_has_explicit_connection($dotPort)) ? '1' : '0';
-                $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '" data-port-connected-to="' . sanitize($dotRoutingConnectedTo) . '" data-port-link-id="' . (int)$dotLinkId . '" data-has-explicit-connection="' . $dotExplicitConnAttr . '"';
+                $dotHasEquipmentLinkedAttr = ((($dotPort && (int)($dotPort['local_equipment_id'] ?? 0) > 0)) || $linkedEquipmentIdOption > 0) ? '1' : '0';
+                $dotDataAttrs = ' data-port-id="' . $dotPortId . '" data-port-status-label="' . $dotStatusAttr . '" data-position-id="' . $dotPositionIdAttr . '" data-port-number="' . (int)($dotMeta['no'] ?? 0) . '" data-port-type="' . sanitize((string)($dotMeta['type'] ?? '')) . '" data-port-connected-to="' . sanitize($dotRoutingConnectedTo) . '" data-port-link-id="' . (int)$dotLinkId . '" data-has-explicit-connection="' . $dotExplicitConnAttr . '" data-has-equipment-linked="' . $dotHasEquipmentLinkedAttr . '"';
                 $dotOnClick = '';
                 if ($dotIsClickable) {
                     $dotOnClick = ' onclick="if(typeof onPortDotClick === \'function\') onPortDotClick(this)"';
