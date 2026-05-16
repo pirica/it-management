@@ -812,6 +812,117 @@ function idf_fetch_position_ports_simple(mysqli $conn, int $company_id, int $pos
 }
 
 /**
+ * Why: `idf_fetch_position_ports_simple()` omits idf_links joins; without link_id / remote metadata the Equipment Link Map reads empty even when links exist.
+ */
+function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, array &$ports): void
+{
+    $ids = [];
+    foreach ($ports as $row) {
+        if (array_key_exists('link_id', $row)) {
+            continue;
+        }
+        $id = (int)($row['id'] ?? 0);
+        if ($id > 0) {
+            $ids[$id] = $id;
+        }
+    }
+    if (!$ids || $company_id <= 0) {
+        return;
+    }
+    $list = implode(',', $ids);
+    $sql = "SELECT
+           pr.id AS enrich_target_port_id,
+           l.id AS link_id,
+           l.cable_color_id,
+           COALESCE(cc_l.color_name, 'Gray') AS cable_color_name,
+           COALESCE(NULLIF(cc_l.hex_color, ''), '#808080') AS cable_hex_color,
+           l.cable_label,
+           l.notes AS link_notes,
+           COALESCE(NULLIF(TRIM(le.name), ''), NULLIF(TRIM(le.hostname), ''), NULLIF(TRIM(sp_link.hostname), ''), '') AS equipment_hostname,
+           COALESCE(CAST(l.equipment_port AS CHAR), CAST(sp_link.port_number AS CHAR), '') AS equipment_port,
+           CASE
+               WHEN l.port_id_a = pr.id THEN l.port_id_b
+               WHEN l.port_id_b = pr.id THEN l.port_id_a
+               ELSE NULL
+           END AS other_port_id,
+           pr_remote.port_no AS remote_port_no,
+           p_remote.position_no AS remote_position_no,
+           p_remote.device_name AS remote_device_name,
+           l.equipment_id AS linked_equipment_id
+      FROM idf_ports pr
+      LEFT JOIN idf_links l ON l.id = (
+          SELECT l2.id
+          FROM idf_links l2
+          WHERE (l2.port_id_a = pr.id OR l2.port_id_b = pr.id)
+            AND l2.company_id = pr.company_id
+          ORDER BY l2.id ASC
+          LIMIT 1
+      )
+      LEFT JOIN switch_ports sp_link
+        ON sp_link.company_id = pr.company_id
+       AND CONVERT(CAST(sp_link.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(CAST(l.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+       AND CONVERT(CAST(sp_link.port_number AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(CAST(l.equipment_port AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+       AND CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp_link.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(l.equipment_port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+      LEFT JOIN idf_ports pr_remote
+        ON pr_remote.id = CASE
+             WHEN l.port_id_a = pr.id THEN l.port_id_b
+             WHEN l.port_id_b = pr.id THEN l.port_id_a
+             ELSE NULL
+           END
+      LEFT JOIN idf_positions p_remote
+        ON p_remote.company_id = pr_remote.company_id
+       AND (
+            p_remote.id = pr_remote.position_id
+            OR (
+                p_remote.position_no = pr_remote.position_id
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM idf_positions p_actual
+                    WHERE p_actual.company_id = pr_remote.company_id
+                      AND p_actual.id = pr_remote.position_id
+                    LIMIT 1
+                )
+            )
+       )
+      LEFT JOIN cable_colors cc_l
+        ON cc_l.id = l.cable_color_id
+       AND cc_l.company_id = l.company_id
+      LEFT JOIN equipment le ON le.id = l.equipment_id
+     WHERE pr.company_id = " . (int)$company_id . "
+       AND pr.id IN (" . $list . ")";
+
+    $res = mysqli_query($conn, $sql);
+    if (!$res) {
+        return;
+    }
+    $byId = [];
+    while ($row = mysqli_fetch_assoc($res)) {
+        $pid = (int)($row['enrich_target_port_id'] ?? 0);
+        if ($pid > 0) {
+            unset($row['enrich_target_port_id']);
+            $byId[$pid] = $row;
+        }
+    }
+    mysqli_free_result($res);
+
+    foreach ($ports as $idx => $row) {
+        if (array_key_exists('link_id', $row)) {
+            continue;
+        }
+        $pid = (int)($row['id'] ?? 0);
+        if ($pid <= 0 || !isset($byId[$pid])) {
+            continue;
+        }
+        foreach ($byId[$pid] as $k => $v) {
+            $ports[$idx][$k] = $v;
+        }
+    }
+}
+
+/**
  * Move legacy IDF ports that were keyed by position_no onto the real position id when safe.
  */
 function idf_repair_legacy_position_port_ids(mysqli $conn, int $company_id, int $positionId, int $positionNo): int
