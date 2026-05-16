@@ -224,7 +224,7 @@ if ($hasSwitchPortsToPatchPortColumn) {
     $switchPortsLiveLabelSelect = "NULLIF(NULLIF(pr_live.patch_port, ''), '0')";
 }
 $switchPortsLiveCommentsSelect = $hasSwitchPortsCommentsColumn
-    ? "NULLIF(pr_live.comments, '')"
+    ? "NULLIF(NULLIF(pr_live.comments, ''), '0')"
     : "''";
 $switchPortsLiveHostnameSelect = $hasSwitchPortsHostnameColumn
     ? "NULLIF(pr_live.hostname, '')"
@@ -300,7 +300,7 @@ $vlanSortExpr = "CASE
     ELSE ''
 END";
 $labelSortExpr = "COALESCE(NULLIF(NULLIF(pr.label, ''), '0'), NULLIF(NULLIF(l.equipment_label, ''), '0'), '')";
-$notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(pr.notes, ''), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(l.equipment_comments, ''))";
+$notesSortExpr = "COALESCE({$switchPortsLiveCommentsSelect}, NULLIF(NULLIF(pr.notes, ''), '0'), NULLIF(l.notes, ''), {$switchPortsLinkedCommentsSelect}, NULLIF(NULLIF(l.equipment_comments, ''), '0'))";
 $normalizedPortTypeExpr = "LOWER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, spt_any.type, 'RJ45')), ' ', ''), '+', 'plus'))";
 $speedLabelExpr = $hasRj45SpeedTable
     ? "CASE
@@ -625,6 +625,15 @@ $stmtPorts = mysqli_prepare(
 );
 
 $idfDeviceHydratePortRow = static function (array $row): array {
+    $row['persisted_vlan_id'] = (int)($row['vlan_id'] ?? 0);
+    $row['persisted_notes'] = idf_normalize_port_notes_value($row['notes'] ?? '');
+    $row['persisted_connected_to'] = trim((string)($row['connected_to'] ?? ''));
+    $row['persisted_label'] = idf_normalize_port_label_value($row['label'] ?? '');
+    $row['persisted_rj45_speed_id'] = (int)($row['rj45_speed_id'] ?? 0);
+    $row['persisted_fiber_port_id'] = (int)($row['speed_id'] ?? 0);
+    $row['persisted_fiber_patch_id'] = (int)($row['fiber_patch_id'] ?? 0);
+    $row['persisted_fiber_rack_id'] = (int)($row['fiber_rack_id'] ?? 0);
+
     if (isset($row['effective_status_id'])) {
         $row['status_id'] = (int)$row['effective_status_id'];
     }
@@ -746,6 +755,13 @@ if (!empty($ports)) {
 
 if (!empty($ports)) {
     idf_enrich_ports_link_fields_for_device($conn, $company_id, $ports);
+}
+
+if (!empty($ports)) {
+    foreach ($ports as &$portRowIsolateDisplay) {
+        idf_isolate_unlinked_port_display_fields($portRowIsolateDisplay);
+    }
+    unset($portRowIsolateDisplay);
 }
 
 foreach ($ports as $portMeta) {
@@ -1720,7 +1736,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['fiber_patch_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['fiber_rack_label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
+                            <td><?php echo sanitize(idf_normalize_port_notes_value($p['notes'] ?? '')); ?></td>
                             <td><?php echo $linkText ?: '<span style="opacity:.75;">-</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
@@ -1756,7 +1772,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['fiber_patch_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['fiber_rack_label'] ?? '')); ?></td>
-                        <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
+                        <td><?php echo sanitize(idf_normalize_port_notes_value($p['notes'] ?? '')); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

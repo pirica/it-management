@@ -464,6 +464,11 @@ function idf_infer_equipment_id_after_ports_load(
  */
 function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $switchRow, int $equipmentDefaultPoeId = 0): void
 {
+    // Why: Only cable-linked ports should inherit switch_ports display fields; unlinked rows use persisted idf_ports values.
+    if (!idf_port_has_cable_link($portRow)) {
+        return;
+    }
+
     $pickEffective = static function (string $effectiveKey, string $switchKey) use (&$portRow, $switchRow): void {
         $current = (int)($portRow[$effectiveKey] ?? 0);
         $incoming = (int)($switchRow[$switchKey] ?? 0);
@@ -530,9 +535,9 @@ function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $sw
         }
     }
 
-    $switchComments = trim((string)($switchRow['comments'] ?? ''));
+    $switchComments = idf_normalize_port_notes_value($switchRow['comments'] ?? '');
     if ($switchComments !== '') {
-        $currentNotes = trim((string)($portRow['notes'] ?? ''));
+        $currentNotes = idf_normalize_port_notes_value($portRow['notes'] ?? '');
         if ($currentNotes === '') {
             $portRow['notes'] = $switchComments;
         }
@@ -673,8 +678,14 @@ function idf_refresh_port_row_display_labels(
     if (array_key_exists('label', $portRow)) {
         $portRow['label'] = idf_normalize_port_label_value($portRow['label'] ?? '');
     }
+    if (array_key_exists('notes', $portRow)) {
+        $portRow['notes'] = idf_normalize_port_notes_value($portRow['notes'] ?? '');
+    }
 
     $vlanId = (int)($portRow['effective_vlan_id'] ?? $portRow['vlan_id'] ?? 0);
+    if ($vlanId <= 0) {
+        $portRow['vlan_label'] = '';
+    }
     if ($vlanId > 0 && isset($vlanOptions[$vlanId])) {
         $portRow['vlan_label'] = (string)$vlanOptions[$vlanId];
         $portRow['vlan_id'] = $vlanId;
@@ -834,15 +845,55 @@ function idf_attach_switch_port_ids_to_ports(
                 $equipmentDefaultPoeId
             );
         }
-        if ($resolvedSwitchPortId > 0 && isset($switchMetaById[$resolvedSwitchPortId])) {
-            idf_merge_switch_port_metadata_into_port_row(
-                $portRow,
-                $switchMetaById[$resolvedSwitchPortId],
-                $equipmentDefaultPoeId
-            );
-        }
     }
     unset($portRow);
+}
+
+/**
+ * Why: The ports grid/modal must show idf_ports columns for cable-unlinked rows, not switch_ports/live join fallbacks.
+ */
+function idf_isolate_unlinked_port_display_fields(array &$portRow): void
+{
+    if (idf_port_has_cable_link($portRow)) {
+        return;
+    }
+
+    $persistedVlanId = (int)($portRow['persisted_vlan_id'] ?? 0);
+    $portRow['effective_vlan_id'] = $persistedVlanId;
+    $portRow['vlan_id'] = $persistedVlanId;
+    $portRow['vlan_label'] = '';
+
+    $portRow['notes'] = idf_normalize_port_notes_value($portRow['persisted_notes'] ?? ($portRow['notes'] ?? ''));
+    $portRow['connected_to'] = trim((string)($portRow['persisted_connected_to'] ?? ''));
+    $portRow['label'] = idf_normalize_port_label_value($portRow['persisted_label'] ?? ($portRow['label'] ?? ''));
+
+    $persistedRj45SpeedId = (int)($portRow['persisted_rj45_speed_id'] ?? 0);
+    $portRow['effective_rj45_speed_id'] = $persistedRj45SpeedId;
+    $portRow['rj45_speed_id'] = $persistedRj45SpeedId;
+    $portRow['rj45_speed_label'] = '';
+
+    $persistedFiberPortId = (int)($portRow['persisted_fiber_port_id'] ?? 0);
+    $portRow['effective_fiber_port_id'] = $persistedFiberPortId;
+    $portRow['speed_label'] = '';
+
+    $persistedFiberPatchId = (int)($portRow['persisted_fiber_patch_id'] ?? 0);
+    $portRow['effective_fiber_patch_id'] = $persistedFiberPatchId;
+    $portRow['fiber_patch_label'] = '';
+
+    $persistedFiberRackId = (int)($portRow['persisted_fiber_rack_id'] ?? 0);
+    $portRow['effective_fiber_rack_id'] = $persistedFiberRackId;
+    $portRow['fiber_rack_label'] = '';
+
+    $portRow['equipment_hostname'] = '';
+    $portRow['equipment_port'] = '';
+    $portRow['linked_equipment_id'] = 0;
+
+    $portTypeRaw = strtolower(trim((string)($portRow['port_type_label'] ?? '')));
+    if (strpos($portTypeRaw, 'sfp') !== false) {
+        $portRow['speed_value_id'] = $persistedFiberPortId;
+    } else {
+        $portRow['speed_value_id'] = $persistedRj45SpeedId;
+    }
 }
 
 /**
@@ -1079,34 +1130,35 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
         foreach ($byId[$pid] as $k => $v) {
             $ports[$idx][$k] = $v;
         }
-        if ((int)($ports[$idx]['effective_vlan_id'] ?? 0) <= 0) {
+        $enrichedLinkId = (int)($byId[$pid]['link_id'] ?? $ports[$idx]['link_id'] ?? 0);
+        if ($enrichedLinkId > 0 && (int)($ports[$idx]['effective_vlan_id'] ?? 0) <= 0) {
             $linkVlanId = (int)($byId[$pid]['equipment_vlan_id'] ?? 0);
             if ($linkVlanId > 0) {
                 $ports[$idx]['effective_vlan_id'] = $linkVlanId;
                 $ports[$idx]['vlan_id'] = $linkVlanId;
             }
         }
-        if ((int)($ports[$idx]['effective_rj45_speed_id'] ?? 0) <= 0) {
+        if ($enrichedLinkId > 0 && (int)($ports[$idx]['effective_rj45_speed_id'] ?? 0) <= 0) {
             $linkRj45SpeedId = (int)($byId[$pid]['equipment_rj45_speed_id'] ?? 0);
             if ($linkRj45SpeedId > 0) {
                 $ports[$idx]['effective_rj45_speed_id'] = $linkRj45SpeedId;
                 $ports[$idx]['rj45_speed_id'] = $linkRj45SpeedId;
             }
         }
-        if ((int)($ports[$idx]['effective_fiber_port_id'] ?? 0) <= 0) {
+        if ($enrichedLinkId > 0 && (int)($ports[$idx]['effective_fiber_port_id'] ?? 0) <= 0) {
             $linkFiberPortId = (int)($byId[$pid]['equipment_fiber_port_id'] ?? 0);
             if ($linkFiberPortId > 0) {
                 $ports[$idx]['effective_fiber_port_id'] = $linkFiberPortId;
             }
         }
-        if ((int)($ports[$idx]['effective_fiber_patch_id'] ?? 0) <= 0) {
+        if ($enrichedLinkId > 0 && (int)($ports[$idx]['effective_fiber_patch_id'] ?? 0) <= 0) {
             $linkFiberPatchId = (int)($byId[$pid]['equipment_fiber_patch_id'] ?? 0);
             if ($linkFiberPatchId > 0) {
                 $ports[$idx]['effective_fiber_patch_id'] = $linkFiberPatchId;
                 $ports[$idx]['fiber_patch_id'] = $linkFiberPatchId;
             }
         }
-        if ((int)($ports[$idx]['effective_fiber_rack_id'] ?? 0) <= 0) {
+        if ($enrichedLinkId > 0 && (int)($ports[$idx]['effective_fiber_rack_id'] ?? 0) <= 0) {
             $linkFiberRackId = (int)($byId[$pid]['equipment_fiber_rack_id'] ?? 0);
             if ($linkFiberRackId > 0) {
                 $ports[$idx]['effective_fiber_rack_id'] = $linkFiberRackId;
