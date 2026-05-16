@@ -1220,6 +1220,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
                     </p>
                 </div>
+                <?php require __DIR__ . '/subnet_view_stats.php'; ?>
                 <?php require __DIR__ . '/subnet_view_ips.php'; ?>
             <?php endif; ?>
         </div>
