@@ -31,24 +31,18 @@ function itm_ipam_parse_cidr(string $cidr): array
         return ['ok' => false, 'error' => 'Network address is not a valid IPv4 address.'];
     }
 
-    $enteredIp = $networkIp;
     if ($prefixLength < 32) {
         $mask = (0xFFFFFFFF << (32 - $prefixLength)) & 0xFFFFFFFF;
-        $networkLong = $networkLong & $mask;
-        $networkIp = long2ip($networkLong);
-        if ($networkIp === false) {
-            return ['ok' => false, 'error' => 'Network address is not a valid IPv4 address.'];
+        if (($networkLong & (~$mask & 0xFFFFFFFF)) !== 0) {
+            return ['ok' => false, 'error' => 'Network address is not aligned to the CIDR prefix.'];
         }
     }
-
-    $normalizedFrom = ($enteredIp !== $networkIp) ? ($enteredIp . '/' . $prefixLength) : '';
 
     return [
         'ok' => true,
         'cidr' => $networkIp . '/' . $prefixLength,
         'network_ip' => $networkIp,
         'prefix_length' => $prefixLength,
-        'normalized_from' => $normalizedFrom,
         'error' => '',
     ];
 }

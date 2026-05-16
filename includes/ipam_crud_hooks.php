@@ -137,14 +137,6 @@ function itm_ipam_normalize_crud_row(
         $data['network_ip'] = "'" . mysqli_real_escape_string($conn, (string)$parsed['network_ip']) . "'";
         $data['prefix_length'] = (string)(int)$parsed['prefix_length'];
 
-        if (!empty($parsed['normalized_from'])) {
-            $_SESSION['crud_success'] = 'CIDR was adjusted to the network address '
-                . (string)$parsed['cidr']
-                . ' (you entered '
-                . (string)$parsed['normalized_from']
-                . ').';
-        }
-
         foreach (['gateway_ip', 'dns1_ip', 'dns2_ip'] as $ipField) {
             $raw = trim((string)($post[$ipField] ?? ''));
             if ($raw === '') {
