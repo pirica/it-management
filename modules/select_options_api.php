@@ -324,23 +324,28 @@ if (isset($columns['active'])) {
     $where .= ' AND `active`=1';
 }
 
-$listSelect = so_escape_identifier($idCol) . ' AS id, ' . so_escape_identifier($labelCol) . ' AS label';
-if ($table === 'cable_colors' && isset($columns['hex_color'])) {
-    $listSelect .= ', `hex_color`';
-}
-$listSql = 'SELECT ' . $listSelect
-    . ' FROM ' . so_escape_identifier($table) . $where . ' ORDER BY label';
-$listRes = mysqli_query($conn, $listSql);
 $options = [];
-while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
-    $optionRow = [
-        'id' => (int)$row['id'],
-        'label' => (string)$row['label'],
-    ];
-    if ($table === 'cable_colors' && array_key_exists('hex_color', $row)) {
-        $optionRow['hex_color'] = (string)($row['hex_color'] ?? '');
+if ($table === 'equipment_poe') {
+    $options = itm_equipment_poe_options_rows($conn, (int)$company_id);
+    itm_equipment_poe_append_persisted_row($conn, $options, (int)$selectedId, (int)$company_id);
+} else {
+    $listSelect = so_escape_identifier($idCol) . ' AS id, ' . so_escape_identifier($labelCol) . ' AS label';
+    if ($table === 'cable_colors' && isset($columns['hex_color'])) {
+        $listSelect .= ', `hex_color`';
     }
-    $options[] = $optionRow;
+    $listSql = 'SELECT ' . $listSelect
+        . ' FROM ' . so_escape_identifier($table) . $where . ' ORDER BY label';
+    $listRes = mysqli_query($conn, $listSql);
+    while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
+        $optionRow = [
+            'id' => (int)$row['id'],
+            'label' => (string)$row['label'],
+        ];
+        if ($table === 'cable_colors' && array_key_exists('hex_color', $row)) {
+            $optionRow['hex_color'] = (string)($row['hex_color'] ?? '');
+        }
+        $options[] = $optionRow;
+    }
 }
 
 echo json_encode([

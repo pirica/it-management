@@ -92,3 +92,84 @@ if (!function_exists('itm_equipment_poe_load_options')) {
         return $options;
     }
 }
+
+if (!function_exists('itm_equipment_poe_options_rows')) {
+    /**
+     * Dropdown rows [{id, label}] for equipment forms and APIs.
+     */
+    function itm_equipment_poe_options_rows(mysqli $conn, $company_id) {
+        $rows = [];
+        foreach (itm_equipment_poe_load_options($conn, (int)$company_id) as $id => $label) {
+            $rows[] = ['id' => (int)$id, 'label' => (string)$label];
+        }
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_equipment_poe_append_persisted_row')) {
+    /**
+     * Keep edit selections when company-scoped option queries omit the saved PoE row.
+     */
+    function itm_equipment_poe_append_persisted_row(mysqli $conn, array &$rows, $poeId, $companyId) {
+        $poeId = (int)$poeId;
+        $companyId = (int)$companyId;
+        if ($poeId <= 0) {
+            return;
+        }
+
+        foreach ($rows as $row) {
+            if ((int)($row['id'] ?? 0) === $poeId) {
+                return;
+            }
+        }
+
+        $hasWatts = false;
+        $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `equipment_poe` LIKE 'watts'");
+        if ($colRes && mysqli_num_rows($colRes) > 0) {
+            $hasWatts = true;
+        }
+
+        $found = null;
+        if ($companyId > 0) {
+            $sql = $hasWatts
+                ? 'SELECT id, name, watts FROM equipment_poe WHERE id = ? AND company_id = ? LIMIT 1'
+                : 'SELECT id, name FROM equipment_poe WHERE id = ? AND company_id = ? LIMIT 1';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ii', $poeId, $companyId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $found = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+                mysqli_stmt_close($stmt);
+            }
+        }
+
+        if (!$found) {
+            $sql = $hasWatts
+                ? 'SELECT id, name, watts FROM equipment_poe WHERE id = ? LIMIT 1'
+                : 'SELECT id, name FROM equipment_poe WHERE id = ? LIMIT 1';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $poeId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $found = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+                mysqli_stmt_close($stmt);
+            }
+        }
+
+        if (!$found) {
+            return;
+        }
+
+        $label = itm_equipment_poe_display_label(
+            (string)($found['name'] ?? ''),
+            $hasWatts ? (string)($found['watts'] ?? '') : ''
+        );
+        if ($label === '') {
+            return;
+        }
+
+        $rows[] = ['id' => $poeId, 'label' => $label];
+    }
+}
