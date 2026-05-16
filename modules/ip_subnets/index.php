@@ -997,6 +997,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
             <?php endif; ?>
+            <?php if ($crudSuccessMessage !== ''): ?>
+                <div class="alert alert-success"><?php echo sanitize($crudSuccessMessage); ?></div>
+            <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
