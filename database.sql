@@ -2485,11 +2485,6 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '5', '
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '8', 'SFP');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '11', 'SFP');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '14', 'SFP');
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '3', 'SFP+');
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '6', 'SFP+');
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '9', 'SFP+');
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '12', 'SFP+');
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '15', 'SFP+');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '16', 'QSFP');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '17', 'QSFP');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('3', '18', 'QSFP');
