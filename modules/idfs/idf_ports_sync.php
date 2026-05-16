@@ -967,7 +967,7 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
 {
     $ids = [];
     foreach ($ports as $row) {
-        if (array_key_exists('link_id', $row)) {
+        if (array_key_exists('link_id', $row) && (int)($row['link_id'] ?? 0) > 0) {
             continue;
         }
         $id = (int)($row['id'] ?? 0);
@@ -1061,7 +1061,7 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
     mysqli_free_result($res);
 
     foreach ($ports as $idx => $row) {
-        if (array_key_exists('link_id', $row)) {
+        if (array_key_exists('link_id', $row) && (int)($row['link_id'] ?? 0) > 0) {
             continue;
         }
         $pid = (int)($row['id'] ?? 0);
@@ -1126,6 +1126,230 @@ function idf_repair_legacy_position_port_ids(mysqli $conn, int $company_id, int 
     mysqli_stmt_close($stmtRepair);
 
     return $repaired > 0 ? $repaired : 0;
+}
+
+/**
+ * Match idf_positions.equipment_id to switch_ports.equipment_id for numeric FKs and legacy asset tokens.
+ */
+function idf_position_equipment_matches_switch_sql(string $positionAlias = 'p', string $switchEquipmentColumnSql = 'sp.equipment_id'): string
+{
+    $numericMatch = "({$positionAlias}.equipment_id REGEXP '^[0-9]+$' AND {$switchEquipmentColumnSql} = CAST({$positionAlias}.equipment_id AS UNSIGNED))";
+    $stringMatch = "(CONVERT(CAST({$positionAlias}.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+        = CONVERT(CAST({$switchEquipmentColumnSql} AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci)";
+
+    return "({$numericMatch} OR {$stringMatch})";
+}
+
+/**
+ * Why: Legacy racks stored idf_ports.position_id as position_no while another slot reused that numeric id, so links/colors appeared on the wrong device card.
+ */
+function idf_repair_misassigned_ports_for_position(mysqli $conn, int $company_id, array $positionRow): int
+{
+    $positionId = (int)($positionRow['id'] ?? 0);
+    $positionNo = (int)($positionRow['position_no'] ?? 0);
+    $idfId = (int)($positionRow['idf_id'] ?? 0);
+    $equipmentRaw = trim((string)($positionRow['equipment_id'] ?? ''));
+
+    if ($company_id <= 0 || $positionId <= 0 || $positionNo <= 0 || $positionId === $positionNo || $equipmentRaw === '' || $idfId <= 0) {
+        return 0;
+    }
+
+    idf_repair_legacy_position_port_ids($conn, $company_id, $positionId, $positionNo);
+
+    $equipmentMatchSql = idf_position_equipment_matches_switch_sql('p', 'sp.equipment_id');
+    $stmtRepair = mysqli_prepare(
+        $conn,
+        "UPDATE idf_ports pr
+         INNER JOIN idf_positions p
+           ON p.id = ?
+          AND p.company_id = ?
+          AND p.idf_id = ?
+         INNER JOIN switch_ports sp
+           ON sp.company_id = pr.company_id
+          AND sp.port_number = pr.port_no
+          AND {$equipmentMatchSql}
+         SET pr.position_id = p.id
+         WHERE pr.company_id = ?
+           AND pr.position_id = p.position_no
+           AND pr.position_id <> p.id"
+    );
+    if (!$stmtRepair) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmtRepair, 'iiii', $positionId, $company_id, $idfId, $company_id);
+    mysqli_stmt_execute($stmtRepair);
+    $repaired = mysqli_affected_rows($conn);
+    mysqli_stmt_close($stmtRepair);
+
+    return $repaired > 0 ? $repaired : 0;
+}
+
+/**
+ * Why: Rack cards can load multiple idf_ports rows for the same port_no after legacy migrations; prefer linked/canonical rows for dot colors.
+ */
+function idf_port_row_matches_position_equipment(mysqli $conn, int $company_id, array $portRow, array $positionRow): bool
+{
+    $equipmentRaw = trim((string)($positionRow['equipment_id'] ?? ''));
+    if ($equipmentRaw === '' || $equipmentRaw === '0') {
+        return true;
+    }
+
+    $portNo = (int)($portRow['port_no'] ?? 0);
+    if ($portNo <= 0) {
+        return false;
+    }
+
+    if (ctype_digit($equipmentRaw)) {
+        $equipmentId = (int)$equipmentRaw;
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND port_number = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $company_id, $equipmentId, $portNo);
+    } else {
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id
+             FROM switch_ports
+             WHERE company_id = ?
+               AND CONVERT(CAST(equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                   = CONVERT(CAST(? AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               AND port_number = ?
+             LIMIT 1"
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'isi', $company_id, $equipmentRaw, $portNo);
+    }
+
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $matched = $res && mysqli_fetch_assoc($res);
+    mysqli_stmt_close($stmt);
+
+    return (bool)$matched;
+}
+
+function idf_port_row_belongs_to_position(mysqli $conn, int $company_id, array $portRow, array $positionRow): bool
+{
+    $portPositionKey = (int)($portRow['position_id'] ?? 0);
+    $positionId = (int)($positionRow['id'] ?? 0);
+    $positionNo = (int)($positionRow['position_no'] ?? 0);
+    if ($portPositionKey !== $positionId && $portPositionKey !== $positionNo) {
+        return false;
+    }
+
+    if (idf_port_row_matches_position_equipment($conn, $company_id, $portRow, $positionRow)) {
+        return true;
+    }
+
+    // Why: Linked legacy ports must stay visible on the rack even when switch_ports rows were renamed or removed.
+    return (int)($portRow['link_id'] ?? 0) > 0;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $ports
+ * @return array<int, array<string, mixed>>
+ */
+function idf_dedupe_position_ports_for_display(array $ports, int $canonicalPositionId): array
+{
+    if ($canonicalPositionId <= 0 || $ports === []) {
+        return $ports;
+    }
+
+    $grouped = [];
+    foreach ($ports as $portRow) {
+        $portNo = (int)($portRow['port_no'] ?? 0);
+        if ($portNo <= 0) {
+            continue;
+        }
+        $typeRaw = strtolower(trim((string)($portRow['port_type_label'] ?? ($portRow['port_type'] ?? 'rj45'))));
+        $typeKey = strpos($typeRaw, 'sfp') !== false ? 'sfp' : 'rj45';
+        $groupKey = $portNo . ':' . $typeKey;
+        if (!isset($grouped[$groupKey])) {
+            $grouped[$groupKey] = [];
+        }
+        $grouped[$groupKey][] = $portRow;
+    }
+
+    $deduped = [];
+    $rankPortRow = static function (array $portRow) use ($canonicalPositionId): int {
+        $score = 0;
+        if ((int)($portRow['link_id'] ?? 0) > 0) {
+            $score += 1000;
+        }
+        if ((int)($portRow['position_id'] ?? 0) === $canonicalPositionId) {
+            $score += 100;
+        }
+        if (trim((string)($portRow['cable_hex_color'] ?? '')) !== '') {
+            $score += 10;
+        }
+        $score -= (int)($portRow['id'] ?? 0);
+
+        return $score;
+    };
+
+    foreach ($grouped as $candidates) {
+        usort(
+            $candidates,
+            static function (array $left, array $right) use ($rankPortRow): int {
+                return $rankPortRow($right) <=> $rankPortRow($left);
+            }
+        );
+        $deduped[] = $candidates[0];
+    }
+
+    usort(
+        $deduped,
+        static function (array $left, array $right): int {
+            return ((int)($left['port_no'] ?? 0)) <=> ((int)($right['port_no'] ?? 0));
+        }
+    );
+
+    return $deduped;
+}
+
+/**
+ * Filter legacy duplicates, enrich links, and normalize rack dot colors after the rack SQL load.
+ *
+ * @param array<int, array<string, mixed>> $ports
+ */
+function idf_prepare_rack_position_ports(mysqli $conn, int $company_id, array &$ports, array $positionRow): void
+{
+    if ($company_id <= 0 || $ports === []) {
+        return;
+    }
+
+    $positionId = (int)($positionRow['id'] ?? 0);
+    $filtered = [];
+    foreach ($ports as $portRow) {
+        if (idf_port_row_belongs_to_position($conn, $company_id, $portRow, $positionRow)) {
+            $filtered[] = $portRow;
+        }
+    }
+
+    $ports = idf_dedupe_position_ports_for_display($filtered, $positionId);
+    if ($ports === []) {
+        return;
+    }
+
+    idf_enrich_ports_link_fields_for_device($conn, $company_id, $ports);
+    idf_normalize_port_visualizer_colors($ports);
+
+    foreach ($ports as &$portRow) {
+        if ((int)($portRow['link_id'] ?? 0) <= 0) {
+            continue;
+        }
+        $cableHex = trim((string)($portRow['cable_hex_color'] ?? ''));
+        if ($cableHex !== '' && strcasecmp($cableHex, '#808080') !== 0) {
+            $portRow['status_color'] = $cableHex;
+        }
+    }
+    unset($portRow);
 }
 
 /**
