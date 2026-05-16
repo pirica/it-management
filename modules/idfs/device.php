@@ -1903,7 +1903,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             $equipmentHostname = trim((string)($e['hostname'] ?? ''));
                             $equipmentLabel = $equipmentName;
                             if ($equipmentHostname !== '') {
-                                $equipmentLabel .= '  &middot;  ' . $equipmentHostname;
+                                // Why: sanitize() escapes HTML entities; use a literal separator so the dropdown does not show &amp;middot;.
+                                $equipmentLabel .= ' · ' . $equipmentHostname;
                             }
                             echo sanitize($equipmentLabel);
                             ?>
@@ -1949,7 +1950,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <label class="label" id="linkPatchPortLabel">Label</label>
                 <input class="input" name="cable_label" placeholder="e.g. FIB-12 / CAT6-34">
             </div>
-            <div data-link-default-field="status">
+            <div data-link-default-field="status" data-link-keep-visible-when-linked="1">
                 <label class="label">Status</label>
                 <select class="input" name="status">
                     <?php foreach ($switchStatusOptions as $statusId => $statusOption): ?>
@@ -3566,7 +3567,8 @@ function toggleLinkedEquipmentFields(isLinked) {
         linkedFields.style.display = isLinked ? 'block' : 'none';
     }
     document.querySelectorAll('[data-link-default-field]').forEach((field) => {
-        field.style.display = isLinked ? 'none' : '';
+        const keepVisibleWhenLinked = field.getAttribute('data-link-keep-visible-when-linked') === '1';
+        field.style.display = (isLinked && !keepVisibleWhenLinked) ? 'none' : '';
     });
 }
 
@@ -3620,6 +3622,20 @@ function populateLinkedEquipmentFields() {
 
     trySelectLinkedColor(f.linked_cable_color_id);
     trySelectLinkedColor(f.cable_color_id);
+
+    const switchPortStatusId = Number(port.equipment_status_id || 0);
+    if (f.status) {
+        if (switchPortStatusId > 0 && Array.from(f.status.options).some((option) => Number(option.value) === switchPortStatusId)) {
+            f.status.value = String(switchPortStatusId);
+        } else {
+            const unknownStatusOption = Array.from(f.status.options).find((option) =>
+                option.value !== '__add_new__' && option.textContent.trim().toLowerCase() === 'unknown'
+            );
+            if (unknownStatusOption) {
+                f.status.value = unknownStatusOption.value;
+            }
+        }
+    }
 
     const sourcePort = findPortMetaByRef(f.port_id_a.value);
     if (sourcePort) {
