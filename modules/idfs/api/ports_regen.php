@@ -304,7 +304,7 @@ try {
                 (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?)"
         );
         if ($stmtInsertSwitchPort) {
-            $switchPatchPortDefault = '0';
+            $switchPatchPortDefault = '';
             $switchCommentsDefault = '';
             foreach ($portRowsToInsert as $portMeta) {
                 $portNo = (int)($portMeta['port_no'] ?? 0);

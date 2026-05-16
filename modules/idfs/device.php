@@ -68,11 +68,7 @@ function idf_csrf_token(): string {
 }
 
 function idf_normalize_label_display($value): string {
-    $normalized = trim((string)$value);
-    if ($normalized === '' || $normalized === '0' || strcasecmp($normalized, 'null') === 0) {
-        return '';
-    }
-    return $normalized;
+    return idf_normalize_port_label_value($value);
 }
 
 $csrf = idf_csrf_token();
@@ -618,6 +614,9 @@ $idfDeviceHydratePortRow = static function (array $row): array {
     }
     if (isset($row['effective_poe_id'])) {
         $row['poe_id'] = (int)$row['effective_poe_id'];
+    }
+    if (array_key_exists('label', $row)) {
+        $row['label'] = idf_normalize_port_label_value($row['label'] ?? '');
     }
     $portTypeRaw = strtolower(trim((string)($row['port_type_label'] ?? '')));
     if (strpos($portTypeRaw, 'sfp') !== false) {
@@ -1660,7 +1659,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         >
                             <td><?php echo (int)$p['port_no']; ?></td>
                             <td><?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?></td>
-                            <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
+                            <td><?php echo sanitize(idf_normalize_label_display($p['label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
                             <td><?php echo sanitize($connectedToText); ?></td>
                             <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
@@ -1694,7 +1693,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                     <tr>
                         <td><?php echo (int)$p['port_no']; ?></td>
                         <td><?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?></td>
-                        <td><?php echo sanitize((string)($p['label'] ?? '')); ?></td>
+                        <td><?php echo sanitize(idf_normalize_label_display($p['label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
                         <td><?php echo sanitize((string)($p['connected_to'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>

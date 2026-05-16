@@ -556,10 +556,12 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
         }
     }
 
+    $equipmentHostnameForSync = trim((string)($equipmentData['hostname'] ?? ''));
+
     $stmtMirrorSwitchPorts = mysqli_prepare(
         $conn,
         "INSERT INTO idf_ports (
-            company_id, position_id, port_no, port_type, label, status_id, vlan_id, notes,
+            company_id, position_id, port_no, port_type, label, status_id, vlan_id, notes, connected_to,
             switch_port_numbering_layout_id, management_id
          )
          SELECT
@@ -568,10 +570,11 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
                 WHEN sp.port_type REGEXP '^[0-9]+$' THEN CAST(sp.port_type AS UNSIGNED)
                 ELSE COALESCE(spt.id, 0)
             END AS resolved_port_type,
-            COALESCE(sp.to_patch_port, ''),
+            COALESCE(NULLIF(NULLIF(TRIM(sp.to_patch_port), ''), '0'), ''),
             COALESCE(NULLIF(sp.status_id, 0), 1),
             sp.vlan_id,
             COALESCE(sp.comments, ''),
+            COALESCE(NULLIF(TRIM(sp.hostname), ''), NULLIF(?, '')),
             NULLIF(?, 0),
             NULLIF(?, 0)
          FROM switch_ports sp
@@ -583,19 +586,21 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
            AND sp.port_number > 0
          HAVING resolved_port_type > 0
          ON DUPLICATE KEY UPDATE
-            label = VALUES(label),
+            label = COALESCE(NULLIF(NULLIF(VALUES(label), ''), '0'), label),
             status_id = VALUES(status_id),
             vlan_id = VALUES(vlan_id),
             notes = VALUES(notes),
+            connected_to = COALESCE(NULLIF(VALUES(connected_to), ''), connected_to),
             switch_port_numbering_layout_id = COALESCE(VALUES(switch_port_numbering_layout_id), idf_ports.switch_port_numbering_layout_id),
             management_id = COALESCE(VALUES(management_id), idf_ports.management_id)"
     );
     if ($stmtMirrorSwitchPorts) {
         mysqli_stmt_bind_param(
             $stmtMirrorSwitchPorts,
-            'iiiiii',
+            'iissiiii',
             $companyId,
             $targetPositionId,
+            $equipmentHostnameForSync,
             $layoutId,
             $switchEnvironmentId,
             $companyId,
@@ -763,10 +768,11 @@ function equipment_finalize_linked_port_capacity(
     }
 
     $fiberPortTypeId = 0;
+    $fiberPortTypeName = 'SFP';
     if ($sfpCount > 0) {
         $stmtFiberType = mysqli_prepare(
             $conn,
-            "SELECT id
+            "SELECT id, type
              FROM switch_port_types
              WHERE company_id = ?
                AND (LOWER(type) = 'sfp' OR LOWER(type) = 'sfp+' OR LOWER(type) = 'sfp plus')
@@ -780,6 +786,10 @@ function equipment_finalize_linked_port_capacity(
             $fiberTypeRow = $resFiberType ? mysqli_fetch_assoc($resFiberType) : null;
             mysqli_stmt_close($stmtFiberType);
             $fiberPortTypeId = (int)($fiberTypeRow['id'] ?? 0);
+            $fiberPortTypeName = trim((string)($fiberTypeRow['type'] ?? ''));
+            if ($fiberPortTypeName === '') {
+                $fiberPortTypeName = 'SFP';
+            }
         }
     }
 
@@ -817,8 +827,8 @@ function equipment_finalize_linked_port_capacity(
 
     equipment_prune_idf_position_port_capacity($conn, $companyId, $positionId, $rj45Count, $sfpCount, $rj45PortTypeId, $equipmentId);
 
-    if ($rj45Count > 0 && equipment_table_has_column($conn, 'switch_ports', 'equipment_id')) {
-        $defaultColorId = 0;
+    $defaultColorId = 0;
+    if (equipment_table_has_column($conn, 'switch_ports', 'equipment_id')) {
         $stmtGrayColor = mysqli_prepare(
             $conn,
             "SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = 'gray' ORDER BY id ASC LIMIT 1"
@@ -850,7 +860,7 @@ function equipment_finalize_linked_port_capacity(
             $conn,
             "INSERT INTO switch_ports
                 (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, management_id, comments)
-             SELECT ?, ?, NULLIF(?, ''), ?, ?, '0', ?, ?, NULLIF(?, 0), NULLIF(?, 0), ''
+             SELECT ?, ?, NULLIF(?, ''), ?, ?, '', ?, ?, NULLIF(?, 0), NULLIF(?, 0), ''
              WHERE NOT EXISTS (
                 SELECT 1
                 FROM switch_ports
@@ -881,6 +891,56 @@ function equipment_finalize_linked_port_capacity(
             }
             mysqli_stmt_close($stmtEnsureSwitchRj45);
         }
+
+        if ($sfpCount > 0 && $fiberPortTypeId > 0) {
+            $stmtEnsureSwitchSfp = mysqli_prepare(
+            $conn,
+            "INSERT INTO switch_ports
+                (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, idf_id, management_id, comments)
+             SELECT ?, ?, NULLIF(?, ''), ?, ?, '', ?, ?, NULLIF(?, 0), NULLIF(?, 0), ''
+             WHERE NOT EXISTS (
+                SELECT 1
+                FROM switch_ports sp_check
+                LEFT JOIN switch_port_types spt_check
+                  ON spt_check.company_id = sp_check.company_id
+                 AND (
+                      spt_check.type = sp_check.port_type
+                      OR spt_check.id = CAST(sp_check.port_type AS UNSIGNED)
+                 )
+                WHERE sp_check.company_id = ?
+                  AND sp_check.equipment_id = ?
+                  AND sp_check.port_number = ?
+                  AND LOWER(TRIM(COALESCE(spt_check.type, sp_check.port_type, ''))) LIKE 'sfp%'
+             )"
+            );
+            if ($stmtEnsureSwitchSfp && $defaultColorId > 0) {
+                for ($fiberIdx = 1; $fiberIdx <= $sfpCount; $fiberIdx++) {
+                    $fiberPortNo = idf_resolve_synthetic_fiber_port_no(0, $fiberIdx);
+                    mysqli_stmt_bind_param(
+                        $stmtEnsureSwitchSfp,
+                        'iissisiiiiii',
+                        $companyId,
+                        $equipmentId,
+                        $equipmentHostname,
+                        $fiberPortTypeName,
+                        $fiberPortNo,
+                        $unknownStatusId,
+                        $defaultColorId,
+                        $idfId,
+                        $switchEnvironmentId,
+                        $companyId,
+                        $equipmentId,
+                        $fiberPortNo
+                    );
+                    mysqli_stmt_execute($stmtEnsureSwitchSfp);
+                }
+                mysqli_stmt_close($stmtEnsureSwitchSfp);
+            }
+        }
+    }
+
+    if ($equipmentHostname !== '') {
+        idf_apply_equipment_hostname_to_position_ports($conn, $companyId, $positionId, $equipmentId, $equipmentHostname);
     }
 }
 
@@ -1166,7 +1226,7 @@ function equipment_regenerate_synced_switch_and_idf_ports(mysqli $conn, int $com
                 (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?)"
         );
         if ($stmtInsertSwitchPort) {
-            $defaultPatchPort = '0';
+            $defaultPatchPort = '';
             $defaultComments = '';
             foreach ($portsToInsert as $portMeta) {
                 $portNo = (int)$portMeta['port_no'];

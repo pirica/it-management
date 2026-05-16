@@ -1135,6 +1135,26 @@ function idf_first_existing_column(mysqli $conn, string $table, array $candidate
 }
 
 /**
+ * Why: switch_ports.to_patch_port defaults to literal "0" in legacy seed/sync paths; treat it as empty in UI and mirrors.
+ */
+function idf_normalize_port_label_value($value): string
+{
+    $normalized = trim((string)$value);
+    if ($normalized === '' || $normalized === '0' || strcasecmp($normalized, 'null') === 0) {
+        return '';
+    }
+    return $normalized;
+}
+
+/**
+ * SQL fragment: blank out placeholder patch-port labels before COALESCE/INSERT.
+ */
+function idf_sql_normalize_port_label_expr(string $columnSql): string
+{
+    return "NULLIF(NULLIF(TRIM({$columnSql}), ''), '0')";
+}
+
+/**
  * Why: Clearing idf_links (or CASCADE-delete from port removal) must still reset the survivor port's mirrored
  * idf_ports + switch_ports visuals; otherwise peers keep link-colored state with no unlink affordance (regen UX).
  *
