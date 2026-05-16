@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
-require_once ROOT_PATH . 'includes/idf_device_port_sort_sql.php';
 require_once __DIR__ . '/port_visualizer_helper.php';
 require_once __DIR__ . '/idf_ports_sync.php';
 require_once __DIR__ . '/idf_positions_schema.php';
@@ -252,9 +251,6 @@ $mirrorHostnameSqlMain = $hasSwitchPortsHostnameColumn
 $mirrorHostnameSqlFallback = $hasSwitchPortsHostnameColumn
     ? "NULLIF(TRIM(sp.hostname), '') AS mirror_switch_hostname"
     : "'' AS mirror_switch_hostname";
-$idfPositionSwitchLiveMatchSql = '(' . itm_idf_position_numeric_equipment_match_sql('p_local', 'pr_live.equipment_id') . '
-    OR CONVERT(CAST(p_local.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
-        = CONVERT(CAST(pr_live.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci)';
 $stmtPos = mysqli_prepare(
     $conn,
     "SELECT p.*, dt.idfdevicetype_name AS device_type_name,
@@ -306,10 +302,6 @@ if ($stmtPos) {
             ? (int)$positionEquipmentIdRaw
             : 0;
         $row['ports'] = [];
-        if ($posId > 0) {
-            idf_repair_misassigned_ports_for_position($conn, $company_id, $row);
-            idf_ensure_ports_for_position($conn, $company_id, $posId);
-        }
 
         $stmtPorts = mysqli_prepare(
             $conn,
@@ -387,17 +379,13 @@ if ($stmtPos) {
                ON p_local.company_id = pr.company_id
               AND p_local.id = ?
               AND p_local.idf_id = ?
-              AND (
-                   p_local.id = pr.position_id
-                   OR p_local.position_no = pr.position_id
-              )
              JOIN idfs i_local ON i_local.id = p_local.idf_id
              LEFT JOIN equipment e_local ON e_local.id = p_local.equipment_id AND e_local.company_id = p_local.company_id
              LEFT JOIN equipment_types et_local ON et_local.id = e_local.equipment_type_id AND et_local.company_id = e_local.company_id
              LEFT JOIN idf_device_type dt_local ON dt_local.id = p_local.device_type AND dt_local.company_id = p_local.company_id
              LEFT JOIN switch_port_types spt ON spt.id = pr.port_type AND spt.company_id = pr.company_id
              LEFT JOIN switch_ports pr_live ON pr_live.company_id = pr.company_id
-                 AND {$idfPositionSwitchLiveMatchSql}
+                 AND pr_live.equipment_id = p_local.equipment_id
                  AND pr_live.port_number = pr.port_no
                  AND (
                       CONVERT(pr_live.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -446,29 +434,29 @@ if ($stmtPos) {
              LEFT JOIN switch_status ss_remote ON ss_remote.id = pr_remote.status_id AND ss_remote.company_id = pr_remote.company_id
              LEFT JOIN switch_status ss_link_meta ON ss_link_meta.id = l.equipment_status_id AND ss_link_meta.company_id = l.company_id
              LEFT JOIN cable_colors cc_ss_link_meta ON cc_ss_link_meta.id = ss_link_meta.color_id AND cc_ss_link_meta.company_id = ss_link_meta.company_id
-             LEFT JOIN idf_positions p_remote ON p_remote.company_id = pr_remote.company_id
-               AND (
-                    p_remote.id = pr_remote.position_id
-                    OR (
-                        p_remote.position_no = pr_remote.position_id
-                        AND NOT EXISTS (
-                            SELECT 1
-                            FROM idf_positions p_actual
-                            WHERE p_actual.company_id = pr_remote.company_id
-                              AND p_actual.id = pr_remote.position_id
-                            LIMIT 1
-                        )
-                    )
-               )
+             LEFT JOIN idf_positions p_remote ON p_remote.id = pr_remote.position_id AND p_remote.company_id = pr_remote.company_id
              LEFT JOIN equipment e_remote ON e_remote.id = p_remote.equipment_id AND e_remote.company_id = p_remote.company_id
              LEFT JOIN equipment_types et_remote ON et_remote.id = e_remote.equipment_type_id AND et_remote.company_id = e_remote.company_id
              LEFT JOIN idf_device_type dt_remote ON dt_remote.id = p_remote.device_type AND dt_remote.company_id = p_remote.company_id
              LEFT JOIN cable_colors cc_l ON cc_l.id = l.cable_color_id AND cc_l.company_id = l.company_id
              WHERE pr.company_id = ?
+               AND (
+                    pr.position_id = ?
+                    OR (
+                        pr.position_id = ?
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM idf_positions p_actual
+                            WHERE p_actual.company_id = pr.company_id
+                              AND p_actual.id = pr.position_id
+                            LIMIT 1
+                        )
+                    )
+               )
              ORDER BY pr.port_no ASC"
         );
         if ($stmtPorts) {
-            mysqli_stmt_bind_param($stmtPorts, 'iii', $posId, $idf_id, $company_id);
+            mysqli_stmt_bind_param($stmtPorts, 'iiiii', $posId, $idf_id, $company_id, $posId, $posNo);
             mysqli_stmt_execute($stmtPorts);
             $portRes = mysqli_stmt_get_result($stmtPorts);
             $idfPortsCount = 0;
@@ -489,7 +477,6 @@ if ($stmtPos) {
                 $row['ports'][] = $pRow;
             }
             mysqli_stmt_close($stmtPorts);
-            idf_prepare_rack_position_ports($conn, $company_id, $row['ports'], $row);
 
             if ($idfDebugEnabled && $idf_id === 4) {
                 idf_debug_log_line('[IDF DEBUG] idf_id=4 position_id=' . $posId . ' idf_ports_count=' . $idfPortsCount . ' company_id=' . $company_id);
