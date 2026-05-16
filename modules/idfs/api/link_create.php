@@ -796,6 +796,8 @@ if (
          LEFT JOIN switch_port_types spt
            ON spt.id = pr.port_type
           AND spt.company_id = pr.company_id
+         LEFT JOIN switch_port_types spt_any
+           ON spt_any.id = pr.port_type
          SET {$switchSetSql}
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
@@ -804,7 +806,7 @@ if (
            AND sp.port_number = pr.port_no
            AND (
                 CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                    = CONVERT(COALESCE(spt.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(COALESCE(spt.type, spt_any.type, 'RJ45') USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 OR CONVERT(sp.port_type USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     = CONVERT(CAST(spt.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 OR (
@@ -812,7 +814,7 @@ if (
                     AND CAST(sp.port_type AS UNSIGNED) = spt.id
                 )
                 OR CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(sp.port_type, '')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                   = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                   = CONVERT(UPPER(REPLACE(REPLACE(TRIM(COALESCE(spt.type, spt_any.type, 'RJ45')), ' ', ''), '+', 'PLUS')) USING utf8mb4) COLLATE utf8mb4_unicode_ci
            )
         "
     );
@@ -823,7 +825,7 @@ if (
         if ($vlanForSwitchSync > 0) {
             mysqli_stmt_bind_param(
                 $stmtSwitchSync,
-                'isiiisii',
+                'isiiisi',
                 $portA,
                 $switchLabelSync,
                 $statusSyncId,
@@ -850,7 +852,7 @@ if (
         if ($vlanForSwitchSync > 0) {
             mysqli_stmt_bind_param(
                 $stmtSwitchSync,
-                'isiiisii',
+                'isiiisi',
                 $portB,
                 $switchLabelSync,
                 $statusSyncId,
