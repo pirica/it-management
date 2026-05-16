@@ -245,6 +245,14 @@ if ($company_id > 0 && isset($conn) && $conn instanceof mysqli) {
         } catch (Throwable $itmIpamMigrateError) {
             error_log('IPAM VLAN subnet migration skipped: ' . $itmIpamMigrateError->getMessage());
         }
+        if (!isset($_SESSION['itm_ipam_equipment_link_backfill_done'])) {
+            try {
+                itm_ipam_backfill_equipment_links_from_ip_address($conn, (int)$company_id);
+                $_SESSION['itm_ipam_equipment_link_backfill_done'] = 1;
+            } catch (Throwable $itmIpamBackfillError) {
+                error_log('IPAM equipment link backfill skipped: ' . $itmIpamBackfillError->getMessage());
+            }
+        }
     }
 }
 

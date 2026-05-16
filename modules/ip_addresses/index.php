@@ -343,6 +343,40 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
+    if ($table === 'ip_addresses' && $field === 'equipment_id') {
+        $equipId = (int)$value;
+        $ipText = trim((string)($GLOBALS['itm_ipam_view_row']['ip_text'] ?? ''));
+        if ($equipId <= 0 && $ipText !== '' && function_exists('itm_ipam_find_equipment_by_ip_text')) {
+            $equipMatch = itm_ipam_find_equipment_by_ip_text($GLOBALS['conn'], (int)($GLOBALS['company_id'] ?? 0), $ipText);
+            if ($equipMatch) {
+                $equipId = (int)$equipMatch['id'];
+            }
+        }
+        if ($equipId > 0) {
+            $equipFk = $GLOBALS['fkMap']['equipment_id'] ?? [
+                'REFERENCED_TABLE_NAME' => 'equipment',
+                'REFERENCED_COLUMN_NAME' => 'id',
+            ];
+            $resolvedLabel = cr_fk_label_by_id(
+                $GLOBALS['conn'],
+                $equipFk,
+                (int)($GLOBALS['company_id'] ?? 0),
+                $equipId,
+                'equipment_id'
+            );
+            if ($resolvedLabel === '' && function_exists('itm_ipam_equipment_label_from_row') && !empty($equipMatch)) {
+                $resolvedLabel = itm_ipam_equipment_label_from_row([
+                    'equipment_name' => $equipMatch['name'] ?? '',
+                    'equipment_hostname' => $equipMatch['hostname'] ?? '',
+                ]);
+            }
+            if ($resolvedLabel !== '') {
+                return '<a href="../equipment/view.php?id=' . $equipId . '">' . sanitize($resolvedLabel) . '</a>';
+            }
+        }
+        return '—';
+    }
+
     if (isset($GLOBALS['fkMap'][$field])) {
         $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), $value, (string)$field);
         if ($resolvedLabel !== '') {
@@ -723,6 +757,12 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
     if (!$data) { $errors[] = 'Record not found.'; }
+    if ($crud_table === 'ip_addresses' && $data && empty($data['equipment_id']) && function_exists('itm_ipam_find_equipment_by_ip_text')) {
+        $itmEquipMatch = itm_ipam_find_equipment_by_ip_text($conn, (int)$company_id, (string)($data['ip_text'] ?? ''));
+        if ($itmEquipMatch) {
+            $data['equipment_id'] = (int)$itmEquipMatch['id'];
+        }
+    }
 }
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
@@ -1296,6 +1336,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- READ-ONLY VIEW -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
+                <?php $GLOBALS['itm_ipam_view_row'] = is_array($data) ? $data : []; ?>
                 <div class="card">
                     <table>
                         <tbody>
