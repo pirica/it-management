@@ -135,6 +135,31 @@ function itm_ipam_table_exists(mysqli $conn, string $table): bool
 }
 
 /**
+ * Why: Large prefixes (/16, etc.) cannot insert every host; cap keeps bulk-generate safe.
+ */
+function itm_ipam_subnet_bulk_generate_max_hosts(int $prefixLength): int
+{
+    if ($prefixLength < 0 || $prefixLength > 32) {
+        return 0;
+    }
+    if ($prefixLength >= 31) {
+        return 1;
+    }
+
+    $hostCount = (int)(2 ** (32 - $prefixLength)) - 2;
+    if ($hostCount <= 0) {
+        return 0;
+    }
+
+    return min(512, $hostCount);
+}
+
+function itm_ipam_can_bulk_generate_subnet(int $prefixLength): bool
+{
+    return itm_ipam_subnet_bulk_generate_max_hosts($prefixLength) > 0;
+}
+
+/**
  * Why: Bulk generation skips network/broadcast and caps very large prefixes.
  */
 function itm_ipam_host_addresses_for_subnet(string $networkIp, int $prefixLength, int $maxHosts = 512): array
@@ -171,7 +196,7 @@ function itm_ipam_host_addresses_for_subnet(string $networkIp, int $prefixLength
 }
 
 /**
- * Create missing host rows for a subnet (used by /24 bulk-generate on subnet view).
+ * Create missing host rows for a subnet (subnet view bulk-generate; large prefixes are capped).
  */
 function itm_ipam_bulk_generate_subnet_ips(
     mysqli $conn,
@@ -217,14 +242,15 @@ function itm_ipam_bulk_generate_subnet_ips(
     }
 
     $prefixLength = (int)($subnetRow['prefix_length'] ?? 0);
-    if ($prefixLength !== 24) {
-        $errorMessage = 'Bulk generate is only available for /24 subnets.';
+    $maxHosts = itm_ipam_subnet_bulk_generate_max_hosts($prefixLength);
+    if ($maxHosts <= 0) {
+        $errorMessage = 'This subnet has no host addresses to generate.';
         return false;
     }
 
     $networkIp = (string)($subnetRow['network_ip'] ?? '');
     $gatewayIp = trim((string)($subnetRow['gateway_ip'] ?? ''));
-    $hostIps = itm_ipam_host_addresses_for_subnet($networkIp, $prefixLength, 512);
+    $hostIps = itm_ipam_host_addresses_for_subnet($networkIp, $prefixLength, $maxHosts);
     if (!$hostIps) {
         $errorMessage = 'No host addresses could be calculated for this subnet.';
         return false;
