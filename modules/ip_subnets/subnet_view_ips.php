@@ -75,16 +75,19 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_fetch_subnet_addresses')) 
                         <td>
                             <?php
                                 $itmEquipId = (int)($itmSubnetIpRow['equipment_id'] ?? 0);
-                                $itmEquipLabel = function_exists('itm_ipam_equipment_label_from_row')
-                                    ? itm_ipam_equipment_label_from_row($itmSubnetIpRow)
-                                    : '';
+                                $itmEquipLabel = function_exists('itm_ipam_equipment_name_label_from_row')
+                                    ? itm_ipam_equipment_name_label_from_row($itmSubnetIpRow)
+                                    : (function_exists('itm_ipam_equipment_label_from_row') ? itm_ipam_equipment_label_from_row($itmSubnetIpRow) : '');
+                                $itmHostnameDisplay = function_exists('itm_ipam_hostname_display_from_row')
+                                    ? itm_ipam_hostname_display_from_row($itmSubnetIpRow)
+                                    : trim((string)($itmSubnetIpRow['hostname'] ?? ''));
                                 if ($itmEquipId > 0 && $itmEquipLabel !== ''): ?>
                                     <a href="../equipment/view.php?id=<?php echo $itmEquipId; ?>"><?php echo sanitize($itmEquipLabel); ?></a>
                                 <?php else: ?>
                                     —
                                 <?php endif; ?>
                         </td>
-                        <td><?php echo sanitize((string)($itmSubnetIpRow['hostname'] ?? '')); ?></td>
+                        <td><?php echo $itmHostnameDisplay !== '' ? sanitize($itmHostnameDisplay) : '—'; ?></td>
                         <td>
                             <a class="btn btn-sm" href="../ip_addresses/view.php?id=<?php echo (int)($itmSubnetIpRow['id'] ?? 0); ?>">🔎</a>
                         </td>

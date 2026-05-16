@@ -528,6 +528,32 @@ function itm_ipam_equipment_label_from_row(array $row): string
 }
 
 /**
+ * Why: Equipment column should show asset name; hostname belongs in the Hostname column.
+ */
+function itm_ipam_equipment_name_label_from_row(array $row): string
+{
+    $label = trim((string)($row['equipment_name'] ?? ''));
+    if ($label === '') {
+        $label = trim((string)($row['equipment_hostname'] ?? ''));
+    }
+
+    return $label;
+}
+
+/**
+ * Why: IP hostname may be blank while linked equipment still has a hostname to display.
+ */
+function itm_ipam_hostname_display_from_row(array $row): string
+{
+    $hostname = trim((string)($row['hostname'] ?? ''));
+    if ($hostname !== '') {
+        return $hostname;
+    }
+
+    return trim((string)($row['equipment_hostname'] ?? ''));
+}
+
+/**
  * @return array<int, array{id: int, label: string}>
  */
 function itm_ipam_fetch_subnet_filter_options(mysqli $conn, int $company_id): array
