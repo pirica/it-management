@@ -2296,6 +2296,26 @@ function portFormControl(form, fieldName) {
     return form.querySelector('[name="' + String(fieldName).replace(/"/g, '\\"') + '"]');
 }
 
+function portFormScopedControl(form, typeFieldsContainerId, fieldName) {
+    const containerId = String(typeFieldsContainerId || '').trim();
+    if (containerId) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            const scoped = container.querySelector('[name="' + String(fieldName).replace(/"/g, '\\"') + '"]');
+            if (scoped) {
+                return scoped;
+            }
+        }
+    }
+    return portFormControl(form, fieldName);
+}
+
+function portFormPositiveInt(form, typeFieldsContainerId, fieldName) {
+    const control = portFormScopedControl(form, typeFieldsContainerId, fieldName);
+    const normalized = coercePositiveSelectValue(control && control.value);
+    return normalized ? Number(normalized) : 0;
+}
+
 function collectPortEditSeed(portMeta, rowDataset) {
     const row = rowDataset || {};
     const portTypeLabel = (portMeta && portMeta.port_type_label) ? portMeta.port_type_label : (row.portType || 'RJ45');
@@ -2595,8 +2615,8 @@ async function openPortModal(portId) {
     );
     updatePortFormTypePresentation(portMeta);
     applyPortEditTextFields(form, editSeed);
-    const fiberPatchSelect = portFormControl(form, 'fiber_patch_id');
-    const fiberRackSelect = portFormControl(form, 'fiber_rack_id');
+    const fiberPatchSelect = portFormScopedControl(form, 'portTypeSpecificFields', 'fiber_patch_id');
+    const fiberRackSelect = portFormScopedControl(form, 'portTypeSpecificFields', 'fiber_rack_id');
     if (fiberPatchSelect) {
         applySelectValueOrLabel(
             fiberPatchSelect,
@@ -2932,22 +2952,16 @@ function savePort() {
                 if (speedValue) {
                     return Number(speedValue);
                 }
-                const dedicatedValue = coercePositiveSelectValue(f.fiber_port_id && f.fiber_port_id.value);
-                return dedicatedValue ? Number(dedicatedValue) : null;
+                const dedicatedValue = portFormPositiveInt(f, 'portTypeSpecificFields', 'fiber_port_id');
+                return dedicatedValue > 0 ? dedicatedValue : 0;
             })()
-            : null,
+            : 0,
         fiber_patch_id: normalizedPortType !== 'rj45'
-            ? (() => {
-                const patchValue = coercePositiveSelectValue(f.fiber_patch_id && f.fiber_patch_id.value);
-                return patchValue ? Number(patchValue) : null;
-            })()
-            : null,
+            ? portFormPositiveInt(f, 'portTypeSpecificFields', 'fiber_patch_id')
+            : 0,
         fiber_rack_id: normalizedPortType !== 'rj45'
-            ? (() => {
-                const rackValue = coercePositiveSelectValue(f.fiber_rack_id && f.fiber_rack_id.value);
-                return rackValue ? Number(rackValue) : null;
-            })()
-            : null,
+            ? portFormPositiveInt(f, 'portTypeSpecificFields', 'fiber_rack_id')
+            : 0,
         ...routingPreserve,
     };
     const destinationPortId = f.port_id_b && f.port_id_b.value ? Number(f.port_id_b.value) : 0;
@@ -3347,18 +3361,9 @@ function createLink() {
             const speedValue = coercePositiveSelectValue(f.rj45_speed_id && f.rj45_speed_id.value);
             return speedValue ? Number(speedValue) : null;
         })(),
-        fiber_port_id: (() => {
-            const portValue = coercePositiveSelectValue(f.fiber_port_id && f.fiber_port_id.value);
-            return portValue ? Number(portValue) : null;
-        })(),
-        fiber_patch_id: (() => {
-            const patchValue = coercePositiveSelectValue(f.fiber_patch_id && f.fiber_patch_id.value);
-            return patchValue ? Number(patchValue) : null;
-        })(),
-        fiber_rack_id: (() => {
-            const rackValue = coercePositiveSelectValue(f.fiber_rack_id && f.fiber_rack_id.value);
-            return rackValue ? Number(rackValue) : null;
-        })(),
+        fiber_port_id: portFormPositiveInt(f, 'linkTypeSpecificFields', 'fiber_port_id'),
+        fiber_patch_id: portFormPositiveInt(f, 'linkTypeSpecificFields', 'fiber_patch_id'),
+        fiber_rack_id: portFormPositiveInt(f, 'linkTypeSpecificFields', 'fiber_rack_id'),
         ...routingFkPayloadFromPortMeta(sourcePort),
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
