@@ -544,25 +544,45 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const selects = document.querySelectorAll('select[data-addable-select="1"]');
-        selects.forEach((selectEl) => {
-            injectAddOption(selectEl);
-            selectEl.dataset.previousValue = selectEl.value || '';
+    function bindAddableSelect(selectEl) {
+        if (!selectEl || selectEl.tagName !== 'SELECT') {
+            return;
+        }
+        if (selectEl.getAttribute('data-addable-select') !== '1') {
+            return;
+        }
+        if (selectEl.dataset.itmAddableBound === '1') {
+            return;
+        }
+        selectEl.dataset.itmAddableBound = '1';
 
-            selectEl.addEventListener('focus', function () {
-                if (selectEl.value !== ADD_VALUE) {
-                    selectEl.dataset.previousValue = selectEl.value || '';
-                }
-            });
+        injectAddOption(selectEl);
+        selectEl.dataset.previousValue = selectEl.value || '';
 
-            selectEl.addEventListener('change', function () {
-                if (selectEl.value === ADD_VALUE) {
-                    addValue(selectEl);
-                    return;
-                }
+        selectEl.addEventListener('focus', function () {
+            if (selectEl.value !== ADD_VALUE) {
                 selectEl.dataset.previousValue = selectEl.value || '';
-            });
+            }
         });
+
+        selectEl.addEventListener('change', function () {
+            if (selectEl.value === ADD_VALUE) {
+                addValue(selectEl);
+                return;
+            }
+            selectEl.dataset.previousValue = selectEl.value || '';
+        });
+    }
+
+    window.itmInitAddableSelects = function (root) {
+        const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+        const selects = scope.querySelectorAll
+            ? scope.querySelectorAll('select[data-addable-select="1"]')
+            : [];
+        selects.forEach(bindAddableSelect);
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        window.itmInitAddableSelects(document);
     });
 })();

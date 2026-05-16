@@ -1124,6 +1124,63 @@ while ($resVlans && ($row = mysqli_fetch_assoc($resVlans))) {
     $vlanOptions[$vlanId] = $label;
 }
 
+$itmVlanAddExtraFields = [
+    ['name' => 'vlan_number', 'label' => 'VLAN Number', 'type' => 'number'],
+    ['name' => 'vlan_color', 'label' => 'Vlan Color', 'type' => 'color'],
+];
+$itmRj45SpeedAddExtraFields = [
+    ['name' => 'max_speed', 'label' => 'Max Speed', 'type' => 'text', 'required' => true],
+    ['name' => 'bandwidth', 'label' => 'Bandwidth', 'type' => 'text', 'required' => true],
+    ['name' => 'max_distance_full_speed', 'label' => 'Max Distance (full speed)', 'type' => 'text', 'required' => true],
+];
+$itmVlanAddExtraFieldsAttr = htmlspecialchars(json_encode($itmVlanAddExtraFields, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+$itmAddableSelectConfig = [
+    'vlan' => [
+        'table' => 'vlans',
+        'idCol' => 'id',
+        'labelCol' => 'vlan_name',
+        'companyScoped' => '1',
+        'friendly' => 'vlan',
+        'extraFields' => $itmVlanAddExtraFields,
+    ],
+    'rj45_speed' => [
+        'table' => 'rj45_speed',
+        'idCol' => 'id',
+        'labelCol' => 'cable_type',
+        'companyScoped' => '1',
+        'friendly' => 'rj45 cable',
+        'extraFields' => $itmRj45SpeedAddExtraFields,
+    ],
+    'equipment_fiber' => [
+        'table' => 'equipment_fiber',
+        'idCol' => 'id',
+        'labelCol' => 'name',
+        'companyScoped' => '1',
+        'friendly' => 'fiber port type',
+    ],
+    'equipment_fiber_patch' => [
+        'table' => 'equipment_fiber_patch',
+        'idCol' => 'id',
+        'labelCol' => 'name',
+        'companyScoped' => '1',
+        'friendly' => 'fiber patch',
+    ],
+    'equipment_fiber_rack' => [
+        'table' => 'equipment_fiber_rack',
+        'idCol' => 'id',
+        'labelCol' => 'name',
+        'companyScoped' => '1',
+        'friendly' => 'fiber rack',
+    ],
+    'equipment_poe' => [
+        'table' => 'equipment_poe',
+        'idCol' => 'id',
+        'labelCol' => 'name',
+        'companyScoped' => '1',
+        'friendly' => 'poe type',
+    ],
+];
+
 $fiberSpeedOptions = [];
 $resFiberSpeeds = mysqli_query(
     $conn,
@@ -1664,27 +1721,42 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div>
                 <label class="label">VLAN</label>
-                <select class="input" name="vlan">
+                <select class="input" name="vlan"
+                    data-addable-select="1"
+                    data-add-table="vlans"
+                    data-add-id-col="id"
+                    data-add-label-col="vlan_name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="vlan"
+                    data-add-extra-fields="<?php echo $itmVlanAddExtraFieldsAttr; ?>">
                     <option value="">-- None --</option>
                     <?php foreach ($vlanOptions as $vlanId => $vlanLabel): ?>
                         <option value="<?php echo (int)$vlanId; ?>"><?php echo sanitize($vlanLabel); ?></option>
                     <?php endforeach; ?>
+                    <option value="__add_new__">&#x2795;</option>
                 </select>
             </div>
             <div>
                 <label class="label" id="portSpeedFieldLabel">RJ45 Cable</label>
-                <select class="input" name="speed">
+                <select class="input" name="speed" data-addable-select="1" data-add-company-scoped="1">
                     <option value="">-- None --</option>
                 </select>
             </div>
             <div id="portTypeSpecificFields" style="grid-column: 1 / -1;"></div>
             <div id="portPoeField">
                 <label class="label">PoE</label>
-                <select class="input" name="poe">
+                <select class="input" name="poe"
+                    data-addable-select="1"
+                    data-add-table="equipment_poe"
+                    data-add-id-col="id"
+                    data-add-label-col="name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="poe type">
                     <option value="">-- None --</option>
                     <?php foreach ($poeOptions as $poeId => $poeLabel): ?>
                         <option value="<?php echo (int)$poeId; ?>"><?php echo sanitize($poeLabel); ?></option>
                     <?php endforeach; ?>
+                    <option value="__add_new__">&#x2795;</option>
                 </select>
             </div>
             <div>
@@ -1803,11 +1875,19 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
             <div data-link-default-field="vlan">
                 <label class="label">VLAN</label>
-                <select class="input" name="vlan">
+                <select class="input" name="vlan"
+                    data-addable-select="1"
+                    data-add-table="vlans"
+                    data-add-id-col="id"
+                    data-add-label-col="vlan_name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="vlan"
+                    data-add-extra-fields="<?php echo $itmVlanAddExtraFieldsAttr; ?>">
                     <option value="">-- None --</option>
                     <?php foreach ($vlanOptions as $vlanId => $vlanLabel): ?>
                         <option value="<?php echo (int)$vlanId; ?>"><?php echo sanitize($vlanLabel); ?></option>
                     <?php endforeach; ?>
+                    <option value="__add_new__">&#x2795;</option>
                 </select>
             </div>
             <div id="linkTypeSpecificFields" style="grid-column: 1 / -1;"></div>
@@ -1902,9 +1982,13 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
     </div>
 </div>
 
+<script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
 <script>
+window.ITM_BASE_URL = <?php echo json_encode(BASE_URL, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrf, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const IDF_BASE = '<?php echo BASE_URL; ?>modules/idfs';
-const CSRF = '<?php echo sanitize($csrf); ?>';
+const CSRF = window.ITM_CSRF_TOKEN;
+const ITM_ADDABLE_SELECT_CONFIG = <?php echo json_encode($itmAddableSelectConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const POSITION_ID = <?php echo (int)$position_id; ?>;
 const POSITION_EQUIPMENT_ID = <?php echo (int)$positionLinkedEquipmentId; ?>;
 const AUTO_OPEN_EDIT_PORT_ID = <?php echo (int)$open_edit_port_id; ?>;
@@ -2014,8 +2098,55 @@ async function apiPost(path, body) {
 }
 
 function coercePositiveSelectValue(value) {
-    const parsed = Number(value);
+    const raw = String(value || '').trim();
+    if (!raw || raw === '__add_new__') {
+        return '';
+    }
+    const parsed = Number(raw);
     return Number.isFinite(parsed) && parsed > 0 ? String(Math.trunc(parsed)) : '';
+}
+
+function escapeSelectOptionHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function applyAddableSelectConfig(selectEl, configKey) {
+    const config = ITM_ADDABLE_SELECT_CONFIG[configKey];
+    if (!selectEl || !config) {
+        return;
+    }
+    selectEl.setAttribute('data-addable-select', '1');
+    selectEl.setAttribute('data-add-table', config.table || '');
+    selectEl.setAttribute('data-add-id-col', config.idCol || 'id');
+    selectEl.setAttribute('data-add-label-col', config.labelCol || 'name');
+    selectEl.setAttribute('data-add-company-scoped', config.companyScoped || '1');
+    if (config.friendly) {
+        selectEl.setAttribute('data-add-friendly', config.friendly);
+    } else {
+        selectEl.removeAttribute('data-add-friendly');
+    }
+    if (Array.isArray(config.extraFields) && config.extraFields.length) {
+        selectEl.setAttribute('data-add-extra-fields', JSON.stringify(config.extraFields));
+    } else {
+        selectEl.removeAttribute('data-add-extra-fields');
+    }
+    if (typeof window.itmInitAddableSelects === 'function') {
+        window.itmInitAddableSelects(selectEl);
+    }
+}
+
+function wireIdfDeviceAddableSelects(root) {
+    if (typeof window.itmInitAddableSelects === 'function') {
+        window.itmInitAddableSelects(root || document);
+    }
+}
+
+function addableConfigKeyForSpeedField(portTypeLabel) {
+    return normalizePortTypeLabel(portTypeLabel) === 'rj45' ? 'rj45_speed' : 'equipment_fiber';
 }
 
 function applySelectValue(selectEl, value) {
@@ -2246,6 +2377,7 @@ async function openPortModal(portId) {
         form.cable_color_id
     );
     updatePortFormTypePresentation(portMeta);
+    wireIdfDeviceAddableSelects(form);
 
     document.getElementById('portBackdrop').style.display = 'flex';
 }
@@ -2288,20 +2420,43 @@ function filterLinkCompatibleDestinations(source, destinations) {
     );
 }
 
-function buildSelectHtml(name, optionsMap, selectedValue, noneLabel) {
+function buildSelectHtml(name, optionsMap, selectedValue, noneLabel, addableConfigKey) {
     const selectedNormalized = coercePositiveSelectValue(selectedValue);
-    let html = `<select class="input" name="${name}">`;
-    html += `<option value="">${noneLabel || '-- None --'}</option>`;
+    let html = `<select class="input" name="${escapeSelectOptionHtml(name)}">`;
+    html += `<option value="">${escapeSelectOptionHtml(noneLabel || '-- None --')}</option>`;
     Object.keys(optionsMap || {}).forEach((id) => {
         const safeId = String(id);
         const selectedAttr = safeId === selectedNormalized ? ' selected' : '';
-        html += `<option value="${safeId}"${selectedAttr}>${String(optionsMap[id] || '')}</option>`;
+        html += `<option value="${escapeSelectOptionHtml(safeId)}"${selectedAttr}>${escapeSelectOptionHtml(optionsMap[id] || '')}</option>`;
     });
     if (selectedNormalized !== '' && !(optionsMap || {})[selectedNormalized]) {
-        html += `<option value="${selectedNormalized}" selected>Saved value #${selectedNormalized}</option>`;
+        html += `<option value="${escapeSelectOptionHtml(selectedNormalized)}" selected>Saved value #${escapeSelectOptionHtml(selectedNormalized)}</option>`;
+    }
+    if (addableConfigKey) {
+        html += '<option value="__add_new__">&#x2795;</option>';
     }
     html += '</select>';
     return html;
+}
+
+function bindAddableSelectsInContainer(containerEl) {
+    if (!containerEl) {
+        return;
+    }
+    const fieldConfigMap = {
+        vlan: 'vlan',
+        poe: 'equipment_poe',
+        rj45_speed_id: 'rj45_speed',
+        fiber_port_id: 'equipment_fiber',
+        fiber_patch_id: 'equipment_fiber_patch',
+        fiber_rack_id: 'equipment_fiber_rack',
+    };
+    containerEl.querySelectorAll('select.input[name]').forEach((selectEl) => {
+        const configKey = fieldConfigMap[selectEl.name] || '';
+        if (configKey) {
+            applyAddableSelectConfig(selectEl, configKey);
+        }
+    });
 }
 
 function renderTypeSpecificFields(containerId, typeLabel, values, includePrimaryCableField) {
@@ -2312,14 +2467,14 @@ function renderTypeSpecificFields(containerId, typeLabel, values, includePrimary
     const parts = [];
     if (normalizedType === 'rj45') {
         if (includePrimaryCableField) {
-            parts.push('<div><label class="label">RJ45 Cable</label>' + buildSelectHtml('rj45_speed_id', RJ45_SPEED_OPTIONS, currentValues.rj45_speed_id || '', '-- None --') + '</div>');
+            parts.push('<div><label class="label">RJ45 Cable</label>' + buildSelectHtml('rj45_speed_id', RJ45_SPEED_OPTIONS, currentValues.rj45_speed_id || '', '-- None --', 'rj45_speed') + '</div>');
         }
     } else {
         if (includePrimaryCableField) {
-            parts.push('<div><label class="label">Fiber Ports</label>' + buildSelectHtml('fiber_port_id', FIBER_SPEED_OPTIONS, currentValues.fiber_port_id || '', '-- None --') + '</div>');
+            parts.push('<div><label class="label">Fiber Ports</label>' + buildSelectHtml('fiber_port_id', FIBER_SPEED_OPTIONS, currentValues.fiber_port_id || '', '-- None --', 'equipment_fiber') + '</div>');
         }
-        parts.push('<div><label class="label">Fiber Patch</label>' + buildSelectHtml('fiber_patch_id', FIBER_PATCH_OPTIONS, currentValues.fiber_patch_id || '', '-- None --') + '</div>');
-        parts.push('<div><label class="label">Fiber Rack</label>' + buildSelectHtml('fiber_rack_id', FIBER_RACK_OPTIONS, currentValues.fiber_rack_id || '', '-- None --') + '</div>');
+        parts.push('<div><label class="label">Fiber Patch</label>' + buildSelectHtml('fiber_patch_id', FIBER_PATCH_OPTIONS, currentValues.fiber_patch_id || '', '-- None --', 'equipment_fiber_patch') + '</div>');
+        parts.push('<div><label class="label">Fiber Rack</label>' + buildSelectHtml('fiber_rack_id', FIBER_RACK_OPTIONS, currentValues.fiber_rack_id || '', '-- None --', 'equipment_fiber_rack') + '</div>');
     }
     if (!parts.length) {
         container.innerHTML = '';
@@ -2328,6 +2483,7 @@ function renderTypeSpecificFields(containerId, typeLabel, values, includePrimary
     }
     container.style.display = '';
     container.innerHTML = '<div class="idf-grid-2">' + parts.join('') + '</div>';
+    bindAddableSelectsInContainer(container);
 }
 
 function routingFkPayloadFromPortMeta(portMeta) {
@@ -2430,7 +2586,14 @@ function rebuildSpeedOptionsForPortType(portTypeLabel, selectedValue) {
         speedSelect.appendChild(fallbackOption);
     }
 
+    const addOption = document.createElement('option');
+    addOption.value = '__add_new__';
+    addOption.textContent = '➕';
+    speedSelect.appendChild(addOption);
+
     speedSelect.value = desiredValue;
+    speedSelect.dataset.itmAddableBound = '';
+    applyAddableSelectConfig(speedSelect, addableConfigKeyForSpeedField(portTypeLabel));
 }
 
 function togglePoeFieldForPortType(portTypeLabel) {
@@ -2474,21 +2637,56 @@ function savePort() {
         label: f.label.value.trim(),
         status_id: Number(normalizedStatus),
         connected_to: f.connected_to.value.trim(),
-        vlan_id: f.vlan.value ? Number(f.vlan.value) : null,
-        speed_id: f.speed.value ? Number(f.speed.value) : null,
-        poe_id: normalizedPortType === 'rj45' && f.poe.value ? Number(f.poe.value) : null,
+        vlan_id: (() => {
+            const vlanValue = coercePositiveSelectValue(f.vlan && f.vlan.value);
+            return vlanValue ? Number(vlanValue) : null;
+        })(),
+        speed_id: (() => {
+            const speedValue = coercePositiveSelectValue(f.speed && f.speed.value);
+            return speedValue ? Number(speedValue) : null;
+        })(),
+        poe_id: normalizedPortType === 'rj45'
+            ? (() => {
+                const poeValue = coercePositiveSelectValue(f.poe && f.poe.value);
+                return poeValue ? Number(poeValue) : null;
+            })()
+            : null,
         notes: f.notes.value.trim(),
         cable_color_id: (f.cable_color_id.value && f.cable_color_id.value !== '__add_new__')
             ? Number(f.cable_color_id.value)
             : null,
         rj45_speed_id: normalizedPortType === 'rj45'
-            ? (f.speed.value ? Number(f.speed.value) : (f.rj45_speed_id && f.rj45_speed_id.value ? Number(f.rj45_speed_id.value) : null))
+            ? (() => {
+                const speedValue = coercePositiveSelectValue(f.speed && f.speed.value);
+                if (speedValue) {
+                    return Number(speedValue);
+                }
+                const dedicatedValue = coercePositiveSelectValue(f.rj45_speed_id && f.rj45_speed_id.value);
+                return dedicatedValue ? Number(dedicatedValue) : null;
+            })()
             : null,
         fiber_port_id: normalizedPortType !== 'rj45'
-            ? (f.speed.value ? Number(f.speed.value) : (f.fiber_port_id && f.fiber_port_id.value ? Number(f.fiber_port_id.value) : null))
+            ? (() => {
+                const speedValue = coercePositiveSelectValue(f.speed && f.speed.value);
+                if (speedValue) {
+                    return Number(speedValue);
+                }
+                const dedicatedValue = coercePositiveSelectValue(f.fiber_port_id && f.fiber_port_id.value);
+                return dedicatedValue ? Number(dedicatedValue) : null;
+            })()
             : null,
-        fiber_patch_id: normalizedPortType !== 'rj45' && f.fiber_patch_id && f.fiber_patch_id.value ? Number(f.fiber_patch_id.value) : null,
-        fiber_rack_id: normalizedPortType !== 'rj45' && f.fiber_rack_id && f.fiber_rack_id.value ? Number(f.fiber_rack_id.value) : null,
+        fiber_patch_id: normalizedPortType !== 'rj45'
+            ? (() => {
+                const patchValue = coercePositiveSelectValue(f.fiber_patch_id && f.fiber_patch_id.value);
+                return patchValue ? Number(patchValue) : null;
+            })()
+            : null,
+        fiber_rack_id: normalizedPortType !== 'rj45'
+            ? (() => {
+                const rackValue = coercePositiveSelectValue(f.fiber_rack_id && f.fiber_rack_id.value);
+                return rackValue ? Number(rackValue) : null;
+            })()
+            : null,
         ...routingPreserve,
     };
     const destinationPortId = f.port_id_b && f.port_id_b.value ? Number(f.port_id_b.value) : 0;
@@ -2737,6 +2935,7 @@ async function openLinkModal(portId) {
     );
     destinationSelect.value = '';
     updateLinkFormTypePresentation(source);
+    wireIdfDeviceAddableSelects(f);
     document.getElementById('linkBackdrop').style.display = 'flex';
 }
 
@@ -2869,16 +3068,31 @@ function createLink() {
         cable_label: cableLabel,
         notes,
         status_id: Number(getNormalizedStatusValue(f) || 0),
-        rj45_speed_id: f.rj45_speed_id && f.rj45_speed_id.value ? Number(f.rj45_speed_id.value) : null,
-        fiber_port_id: f.fiber_port_id && f.fiber_port_id.value ? Number(f.fiber_port_id.value) : null,
-        fiber_patch_id: f.fiber_patch_id && f.fiber_patch_id.value ? Number(f.fiber_patch_id.value) : null,
-        fiber_rack_id: f.fiber_rack_id && f.fiber_rack_id.value ? Number(f.fiber_rack_id.value) : null,
+        rj45_speed_id: (() => {
+            const speedValue = coercePositiveSelectValue(f.rj45_speed_id && f.rj45_speed_id.value);
+            return speedValue ? Number(speedValue) : null;
+        })(),
+        fiber_port_id: (() => {
+            const portValue = coercePositiveSelectValue(f.fiber_port_id && f.fiber_port_id.value);
+            return portValue ? Number(portValue) : null;
+        })(),
+        fiber_patch_id: (() => {
+            const patchValue = coercePositiveSelectValue(f.fiber_patch_id && f.fiber_patch_id.value);
+            return patchValue ? Number(patchValue) : null;
+        })(),
+        fiber_rack_id: (() => {
+            const rackValue = coercePositiveSelectValue(f.fiber_rack_id && f.fiber_rack_id.value);
+            return rackValue ? Number(rackValue) : null;
+        })(),
         ...routingFkPayloadFromPortMeta(sourcePort),
         linked_equipment_port: linkedMode ? f.linked_equipment_port.value.trim() : '',
         linked_destination_port: linkedMode ? linkedDestinationPort : '',
         linked_cable_color: linkedCableColorName,
         linked_cable_color_hex: linkedCableColorHex,
-        vlan_id: f.vlan && f.vlan.value ? Number(f.vlan.value) : null,
+        vlan_id: (() => {
+            const vlanValue = coercePositiveSelectValue(f.vlan && f.vlan.value);
+            return vlanValue ? Number(vlanValue) : null;
+        })(),
     };
 
     apiPost('link_create.php', payload)
@@ -3221,13 +3435,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const portForm = document.getElementById('portForm');
     if (portForm && portForm.port_type) {
         portForm.port_type.addEventListener('change', () => {
+            const portMeta = findPortMetaByRef(portForm.port_id.value) || null;
             const selectedTypeLabel = (portForm.port_type.options && portForm.port_type.options[portForm.port_type.selectedIndex])
                 ? portForm.port_type.options[portForm.port_type.selectedIndex].textContent
                 : '';
             rebuildSpeedOptionsForPortType(selectedTypeLabel, '');
             togglePoeFieldForPortType(selectedTypeLabel);
+            updatePortFormTypePresentation(portMeta
+                ? Object.assign({}, portMeta, {port_type_label: selectedTypeLabel})
+                : {port_type_label: selectedTypeLabel});
         });
     }
+
+    wireIdfDeviceAddableSelects(document.getElementById('portForm'));
+    wireIdfDeviceAddableSelects(document.getElementById('linkForm'));
 
     // Why: Once the deep-link modal is consumed, removing query flags prevents a stale auto-open after save/reload.
     if (AUTO_OPEN_LINK_PORT_ID > 0 || AUTO_OPEN_EDIT_PORT_ID > 0 || AUTO_OPEN_LINK_PORT_NO > 0 || AUTO_OPEN_EDIT_PORT_NO > 0) {
