@@ -419,7 +419,7 @@ $stmtPorts = mysqli_prepare(
        COALESCE(NULLIF(cc_l.hex_color, ''), NULLIF(l.cable_color_hex, ''), NULLIF(pr.hex_color, ''), NULLIF(cc_pr_live_direct.hex_color, ''), NULLIF(cc_live.hex_color, ''), NULLIF(cc_sp_link_direct.hex_color, ''), NULLIF(cc_ss_link_meta.hex_color, ''), '#808080') AS cable_hex_color,
        l.cable_label,
        l.notes AS link_notes,
-       COALESCE(NULLIF(le.name, ''), NULLIF(sp_link.hostname, ''), '') AS equipment_hostname,
+       COALESCE(NULLIF(TRIM(le.name), ''), NULLIF(TRIM(le.hostname), ''), NULLIF(TRIM(sp_link.hostname), ''), '') AS equipment_hostname,
        COALESCE(CAST(l.equipment_port AS CHAR), CAST(sp_link.port_number AS CHAR), '') AS equipment_port,
        CASE
          WHEN l.port_id_a = pr.id THEN l.port_id_b
@@ -706,6 +706,10 @@ if (!empty($ports)) {
     idf_normalize_port_visualizer_colors($ports);
 }
 
+if (!empty($ports)) {
+    idf_enrich_ports_link_fields_for_device($conn, $company_id, $ports);
+}
+
 foreach ($ports as $portMeta) {
     $portNo = (int)($portMeta['port_no'] ?? 0);
     if ($portNo <= 0) {
@@ -907,7 +911,13 @@ foreach ($ports as $p) {
     }
 
     if ($remoteDeviceName === '' && $remotePositionNo <= 0 && $remotePortNo <= 0) {
-        continue;
+        // Why: Equipment-only endpoints may lack idf_positions metadata on the linked side; keep a visible map row anyway.
+        $linkedEquipFallback = (int)($p['linked_equipment_id'] ?? 0);
+        if ($linkedEquipFallback > 0) {
+            $remoteDeviceName = 'Equipment #' . $linkedEquipFallback;
+        } else {
+            continue;
+        }
     }
 
     $linkNotes = trim((string)($p['link_notes'] ?? ''));
