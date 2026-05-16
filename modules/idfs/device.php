@@ -59,6 +59,14 @@ function idf_csrf_token(): string {
     return (string)$_SESSION['csrf_token'];
 }
 
+function idf_normalize_label_display($value): string {
+    $normalized = trim((string)$value);
+    if ($normalized === '' || $normalized === '0' || strcasecmp($normalized, 'null') === 0) {
+        return '';
+    }
+    return $normalized;
+}
+
 $csrf = idf_csrf_token();
 
 $pos = null;
@@ -1618,7 +1626,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             data-port-id="<?php echo (int)$p['id']; ?>"
                             data-port-type-id="<?php echo (int)($p['port_type'] ?? 0); ?>"
                             data-port-type="<?php echo sanitize((string)($p['port_type_label'] ?? 'RJ45')); ?>"
-                            data-label="<?php echo sanitize((string)($p['label'] ?? '')); ?>"
+                            data-label="<?php echo sanitize(idf_normalize_label_display($p['label'] ?? '')); ?>"
                             data-status-id="<?php echo (int)($p['status_id'] ?? 0); ?>"
                             data-status="<?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?>"
                             data-connected-to="<?php echo sanitize((string)($p['connected_to'] ?? '')); ?>"
@@ -2010,7 +2018,7 @@ $portsMeta = array_map(static function (array $port): array {
         'port_no' => (int)($port['port_no'] ?? 0),
         'switch_port_id' => isset($port['switch_port_live_id']) ? (int)$port['switch_port_live_id'] : 0,
         'port_type_id' => isset($port['port_type']) ? (int)$port['port_type'] : 0,
-        'label' => (string)($port['label'] ?? ''),
+        'label' => idf_normalize_label_display($port['label'] ?? ''),
         'port_type_label' => (string)($port['port_type_label'] ?? 'RJ45'),
         'status_id' => isset($port['status_id']) ? (int)$port['status_id'] : 0,
         'vlan_id' => isset($port['effective_vlan_id']) ? (int)$port['effective_vlan_id'] : (isset($port['vlan_id']) ? (int)$port['vlan_id'] : 0),
@@ -2106,6 +2114,14 @@ function coercePositiveSelectValue(value) {
     return Number.isFinite(parsed) && parsed > 0 ? String(Math.trunc(parsed)) : '';
 }
 
+function normalizeLabelDisplayValue(value) {
+    const normalized = String(value || '').trim();
+    if (normalized === '' || normalized === '0' || normalized.toLowerCase() === 'null') {
+        return '';
+    }
+    return normalized;
+}
+
 function escapeSelectOptionHtml(value) {
     return String(value || '')
         .replace(/&/g, '&amp;')
@@ -2196,10 +2212,11 @@ function mergeSwitchPortApiRowIntoPortMeta(portMeta, switchPort) {
     if (Number(merged.switch_port_id) <= 0 && Number(switchPort.id) > 0) {
         merged.switch_port_id = Number(switchPort.id);
     }
-    const switchLabel = String(switchPort.equipment_label || '').trim();
-    if ((!merged.label || merged.label === '0') && switchLabel !== '') {
+    const switchLabel = normalizeLabelDisplayValue(switchPort.equipment_label || '');
+    if (!normalizeLabelDisplayValue(merged.label) && switchLabel !== '') {
         merged.label = switchLabel;
     }
+    merged.label = normalizeLabelDisplayValue(merged.label || '');
     const switchComments = String(switchPort.equipment_comments || '').trim();
     if (!merged.notes && switchComments !== '') {
         merged.notes = switchComments;
@@ -2325,7 +2342,9 @@ async function openPortModal(portId) {
         );
         form.port_type.value = portTypeOption ? portTypeOption.value : (form.port_type.value || '');
     }
-    form.label.value = (portMeta && portMeta.label) ? portMeta.label : (rowData.label || '');
+    form.label.value = normalizeLabelDisplayValue(
+        (portMeta && portMeta.label) ? portMeta.label : (rowData.label || '')
+    );
     const requestedStatusId = portMeta ? portMeta.status_id : rowData.statusId;
     if (requestedStatusId && Array.from(form.status.options).some((option) => option.value === String(requestedStatusId))) {
         form.status.value = String(requestedStatusId);
@@ -2634,7 +2653,7 @@ function savePort() {
         port_id: Number(f.port_id.value),
         port_type_id: Number(f.port_type.value),
         port_type_label: selectedPortTypeLabel.trim(),
-        label: f.label.value.trim(),
+        label: normalizeLabelDisplayValue(f.label.value),
         status_id: Number(normalizedStatus),
         connected_to: f.connected_to.value.trim(),
         vlan_id: (() => {
@@ -2911,7 +2930,7 @@ async function openLinkModal(portId) {
         f.linked_cable_color_id.dataset.previousValue = f.linked_cable_color_id.value || '';
         updateCableColorSwatch(source.cable_hex_color || sourceCableColorName || 'Gray', f.linked_cable_color_id);
     }
-    f.cable_label.value = (source.label && String(source.label).trim() !== '0') ? String(source.label).trim() : '';
+    f.cable_label.value = normalizeLabelDisplayValue(source.label || '');
     f.notes.value = source.notes ? String(source.notes).trim() : '';
     const sourceStatusId = Number(source.status_id || 0);
     if (sourceStatusId > 0 && Array.from(f.status.options).some((option) => Number(option.value) === sourceStatusId)) {
@@ -3050,7 +3069,9 @@ function createLink() {
     const selectedCableColorHex = selectedCableColorOption
         ? String((selectedCableColorOption.dataset && selectedCableColorOption.dataset.hex) || '').trim()
         : '';
-    const cableLabel = linkedMode ? f.linked_cable_label.value.trim() : f.cable_label.value.trim();
+    const cableLabel = linkedMode
+        ? normalizeLabelDisplayValue(f.linked_cable_label.value)
+        : normalizeLabelDisplayValue(f.cable_label.value);
     const notes = linkedMode ? f.linked_notes.value.trim() : f.notes.value.trim();
     const linkedCableColorName = selectedCableColorName;
     const linkedCableColorHex = selectedCableColorHex;
@@ -3304,7 +3325,7 @@ function populateLinkedEquipmentFields() {
     const linkedColorName = (port.equipment_color || '').trim() || 'Gray';
     const linkedColorHex = (port.equipment_color_hex || '').trim();
     f.linked_equipment_port.value = port.equipment_port || '';
-    f.linked_cable_label.value = port.equipment_label || '';
+    f.linked_cable_label.value = normalizeLabelDisplayValue(port.equipment_label || '');
     f.linked_notes.value = port.equipment_comments || '';
 
     const switchPortColorId = Number(port.equipment_color_id || 0);

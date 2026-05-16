@@ -659,6 +659,14 @@ if (!empty($_SESSION['crud_success'])) {
             return availablePortTypes.indexOf(type) !== -1;
         }
 
+        function normalizePortLabelValue(value) {
+            const normalized = String(value || '').trim();
+            if (normalized === '' || normalized === '0' || normalized.toLowerCase() === 'null') {
+                return '';
+            }
+            return normalized;
+        }
+
         function readSwitchMeta(key) {
             return String((selectedSwitchMeta && selectedSwitchMeta[key]) || '').trim();
         }
@@ -973,7 +981,7 @@ if (!empty($_SESSION['crud_success'])) {
         }
 
         function showTooltip(ev, el) {
-            const label = el.dataset.label || '—';
+            const label = normalizePortLabelValue(el.dataset.label) || '—';
             const status = el.dataset.status || 'unknown';
             const comments = el.dataset.comments || '';
             const vlanName = el.dataset.vlanName || '—';
@@ -1050,8 +1058,7 @@ if (!empty($_SESSION['crud_success'])) {
             document.getElementById('colorSelect').value = el.dataset.color || '';
             document.getElementById('statusSelect').value = el.dataset.status || '';
             document.getElementById('rj45CableSelect').value = el.dataset.rj45SpeedId || '';
-            const selectedPatchPortLabel = String(el.dataset.label || '').trim();
-            document.getElementById('labelInput').value = selectedPatchPortLabel === '0' ? '' : selectedPatchPortLabel;
+            document.getElementById('labelInput').value = normalizePortLabelValue(el.dataset.label);
             document.getElementById('vlanSelect').value = el.dataset.vlanId || '';
             document.getElementById('fiberPortsSelect').value = String(el.dataset.fiberPortId || ((selectedSwitchMeta && selectedSwitchMeta.fiber_id) || ''));
             document.getElementById('fiberPatchSelect').value = String(el.dataset.fiberPatchId || ((selectedSwitchMeta && selectedSwitchMeta.fiber_patch_id) || ''));
@@ -1068,7 +1075,7 @@ if (!empty($_SESSION['crud_success'])) {
             el.dataset.id = p.id;
             el.dataset.portNumber = p.port_number;
             el.dataset.portType = normalizePortType(p.port_type);
-            el.dataset.label = p.label || '';
+            el.dataset.label = normalizePortLabelValue(p.label || p.to_patch_port || '');
             el.dataset.status = p.status || 'unknown';
             el.dataset.comments = p.comments || '';
             el.dataset.vlanId = p.vlan_id || '';
@@ -1396,7 +1403,7 @@ if (!empty($_SESSION['crud_success'])) {
                 color: document.getElementById('colorSelect').value || null,
                 status: document.getElementById('statusSelect').value || null,
                 rj45_speed_id: document.getElementById('rj45CableSelect').value || null,
-                label: document.getElementById('labelInput').value || null,
+                label: normalizePortLabelValue(document.getElementById('labelInput').value) || null,
                 vlan: document.getElementById('vlanSelect').value || null,
                 comments: document.getElementById('commentsInput').value
             };
@@ -1431,7 +1438,7 @@ if (!empty($_SESSION['crud_success'])) {
                 .then(function () {
                     selected.dataset.status = payload.status || selected.dataset.status;
                     selected.dataset.rj45SpeedId = payload.rj45_speed_id || '';
-                    selected.dataset.label = payload.label || selected.dataset.label;
+                    selected.dataset.label = normalizePortLabelValue(payload.label || selected.dataset.label);
                     selected.dataset.vlanId = payload.vlan || '';
                     const selectedVlan = vlanOptions.find(function (item) { return String(item.id) === String(payload.vlan || ''); });
                     selected.dataset.vlanName = selectedVlan ? selectedVlan.name : '';
