@@ -1376,7 +1376,7 @@ $switchRj45Options = fetch_options($conn, 'equipment_rj45');
 $switchFiberOptions = fetch_options($conn, 'equipment_fiber');
 $switchFiberPatchOptions = fetch_options($conn, 'equipment_fiber_patch');
 $switchFiberRackOptions = fetch_options($conn, 'equipment_fiber_rack');
-$switchPoeOptions = fetch_options($conn, 'equipment_poe');
+$switchPoeOptions = itm_equipment_poe_options_rows($conn, (int)$company_id);
 $switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
 $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_layout');
 $hasWorkstationOfficeIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_office_id');
@@ -1889,6 +1889,8 @@ $currentPhotoUrls = [];
 foreach ($currentPhotoFilenames as $currentPhotoFilename) {
     $currentPhotoUrls[] = UPLOAD_URL . rawurlencode((string)$currentPhotoFilename);
 }
+
+itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['switch_poe_id'] ?? 0), (int)$company_id);
 ?>
 <!DOCTYPE html>
 <html lang="en">
