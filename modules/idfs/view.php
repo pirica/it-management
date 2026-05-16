@@ -1710,9 +1710,10 @@ function onPortClick(portId, portElement) {
     const portNode = portElement && portElement.dataset ? portElement : null;
     const positionId = portNode ? Number(portNode.dataset.positionId || 0) : 0;
     const portNo = portNode ? Number(portNode.dataset.portNumber || 0) : 0;
-    // Why: Same notion as device.php Ports "Connected To": no idf_links / routed cable text ⇒ Create Cable Link; otherwise Edit Port (`finishInlineMutationOrReload` returns to `return_to` view.php).
-    const hasExplicitConnection = !!(portNode && portNode.dataset.hasExplicitConnection === '1');
-    const action = hasExplicitConnection ? 'edit' : 'link';
+    // Why: Only idf_links rows route to Edit Port; equipment hostname in Connected To still opens Create Cable Link.
+    const linkId = portNode ? Number(portNode.dataset.portLinkId || 0) : 0;
+    const hasIdfLink = linkId > 0 || !!(portNode && portNode.dataset.hasExplicitConnection === '1');
+    const action = hasIdfLink ? 'edit' : 'link';
     navigateToDeviceEditor(positionId, Number(portId), action, portNo);
 }
 
@@ -1738,8 +1739,9 @@ function onPortDotClick(portElement) {
         alert('Position not found for this port.');
         return;
     }
-    const hasExplicitConnection = portNode.dataset.hasExplicitConnection === '1';
-    const action = hasExplicitConnection ? 'edit' : 'link';
+    const linkId = Number(portNode.dataset.portLinkId || 0);
+    const hasIdfLink = linkId > 0 || portNode.dataset.hasExplicitConnection === '1';
+    const action = hasIdfLink ? 'edit' : 'link';
     navigateToDeviceEditor(positionId, 0, action, portNo);
 }
 
