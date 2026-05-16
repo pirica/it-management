@@ -1612,7 +1612,7 @@ if ($pid > 0) {
                 LEFT JOIN cable_colors cc
                   ON cc.company_id = sp.company_id
                  AND cc.id = sp.color_id
-                SET ip.label = COALESCE(NULLIF(sp.{$switchPortLabelColumn}, ''), ip.label),
+                SET ip.label = COALESCE(NULLIF(NULLIF(TRIM(sp.{$switchPortLabelColumn}), ''), '0'), ip.label),
                     ip.status_id = COALESCE(sp.status_id, ip.status_id),
                     ip.connected_to = COALESCE(NULLIF(sp.hostname, ''), ip.connected_to),
                     ip.vlan_id = COALESCE(sp.vlan_id, ip.vlan_id),

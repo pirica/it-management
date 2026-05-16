@@ -559,6 +559,103 @@ function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $sw
 }
 
 /**
+ * Stamp equipment hostname onto switch_ports and idf_ports after equipment→IDF sync.
+ */
+function idf_apply_equipment_hostname_to_position_ports(
+    mysqli $conn,
+    int $company_id,
+    int $positionId,
+    int $equipmentId,
+    string $hostname
+): void {
+    $hostname = trim($hostname);
+    if ($company_id <= 0 || $positionId <= 0 || $equipmentId <= 0 || $hostname === '') {
+        return;
+    }
+
+    $stmtSwitchPorts = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports
+         SET hostname = ?
+         WHERE company_id = ?
+           AND equipment_id = ?
+           AND (hostname IS NULL OR TRIM(hostname) = '')"
+    );
+    if ($stmtSwitchPorts) {
+        mysqli_stmt_bind_param($stmtSwitchPorts, 'sii', $hostname, $company_id, $equipmentId);
+        mysqli_stmt_execute($stmtSwitchPorts);
+        mysqli_stmt_close($stmtSwitchPorts);
+    }
+
+    $stmtIdfPorts = mysqli_prepare(
+        $conn,
+        "UPDATE idf_ports
+         SET connected_to = ?
+         WHERE company_id = ?
+           AND position_id = ?
+           AND (connected_to IS NULL OR TRIM(connected_to) = '')"
+    );
+    if ($stmtIdfPorts) {
+        mysqli_stmt_bind_param($stmtIdfPorts, 'sii', $hostname, $company_id, $positionId);
+        mysqli_stmt_execute($stmtIdfPorts);
+        mysqli_stmt_close($stmtIdfPorts);
+    }
+
+    idf_strip_placeholder_port_labels_for_position($conn, $company_id, $positionId, $equipmentId);
+}
+
+/**
+ * Why: Legacy equipment→IDF sync stored literal "0" in switch_ports.to_patch_port / idf_ports.label; clear on resync.
+ */
+function idf_strip_placeholder_port_labels_for_position(
+    mysqli $conn,
+    int $company_id,
+    int $positionId,
+    int $equipmentId = 0
+): void {
+    if ($company_id <= 0 || $positionId <= 0) {
+        return;
+    }
+
+    $stmtIdfLabels = mysqli_prepare(
+        $conn,
+        "UPDATE idf_ports
+         SET label = ''
+         WHERE company_id = ?
+           AND position_id = ?
+           AND label IN ('0', 'null', 'NULL')"
+    );
+    if ($stmtIdfLabels) {
+        mysqli_stmt_bind_param($stmtIdfLabels, 'ii', $company_id, $positionId);
+        mysqli_stmt_execute($stmtIdfLabels);
+        mysqli_stmt_close($stmtIdfLabels);
+    }
+
+    if ($equipmentId <= 0) {
+        return;
+    }
+
+    $switchPortLabelColumn = idf_first_existing_column($conn, 'switch_ports', ['to_patch_port', 'label', 'patch_port']);
+    if ($switchPortLabelColumn === null) {
+        return;
+    }
+
+    $stmtSwitchLabels = mysqli_prepare(
+        $conn,
+        "UPDATE switch_ports
+         SET {$switchPortLabelColumn} = ''
+         WHERE company_id = ?
+           AND equipment_id = ?
+           AND {$switchPortLabelColumn} IN ('0', 'null', 'NULL')"
+    );
+    if ($stmtSwitchLabels) {
+        mysqli_stmt_bind_param($stmtSwitchLabels, 'ii', $company_id, $equipmentId);
+        mysqli_stmt_execute($stmtSwitchLabels);
+        mysqli_stmt_close($stmtSwitchLabels);
+    }
+}
+
+/**
  * Rebuild human-readable grid labels after PHP-side effective_* merges (switch_ports / links).
  */
 function idf_refresh_port_row_display_labels(
@@ -568,6 +665,10 @@ function idf_refresh_port_row_display_labels(
     array $fiberSpeedOptions,
     array $poeOptions
 ): void {
+    if (array_key_exists('label', $portRow)) {
+        $portRow['label'] = idf_normalize_port_label_value($portRow['label'] ?? '');
+    }
+
     $vlanId = (int)($portRow['effective_vlan_id'] ?? $portRow['vlan_id'] ?? 0);
     if ($vlanId > 0 && isset($vlanOptions[$vlanId])) {
         $portRow['vlan_label'] = (string)$vlanOptions[$vlanId];
@@ -703,11 +804,9 @@ function idf_attach_switch_port_ids_to_ports(
                 $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeId . ':' . $portNo];
             } elseif ($portTypeLabel !== '' && isset($switchPortsByKey[$portTypeLabel . ':' . $portNo])) {
                 $resolvedSwitchPortId = (int)$switchPortsByKey[$portTypeLabel . ':' . $portNo];
-            } elseif (isset($switchPortsByNumber[$portNo])) {
+            } elseif (isset($switchPortsByNumber[$portNo]) && strpos($portTypeLabel, 'sfp') === false) {
+                // Why: port-number-only fallback is unsafe when RJ45 and SFP share per-type 1..N numbering.
                 $resolvedSwitchPortId = (int)$switchPortsByNumber[$portNo];
-            }
-            if ($resolvedSwitchPortId > 0) {
-                $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
             }
             if ($resolvedSwitchPortId > 0) {
                 $portRow['switch_port_live_id'] = $resolvedSwitchPortId;
@@ -837,6 +936,9 @@ function idf_fetch_position_ports_simple(mysqli $conn, int $company_id, int $pos
 
     $rows = [];
     while ($res && ($row = mysqli_fetch_assoc($res))) {
+        if (array_key_exists('label', $row)) {
+            $row['label'] = idf_normalize_port_label_value($row['label'] ?? '');
+        }
         $rows[] = $row;
     }
 
@@ -1140,6 +1242,25 @@ function idf_ensure_ports_for_position(mysqli $conn, int $company_id, int $posit
     }
     if ($fiberCapPrune > 0) {
         idf_prune_fiber_idf_ports_above_capacity($conn, $company_id, $positionId, $fiberCapPrune);
+    }
+
+    if ($equipmentId > 0) {
+        $equipmentHostname = '';
+        $stmtHostname = mysqli_prepare(
+            $conn,
+            'SELECT COALESCE(hostname, name, \'\') AS equipment_hostname FROM equipment WHERE company_id = ? AND id = ? LIMIT 1'
+        );
+        if ($stmtHostname) {
+            mysqli_stmt_bind_param($stmtHostname, 'ii', $company_id, $equipmentId);
+            mysqli_stmt_execute($stmtHostname);
+            $resHostname = mysqli_stmt_get_result($stmtHostname);
+            $hostnameRow = $resHostname ? mysqli_fetch_assoc($resHostname) : null;
+            mysqli_stmt_close($stmtHostname);
+            $equipmentHostname = trim((string)($hostnameRow['equipment_hostname'] ?? ''));
+        }
+        if ($equipmentHostname !== '') {
+            idf_apply_equipment_hostname_to_position_ports($conn, $company_id, $positionId, $equipmentId, $equipmentHostname);
+        }
     }
 
     return $inserted + $claimed;

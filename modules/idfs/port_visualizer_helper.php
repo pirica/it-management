@@ -488,8 +488,11 @@ if (!function_exists('itm_render_port_visualizer')) {
                 if ($portTypeLabel !== '') {
                     $titleParts[] = 'Type: ' . $portTypeLabel;
                 }
-                if (!empty($p['label'])) {
-                    $titleParts[] = 'Label: ' . trim((string)$p['label']);
+                $portLabelDisplay = function_exists('idf_normalize_port_label_value')
+                    ? idf_normalize_port_label_value($p['label'] ?? '')
+                    : trim((string)($p['label'] ?? ''));
+                if ($portLabelDisplay !== '') {
+                    $titleParts[] = 'Label: ' . $portLabelDisplay;
                 }
                 $cableName = trim((string)($p['cable_color_name'] ?? ''));
                 if ($cableName === '' && $cableHexColor !== '') {

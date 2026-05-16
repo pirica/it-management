@@ -228,7 +228,7 @@ if ($switchPortsHostnameColumnRes && mysqli_num_rows($switchPortsHostnameColumnR
 }
 $switchPortsLiveLabelSelect = "''";
 if ($hasSwitchPortsToPatchPortColumn) {
-    $switchPortsLiveLabelSelect = "NULLIF(pr_live.to_patch_port, '')";
+    $switchPortsLiveLabelSelect = "NULLIF(NULLIF(TRIM(pr_live.to_patch_port), ''), '0')";
 } elseif ($hasSwitchPortsLabelColumn) {
     $switchPortsLiveLabelSelect = "NULLIF(pr_live.label, '')";
 }
@@ -494,7 +494,7 @@ if ($stmtPos) {
                         sp.id AS switch_port_id,
                         sp.port_number AS port_no,
                         COALESCE(sp.port_type, 'RJ45') AS port_type_label,
-                        " . ($hasSwitchPortsToPatchPortColumn ? "COALESCE(sp.to_patch_port, '')" : "''") . " AS label,
+                        " . ($hasSwitchPortsToPatchPortColumn ? "COALESCE(NULLIF(NULLIF(TRIM(sp.to_patch_port), ''), '0'), '')" : "''") . " AS label,
                         {$switchPortsFallbackHostnameSelect} AS connected_to,
                         {$mirrorHostnameSqlFallback},
                         TRIM(COALESCE(pr_match.connected_to, '')) AS idf_port_connected_for_routing,
