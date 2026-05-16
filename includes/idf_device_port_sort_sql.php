@@ -146,6 +146,10 @@ if (!function_exists('itm_idf_ports_device_list_primary_compare')) {
                 return strcasecmp((string)($a['rj45_speed_label'] ?? ''), (string)($b['rj45_speed_label'] ?? ''));
             case 'poe':
                 return strcasecmp((string)($a['poe_label'] ?? ''), (string)($b['poe_label'] ?? ''));
+            case 'fiber_patch':
+                return strcasecmp((string)($a['fiber_patch_label'] ?? ''), (string)($b['fiber_patch_label'] ?? ''));
+            case 'fiber_rack':
+                return strcasecmp((string)($a['fiber_rack_label'] ?? ''), (string)($b['fiber_rack_label'] ?? ''));
             case 'notes':
                 return strcasecmp((string)($a['notes'] ?? ''), (string)($b['notes'] ?? ''));
             case 'link':
