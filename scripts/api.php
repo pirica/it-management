@@ -57,9 +57,8 @@
  * Equipment switch manager now orders SFP/SFP+ ports using the selected Port Numbering Layout.
  * Vertical switch layouts now render fiber ports in two rows (odd top / even bottom) to match RJ45 numbering semantics.
  * Switch manager now hides inactive/zero-count fiber sections so SFP+ is not shown when only SFP ports are configured.
- * Database seed data now includes QSFP switch port type entries for companies 1 through 5 in `switch_port_types`.
- * Fresh `database.sql` imports no longer seed `switch_port_types` rows labeled `SFP+` (per-tenant catalogs keep RJ45/SFP/QSFP only; 10 Gbps optics remain in `equipment_fiber` names).
- * `switch_port_types` table definition now sets AUTO_INCREMENT to 21 so inserts continue correctly after seeded IDs 1-20.
+ * Fresh `database.sql` seeds `switch_port_types` with RJ45 and SFP only per company (no `SFP+` / `QSFP` type rows); QSFP-style optics can still appear as `equipment_fiber` names.
+ * `switch_port_types` table definition now sets AUTO_INCREMENT to 15 so inserts continue after seeded ids 1–14.
  * includes/get_ports.php now avoids PHP 8-only string helpers so the switch-port loader returns JSON correctly on PHP 7.4 environments.
  * Switch tooling and rack/device port visualizers now treat SFP+ as part of the single fiber bucket `sfp` (`includes/get_ports.php`, `modules/idfs/port_visualizer_helper.php`, `modules/equipment/index.php`, IDF rack/device views); rack/device fallback fiber placeholders use `idf_resolve_synthetic_fiber_port_no` so numbering stays RJ45-tail aligned when hydration is incomplete.
  * includes/get_ports.php now guards equipment_fiber table-existence checks when shared helpers are unavailable, preventing fatal errors that returned empty AJAX bodies.
