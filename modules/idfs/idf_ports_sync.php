@@ -559,6 +559,47 @@ function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $sw
 }
 
 /**
+ * Rebuild human-readable grid labels after PHP-side effective_* merges (switch_ports / links).
+ */
+function idf_refresh_port_row_display_labels(
+    array &$portRow,
+    array $vlanOptions,
+    array $rj45SpeedOptions,
+    array $fiberSpeedOptions,
+    array $poeOptions
+): void {
+    $vlanId = (int)($portRow['effective_vlan_id'] ?? $portRow['vlan_id'] ?? 0);
+    if ($vlanId > 0 && isset($vlanOptions[$vlanId])) {
+        $portRow['vlan_label'] = (string)$vlanOptions[$vlanId];
+        $portRow['vlan_id'] = $vlanId;
+    }
+
+    $poeId = (int)($portRow['effective_poe_id'] ?? $portRow['poe_id'] ?? 0);
+    if ($poeId > 0 && isset($poeOptions[$poeId])) {
+        $portRow['poe_label'] = (string)$poeOptions[$poeId];
+        $portRow['poe_id'] = $poeId;
+    }
+
+    $rj45SpeedId = (int)($portRow['effective_rj45_speed_id'] ?? $portRow['rj45_speed_id'] ?? 0);
+    if ($rj45SpeedId > 0 && isset($rj45SpeedOptions[$rj45SpeedId])) {
+        $portRow['rj45_speed_label'] = (string)$rj45SpeedOptions[$rj45SpeedId];
+        $portRow['rj45_speed_id'] = $rj45SpeedId;
+    }
+
+    $fiberPortId = (int)($portRow['effective_fiber_port_id'] ?? 0);
+    if ($fiberPortId > 0 && isset($fiberSpeedOptions[$fiberPortId])) {
+        $portRow['speed_label'] = (string)$fiberSpeedOptions[$fiberPortId];
+    }
+
+    $portTypeRaw = strtolower(trim((string)($portRow['port_type_label'] ?? '')));
+    if (strpos($portTypeRaw, 'sfp') !== false) {
+        $portRow['speed_value_id'] = $fiberPortId;
+    } elseif ($rj45SpeedId > 0) {
+        $portRow['speed_value_id'] = $rj45SpeedId;
+    }
+}
+
+/**
  * Attach switch_ports.id and merge live switch_ports metadata (join can miss when port_type strings differ).
  */
 function idf_attach_switch_port_ids_to_ports(
@@ -839,7 +880,10 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
            pr_remote.port_no AS remote_port_no,
            p_remote.position_no AS remote_position_no,
            p_remote.device_name AS remote_device_name,
-           l.equipment_id AS linked_equipment_id
+           l.equipment_id AS linked_equipment_id,
+           COALESCE(l.equipment_vlan_id, 0) AS equipment_vlan_id,
+           COALESCE(l.equipment_rj45_speed_id, 0) AS equipment_rj45_speed_id,
+           COALESCE(l.equipment_fiber_port_id, 0) AS equipment_fiber_port_id
       FROM idf_ports pr
       LEFT JOIN idf_links l ON l.id = (
           SELECT l2.id
@@ -909,6 +953,26 @@ function idf_enrich_ports_link_fields_for_device(mysqli $conn, int $company_id, 
         }
         foreach ($byId[$pid] as $k => $v) {
             $ports[$idx][$k] = $v;
+        }
+        if ((int)($ports[$idx]['effective_vlan_id'] ?? 0) <= 0) {
+            $linkVlanId = (int)($byId[$pid]['equipment_vlan_id'] ?? 0);
+            if ($linkVlanId > 0) {
+                $ports[$idx]['effective_vlan_id'] = $linkVlanId;
+                $ports[$idx]['vlan_id'] = $linkVlanId;
+            }
+        }
+        if ((int)($ports[$idx]['effective_rj45_speed_id'] ?? 0) <= 0) {
+            $linkRj45SpeedId = (int)($byId[$pid]['equipment_rj45_speed_id'] ?? 0);
+            if ($linkRj45SpeedId > 0) {
+                $ports[$idx]['effective_rj45_speed_id'] = $linkRj45SpeedId;
+                $ports[$idx]['rj45_speed_id'] = $linkRj45SpeedId;
+            }
+        }
+        if ((int)($ports[$idx]['effective_fiber_port_id'] ?? 0) <= 0) {
+            $linkFiberPortId = (int)($byId[$pid]['equipment_fiber_port_id'] ?? 0);
+            if ($linkFiberPortId > 0) {
+                $ports[$idx]['effective_fiber_port_id'] = $linkFiberPortId;
+            }
         }
     }
 }
