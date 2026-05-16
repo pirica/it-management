@@ -781,6 +781,21 @@ function idf_ensure_status_schema(mysqli $conn) {
     if (!idf_table_has_column($conn, 'idf_ports', 'management_id')) {
         mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `management_id` int DEFAULT NULL AFTER `switch_port_numbering_layout_id`");
     }
+    if (!idf_table_has_column($conn, 'idf_ports', 'fiber_patch_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `fiber_patch_id` int DEFAULT NULL AFTER `speed_id`");
+    }
+    if (!idf_table_has_column($conn, 'idf_ports', 'fiber_rack_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `fiber_rack_id` int DEFAULT NULL AFTER `fiber_patch_id`");
+    }
+    if (!idf_table_has_column($conn, 'idf_ports', 'to_idf_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `to_idf_id` int DEFAULT NULL AFTER `fiber_rack_id`");
+    }
+    if (!idf_table_has_column($conn, 'idf_ports', 'to_rack_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `to_rack_id` int DEFAULT NULL AFTER `to_idf_id`");
+    }
+    if (!idf_table_has_column($conn, 'idf_ports', 'to_location_id')) {
+        mysqli_query($conn, "ALTER TABLE `idf_ports` ADD COLUMN `to_location_id` int DEFAULT NULL AFTER `to_rack_id`");
+    }
 
     $hasFiberCountIndex = false;
     $fiberCountIndexRes = mysqli_query($conn, "SHOW INDEX FROM `idf_ports` WHERE Key_name = 'idf_ports_fiber_ports_number_idx'");
@@ -837,6 +852,11 @@ function idf_ensure_status_schema(mysqli $conn) {
         }
     };
     $ensureIdfPortsFk('idf_ports_ibfk_fiber_ports_number', 'fiber_ports_number', 'equipment_fiber_count');
+    $ensureIdfPortsFk('idf_ports_ibfk_fiber_patch', 'fiber_patch_id', 'equipment_fiber_patch');
+    $ensureIdfPortsFk('idf_ports_ibfk_fiber_rack', 'fiber_rack_id', 'equipment_fiber_rack');
+    $ensureIdfPortsFk('idf_ports_ibfk_to_idf', 'to_idf_id', 'idfs');
+    $ensureIdfPortsFk('idf_ports_ibfk_to_rack', 'to_rack_id', 'racks');
+    $ensureIdfPortsFk('idf_ports_ibfk_to_location', 'to_location_id', 'it_locations');
     $ensureIdfPortsFk('idf_ports_ibfk_layout', 'switch_port_numbering_layout_id', 'switch_port_numbering_layout');
     $ensureIdfPortsFk('idf_ports_ibfk_management', 'management_id', 'equipment_environment');
 

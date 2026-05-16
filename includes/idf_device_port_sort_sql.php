@@ -61,8 +61,18 @@ if (!function_exists('itm_idf_destination_switch_ports_join_sql')) {
         return "LEFT JOIN switch_ports sp_dest
        ON sp_dest.company_id = {$portAlias}.company_id
       AND sp_dest.port_number = {$portAlias}.port_no
-      AND {$positionAlias}.equipment_id REGEXP '^[0-9]+$'
-      AND sp_dest.equipment_id = CAST({$positionAlias}.equipment_id AS UNSIGNED)";
+      AND " . itm_idf_position_numeric_equipment_match_sql($positionAlias, 'sp_dest.equipment_id');
+    }
+}
+
+if (!function_exists('itm_idf_position_numeric_equipment_match_sql')) {
+
+    /**
+     * Match idf_positions.equipment_id to switch_ports.equipment_id only for numeric equipment FKs.
+     */
+    function itm_idf_position_numeric_equipment_match_sql(string $positionAlias = 'p', string $switchEquipmentColumnSql = 'sp.equipment_id'): string
+    {
+        return "({$positionAlias}.equipment_id REGEXP '^[0-9]+$' AND {$switchEquipmentColumnSql} = CAST({$positionAlias}.equipment_id AS UNSIGNED))";
     }
 }
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../includes/idf_device_port_sort_sql.php';
 
 $data = idf_read_json();
 idf_require_csrf($data);
@@ -199,6 +200,10 @@ $layoutVal = $switch_port_numbering_layout_id !== null ? (int)$switch_port_numbe
 $notes_val = $notes !== '' ? $notes : null;
 
 $hasRj45SpeedIdColumn = idf_table_has_column($conn, 'idf_ports', 'rj45_speed_id');
+$hasFiberPatchIdColumn = idf_table_has_column($conn, 'idf_ports', 'fiber_patch_id');
+$hasFiberRackIdColumn = idf_table_has_column($conn, 'idf_ports', 'fiber_rack_id');
+$hasToIdfIdColumn = idf_table_has_column($conn, 'idf_ports', 'to_idf_id');
+$positionEquipmentJoinSql = itm_idf_position_numeric_equipment_match_sql('p', 'sp.equipment_id');
 
 $sql = "UPDATE idf_ports
         SET port_type=?,
@@ -210,6 +215,20 @@ $sql = "UPDATE idf_ports
 if ($hasRj45SpeedIdColumn) {
     $sql .= "
             rj45_speed_id=NULLIF(?, 0),";
+}
+if ($hasFiberPatchIdColumn) {
+    $sql .= "
+            fiber_patch_id=NULLIF(?, 0),";
+}
+if ($hasFiberRackIdColumn) {
+    $sql .= "
+            fiber_rack_id=NULLIF(?, 0),";
+}
+if ($hasToIdfIdColumn) {
+    $sql .= "
+            to_idf_id=NULLIF(?, 0),
+            to_rack_id=NULLIF(?, 0),
+            to_location_id=NULLIF(?, 0),";
 }
 $sql .= "
             poe_id=NULLIF(?, 0),
@@ -224,11 +243,36 @@ $sql .= "
 
 $stmtUpd = mysqli_prepare($conn, $sql);
 if ($stmtUpd) {
+    $bindTypes = 'isisii';
+    $bindValues = [$port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val];
     if ($hasRj45SpeedIdColumn) {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $rj45SpeedVal, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
-    } else {
-        mysqli_stmt_bind_param($stmtUpd, 'isisiiiiisssi', $port_type_id, $label_val, $status_id, $conn_val, $vlan_val, $speed_val, $poe_val, $fiberPortsNumberVal, $layoutVal, $portManagementId, $cable_color_name, $cable_hex_color, $notes_val, $port_id);
+        $bindTypes .= 'i';
+        $bindValues[] = $rj45SpeedVal;
     }
+    if ($hasFiberPatchIdColumn) {
+        $bindTypes .= 'i';
+        $bindValues[] = $fiber_patch_id;
+    }
+    if ($hasFiberRackIdColumn) {
+        $bindTypes .= 'i';
+        $bindValues[] = $fiber_rack_id;
+    }
+    if ($hasToIdfIdColumn) {
+        $bindTypes .= 'iii';
+        $bindValues[] = $to_idf_id;
+        $bindValues[] = $to_rack_id;
+        $bindValues[] = $to_location_id;
+    }
+    $bindTypes .= 'iiiisssi';
+    $bindValues[] = $poe_val;
+    $bindValues[] = $fiberPortsNumberVal;
+    $bindValues[] = $layoutVal;
+    $bindValues[] = $portManagementId;
+    $bindValues[] = $cable_color_name;
+    $bindValues[] = $cable_hex_color;
+    $bindValues[] = $notes_val;
+    $bindValues[] = $port_id;
+    mysqli_stmt_bind_param($stmtUpd, $bindTypes, ...$bindValues);
     if (!mysqli_stmt_execute($stmtUpd)) {
         idf_fail('DB error updating port: ' . mysqli_stmt_error($stmtUpd), 500);
     }
@@ -299,8 +343,7 @@ $stmtSwitchSync = mysqli_prepare(
          sp.comments = ?
      WHERE sp.company_id = ?
        AND p.company_id = sp.company_id
-       AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
-           = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+       AND {$positionEquipmentJoinSql}
        AND sp.port_number = pr.port_no
        AND (
             CONVERT(CAST(sp.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -417,8 +460,7 @@ if ($linkedPeerPortIds) {
              sp.{$switchPortLabelColumn} = ?
          WHERE sp.company_id = ?
            AND p.company_id = sp.company_id
-           AND CONVERT(CAST(p.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
-               = CONVERT(CAST(sp.equipment_id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           AND {$positionEquipmentJoinSql}
            AND sp.port_number = pr.port_no
            AND (
                 CONVERT(CAST(sp.port_type AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci

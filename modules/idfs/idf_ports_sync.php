@@ -481,6 +481,9 @@ function idf_merge_switch_port_metadata_into_port_row(array &$portRow, array $sw
     $pickEffective('effective_to_idf_id', 'to_idf_id');
     $pickEffective('effective_to_rack_id', 'to_rack_id');
     $pickEffective('effective_to_location_id', 'to_location_id');
+    $pickEffective('effective_to_idf_id', 'to_idf_id');
+    $pickEffective('effective_to_rack_id', 'to_rack_id');
+    $pickEffective('effective_to_location_id', 'to_location_id');
 
     // Why: Switch Port Manager historically stores home/physical routing in rack_id/location_id/idf_id while the IDF modal edits to_*; mirror equipment UI fallbacks (to_idf_id || idf_id).
     if ((int)($portRow['effective_to_idf_id'] ?? 0) <= 0) {
