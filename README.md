@@ -28,6 +28,10 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 ![IDF rack view](docs/readme/idf.png)
 
+**Rack planner** — drag-and-drop rack elevation with patch panels, switches, and servers by RU.
+
+![Rack planner](docs/readme/rack_planner.png)
+
 ## Installation
 
 1. Extract the project files into your web root.
@@ -42,6 +46,7 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 - Equipment — Manage IT equipment
 - IDFs — Rack layout, positions, ports, and cable links
+- Rack planner — Visual rack elevation and component placement
 - Printers — Track printers and supplies
 - Workstations — Manage workstations
 - Tickets — Support ticket system
