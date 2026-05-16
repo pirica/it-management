@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
-require_once __DIR__ . '/../../includes/idf_device_port_sort_sql.php';
+require_once ROOT_PATH . 'includes/idf_device_port_sort_sql.php';
 
 $data = idf_read_json();
 idf_require_csrf($data);
