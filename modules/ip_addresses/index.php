@@ -898,12 +898,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 // FETCH LIST DATA
+$itmIpAddressFocusedList = in_array($crud_action, ['index', 'list_all'], true);
+$itmSubnetFilterId = max(0, (int)($_GET['subnet_id'] ?? 0));
+$itmSubnetFilterOptions = [];
+$itmIpAddressListRows = [];
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+
+if ($itmIpAddressFocusedList && $hasCompany && $company_id > 0 && function_exists('itm_ipam_fetch_subnet_filter_options')) {
+    $itmSubnetFilterOptions = itm_ipam_fetch_subnet_filter_options($conn, (int)$company_id);
+}
+
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
 
-// SEARCH LOGIC
-$searchRaw = trim((string)($_GET['search'] ?? ''));
-if ($searchRaw !== '') {
+// SEARCH LOGIC (generic CRUD list fallback)
+if (!$itmIpAddressFocusedList && $searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
@@ -919,25 +928,55 @@ if ($searchRaw !== '') {
 }
 
 // SORTING LOGIC
-$sortableColumns = array_map(static function ($col) { return $col['Field']; }, $fieldColumns);
-$sort = (string)($_GET['sort'] ?? 'id');
-$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
-if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
+$itmIpAddressSortColumns = ['ip_text', 'status', 'subnet', 'equipment', 'hostname', 'id'];
+if ($itmIpAddressFocusedList) {
+    $sortableColumns = $itmIpAddressSortColumns;
+    $sort = (string)($_GET['sort'] ?? 'ip_text');
+    $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
+} else {
+    $sortableColumns = array_map(static function ($col) { return $col['Field']; }, $fieldColumns);
+    $sort = (string)($_GET['sort'] ?? 'id');
+    $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+}
+if (!in_array($sort, $sortableColumns, true)) { $sort = $itmIpAddressFocusedList ? 'ip_text' : 'id'; }
+if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = $itmIpAddressFocusedList ? 'ASC' : 'DESC'; }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
 // PAGINATION LOGIC
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
-$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
-$totalRows = 0;
-if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) { $totalRows = (int)($countRow['total_rows'] ?? 0); }
-$totalPages = max(1, (int)ceil($totalRows / $perPage));
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) { $page = 1; }
-if ($page > $totalPages) { $page = $totalPages; }
-$offset = ($page - 1) * $perPage;
 
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+if ($itmIpAddressFocusedList && $hasCompany && $company_id > 0 && function_exists('itm_ipam_count_address_list')) {
+    $totalRows = itm_ipam_count_address_list($conn, (int)$company_id, $itmSubnetFilterId, $searchRaw);
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    if ($page > $totalPages) { $page = $totalPages; }
+    $offset = ($page - 1) * $perPage;
+    $itmIpAddressListRows = itm_ipam_fetch_address_list(
+        $conn,
+        (int)$company_id,
+        $itmSubnetFilterId,
+        $searchRaw,
+        $sort,
+        $dir,
+        $perPage,
+        $offset
+    );
+    $rows = null;
+} else {
+    $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
+    $totalRows = 0;
+    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) { $totalRows = (int)($countRow['total_rows'] ?? 0); }
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    if ($page > $totalPages) { $page = $totalPages; }
+    $offset = ($page - 1) * $perPage;
+    $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+}
+
+$itmIpAddressListQuerySuffix = 'search=' . urlencode($searchRaw)
+    . '&sort=' . urlencode($sort)
+    . '&dir=' . urlencode($dir)
+    . '&subnet_id=' . (int)$itmSubnetFilterId;
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
@@ -990,16 +1029,48 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
                         <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                         <input type="hidden" name="page" value="1">
+                        <?php if ($itmIpAddressFocusedList): ?>
+                            <div class="form-group" style="margin:0;min-width:220px;">
+                                <label for="subnetFilter">Subnet</label>
+                                <select id="subnetFilter" name="subnet_id">
+                                    <option value="">All subnets</option>
+                                    <?php foreach ($itmSubnetFilterOptions as $itmSubnetOption): ?>
+                                        <option value="<?php echo (int)$itmSubnetOption['id']; ?>"<?php echo $itmSubnetFilterId === (int)$itmSubnetOption['id'] ? ' selected' : ''; ?>>
+                                            <?php echo sanitize((string)$itmSubnetOption['label']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        <?php endif; ?>
                         <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                            <label for="moduleSearch">Search (all fields)</label>
+                            <label for="moduleSearch">Search<?php echo $itmIpAddressFocusedList ? ' (IP, status, subnet, equipment)' : ' (all fields)'; ?></label>
                             <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
                             <a href="index.php" class="btn">🔙</a>
+                            <?php if ($itmIpAddressFocusedList): ?>
+                                <a href="../ip_subnets/index.php" class="btn btn-sm">IP Subnets</a>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>
+
+                <?php if ($itmIpAddressFocusedList && $itmSubnetFilterId > 0): ?>
+                    <?php
+                        $itmSelectedSubnetLabel = '';
+                        foreach ($itmSubnetFilterOptions as $itmSubnetOption) {
+                            if ((int)$itmSubnetOption['id'] === $itmSubnetFilterId) {
+                                $itmSelectedSubnetLabel = (string)$itmSubnetOption['label'];
+                                break;
+                            }
+                        }
+                    ?>
+                    <p style="margin:0 0 12px;color:#57606a;">
+                        Showing IPs for subnet <strong><?php echo sanitize($itmSelectedSubnetLabel); ?></strong>
+                        — <a href="../ip_subnets/view.php?id=<?php echo (int)$itmSubnetFilterId; ?>">subnet details</a>
+                    </p>
+                <?php endif; ?>
 
                 <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
@@ -1007,21 +1078,83 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
-                            <?php foreach ($uiColumns as $col): ?>
-                                <?php $field = (string)$col['Field']; ?>
-                                <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                                <th>
-                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
-                                        <?php echo sanitize(cr_humanize_field($field)); ?>
-                                        <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
-                                    </a>
-                                </th>
-                            <?php endforeach; ?>
+                            <?php if ($itmIpAddressFocusedList): ?>
+                                <?php
+                                    $itmIpListHeaders = [
+                                        'ip_text' => 'IP',
+                                        'status' => 'Status',
+                                        'subnet' => 'Subnet',
+                                        'equipment' => 'Equipment',
+                                        'hostname' => 'Hostname',
+                                    ];
+                                ?>
+                                <?php foreach ($itmIpListHeaders as $itmHeaderField => $itmHeaderLabel): ?>
+                                    <?php $nextDir = ($sort === $itmHeaderField && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                                    <th>
+                                        <a href="?<?php echo $itmIpAddressListQuerySuffix; ?>&sort=<?php echo urlencode($itmHeaderField); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                            <?php echo sanitize($itmHeaderLabel); ?>
+                                            <?php if ($sort === $itmHeaderField): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                        </a>
+                                    </th>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($uiColumns as $col): ?>
+                                    <?php $field = (string)$col['Field']; ?>
+                                    <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                                    <th>
+                                        <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                            <?php echo sanitize(cr_humanize_field($field)); ?>
+                                            <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                        </a>
+                                    </th>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                             <th data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
+                        <?php if ($itmIpAddressFocusedList && $itmIpAddressListRows): ?>
+                            <?php foreach ($itmIpAddressListRows as $row): ?>
+                                <?php
+                                    $itmEquipId = (int)($row['equipment_id'] ?? 0);
+                                    $itmEquipLabel = function_exists('itm_ipam_equipment_label_from_row')
+                                        ? itm_ipam_equipment_label_from_row($row)
+                                        : '';
+                                ?>
+                                <tr>
+                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                    <td><?php echo sanitize((string)($row['ip_text'] ?? '')); ?></td>
+                                    <td><?php echo cr_render_cell_value($crud_table, 'status', $row['status'] ?? ''); ?></td>
+                                    <td>
+                                        <?php if ((int)($row['subnet_id'] ?? 0) > 0): ?>
+                                            <a href="../ip_subnets/view.php?id=<?php echo (int)$row['subnet_id']; ?>"><?php echo sanitize((string)($row['subnet_cidr'] ?? '')); ?></a>
+                                        <?php else: ?>
+                                            —
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($itmEquipId > 0 && $itmEquipLabel !== ''): ?>
+                                            <a href="../equipment/view.php?id=<?php echo $itmEquipId; ?>"><?php echo sanitize($itmEquipLabel); ?></a>
+                                        <?php else: ?>
+                                            —
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo sanitize((string)($row['hostname'] ?? '')); ?></td>
+                                    <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                        <div class="itm-actions-wrap">
+                                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                            <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                                <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                                <input type="hidden" name="bulk_action" value="single_delete">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php elseif (!$itmIpAddressFocusedList && $rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
@@ -1047,7 +1180,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo $itmIpAddressFocusedList ? 7 : count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.<?php if ($itmIpAddressFocusedList && $itmSubnetFilterId > 0): ?> Generate host IPs from the <a href="../ip_subnets/view.php?id=<?php echo (int)$itmSubnetFilterId; ?>">subnet view</a>.<?php endif; ?></td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -1068,11 +1201,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>">Previous</a>
+                                <a class="btn btn-sm" href="?<?php echo $itmIpAddressFocusedList ? $itmIpAddressListQuerySuffix : ('search=' . urlencode($searchRaw) . '&sort=' . urlencode($sort) . '&dir=' . urlencode($dir)); ?>&page=<?php echo $page - 1; ?>">Previous</a>
                             <?php endif; ?>
                             <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>">Next</a>
+                                <a class="btn btn-sm" href="?<?php echo $itmIpAddressFocusedList ? $itmIpAddressListQuerySuffix : ('search=' . urlencode($searchRaw) . '&sort=' . urlencode($sort) . '&dir=' . urlencode($dir)); ?>&page=<?php echo $page + 1; ?>">Next</a>
                             <?php endif; ?>
                         </div>
                     </div>
