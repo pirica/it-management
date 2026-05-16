@@ -427,7 +427,11 @@ $stmtPorts = mysqli_prepare(
        {$speedLabelExpr} AS speed_label,
        {$rj45SpeedLabelExpr} AS rj45_speed_label,
        {$speedValueIdExpr} AS speed_value_id,
-       COALESCE(ep.name, '') AS poe_label,
+       CASE
+         WHEN ep.id IS NULL THEN ''
+         WHEN TRIM(COALESCE(ep.watts, '')) <> '' THEN CONCAT(ep.name, ' - ', ep.watts)
+         ELSE COALESCE(ep.name, '')
+       END AS poe_label,
        pr_live.id AS switch_port_live_id,
        l.id AS link_id,
        l.cable_color_id,
@@ -1249,21 +1253,7 @@ while ($resFiberRacks && ($row = mysqli_fetch_assoc($resFiberRacks))) {
     }
 }
 
-$poeOptions = [];
-$resPoeOptions = mysqli_query(
-    $conn,
-    "SELECT id, name
-     FROM equipment_poe
-     WHERE company_id = $company_id
-     ORDER BY name ASC"
-);
-while ($resPoeOptions && ($row = mysqli_fetch_assoc($resPoeOptions))) {
-    $poeId = (int)($row['id'] ?? 0);
-    $poeName = trim((string)($row['name'] ?? ''));
-    if ($poeId > 0 && $poeName !== '') {
-        $poeOptions[$poeId] = $poeName;
-    }
-}
+$poeOptions = itm_equipment_poe_load_options($conn, $company_id);
 
 if (!empty($ports)) {
     foreach ($ports as &$portRowDisplayRelabel) {

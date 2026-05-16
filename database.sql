@@ -1184,6 +1184,7 @@ CREATE TABLE `equipment_poe` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `watts` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -1192,21 +1193,21 @@ CREATE TABLE `equipment_poe` (
   CONSTRAINT `equipment_poe_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `equipment_poe`
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '1', 'PoE (802.3af) - up to 15.4W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('2', '4', 'PoE (802.3af) - up to 15.4W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('3', '7', 'PoE (802.3af) - up to 15.4W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '10', 'PoE (802.3af) - up to 15.4W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '13', 'PoE (802.3af) - up to 15.4W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '2', 'PoE+ (802.3at) - up to 30W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('2', '5', 'PoE+ (802.3at) - up to 30W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('3', '8', 'PoE+ (802.3at) - up to 30W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '11', 'PoE+ (802.3at) - up to 30W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '14', 'PoE+ (802.3at) - up to 30W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('1', '3', 'PoE++ (802.3bt) - up to 60-90W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('2', '6', 'PoE++ (802.3bt) - up to 60-90W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('3', '9', 'PoE++ (802.3bt) - up to 60-90W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('4', '12', 'PoE++ (802.3bt) - up to 60-90W');
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`) VALUES ('5', '15', 'PoE++ (802.3bt) - up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('1', '1', 'PoE (802.3af)', 'Up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('2', '4', 'PoE (802.3af)', 'Up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('3', '7', 'PoE (802.3af)', 'Up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('4', '10', 'PoE (802.3af)', 'Up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('5', '13', 'PoE (802.3af)', 'Up to 15.4W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('1', '2', 'PoE+ (802.3at)', 'Up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('2', '5', 'PoE+ (802.3at)', 'Up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('3', '8', 'PoE+ (802.3at)', 'Up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('4', '11', 'PoE+ (802.3at)', 'Up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('5', '14', 'PoE+ (802.3at)', 'Up to 30W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('1', '3', 'PoE++ (802.3bt)', 'Up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('2', '6', 'PoE++ (802.3bt)', 'Up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('3', '9', 'PoE++ (802.3bt)', 'Up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('4', '12', 'PoE++ (802.3bt)', 'Up to 60-90W');
+INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`) VALUES ('5', '15', 'PoE++ (802.3bt)', 'Up to 60-90W');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed_id`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `idf_ports_ibfk_fiber_ports_number` FOREIGN KEY (`fiber_ports_number`) REFERENCES `equipment_fiber_count` (`id`) ON DELETE SET NULL,
@@ -3835,7 +3836,7 @@ INSERT IGNORE INTO `equipment_fiber` (`company_id`, `name`) SELECT c.`id`, t.`na
 INSERT IGNORE INTO `equipment_fiber_patch` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_patch` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_fiber_rack` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_rack` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_fiber_count` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_fiber_count` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `equipment_poe` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_poe` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `equipment_poe` (`company_id`, `name`, `watts`) SELECT c.`id`, t.`name`, t.`watts` FROM `equipment_poe` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_rj45` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_rj45` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `rj45_speed` (`company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) SELECT c.`id`, t.`cable_type`, t.`max_speed`, t.`bandwidth`, t.`max_distance_full_speed`, t.`notes`, t.`active` FROM `rj45_speed` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `equipment_statuses` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `equipment_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -4433,15 +4434,15 @@ DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_equipment_poe_audit_insert` AFTER INSERT ON `equipment_poe` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'watts', NEW.`watts`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_equipment_poe_audit_update` AFTER UPDATE ON `equipment_poe` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'watts', OLD.`watts`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'watts', NEW.`watts`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_equipment_poe_audit_delete` AFTER DELETE ON `equipment_poe` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'watts', OLD.`watts`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 

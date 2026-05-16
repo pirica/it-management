@@ -168,6 +168,7 @@ if (!is_dir(BACKUP_PATH)) {
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
+require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 
 // Establish Database Connection
 mysqli_report(MYSQLI_REPORT_OFF);
