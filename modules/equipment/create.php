@@ -597,7 +597,7 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
     if ($stmtMirrorSwitchPorts) {
         mysqli_stmt_bind_param(
             $stmtMirrorSwitchPorts,
-            'iissiiii',
+            'iissiii',
             $companyId,
             $targetPositionId,
             $equipmentHostnameForSync,
@@ -689,7 +689,7 @@ function equipment_prune_idf_position_port_capacity(
         if ($stmtDeleteExtraSfp) {
             mysqli_stmt_bind_param(
                 $stmtDeleteExtraSfp,
-                'iiiii',
+                'iiii',
                 $companyId,
                 $positionId,
                 $companyId,
