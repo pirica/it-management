@@ -781,19 +781,7 @@ if (empty($sfpPortNumbers)) {
         $fiberFallbackCount = (int)($pos['equipment_fiber_ports_number'] ?? 0);
     }
     if ($fiberFallbackCount > 0) {
-        $fiberBaseline = (int)($pos['rj45_count'] ?? 0);
-        if (!empty($rj45PortNumbers)) {
-            $fiberBaseline = max($fiberBaseline, max($rj45PortNumbers));
-        }
-        $switchRjNameHint = trim((string)($pos['switch_rj45_name'] ?? ''));
-        if ($switchRjNameHint !== '' && preg_match('/(\d+)/', $switchRjNameHint, $rjDigits)) {
-            $fiberBaseline = max($fiberBaseline, (int)$rjDigits[1]);
-        }
-        $synthFiber = [];
-        for ($fiberOrd = 1; $fiberOrd <= $fiberFallbackCount; $fiberOrd++) {
-            $synthFiber[] = idf_resolve_synthetic_fiber_port_no($fiberBaseline, $fiberOrd);
-        }
-        $sfpPortNumbers = $synthFiber;
+        $sfpPortNumbers = range(1, $fiberFallbackCount);
     }
 }
 

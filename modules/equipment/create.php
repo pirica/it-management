@@ -668,15 +668,6 @@ function equipment_prune_idf_position_port_capacity(
     }
 
     if ($sfpCount > 0) {
-        $fiberBaselinePrune = max(0, (int)$rj45Count);
-        if ($fiberBaselinePrune <= 0 && $equipmentId > 0) {
-            require_once ROOT_PATH . 'modules/idfs/idf_ports_sync.php';
-            $fiberBaselinePrune = idf_equipment_switch_rj45_capacity_hint($conn, $companyId, $equipmentId);
-        }
-        $fiberCeilingExclusive = ($fiberBaselinePrune > 0)
-            ? ($fiberBaselinePrune + $sfpCount)
-            : $sfpCount;
-
         $stmtDeleteExtraSfp = mysqli_prepare(
             $conn,
             "DELETE FROM idf_ports
@@ -688,21 +679,16 @@ function equipment_prune_idf_position_port_capacity(
                     WHERE company_id = ?
                       AND LOWER(type) LIKE '%sfp%'
                )
-               AND (
-                    port_no > ?
-                    OR (? > 0 AND port_no <= ?)
-               )"
+               AND port_no > ?"
         );
         if ($stmtDeleteExtraSfp) {
             mysqli_stmt_bind_param(
                 $stmtDeleteExtraSfp,
-                'iiiiii',
+                'iiiii',
                 $companyId,
                 $positionId,
                 $companyId,
-                $fiberCeilingExclusive,
-                $fiberBaselinePrune,
-                $fiberBaselinePrune
+                $sfpCount
             );
             mysqli_stmt_execute($stmtDeleteExtraSfp);
             mysqli_stmt_close($stmtDeleteExtraSfp);
@@ -815,9 +801,8 @@ function equipment_finalize_linked_port_capacity(
     }
 
     if ($sfpCount > 0 && $fiberPortTypeId > 0) {
-        $rj45Baseline = max($rj45Count, idf_equipment_switch_rj45_capacity_hint($conn, $companyId, $equipmentId));
         for ($fiberIdx = 1; $fiberIdx <= $sfpCount; $fiberIdx++) {
-            $fiberPortNo = idf_resolve_synthetic_fiber_port_no($rj45Baseline, $fiberIdx);
+            $fiberPortNo = idf_resolve_synthetic_fiber_port_no(0, $fiberIdx);
             mysqli_query(
                 $conn,
                 "INSERT INTO idf_ports (company_id, position_id, port_no, port_type, status_id, switch_port_numbering_layout_id, management_id)
