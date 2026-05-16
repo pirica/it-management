@@ -293,6 +293,7 @@ function cr_humanize_field($field) {
         'dhcp_managed' => 'DHCP Managed',
         'is_gateway' => 'Gateway',
         'is_dns' => 'DNS',
+        'notes' => 'IP Notes',
     ];
 
     if (isset($map[$label])) { return $map[$label]; }
@@ -519,6 +520,41 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
+
+// Inline notes save from IP list (AJAX).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && in_array($crud_action, ['index', 'list_all'], true)
+    && isset($_POST['inline_notes_save'])
+) {
+    header('Content-Type: application/json');
+    cr_require_valid_csrf_token();
+
+    if (!$hasCompany || $company_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Active company is required.']);
+        exit;
+    }
+
+    $inlineAddressId = (int)($_POST['id'] ?? 0);
+    $inlineNotes = trim((string)($_POST['notes'] ?? ''));
+    if ($inlineAddressId <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Invalid IP address record.']);
+        exit;
+    }
+
+    $inlineSaved = function_exists('itm_ipam_save_address_notes')
+        && itm_ipam_save_address_notes($conn, (int)$company_id, $inlineAddressId, $inlineNotes);
+    if (!$inlineSaved) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Unable to save notes.']);
+        exit;
+    }
+
+    echo json_encode(['ok' => true, 'notes' => $inlineNotes]);
+    exit;
+}
 
 // Handle Excel/CSV database import requests from table-tools.js.
 $requestContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
@@ -968,7 +1004,7 @@ if (!$itmIpAddressFocusedList && $searchRaw !== '') {
 }
 
 // SORTING LOGIC
-$itmIpAddressSortColumns = ['ip_text', 'status', 'subnet', 'equipment', 'hostname', 'id'];
+$itmIpAddressSortColumns = ['ip_text', 'status', 'subnet', 'equipment', 'hostname', 'notes', 'id'];
 if ($itmIpAddressFocusedList) {
     $sortableColumns = $itmIpAddressSortColumns;
     $sort = (string)($_GET['sort'] ?? 'ip_text');
@@ -1083,7 +1119,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             </div>
                         <?php endif; ?>
                         <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                            <label for="moduleSearch">Search<?php echo $itmIpAddressFocusedList ? ' (IP, status, subnet, equipment)' : ' (all fields)'; ?></label>
+                            <label for="moduleSearch">Search<?php echo $itmIpAddressFocusedList ? ' (IP, status, subnet, equipment, IP notes)' : ' (all fields)'; ?></label>
                             <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
@@ -1127,6 +1163,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                         'subnet' => 'Subnet',
                                         'equipment' => 'Equipment',
                                         'hostname' => 'Hostname',
+                                        'notes' => 'IP Notes',
                                     ];
                                 ?>
                                 <?php foreach ($itmIpListHeaders as $itmHeaderField => $itmHeaderLabel): ?>
@@ -1197,6 +1234,19 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo $itmHostnameDisplay !== '' ? sanitize($itmHostnameDisplay) : '—'; ?></td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="itm-ip-inline-notes"
+                                            data-ip-address-id="<?php echo (int)$row['id']; ?>"
+                                            value="<?php echo sanitize((string)($row['notes'] ?? '')); ?>"
+                                            maxlength="255"
+                                            placeholder="IP-only note…"
+                                            style="width:100%;min-width:160px;"
+                                            aria-label="IP notes for <?php echo sanitize((string)($row['ip_text'] ?? '')); ?>"
+                                        >
+                                        <span class="itm-ip-inline-notes-status" style="display:block;font-size:12px;color:#57606a;min-height:16px;"></span>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php elseif (!$itmIpAddressFocusedList && $rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
@@ -1204,7 +1254,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
-                                        <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
+                                        <?php if ($f === 'notes' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
@@ -1225,7 +1275,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo $itmIpAddressFocusedList ? 7 : count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.<?php if ($itmIpAddressFocusedList && $itmSubnetFilterId > 0): ?> Generate host IPs from the <a href="../ip_subnets/view.php?id=<?php echo (int)$itmSubnetFilterId; ?>">subnet view</a>.<?php endif; ?></td></tr>
+                            <tr><td colspan="<?php echo $itmIpAddressFocusedList ? 8 : count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.<?php if ($itmIpAddressFocusedList && $itmSubnetFilterId > 0): ?> Generate host IPs from the <a href="../ip_subnets/view.php?id=<?php echo (int)$itmSubnetFilterId; ?>">subnet view</a>.<?php endif; ?></td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -1422,6 +1472,73 @@ document.addEventListener('change', function (event) {
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
+</script>
+<script>
+(function () {
+    const inlineNotesEndpoint = <?php echo json_encode($modulePath . '/index.php'); ?>;
+    const inlineNotesCsrf = <?php echo json_encode($csrfToken); ?>;
+    const inlineNotesSaving = new Set();
+
+    function setInlineNotesStatus(input, message, tone) {
+        const status = input.parentElement ? input.parentElement.querySelector('.itm-ip-inline-notes-status') : null;
+        if (!status) { return; }
+        status.textContent = message || '';
+        status.style.color = tone === 'ok' ? '#1a7f37' : (tone === 'error' ? '#cf222e' : '#57606a');
+    }
+
+    function saveInlineNotes(input) {
+        const addressId = parseInt(input.getAttribute('data-ip-address-id') || '0', 10);
+        if (!addressId || inlineNotesSaving.has(addressId)) { return; }
+        const nextValue = (input.value || '').trim();
+        const lastSaved = input.getAttribute('data-last-saved') ?? '';
+        if (nextValue === lastSaved) { return; }
+
+        inlineNotesSaving.add(addressId);
+        setInlineNotesStatus(input, 'Saving…', 'pending');
+        const body = new URLSearchParams();
+        body.set('inline_notes_save', '1');
+        body.set('id', String(addressId));
+        body.set('notes', nextValue);
+        body.set('csrf_token', inlineNotesCsrf);
+
+        fetch(inlineNotesEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: body.toString(),
+            credentials: 'same-origin'
+        })
+            .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.ok) {
+                    throw new Error((result.data && result.data.error) ? result.data.error : 'Save failed');
+                }
+                input.setAttribute('data-last-saved', nextValue);
+                setInlineNotesStatus(input, 'Saved', 'ok');
+                window.setTimeout(function () {
+                    if ((input.value || '').trim() === nextValue) {
+                        setInlineNotesStatus(input, '', 'pending');
+                    }
+                }, 1500);
+            })
+            .catch(function (error) {
+                setInlineNotesStatus(input, error && error.message ? error.message : 'Save failed', 'error');
+            })
+            .finally(function () {
+                inlineNotesSaving.delete(addressId);
+            });
+    }
+
+    document.querySelectorAll('.itm-ip-inline-notes').forEach(function (input) {
+        input.setAttribute('data-last-saved', (input.value || '').trim());
+        input.addEventListener('blur', function () { saveInlineNotes(input); });
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                input.blur();
+            }
+        });
+    });
+})();
 </script>
 </body>
 </html>
