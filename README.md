@@ -55,6 +55,7 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 - Departments — Department management
 - Employees — Employee tracking
 - Companies — Multi-company support
+- Budget — Annual/Monthly Budgets, Forecasts, Expenses and Reports
 
 ## System Requirements
 
