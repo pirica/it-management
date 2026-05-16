@@ -1216,7 +1216,7 @@ if (!empty($_SESSION['crud_success'])) {
                 option.textContent = item.name;
                 statusSelect.appendChild(option);
             });
-            statusSelect.appendChild(new Option('➕ Add', '__add_new__'));
+            statusSelect.appendChild(new Option('➕', '__add_new__'));
 
             colorOptions.forEach(function (item) {
                 const option = document.createElement('option');
@@ -1254,15 +1254,15 @@ if (!empty($_SESSION['crud_success'])) {
             (Array.isArray(locations) ? locations : []).forEach(function (item) {
                 toLocationSelect.appendChild(new Option(item.name, item.id));
             });
-            colorSelect.appendChild(new Option('+', '__add_new__'));
-            rj45CableSelect.appendChild(new Option('+', '__add_new__'));
-            vlanSelect.appendChild(new Option('+', '__add_new__'));
-            fiberPortsSelect.appendChild(new Option('+', '__add_new__'));
-            fiberPatchSelect.appendChild(new Option('+', '__add_new__'));
-            fiberRackSelect.appendChild(new Option('+', '__add_new__'));
-            idfSelect.appendChild(new Option('+', '__add_new__'));
-            toRackSelect.appendChild(new Option('+', '__add_new__'));
-            toLocationSelect.appendChild(new Option('+', '__add_new__'));
+            colorSelect.appendChild(new Option('➕', '__add_new__'));
+            rj45CableSelect.appendChild(new Option('➕', '__add_new__'));
+            vlanSelect.appendChild(new Option('➕', '__add_new__'));
+            fiberPortsSelect.appendChild(new Option('➕', '__add_new__'));
+            fiberPatchSelect.appendChild(new Option('➕', '__add_new__'));
+            fiberRackSelect.appendChild(new Option('➕', '__add_new__'));
+            idfSelect.appendChild(new Option('➕', '__add_new__'));
+            toRackSelect.appendChild(new Option('➕', '__add_new__'));
+            toLocationSelect.appendChild(new Option('➕', '__add_new__'));
         }
 
         function fallbackLayout() {
