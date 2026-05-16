@@ -1628,7 +1628,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <table id="portsTable" class="table idf-ports-table">
                     <thead>
                     <tr>
-                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('rj45_speed')); ?>">RJ45 Speed<?php echo $renderPortSortIndicator('rj45_speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('fiber_patch')); ?>">Fiber Patch<?php echo $renderPortSortIndicator('fiber_patch'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('fiber_rack')); ?>">Fiber Rack<?php echo $renderPortSortIndicator('fiber_rack'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
+                        <th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_no')); ?>">#<?php echo $renderPortSortIndicator('port_no'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('port_type')); ?>">Type<?php echo $renderPortSortIndicator('port_type'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('label')); ?>">Label<?php echo $renderPortSortIndicator('label'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('status')); ?>">Status<?php echo $renderPortSortIndicator('status'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('connected_to')); ?>">Connected To<?php echo $renderPortSortIndicator('connected_to'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('vlan')); ?>">VLAN<?php echo $renderPortSortIndicator('vlan'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('rj45_speed')); ?>">RJ45 Speed<?php echo $renderPortSortIndicator('rj45_speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('poe')); ?>">PoE<?php echo $renderPortSortIndicator('poe'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('speed')); ?>">Fiber Speed<?php echo $renderPortSortIndicator('speed'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('fiber_patch')); ?>">Fiber Patch<?php echo $renderPortSortIndicator('fiber_patch'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('fiber_rack')); ?>">Fiber Rack<?php echo $renderPortSortIndicator('fiber_rack'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('notes')); ?>">Notes<?php echo $renderPortSortIndicator('notes'); ?></a></th><th><a style="color:inherit; text-decoration:none;" href="<?php echo sanitize($buildPortSortLink('link')); ?>">Link<?php echo $renderPortSortIndicator('link'); ?></a></th><th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -1717,9 +1717,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
                             <td><?php echo sanitize($connectedToText); ?></td>
                             <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
-                            <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
+                            <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['fiber_patch_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['fiber_rack_label'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
@@ -1741,7 +1741,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <table id="portsExportTable" class="table" style="display:none;">
                 <thead>
                 <tr>
-                    <th>Port No</th><th>Type</th><th>Label</th><th>Status</th><th>Connected To</th><th>VLAN</th><th>Speed</th><th>RJ45 Speed</th><th>PoE</th><th>Fiber Patch</th><th>Fiber Rack</th><th>Notes</th>
+                    <th>Port No</th><th>Type</th><th>Label</th><th>Status</th><th>Connected To</th><th>VLAN</th><th>RJ45 Speed</th><th>PoE</th><th>Fiber Speed</th><th>Fiber Patch</th><th>Fiber Rack</th><th>Notes</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -1753,9 +1753,9 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                         <td><?php echo sanitize((string)($p['status_label'] ?? 'Unknown')); ?></td>
                         <td><?php echo sanitize((string)($p['connected_to'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['vlan_label'] ?? '')); ?></td>
-                        <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['rj45_speed_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['poe_label'] ?? '')); ?></td>
+                        <td><?php echo sanitize((string)($p['speed_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['fiber_patch_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['fiber_rack_label'] ?? '')); ?></td>
                         <td><?php echo sanitize((string)($p['notes'] ?? '')); ?></td>
@@ -2793,7 +2793,7 @@ function updatePortFormTypePresentation(portMeta) {
     const speedLabelEl = document.getElementById('portSpeedFieldLabel');
     const patchLabelEl = document.getElementById('portPatchPortLabel');
     const commentsLabelEl = document.getElementById('portCommentsLabel');
-    if (speedLabelEl) speedLabelEl.textContent = normalizedType === 'rj45' ? 'RJ45 Cable' : 'Fiber Ports';
+    if (speedLabelEl) speedLabelEl.textContent = normalizedType === 'rj45' ? 'RJ45 Speed' : 'Fiber Speed';
     if (patchLabelEl) patchLabelEl.textContent = 'Label';
     if (commentsLabelEl) commentsLabelEl.textContent = 'Notes';
     renderTypeSpecificFields('portTypeSpecificFields', portTypeLabel, portMeta || {}, false);
