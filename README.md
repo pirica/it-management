@@ -22,7 +22,7 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 **Equipment** — module list with search, sort, and table tools (export / import).
 
-![Equipment module list](docs/readme/equipment-list.png)
+![Equipment module list](docs/readme/equipment.png)
 
 **IDF rack** — visual rack layout with positions, port grid, and linked device management.
 
