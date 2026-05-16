@@ -314,14 +314,8 @@ $rj45SpeedLabelExpr = $hasRj45SpeedTable
     ELSE ''
 END"
     : "''";
-$fiberPatchLabelExpr = "CASE
-    WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(efp.name, '')
-    ELSE ''
-END";
-$fiberRackLabelExpr = "CASE
-    WHEN {$normalizedPortTypeExpr} LIKE 'sfp%' THEN COALESCE(efr.name, '')
-    ELSE ''
-END";
+$fiberPatchLabelExpr = 'COALESCE(efp.name, \'\')';
+$fiberRackLabelExpr = 'COALESCE(efr.name, \'\')';
 
 $idfPortTypeLabelSql = itm_idf_port_type_label_sql();
 $portFiberFamilyRankExpr = itm_idf_port_fiber_family_rank_sql();
@@ -375,7 +369,7 @@ $stmtPorts = mysqli_prepare(
        COALESCE(dt_local.idfdevicetype_name, et_local.name, '') AS local_device_type_label,
        COALESCE(NULLIF(pr_live.vlan_id, 0), NULLIF(pr.vlan_id, 0), NULLIF(sp_link.vlan_id, 0), NULLIF(l.equipment_vlan_id, 0), 0) AS effective_vlan_id,
        COALESCE(NULLIF(pr_live.rj45_speed_id, 0), NULLIF(sp_link.rj45_speed_id, 0), NULLIF(l.equipment_rj45_speed_id, 0), NULLIF({$rj45SpeedIdExpr}, 0), NULLIF(pr.speed_id, 0), 0) AS effective_rj45_speed_id,
-       COALESCE(NULLIF(pr.fiber_port_id, 0), NULLIF(pr_live.fiber_port_id, 0), NULLIF(sp_link.fiber_port_id, 0), NULLIF(l.equipment_fiber_port_id, 0), NULLIF(pr.speed_id, 0), 0) AS effective_fiber_port_id,
+       COALESCE(NULLIF(pr_live.fiber_port_id, 0), NULLIF(sp_link.fiber_port_id, 0), NULLIF(l.equipment_fiber_port_id, 0), NULLIF(pr.speed_id, 0), 0) AS effective_fiber_port_id,
        COALESCE(NULLIF(pr.fiber_patch_id, 0), NULLIF(pr_live.fiber_patch_id, 0), NULLIF(sp_link.fiber_patch_id, 0), NULLIF(l.equipment_fiber_patch_id, 0), 0) AS effective_fiber_patch_id,
        COALESCE(NULLIF(pr.fiber_rack_id, 0), NULLIF(pr_live.fiber_rack_id, 0), NULLIF(sp_link.fiber_rack_id, 0), NULLIF(l.equipment_fiber_rack_id, 0), 0) AS effective_fiber_rack_id,
        COALESCE(
@@ -548,7 +542,11 @@ $stmtPorts = mysqli_prepare(
           FROM idf_links l2
           WHERE (l2.port_id_a = pr.id OR l2.port_id_b = pr.id)
             AND l2.company_id = pr.company_id
-          ORDER BY l2.id ASC
+          ORDER BY
+            CASE WHEN COALESCE(l2.equipment_fiber_patch_id, 0) > 0 THEN 0 ELSE 1 END,
+            CASE WHEN COALESCE(l2.equipment_fiber_rack_id, 0) > 0 THEN 0 ELSE 1 END,
+            CASE WHEN COALESCE(l2.equipment_fiber_port_id, 0) > 0 THEN 0 ELSE 1 END,
+            l2.id ASC
           LIMIT 1
       )
       LEFT JOIN switch_ports sp_link
