@@ -666,7 +666,9 @@ function idf_refresh_port_row_display_labels(
     array $vlanOptions,
     array $rj45SpeedOptions,
     array $fiberSpeedOptions,
-    array $poeOptions
+    array $poeOptions,
+    array $fiberPatchOptions = [],
+    array $fiberRackOptions = []
 ): void {
     if (array_key_exists('label', $portRow)) {
         $portRow['label'] = idf_normalize_port_label_value($portRow['label'] ?? '');
@@ -693,6 +695,16 @@ function idf_refresh_port_row_display_labels(
     $fiberPortId = (int)($portRow['effective_fiber_port_id'] ?? 0);
     if ($fiberPortId > 0 && isset($fiberSpeedOptions[$fiberPortId])) {
         $portRow['speed_label'] = (string)$fiberSpeedOptions[$fiberPortId];
+    }
+
+    $fiberPatchId = (int)($portRow['effective_fiber_patch_id'] ?? 0);
+    if ($fiberPatchId > 0 && isset($fiberPatchOptions[$fiberPatchId])) {
+        $portRow['fiber_patch_label'] = (string)$fiberPatchOptions[$fiberPatchId];
+    }
+
+    $fiberRackId = (int)($portRow['effective_fiber_rack_id'] ?? 0);
+    if ($fiberRackId > 0 && isset($fiberRackOptions[$fiberRackId])) {
+        $portRow['fiber_rack_label'] = (string)$fiberRackOptions[$fiberRackId];
     }
 
     $portTypeRaw = strtolower(trim((string)($portRow['port_type_label'] ?? '')));
