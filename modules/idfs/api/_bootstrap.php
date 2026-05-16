@@ -1187,6 +1187,55 @@ function idf_port_has_cable_link(array $portRow): bool
 }
 
 /**
+ * Why: equipment.switch_port_numbering_layout_id must be NULL when unset; FK rejects 0 and orphan tenant ids.
+ */
+function idf_normalize_switch_port_numbering_layout_id(mysqli $conn, int $company_id, $raw): int
+{
+    if ($company_id <= 0 || $raw === null || $raw === '') {
+        return 0;
+    }
+    if (!is_numeric((string)$raw)) {
+        return 0;
+    }
+    $candidate = (int)$raw;
+    if ($candidate <= 0) {
+        return 0;
+    }
+
+    $stmtScoped = mysqli_prepare(
+        $conn,
+        'SELECT id FROM switch_port_numbering_layout WHERE company_id = ? AND id = ? LIMIT 1'
+    );
+    if ($stmtScoped) {
+        mysqli_stmt_bind_param($stmtScoped, 'ii', $company_id, $candidate);
+        mysqli_stmt_execute($stmtScoped);
+        $resScoped = mysqli_stmt_get_result($stmtScoped);
+        $rowScoped = $resScoped ? mysqli_fetch_assoc($resScoped) : null;
+        mysqli_stmt_close($stmtScoped);
+        if ($rowScoped) {
+            return (int)$rowScoped['id'];
+        }
+    }
+
+    $stmtLegacy = mysqli_prepare(
+        $conn,
+        'SELECT id FROM switch_port_numbering_layout WHERE id = ? LIMIT 1'
+    );
+    if ($stmtLegacy) {
+        mysqli_stmt_bind_param($stmtLegacy, 'i', $candidate);
+        mysqli_stmt_execute($stmtLegacy);
+        $resLegacy = mysqli_stmt_get_result($stmtLegacy);
+        $rowLegacy = $resLegacy ? mysqli_fetch_assoc($resLegacy) : null;
+        mysqli_stmt_close($stmtLegacy);
+        if ($rowLegacy) {
+            return (int)$rowLegacy['id'];
+        }
+    }
+
+    return 0;
+}
+
+/**
  * SQL fragment: blank out placeholder patch-port labels before COALESCE/INSERT.
  */
 function idf_sql_normalize_port_label_expr(string $columnSql): string

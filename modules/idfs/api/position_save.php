@@ -15,7 +15,11 @@ $linkedEquipmentId = isset($data['equipment_id']) ? idf_parse_linked_equipment_i
 $isIntentionallyUnlinked = $linkedEquipmentId <= 0;
 $equipment_id = $linkedEquipmentId;
 $switch_rj45_id = isset($data['switch_rj45_id']) ? (int)$data['switch_rj45_id'] : 0;
-$layout_id = isset($data['switch_port_numbering_layout_id']) ? (int)$data['switch_port_numbering_layout_id'] : 0;
+$layoutSubmitted = array_key_exists('switch_port_numbering_layout_id', $data);
+$layout_id = 0;
+if ($layoutSubmitted) {
+    $layout_id = idf_normalize_switch_port_numbering_layout_id($conn, $company_id, $data['switch_port_numbering_layout_id']);
+}
 $switch_fiber_ports_number_submitted = array_key_exists('switch_fiber_ports_number', $data);
 $switch_fiber_ports_number = $switch_fiber_ports_number_submitted ? substr(trim((string)($data['switch_fiber_ports_number'] ?? '')), 0, 50) : '';
 if ($switch_fiber_ports_number === '__add_new__') {
@@ -702,8 +706,12 @@ if ($equipment_id > 0) {
             // Why: preserve linked equipment metadata in sync updates without forcing switch port presets into non-switch IDF entries.
             $switch_rj45_id = (int)($equipment['switch_rj45_id'] ?? 0);
         }
-        if ($layout_id <= 0) {
-            $layout_id = (int)($equipment['switch_port_numbering_layout_id'] ?? 0);
+        if (!$layoutSubmitted && $layout_id <= 0) {
+            $layout_id = idf_normalize_switch_port_numbering_layout_id(
+                $conn,
+                $company_id,
+                $equipment['switch_port_numbering_layout_id'] ?? 0
+            );
         }
         if ($device_type_name === 'switch') {
             if (!$switch_fiber_ports_number_submitted) {
@@ -727,7 +735,7 @@ if ($equipment_id > 0) {
         $stmtUpdateEq = mysqli_prepare(
             $conn,
             "UPDATE equipment
-             SET name=?, switch_rj45_id=?, switch_port_numbering_layout_id=?, switch_fiber_ports_number=NULLIF(?, ''), notes=?
+             SET name=?, switch_rj45_id=?, switch_port_numbering_layout_id=NULLIF(?, 0), switch_fiber_ports_number=NULLIF(?, ''), notes=?
              WHERE id=? AND company_id=?
              LIMIT 1"
         );
@@ -770,8 +778,12 @@ if (!$isIntentionallyUnlinked && $equipment_id <= 0 && $device_type_name === 'sw
             if ($switch_rj45_id <= 0) {
                 $switch_rj45_id = (int)($equipmentByName['switch_rj45_id'] ?? 0);
             }
-            if ($layout_id <= 0) {
-                $layout_id = (int)($equipmentByName['switch_port_numbering_layout_id'] ?? 0);
+            if (!$layoutSubmitted && $layout_id <= 0) {
+                $layout_id = idf_normalize_switch_port_numbering_layout_id(
+                    $conn,
+                    $company_id,
+                    $equipmentByName['switch_port_numbering_layout_id'] ?? 0
+                );
             }
             if ($rj45_count <= 0 && !empty($equipmentByName['switch_rj45_name']) && preg_match('/(\d+)/', (string)$equipmentByName['switch_rj45_name'], $matches)) {
                 $rj45_count = (int)$matches[1];
