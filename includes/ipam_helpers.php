@@ -332,6 +332,194 @@ function itm_ipam_count_subnet_addresses(mysqli $conn, int $company_id, int $sub
 }
 
 /**
+ * Why: IP Addresses list should show hostname/name instead of raw equipment_id.
+ */
+function itm_ipam_equipment_label_from_row(array $row): string
+{
+    $label = trim((string)($row['equipment_hostname'] ?? ''));
+    if ($label === '') {
+        $label = trim((string)($row['equipment_name'] ?? ''));
+    }
+
+    return $label;
+}
+
+/**
+ * @return array<int, array{id: int, label: string}>
+ */
+function itm_ipam_fetch_subnet_filter_options(mysqli $conn, int $company_id): array
+{
+    if ($company_id <= 0 || !itm_ipam_table_exists($conn, 'ip_subnets')) {
+        return [];
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, cidr FROM ip_subnets WHERE company_id = ? AND active = 1 ORDER BY cidr ASC'
+    );
+    if (!$stmt) {
+        return [];
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $company_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $options = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $options[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'label' => (string)($row['cidr'] ?? ''),
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return $options;
+}
+
+/**
+ * Why: Shared WHERE builder keeps subnet filter + search aligned for count and list queries.
+ *
+ * @return array{sql: string, types: string, params: array<int|string>}
+ */
+function itm_ipam_address_list_where_clause(int $company_id, int $subnet_id, string $searchRaw): array
+{
+    $sql = ' WHERE ia.company_id = ?';
+    $types = 'i';
+    $params = [$company_id];
+
+    if ($subnet_id > 0) {
+        $sql .= ' AND ia.subnet_id = ?';
+        $types .= 'i';
+        $params[] = $subnet_id;
+    }
+
+    $searchRaw = trim($searchRaw);
+    if ($searchRaw !== '') {
+        $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_'))
+            ? $searchRaw
+            : '%' . $searchRaw . '%';
+        $sql .= " AND (
+            CAST(ia.id AS CHAR) LIKE ?
+            OR ia.ip_text LIKE ?
+            OR ia.status LIKE ?
+            OR ia.hostname LIKE ?
+            OR s.cidr LIKE ?
+            OR e.name LIKE ?
+            OR e.hostname LIKE ?
+        )";
+        $types .= str_repeat('s', 7);
+        for ($i = 0; $i < 7; $i++) {
+            $params[] = $searchPattern;
+        }
+    }
+
+    return ['sql' => $sql, 'types' => $types, 'params' => $params];
+}
+
+function itm_ipam_address_list_sort_sql(string $sort, string $dir): string
+{
+    $sortMap = [
+        'ip_text' => 'INET_ATON(ia.ip_text)',
+        'status' => 'ia.status',
+        'subnet' => 's.cidr',
+        'subnet_cidr' => 's.cidr',
+        'equipment' => "COALESCE(NULLIF(TRIM(e.hostname), ''), NULLIF(TRIM(e.name), ''), '')",
+        'hostname' => 'ia.hostname',
+        'id' => 'ia.id',
+    ];
+    $sortKey = array_key_exists($sort, $sortMap) ? $sort : 'ip_text';
+    $dirSql = strtoupper($dir) === 'DESC' ? 'DESC' : 'ASC';
+
+    return $sortMap[$sortKey] . ' ' . $dirSql . ', ia.id ASC';
+}
+
+/**
+ * @param array<int|string> $params
+ */
+function itm_ipam_bind_address_list_params(mysqli_stmt $stmt, string $types, array $params): void
+{
+    if ($types === '' || !$params) {
+        return;
+    }
+
+    $bind = [$types];
+    foreach ($params as $index => $value) {
+        $bind[] = &$params[$index];
+    }
+    call_user_func_array([$stmt, 'bind_param'], $bind);
+}
+
+function itm_ipam_count_address_list(mysqli $conn, int $company_id, int $subnet_id, string $searchRaw): int
+{
+    if ($company_id <= 0 || !itm_ipam_table_exists($conn, 'ip_addresses') || !itm_ipam_table_exists($conn, 'ip_subnets')) {
+        return 0;
+    }
+
+    $where = itm_ipam_address_list_where_clause($company_id, $subnet_id, $searchRaw);
+    $sql = 'SELECT COUNT(*) AS c
+            FROM ip_addresses ia
+            INNER JOIN ip_subnets s ON s.id = ia.subnet_id AND s.company_id = ia.company_id
+            LEFT JOIN equipment e ON e.id = ia.equipment_id AND e.company_id = ia.company_id'
+        . $where['sql'];
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+    itm_ipam_bind_address_list_params($stmt, $where['types'], $where['params']);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return (int)($row['c'] ?? 0);
+}
+
+/**
+ * @return array<int, array<string, mixed>>
+ */
+function itm_ipam_fetch_address_list(
+    mysqli $conn,
+    int $company_id,
+    int $subnet_id,
+    string $searchRaw,
+    string $sort,
+    string $dir,
+    int $limit,
+    int $offset
+): array {
+    if ($company_id <= 0 || !itm_ipam_table_exists($conn, 'ip_addresses') || !itm_ipam_table_exists($conn, 'ip_subnets')) {
+        return [];
+    }
+
+    $limit = max(1, min(500, $limit));
+    $offset = max(0, $offset);
+    $where = itm_ipam_address_list_where_clause($company_id, $subnet_id, $searchRaw);
+    $orderSql = itm_ipam_address_list_sort_sql($sort, $dir);
+    $sql = "SELECT ia.id, ia.ip_text, ia.status, ia.hostname, ia.equipment_id, ia.is_gateway,
+                   s.id AS subnet_id, s.cidr AS subnet_cidr,
+                   e.name AS equipment_name, e.hostname AS equipment_hostname
+            FROM ip_addresses ia
+            INNER JOIN ip_subnets s ON s.id = ia.subnet_id AND s.company_id = ia.company_id
+            LEFT JOIN equipment e ON e.id = ia.equipment_id AND e.company_id = ia.company_id"
+        . $where['sql']
+        . ' ORDER BY ' . $orderSql
+        . ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+    itm_ipam_bind_address_list_params($stmt, $where['types'], $where['params']);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    return $rows;
+}
+
+/**
  * @return array<int, array<string, mixed>>
  */
 function itm_ipam_fetch_equipment_ip_assignments(mysqli $conn, int $company_id, int $equipment_id): array

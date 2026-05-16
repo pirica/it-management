@@ -21,7 +21,7 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_fetch_subnet_addresses')) 
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
         <h2 style="margin:0;">IP addresses in this subnet</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <a class="btn btn-sm" href="../ip_addresses/index.php">Open IP Addresses module</a>
+            <a class="btn btn-sm" href="../ip_addresses/index.php?subnet_id=<?php echo (int)$itmSubnetViewId; ?>">Open full IP list</a>
             <?php if ($itmSubnetCanBulkGenerate): ?>
                 <form method="POST" style="display:inline;" onsubmit="return confirm('Generate all host IPs for this /24? Existing IPs are kept.');">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -59,15 +59,15 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_fetch_subnet_addresses')) 
                         <td><?php echo cr_render_cell_value('ip_addresses', 'status', $itmSubnetIpRow['status'] ?? ''); ?></td>
                         <td>
                             <?php
-                                $itmEquipLabel = trim((string)($itmSubnetIpRow['equipment_hostname'] ?? ''));
-                                if ($itmEquipLabel === '') {
-                                    $itmEquipLabel = trim((string)($itmSubnetIpRow['equipment_name'] ?? ''));
-                                }
-                                if ($itmEquipLabel === '' && (int)($itmSubnetIpRow['equipment_id'] ?? 0) > 0) {
-                                    $itmEquipLabel = 'Equipment #' . (int)$itmSubnetIpRow['equipment_id'];
-                                }
-                                echo $itmEquipLabel !== '' ? sanitize($itmEquipLabel) : '—';
-                            ?>
+                                $itmEquipId = (int)($itmSubnetIpRow['equipment_id'] ?? 0);
+                                $itmEquipLabel = function_exists('itm_ipam_equipment_label_from_row')
+                                    ? itm_ipam_equipment_label_from_row($itmSubnetIpRow)
+                                    : '';
+                                if ($itmEquipId > 0 && $itmEquipLabel !== ''): ?>
+                                    <a href="../equipment/view.php?id=<?php echo $itmEquipId; ?>"><?php echo sanitize($itmEquipLabel); ?></a>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
                         </td>
                         <td><?php echo sanitize((string)($itmSubnetIpRow['hostname'] ?? '')); ?></td>
                         <td>
