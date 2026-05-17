@@ -332,7 +332,76 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             return diagramViewport.querySelector('svg');
         }
 
-        function getSerializedSvg(svgElement, exportScale) {
+        // Why: browsers reject canvas.toBlob() when width*height exceeds safe limits (large ER + zoom).
+        var maxExportSidePx = 8192;
+        var maxExportPixelArea = 16777216;
+
+        function readSvgViewBoxSize(svgElement) {
+            var width = 0;
+            var height = 0;
+
+            if (svgElement.viewBox && svgElement.viewBox.baseVal) {
+                width = svgElement.viewBox.baseVal.width;
+                height = svgElement.viewBox.baseVal.height;
+            }
+
+            if (!(width > 0) || !(height > 0)) {
+                var viewBox = svgElement.getAttribute('viewBox');
+                if (viewBox) {
+                    var vb = viewBox.trim().split(/\s+/);
+                    if (vb.length === 4) {
+                        width = parseFloat(vb[2]);
+                        height = parseFloat(vb[3]);
+                    }
+                }
+            }
+
+            if (!(width > 0) || !(height > 0)) {
+                width = parseFloat(svgElement.getAttribute('width')) || 1200;
+                height = parseFloat(svgElement.getAttribute('height')) || 800;
+            }
+
+            return {
+                width: Math.max(1, width),
+                height: Math.max(1, height)
+            };
+        }
+
+        function resolveExportSize(svgElement, exportScale) {
+            var scaleForExport = Number(exportScale || 1);
+            if (!isFinite(scaleForExport) || scaleForExport <= 0) {
+                scaleForExport = 1;
+            }
+
+            var base = readSvgViewBoxSize(svgElement);
+            var width = Math.ceil(base.width * scaleForExport);
+            var height = Math.ceil(base.height * scaleForExport);
+            var capped = false;
+
+            if (width > maxExportSidePx) {
+                height = Math.ceil(height * (maxExportSidePx / width));
+                width = maxExportSidePx;
+                capped = true;
+            }
+            if (height > maxExportSidePx) {
+                width = Math.ceil(width * (maxExportSidePx / height));
+                height = maxExportSidePx;
+                capped = true;
+            }
+            while (width * height > maxExportPixelArea) {
+                width = Math.max(1, Math.floor(width * 0.85));
+                height = Math.max(1, Math.floor(height * 0.85));
+                capped = true;
+            }
+
+            return {
+                width: Math.max(1, width),
+                height: Math.max(1, height),
+                capped: capped
+            };
+        }
+
+        function getSerializedSvg(svgElement, exportScale, exportSize) {
             var serializer = new XMLSerializer();
             var cloned = svgElement.cloneNode(true);
             if (!cloned.getAttribute('xmlns')) {
@@ -342,25 +411,118 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
                 cloned.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
             }
 
-            var scaleForExport = Number(exportScale || 1);
-            if (!isFinite(scaleForExport) || scaleForExport <= 0) {
-                scaleForExport = 1;
-            }
+            if (exportSize && exportSize.width > 0 && exportSize.height > 0) {
+                cloned.setAttribute('width', String(Math.ceil(exportSize.width)));
+                cloned.setAttribute('height', String(Math.ceil(exportSize.height)));
+            } else {
+                var scaleForExport = Number(exportScale || 1);
+                if (!isFinite(scaleForExport) || scaleForExport <= 0) {
+                    scaleForExport = 1;
+                }
 
-            var viewBox = cloned.getAttribute('viewBox');
-            if (viewBox) {
-                var vb = viewBox.trim().split(/\s+/);
-                if (vb.length === 4) {
-                    var vbWidth = parseFloat(vb[2]);
-                    var vbHeight = parseFloat(vb[3]);
-                    if (isFinite(vbWidth) && vbWidth > 0 && isFinite(vbHeight) && vbHeight > 0) {
-                        cloned.setAttribute('width', String(Math.ceil(vbWidth * scaleForExport)));
-                        cloned.setAttribute('height', String(Math.ceil(vbHeight * scaleForExport)));
+                var viewBox = cloned.getAttribute('viewBox');
+                if (viewBox) {
+                    var vb = viewBox.trim().split(/\s+/);
+                    if (vb.length === 4) {
+                        var vbWidth = parseFloat(vb[2]);
+                        var vbHeight = parseFloat(vb[3]);
+                        if (isFinite(vbWidth) && vbWidth > 0 && isFinite(vbHeight) && vbHeight > 0) {
+                            cloned.setAttribute('width', String(Math.ceil(vbWidth * scaleForExport)));
+                            cloned.setAttribute('height', String(Math.ceil(vbHeight * scaleForExport)));
+                        }
                     }
                 }
             }
 
             return serializer.serializeToString(cloned);
+        }
+
+        function svgMarkupToDataUrl(svgText) {
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+        }
+
+        function downloadPngFromCanvas(canvas, wasCapped) {
+            function finishWithBlob(blob) {
+                if (blob) {
+                    triggerDownload(blob, 'database-diagram.png');
+                    if (wasCapped) {
+                        alert('PNG export was resized to fit browser limits. Use Export SVG for the full-resolution diagram.');
+                    }
+                    return;
+                }
+                downloadPngFromDataUrl(canvas, wasCapped);
+            }
+
+            if (canvas.toBlob) {
+                canvas.toBlob(function (pngBlob) {
+                    finishWithBlob(pngBlob);
+                }, 'image/png', 0.92);
+                return;
+            }
+
+            downloadPngFromDataUrl(canvas, wasCapped);
+        }
+
+        function downloadPngFromDataUrl(canvas, wasCapped) {
+            try {
+                var dataUrl = canvas.toDataURL('image/png');
+                if (!dataUrl || dataUrl === 'data:,') {
+                    throw new Error('empty data url');
+                }
+                var parts = dataUrl.split(',');
+                if (parts.length < 2) {
+                    throw new Error('invalid data url');
+                }
+                var binary = atob(parts[1]);
+                var bytes = new Uint8Array(binary.length);
+                for (var i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                triggerDownload(new Blob([bytes], { type: 'image/png' }), 'database-diagram.png');
+                if (wasCapped) {
+                    alert('PNG export was resized to fit browser limits. Use Export SVG for the full-resolution diagram.');
+                }
+            } catch (exportError) {
+                alert('Unable to create PNG from the diagram. It may be too large — zoom out, or use Export SVG instead.');
+            }
+        }
+
+        function rasterizeSvgToPng(svgElement, exportScale) {
+            var exportSize = resolveExportSize(svgElement, exportScale);
+            var svgText = getSerializedSvg(svgElement, exportScale, exportSize);
+            var image = new Image();
+            var dataUrl = svgMarkupToDataUrl(svgText);
+
+            function drawToCanvas() {
+                var width = exportSize.width;
+                var height = exportSize.height;
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d');
+                canvas.width = width;
+                canvas.height = height;
+                if (!context) {
+                    alert('Canvas rendering is not available in this browser.');
+                    return;
+                }
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, width, height);
+                context.drawImage(image, 0, 0, width, height);
+                downloadPngFromCanvas(canvas, exportSize.capped);
+            }
+
+            image.onload = function () {
+                if (image.decode) {
+                    image.decode().then(drawToCanvas).catch(drawToCanvas);
+                    return;
+                }
+                drawToCanvas();
+            };
+
+            image.onerror = function () {
+                alert('Unable to render PNG. Try Export SVG instead.');
+            };
+
+            image.src = dataUrl;
         }
 
         function triggerDownload(blob, filename) {
@@ -425,42 +587,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
                 return;
             }
 
-            var svgText = getSerializedSvg(svgElement, scale);
-            var svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
-            var svgUrl = URL.createObjectURL(svgBlob);
-            var image = new Image();
-
-            image.onload = function () {
-                var width = Math.max(1, Math.ceil(image.width));
-                var height = Math.max(1, Math.ceil(image.height));
-                var canvas = document.createElement('canvas');
-                var context = canvas.getContext('2d');
-                canvas.width = width;
-                canvas.height = height;
-                if (!context) {
-                    URL.revokeObjectURL(svgUrl);
-                    alert('Canvas rendering is not available in this browser.');
-                    return;
-                }
-                context.fillStyle = '#ffffff';
-                context.fillRect(0, 0, width, height);
-                context.drawImage(image, 0, 0, width, height);
-                canvas.toBlob(function (pngBlob) {
-                    URL.revokeObjectURL(svgUrl);
-                    if (!pngBlob) {
-                        alert('Unable to create PNG file from the diagram.');
-                        return;
-                    }
-                    triggerDownload(pngBlob, 'database-diagram.png');
-                }, 'image/png');
-            };
-
-            image.onerror = function () {
-                URL.revokeObjectURL(svgUrl);
-                alert('Unable to render PNG. Try Export SVG instead.');
-            };
-
-            image.src = svgUrl;
+            rasterizeSvgToPng(svgElement, scale);
         });
 
         renderScale();
