@@ -30,11 +30,11 @@ if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
 
 $schemaName = mysqli_real_escape_string($conn, (string) DB_NAME);
 $listSql = "
-    SELECT `table_name`
+    SELECT `TABLE_NAME` AS `table_name`
     FROM `information_schema`.`tables`
     WHERE `table_schema` = '{$schemaName}'
       AND `table_type` = 'BASE TABLE'
-    ORDER BY `table_name` ASC
+    ORDER BY `TABLE_NAME` ASC
 ";
 
 $tableResult = itm_run_query($conn, $listSql);
@@ -45,7 +45,12 @@ if (!$tableResult) {
 
 $tables = [];
 while ($tableRow = mysqli_fetch_assoc($tableResult)) {
-    $tableName = isset($tableRow['table_name']) ? (string) $tableRow['table_name'] : '';
+    $tableName = '';
+    if (isset($tableRow['table_name'])) {
+        $tableName = (string) $tableRow['table_name'];
+    } elseif (isset($tableRow['TABLE_NAME'])) {
+        $tableName = (string) $tableRow['TABLE_NAME'];
+    }
     if ($tableName !== '' && itm_is_safe_identifier($tableName)) {
         $tables[] = $tableName;
     }
