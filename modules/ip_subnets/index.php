@@ -1383,7 +1383,9 @@ document.addEventListener('change', function (event) {
 
     function setPingMessage(html, tone) {
         pingResult.innerHTML = html;
-        pingResult.style.color = tone === 'ok' ? '#1a7f37' : (tone === 'error' ? '#cf222e' : '#57606a');
+        pingResult.style.color = tone === 'ok'
+            ? '#1a7f37'
+            : (tone === 'error' ? '#cf222e' : (tone === 'warning' ? '#9a6700' : '#57606a'));
     }
 
     function escapeHtml(value) {
@@ -1433,8 +1435,23 @@ document.addEventListener('change', function (event) {
                 const lines = [];
                 const pingData = result.data.ping || {};
                 const pingReachable = !!pingData.reachable;
+                const userRequestedPort = port !== '';
+                const requestedPortNum = userRequestedPort ? parseInt(port, 10) : 0;
+                const portUsedNum = pingData.port_used ? parseInt(String(pingData.port_used), 10) : 0;
+                const portData = result.data.port;
+                const portOpen = !!(portData && portData.open);
+                const usedFallbackPort = userRequestedPort
+                    && pingReachable
+                    && requestedPortNum > 0
+                    && portUsedNum > 0
+                    && portUsedNum !== requestedPortNum
+                    && !portOpen;
                 const probeLabel = (pingData.method === 'tcp') ? 'TCP reachability' : 'Reachability';
-                lines.push('<strong>' + probeLabel + ':</strong> ' + (pingReachable ? 'Reachable' : 'No response'));
+                let reachabilityText = pingReachable ? 'Reachable' : 'No response';
+                if (usedFallbackPort) {
+                    reachabilityText = 'Reachable on port ' + portUsedNum + ' (not port ' + requestedPortNum + ')';
+                }
+                lines.push('<strong>' + probeLabel + ':</strong> ' + reachabilityText);
                 if (pingData.port_used) {
                     lines.push('<span style="display:block;margin-top:4px;">Port used: ' + escapeHtml(String(pingData.port_used)) + '</span>');
                 }
@@ -1453,17 +1470,20 @@ document.addEventListener('change', function (event) {
                     });
                 }
 
-                const portData = result.data.port;
                 if (portData) {
-                    const portOpen = !!portData.open;
                     lines.push('<strong style="display:block;margin-top:8px;">Requested port:</strong> ' + (portOpen ? 'Open' : 'Closed / filtered'));
                     if (portData.message) {
                         lines.push('<span style="display:block;margin-top:4px;">' + escapeHtml(portData.message) + '</span>');
                     }
                 }
 
-                const overallOk = pingReachable || (portData && portData.open);
-                setPingMessage(lines.join(''), overallOk ? 'ok' : 'error');
+                let overallTone = 'error';
+                if (userRequestedPort) {
+                    overallTone = portOpen ? 'ok' : 'error';
+                } else if (pingReachable) {
+                    overallTone = 'ok';
+                }
+                setPingMessage(lines.join(''), overallTone);
             })
             .catch(function (error) {
                 setPingMessage(escapeHtml(error && error.message ? error.message : 'Ping check failed.'), 'error');
