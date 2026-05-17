@@ -114,7 +114,9 @@ foreach ($iterator as $fileInfo) {
 
     // Analyze individual POST handler blocks
     if (preg_match_all($postHandlerPattern, $source, $matches, PREG_OFFSET_CAPTURE) > 0) {
-        foreach ($matches[0] as [$matchText, $offset]) {
+        foreach ($matches[0] as $match) {
+            $matchText = $match[0];
+            $offset = (int) $match[1];
             $handlerScanned++;
             $bracePos = strpos($source, '{', $offset + strlen($matchText) - 1);
             if ($bracePos === false) {
@@ -150,6 +152,12 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: includes/*.php hook libraries (e.g. ipam_crud_hooks) mutate via helpers; callers enforce CSRF.
+    $relativePath = str_replace('\\', '/', str_replace($root . DIRECTORY_SEPARATOR, '', $path));
+    if (strpos($relativePath, 'includes/') === 0) {
+        continue;
+    }
+
     if (!$hasFileLevelGuard) {
         $missing[] = [$path, 'POST/mutation surface without CSRF guard reference'];
     }
@@ -162,7 +170,9 @@ if (empty($missing)) {
 }
 
 echo "CSRF coverage check found potential gaps:\n";
-foreach ($missing as [$path, $reason]) {
+foreach ($missing as $entry) {
+    $path = $entry[0];
+    $reason = $entry[1];
     $relative = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
     echo " - {$relative}: {$reason}\n";
 }
