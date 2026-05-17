@@ -26,6 +26,51 @@ if ($sql === '') {
 }
 
 /**
+ * @return array<string, true>
+ */
+function itm_sql_tables_with_created_at($sql)
+{
+    $tables = [];
+    $offset = 0;
+    $len = strlen($sql);
+
+    while ($offset < $len) {
+        $found = stripos($sql, 'CREATE TABLE `', $offset);
+        if ($found === false) {
+            break;
+        }
+
+        $nameStart = $found + strlen('CREATE TABLE `');
+        $nameEnd = strpos($sql, '`', $nameStart);
+        if ($nameEnd === false) {
+            break;
+        }
+
+        $tableName = substr($sql, $nameStart, $nameEnd - $nameStart);
+        $bodyStart = strpos($sql, '(', $nameEnd);
+        if ($bodyStart === false) {
+            $offset = $nameEnd + 1;
+            continue;
+        }
+
+        $enginePos = stripos($sql, 'ENGINE=', $bodyStart);
+        if ($enginePos === false) {
+            $offset = $bodyStart + 1;
+            continue;
+        }
+
+        $body = substr($sql, $bodyStart, $enginePos - $bodyStart);
+        if (preg_match('/`created_at`\s+/i', $body)) {
+            $tables[$tableName] = true;
+        }
+
+        $offset = $enginePos + 1;
+    }
+
+    return $tables;
+}
+
+/**
  * @return array<int, string>
  */
 function itm_sql_split_csv_values($valuesPart)
@@ -33,15 +78,15 @@ function itm_sql_split_csv_values($valuesPart)
     $values = [];
     $current = '';
     $inString = false;
-    $len = strlen($valuesPart);
+    $partLen = strlen($valuesPart);
 
-    for ($i = 0; $i < $len; $i++) {
+    for ($i = 0; $i < $partLen; $i++) {
         $ch = $valuesPart[$i];
 
         if ($inString) {
             $current .= $ch;
             if ($ch === "'") {
-                if ($i + 1 < $len && $valuesPart[$i + 1] === "'") {
+                if ($i + 1 < $partLen && $valuesPart[$i + 1] === "'") {
                     $current .= $valuesPart[++$i];
                     continue;
                 }
@@ -80,6 +125,34 @@ function itm_sql_join_csv_values(array $values)
     return implode(', ', $values);
 }
 
+/**
+ * @param array<int, string> $columns
+ * @return array<int, string>
+ */
+function itm_sql_columns_append_created_at(array $columns)
+{
+    if (in_array('created_at', $columns, true)) {
+        return $columns;
+    }
+
+    $updatedIndex = array_search('updated_at', $columns, true);
+    if ($updatedIndex !== false) {
+        array_splice($columns, $updatedIndex, 0, ['created_at']);
+        return $columns;
+    }
+
+    $columns[] = 'created_at';
+    return $columns;
+}
+
+/**
+ * @param array<int, string> $columns
+ */
+function itm_sql_format_column_list(array $columns)
+{
+    return '`' . implode('`, `', $columns) . '`';
+}
+
 function itm_sql_is_created_at_literal($token)
 {
     if (!preg_match("/^'([0-9]{4}-[0-9]{2}-[0-9]{2}(?: [0-9]{2}:[0-9]{2}:[0-9]{2})?)'$/", $token)) {
@@ -108,37 +181,64 @@ function itm_sql_normalize_created_at_token($token, $target)
     return "'" . $target . "'";
 }
 
+function itm_sql_is_seed_insert_statement($statement)
+{
+    if (stripos($statement, 'NEW.') !== false || stripos($statement, 'OLD.') !== false) {
+        return false;
+    }
+
+    if (strpos($statement, '@app_user_id') !== false || strpos($statement, 'JSON_OBJECT') !== false) {
+        return false;
+    }
+
+    return true;
+}
+
 /**
+ * @param array<string, true> $tablesWithCreatedAt
  * @return string|null
  */
-function itm_sql_rewrite_insert_statement($statement, $targetCreatedAt)
+function itm_sql_rewrite_insert_values_statement($statement, $targetCreatedAt, array $tablesWithCreatedAt)
 {
+    if (!itm_sql_is_seed_insert_statement($statement)) {
+        return null;
+    }
+
     if (!preg_match(
-        '/\bINSERT\s+(?:IGNORE\s+)?INTO\s+`([^`]+)`\s*\(([^)]+)\)\s*VALUES\s*(.+)\s*;\s*$/is',
+        '/\b(INSERT\s+(?:IGNORE\s+)?INTO\s+`[^`]+`\s*\([^)]+\))\s*VALUES\s*(.+)\s*;\s*$/is',
         $statement,
         $match
     )) {
         return null;
     }
 
-    $columnsRaw = (string)$match[2];
-    $valuesSection = trim((string)$match[3]);
+    if (!preg_match(
+        '/\bINSERT\s+(?:IGNORE\s+)?INTO\s+`([^`]+)`\s*\(([^)]+)\)\s*VALUES\s*(.+)\s*;\s*$/is',
+        $statement,
+        $parts
+    )) {
+        return null;
+    }
+
+    $insertHead = (string)$match[1];
+    $tableName = (string)$parts[1];
+    if (!isset($tablesWithCreatedAt[$tableName])) {
+        return null;
+    }
+
+    $columnsRaw = (string)$parts[2];
+    $valuesSection = trim((string)$parts[3]);
     $columns = [];
     foreach (explode(',', $columnsRaw) as $columnToken) {
         $columns[] = trim(str_replace('`', '', $columnToken));
     }
 
-    $createdIndex = array_search('created_at', $columns, true);
-    if ($createdIndex === false) {
-        return null;
-    }
-
     $rows = [];
     $depth = 0;
     $rowStart = -1;
-    $len = strlen($valuesSection);
+    $sectionLen = strlen($valuesSection);
 
-    for ($i = 0; $i < $len; $i++) {
+    for ($i = 0; $i < $sectionLen; $i++) {
         $ch = $valuesSection[$i];
         if ($ch === '(') {
             if ($depth === 0) {
@@ -160,20 +260,39 @@ function itm_sql_rewrite_insert_statement($statement, $targetCreatedAt)
         return null;
     }
 
+    $hadCreatedAt = in_array('created_at', $columns, true);
+    if (!$hadCreatedAt) {
+        $columns = itm_sql_columns_append_created_at($columns);
+    }
+
+    $createdIndex = array_search('created_at', $columns, true);
+    if ($createdIndex === false) {
+        return null;
+    }
+
+    $targetLiteral = "'" . $targetCreatedAt . "'";
     $changed = false;
     $rewrittenRows = [];
 
     foreach ($rows as $rowValuesPart) {
         $tokens = itm_sql_split_csv_values($rowValuesPart);
-        if (!array_key_exists($createdIndex, $tokens)) {
+
+        if (!$hadCreatedAt) {
+            if (count($tokens) === $createdIndex) {
+                $tokens[] = $targetLiteral;
+            } else {
+                array_splice($tokens, $createdIndex, 0, [$targetLiteral]);
+            }
+            $changed = true;
+        } elseif (!array_key_exists($createdIndex, $tokens)) {
             $rewrittenRows[] = '(' . $rowValuesPart . ')';
             continue;
-        }
-
-        $newToken = itm_sql_normalize_created_at_token($tokens[$createdIndex], $targetCreatedAt);
-        if ($newToken !== $tokens[$createdIndex]) {
-            $tokens[$createdIndex] = $newToken;
-            $changed = true;
+        } else {
+            $newToken = itm_sql_normalize_created_at_token($tokens[$createdIndex], $targetCreatedAt);
+            if ($newToken !== $tokens[$createdIndex]) {
+                $tokens[$createdIndex] = $newToken;
+                $changed = true;
+            }
         }
 
         $rewrittenRows[] = '(' . itm_sql_join_csv_values($tokens) . ')';
@@ -183,13 +302,80 @@ function itm_sql_rewrite_insert_statement($statement, $targetCreatedAt)
         return null;
     }
 
-    $valuesPos = stripos($statement, 'VALUES');
-    if ($valuesPos === false) {
+    if (!preg_match('/\bINSERT\s+(?:IGNORE\s+)?INTO\s+`[^`]+`/i', $statement, $insertMatch, PREG_OFFSET_CAPTURE)) {
         return null;
     }
-    $prefix = substr($statement, 0, $valuesPos + strlen('VALUES'));
+
+    $ignore = (stripos($statement, 'INSERT IGNORE') === 0) ? 'INSERT IGNORE' : 'INSERT';
+    $prefix = $ignore . ' INTO `' . $tableName . '` (' . itm_sql_format_column_list($columns) . ') VALUES';
     return rtrim($prefix) . ' ' . implode(",\n", $rewrittenRows) . ';';
 }
+
+/**
+ * @param array<string, true> $tablesWithCreatedAt
+ * @return string|null
+ */
+function itm_sql_rewrite_insert_select_statement($statement, $targetCreatedAt, array $tablesWithCreatedAt)
+{
+    if (!itm_sql_is_seed_insert_statement($statement)) {
+        return null;
+    }
+
+    if (!preg_match(
+        '/\b(INSERT\s+(?:IGNORE\s+)?INTO\s+`[^`]+`\s*\([^)]+\))\s+SELECT\s+(.+?)\s*;\s*$/is',
+        $statement,
+        $match
+    )) {
+        return null;
+    }
+
+    if (!preg_match(
+        '/\bINSERT\s+(?:IGNORE\s+)?INTO\s+`([^`]+)`\s*\(([^)]+)\)\s+SELECT\s+(.+?)\s*;\s*$/is',
+        $statement,
+        $parts
+    )) {
+        return null;
+    }
+
+    $tableName = (string)$parts[1];
+    if (!isset($tablesWithCreatedAt[$tableName])) {
+        return null;
+    }
+
+    $columns = [];
+    foreach (explode(',', (string)$parts[2]) as $columnToken) {
+        $columns[] = trim(str_replace('`', '', $columnToken));
+    }
+
+    if (in_array('created_at', $columns, true)) {
+        return null;
+    }
+
+    $selectExpr = trim((string)$parts[3]);
+    if (strpos($selectExpr, "\n") !== false || strpos($selectExpr, "\r") !== false) {
+        return null;
+    }
+
+    if (substr_count(strtoupper($selectExpr), ' FROM ') !== 1) {
+        return null;
+    }
+
+    $fromPos = stripos($selectExpr, ' FROM ');
+    if ($fromPos === false) {
+        return null;
+    }
+
+    $selectList = trim(substr($selectExpr, 0, $fromPos));
+    $fromClause = substr($selectExpr, $fromPos);
+    $columns = itm_sql_columns_append_created_at($columns);
+    $targetLiteral = "'" . $targetCreatedAt . "'";
+
+    $ignore = (stripos($statement, 'INSERT IGNORE') === 0) ? 'INSERT IGNORE' : 'INSERT';
+    $prefix = $ignore . ' INTO `' . $tableName . '` (' . itm_sql_format_column_list($columns) . ') SELECT ';
+    return $prefix . $selectList . ', ' . $targetLiteral . $fromClause . ';';
+}
+
+$tablesWithCreatedAt = itm_sql_tables_with_created_at($sql);
 
 // Why: do not split on the semicolon in "DELIMITER ;" (restore after rebuild).
 $sqlProtected = preg_replace('/^DELIMITER\s+;\s*$/mi', 'DELIMITER __ITM_SEMICOLON__', $sql) ?? $sql;
@@ -209,7 +395,12 @@ foreach ($parts as $index => $part) {
         continue;
     }
 
-    $rewritten = itm_sql_rewrite_insert_statement($statement . ';', $targetCreatedAt);
+    $statementWithSemi = $statement . ';';
+    $rewritten = itm_sql_rewrite_insert_values_statement($statementWithSemi, $targetCreatedAt, $tablesWithCreatedAt);
+    if ($rewritten === null) {
+        $rewritten = itm_sql_rewrite_insert_select_statement($statementWithSemi, $targetCreatedAt, $tablesWithCreatedAt);
+    }
+
     if ($rewritten !== null) {
         $updatedCount++;
         $rebuilt[] = rtrim($rewritten, ';');
@@ -228,5 +419,6 @@ $output = str_replace('DELIMITER __ITM_SEMICOLON__', 'DELIMITER ;', $output);
 $output = preg_replace('/^DELIMITER;\s*$/m', 'DELIMITER ;', $output) ?? $output;
 
 file_put_contents($schemaPath, $output);
-echo "[OK] Updated created_at literals in {$updatedCount} INSERT statement(s).\n";
+echo "[OK] Updated created_at in {$updatedCount} INSERT statement(s).\n";
 echo "Target value: {$targetCreatedAt}\n";
+echo 'Tables with created_at column: ' . count($tablesWithCreatedAt) . "\n";
