@@ -93,6 +93,9 @@ header('Content-Type: text/html; charset=utf-8');
         .itm-dsu-table code { font-size: 0.85rem; word-break: break-word; }
         .itm-dsu-row-skip td { color: var(--text-muted, #57606a); }
         .itm-dsu-dash { color: var(--text-muted, #57606a); }
+        .itm-dsu-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+        .itm-dsu-th-sort:hover { background: var(--table-row-hover-bg, #eef1f4); }
+        .itm-dsu-sort-indicator { display: inline-block; min-width: 1.1em; margin-left: 4px; color: var(--text-muted, #57606a); font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -143,19 +146,19 @@ header('Content-Type: text/html; charset=utf-8');
 
     <div class="itm-dsu-card">
         <h2>Results (all <?= (int) $result['summary']['tables']; ?> tables)</h2>
-        <table class="itm-dsu-table">
+        <table class="itm-dsu-table" id="itm-dsu-results-table">
             <thead>
                 <tr>
-                    <th>Status</th>
-                    <th>Table</th>
-                    <th>Uniques</th>
-                    <th>Scope column</th>
-                    <th>Scope UNIQUE</th>
-                    <th>Notes</th>
-                    <th>Suggested ALTER</th>
+                    <th class="itm-dsu-th-sort" data-sort-type="status" scope="col" aria-sort="none">Status<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Table<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="number" scope="col" aria-sort="none">Uniques<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Scope column<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Scope UNIQUE<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Notes<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Suggested ALTER<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="itm-dsu-results-body">
                 <?php foreach ($result['lines'] as $line): ?>
                     <?php
                     $status = (string) $line['status'];
@@ -173,19 +176,119 @@ header('Content-Type: text/html; charset=utf-8');
                     $scopeColumn = (string) ($line['scope_column'] ?? '');
                     $scopeUnique = (string) ($line['scope_unique'] ?? '');
                     ?>
-                <tr class="<?= itm_db_sql_unique_escape($rowClass); ?>">
-                    <td><span class="itm-dsu-badge <?= $badgeClass; ?>"><?= itm_db_sql_unique_escape($statusLabel); ?></span></td>
-                    <td><code><?= itm_db_sql_unique_escape($line['table']); ?></code></td>
-                    <td><?= (int) $line['unique_count']; ?></td>
-                    <td><?php if ($scopeColumn !== ''): ?><code><?= itm_db_sql_unique_escape($scopeColumn); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
-                    <td><?php if ($scopeUnique !== ''): ?><code><?= itm_db_sql_unique_escape($scopeUnique); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
-                    <td><?= itm_db_sql_unique_escape($line['message']); ?></td>
-                    <td><?php if ($line['alter_sql'] !== ''): ?><code><?= itm_db_sql_unique_escape($line['alter_sql']); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
+                <tr class="<?= itm_db_sql_unique_escape($rowClass); ?>" data-status="<?= itm_db_sql_unique_escape($statusLabel); ?>">
+                    <td data-sort-value="<?= itm_db_sql_unique_escape($statusLabel); ?>"><span class="itm-dsu-badge <?= $badgeClass; ?>"><?= itm_db_sql_unique_escape($statusLabel); ?></span></td>
+                    <td data-sort-value="<?= itm_db_sql_unique_escape($line['table']); ?>"><code><?= itm_db_sql_unique_escape($line['table']); ?></code></td>
+                    <td data-sort-value="<?= (int) $line['unique_count']; ?>"><?= (int) $line['unique_count']; ?></td>
+                    <td data-sort-value="<?= itm_db_sql_unique_escape($scopeColumn !== '' ? $scopeColumn : ''); ?>"><?php if ($scopeColumn !== ''): ?><code><?= itm_db_sql_unique_escape($scopeColumn); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
+                    <td data-sort-value="<?= itm_db_sql_unique_escape($scopeUnique !== '' ? $scopeUnique : ''); ?>"><?php if ($scopeUnique !== ''): ?><code><?= itm_db_sql_unique_escape($scopeUnique); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
+                    <td data-sort-value="<?= itm_db_sql_unique_escape($line['message']); ?>"><?= itm_db_sql_unique_escape($line['message']); ?></td>
+                    <td data-sort-value="<?= itm_db_sql_unique_escape($line['alter_sql'] !== '' ? $line['alter_sql'] : ''); ?>"><?php if ($line['alter_sql'] !== ''): ?><code><?= itm_db_sql_unique_escape($line['alter_sql']); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     </div>
 </div>
+<script>
+(function () {
+    var table = document.getElementById('itm-dsu-results-table');
+    var tbody = document.getElementById('itm-dsu-results-body');
+    if (!table || !tbody) {
+        return;
+    }
+
+    var headers = table.querySelectorAll('thead .itm-dsu-th-sort');
+    var statusRank = { fail: 0, skip: 1, pass: 2 };
+    var activeHeader = null;
+    var activeDir = 'asc';
+
+    function cellSortValue(row, colIndex) {
+        var cell = row.cells[colIndex];
+        if (!cell) {
+            return '';
+        }
+        if (cell.hasAttribute('data-sort-value')) {
+            return cell.getAttribute('data-sort-value') || '';
+        }
+        return (cell.textContent || '').trim();
+    }
+
+    function compareRows(rowA, rowB, colIndex, sortType, dir) {
+        var a = cellSortValue(rowA, colIndex);
+        var b = cellSortValue(rowB, colIndex);
+        var cmp = 0;
+
+        if (sortType === 'number') {
+            cmp = (parseFloat(a) || 0) - (parseFloat(b) || 0);
+        } else if (sortType === 'status') {
+            cmp = (statusRank[a] !== undefined ? statusRank[a] : 99) - (statusRank[b] !== undefined ? statusRank[b] : 99);
+            if (cmp === 0) {
+                cmp = String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+            }
+        } else {
+            cmp = String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true });
+        }
+
+        return dir === 'desc' ? -cmp : cmp;
+    }
+
+    function updateIndicators() {
+        headers.forEach(function (th) {
+            var indicator = th.querySelector('.itm-dsu-sort-indicator');
+            if (!indicator) {
+                return;
+            }
+            if (th === activeHeader) {
+                indicator.textContent = activeDir === 'asc' ? '\u25B2' : '\u25BC';
+                th.setAttribute('aria-sort', activeDir === 'asc' ? 'ascending' : 'descending');
+            } else {
+                indicator.textContent = '';
+                th.setAttribute('aria-sort', 'none');
+            }
+        });
+    }
+
+    function sortByHeader(th) {
+        var colIndex = Array.prototype.indexOf.call(th.parentNode.children, th);
+        var sortType = th.getAttribute('data-sort-type') || 'text';
+
+        if (activeHeader === th) {
+            activeDir = activeDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            activeHeader = th;
+            activeDir = sortType === 'number' ? 'desc' : 'asc';
+        }
+
+        var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        rows.sort(function (rowA, rowB) {
+            return compareRows(rowA, rowB, colIndex, sortType, activeDir);
+        });
+        rows.forEach(function (row) {
+            tbody.appendChild(row);
+        });
+        updateIndicators();
+    }
+
+    headers.forEach(function (th) {
+        th.addEventListener('click', function () {
+            sortByHeader(th);
+        });
+        th.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                sortByHeader(th);
+            }
+        });
+        th.setAttribute('tabindex', '0');
+        th.setAttribute('role', 'button');
+    });
+
+    var defaultHeader = headers[0];
+    if (defaultHeader) {
+        sortByHeader(defaultHeader);
+    }
+})();
+</script>
 </body>
 </html>
