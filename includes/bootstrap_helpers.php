@@ -46,3 +46,63 @@ if (!function_exists('itm_table_has_column')) {
         return $cache[$key];
     }
 }
+
+/**
+ * Form display value: never show SQL quote wrappers after a failed save.
+ */
+if (!function_exists('itm_cr_form_display_value')) {
+    function itm_cr_form_display_value($value) {
+        if ($value === null || $value === '' || $value === 'NULL') {
+            return '';
+        }
+        $text = (string) $value;
+        if (strlen($text) >= 2 && $text[0] === "'" && substr($text, -1) === "'") {
+            $inner = substr($text, 1, -1);
+            return str_replace(["\\'", '\\\\'], ["'", '\\'], $inner);
+        }
+        return $text;
+    }
+}
+
+/**
+ * Why: Older imports left it_locations.type_id NOT NULL while the UI allows -- Select --.
+ */
+if (!function_exists('itm_ensure_it_locations_type_id_nullable')) {
+    function itm_ensure_it_locations_type_id_nullable($conn) {
+        static $checked = false;
+        if ($checked || !($conn instanceof mysqli)) {
+            return true;
+        }
+        $checked = true;
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT IS_NULLABLE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        $table = 'it_locations';
+        $column = 'type_id';
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return false;
+        }
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row || strtoupper((string) ($row['IS_NULLABLE'] ?? 'NO')) === 'YES') {
+            return true;
+        }
+
+        mysqli_query($conn, 'ALTER TABLE `it_locations` DROP FOREIGN KEY `it_locations_ibfk_2`');
+        mysqli_query($conn, 'ALTER TABLE `it_locations` MODIFY `type_id` int DEFAULT NULL');
+        mysqli_query(
+            $conn,
+            'ALTER TABLE `it_locations` ADD CONSTRAINT `it_locations_ibfk_2` FOREIGN KEY (`type_id`) REFERENCES `location_types` (`id`) ON DELETE SET NULL'
+        );
+        return true;
+    }
+}
