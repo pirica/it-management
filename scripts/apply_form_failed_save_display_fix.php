@@ -10,7 +10,9 @@
 
 declare(strict_types=1);
 
-define('ITM_CLI_SCRIPT', true);
+if (!defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
 require_once dirname(__DIR__) . '/config/config.php';
 require_once dirname(__DIR__) . '/includes/form_failed_save_test.php';
 
