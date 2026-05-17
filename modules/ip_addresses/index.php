@@ -1,4 +1,7 @@
 <?php
+function cr_form_display_value($value) {
+    return itm_cr_form_display_value($value);
+}
 /**
  * IP Addresses Module - Index
  * 
@@ -854,12 +857,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         // Booleans (checkboxes)
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
+            $sqlValues[$name] = (string) (int) $data[$name];
             continue;
         }
 
         // Automatic company scoping
         if ($name === 'company_id' && $company_id > 0) {
             $data[$name] = (int)$company_id;
+            $sqlValues[$name] = (string) (int) $company_id;
             continue;
         }
 
@@ -877,7 +882,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
-                $data[$name] = 'NULL';
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
                 continue;
             }
 
@@ -898,7 +904,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $existing = mysqli_query($conn, $findSql);
                 if ($existing && mysqli_num_rows($existing) > 0) {
                     $row = mysqli_fetch_assoc($existing);
-                    $data[$name] = (string)(int)$row['id'];
+                    $data[$name] = (string) (int) $row['id'];
+                    $sqlValues[$name] = (string) (int) $row['id'];
                 } else {
                     $insertFields = [cr_escape_identifier($labelCol)];
                     $insertValues = ["'" . $newValueEsc . "'"];
@@ -911,10 +918,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $dbErrorCode = 0;
                     $dbErrorMessage = '';
                     if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                        $data[$name] = (string)(int)mysqli_insert_id($conn);
+                        $resolvedId = (string) (int) mysqli_insert_id($conn);
+                        $data[$name] = $resolvedId;
+                        $sqlValues[$name] = $resolvedId;
                     } else {
                         $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-                        $data[$name] = 'NULL';
+                        $data[$name] = '';
+                        $sqlValues[$name] = 'NULL';
                     }
                 }
                 continue;
@@ -924,18 +934,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         // Generic field handling
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            $data[$name] = 'NULL';
+            $data[$name] = '';
+            $sqlValues[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
             $normalizedNumeric = null;
             $numericError = '';
             if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {
                 $errors[] = $numericError;
-                $data[$name] = 'NULL';
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
             } else {
                 $data[$name] = $normalizedNumeric;
+                $sqlValues[$name] = $normalizedNumeric;
             }
         } else {
-            $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+            $data[$name] = (string) $value;
+            $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
     }
 
