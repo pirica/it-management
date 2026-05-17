@@ -18,6 +18,8 @@ try {
     require_once dirname(__DIR__) . '/config/config.php';
 } catch (Throwable $e) {
     fwrite(STDERR, "Unable to bootstrap application config/db connection: " . $e->getMessage() . "\n");
+    fwrite(STDERR, "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:\n");
+    fwrite(STDERR, "  C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php\n");
     exit(1);
 }
 

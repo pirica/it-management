@@ -220,7 +220,22 @@ require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 
 // Establish Database Connection
-mysqli_report(MYSQLI_REPORT_OFF);
+if (!function_exists('mysqli_connect')) {
+    $itmMysqliMissingMessage = 'MySQLi extension is not loaded in this PHP build ('
+        . PHP_VERSION
+        . '). Use Laragon PHP 7.4 for CLI scripts, for example: '
+        . 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\<script>.php';
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $itmMysqliMissingMessage . PHP_EOL);
+        exit(1);
+    }
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    die(json_encode(['error' => $itmMysqliMissingMessage]));
+}
+if (function_exists('mysqli_report')) {
+    mysqli_report(MYSQLI_REPORT_OFF);
+}
 $conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
 if (!$conn && DB_HOST === 'localhost') {
