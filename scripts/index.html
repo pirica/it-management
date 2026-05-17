@@ -12,11 +12,13 @@
         .scripts-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
         .scripts-table th, .scripts-table td { border: 1px solid var(--border-color, #d0d7de); padding: 10px 12px; text-align: left; vertical-align: top; }
         .scripts-table th { background: var(--table-header-bg, #f6f8fa); }
+        .scripts-table th.scripts-access-col,
+        .scripts-table td.scripts-access-cell { white-space: nowrap; width: 1%; }
         .scripts-table code { font-size: 0.88rem; word-break: break-word; }
-        .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+        .scripts-access-badges { display: inline-flex; flex-wrap: nowrap; gap: 4px; align-items: center; }
+        .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
         .scripts-badge-web { background: #ddf4ff; color: #0969da; }
         .scripts-badge-cli { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
-        .scripts-badge-both { background: #dafbe1; color: #116329; }
         .scripts-toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 8px; padding: 0; list-style: none; }
         .scripts-toc a { color: #0969da; text-decoration: none; }
         .scripts-toc a:hover { text-decoration: underline; }
@@ -55,7 +57,7 @@
             <thead>
                 <tr>
                     <th>Script</th>
-                    <th>Access</th>
+                    <th class="scripts-access-col">Access</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -63,7 +65,7 @@
             <tbody>
                 <tr>
                     <td><a href="api.php">api.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>HTML reference for JSON API endpoints (auth, CSRF, module import routes, request/response examples).</td>
                     <td>Open in the browser after deploy. Use as the source of truth when calling <code>/modules/*/index.php</code> JSON handlers or shared APIs documented in the file.</td>
                 </tr>
@@ -77,7 +79,7 @@
             <thead>
                 <tr>
                     <th>Script</th>
-                    <th>Access</th>
+                    <th class="scripts-access-col">Access</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -85,7 +87,7 @@
             <tbody>
                 <tr>
                     <td><a href="DBdesign.php">DBdesign.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>ER-style diagram generated from <code>database.sql</code> (Mermaid render, zoom, SVG/PNG export).</td>
                     <td>
                         Open <a href="DBdesign.php">DBdesign.php</a>. Optional:
@@ -96,19 +98,19 @@
                 </tr>
                 <tr>
                     <td><a href="crud_tables.php">crud_tables.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Lists every module folder and the first <code>$crud_table =</code> line found in <code>index.php</code>, with links to each module.</td>
                     <td>Open in the browser to audit module-to-table mapping. CLI redirect: <code>php scripts/crud_tables.php &gt; crud_tables.html</code></td>
                 </tr>
                 <tr>
                     <td><a href="update_all_created_at.php">update_all_created_at.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-both">Browser + CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>After importing <code>database.sql</code>, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>
                     <td>Open <a href="update_all_created_at.php">update_all_created_at.php</a> while logged in. Optional CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
                 </tr>
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong> (e.g. Location id=1 and id=4 for the same tenant).</td>
                     <td>
                         <strong>Log in first.</strong> Open the UI, choose <em>Scan mode</em>, <em>Company</em>, <em>Risk filter</em>, and <em>Output</em> (table or JSON), then click <strong>Run scan</strong>.
@@ -117,7 +119,7 @@
                 </tr>
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-both">Both</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Same FK dropdown risk scan as above; in the browser it loads the UI file.</td>
                     <td>
                         Browser: same as <code>detect_fk_dropdown_ui_risk_ui.php</code>.
@@ -134,7 +136,7 @@
             <thead>
                 <tr>
                     <th>Script</th>
-                    <th>Access</th>
+                    <th class="scripts-access-col">Access</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -142,7 +144,7 @@
             <tbody>
                 <tr>
                     <td><a href="test_sql_injection.php">test_sql_injection.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>JSON sandbox to test SQL-injection signature detection and safe prepared-statement execution (GET/POST).</td>
                     <td>
                         <strong>Requires login</strong> and active <code>company_id</code>.
@@ -152,19 +154,19 @@
                 </tr>
                 <tr>
                     <td>sql_injection_matrix_test.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs a fixed table of injection payloads through <code>lib/sql_injection_detector.php</code> and reports pass/fail.</td>
                     <td><code>php scripts/sql_injection_matrix_test.php</code> — exit code non-zero if any case fails.</td>
                 </tr>
                 <tr>
                     <td>check_sql_injection_coverage.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: flags PHP files where queries may use user input without binding/sanitization.</td>
                     <td><code>php scripts/check_sql_injection_coverage.php</code> — run after CRUD/SQL changes (AGENTS.md requirement).</td>
                 </tr>
                 <tr>
                     <td>check_csrf_coverage.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: finds POST handlers that change data without a known CSRF guard.</td>
                     <td><code>php scripts/check_csrf_coverage.php</code></td>
                 </tr>
@@ -178,7 +180,7 @@
             <thead>
                 <tr>
                     <th>Script</th>
-                    <th>Access</th>
+                    <th class="scripts-access-col">Access</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -192,13 +194,13 @@
                 </tr>
                 <tr>
                     <td>repair_table_from_schema.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Rebuilds one InnoDB table from <code>database.sql</code> when metadata drift causes "doesn't exist in engine" errors.</td>
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
                     <td>normalize_database_sql_created_at.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged.</td>
                     <td><code>php scripts/normalize_database_sql_created_at.php</code> — edits <code>database.sql</code> before import (not the live database).</td>
                 </tr>
@@ -212,7 +214,7 @@
             <thead>
                 <tr>
                     <th>Script</th>
-                    <th>Access</th>
+                    <th class="scripts-access-col">Access</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -220,7 +222,7 @@
             <tbody>
                 <tr>
                     <td><a href="idfs_sync_human_test.php">idfs_sync_human_test.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-both">Both</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>End-to-end HTTP regression for IDF rack/device flows; asserts sync across <code>idf_ports</code>, <code>switch_ports</code>, <code>equipment</code>, <code>idf_links</code>.</td>
                     <td>
                         CLI (recommended): <code>php scripts/idfs_sync_human_test.php</code><br>
@@ -230,7 +232,7 @@
                 </tr>
                 <tr>
                     <td>idfs_api_payload_dry_run.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Validates IDF device API JSON payloads offline (no MySQL).</td>
                     <td>
                         <code>php scripts/idfs_api_payload_dry_run.php --samples</code><br>
@@ -240,7 +242,7 @@
                 </tr>
                 <tr>
                     <td>idf_device_port_sort_test.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Proves RJ45 ports sort before fiber (SFP) in IDF device SQL; optional live MySQL checks.</td>
                     <td>
                         <code>php scripts/idf_device_port_sort_test.php</code><br>
@@ -257,7 +259,7 @@
             <thead>
                 <tr>
                     <th>Script</th>
-                    <th>Access</th>
+                    <th class="scripts-access-col">Access</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -265,7 +267,7 @@
             <tbody>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verifies modules implement UI configuration hooks: table actions origin, new button position, export toolbar, back/save alignment.</td>
                     <td><code>php scripts/check_ui_configuration_coverage.php</code> — exits <code>2</code> if any module fails; skips <code>idfs</code> module.</td>
                 </tr>
