@@ -25,7 +25,7 @@ $itmFloorPlansModuleUrl = rtrim((string)(defined('BASE_URL') ? BASE_URL : ''), '
                         <th>File</th>
                         <th>Folder</th>
                         <th>Type</th>
-                        <th data-itm-actions-origin="1">Actions</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,7 +40,7 @@ $itmFloorPlansModuleUrl = rtrim((string)(defined('BASE_URL') ? BASE_URL : ''), '
                             <td><?php echo sanitize($itmFpName); ?></td>
                             <td><?php echo $itmFpFolder !== '' ? sanitize($itmFpFolder) : '— Unfiled —'; ?></td>
                             <td><?php echo sanitize(strtoupper($itmFpExt !== '' ? $itmFpExt : 'file')); ?></td>
-                            <td class="itm-actions-cell">
+                            <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="<?php echo sanitize($itmFloorPlansModuleUrl . 'view.php?id=' . $itmFpId); ?>">🔎</a>
                                     <a class="btn btn-sm" href="<?php echo sanitize($itmFloorPlansModuleUrl . 'edit.php?id=' . $itmFpId); ?>">✏️</a>

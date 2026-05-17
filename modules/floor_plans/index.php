@@ -276,10 +276,10 @@ function cr_humanize_field($field) {
         'hu_the_lobby' => 'HU & The Lobby',
         'folder_id' => 'Folder',
         'it_location_id' => fp_it_location_link_label(),
-        'display_name' => 'File Name',
+        'display_name' => 'File',
         'stored_filename' => 'Stored File',
-        'mime_type' => 'Type',
-        'file_ext' => 'Extension',
+        'mime_type' => 'MIME Type',
+        'file_ext' => 'Type',
         'file_size' => 'Size',
         'created_by_user_id' => 'Uploaded By',
     ];
@@ -325,6 +325,9 @@ function cr_render_cell_value($table, $field, $value) {
         }
         if ($field === 'display_name' && (string)$value !== '') {
             return sanitize((string)$value);
+        }
+        if ($field === 'file_ext' && (string)$value !== '') {
+            return sanitize(strtoupper((string)$value));
         }
         if ($field === 'it_location_id') {
             $locationLabel = fp_it_location_label_by_id($GLOBALS['conn'], (int)($GLOBALS['company_id'] ?? 0), $value);
@@ -490,6 +493,12 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+if ($crud_table === 'floor_plans' && $crud_action === 'list_all') {
+    $fpListFields = ['display_name', 'folder_id', 'file_ext', 'file_size', 'it_location_id', 'mime_type', 'active'];
+    $uiColumns = array_values(array_filter($uiColumns, static function ($col) use ($fpListFields) {
+        return in_array((string)($col['Field'] ?? ''), $fpListFields, true);
+    }));
+}
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -1271,6 +1280,8 @@ if ($crud_action !== 'index') {
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
+$showBulkActions = ($crud_action === 'list_all' && $totalRows >= $perPage);
+$listTableColspan = count($uiColumns) + 1 + ($showBulkActions ? 1 : 0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1341,7 +1352,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php if ($showBulkActions): ?>
+                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -1352,13 +1365,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th data-itm-actions-origin="1">Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkActions): ?>
+                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
@@ -1382,7 +1397,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo (int)$listTableColspan; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
