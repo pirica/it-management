@@ -120,6 +120,122 @@ function itm_ipam_is_valid_ipv4(string $ip): bool
 }
 
 /**
+ * Why: Subnet list "Ping IP" uses ICMP from the app server (same host as Laragon/Apache).
+ *
+ * @return array{ok: bool, reachable: bool, message: string}
+ */
+function itm_ipam_ping_ipv4(string $ip, int $timeoutMs = 2000): array
+{
+    if (!itm_ipam_is_valid_ipv4($ip)) {
+        return ['ok' => false, 'reachable' => false, 'message' => 'Ping IP must be a valid IPv4 address.'];
+    }
+
+    if (!function_exists('exec')) {
+        return ['ok' => false, 'reachable' => false, 'message' => 'Ping is unavailable (exec is disabled on this server).'];
+    }
+
+    $timeoutMs = max(500, min(10000, $timeoutMs));
+    $isWindows = DIRECTORY_SEPARATOR === '\\' || stripos(PHP_OS, 'WIN') === 0;
+    if ($isWindows) {
+        $cmd = 'ping -n 1 -w ' . (int)$timeoutMs . ' ' . escapeshellarg($ip) . ' 2>&1';
+    } else {
+        $timeoutSec = max(1, (int)ceil($timeoutMs / 1000));
+        $cmd = 'ping -c 1 -W ' . $timeoutSec . ' ' . escapeshellarg($ip) . ' 2>&1';
+    }
+
+    $output = [];
+    $exitCode = 1;
+    @exec($cmd, $output, $exitCode);
+    $reachable = ($exitCode === 0);
+    $message = trim(implode("\n", $output));
+    if ($message === '') {
+        $message = $reachable ? 'Host responded to ping.' : 'No ping response from host.';
+    }
+
+    return ['ok' => true, 'reachable' => $reachable, 'message' => $message];
+}
+
+/**
+ * Why: Optional TCP port check complements ICMP when firewalls block ping but a service port is open.
+ *
+ * @return array{ok: bool, open: bool, message: string}
+ */
+function itm_ipam_check_tcp_port(string $ip, int $port, int $timeoutSec = 3): array
+{
+    if (!itm_ipam_is_valid_ipv4($ip)) {
+        return ['ok' => false, 'open' => false, 'message' => 'Ping IP must be a valid IPv4 address.'];
+    }
+    if ($port < 1 || $port > 65535) {
+        return ['ok' => false, 'open' => false, 'message' => 'Port must be between 1 and 65535.'];
+    }
+
+    $timeoutSec = max(1, min(10, $timeoutSec));
+    $errno = 0;
+    $errstr = '';
+    $socket = @fsockopen($ip, $port, $errno, $errstr, (float)$timeoutSec);
+    if (is_resource($socket)) {
+        fclose($socket);
+
+        return ['ok' => true, 'open' => true, 'message' => 'Port ' . $port . ' is open on ' . $ip . '.'];
+    }
+
+    $detail = trim($errstr);
+    if ($detail === '' && $errno > 0) {
+        $detail = 'error ' . $errno;
+    }
+
+    return [
+        'ok' => true,
+        'open' => false,
+        'message' => 'Port ' . $port . ' is not reachable on ' . $ip . ($detail !== '' ? ' (' . $detail . ')' : '') . '.',
+    ];
+}
+
+/**
+ * Why: Subnet index ping tool returns one JSON payload for ICMP and optional TCP checks.
+ *
+ * @return array{ok: bool, error?: string, ip?: string, ping?: array<string, mixed>, port?: array<string, mixed>|null}
+ */
+function itm_ipam_run_ping_port_check(string $ip, string $portRaw): array
+{
+    $ip = itm_ipam_trim_user_input($ip);
+    if ($ip === '') {
+        return ['ok' => false, 'error' => 'Ping IP is required.'];
+    }
+
+    $ping = itm_ipam_ping_ipv4($ip);
+    if (!$ping['ok']) {
+        return ['ok' => false, 'error' => (string)$ping['message']];
+    }
+
+    $result = [
+        'ok' => true,
+        'ip' => $ip,
+        'ping' => $ping,
+        'port' => null,
+    ];
+
+    $portRaw = itm_ipam_trim_user_input($portRaw);
+    if ($portRaw === '') {
+        return $result;
+    }
+
+    if (!ctype_digit($portRaw)) {
+        return ['ok' => false, 'error' => 'Port must be a number between 1 and 65535.'];
+    }
+
+    $port = (int)$portRaw;
+    $portCheck = itm_ipam_check_tcp_port($ip, $port);
+    if (!$portCheck['ok']) {
+        return ['ok' => false, 'error' => (string)$portCheck['message']];
+    }
+
+    $result['port'] = $portCheck;
+
+    return $result;
+}
+
+/**
  * Why: Keep equipment.ip_address aligned when an IPAM row is assigned to an asset.
  */
 function itm_ipam_sync_equipment_ip_address(

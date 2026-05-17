@@ -479,6 +479,44 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Ping IP / port check from list view (AJAX).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && in_array($crud_action, ['index', 'list_all'], true)
+    && isset($_POST['ping_ip_check'])
+) {
+    header('Content-Type: application/json; charset=utf-8');
+    cr_require_valid_csrf_token();
+
+    if (!$hasCompany || $company_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Active company is required.']);
+        exit;
+    }
+
+    if (!function_exists('itm_ipam_run_ping_port_check')) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Ping tools are not available.']);
+        exit;
+    }
+
+    $pingPayload = itm_ipam_run_ping_port_check(
+        (string)($_POST['ping_ip'] ?? ''),
+        (string)($_POST['ping_port'] ?? '')
+    );
+    if (empty($pingPayload['ok'])) {
+        http_response_code(400);
+        echo json_encode([
+            'ok' => false,
+            'error' => (string)($pingPayload['error'] ?? 'Ping check failed.'),
+        ]);
+        exit;
+    }
+
+    echo json_encode($pingPayload);
+    exit;
+}
+
 // Handle Excel/CSV database import requests from table-tools.js.
 $requestContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
 $isJsonImportRequest = false;
@@ -1048,6 +1086,20 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-color, #d0d7de);display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;min-width:180px;">
+                            <label for="itmPingIp">Ping IP</label>
+                            <input type="text" id="itmPingIp" value="" placeholder="192.168.10.20" inputmode="decimal" autocomplete="off">
+                        </div>
+                        <div class="form-group" style="margin:0;min-width:100px;">
+                            <label for="itmPingPort">Port</label>
+                            <input type="number" id="itmPingPort" value="" placeholder="80" min="1" max="65535" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
+                            <button type="button" class="btn btn-primary" id="itmPingRunBtn">Ping</button>
+                        </div>
+                        <div id="itmPingResult" style="flex:1 1 100%;min-height:20px;font-size:14px;color:#57606a;" aria-live="polite"></div>
+                    </div>
                 </div>
 
                 <!-- DATA TABLE -->
@@ -1315,6 +1367,115 @@ document.addEventListener('change', function (event) {
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
+<?php if (($crud_table ?? '') === 'ip_subnets' && in_array($crud_action, ['index', 'list_all'], true)): ?>
+<script>
+(function () {
+    const pingBtn = document.getElementById('itmPingRunBtn');
+    const pingIpInput = document.getElementById('itmPingIp');
+    const pingPortInput = document.getElementById('itmPingPort');
+    const pingResult = document.getElementById('itmPingResult');
+    if (!pingBtn || !pingIpInput || !pingResult) { return; }
+
+    const pingEndpoint = <?php echo json_encode($modulePath . '/index.php'); ?>;
+    const pingCsrf = <?php echo json_encode($csrfToken); ?>;
+    let pingBusy = false;
+
+    function setPingMessage(html, tone) {
+        pingResult.innerHTML = html;
+        pingResult.style.color = tone === 'ok' ? '#1a7f37' : (tone === 'error' ? '#cf222e' : '#57606a');
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function runPingCheck() {
+        if (pingBusy) { return; }
+        const ip = (pingIpInput.value || '').trim();
+        const port = pingPortInput ? (pingPortInput.value || '').trim() : '';
+        if (ip === '') {
+            setPingMessage('Enter a Ping IP address.', 'error');
+            pingIpInput.focus();
+            return;
+        }
+
+        pingBusy = true;
+        pingBtn.disabled = true;
+        setPingMessage('Running ping' + (port !== '' ? ' and port check' : '') + '…', 'pending');
+
+        const body = new URLSearchParams();
+        body.set('ping_ip_check', '1');
+        body.set('ping_ip', ip);
+        body.set('ping_port', port);
+        body.set('csrf_token', pingCsrf);
+
+        fetch(pingEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: body.toString(),
+            credentials: 'same-origin'
+        })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    return { ok: response.ok, data: data };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.ok) {
+                    throw new Error((result.data && result.data.error) ? result.data.error : 'Ping check failed.');
+                }
+
+                const lines = [];
+                const pingData = result.data.ping || {};
+                const pingReachable = !!pingData.reachable;
+                lines.push('<strong>Ping:</strong> ' + (pingReachable ? 'Reachable' : 'No response'));
+                if (pingData.message) {
+                    lines.push('<span style="display:block;margin-top:4px;white-space:pre-wrap;">' + escapeHtml(pingData.message) + '</span>');
+                }
+
+                const portData = result.data.port;
+                if (portData) {
+                    const portOpen = !!portData.open;
+                    lines.push('<strong style="display:block;margin-top:8px;">Port:</strong> ' + (portOpen ? 'Open' : 'Closed / filtered'));
+                    if (portData.message) {
+                        lines.push('<span style="display:block;margin-top:4px;">' + escapeHtml(portData.message) + '</span>');
+                    }
+                }
+
+                const overallOk = pingReachable || (portData && portData.open);
+                setPingMessage(lines.join(''), overallOk ? 'ok' : 'error');
+            })
+            .catch(function (error) {
+                setPingMessage(escapeHtml(error && error.message ? error.message : 'Ping check failed.'), 'error');
+            })
+            .finally(function () {
+                pingBusy = false;
+                pingBtn.disabled = false;
+            });
+    }
+
+    pingBtn.addEventListener('click', runPingCheck);
+    pingIpInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            runPingCheck();
+        }
+    });
+    if (pingPortInput) {
+        pingPortInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                runPingCheck();
+            }
+        });
+    }
+})();
+</script>
+<?php endif; ?>
 <?php if (($crud_table ?? '') === 'ip_subnets' && in_array($crud_action, ['create', 'edit'], true)): ?>
 <script>
 (function () {
