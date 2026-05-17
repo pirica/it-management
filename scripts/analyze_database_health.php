@@ -12,6 +12,8 @@ if (PHP_SAPI !== 'cli') {
     exit("This script must be run from CLI.\n");
 }
 
+define('ITM_CLI_SCRIPT', true);
+
 try {
     require_once dirname(__DIR__) . '/config/config.php';
 } catch (Throwable $e) {

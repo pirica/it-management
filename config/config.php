@@ -263,22 +263,38 @@ mysqli_query($conn, "SET @app_user_agent = '" . mysqli_real_escape_string($conn,
 
 // --- Global Access Control ---
 $current_file = basename($_SERVER['PHP_SELF']);
+// Why: CLI maintenance scripts define ITM_CLI_SCRIPT before requiring config so they can use $conn without a web session.
+$itmSkipWebAuth = PHP_SAPI === 'cli' && defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT;
 
 // Redirect to login if session is missing, excluding auth pages
-if (!isset($_SESSION['user_id']) && !in_array($current_file, ['login.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)) {
+if (
+    !$itmSkipWebAuth
+    && !isset($_SESSION['user_id'])
+    && !in_array($current_file, ['login.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)
+) {
     header('Location: ' . BASE_URL . 'login.php');
     exit();
 }
 
 // Restrict users in read-only mode to the user-config page
 $isReadOnlyUserConfig = !empty($_SESSION['read_only_user_config']);
-if ($isReadOnlyUserConfig && !in_array($current_file, ['user-config.php', 'logout.php'], true)) {
+if (
+    !$itmSkipWebAuth
+    && $isReadOnlyUserConfig
+    && !in_array($current_file, ['user-config.php', 'logout.php'], true)
+) {
     header('Location: ' . BASE_URL . 'user-config.php');
     exit();
 }
 
 // Ensure a company is selected before accessing protected modules
-if (isset($_SESSION['user_id']) && !isset($_SESSION['company_id']) && !$isReadOnlyUserConfig && !in_array($current_file, ['index.php', 'logout.php'], true)) {
+if (
+    !$itmSkipWebAuth
+    && isset($_SESSION['user_id'])
+    && !isset($_SESSION['company_id'])
+    && !$isReadOnlyUserConfig
+    && !in_array($current_file, ['index.php', 'logout.php'], true)
+) {
     header('Location: ' . BASE_URL . 'index.php');
     exit();
 }
