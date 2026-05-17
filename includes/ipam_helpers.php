@@ -490,6 +490,81 @@ function itm_ipam_decode_json_response(string $raw)
 }
 
 /**
+ * Why: IP2WHOIS sits behind Cloudflare and rejects requests without a User-Agent (HTTP 520 plain-text body).
+ *
+ * @return array{ok: bool, http_code: int, body: string, error: string}
+ */
+function itm_ipam_ip2whois_http_get(string $url): array
+{
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'http_code' => 0, 'body' => '', 'error' => 'cURL extension is not available.'];
+    }
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 18);
+    curl_setopt($ch, CURLOPT_ENCODING, '');
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Accept: application/json',
+        'User-Agent: IT-Management-IPAM/1.0 (Network Discovery; PHP cURL)',
+    ]);
+
+    $body = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrNo = (int)curl_errno($ch);
+    $curlErrText = trim((string)curl_error($ch));
+    curl_close($ch);
+
+    if ($curlErrNo !== 0) {
+        return [
+            'ok' => false,
+            'http_code' => $httpCode,
+            'body' => is_string($body) ? $body : '',
+            'error' => 'IP2WHOIS request failed: ' . $curlErrText,
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'http_code' => $httpCode,
+        'body' => is_string($body) ? $body : '',
+        'error' => '',
+    ];
+}
+
+/**
+ * @return array{ok: bool, http_code: int, body: string, error: string}
+ */
+function itm_ipam_ip2whois_http_get_with_retry(string $url, int $maxAttempts = 2): array
+{
+    $maxAttempts = max(1, min(3, $maxAttempts));
+    $last = ['ok' => false, 'http_code' => 0, 'body' => '', 'error' => 'IP2WHOIS request failed.'];
+
+    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+        $last = itm_ipam_ip2whois_http_get($url);
+        if (!$last['ok']) {
+            return $last;
+        }
+
+        $httpCode = (int)$last['http_code'];
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return $last;
+        }
+
+        if (!in_array($httpCode, [520, 522, 523, 524, 429], true) || $attempt >= $maxAttempts) {
+            return $last;
+        }
+
+        usleep(350000);
+    }
+
+    return $last;
+}
+
+/**
  * Reverse hosted-domain lookup via IP2WHOIS (HTTPS + curl, no shell exec).
  *
  * @return array{
@@ -511,10 +586,6 @@ function itm_ipam_ip2whois_lookup_domains(string $ip, int $page = 1): array
         return ['ok' => true, 'domains' => [], 'skipped' => true, 'error' => ''];
     }
 
-    if (!function_exists('curl_init')) {
-        return ['ok' => false, 'domains' => [], 'error' => 'cURL extension is not available.'];
-    }
-
     $baseUrl = defined('IP2WHOIS_DOMAINS_URL') ? (string)IP2WHOIS_DOMAINS_URL : 'https://domains.ip2whois.com/domains';
     $query = http_build_query([
         'ip' => $ip,
@@ -524,41 +595,38 @@ function itm_ipam_ip2whois_lookup_domains(string $ip, int $page = 1): array
     ]);
     $url = $baseUrl . '?' . $query;
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-    curl_setopt($ch, CURLOPT_ENCODING, '');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
-    if (defined('APP_ENV') && APP_ENV === 'development') {
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    $httpResult = itm_ipam_ip2whois_http_get_with_retry($url);
+    if (empty($httpResult['ok'])) {
+        return ['ok' => false, 'domains' => [], 'error' => (string)($httpResult['error'] ?? 'IP2WHOIS request failed.')];
     }
-    $responseBody = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErrNo = (int)curl_errno($ch);
-    $curlErrText = (string)curl_error($ch);
-    curl_close($ch);
 
-    if ($curlErrNo !== 0) {
-        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS request failed: ' . $curlErrText];
-    }
-    if ($responseBody === false || $responseBody === '') {
+    $httpCode = (int)($httpResult['http_code'] ?? 0);
+    $responseBody = (string)($httpResult['body'] ?? '');
+    if ($responseBody === '') {
         return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS returned an empty response.'];
     }
 
-    $decoded = itm_ipam_decode_json_response((string)$responseBody);
+    if ($httpCode < 200 || $httpCode >= 300) {
+        $snippet = trim(preg_replace('/\s+/', ' ', $responseBody));
+        if (strlen($snippet) > 140) {
+            $snippet = substr($snippet, 0, 140) . '…';
+        }
+        $suffix = $snippet !== '' ? (': ' . $snippet) : '';
+        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS HTTP ' . $httpCode . $suffix];
+    }
+
+    $decoded = itm_ipam_decode_json_response($responseBody);
     if (!is_array($decoded)) {
-        $jsonErr = function_exists('json_last_error_msg') ? json_last_error_msg() : 'invalid JSON';
+        $snippet = trim(preg_replace('/\s+/', ' ', $responseBody));
+        if (strlen($snippet) > 140) {
+            $snippet = substr($snippet, 0, 140) . '…';
+        }
         return [
             'ok' => false,
             'domains' => [],
-            'error' => 'IP2WHOIS response could not be parsed (' . $jsonErr . ').',
+            'error' => 'IP2WHOIS returned a non-JSON response'
+                . ($snippet !== '' ? (': ' . $snippet) : '.'),
         ];
-    }
-
-    if ($httpCode >= 400) {
-        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS HTTP ' . $httpCode];
     }
 
     if (isset($decoded['error'])) {
