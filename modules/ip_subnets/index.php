@@ -517,6 +517,133 @@ if (
     exit;
 }
 
+// Network discovery scan (TCP, no exec).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && in_array($crud_action, ['index', 'list_all'], true)
+    && isset($_POST['network_discovery_scan'])
+) {
+    header('Content-Type: application/json; charset=utf-8');
+    cr_require_valid_csrf_token();
+
+    if (!$hasCompany || $company_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Active company is required.']);
+        exit;
+    }
+
+    $rangeStart = (string)($_POST['range_start'] ?? '');
+    $rangeEnd = (string)($_POST['range_end'] ?? '');
+    $batchOffset = max(0, (int)($_POST['batch_offset'] ?? 0));
+    $batchSize = max(1, min(25, (int)($_POST['batch_size'] ?? 5)));
+    $useBatch = isset($_POST['batch_offset']) || isset($_POST['batch_size']);
+
+    if ($useBatch && function_exists('itm_ipam_network_discovery_scan_batch')) {
+        $scanPayload = itm_ipam_network_discovery_scan_batch(
+            $conn,
+            (int)$company_id,
+            $rangeStart,
+            $rangeEnd,
+            $batchOffset,
+            $batchSize
+        );
+    } elseif (!function_exists('itm_ipam_network_discovery_scan')) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Network discovery is not available.']);
+        exit;
+    } else {
+        $scanPayload = itm_ipam_network_discovery_scan(
+            $conn,
+            (int)$company_id,
+            $rangeStart,
+            $rangeEnd
+        );
+    }
+    if (empty($scanPayload['ok'])) {
+        http_response_code(400);
+        echo json_encode([
+            'ok' => false,
+            'error' => (string)($scanPayload['error'] ?? 'Network discovery scan failed.'),
+        ]);
+        exit;
+    }
+
+    echo json_encode($scanPayload);
+    exit;
+}
+
+// Import discovered hosts into ip_addresses inventory.
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && in_array($crud_action, ['index', 'list_all'], true)
+    && isset($_POST['network_discovery_import'])
+) {
+    header('Content-Type: application/json; charset=utf-8');
+    cr_require_valid_csrf_token();
+
+    if (!$hasCompany || $company_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Active company is required.']);
+        exit;
+    }
+
+    if (
+        !function_exists('itm_ipam_network_discovery_import_hosts')
+        && !function_exists('itm_ipam_network_discovery_import_hosts_batch')
+    ) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Network discovery import is not available.']);
+        exit;
+    }
+
+    $hostIpsRaw = trim((string)($_POST['host_ips'] ?? ''));
+    $hostIps = [];
+    if ($hostIpsRaw !== '') {
+        $decoded = json_decode($hostIpsRaw, true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $hostIp) {
+                $hostIps[] = (string)$hostIp;
+            }
+        }
+    }
+    if ($hostIps === []) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'No discovered hosts were selected for import.']);
+        exit;
+    }
+
+    $batchOffset = max(0, (int)($_POST['batch_offset'] ?? 0));
+    $batchSize = max(1, min(25, (int)($_POST['batch_size'] ?? 5)));
+    $useBatch = isset($_POST['batch_offset']) || isset($_POST['batch_size']);
+
+    if ($useBatch && function_exists('itm_ipam_network_discovery_import_hosts_batch')) {
+        $importPayload = itm_ipam_network_discovery_import_hosts_batch(
+            $conn,
+            (int)$company_id,
+            $hostIps,
+            $batchOffset,
+            $batchSize
+        );
+    } elseif (!function_exists('itm_ipam_network_discovery_import_hosts')) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Network discovery import is not available.']);
+        exit;
+    } else {
+        $importPayload = itm_ipam_network_discovery_import_hosts($conn, (int)$company_id, $hostIps);
+    }
+    if (empty($importPayload['ok'])) {
+        http_response_code(400);
+        echo json_encode([
+            'ok' => false,
+            'error' => (string)($importPayload['error'] ?? 'Import failed.'),
+        ]);
+        exit;
+    }
+
+    echo json_encode($importPayload);
+    exit;
+}
+
 // Handle Excel/CSV database import requests from table-tools.js.
 $requestContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
 $isJsonImportRequest = false;
@@ -1101,6 +1228,38 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <small style="flex:1 1 100%;color:#57606a;">Uses TCP connect (no shell). Empty port tries 80, then 443, 22, 53, 3389.</small>
                         <div id="itmPingResult" style="flex:1 1 100%;min-height:20px;font-size:14px;color:#57606a;" aria-live="polite"></div>
                     </div>
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-color, #d0d7de);">
+                        <h3 style="margin:0 0 6px 0;font-size:16px;">Network Discovery</h3>
+                        <p style="margin:0 0 12px 0;color:#57606a;font-size:14px;">Network scanning to find connected devices and add them to inventory (TCP connect only, no shell). Responding hosts are enriched with hosted domains from IP2WHOIS when <code>IP2WHOIS_API_KEY</code> is set in <code>.env</code>.</p>
+                        <p style="margin:0 0 10px 0;color:#57606a;font-size:13px;"><strong>Scope of Inspection</strong> — select an IP range to search for devices (up to 255 addresses at a time).</p>
+                        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <div class="form-group" style="margin:0;min-width:180px;">
+                                <label for="itmDiscoveryRangeStart">Beginning of the Range</label>
+                                <input type="text" id="itmDiscoveryRangeStart" value="192.168.1.1" placeholder="192.168.1.1" inputmode="decimal" autocomplete="off">
+                            </div>
+                            <div class="form-group" style="margin:0;min-width:180px;">
+                                <label for="itmDiscoveryRangeEnd">End of range</label>
+                                <input type="text" id="itmDiscoveryRangeEnd" value="192.168.1.50" placeholder="192.168.1.50" inputmode="decimal" autocomplete="off">
+                            </div>
+                            <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
+                                <button type="button" class="btn btn-primary" id="itmDiscoveryScanBtn">Start the scan</button>
+                                <button type="button" class="btn btn-danger" id="itmDiscoveryStopBtn" style="display:none;">Stop</button>
+                                <button type="button" class="btn" id="itmDiscoveryImportBtn" style="display:none;">Add to inventory</button>
+                            </div>
+                        </div>
+                        <div id="itmDiscoveryProgressWrap" style="display:none;margin-top:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:#57606a;">
+                                <span id="itmDiscoveryProgressLabel">Preparing scan…</span>
+                                <span id="itmDiscoveryProgressPct">0%</span>
+                            </div>
+                            <div style="height:8px;background:#d0d7de;border-radius:4px;overflow:hidden;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="itmDiscoveryProgressTrack">
+                                <div id="itmDiscoveryProgressBar" style="width:0%;height:100%;background:#0969da;border-radius:4px;transition:width 0.15s ease;"></div>
+                            </div>
+                        </div>
+                        <div id="itmDiscoveryStatus" style="margin-top:10px;font-size:14px;color:#57606a;" aria-live="polite"></div>
+                        <div id="itmDiscoveryLog" style="display:none;margin-top:8px;max-height:140px;overflow-y:auto;padding:8px 10px;background:var(--bg-muted, #f6f8fa);border:1px solid var(--border-color, #d0d7de);border-radius:6px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.45;"></div>
+                        <div id="itmDiscoveryResults" style="margin-top:10px;overflow:auto;"></div>
+                    </div>
                 </div>
 
                 <!-- DATA TABLE -->
@@ -1375,7 +1534,7 @@ document.addEventListener('change', function (event) {
     const pingIpInput = document.getElementById('itmPingIp');
     const pingPortInput = document.getElementById('itmPingPort');
     const pingResult = document.getElementById('itmPingResult');
-    if (!pingBtn || !pingIpInput || !pingResult) { return; }
+    const hasPingUi = !!(pingBtn && pingIpInput && pingResult);
 
     const pingEndpoint = <?php echo json_encode($modulePath . '/index.php'); ?>;
     const pingCsrf = <?php echo json_encode($csrfToken); ?>;
@@ -1514,20 +1673,386 @@ document.addEventListener('change', function (event) {
             });
     }
 
-    pingBtn.addEventListener('click', runPingCheck);
-    pingIpInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            runPingCheck();
-        }
-    });
-    if (pingPortInput) {
-        pingPortInput.addEventListener('keydown', function (event) {
+    if (hasPingUi) {
+        pingBtn.addEventListener('click', runPingCheck);
+        pingIpInput.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 runPingCheck();
             }
         });
+        if (pingPortInput) {
+            pingPortInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    runPingCheck();
+                }
+            });
+        }
+    }
+
+    const discoveryScanBtn = document.getElementById('itmDiscoveryScanBtn');
+    const discoveryStopBtn = document.getElementById('itmDiscoveryStopBtn');
+    const discoveryImportBtn = document.getElementById('itmDiscoveryImportBtn');
+    const discoveryRangeStart = document.getElementById('itmDiscoveryRangeStart');
+    const discoveryRangeEnd = document.getElementById('itmDiscoveryRangeEnd');
+    const discoveryStatus = document.getElementById('itmDiscoveryStatus');
+    const discoveryResults = document.getElementById('itmDiscoveryResults');
+    const discoveryProgressWrap = document.getElementById('itmDiscoveryProgressWrap');
+    const discoveryProgressLabel = document.getElementById('itmDiscoveryProgressLabel');
+    const discoveryProgressPct = document.getElementById('itmDiscoveryProgressPct');
+    const discoveryProgressBar = document.getElementById('itmDiscoveryProgressBar');
+    const discoveryProgressTrack = document.getElementById('itmDiscoveryProgressTrack');
+    const discoveryLog = document.getElementById('itmDiscoveryLog');
+    const DISCOVERY_BATCH_SIZE = 5;
+    const IMPORT_BATCH_SIZE = 5;
+    let discoveryBusy = false;
+    let discoveryStopRequested = false;
+    let discoveryAbortController = null;
+    let discoveryHosts = [];
+
+    function escapeHtmlDiscovery(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function setDiscoveryStatus(html, tone) {
+        if (!discoveryStatus) { return; }
+        discoveryStatus.innerHTML = html;
+        discoveryStatus.style.color = tone === 'ok' ? '#1a7f37' : (tone === 'fail' ? '#cf222e' : (tone === 'warn' ? '#9a6700' : '#57606a'));
+    }
+
+    function discoveryLogColor(level) {
+        if (level === 'ok') { return '#1a7f37'; }
+        if (level === 'fail') { return '#cf222e'; }
+        if (level === 'warn') { return '#9a6700'; }
+        if (level === 'muted') { return '#8b949e'; }
+        return '#24292f';
+    }
+
+    function clearDiscoveryLog() {
+        if (discoveryLog) {
+            discoveryLog.innerHTML = '';
+            discoveryLog.style.display = 'none';
+        }
+    }
+
+    function appendDiscoveryLog(activities) {
+        if (!discoveryLog || !activities || !activities.length) { return; }
+        discoveryLog.style.display = 'block';
+        activities.forEach(function (entry) {
+            const line = document.createElement('div');
+            line.style.color = discoveryLogColor(entry.level || 'info');
+            line.textContent = entry.message || '';
+            discoveryLog.appendChild(line);
+        });
+        discoveryLog.scrollTop = discoveryLog.scrollHeight;
+    }
+
+    function setDiscoveryProgress(percent, label) {
+        const pct = Math.max(0, Math.min(100, Math.round(percent)));
+        if (discoveryProgressWrap) { discoveryProgressWrap.style.display = 'block'; }
+        if (discoveryProgressBar) { discoveryProgressBar.style.width = pct + '%'; }
+        if (discoveryProgressPct) { discoveryProgressPct.textContent = pct + '%'; }
+        if (discoveryProgressLabel && label) { discoveryProgressLabel.textContent = label; }
+        if (discoveryProgressTrack) { discoveryProgressTrack.setAttribute('aria-valuenow', String(pct)); }
+    }
+
+    function hideDiscoveryProgress() {
+        if (discoveryProgressWrap) { discoveryProgressWrap.style.display = 'none'; }
+        if (discoveryProgressBar) { discoveryProgressBar.style.width = '0%'; }
+        if (discoveryProgressPct) { discoveryProgressPct.textContent = '0%'; }
+        if (discoveryProgressTrack) { discoveryProgressTrack.setAttribute('aria-valuenow', '0'); }
+    }
+
+    function setDiscoveryRunningUi(running) {
+        if (discoveryScanBtn) { discoveryScanBtn.disabled = running; }
+        if (discoveryImportBtn && running) { discoveryImportBtn.style.display = 'none'; }
+        if (discoveryStopBtn) { discoveryStopBtn.style.display = running ? 'inline-block' : 'none'; }
+        if (discoveryRangeStart) { discoveryRangeStart.disabled = running; }
+        if (discoveryRangeEnd) { discoveryRangeEnd.disabled = running; }
+    }
+
+    function requestDiscoveryStop() {
+        if (!discoveryBusy) { return; }
+        discoveryStopRequested = true;
+        if (discoveryAbortController) {
+            discoveryAbortController.abort();
+        }
+        appendDiscoveryLog([{ level: 'warn', message: 'Stop requested — finishing current step…' }]);
+        setDiscoveryStatus('Stopping…', 'warn');
+        if (discoveryStopBtn) { discoveryStopBtn.disabled = true; }
+    }
+
+    function discoveryPost(actionKey, fields) {
+        const body = new URLSearchParams();
+        body.set(actionKey, '1');
+        body.set('csrf_token', pingCsrf);
+        Object.keys(fields).forEach(function (key) {
+            body.set(key, fields[key]);
+        });
+        discoveryAbortController = new AbortController();
+        return fetch(pingEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: body.toString(),
+            credentials: 'same-origin',
+            signal: discoveryAbortController.signal
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                return { ok: response.ok, data: data };
+            });
+        });
+    }
+
+    function renderDiscoveryResults(hosts) {
+        if (!discoveryResults) { return; }
+        if (!hosts || !hosts.length) {
+            discoveryResults.innerHTML = '<p style="color:#57606a;">No responding hosts were found in this range.</p>';
+            if (discoveryImportBtn) { discoveryImportBtn.style.display = 'none'; }
+            return;
+        }
+
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:14px;"><thead><tr>';
+        html += '<th style="text-align:left;padding:6px;border-bottom:1px solid #d0d7de;">IP</th>';
+        html += '<th style="text-align:left;padding:6px;border-bottom:1px solid #d0d7de;">Port</th>';
+        html += '<th style="text-align:left;padding:6px;border-bottom:1px solid #d0d7de;">Subnet</th>';
+        html += '<th style="text-align:left;padding:6px;border-bottom:1px solid #d0d7de;">Equipment</th>';
+        html += '<th style="text-align:left;padding:6px;border-bottom:1px solid #d0d7de;">Domains (IP2WHOIS)</th>';
+        html += '<th style="text-align:left;padding:6px;border-bottom:1px solid #d0d7de;">Inventory</th>';
+        html += '</tr></thead><tbody>';
+
+        hosts.forEach(function (host) {
+            const inInventory = !!host.in_inventory;
+            const canImport = !inInventory && parseInt(host.subnet_id || '0', 10) > 0;
+            html += '<tr>';
+            html += '<td style="padding:6px;border-bottom:1px solid #eef1f4;">' + escapeHtmlDiscovery(host.ip || '') + '</td>';
+            html += '<td style="padding:6px;border-bottom:1px solid #eef1f4;">' + escapeHtmlDiscovery(host.port_used || '—') + '</td>';
+            html += '<td style="padding:6px;border-bottom:1px solid #eef1f4;">' + escapeHtmlDiscovery(host.subnet_cidr || '—') + '</td>';
+            html += '<td style="padding:6px;border-bottom:1px solid #eef1f4;">' + escapeHtmlDiscovery(host.equipment_label || '—') + '</td>';
+            let domainCell = '—';
+            if (host.domains && host.domains.length) {
+                domainCell = escapeHtmlDiscovery(host.domains.slice(0, 3).join(', '));
+                if (host.domains.length > 3 || (parseInt(host.total_domains || '0', 10) > host.domains.length)) {
+                    const totalDomains = parseInt(host.total_domains || String(host.domains.length), 10);
+                    domainCell += ' <span style="color:#57606a;">(' + totalDomains + ' total)</span>';
+                }
+            } else if (host.domain_primary) {
+                domainCell = escapeHtmlDiscovery(host.domain_primary);
+            }
+            html += '<td style="padding:6px;border-bottom:1px solid #eef1f4;">' + domainCell + '</td>';
+            html += '<td style="padding:6px;border-bottom:1px solid #eef1f4;color:' + (inInventory ? '#1a7f37' : (canImport ? '#9a6700' : '#cf222e')) + ';">';
+            html += inInventory ? 'In inventory' : (canImport ? 'Ready to add' : 'No matching subnet');
+            html += '</td></tr>';
+        });
+
+        html += '</tbody></table>';
+        discoveryResults.innerHTML = html;
+
+        const importable = hosts.filter(function (host) {
+            return !host.in_inventory && parseInt(host.subnet_id || '0', 10) > 0;
+        });
+        if (discoveryImportBtn) {
+            discoveryImportBtn.style.display = importable.length ? 'inline-block' : 'none';
+            discoveryImportBtn.textContent = 'Add ' + importable.length + ' to inventory';
+        }
+    }
+
+    function runDiscoveryScanBatch(rangeStart, rangeEnd, offset, totalHosts) {
+        if (discoveryStopRequested) {
+            return Promise.resolve({ stopped: true });
+        }
+
+        return discoveryPost('network_discovery_scan', {
+            range_start: rangeStart,
+            range_end: rangeEnd,
+            batch_offset: String(offset),
+            batch_size: String(DISCOVERY_BATCH_SIZE)
+        }).then(function (result) {
+            if (!result.ok || !result.data || !result.data.ok) {
+                throw new Error((result.data && result.data.error) ? result.data.error : 'Scan failed.');
+            }
+            const data = result.data;
+            const batchHosts = data.hosts || [];
+            discoveryHosts = discoveryHosts.concat(batchHosts);
+            appendDiscoveryLog(data.activities || []);
+
+            const total = parseInt(data.total || String(totalHosts || 0), 10);
+            const nextOffset = parseInt(data.next_offset || '0', 10);
+            const pct = total > 0 ? (nextOffset / total) * 100 : 100;
+            setDiscoveryProgress(pct, data.detail || ('Scanning ' + nextOffset + ' of ' + total + '…'));
+            setDiscoveryStatus(data.detail || 'Scanning…', 'neutral');
+
+            if (discoveryStopRequested) {
+                return { stopped: true, total: total, found: discoveryHosts.length };
+            }
+            if (!data.complete && nextOffset < total) {
+                return runDiscoveryScanBatch(rangeStart, rangeEnd, nextOffset, total);
+            }
+            return { stopped: false, total: total, found: discoveryHosts.length };
+        });
+    }
+
+    function runDiscoveryScan() {
+        if (discoveryBusy || !discoveryScanBtn) { return; }
+        const rangeStart = (discoveryRangeStart && discoveryRangeStart.value || '').trim();
+        const rangeEnd = (discoveryRangeEnd && discoveryRangeEnd.value || '').trim();
+        if (rangeStart === '' || rangeEnd === '') {
+            setDiscoveryStatus('Enter beginning and end of the IP range.', 'fail');
+            return;
+        }
+
+        discoveryBusy = true;
+        discoveryStopRequested = false;
+        discoveryHosts = [];
+        setDiscoveryRunningUi(true);
+        if (discoveryStopBtn) { discoveryStopBtn.disabled = false; }
+        clearDiscoveryLog();
+        setDiscoveryProgress(0, 'Preparing scan…');
+        setDiscoveryStatus('Starting network discovery (TCP, no shell)…', 'neutral');
+        if (discoveryResults) { discoveryResults.innerHTML = ''; }
+
+        runDiscoveryScanBatch(rangeStart, rangeEnd, 0, 0)
+            .then(function (outcome) {
+                if (outcome && outcome.stopped) {
+                    setDiscoveryProgress(outcome.total > 0 ? (discoveryHosts.length / outcome.total) * 100 : 0, 'Scan stopped');
+                    setDiscoveryStatus(
+                        'Scan stopped. Scanned partial range; found ' + discoveryHosts.length + ' responding host(s).',
+                        discoveryHosts.length > 0 ? 'warn' : 'fail'
+                    );
+                } else {
+                    setDiscoveryProgress(100, 'Scan complete');
+                    const found = discoveryHosts.length;
+                    setDiscoveryStatus(
+                        'Scanned ' + (outcome && outcome.total ? outcome.total : 'all') + ' address(es); found ' + found + ' responding host(s).',
+                        found > 0 ? 'ok' : 'fail'
+                    );
+                }
+                renderDiscoveryResults(discoveryHosts);
+            })
+            .catch(function (error) {
+                if (error && error.name === 'AbortError') {
+                    setDiscoveryStatus('Scan stopped.', 'warn');
+                    renderDiscoveryResults(discoveryHosts);
+                    return;
+                }
+                setDiscoveryStatus(escapeHtmlDiscovery(error && error.message ? error.message : 'Scan failed.'), 'fail');
+                if (discoveryResults && !discoveryHosts.length) { discoveryResults.innerHTML = ''; }
+            })
+            .finally(function () {
+                discoveryBusy = false;
+                discoveryStopRequested = false;
+                discoveryAbortController = null;
+                setDiscoveryRunningUi(false);
+                if (discoveryImportBtn) { discoveryImportBtn.disabled = false; }
+            });
+    }
+
+    function runDiscoveryImportBatch(importableIps, offset, totals) {
+        if (discoveryStopRequested) {
+            return Promise.resolve({ stopped: true, added: totals.added, skipped: totals.skipped });
+        }
+
+        return discoveryPost('network_discovery_import', {
+            host_ips: JSON.stringify(importableIps),
+            batch_offset: String(offset),
+            batch_size: String(IMPORT_BATCH_SIZE)
+        }).then(function (result) {
+            if (!result.ok || !result.data || !result.data.ok) {
+                throw new Error((result.data && result.data.error) ? result.data.error : 'Import failed.');
+            }
+            const data = result.data;
+            totals.added += parseInt(data.added || '0', 10);
+            totals.skipped += parseInt(data.skipped || '0', 10);
+            appendDiscoveryLog(data.activities || []);
+
+            const total = parseInt(data.total || String(importableIps.length), 10);
+            const nextOffset = parseInt(data.next_offset || '0', 10);
+            const pct = total > 0 ? (nextOffset / total) * 100 : 100;
+            setDiscoveryProgress(pct, data.detail || ('Importing ' + nextOffset + ' of ' + total + '…'));
+            setDiscoveryStatus(data.detail || 'Importing…', 'neutral');
+
+            if (discoveryStopRequested) {
+                return { stopped: true, added: totals.added, skipped: totals.skipped };
+            }
+            if (!data.complete && nextOffset < total) {
+                return runDiscoveryImportBatch(importableIps, nextOffset, totals);
+            }
+            return { stopped: false, added: totals.added, skipped: totals.skipped };
+        });
+    }
+
+    function runDiscoveryImport() {
+        if (discoveryBusy || !discoveryImportBtn) { return; }
+        const importableIps = discoveryHosts
+            .filter(function (host) {
+                return !host.in_inventory && parseInt(host.subnet_id || '0', 10) > 0;
+            })
+            .map(function (host) { return host.ip; });
+
+        if (!importableIps.length) {
+            setDiscoveryStatus('No discovered hosts are ready to import.', 'fail');
+            return;
+        }
+
+        discoveryBusy = true;
+        discoveryStopRequested = false;
+        discoveryImportBtn.disabled = true;
+        setDiscoveryRunningUi(true);
+        if (discoveryStopBtn) { discoveryStopBtn.disabled = false; }
+        clearDiscoveryLog();
+        setDiscoveryProgress(0, 'Preparing import…');
+        setDiscoveryStatus('Adding ' + importableIps.length + ' host(s) to inventory…', 'neutral');
+
+        const totals = { added: 0, skipped: 0 };
+        runDiscoveryImportBatch(importableIps, 0, totals)
+            .then(function (outcome) {
+                const added = outcome ? outcome.added : totals.added;
+                const skipped = outcome ? outcome.skipped : totals.skipped;
+                if (outcome && outcome.stopped) {
+                    setDiscoveryProgress(0, 'Import stopped');
+                    setDiscoveryStatus('Import stopped. Added ' + added + ' host(s); skipped ' + skipped + '.', added > 0 ? 'warn' : 'fail');
+                } else {
+                    setDiscoveryProgress(100, 'Import complete');
+                    setDiscoveryStatus('Added ' + added + ' host(s) to inventory. Skipped ' + skipped + '.', added > 0 ? 'ok' : 'fail');
+                }
+                if (!(outcome && outcome.stopped)) {
+                    discoveryHosts.forEach(function (host) {
+                        if (importableIps.indexOf(host.ip) !== -1) {
+                            host.in_inventory = true;
+                        }
+                    });
+                }
+                renderDiscoveryResults(discoveryHosts);
+            })
+            .catch(function (error) {
+                if (error && error.name === 'AbortError') {
+                    setDiscoveryStatus('Import stopped.', 'warn');
+                    return;
+                }
+                setDiscoveryStatus(escapeHtmlDiscovery(error && error.message ? error.message : 'Import failed.'), 'fail');
+            })
+            .finally(function () {
+                discoveryBusy = false;
+                discoveryStopRequested = false;
+                discoveryAbortController = null;
+                setDiscoveryRunningUi(false);
+                discoveryImportBtn.disabled = false;
+                hideDiscoveryProgress();
+            });
+    }
+
+    if (discoveryScanBtn) {
+        discoveryScanBtn.addEventListener('click', runDiscoveryScan);
+    }
+    if (discoveryStopBtn) {
+        discoveryStopBtn.addEventListener('click', requestDiscoveryStop);
+    }
+    if (discoveryImportBtn) {
+        discoveryImportBtn.addEventListener('click', runDiscoveryImport);
     }
 })();
 </script>

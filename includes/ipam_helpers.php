@@ -331,6 +331,709 @@ function itm_ipam_run_ping_port_check(string $ip, string $portRaw): array
 }
 
 /**
+ * Why: Discovery UI accepts human start/end IPs and must cap scan size for PHP timeouts.
+ *
+ * @return array{ok: bool, ips: array<int, string>, error: string}
+ */
+function itm_ipam_ipv4_range_from_bounds(string $startIp, string $endIp, int $maxHosts = 255): array
+{
+    $startIp = itm_ipam_trim_user_input($startIp);
+    $endIp = itm_ipam_trim_user_input($endIp);
+    if (!itm_ipam_is_valid_ipv4($startIp) || !itm_ipam_is_valid_ipv4($endIp)) {
+        return ['ok' => false, 'ips' => [], 'error' => 'Beginning and end of range must be valid IPv4 addresses.'];
+    }
+
+    $startLong = ip2long($startIp);
+    $endLong = ip2long($endIp);
+    if ($startLong === false || $endLong === false) {
+        return ['ok' => false, 'ips' => [], 'error' => 'Range addresses could not be parsed.'];
+    }
+    if ($startLong > $endLong) {
+        return ['ok' => false, 'ips' => [], 'error' => 'Beginning of range must be less than or equal to end of range.'];
+    }
+
+    $count = ($endLong - $startLong) + 1;
+    if ($count > $maxHosts) {
+        return ['ok' => false, 'ips' => [], 'error' => 'Select a range of up to ' . $maxHosts . ' addresses at a time.'];
+    }
+
+    $ips = [];
+    for ($long = $startLong; $long <= $endLong; $long++) {
+        $ip = long2ip($long);
+        if ($ip !== false) {
+            $ips[] = $ip;
+        }
+    }
+
+    return ['ok' => true, 'ips' => $ips, 'error' => ''];
+}
+
+/**
+ * @return array<int, array{id: int, network_ip: string, prefix_length: int, cidr: string}>
+ */
+function itm_ipam_load_company_subnets_for_discovery(mysqli $conn, int $company_id): array
+{
+    if ($company_id <= 0 || !itm_ipam_table_exists($conn, 'ip_subnets')) {
+        return [];
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, network_ip, prefix_length, cidr
+         FROM ip_subnets
+         WHERE company_id = ? AND active = 1
+         ORDER BY prefix_length DESC, cidr ASC'
+    );
+    if (!$stmt) {
+        return [];
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $company_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'network_ip' => (string)($row['network_ip'] ?? ''),
+            'prefix_length' => (int)($row['prefix_length'] ?? 0),
+            'cidr' => (string)($row['cidr'] ?? ''),
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return $rows;
+}
+
+function itm_ipam_find_subnet_id_for_ip(string $ip, array $subnets): int
+{
+    foreach ($subnets as $subnet) {
+        $networkIp = (string)($subnet['network_ip'] ?? '');
+        $prefixLength = (int)($subnet['prefix_length'] ?? 0);
+        if ($networkIp === '' || $prefixLength < 0 || $prefixLength > 32) {
+            continue;
+        }
+        if (itm_ipam_ipv4_in_cidr($ip, $networkIp, $prefixLength)) {
+            return (int)($subnet['id'] ?? 0);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * @return string
+ */
+function itm_ipam_get_ip2whois_api_key(): string
+{
+    if (defined('IP2WHOIS_API_KEY')) {
+        return trim((string)IP2WHOIS_API_KEY);
+    }
+
+    $fromEnv = trim((string)getenv('IP2WHOIS_API_KEY'));
+    if ($fromEnv !== '') {
+        return $fromEnv;
+    }
+
+    return trim((string)getenv('ITM_IP2WHOIS_API_KEY'));
+}
+
+/**
+ * Why: Prefer the first hosted domain as a hostname hint when equipment has no hostname.
+ */
+function itm_ipam_domain_to_hostname_hint(string $domain): string
+{
+    $domain = strtolower(trim($domain));
+    if ($domain === '') {
+        return '';
+    }
+    if (strpos($domain, 'www.') === 0) {
+        $domain = substr($domain, 4);
+    }
+    if (strlen($domain) > 253) {
+        $domain = substr($domain, 0, 253);
+    }
+
+    return $domain;
+}
+
+/**
+ * Reverse hosted-domain lookup via IP2WHOIS (HTTPS + curl, no shell exec).
+ *
+ * @return array{
+ *   ok: bool,
+ *   domains: array<int, string>,
+ *   total_domains?: int,
+ *   skipped?: bool,
+ *   error?: string
+ * }
+ */
+function itm_ipam_ip2whois_lookup_domains(string $ip, int $page = 1): array
+{
+    if (!itm_ipam_is_valid_ipv4($ip)) {
+        return ['ok' => false, 'domains' => [], 'error' => 'Invalid IP address.'];
+    }
+
+    $apiKey = itm_ipam_get_ip2whois_api_key();
+    if ($apiKey === '' || $apiKey === 'YOUR_IP2WHOIS_API_KEY_HERE') {
+        return ['ok' => true, 'domains' => [], 'skipped' => true, 'error' => ''];
+    }
+
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'domains' => [], 'error' => 'cURL extension is not available.'];
+    }
+
+    $baseUrl = defined('IP2WHOIS_DOMAINS_URL') ? (string)IP2WHOIS_DOMAINS_URL : 'https://domains.ip2whois.com/domains';
+    $query = http_build_query([
+        'ip' => $ip,
+        'key' => $apiKey,
+        'format' => 'json',
+        'page' => max(1, $page),
+    ]);
+    $url = $baseUrl . '?' . $query;
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
+    $responseBody = curl_exec($ch);
+    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrNo = (int)curl_errno($ch);
+    $curlErrText = (string)curl_error($ch);
+    curl_close($ch);
+
+    if ($curlErrNo !== 0) {
+        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS request failed: ' . $curlErrText];
+    }
+    if ($responseBody === false || $responseBody === '') {
+        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS returned an empty response.'];
+    }
+
+    $decoded = json_decode($responseBody, true);
+    if (!is_array($decoded)) {
+        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS response could not be parsed.'];
+    }
+
+    if (isset($decoded['error']) && is_array($decoded['error'])) {
+        $errorMessage = trim((string)($decoded['error']['error_message'] ?? 'IP2WHOIS lookup failed.'));
+        return ['ok' => false, 'domains' => [], 'error' => $errorMessage];
+    }
+
+    if ($httpCode >= 400) {
+        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS HTTP ' . $httpCode];
+    }
+
+    $domains = [];
+    if (isset($decoded['domains']) && is_array($decoded['domains'])) {
+        foreach ($decoded['domains'] as $domainName) {
+            $domainName = trim((string)$domainName);
+            if ($domainName !== '') {
+                $domains[] = $domainName;
+            }
+        }
+    }
+
+    return [
+        'ok' => true,
+        'domains' => $domains,
+        'total_domains' => (int)($decoded['total_domains'] ?? count($domains)),
+        'page' => (int)($decoded['page'] ?? $page),
+        'total_pages' => (int)($decoded['total_pages'] ?? 1),
+    ];
+}
+
+/**
+ * Why: Discovery scans use a short TCP probe only (no ICMP/exec).
+ *
+ * @return array{alive: bool, port_used: int|null, response_ms: float|null}
+ */
+function itm_ipam_quick_host_alive(string $ip, float $timeout = 0.35): array
+{
+    foreach ([80, 443, 22, 135, 3389] as $port) {
+        $probe = itm_ipam_socket_ping($ip, $port, $timeout);
+        if (!empty($probe['reachable'])) {
+            return [
+                'alive' => true,
+                'port_used' => (int)$port,
+                'response_ms' => $probe['response_ms'] ?? null,
+            ];
+        }
+    }
+
+    return ['alive' => false, 'port_used' => null, 'response_ms' => null];
+}
+
+/**
+ * @param array<int, string> $ips
+ * @return array{hosts: array<int, array<string, mixed>>, activities: array<int, array{level: string, message: string}>}
+ */
+function itm_ipam_network_discovery_scan_ips(
+    mysqli $conn,
+    int $company_id,
+    array $ips,
+    float $probeTimeout = 0.35
+): array {
+    $subnets = itm_ipam_load_company_subnets_for_discovery($conn, $company_id);
+    $stmtExists = mysqli_prepare(
+        $conn,
+        'SELECT id, equipment_id FROM ip_addresses WHERE company_id = ? AND subnet_id = ? AND ip_text = ? LIMIT 1'
+    );
+
+    $hosts = [];
+    $activities = [];
+
+    foreach ($ips as $ip) {
+        $activities[] = [
+            'level' => 'info',
+            'message' => 'Probing ' . $ip . ' (TCP ports 80, 443, 22, 135, 3389)…',
+        ];
+
+        $aliveProbe = itm_ipam_quick_host_alive($ip, $probeTimeout);
+        if (empty($aliveProbe['alive'])) {
+            $activities[] = ['level' => 'muted', 'message' => $ip . ': no TCP response'];
+            continue;
+        }
+
+        $portUsed = (int)($aliveProbe['port_used'] ?? 0);
+        $responseMs = $aliveProbe['response_ms'] ?? null;
+        $responseLabel = $responseMs !== null ? round((float)$responseMs, 1) . ' ms' : 'n/a';
+        $activities[] = [
+            'level' => 'ok',
+            'message' => $ip . ': host responded on port ' . $portUsed . ' (' . $responseLabel . ')',
+        ];
+
+        $subnetId = itm_ipam_find_subnet_id_for_ip($ip, $subnets);
+        $subnetCidr = '';
+        foreach ($subnets as $subnet) {
+            if ((int)($subnet['id'] ?? 0) === $subnetId) {
+                $subnetCidr = (string)($subnet['cidr'] ?? '');
+                break;
+            }
+        }
+
+        $inventoryId = 0;
+        $inventoryEquipmentId = 0;
+        if ($stmtExists && $subnetId > 0) {
+            mysqli_stmt_bind_param($stmtExists, 'iis', $company_id, $subnetId, $ip);
+            mysqli_stmt_execute($stmtExists);
+            $existsRes = mysqli_stmt_get_result($stmtExists);
+            $existsRow = $existsRes ? mysqli_fetch_assoc($existsRes) : null;
+            if ($existsRow) {
+                $inventoryId = (int)($existsRow['id'] ?? 0);
+                $inventoryEquipmentId = (int)($existsRow['equipment_id'] ?? 0);
+            }
+        }
+
+        $equipment = itm_ipam_find_equipment_by_ip_text($conn, $company_id, $ip);
+        $equipmentId = (int)($equipment['id'] ?? 0);
+        if ($inventoryEquipmentId > 0) {
+            $equipmentId = $inventoryEquipmentId;
+        }
+
+        $equipmentLabel = '';
+        if ($equipmentId > 0 && $equipment) {
+            $equipmentLabel = trim((string)($equipment['hostname'] ?? ''));
+            if ($equipmentLabel === '') {
+                $equipmentLabel = trim((string)($equipment['name'] ?? ''));
+            }
+        }
+
+        if ($subnetId > 0) {
+            $activities[] = [
+                'level' => 'info',
+                'message' => $ip . ': matched subnet ' . ($subnetCidr !== '' ? $subnetCidr : ('#' . $subnetId)),
+            ];
+        } else {
+            $activities[] = [
+                'level' => 'warn',
+                'message' => $ip . ': no company subnet covers this address',
+            ];
+        }
+
+        if ($inventoryId > 0) {
+            $activities[] = ['level' => 'muted', 'message' => $ip . ': already in IP inventory'];
+        }
+
+        $domains = [];
+        $domainPrimary = '';
+        $totalDomains = 0;
+        $domainLookup = itm_ipam_ip2whois_lookup_domains($ip);
+        if (!empty($domainLookup['skipped'])) {
+            $activities[] = [
+                'level' => 'muted',
+                'message' => $ip . ': IP2WHOIS lookup skipped (set IP2WHOIS_API_KEY in .env)',
+            ];
+        } elseif (empty($domainLookup['ok'])) {
+            $activities[] = [
+                'level' => 'warn',
+                'message' => $ip . ': IP2WHOIS — ' . (string)($domainLookup['error'] ?? 'lookup failed'),
+            ];
+        } else {
+            $domains = $domainLookup['domains'] ?? [];
+            $totalDomains = (int)($domainLookup['total_domains'] ?? count($domains));
+            if ($domains !== []) {
+                $domainPrimary = (string)$domains[0];
+                $preview = implode(', ', array_slice($domains, 0, 3));
+                if (count($domains) > 3) {
+                    $preview .= '…';
+                }
+                $totalLabel = $totalDomains > count($domains)
+                    ? (' (' . $totalDomains . ' total)')
+                    : '';
+                $activities[] = [
+                    'level' => 'info',
+                    'message' => $ip . ': IP2WHOIS hosted domains' . $totalLabel . ' — ' . $preview,
+                ];
+            } else {
+                $activities[] = ['level' => 'muted', 'message' => $ip . ': IP2WHOIS returned no hosted domains'];
+            }
+        }
+
+        $hosts[] = [
+            'ip' => $ip,
+            'port_used' => $aliveProbe['port_used'] ?? null,
+            'response_ms' => $aliveProbe['response_ms'] ?? null,
+            'subnet_id' => $subnetId,
+            'subnet_cidr' => $subnetCidr,
+            'equipment_id' => $equipmentId,
+            'equipment_label' => $equipmentLabel,
+            'domains' => $domains,
+            'domain_primary' => $domainPrimary,
+            'total_domains' => $totalDomains,
+            'in_inventory' => $inventoryId > 0,
+            'inventory_id' => $inventoryId,
+        ];
+    }
+
+    if ($stmtExists) {
+        mysqli_stmt_close($stmtExists);
+    }
+
+    return ['hosts' => $hosts, 'activities' => $activities];
+}
+
+/**
+ * @return array{ok: bool, error?: string, scanned?: int, found?: int, hosts?: array<int, array<string, mixed>>, activities?: array<int, array{level: string, message: string}>}
+ */
+function itm_ipam_network_discovery_scan(
+    mysqli $conn,
+    int $company_id,
+    string $rangeStart,
+    string $rangeEnd,
+    float $probeTimeout = 0.35
+): array {
+    if ($company_id <= 0) {
+        return ['ok' => false, 'error' => 'Active company is required.'];
+    }
+    if (!itm_ipam_table_exists($conn, 'ip_addresses')) {
+        return ['ok' => false, 'error' => 'IP address inventory is not available.'];
+    }
+
+    $range = itm_ipam_ipv4_range_from_bounds($rangeStart, $rangeEnd);
+    if (empty($range['ok'])) {
+        return ['ok' => false, 'error' => (string)($range['error'] ?? 'Invalid IP range.')];
+    }
+
+    if (function_exists('set_time_limit')) {
+        @set_time_limit(180);
+    }
+
+    $ips = $range['ips'] ?? [];
+    $scanResult = itm_ipam_network_discovery_scan_ips($conn, $company_id, $ips, $probeTimeout);
+    $hosts = $scanResult['hosts'] ?? [];
+
+    return [
+        'ok' => true,
+        'scanned' => count($ips),
+        'found' => count($hosts),
+        'hosts' => $hosts,
+        'activities' => $scanResult['activities'] ?? [],
+    ];
+}
+
+/**
+ * Why: Batched AJAX requests keep the UI responsive and allow a real progress bar.
+ *
+ * @return array<string, mixed>
+ */
+function itm_ipam_network_discovery_scan_batch(
+    mysqli $conn,
+    int $company_id,
+    string $rangeStart,
+    string $rangeEnd,
+    int $offset,
+    int $batchSize = 5,
+    float $probeTimeout = 0.35
+): array {
+    if ($company_id <= 0) {
+        return ['ok' => false, 'error' => 'Active company is required.'];
+    }
+    if (!itm_ipam_table_exists($conn, 'ip_addresses')) {
+        return ['ok' => false, 'error' => 'IP address inventory is not available.'];
+    }
+
+    $range = itm_ipam_ipv4_range_from_bounds($rangeStart, $rangeEnd);
+    if (empty($range['ok'])) {
+        return ['ok' => false, 'error' => (string)($range['error'] ?? 'Invalid IP range.')];
+    }
+
+    if (function_exists('set_time_limit')) {
+        @set_time_limit(60);
+    }
+
+    $offset = max(0, $offset);
+    $batchSize = max(1, min(25, $batchSize));
+    $allIps = $range['ips'] ?? [];
+    $total = count($allIps);
+    $batchIps = array_slice($allIps, $offset, $batchSize);
+    $batchCount = count($batchIps);
+    $nextOffset = $offset + $batchCount;
+    $complete = $nextOffset >= $total;
+
+    $activities = [];
+    if ($offset === 0) {
+        $activities[] = [
+            'level' => 'info',
+            'message' => 'Validated range ' . $rangeStart . ' – ' . $rangeEnd . ' (' . $total . ' address' . ($total === 1 ? '' : 'es') . ')',
+        ];
+    }
+    if ($batchCount === 0) {
+        return [
+            'ok' => true,
+            'total' => $total,
+            'offset' => $offset,
+            'next_offset' => $nextOffset,
+            'complete' => true,
+            'scanned' => 0,
+            'found' => 0,
+            'hosts' => [],
+            'activities' => $activities,
+            'detail' => 'Scan complete.',
+        ];
+    }
+
+    $activities[] = [
+        'level' => 'info',
+        'message' => 'Batch ' . (int)floor($offset / $batchSize + 1) . ': scanning ' . $batchIps[0] . ' – ' . $batchIps[$batchCount - 1],
+    ];
+
+    $scanResult = itm_ipam_network_discovery_scan_ips($conn, $company_id, $batchIps, $probeTimeout);
+    $hosts = $scanResult['hosts'] ?? [];
+    $activities = array_merge($activities, $scanResult['activities'] ?? []);
+
+    $detail = $complete
+        ? ('Finished scanning ' . $total . ' address' . ($total === 1 ? '' : 'es') . '.')
+        : ('Scanned ' . $nextOffset . ' of ' . $total . ' addresses…');
+
+    return [
+        'ok' => true,
+        'total' => $total,
+        'offset' => $offset,
+        'next_offset' => $nextOffset,
+        'complete' => $complete,
+        'scanned' => $batchCount,
+        'found' => count($hosts),
+        'hosts' => $hosts,
+        'activities' => $activities,
+        'detail' => $detail,
+    ];
+}
+
+/**
+ * @param array<int, string> $hostIps
+ * @return array{ok: bool, error?: string, added?: int, skipped?: int, details?: array<int, array<string, mixed>>, activities?: array<int, array{level: string, message: string}>}
+ */
+function itm_ipam_network_discovery_import_hosts(mysqli $conn, int $company_id, array $hostIps): array
+{
+    $batch = itm_ipam_network_discovery_import_hosts_batch($conn, $company_id, $hostIps, 0, max(1, count($hostIps)));
+    if (empty($batch['ok'])) {
+        return ['ok' => false, 'error' => (string)($batch['error'] ?? 'Import failed.')];
+    }
+
+    return [
+        'ok' => true,
+        'added' => (int)($batch['added'] ?? 0),
+        'skipped' => (int)($batch['skipped'] ?? 0),
+        'details' => $batch['details'] ?? [],
+        'activities' => $batch['activities'] ?? [],
+    ];
+}
+
+/**
+ * @param array<int, string> $hostIps
+ * @return array<string, mixed>
+ */
+function itm_ipam_network_discovery_import_hosts_batch(
+    mysqli $conn,
+    int $company_id,
+    array $hostIps,
+    int $offset,
+    int $batchSize = 5
+): array {
+    if ($company_id <= 0) {
+        return ['ok' => false, 'error' => 'Active company is required.'];
+    }
+    if (!itm_ipam_table_exists($conn, 'ip_addresses')) {
+        return ['ok' => false, 'error' => 'IP address inventory is not available.'];
+    }
+
+    $offset = max(0, $offset);
+    $batchSize = max(1, min(25, $batchSize));
+    $total = count($hostIps);
+    $batchIps = array_slice($hostIps, $offset, $batchSize);
+    $batchCount = count($batchIps);
+    $nextOffset = $offset + $batchCount;
+    $complete = $nextOffset >= $total;
+
+    $subnets = itm_ipam_load_company_subnets_for_discovery($conn, $company_id);
+    $stmtExists = mysqli_prepare(
+        $conn,
+        'SELECT id FROM ip_addresses WHERE company_id = ? AND subnet_id = ? AND ip_text = ? LIMIT 1'
+    );
+    $stmtInsertWithEquip = mysqli_prepare(
+        $conn,
+        'INSERT INTO ip_addresses (company_id, subnet_id, ip_text, status, equipment_id, hostname, notes, active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+    );
+    $stmtInsertNoEquip = mysqli_prepare(
+        $conn,
+        'INSERT INTO ip_addresses (company_id, subnet_id, ip_text, status, hostname, notes, active)
+         VALUES (?, ?, ?, ?, ?, ?, 1)'
+    );
+
+    $added = 0;
+    $skipped = 0;
+    $details = [];
+    $activities = [];
+
+    if ($offset === 0 && $total > 0) {
+        $activities[] = [
+            'level' => 'info',
+            'message' => 'Importing ' . $total . ' discovered host' . ($total === 1 ? '' : 's') . ' into IP inventory…',
+        ];
+    }
+
+    foreach ($batchIps as $rawIp) {
+        $ip = itm_ipam_trim_user_input((string)$rawIp);
+        $activities[] = ['level' => 'info', 'message' => 'Importing ' . $ip . '…'];
+
+        if (!itm_ipam_is_valid_ipv4($ip)) {
+            $skipped++;
+            $details[] = ['ip' => $ip, 'status' => 'invalid'];
+            $activities[] = ['level' => 'warn', 'message' => $ip . ': skipped (invalid IP)'];
+            continue;
+        }
+
+        $subnetId = itm_ipam_find_subnet_id_for_ip($ip, $subnets);
+        if ($subnetId <= 0) {
+            $skipped++;
+            $details[] = ['ip' => $ip, 'status' => 'no_subnet'];
+            $activities[] = ['level' => 'warn', 'message' => $ip . ': skipped (no matching subnet)'];
+            continue;
+        }
+
+        if ($stmtExists) {
+            mysqli_stmt_bind_param($stmtExists, 'iis', $company_id, $subnetId, $ip);
+            mysqli_stmt_execute($stmtExists);
+            $existsRes = mysqli_stmt_get_result($stmtExists);
+            if ($existsRes && mysqli_num_rows($existsRes) > 0) {
+                $skipped++;
+                $details[] = ['ip' => $ip, 'status' => 'exists'];
+                $activities[] = ['level' => 'muted', 'message' => $ip . ': already in inventory'];
+                continue;
+            }
+        }
+
+        $equipment = itm_ipam_find_equipment_by_ip_text($conn, $company_id, $ip);
+        $equipmentId = (int)($equipment['id'] ?? 0);
+        $hostname = $equipment ? trim((string)($equipment['hostname'] ?? '')) : '';
+        if ($hostname === '') {
+            $domainLookup = itm_ipam_ip2whois_lookup_domains($ip);
+            if (!empty($domainLookup['ok']) && !empty($domainLookup['domains'][0])) {
+                $hostname = itm_ipam_domain_to_hostname_hint((string)$domainLookup['domains'][0]);
+                if ($hostname !== '') {
+                    $activities[] = [
+                        'level' => 'info',
+                        'message' => $ip . ': hostname from IP2WHOIS — ' . $hostname,
+                    ];
+                }
+            }
+        }
+        $status = 'used';
+        $notes = 'Discovered via network scan';
+
+        $insertOk = false;
+        if ($equipmentId > 0 && $stmtInsertWithEquip) {
+            mysqli_stmt_bind_param(
+                $stmtInsertWithEquip,
+                'iississ',
+                $company_id,
+                $subnetId,
+                $ip,
+                $status,
+                $equipmentId,
+                $hostname,
+                $notes
+            );
+            $insertOk = mysqli_stmt_execute($stmtInsertWithEquip);
+        } elseif ($stmtInsertNoEquip) {
+            mysqli_stmt_bind_param(
+                $stmtInsertNoEquip,
+                'iissss',
+                $company_id,
+                $subnetId,
+                $ip,
+                $status,
+                $hostname,
+                $notes
+            );
+            $insertOk = mysqli_stmt_execute($stmtInsertNoEquip);
+        }
+
+        if (!$insertOk) {
+            $skipped++;
+            $details[] = ['ip' => $ip, 'status' => 'error'];
+            $activities[] = ['level' => 'fail', 'message' => $ip . ': database insert failed'];
+            continue;
+        }
+
+        $added++;
+        $details[] = ['ip' => $ip, 'status' => 'added', 'subnet_id' => $subnetId];
+        $activities[] = [
+            'level' => 'ok',
+            'message' => $ip . ': added to inventory' . ($equipmentId > 0 ? ' (linked equipment)' : ''),
+        ];
+    }
+
+    if ($stmtExists) {
+        mysqli_stmt_close($stmtExists);
+    }
+    if ($stmtInsertWithEquip) {
+        mysqli_stmt_close($stmtInsertWithEquip);
+    }
+    if ($stmtInsertNoEquip) {
+        mysqli_stmt_close($stmtInsertNoEquip);
+    }
+
+    $detail = $complete
+        ? ('Import finished (' . $total . ' host' . ($total === 1 ? '' : 's') . ' processed).')
+        : ('Processed ' . $nextOffset . ' of ' . $total . ' hosts…');
+
+    return [
+        'ok' => true,
+        'total' => $total,
+        'offset' => $offset,
+        'next_offset' => $nextOffset,
+        'complete' => $complete,
+        'added' => $added,
+        'skipped' => $skipped,
+        'details' => $details,
+        'activities' => $activities,
+        'detail' => $detail,
+    ];
+}
+
+/**
  * Why: Keep equipment.ip_address aligned when an IPAM row is assigned to an asset.
  */
 function itm_ipam_sync_equipment_ip_address(
