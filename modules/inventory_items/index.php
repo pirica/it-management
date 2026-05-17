@@ -69,104 +69,34 @@ function cr_fk_map($conn, $table) {
     $map = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $columnName = (string)($row['COLUMN_NAME'] ?? '');
-        if ($columnName === '' || isset($map[$columnName])) {
-            continue;
-        }
-        $map[$columnName] = $row;
+        $map[$row['COLUMN_NAME']] = $row;
     }
     return $map;
-}
-
-/**
- * Why: information_schema or legacy imports can surface the same FK id twice in dropdown markup.
- *
- * @param array<int, array{id: mixed, label: mixed}> $rows
- * @return array<int, array{id: int, label: string}>
- */
-function cr_fk_options_dedupe_by_id(array $rows): array
-{
-    $deduped = [];
-    $seen = [];
-    foreach ($rows as $row) {
-        $id = (int)($row['id'] ?? 0);
-        if ($id <= 0 || isset($seen[$id])) {
-            continue;
-        }
-        $seen[$id] = true;
-        $deduped[] = [
-            'id' => $id,
-            'label' => trim((string)($row['label'] ?? '')),
-        ];
-    }
-
-    return $deduped;
 }
 
 /**
  * Fetches available options for a foreign key dropdown, scoped by company.
  */
 function cr_fk_options($conn, $fk, $company_id) {
-    $table = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
-    $col = (string)($fk['REFERENCED_COLUMN_NAME'] ?? '');
-    if ($table === '' || $col === '' || !itm_is_safe_identifier($table) || !itm_is_safe_identifier($col)) {
-        return [];
-    }
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
 
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
-    $conditions = [];
+    $where = '';
     if (in_array('company_id', $available, true) && $company_id > 0) {
-        $conditions[] = 'company_id=' . (int)$company_id;
-    }
-    if (in_array('active', $available, true)) {
-        $conditions[] = 'active=1';
-    }
-    $where = $conditions !== [] ? (' WHERE ' . implode(' AND ', $conditions)) : '';
-
-    $labelSql = cr_escape_identifier($labelCol);
-    if ($table === 'it_locations' && in_array('location_code', $available, true)) {
-        $labelSql = "TRIM(CONCAT(COALESCE(" . cr_escape_identifier($labelCol) . ", ''), CASE WHEN COALESCE(location_code, '') <> '' THEN CONCAT(' (', location_code, ')') ELSE '' END))";
-    } elseif ($table === 'suppliers' && in_array('supplier_code', $available, true)) {
-        $labelSql = "TRIM(CONCAT(COALESCE(" . cr_escape_identifier($labelCol) . ", ''), CASE WHEN COALESCE(supplier_code, '') <> '' THEN CONCAT(' (', supplier_code, ')') ELSE '' END))";
+        $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSql . ' AS label FROM '
-        . cr_escape_identifier($table) . $where . ' ORDER BY label';
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
     $rows = [];
     $res = mysqli_query($conn, $sql);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
     }
-
-    return cr_fk_options_dedupe_by_id($rows);
-}
-
-/**
- * Why: Persisted FK values must stay selectable without duplicating rows already returned by cr_fk_options().
- */
-function cr_fk_options_with_selected($conn, $fk, $company_id, $selectedId): array
-{
-    $options = cr_fk_options($conn, $fk, $company_id);
-    $selectedId = (int)$selectedId;
-    if ($selectedId <= 0) {
-        return $options;
-    }
-
-    foreach ($options as $option) {
-        if ((int)($option['id'] ?? 0) === $selectedId) {
-            return $options;
-        }
-    }
-
-    $fallbackLabel = cr_fk_label_by_id($conn, $fk, $company_id, $selectedId);
-    if ($fallbackLabel !== '') {
-        $options[] = ['id' => $selectedId, 'label' => $fallbackLabel];
-    }
-
-    return cr_fk_options_dedupe_by_id($options);
+    return $rows;
 }
 
 /**
@@ -982,15 +912,22 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $selectedFkId = (int)$displayVal;
-                                    $opts = cr_fk_options_with_selected(
-                                        $conn,
-                                        $fkMap[$name],
-                                        (int)$company_id,
-                                        $selectedFkId
-                                    );
+                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $hasSelectedValue = false;
+                                    foreach ($opts as $existingOpt) {
+                                        if ((string)$displayVal === (string)$existingOpt['id']) {
+                                            $hasSelectedValue = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!$hasSelectedValue && $displayVal !== '' && $displayVal !== 'NULL') {
+                                        $fallbackLabel = cr_fk_label_by_id($conn, $fkMap[$name], (int)$company_id, (int)$displayVal);
+                                        if ($fallbackLabel !== '') {
+                                            $opts[] = ['id' => (int)$displayVal, 'label' => $fallbackLabel];
+                                        }
+                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
