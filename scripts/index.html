@@ -44,6 +44,7 @@
             <li><a href="#security">Security</a></li>
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
+            <li><a href="#ui-modules">UI &amp; modules</a></li>
             <li><a href="#static">Static analysis (CLI)</a></li>
         </ul>
         <div class="scripts-cli-hint">
@@ -264,6 +265,32 @@
                     <td>
                         <code>php scripts/idf_device_port_sort_test.php</code><br>
                         <code>php scripts/idf_device_port_sort_test.php --offline-only</code> (skip DB tests)
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="ui-modules">
+        <h2>UI &amp; modules</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists <code>modules/*/index.php</code> folders that are <strong>not</strong> on the sidebar (including policy-hidden internal modules such as <code>floor_plan_folders</code>, <code>floor_plan_tags</code>, <code>floor_plan_item_tags</code>).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a> or
+                        <a href="list_modules_not_on_sidebar.php?format=json">?format=json</a>.<br>
+                        CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code>
                     </td>
                 </tr>
             </tbody>
