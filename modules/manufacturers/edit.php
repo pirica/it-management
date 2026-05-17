@@ -112,6 +112,9 @@ function cr_manageable_columns($columns) {
     }));
 }
 
+function cr_form_display_value($value) {
+    return itm_cr_form_display_value($value);
+}
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -620,8 +623,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
-                        $val = $data[$name] ?? '';
-                        $displayVal = ($val === 'NULL') ? '' : (string)$val;
+                        $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
                         <?php if ($name === 'company_id'): ?>
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">

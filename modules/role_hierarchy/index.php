@@ -149,6 +149,9 @@ function cr_manageable_columns($columns) {
     }));
 }
 
+function cr_form_display_value($value) {
+    return itm_cr_form_display_value($value);
+}
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -609,11 +612,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
+            $sqlValues[$name] = (string) (int) $data[$name];
             continue;
         }
 
         if ($name === 'company_id' && $company_id > 0) {
             $data[$name] = (int)$company_id;
+            $sqlValues[$name] = (string) (int) $company_id;
             continue;
         }
 
@@ -624,7 +629,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
-                $data[$name] = 'NULL';
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
                 continue;
             }
 
@@ -646,7 +652,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $existing = mysqli_query($conn, $findSql);
                 if ($existing && mysqli_num_rows($existing) > 0) {
                     $row = mysqli_fetch_assoc($existing);
-                    $data[$name] = (string)(int)$row['id'];
+                    $data[$name] = (string) (int) $row['id'];
+                    $sqlValues[$name] = (string) (int) $row['id'];
                 } else {
                     $insertFields = [cr_escape_identifier($labelCol)];
                     $insertValues = ["'" . $newValueEsc . "'"];
@@ -659,10 +666,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $dbErrorCode = 0;
                     $dbErrorMessage = '';
                     if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                        $data[$name] = (string)(int)mysqli_insert_id($conn);
+                        $resolvedId = (string) (int) mysqli_insert_id($conn);
+                        $data[$name] = $resolvedId;
+                        $sqlValues[$name] = $resolvedId;
                     } else {
                         $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-                        $data[$name] = 'NULL';
+                        $data[$name] = '';
+                        $sqlValues[$name] = 'NULL';
                     }
                 }
                 continue;
@@ -671,18 +681,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            $data[$name] = 'NULL';
+            $data[$name] = '';
+            $sqlValues[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
             $normalizedNumeric = null;
             $numericError = '';
             if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {
                 $errors[] = $numericError;
-                $data[$name] = 'NULL';
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
             } else {
                 $data[$name] = $normalizedNumeric;
+                $sqlValues[$name] = $normalizedNumeric;
             }
         } else {
-            $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+            $data[$name] = (string) $value;
+            $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
     }
 
@@ -693,14 +707,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             foreach ($fieldColumns as $col) {
                 $name = $col['Field'];
                 $fields[] = cr_escape_identifier($name);
-                $values[] = $data[$name];
+                $values[] = $sqlValues[$name] ?? 'NULL';
             }
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
             $sets = [];
             foreach ($fieldColumns as $col) {
                 $name = $col['Field'];
-                $sets[] = cr_escape_identifier($name) . '=' . $data[$name];
+                $sets[] = cr_escape_identifier($name) . '=' . ($sqlValues[$name] ?? 'NULL');
             }
             $where = ' WHERE id=' . $editId;
             if ($hasCompany && $company_id > 0) {
@@ -920,8 +934,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
-                        $val = $data[$name] ?? '';
-                        $displayVal = ($val === 'NULL') ? '' : (string)$val;
+                        $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
