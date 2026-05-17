@@ -321,6 +321,94 @@ INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`) VALUES ('3', '3', '7', '7', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1', '2026-01-01 00:00:01');
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`) VALUES ('4', '4', '10', '10', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1', '2026-01-01 00:00:01');
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`) VALUES ('5', '5', '13', '13', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1', '2026-01-01 00:00:01');
+-- Table structure for `floor_plan_folders`
+DROP TABLE IF EXISTS `floor_plan_item_tags`;
+DROP TABLE IF EXISTS `floor_plans`;
+DROP TABLE IF EXISTS `floor_plan_tags`;
+DROP TABLE IF EXISTS `floor_plan_folders`;
+CREATE TABLE `floor_plan_folders` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `parent_folder_id` int DEFAULT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `parent_folder_id` (`parent_folder_id`),
+  CONSTRAINT `floor_plan_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('4', '2', '3', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('5', '3', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('6', '3', '5', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('7', '4', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('8', '4', '7', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('9', '5', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('10', '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
+-- Table structure for `floor_plan_tags`
+CREATE TABLE `floor_plan_tags` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_floor_plan_tags_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `floor_plan_tags_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Ground Floor', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('2', '1', 'Building A', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('3', '2', 'Ground Floor', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('4', '2', 'Building A', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('5', '3', 'Ground Floor', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('6', '3', 'Building A', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('7', '4', 'Ground Floor', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('8', '4', 'Building A', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('9', '5', 'Ground Floor', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('10', '5', 'Building A', '1', '2026-01-01 00:00:01');
+-- Table structure for `floor_plans`
+CREATE TABLE `floor_plans` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `folder_id` int DEFAULT NULL,
+  `it_location_id` int DEFAULT NULL COMMENT 'Optional FK: floor plan links to it_locations',
+  `display_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stored_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_ext` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_size` int unsigned NOT NULL DEFAULT '0',
+  `created_by_user_id` int DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `folder_id` (`folder_id`),
+  KEY `it_location_id` (`it_location_id`),
+  KEY `created_by_user_id` (`created_by_user_id`),
+  CONSTRAINT `floor_plans_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `floor_plans_ibfk_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Manual migration (existing databases only):
+-- ALTER TABLE `floor_plans` ADD COLUMN `it_location_id` int DEFAULT NULL AFTER `folder_id`, ADD KEY `it_location_id` (`it_location_id`), ADD CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL;
+-- Table structure for `floor_plan_item_tags`
+CREATE TABLE `floor_plan_item_tags` (
+  `floor_plan_id` int NOT NULL,
+  `tag_id` int NOT NULL,
+  PRIMARY KEY (`floor_plan_id`,`tag_id`),
+  KEY `tag_id` (`tag_id`),
+  CONSTRAINT `floor_plan_item_tags_ibfk_plan` FOREIGN KEY (`floor_plan_id`) REFERENCES `floor_plans` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `floor_plan_item_tags_ibfk_tag` FOREIGN KEY (`tag_id`) REFERENCES `floor_plan_tags` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Table structure for `forecast_revisions_status`
 DROP TABLE IF EXISTS `forecast_revisions_status`;
 CREATE TABLE `forecast_revisions_status` (
@@ -2172,7 +2260,8 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'workstation_os_types' AS entry_id, 'reference_data' AS section_id, 59 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_os_versions' AS entry_id, 'reference_data' AS section_id, 60 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_ram' AS entry_id, 'reference_data' AS section_id, 61 AS display_order
-      UNION ALL SELECT 'item' AS entry_type, 'rj45_speed' AS entry_id, 'reference_data' AS section_id, 62 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'floor_plans' AS entry_id, 'reference_data' AS section_id, 62 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'rj45_speed' AS entry_id, 'reference_data' AS section_id, 63 AS display_order
 ) AS t
 ORDER BY c.company_id, FIELD(t.entry_type, 'section', 'item'), t.display_order, t.entry_id;
 -- Table structure for `supplier_statuses`
@@ -3643,6 +3732,12 @@ SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
 INSERT IGNORE INTO `access_levels` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `assignment_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`description`, t.`active`, '2026-01-01 00:00:01' FROM `budget_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `floor_plan_folders` (`company_id`, `parent_folder_id`, `name`, `active`, `created_at`)
+SELECT c.`id`, NULL, t.`name`, t.`active`, '2026-01-01 00:00:01'
+FROM `floor_plan_folders` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+WHERE t.`company_id` = @replicate_source_company_id AND t.`parent_folder_id` IS NULL;
+INSERT IGNORE INTO `floor_plan_tags` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `floor_plan_tags` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `gl_accounts` (`company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`)
 SELECT
     c.`id`,

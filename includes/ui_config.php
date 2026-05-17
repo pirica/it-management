@@ -86,6 +86,7 @@ function itm_sidebar_base_structure() {
             'title' => '🗂️ Reference Data',
             'items' => [
                 ['id' => 'it_locations', 'label' => '📍 IT Locations', 'href' => 'modules/it_locations/', 'match_dir' => 'it_locations'],
+                ['id' => 'floor_plans', 'label' => '🗺️ Floor Plans', 'href' => 'modules/floor_plans/', 'match_dir' => 'floor_plans'],
                 ['id' => 'location_types', 'label' => '🧭 Location Types', 'href' => 'modules/location_types/', 'match_dir' => 'location_types'],
                 ['id' => 'equipment_types', 'label' => '🖥️ Equipment Types', 'href' => 'modules/equipment_types/', 'match_dir' => 'equipment_types'],
                 ['id' => 'equipment_statuses', 'label' => '✅ Equipment Statuses', 'href' => 'modules/equipment_statuses/', 'match_dir' => 'equipment_statuses'],
