@@ -9,6 +9,7 @@ A complete IT Asset Management System built with PHP and MySQL, multi-company su
 - ✅ Equipment management with photo uploads
 - ✅ Printer and workstation tracking
 - ✅ Ticket management system
+- ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
 - ✅ Responsive design
 - ✅ API
 
@@ -32,6 +33,10 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 ![Rack planner](docs/readme/rack_planner.png)
 
+**Floor Plans** — gallery with nested folders, tags, and uploads (images, PDF, AutoCAD); optional link to IT Locations; drag-and-drop to move files and folders (see [Floor Plans gallery](#floor-plans-gallery)).
+
+![Floor Plans gallery](docs/readme/floor_plans.png)
+
 ## Architecture
 
 High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.
@@ -50,7 +55,10 @@ High-level request flow from web entry points through shared core into company-s
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
-7. Open `http://localhost/it-management/` in your browser.
+7. Create a `floor_plans/` directory for floor plan file uploads (company subfolders are created automatically).
+8. Open `http://localhost/it-management/` in your browser.
+
+For an existing database, apply the Floor Plans tables from `database.sql` (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`) if they are not already present.
 
 ## Modules
 
@@ -58,6 +66,7 @@ High-level request flow from web entry points through shared core into company-s
 - IDFs — Rack layout, positions, ports, and cable links
 - IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment (includes **Network Discovery** TCP scan under IP Subnets)
 - Rack planner — Visual rack elevation and component placement
+- Floor Plans — Image/PDF/CAD gallery with nested folders, tags, optional IT Location link, and drag-and-drop moves ([details](#floor-plans-gallery))
 - Printers — Track printers and supplies
 - Workstations — Manage workstations
 - Tickets — Support ticket system
@@ -69,6 +78,24 @@ High-level request flow from web entry points through shared core into company-s
 - Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
 - Audit Logs
 
+
+## Floor Plans gallery
+
+Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layouts and drawings per company.
+
+| Capability | Details |
+| --- | --- |
+| **Files** | Images (JPEG, PNG, GIF, WebP), PDF, AutoCAD (DWG, DXF, DWF, DWS); 20 MB per file |
+| **Folders** | Nested folder tree; create, rename, delete (empty only), and **move** into another folder or root |
+| **Tags** | Comma-separated tags on upload; shared tag list per company |
+| **IT Locations** | Optional nullable link from each file to an IT Location (`it_location_id`) |
+| **Moves** | Drag file cards onto folders (or **Unfiled**); drag folders onto another folder or **All files (root)** |
+| **Views** | Gallery index (default), table view (`list_all.php`), file detail/preview |
+| **Storage** | `floor_plans/{company_id}/` (see `FLOOR_PLAN_*` constants in `config/config.php`) |
+
+**Move folder:** open a folder in the sidebar → **Move folder** → choose **Move into** (target folder or **— Root —**), or drag the folder in the tree. The module blocks moving a folder into itself or its subfolders and rejects duplicate names at the same level.
+
+**Setup:** import the Floor Plans section from `database.sql` on existing databases. If tables are missing, the gallery shows an explicit migration message instead of a generic company error.
 
 ## System Requirements
 
