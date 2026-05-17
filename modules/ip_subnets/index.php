@@ -1381,11 +1381,21 @@ document.addEventListener('change', function (event) {
     const pingCsrf = <?php echo json_encode($csrfToken); ?>;
     let pingBusy = false;
 
-    function setPingMessage(html, tone) {
+    function setPingMessage(html) {
         pingResult.innerHTML = html;
-        pingResult.style.color = tone === 'ok'
-            ? '#1a7f37'
-            : (tone === 'error' ? '#cf222e' : (tone === 'warning' ? '#9a6700' : '#57606a'));
+        pingResult.style.removeProperty('color');
+    }
+
+    function pingRow(html, status) {
+        var color = '#57606a';
+        if (status === 'ok') {
+            color = '#1a7f37';
+        } else if (status === 'fail') {
+            color = '#cf222e';
+        } else if (status === 'warn') {
+            color = '#9a6700';
+        }
+        return '<div class="itm-ping-line" style="display:block;margin-top:6px;color:' + color + ' !important;">' + html + '</div>';
     }
 
     function escapeHtml(value) {
@@ -1401,14 +1411,14 @@ document.addEventListener('change', function (event) {
         const ip = (pingIpInput.value || '').trim();
         const port = pingPortInput ? (pingPortInput.value || '').trim() : '';
         if (ip === '') {
-            setPingMessage('Enter a Ping IP address.', 'error');
+            setPingMessage(pingRow('Enter a Ping IP address.', 'fail'));
             pingIpInput.focus();
             return;
         }
 
         pingBusy = true;
         pingBtn.disabled = true;
-        setPingMessage('Checking TCP connectivity' + (port !== '' ? ' on port ' + escapeHtml(port) : '') + '…', 'pending');
+        setPingMessage(pingRow('Checking TCP connectivity' + (port !== '' ? ' on port ' + escapeHtml(port) : '') + '…', 'neutral'));
 
         const body = new URLSearchParams();
         body.set('ping_ip_check', '1');
@@ -1451,42 +1461,52 @@ document.addEventListener('change', function (event) {
                 if (usedFallbackPort) {
                     reachabilityText = 'Reachable on port ' + portUsedNum + ' (not port ' + requestedPortNum + ')';
                 }
-                lines.push('<strong>' + probeLabel + ':</strong> ' + reachabilityText);
+
+                var reachTone = 'fail';
+                if (usedFallbackPort) {
+                    reachTone = 'warn';
+                } else if (pingReachable) {
+                    reachTone = 'ok';
+                }
+                lines.push(pingRow('<strong>' + probeLabel + ':</strong> ' + escapeHtml(reachabilityText), reachTone));
+
                 if (pingData.port_used) {
-                    lines.push('<span style="display:block;margin-top:4px;">Port used: ' + escapeHtml(String(pingData.port_used)) + '</span>');
+                    lines.push(pingRow('Port used: ' + escapeHtml(String(pingData.port_used)), pingReachable ? 'ok' : 'fail'));
                 }
                 if (pingData.response_ms !== null && pingData.response_ms !== undefined && pingData.response_ms !== '') {
-                    lines.push('<span style="display:block;margin-top:4px;">Response time: ' + escapeHtml(String(pingData.response_ms)) + ' ms</span>');
+                    lines.push(pingRow('Response time: ' + escapeHtml(String(pingData.response_ms)) + ' ms', pingReachable ? 'ok' : 'fail'));
                 }
                 if (pingData.message) {
-                    lines.push('<span style="display:block;margin-top:4px;white-space:pre-wrap;">' + escapeHtml(pingData.message) + '</span>');
+                    var messageTone = 'neutral';
+                    if (usedFallbackPort || (pingReachable && !portOpen && userRequestedPort)) {
+                        messageTone = 'ok';
+                    } else if (!pingReachable) {
+                        messageTone = 'fail';
+                    } else if (pingReachable) {
+                        messageTone = 'ok';
+                    }
+                    lines.push(pingRow(escapeHtml(pingData.message), messageTone));
                 }
                 if (Array.isArray(pingData.alternatives_tried) && pingData.alternatives_tried.length > 1 && !pingReachable) {
-                    lines.push('<span style="display:block;margin-top:8px;font-size:13px;">Tried ports:</span>');
+                    lines.push(pingRow('Tried ports:', 'neutral'));
                     pingData.alternatives_tried.forEach(function (attempt) {
                         const attemptPort = attempt && attempt.port ? String(attempt.port) : '?';
                         const attemptState = attempt && attempt.reachable ? 'open' : 'closed';
-                        lines.push('<span style="display:block;font-size:13px;">• ' + escapeHtml(attemptPort) + ' — ' + escapeHtml(attemptState) + '</span>');
+                        lines.push(pingRow('• ' + escapeHtml(attemptPort) + ' — ' + escapeHtml(attemptState), attempt && attempt.reachable ? 'ok' : 'fail'));
                     });
                 }
 
                 if (portData) {
-                    lines.push('<strong style="display:block;margin-top:8px;">Requested port:</strong> ' + (portOpen ? 'Open' : 'Closed / filtered'));
+                    lines.push(pingRow('<strong>Requested port:</strong> ' + (portOpen ? 'Open' : 'Closed / filtered'), portOpen ? 'ok' : 'fail'));
                     if (portData.message) {
-                        lines.push('<span style="display:block;margin-top:4px;">' + escapeHtml(portData.message) + '</span>');
+                        lines.push(pingRow(escapeHtml(portData.message), portOpen ? 'ok' : 'fail'));
                     }
                 }
 
-                let overallTone = 'error';
-                if (userRequestedPort) {
-                    overallTone = portOpen ? 'ok' : 'error';
-                } else if (pingReachable) {
-                    overallTone = 'ok';
-                }
-                setPingMessage(lines.join(''), overallTone);
+                setPingMessage(lines.join(''));
             })
             .catch(function (error) {
-                setPingMessage(escapeHtml(error && error.message ? error.message : 'Ping check failed.'), 'error');
+                setPingMessage(pingRow(escapeHtml(error && error.message ? error.message : 'Ping check failed.'), 'fail'));
             })
             .finally(function () {
                 pingBusy = false;
