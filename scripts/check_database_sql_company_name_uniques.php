@@ -82,9 +82,10 @@ header('Content-Type: text/html; charset=utf-8');
         .itm-dsu-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .itm-dsu-card { background: var(--card-bg, #fff); border: 1px solid var(--border-color, #d0d7de); border-radius: 8px; margin-bottom: 16px; padding: 16px; }
         .itm-dsu-muted { color: var(--text-muted, #57606a); line-height: 1.5; }
+        .itm-dsu-table-wrap { overflow-x: auto; }
         .itm-dsu-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         .itm-dsu-table th, .itm-dsu-table td { border: 1px solid var(--border-color, #d0d7de); padding: 8px; text-align: left; vertical-align: top; }
-        .itm-dsu-table th { background: var(--table-header-bg, #f6f8fa); }
+        .itm-dsu-table thead th { background: var(--table-header-bg, #f6f8fa); white-space: nowrap; }
         .itm-dsu-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
         .itm-dsu-badge-pass { background: #dafbe1; color: #116329; }
         .itm-dsu-badge-fail { background: #ffebe9; color: #cf222e; }
@@ -95,7 +96,9 @@ header('Content-Type: text/html; charset=utf-8');
         .itm-dsu-dash { color: var(--text-muted, #57606a); }
         .itm-dsu-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
         .itm-dsu-th-sort:hover { background: var(--table-row-hover-bg, #eef1f4); }
-        .itm-dsu-sort-indicator { display: inline-block; min-width: 1.1em; margin-left: 4px; color: var(--text-muted, #57606a); font-size: 0.75rem; }
+        .itm-dsu-th-inner { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .itm-dsu-th-label { white-space: nowrap; }
+        .itm-dsu-sort-indicator { flex: 0 0 auto; min-width: 1.1em; color: var(--text-muted, #57606a); font-size: 0.75rem; line-height: 1; }
     </style>
 </head>
 <body>
@@ -146,16 +149,17 @@ header('Content-Type: text/html; charset=utf-8');
 
     <div class="itm-dsu-card">
         <h2>Results (all <?= (int) $result['summary']['tables']; ?> tables)</h2>
+        <div class="itm-dsu-table-wrap">
         <table class="itm-dsu-table" id="itm-dsu-results-table">
             <thead>
                 <tr>
-                    <th class="itm-dsu-th-sort" data-sort-type="status" scope="col" aria-sort="none">Status<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
-                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Table<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
-                    <th class="itm-dsu-th-sort" data-sort-type="number" scope="col" aria-sort="none">Uniques<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
-                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Scope column<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
-                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Scope UNIQUE<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
-                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Notes<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
-                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none">Suggested ALTER<span class="itm-dsu-sort-indicator" aria-hidden="true"></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="status" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Status</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Table</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="number" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Uniques</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Scope&nbsp;column</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Scope&nbsp;UNIQUE</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Notes</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
+                    <th class="itm-dsu-th-sort" data-sort-type="text" scope="col" aria-sort="none"><span class="itm-dsu-th-inner"><span class="itm-dsu-th-label">Suggested&nbsp;ALTER</span><span class="itm-dsu-sort-indicator" aria-hidden="true"></span></span></th>
                 </tr>
             </thead>
             <tbody id="itm-dsu-results-body">
@@ -188,6 +192,7 @@ header('Content-Type: text/html; charset=utf-8');
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 <script>
