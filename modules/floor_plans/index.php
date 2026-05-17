@@ -577,7 +577,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
         } else {
             $allFolders = fp_fetch_folders($conn, (int)$company_id);
             $moveError = fp_move_folder_to_parent($conn, (int)$company_id, $folderId, $newParentId, $allFolders);
-            if ($moveError !== '') {
+            if ($moveError === '__NOOP__') {
+                $_SESSION['crud_success'] = 'Folder is already in the selected location.';
+            } elseif ($moveError !== '') {
                 $_SESSION['crud_error'] = $moveError;
             } else {
                 $_SESSION['crud_success'] = 'Folder moved.';
