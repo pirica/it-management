@@ -457,6 +457,39 @@ function itm_ipam_domain_to_hostname_hint(string $domain): string
 }
 
 /**
+ * Why: IP2WHOIS may return gzip/deflate bodies or stray bytes; curl CLI auto-decodes but PHP needs help.
+ *
+ * @return array<string, mixed>|null
+ */
+function itm_ipam_decode_json_response(string $raw)
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return null;
+    }
+    if (strncmp($raw, "\xEF\xBB\xBF", 3) === 0) {
+        $raw = substr($raw, 3);
+    }
+
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+
+    $start = strpos($raw, '{');
+    $end = strrpos($raw, '}');
+    if ($start !== false && $end !== false && $end > $start) {
+        $slice = substr($raw, $start, $end - $start + 1);
+        $decoded = json_decode($slice, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Reverse hosted-domain lookup via IP2WHOIS (HTTPS + curl, no shell exec).
  *
  * @return array{
@@ -495,7 +528,12 @@ function itm_ipam_ip2whois_lookup_domains(string $ip, int $page = 1): array
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+    curl_setopt($ch, CURLOPT_ENCODING, '');
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
+    if (defined('APP_ENV') && APP_ENV === 'development') {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    }
     $responseBody = curl_exec($ch);
     $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErrNo = (int)curl_errno($ch);
@@ -509,18 +547,29 @@ function itm_ipam_ip2whois_lookup_domains(string $ip, int $page = 1): array
         return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS returned an empty response.'];
     }
 
-    $decoded = json_decode($responseBody, true);
+    $decoded = itm_ipam_decode_json_response((string)$responseBody);
     if (!is_array($decoded)) {
-        return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS response could not be parsed.'];
-    }
-
-    if (isset($decoded['error']) && is_array($decoded['error'])) {
-        $errorMessage = trim((string)($decoded['error']['error_message'] ?? 'IP2WHOIS lookup failed.'));
-        return ['ok' => false, 'domains' => [], 'error' => $errorMessage];
+        $jsonErr = function_exists('json_last_error_msg') ? json_last_error_msg() : 'invalid JSON';
+        return [
+            'ok' => false,
+            'domains' => [],
+            'error' => 'IP2WHOIS response could not be parsed (' . $jsonErr . ').',
+        ];
     }
 
     if ($httpCode >= 400) {
         return ['ok' => false, 'domains' => [], 'error' => 'IP2WHOIS HTTP ' . $httpCode];
+    }
+
+    if (isset($decoded['error'])) {
+        if (is_array($decoded['error'])) {
+            $errorMessage = trim((string)($decoded['error']['error_message'] ?? 'IP2WHOIS lookup failed.'));
+            return ['ok' => false, 'domains' => [], 'error' => $errorMessage];
+        }
+        $errorMessage = trim((string)$decoded['error']);
+        if ($errorMessage !== '') {
+            return ['ok' => false, 'domains' => [], 'error' => $errorMessage];
+        }
     }
 
     $domains = [];
