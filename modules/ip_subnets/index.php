@@ -1098,6 +1098,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
                             <button type="button" class="btn btn-primary" id="itmPingRunBtn">Ping</button>
                         </div>
+                        <small style="flex:1 1 100%;color:#57606a;">Uses TCP connect (no shell). Empty port tries 80, then 443, 22, 53, 3389.</small>
                         <div id="itmPingResult" style="flex:1 1 100%;min-height:20px;font-size:14px;color:#57606a;" aria-live="polite"></div>
                     </div>
                 </div>
@@ -1405,7 +1406,7 @@ document.addEventListener('change', function (event) {
 
         pingBusy = true;
         pingBtn.disabled = true;
-        setPingMessage('Running ping' + (port !== '' ? ' and port check' : '') + '…', 'pending');
+        setPingMessage('Checking TCP connectivity' + (port !== '' ? ' on port ' + escapeHtml(port) : '') + '…', 'pending');
 
         const body = new URLSearchParams();
         body.set('ping_ip_check', '1');
@@ -1432,15 +1433,30 @@ document.addEventListener('change', function (event) {
                 const lines = [];
                 const pingData = result.data.ping || {};
                 const pingReachable = !!pingData.reachable;
-                lines.push('<strong>Ping:</strong> ' + (pingReachable ? 'Reachable' : 'No response'));
+                const probeLabel = (pingData.method === 'tcp') ? 'TCP reachability' : 'Reachability';
+                lines.push('<strong>' + probeLabel + ':</strong> ' + (pingReachable ? 'Reachable' : 'No response'));
+                if (pingData.port_used) {
+                    lines.push('<span style="display:block;margin-top:4px;">Port used: ' + escapeHtml(String(pingData.port_used)) + '</span>');
+                }
+                if (pingData.response_ms !== null && pingData.response_ms !== undefined && pingData.response_ms !== '') {
+                    lines.push('<span style="display:block;margin-top:4px;">Response time: ' + escapeHtml(String(pingData.response_ms)) + ' ms</span>');
+                }
                 if (pingData.message) {
                     lines.push('<span style="display:block;margin-top:4px;white-space:pre-wrap;">' + escapeHtml(pingData.message) + '</span>');
+                }
+                if (Array.isArray(pingData.alternatives_tried) && pingData.alternatives_tried.length > 1 && !pingReachable) {
+                    lines.push('<span style="display:block;margin-top:8px;font-size:13px;">Tried ports:</span>');
+                    pingData.alternatives_tried.forEach(function (attempt) {
+                        const attemptPort = attempt && attempt.port ? String(attempt.port) : '?';
+                        const attemptState = attempt && attempt.reachable ? 'open' : 'closed';
+                        lines.push('<span style="display:block;font-size:13px;">• ' + escapeHtml(attemptPort) + ' — ' + escapeHtml(attemptState) + '</span>');
+                    });
                 }
 
                 const portData = result.data.port;
                 if (portData) {
                     const portOpen = !!portData.open;
-                    lines.push('<strong style="display:block;margin-top:8px;">Port:</strong> ' + (portOpen ? 'Open' : 'Closed / filtered'));
+                    lines.push('<strong style="display:block;margin-top:8px;">Requested port:</strong> ' + (portOpen ? 'Open' : 'Closed / filtered'));
                     if (portData.message) {
                         lines.push('<span style="display:block;margin-top:4px;">' + escapeHtml(portData.message) + '</span>');
                     }
