@@ -104,138 +104,6 @@ function cr_fk_options_dedupe_by_id(array $rows): array
 }
 
 /**
- * Why: Seeded inventory rows often reuse FK id=1 across tenants; match the active company's row by business keys.
- *
- * @return string[]
- */
-function cr_fk_business_key_columns($table, array $available): array
-{
-    if ($table === 'it_locations' && in_array('name', $available, true) && in_array('location_code', $available, true)) {
-        return ['name', 'location_code'];
-    }
-    if ($table === 'suppliers' && in_array('name', $available, true) && in_array('supplier_code', $available, true)) {
-        return ['name', 'supplier_code'];
-    }
-    if (in_array('name', $available, true)) {
-        return ['name'];
-    }
-
-    return [];
-}
-
-/**
- * Builds the same human-readable label SQL used in dropdowns and detail views.
- */
-function cr_fk_label_sql_expression($table, $labelCol, array $available): string
-{
-    $labelSql = cr_escape_identifier($labelCol);
-    if ($table === 'it_locations' && in_array('location_code', $available, true)) {
-        $labelSql = "TRIM(CONCAT(COALESCE(" . cr_escape_identifier($labelCol) . ", ''), CASE WHEN COALESCE(location_code, '') <> '' THEN CONCAT(' (', location_code, ')') ELSE '' END))";
-    } elseif ($table === 'suppliers' && in_array('supplier_code', $available, true)) {
-        $labelSql = "TRIM(CONCAT(COALESCE(" . cr_escape_identifier($labelCol) . ", ''), CASE WHEN COALESCE(supplier_code, '') <> '' THEN CONCAT(' (', supplier_code, ')') ELSE '' END))";
-    }
-
-    return $labelSql;
-}
-
-/**
- * Why: Cross-tenant FK ids from seed data should map to the active company's equivalent row when one exists.
- */
-function cr_fk_resolve_company_equivalent_id($conn, $fk, $company_id, $valueId): int
-{
-    $id = (int)$valueId;
-    $company_id = (int)$company_id;
-    if ($id <= 0 || $company_id <= 0) {
-        return $id;
-    }
-
-    $table = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
-    $col = (string)($fk['REFERENCED_COLUMN_NAME'] ?? '');
-    if ($table === '' || $col === '' || !itm_is_safe_identifier($table) || !itm_is_safe_identifier($col)) {
-        return $id;
-    }
-
-    $meta = cr_fk_metadata($conn, $table);
-    $available = $meta['available'];
-    if (!in_array('company_id', $available, true)) {
-        return $id;
-    }
-
-    $scopedSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id FROM ' . cr_escape_identifier($table)
-        . ' WHERE ' . cr_escape_identifier($col) . '=? AND company_id=? LIMIT 1';
-    $scopedStmt = mysqli_prepare($conn, $scopedSql);
-    if ($scopedStmt) {
-        mysqli_stmt_bind_param($scopedStmt, 'ii', $id, $company_id);
-        mysqli_stmt_execute($scopedStmt);
-        $scopedRes = mysqli_stmt_get_result($scopedStmt);
-        if ($scopedRes && mysqli_fetch_assoc($scopedRes)) {
-            mysqli_stmt_close($scopedStmt);
-            return $id;
-        }
-        mysqli_stmt_close($scopedStmt);
-    }
-
-    $keyColumns = cr_fk_business_key_columns($table, $available);
-    if ($keyColumns === []) {
-        return $id;
-    }
-
-    $selectCols = array_merge([cr_escape_identifier($col)], array_map('cr_escape_identifier', $keyColumns));
-    $sourceSql = 'SELECT ' . implode(', ', $selectCols) . ' FROM ' . cr_escape_identifier($table)
-        . ' WHERE ' . cr_escape_identifier($col) . '=? LIMIT 1';
-    $sourceStmt = mysqli_prepare($conn, $sourceSql);
-    if (!$sourceStmt) {
-        return $id;
-    }
-
-    mysqli_stmt_bind_param($sourceStmt, 'i', $id);
-    mysqli_stmt_execute($sourceStmt);
-    $sourceRes = mysqli_stmt_get_result($sourceStmt);
-    $sourceRow = $sourceRes ? mysqli_fetch_assoc($sourceRes) : null;
-    mysqli_stmt_close($sourceStmt);
-    if (!$sourceRow) {
-        return $id;
-    }
-
-    $whereParts = ['company_id=?'];
-    $types = 'i';
-    $bindValues = [$company_id];
-    foreach ($keyColumns as $keyColumn) {
-        $keyValue = isset($sourceRow[$keyColumn]) ? (string)$sourceRow[$keyColumn] : '';
-        if ($keyValue === '') {
-            $whereParts[] = '(' . cr_escape_identifier($keyColumn) . "='' OR " . cr_escape_identifier($keyColumn) . ' IS NULL)';
-            continue;
-        }
-        $whereParts[] = cr_escape_identifier($keyColumn) . '=?';
-        $types .= 's';
-        $bindValues[] = $keyValue;
-    }
-
-    $matchSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id FROM ' . cr_escape_identifier($table)
-        . ' WHERE ' . implode(' AND ', $whereParts) . ' ORDER BY ' . cr_escape_identifier($col) . ' ASC LIMIT 1';
-    $matchStmt = mysqli_prepare($conn, $matchSql);
-    if (!$matchStmt) {
-        return $id;
-    }
-
-    $bindParams = array_merge([$matchStmt, $types], $bindValues);
-    $ref = [];
-    foreach ($bindParams as $index => $value) {
-        $ref[$index] = &$bindParams[$index];
-    }
-    call_user_func_array('mysqli_stmt_bind_param', $ref);
-    mysqli_stmt_execute($matchStmt);
-    $matchRes = mysqli_stmt_get_result($matchStmt);
-    $matchRow = $matchRes ? mysqli_fetch_assoc($matchRes) : null;
-    mysqli_stmt_close($matchStmt);
-    if ($matchRow && isset($matchRow['id'])) {
-        return (int)$matchRow['id'];
-    }
-
-    return $id;
-}
-
-/**
  * Fetches available options for a foreign key dropdown, scoped by company.
  */
 function cr_fk_options($conn, $fk, $company_id) {
@@ -258,7 +126,12 @@ function cr_fk_options($conn, $fk, $company_id) {
     }
     $where = $conditions !== [] ? (' WHERE ' . implode(' AND ', $conditions)) : '';
 
-    $labelSql = cr_fk_label_sql_expression($table, $labelCol, $available);
+    $labelSql = cr_escape_identifier($labelCol);
+    if ($table === 'it_locations' && in_array('location_code', $available, true)) {
+        $labelSql = "TRIM(CONCAT(COALESCE(" . cr_escape_identifier($labelCol) . ", ''), CASE WHEN COALESCE(location_code, '') <> '' THEN CONCAT(' (', location_code, ')') ELSE '' END))";
+    } elseif ($table === 'suppliers' && in_array('supplier_code', $available, true)) {
+        $labelSql = "TRIM(CONCAT(COALESCE(" . cr_escape_identifier($labelCol) . ", ''), CASE WHEN COALESCE(supplier_code, '') <> '' THEN CONCAT(' (', supplier_code, ')') ELSE '' END))";
+    }
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . $labelSql . ' AS label FROM '
         . cr_escape_identifier($table) . $where . ' ORDER BY label';
@@ -277,7 +150,7 @@ function cr_fk_options($conn, $fk, $company_id) {
 function cr_fk_options_with_selected($conn, $fk, $company_id, $selectedId): array
 {
     $options = cr_fk_options($conn, $fk, $company_id);
-    $selectedId = cr_fk_resolve_company_equivalent_id($conn, $fk, (int)$company_id, (int)$selectedId);
+    $selectedId = (int)$selectedId;
     if ($selectedId <= 0) {
         return $options;
     }
@@ -300,7 +173,7 @@ function cr_fk_options_with_selected($conn, $fk, $company_id, $selectedId): arra
  * Resolves a foreign-key label using company-scoped lookup first, then ID fallback.
  */
 function cr_fk_label_by_id($conn, $fk, $company_id, $valueId) {
-    $id = cr_fk_resolve_company_equivalent_id($conn, $fk, (int)$company_id, (int)$valueId);
+    $id = (int)$valueId;
     if ($id <= 0) {
         return '';
     }
@@ -316,15 +189,14 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $valueId) {
         $where .= ' AND company_id=' . (int)$company_id;
     }
 
-    $labelSql = cr_fk_label_sql_expression($table, $labelCol, $available);
-    $sql = 'SELECT ' . $labelSql . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
+    $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
     $res = mysqli_query($conn, $sql);
     if ($res && ($row = mysqli_fetch_assoc($res)) && isset($row['label'])) {
         return (string)$row['label'];
     }
 
     // Why: keeps readable labels for legacy/shared reference rows.
-    $fallbackSql = 'SELECT ' . $labelSql . ' AS label FROM ' . cr_escape_identifier($table)
+    $fallbackSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
         . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
     $fallbackRes = mysqli_query($conn, $fallbackSql);
     if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes)) && isset($fallbackRow['label'])) {
@@ -815,15 +687,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 continue;
             }
 
-            if ($value !== '' && $value !== null && is_numeric($value)) {
-                $value = (string)cr_fk_resolve_company_equivalent_id(
-                    $conn,
-                    $fkMap[$name],
-                    (int)$company_id,
-                    (int)$value
-                );
-            }
-
             if ($value === '__new__' && $newValueRaw !== '') {
                 $fk = $fkMap[$name];
                 $fkTable = $fk['REFERENCED_TABLE_NAME'];
@@ -1119,12 +982,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $selectedFkId = cr_fk_resolve_company_equivalent_id(
-                                        $conn,
-                                        $fkMap[$name],
-                                        (int)$company_id,
-                                        (int)$displayVal
-                                    );
+                                    $selectedFkId = (int)$displayVal;
                                     $opts = cr_fk_options_with_selected(
                                         $conn,
                                         $fkMap[$name],
@@ -1145,7 +1003,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$selectedFkId === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
