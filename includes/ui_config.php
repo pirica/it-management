@@ -318,6 +318,25 @@ function itm_auto_create_module_scaffold($moduleName) {
 }
 
 /**
+ * Module IDs excluded from auto-discovery and the sidebar (managed inside other modules).
+ */
+function itm_sidebar_excluded_module_ids() {
+    return [
+        'floor_plan_folders',
+        'floor_plan_item_tags',
+        'floor_plan_tags',
+    ];
+}
+
+function itm_sidebar_module_is_hidden($moduleName) {
+    $moduleName = trim((string)$moduleName);
+    if ($moduleName === '') {
+        return false;
+    }
+    return in_array($moduleName, itm_sidebar_excluded_module_ids(), true);
+}
+
+/**
  * Returns the complete sidebar structure, including auto-discovered modules
  */
 function itm_sidebar_structure($conn = null) {
@@ -346,7 +365,7 @@ function itm_sidebar_structure($conn = null) {
         $moduleDirs = glob($modulesRoot . '/*', GLOB_ONLYDIR) ?: [];
         foreach ($moduleDirs as $moduleDir) {
             $moduleName = basename($moduleDir);
-            if ($moduleName === '' || isset($existingItemIds[$moduleName])) {
+            if ($moduleName === '' || isset($existingItemIds[$moduleName]) || itm_sidebar_module_is_hidden($moduleName)) {
                 continue;
             }
 
@@ -383,7 +402,7 @@ function itm_sidebar_structure($conn = null) {
         if ($tablesRes) {
             while ($tableRow = mysqli_fetch_array($tablesRes)) {
                 $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
-                if ($table === '' || isset($existingItemIds[$table])) {
+                if ($table === '' || isset($existingItemIds[$table]) || itm_sidebar_module_is_hidden($table)) {
                     continue;
                 }
 
@@ -402,6 +421,9 @@ function itm_sidebar_structure($conn = null) {
     $discoveredEquipmentTypeItems = [];
     $discoveredItems = [];
     foreach ($moduleNames as $moduleName => $moduleMeta) {
+        if (itm_sidebar_module_is_hidden($moduleName)) {
+            continue;
+        }
         $item = [
             'id' => $moduleName,
             'label' => '🧩 ' . itm_sidebar_humanize_table_name($moduleName),
