@@ -204,6 +204,12 @@
                     <td>Open <a href="analyze_database_health.php">analyze_database_health.php</a> while logged in. Optional CLI: <code>php scripts/analyze_database_health.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audits <code>database.sql</code>: each <code>company_id</code> table needs 2 uniques (PRIMARY + UNIQUE on <code>company_id</code> + <code>name</code> or 3rd column).</td>
+                    <td>Open <a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a> or <code>php scripts/check_database_sql_company_name_uniques.php</code> (exit 1 if any fail).</td>
+                </tr>
+                <tr>
                     <td>repair_table_from_schema.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Rebuilds one InnoDB table from <code>database.sql</code> when metadata drift causes "doesn't exist in engine" errors.</td>
