@@ -5,6 +5,7 @@ $crud_action = 'delete';
 ?>
 <?php
 require '../../config/config.php';
+itm_ensure_location_types_company_name_unique($conn);
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
