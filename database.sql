@@ -342,37 +342,36 @@ CREATE TABLE `forecast_revisions_status` (
   CONSTRAINT `forecast_revisions_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `forecast_revisions_status`
-INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, `active`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
-(2, 1, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
-(3, 1, 'Finance Review', NULL, 1, NULL, NULL),
-(4, 1, 'Gm Review', NULL, 1, NULL, NULL),
-(5, 1, 'Approved', NULL, 1, NULL, NULL),
-(6, 1, 'Rejected', NULL, 1, NULL, NULL),
-(7, 2, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
-(8, 2, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
-(9, 2, 'Finance Review', NULL, 1, NULL, NULL),
-(10, 2, 'Gm Review', NULL, 1, NULL, NULL),
-(11, 2, 'Approved', NULL, 1, NULL, NULL),
-(12, 2, 'Rejected', NULL, 1, NULL, NULL),
-(13, 3, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
-(14, 3, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
-(15, 3, 'Finance Review', NULL, 1, NULL, NULL),
-(16, 3, 'Gm Review', NULL, 1, NULL, NULL),
-(17, 3, 'Approved', NULL, 1, NULL, NULL),
-(18, 3, 'Rejected', NULL, 1, NULL, NULL),
-(19, 4, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
-(20, 4, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
-(21, 4, 'Finance Review', NULL, 1, NULL, NULL),
-(22, 4, 'Gm Review', NULL, 1, NULL, NULL),
-(23, 4, 'Approved', NULL, 1, NULL, NULL),
-(24, 4, 'Rejected', NULL, 1, NULL, NULL),
-(25, 5, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
-(26, 5, 'Submitted', 'Submitted to finance for February forecast', 1, NULL, NULL),
-(27, 5, 'Finance Review', NULL, 1, NULL, NULL),
-(28, 5, 'Gm Review', NULL, 1, NULL, NULL),
-(29, 5, 'Approved', NULL, 1, NULL, NULL),
-(30, 5, 'Rejected', NULL, 1, NULL, NULL);
+INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 'Draft', 'Draft projection before finance review', 1, '2026-01-01 00:00:01', NULL),
+(2, 1, 'Submitted', 'Submitted to finance for February forecast', 1, '2026-01-01 00:00:01', NULL),
+(3, 1, 'Finance Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(4, 1, 'Gm Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(5, 1, 'Approved', NULL, 1, '2026-01-01 00:00:01', NULL),
+(6, 1, 'Rejected', NULL, 1, '2026-01-01 00:00:01', NULL),
+(7, 2, 'Draft', 'Draft projection before finance review', 1, '2026-01-01 00:00:01', NULL),
+(8, 2, 'Submitted', 'Submitted to finance for February forecast', 1, '2026-01-01 00:00:01', NULL),
+(9, 2, 'Finance Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(10, 2, 'Gm Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(11, 2, 'Approved', NULL, 1, '2026-01-01 00:00:01', NULL),
+(12, 2, 'Rejected', NULL, 1, '2026-01-01 00:00:01', NULL),
+(13, 3, 'Draft', 'Draft projection before finance review', 1, '2026-01-01 00:00:01', NULL),
+(14, 3, 'Submitted', 'Submitted to finance for February forecast', 1, '2026-01-01 00:00:01', NULL),
+(15, 3, 'Finance Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(16, 3, 'Gm Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(17, 3, 'Approved', NULL, 1, '2026-01-01 00:00:01', NULL),
+(18, 3, 'Rejected', NULL, 1, '2026-01-01 00:00:01', NULL),
+(19, 4, 'Draft', 'Draft projection before finance review', 1, '2026-01-01 00:00:01', NULL),
+(20, 4, 'Submitted', 'Submitted to finance for February forecast', 1, '2026-01-01 00:00:01', NULL),
+(21, 4, 'Finance Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(22, 4, 'Gm Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(23, 4, 'Approved', NULL, 1, '2026-01-01 00:00:01', NULL),
+(24, 4, 'Rejected', NULL, 1, '2026-01-01 00:00:01', NULL),
+(25, 5, 'Draft', 'Draft projection before finance review', 1, '2026-01-01 00:00:01', NULL),
+(26, 5, 'Submitted', 'Submitted to finance for February forecast', 1, '2026-01-01 00:00:01', NULL),
+(27, 5, 'Finance Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(28, 5, 'Gm Review', NULL, 1, '2026-01-01 00:00:01', NULL),
+(29, 5, 'Approved', NULL, 1, '2026-01-01 00:00:01', NULL),
+(30, 5, 'Rejected', NULL, 1, '2026-01-01 00:00:01', NULL);
 -- Table structure for `forecast_revisions`
 DROP TABLE IF EXISTS `forecast_revisions`;
 CREATE TABLE `forecast_revisions` (
@@ -1447,31 +1446,31 @@ CREATE TABLE `idf_device_type` (
   CONSTRAINT `idf_device_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `idf_device_type`
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('6', '2', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('11', '3', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('16', '4', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('21', '5', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('7', '2', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('12', '3', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('17', '4', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('22', '5', 'patch_panel', '➿', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('8', '2', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('13', '3', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('18', '4', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('23', '5', 'ups', '🔋', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('9', '2', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('14', '3', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('19', '4', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('24', '5', 'server', '🖥️', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('10', '2', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('15', '3', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('20', '4', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('25', '5', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('6', '2', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('11', '3', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('16', '4', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('21', '5', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('7', '2', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('12', '3', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('17', '4', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('22', '5', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('8', '2', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('13', '3', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('18', '4', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('23', '5', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('9', '2', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('14', '3', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('19', '4', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('24', '5', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('10', '2', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('15', '3', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('20', '4', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('25', '5', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
@@ -1611,12 +1610,11 @@ CREATE TABLE `inventory_items` (
   CONSTRAINT `inventory_items_ibfk_6` FOREIGN KEY (`last_user_id`) REFERENCES `employees` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `inventory_items`
-INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 1, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 1, 1, 1, NULL, '2026-05-17 05:08:05'),
-(2, 2, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 7, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 2, 2, 1, NULL, '2026-05-17 05:08:05'),
-(3, 3, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 13, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 3, 3, 1, NULL, '2026-05-17 05:07:05'),
-(4, 4, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 19, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 4, 4, 1, NULL, '2026-05-17 05:05:19'),
-(5, 5, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 25, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 5, 5, 1, NULL, '2026-05-17 05:07:27');
+INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 1, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 1, 1, 1, '2026-01-01 00:00:01', '2026-05-17 05:08:05'),
+(2, 2, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 7, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 2, 2, 1, '2026-01-01 00:00:01', '2026-05-17 05:08:05'),
+(3, 3, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 13, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 3, 3, 1, '2026-01-01 00:00:01', '2026-05-17 05:07:05'),
+(4, 4, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 19, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 4, 4, 1, '2026-01-01 00:00:01', '2026-05-17 05:05:19'),
+(5, 5, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 25, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 5, 5, 1, '2026-01-01 00:00:01', '2026-05-17 05:07:27');
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
 CREATE TABLE `it_locations` (
@@ -1641,11 +1639,11 @@ CREATE TABLE `it_locations` (
   CONSTRAINT `it_locations_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `it_locations_ibfk_2` FOREIGN KEY (`type_id`) REFERENCES `location_types` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `it_locations`
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
 -- Table structure for `location_types`
 DROP TABLE IF EXISTS `location_types`;
 CREATE TABLE `location_types` (

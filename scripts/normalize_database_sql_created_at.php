@@ -75,7 +75,7 @@ function itm_sql_split_csv_values($valuesPart)
 /**
  * @param array<int, string> $values
  */
-function itm_sql_join_csv_values(array $values): string
+function itm_sql_join_csv_values(array $values)
 {
     return implode(', ', $values);
 }
@@ -89,9 +89,19 @@ function itm_sql_is_created_at_literal($token)
     return true;
 }
 
+function itm_sql_should_normalize_created_at_token($token)
+{
+    $upper = strtoupper(trim($token));
+    if ($upper === 'NULL' || $upper === 'CURRENT_TIMESTAMP') {
+        return true;
+    }
+
+    return itm_sql_is_created_at_literal($token);
+}
+
 function itm_sql_normalize_created_at_token($token, $target)
 {
-    if (!itm_sql_is_created_at_literal($token)) {
+    if (!itm_sql_should_normalize_created_at_token($token)) {
         return $token;
     }
 
