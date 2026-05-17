@@ -172,6 +172,18 @@ if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
     }
 }
 
+if (!function_exists('itm_database_sql_unique_audit_unique_matches_id_company')) {
+    /**
+     * @param array<int, string> $columns
+     */
+    function itm_database_sql_unique_audit_unique_matches_id_company(array $columns): bool
+    {
+        return count($columns) === 2
+            && strtolower($columns[0]) === 'id'
+            && strtolower($columns[1]) === 'company_id';
+    }
+}
+
 if (!function_exists('itm_database_sql_unique_audit_run')) {
     /**
      * @return array{
@@ -245,7 +257,19 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
                 continue;
             }
 
+            $idCompanyUniqueCols = [];
+            foreach ($tableRow['uniques'] as $unique) {
+                if (itm_database_sql_unique_audit_unique_matches_id_company($unique['columns'])) {
+                    $idCompanyUniqueCols = $unique['columns'];
+                    break;
+                }
+            }
+            $hasIdCompanyUnique = $idCompanyUniqueCols !== [];
+
             $scopeUniqueCols = $tableRow['scope_unique_columns'];
+            if ($hasIdCompanyUnique) {
+                $scopeUniqueCols = $idCompanyUniqueCols;
+            }
             $scopeUniqueLabel = is_array($scopeUniqueCols) && $scopeUniqueCols
                 ? '(`' . implode('`, `', $scopeUniqueCols) . '`)'
                 : '(`company_id`, `' . $scopeColumn . '`)';
@@ -253,7 +277,8 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             $alterSql = 'ALTER TABLE `' . $table . '` ADD UNIQUE KEY `uq_' . $table . '_company_scope` (`company_id`, `'
                 . $scopeColumn . '`);';
 
-            $ok = (int) $tableRow['unique_count'] === $requiredUniqueCount && !empty($tableRow['has_scope_unique']);
+            $ok = (int) $tableRow['unique_count'] === $requiredUniqueCount
+                && (!empty($tableRow['has_scope_unique']) || $hasIdCompanyUnique);
 
             if ($ok) {
                 $summary['pass']++;
