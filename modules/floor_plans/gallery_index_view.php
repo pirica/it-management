@@ -5,6 +5,9 @@
 $fpListUrl = $modulePath . '/list_all.php';
 $fpCreateUrl = $modulePath . '/create.php';
 ?>
+<?php if (!empty($fpGalleryAccessError)): ?>
+    <div class="alert alert-error"><?php echo sanitize($fpGalleryAccessError); ?></div>
+<?php endif; ?>
 <div data-itm-new-button-managed="server" class="itm-floor-plan-toolbar">
     <div class="itm-floor-plan-toolbar-left">
         <a href="<?php echo sanitize($fpCreateUrl); ?>" class="btn btn-primary">➕ Upload</a>
@@ -17,8 +20,8 @@ $fpCreateUrl = $modulePath . '/create.php';
     <aside class="card itm-floor-plan-sidebar">
         <h2 class="itm-floor-plan-sidebar-title">Folders</h2>
         <ul class="itm-folder-tree">
-            <li class="itm-folder-tree-item<?php echo ($galleryFolderId === 0 && !$galleryUnfiled) ? ' is-active' : ''; ?>">
-                <a href="index.php">📂 All files</a>
+            <li class="itm-folder-tree-item itm-folder-reparent-root itm-folder-drop-target<?php echo ($galleryFolderId === 0 && !$galleryUnfiled) ? ' is-active' : ''; ?>" data-folder-reparent-root="1">
+                <a href="index.php">📂 All files <span class="itm-drop-hint">(root)</span></a>
             </li>
             <li class="itm-folder-tree-item itm-folder-drop-target<?php echo $galleryUnfiled ? ' is-active' : ''; ?>" data-folder-drop-id="0" data-folder-drop-unfiled="1">
                 <a href="index.php?unfiled=1">📄 Unfiled <span class="itm-drop-hint">(drop here)</span></a>
@@ -52,13 +55,31 @@ $fpCreateUrl = $modulePath . '/create.php';
         <?php if ($galleryFolderId > 0): ?>
             <?php
             $fpCurrentFolderName = '';
+            $fpCurrentFolderParentId = null;
             foreach ($galleryFolders as $fpFolder) {
                 if ((int)$fpFolder['id'] === $galleryFolderId) {
                     $fpCurrentFolderName = (string)$fpFolder['name'];
+                    $fpCurrentFolderParentId = fp_folder_parent_id_from_row($fpFolder);
                     break;
                 }
             }
             ?>
+            <details class="itm-folder-manage">
+                <summary class="btn btn-sm">Move folder</summary>
+                <form method="POST" class="itm-folder-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="fp_action" value="folder_move">
+                    <input type="hidden" name="move_folder_id" value="<?php echo (int)$galleryFolderId; ?>">
+                    <div class="form-group">
+                        <label for="moveFolderParent">Move into</label>
+                        <select name="parent_folder_id" id="moveFolderParent">
+                            <option value=""<?php echo $fpCurrentFolderParentId === null ? ' selected' : ''; ?>>— Root —</option>
+                            <?php echo fp_render_folder_move_parent_options($galleryFolders, (int)$galleryFolderId, $fpCurrentFolderParentId); ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Move</button>
+                </form>
+            </details>
             <details class="itm-folder-manage">
                 <summary class="btn btn-sm">Rename folder</summary>
                 <form method="POST" class="itm-folder-form">
@@ -123,6 +144,12 @@ $fpCreateUrl = $modulePath . '/create.php';
             <input type="hidden" name="fp_action" value="move_file">
             <input type="hidden" name="plan_id" id="floorPlanMovePlanId" value="">
             <input type="hidden" name="folder_id" id="floorPlanMoveFolderId" value="">
+        </form>
+        <form id="floorPlanMoveFolderForm" method="POST" style="display:none;">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+            <input type="hidden" name="fp_action" value="folder_move">
+            <input type="hidden" name="move_folder_id" id="floorPlanMoveFolderSourceId" value="">
+            <input type="hidden" name="parent_folder_id" id="floorPlanMoveFolderParentId" value="">
         </form>
 
         <div class="itm-floor-plan-gallery" id="floorPlanGallery">

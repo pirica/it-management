@@ -470,6 +470,12 @@ foreach ($columns as $c) {
         break;
     }
 }
+// floor_plans is always tenant-scoped; DESCRIBE fails when tables are not migrated yet.
+if ($crud_table === 'floor_plans') {
+    $hasCompany = true;
+}
+$fpSchemaReady = fp_floor_plan_schema_ready($conn);
+$fpGalleryAccessError = fp_gallery_access_error($conn);
 $fieldColumns = cr_manageable_columns($columns);
 // Exclude employee-specific sensitive fields.
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
@@ -494,8 +500,8 @@ $csrfToken = cr_get_csrf_token();
 // Gallery POST actions (folders, uploads, rename, move, tags).
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($crud_action === 'index' || $crud_action === 'create')) {
     cr_require_valid_csrf_token();
-    if (!$hasCompany || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'An active company is required.';
+    if ($fpGalleryAccessError !== '') {
+        $_SESSION['crud_error'] = $fpGalleryAccessError;
         header('Location: ' . $listUrl);
         exit;
     }
@@ -559,6 +565,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
             }
         }
         header('Location: ' . $listUrl . $redirectSuffix);
+        exit;
+    }
+
+    if ($fpAction === 'folder_move') {
+        $folderId = (int)($_POST['move_folder_id'] ?? 0);
+        $parentRaw = $_POST['parent_folder_id'] ?? '';
+        $newParentId = ($parentRaw === '' || $parentRaw === 'root') ? null : (int)$parentRaw;
+        if ($folderId <= 0) {
+            $_SESSION['crud_error'] = 'Folder not found.';
+        } else {
+            $allFolders = fp_fetch_folders($conn, (int)$company_id);
+            $moveError = fp_move_folder_to_parent($conn, (int)$company_id, $folderId, $newParentId, $allFolders);
+            if ($moveError !== '') {
+                $_SESSION['crud_error'] = $moveError;
+            } else {
+                $_SESSION['crud_success'] = 'Folder moved.';
+            }
+        }
+        header('Location: ' . $listUrl . '?folder_id=' . (int)$folderId);
         exit;
     }
 
@@ -775,9 +800,9 @@ if ($isJsonImportRequest) {
             exit;
         }
 
-        if (!$hasCompany || $company_id <= 0) {
+        if ($fpGalleryAccessError !== '') {
             http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => 'Import requires an active company.']);
+            echo json_encode(['ok' => false, 'error' => $fpGalleryAccessError]);
             exit;
         }
 
@@ -977,8 +1002,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     cr_require_valid_csrf_token();
     $fpSampleRedirect = ($crud_action === 'list_all') ? ($modulePath . '/list_all.php') : $listUrl;
 
-    if (!$hasCompany || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+    if ($fpGalleryAccessError !== '') {
+        $_SESSION['crud_error'] = $fpGalleryAccessError;
         header('Location: ' . $fpSampleRedirect);
         exit;
     }
@@ -1178,7 +1203,7 @@ $galleryFolders = [];
 $galleryTree = [];
 $galleryItems = [];
 $gallerySampleEmpty = false;
-if ($crud_action === 'index' && $hasCompany && $company_id > 0) {
+if ($crud_action === 'index' && $fpGalleryAccessError === '') {
     $galleryFolders = fp_fetch_folders($conn, (int)$company_id);
     $galleryTree = fp_build_folder_tree($galleryFolders);
     $galleryItems = fp_fetch_gallery_items(
