@@ -12,6 +12,8 @@ if (PHP_SAPI !== 'cli') {
     exit("This script must be run from CLI.\n");
 }
 
+define('ITM_CLI_SCRIPT', true);
+
 $options = getopt('', ['table:']);
 $tableName = isset($options['table']) ? trim((string) $options['table']) : '';
 
