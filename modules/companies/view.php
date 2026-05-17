@@ -7,6 +7,7 @@
  */
 
 require '../../config/config.php';
+itm_ensure_companies_company_unique($conn);
 
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
