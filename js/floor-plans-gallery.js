@@ -1,5 +1,5 @@
 /**
- * Floor Plans gallery: upload dropzone, preview modal, drag cards to folders.
+ * Floor Plans gallery: upload dropzone, preview modal, drag files/folders to folders.
  */
 (function () {
     const dropzone = document.getElementById('floorPlanDropzone');
@@ -10,6 +10,10 @@
     const moveForm = document.getElementById('floorPlanMoveForm');
     const movePlanInput = document.getElementById('floorPlanMovePlanId');
     const moveFolderInput = document.getElementById('floorPlanMoveFolderId');
+    const moveFolderForm = document.getElementById('floorPlanMoveFolderForm');
+    const moveFolderSourceInput = document.getElementById('floorPlanMoveFolderSourceId');
+    const moveFolderParentInput = document.getElementById('floorPlanMoveFolderParentId');
+    const folderDragMime = 'application/x-itm-floor-folder';
 
     if (dropzone && fileInput) {
         dropzone.addEventListener('dragover', function (event) {
@@ -76,13 +80,31 @@
         });
     }
 
-    function submitMove(planId, folderId) {
+    function submitFileMove(planId, folderId) {
         if (!moveForm || !movePlanInput || !moveFolderInput) {
             return;
         }
         movePlanInput.value = String(planId);
         moveFolderInput.value = String(folderId);
         moveForm.submit();
+    }
+
+    function submitFolderMove(folderId, parentId) {
+        if (!moveFolderForm || !moveFolderSourceInput || !moveFolderParentInput) {
+            return;
+        }
+        moveFolderSourceInput.value = String(folderId);
+        moveFolderParentInput.value = parentId === null || parentId === undefined ? '' : String(parentId);
+        moveFolderForm.submit();
+    }
+
+    function readFolderDragId(event) {
+        if (!event.dataTransfer) {
+            return 0;
+        }
+        const raw = event.dataTransfer.getData(folderDragMime) || '';
+        const folderId = parseInt(raw, 10);
+        return folderId > 0 ? folderId : 0;
     }
 
     document.querySelectorAll('.itm-floor-plan-card[draggable="true"]').forEach(function (card) {
@@ -101,10 +123,28 @@
         });
     });
 
+    document.querySelectorAll('.itm-folder-tree-folder[draggable="true"]').forEach(function (item) {
+        item.addEventListener('dragstart', function (event) {
+            const folderId = parseInt(item.getAttribute('data-folder-id') || '0', 10);
+            if (!folderId || !event.dataTransfer) {
+                return;
+            }
+            event.dataTransfer.setData(folderDragMime, String(folderId));
+            event.dataTransfer.effectAllowed = 'move';
+            item.classList.add('is-dragging');
+        });
+        item.addEventListener('dragend', function () {
+            item.classList.remove('is-dragging');
+            clearDropTargets();
+        });
+    });
+
     document.querySelectorAll('.itm-folder-drop-target').forEach(function (target) {
         target.addEventListener('dragover', function (event) {
             event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'move';
+            }
             target.classList.add('is-drop-hover');
         });
         target.addEventListener('dragleave', function () {
@@ -113,12 +153,35 @@
         target.addEventListener('drop', function (event) {
             event.preventDefault();
             clearDropTargets();
+
+            const folderDragId = readFolderDragId(event);
+            if (folderDragId) {
+                let parentId = null;
+                if (target.getAttribute('data-folder-reparent-root') === '1') {
+                    parentId = null;
+                } else {
+                    const targetFolderId = parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
+                    if (targetFolderId <= 0) {
+                        return;
+                    }
+                    if (targetFolderId === folderDragId) {
+                        return;
+                    }
+                    parentId = targetFolderId;
+                }
+                submitFolderMove(folderDragId, parentId);
+                return;
+            }
+
             const planId = parseInt(event.dataTransfer.getData('text/plain'), 10);
             if (!planId) {
                 return;
             }
-            const folderId = parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
-            submitMove(planId, folderId);
+            const unfiled = target.getAttribute('data-folder-drop-unfiled') === '1';
+            const folderId = unfiled
+                ? 0
+                : parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
+            submitFileMove(planId, folderId);
         });
     });
 

@@ -1467,6 +1467,20 @@ input[type="submit"] {
     outline: 2px dashed var(--accent-color, #0969da);
 }
 
+.itm-folder-tree-folder.is-dragging {
+    opacity: 0.55;
+    outline: 2px dashed var(--accent-color, #0969da);
+    border-radius: 6px;
+}
+
+.itm-folder-tree-folder[draggable="true"] > a {
+    cursor: grab;
+}
+
+.itm-folder-tree-folder.is-dragging > a {
+    cursor: grabbing;
+}
+
 .itm-folder-drop-target.is-drop-hover > a,
 .itm-folder-drop-target.is-drop-hover {
     background: var(--accent-muted, rgba(9, 105, 218, 0.18));

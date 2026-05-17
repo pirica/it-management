@@ -4,6 +4,44 @@
  * Why: Keeps upload, folder tree, tagging, and filesystem cleanup out of the main CRUD router.
  */
 
+function fp_floor_plan_schema_ready(mysqli $conn): bool
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    $tables = ['floor_plan_folders', 'floor_plan_tags', 'floor_plans', 'floor_plan_item_tags'];
+    foreach ($tables as $table) {
+        if (!itm_is_safe_identifier($table)) {
+            $ready = false;
+            return false;
+        }
+        $res = mysqli_query($conn, 'SHOW TABLES LIKE \'' . mysqli_real_escape_string($conn, $table) . '\'');
+        if (!$res || mysqli_num_rows($res) === 0) {
+            $ready = false;
+            return false;
+        }
+    }
+    $ready = true;
+    return true;
+}
+
+function fp_resolve_active_company_id(): int
+{
+    return (int)($_SESSION['company_id'] ?? 0);
+}
+
+function fp_gallery_access_error(mysqli $conn): string
+{
+    if (fp_resolve_active_company_id() <= 0) {
+        return 'Select a company from the home page before using Floor Plans.';
+    }
+    if (!fp_floor_plan_schema_ready($conn)) {
+        return 'Floor Plans database tables are missing. Apply the floor plan section from database.sql (tables floor_plan_folders, floor_plan_tags, floor_plans, floor_plan_item_tags).';
+    }
+    return '';
+}
+
 function fp_company_upload_dir(int $companyId): string {
     $base = FLOOR_PLAN_UPLOAD_PATH . (int)$companyId . DIRECTORY_SEPARATOR;
     if (!is_dir($base)) {
@@ -313,6 +351,115 @@ function fp_collect_folder_descendant_ids(array $folders, int $rootId): array {
     return array_values(array_unique($ids));
 }
 
+function fp_folder_row_by_id(array $folders, int $folderId): ?array
+{
+    foreach ($folders as $folder) {
+        if ((int)($folder['id'] ?? 0) === $folderId) {
+            return $folder;
+        }
+    }
+    return null;
+}
+
+function fp_folder_parent_id_from_row(?array $folderRow): ?int
+{
+    if ($folderRow === null) {
+        return null;
+    }
+    $parent = $folderRow['parent_folder_id'] ?? null;
+    if ($parent === null || $parent === '') {
+        return null;
+    }
+    return (int)$parent;
+}
+
+function fp_can_move_folder_to_parent(array $folders, int $folderId, ?int $newParentId): bool
+{
+    if ($newParentId === null || $newParentId <= 0) {
+        return true;
+    }
+    $blocked = fp_collect_folder_descendant_ids($folders, $folderId);
+    return !in_array($newParentId, $blocked, true);
+}
+
+function fp_move_folder_to_parent(mysqli $conn, int $companyId, int $folderId, ?int $newParentId, array $allFolders): string
+{
+    if ($folderId <= 0 || !fp_folder_belongs_to_company($conn, $folderId, $companyId)) {
+        return 'Folder not found.';
+    }
+    if ($newParentId !== null && $newParentId > 0 && !fp_folder_belongs_to_company($conn, $newParentId, $companyId)) {
+        return 'Target folder not found.';
+    }
+    if (!fp_can_move_folder_to_parent($allFolders, $folderId, $newParentId)) {
+        return 'Cannot move a folder into itself or one of its subfolders.';
+    }
+
+    $folderRow = fp_folder_row_by_id($allFolders, $folderId);
+    if ($folderRow === null) {
+        return 'Folder not found.';
+    }
+
+    $currentParentId = fp_folder_parent_id_from_row($folderRow);
+    $normalizedParent = ($newParentId !== null && $newParentId > 0) ? $newParentId : null;
+    if ($currentParentId === $normalizedParent) {
+        return '';
+    }
+
+    $folderName = trim((string)($folderRow['name'] ?? ''));
+    if ($folderName === '') {
+        return 'Folder name is required.';
+    }
+    if (fp_folder_name_exists($conn, $companyId, $normalizedParent, $folderName, $folderId)) {
+        return 'A folder with that name already exists at the target location.';
+    }
+
+    if ($normalizedParent === null) {
+        $stmt = mysqli_prepare($conn, 'UPDATE floor_plan_folders SET parent_folder_id=NULL WHERE id=? AND company_id=? LIMIT 1');
+        if (!$stmt) {
+            return 'Could not move folder.';
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $folderId, $companyId);
+    } else {
+        $stmt = mysqli_prepare($conn, 'UPDATE floor_plan_folders SET parent_folder_id=? WHERE id=? AND company_id=? LIMIT 1');
+        if (!$stmt) {
+            return 'Could not move folder.';
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $normalizedParent, $folderId, $companyId);
+    }
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        return 'Could not move folder.';
+    }
+    mysqli_stmt_close($stmt);
+    return '';
+}
+
+function fp_render_folder_move_parent_options(array $folders, int $movingFolderId, ?int $selectedParentId): string
+{
+    $blocked = fp_collect_folder_descendant_ids($folders, $movingFolderId);
+    $tree = fp_build_folder_tree($folders, null);
+    return fp_render_folder_move_options_from_tree($tree, $blocked, $selectedParentId, 0);
+}
+
+function fp_render_folder_move_options_from_tree(array $tree, array $blocked, ?int $selectedParentId, int $depth): string
+{
+    $html = '';
+    foreach ($tree as $node) {
+        $id = (int)($node['id'] ?? 0);
+        if ($id <= 0 || in_array($id, $blocked, true)) {
+            continue;
+        }
+        $isSelected = ($selectedParentId !== null && $selectedParentId === $id);
+        $prefix = $depth > 0 ? str_repeat('— ', $depth) : '';
+        $html .= '<option value="' . $id . '"' . ($isSelected ? ' selected' : '') . '>'
+            . sanitize($prefix . (string)$node['name']) . '</option>';
+        if (!empty($node['children'])) {
+            $html .= fp_render_folder_move_options_from_tree($node['children'], $blocked, $selectedParentId, $depth + 1);
+        }
+    }
+    return $html;
+}
+
 function fp_get_tags_for_plan(mysqli $conn, int $planId, int $companyId): array {
     $tags = [];
     $sql = 'SELECT t.id, t.name FROM floor_plan_tags t
@@ -526,8 +673,8 @@ function fp_render_folder_tree_html(array $tree, int $selectedFolderId, bool $un
         $id = (int)$node['id'];
         $isActive = ($selectedFolderId === $id && !$unfiledSelected) ? ' is-active' : '';
         $pad = 8 + ($depth * 14);
-        $html .= '<li class="itm-folder-tree-item itm-folder-drop-target' . $isActive . '" data-folder-drop-id="' . $id . '">';
-        $html .= '<a href="index.php?folder_id=' . $id . '" style="padding-left:' . (int)$pad . 'px;">📁 ' . sanitize((string)$node['name']) . '</a>';
+        $html .= '<li class="itm-folder-tree-item itm-folder-tree-folder itm-folder-drop-target' . $isActive . '" draggable="true" data-folder-id="' . $id . '" data-folder-drop-id="' . $id . '">';
+        $html .= '<a href="index.php?folder_id=' . $id . '" style="padding-left:' . (int)$pad . 'px;">📁 ' . sanitize((string)$node['name']) . ' <span class="itm-drop-hint">(drop)</span></a>';
         if (!empty($node['children'])) {
             $html .= '<ul class="itm-folder-tree-children">' . fp_render_folder_tree_html($node['children'], $selectedFolderId, $unfiledSelected, $depth + 1) . '</ul>';
         }
