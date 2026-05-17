@@ -293,6 +293,16 @@
                         CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code>
                     </td>
                 </tr>
+                <tr>
+                    <td><a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Compares every <code>CREATE TABLE</code> in <code>database.sql</code> with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a> or
+                        <a href="compare_database_sql_modules.php?format=json">?format=json</a>.<br>
+                        CLI: <code>php scripts/compare_database_sql_modules.php</code> · JSON: <code>--json</code> · exit code <code>1</code> when gaps exist.
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
