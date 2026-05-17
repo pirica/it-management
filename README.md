@@ -10,7 +10,7 @@ A complete IT Asset Management System built with PHP and MySQL, multi-company su
 - ✅ Printer and workstation tracking
 - ✅ Ticket management system
 - ✅ Responsive design
-- ✅ MySQLi implementation (no PDO)
+- ✅ API
 
 ## Screenshots
 
@@ -64,6 +64,7 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 - PHP 7.4.33
 - MySQL 8.0+
+- MySQLi implementation (no PDO)
 - Apache 2.4+
 - No Composer required
 
