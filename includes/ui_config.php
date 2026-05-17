@@ -281,6 +281,9 @@ function itm_auto_create_module_scaffold($moduleName) {
     if ($moduleName === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $moduleName)) {
         return false;
     }
+    if (itm_sidebar_module_is_hidden($moduleName)) {
+        return false;
+    }
 
     $modulesRoot = dirname(__DIR__) . '/modules';
     $moduleDir = $modulesRoot . '/' . $moduleName;

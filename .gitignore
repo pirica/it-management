@@ -1,1 +1,6 @@
 .env
+
+# Auto-scaffold copies for floor plan support tables (use modules/floor_plans/ gallery only).
+/modules/floor_plan_folders/
+/modules/floor_plan_item_tags/
+/modules/floor_plan_tags/
