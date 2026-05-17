@@ -32,6 +32,12 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 
 ![Rack planner](docs/readme/rack_planner.png)
 
+## Architecture
+
+High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.
+
+![Architecture overview](docs/readme/architecture.png)
+
 ## Installation
 
 1. Extract the project files into your web root.
