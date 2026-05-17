@@ -120,63 +120,54 @@ function itm_ipam_is_valid_ipv4(string $ip): bool
 }
 
 /**
- * Why: Subnet list "Ping IP" uses ICMP from the app server (same host as Laragon/Apache).
+ * Why: Host checks must not shell out; TCP connect timing works on shared hosting without exec.
  *
- * @return array{ok: bool, reachable: bool, message: string}
+ * @return array{ok: bool, reachable: bool, open: bool, port: int, message: string, response_ms: float|null, method: string}
  */
-function itm_ipam_ping_ipv4(string $ip, int $timeoutMs = 2000): array
+function itm_ipam_socket_ping(string $host, int $port, float $timeout = 10): array
 {
-    if (!itm_ipam_is_valid_ipv4($ip)) {
-        return ['ok' => false, 'reachable' => false, 'message' => 'Ping IP must be a valid IPv4 address.'];
-    }
-
-    if (!function_exists('exec')) {
-        return ['ok' => false, 'reachable' => false, 'message' => 'Ping is unavailable (exec is disabled on this server).'];
-    }
-
-    $timeoutMs = max(500, min(10000, $timeoutMs));
-    $isWindows = DIRECTORY_SEPARATOR === '\\' || stripos(PHP_OS, 'WIN') === 0;
-    if ($isWindows) {
-        $cmd = 'ping -n 1 -w ' . (int)$timeoutMs . ' ' . escapeshellarg($ip) . ' 2>&1';
-    } else {
-        $timeoutSec = max(1, (int)ceil($timeoutMs / 1000));
-        $cmd = 'ping -c 1 -W ' . $timeoutSec . ' ' . escapeshellarg($ip) . ' 2>&1';
-    }
-
-    $output = [];
-    $exitCode = 1;
-    @exec($cmd, $output, $exitCode);
-    $reachable = ($exitCode === 0);
-    $message = trim(implode("\n", $output));
-    if ($message === '') {
-        $message = $reachable ? 'Host responded to ping.' : 'No ping response from host.';
-    }
-
-    return ['ok' => true, 'reachable' => $reachable, 'message' => $message];
-}
-
-/**
- * Why: Optional TCP port check complements ICMP when firewalls block ping but a service port is open.
- *
- * @return array{ok: bool, open: bool, message: string}
- */
-function itm_ipam_check_tcp_port(string $ip, int $port, int $timeoutSec = 3): array
-{
-    if (!itm_ipam_is_valid_ipv4($ip)) {
-        return ['ok' => false, 'open' => false, 'message' => 'Ping IP must be a valid IPv4 address.'];
+    if (!itm_ipam_is_valid_ipv4($host)) {
+        return [
+            'ok' => false,
+            'reachable' => false,
+            'open' => false,
+            'port' => $port,
+            'message' => 'Ping IP must be a valid IPv4 address.',
+            'response_ms' => null,
+            'method' => 'tcp',
+        ];
     }
     if ($port < 1 || $port > 65535) {
-        return ['ok' => false, 'open' => false, 'message' => 'Port must be between 1 and 65535.'];
+        return [
+            'ok' => false,
+            'reachable' => false,
+            'open' => false,
+            'port' => $port,
+            'message' => 'Port must be between 1 and 65535.',
+            'response_ms' => null,
+            'method' => 'tcp',
+        ];
     }
 
-    $timeoutSec = max(1, min(10, $timeoutSec));
+    $timeout = max(1.0, min(30.0, $timeout));
+    $startTime = microtime(true);
     $errno = 0;
     $errstr = '';
-    $socket = @fsockopen($ip, $port, $errno, $errstr, (float)$timeoutSec);
+    $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
+    $responseMs = round((microtime(true) - $startTime) * 1000, 1);
+
     if (is_resource($socket)) {
         fclose($socket);
 
-        return ['ok' => true, 'open' => true, 'message' => 'Port ' . $port . ' is open on ' . $ip . '.'];
+        return [
+            'ok' => true,
+            'reachable' => true,
+            'open' => true,
+            'port' => $port,
+            'message' => 'Connected on port ' . $port . '. Response time: ' . $responseMs . ' ms.',
+            'response_ms' => $responseMs,
+            'method' => 'tcp',
+        ];
     }
 
     $detail = trim($errstr);
@@ -186,13 +177,106 @@ function itm_ipam_check_tcp_port(string $ip, int $port, int $timeoutSec = 3): ar
 
     return [
         'ok' => true,
+        'reachable' => false,
         'open' => false,
-        'message' => 'Port ' . $port . ' is not reachable on ' . $ip . ($detail !== '' ? ' (' . $detail . ')' : '') . '.',
+        'port' => $port,
+        'message' => 'Failed to connect on port ' . $port . ($detail !== '' ? ': ' . $detail : '.'),
+        'response_ms' => null,
+        'method' => 'tcp',
     ];
 }
 
 /**
- * Why: Subnet index ping tool returns one JSON payload for ICMP and optional TCP checks.
+ * Why: When the requested port is closed, try common service ports before reporting unreachable.
+ *
+ * @return array{ok: bool, reachable: bool, message: string, method: string, port_used: int|null, response_ms: float|null, alternatives_tried: array<int, array<string, mixed>>}
+ */
+function itm_ipam_probe_host_reachability(string $ip, int $primaryPort = 80, float $timeout = 5): array
+{
+    if (!itm_ipam_is_valid_ipv4($ip)) {
+        return [
+            'ok' => false,
+            'reachable' => false,
+            'message' => 'Ping IP must be a valid IPv4 address.',
+            'method' => 'tcp',
+            'port_used' => null,
+            'response_ms' => null,
+            'alternatives_tried' => [],
+        ];
+    }
+
+    $fallbackPorts = [80, 443, 22, 53, 3389];
+    $portsToTry = [];
+    if ($primaryPort > 0) {
+        $portsToTry[] = $primaryPort;
+    }
+    foreach ($fallbackPorts as $fallbackPort) {
+        if (!in_array($fallbackPort, $portsToTry, true)) {
+            $portsToTry[] = $fallbackPort;
+        }
+    }
+
+    $alternativesTried = [];
+    foreach ($portsToTry as $port) {
+        $attempt = itm_ipam_socket_ping($ip, $port, $timeout);
+        $alternativesTried[] = [
+            'port' => $port,
+            'reachable' => !empty($attempt['reachable']),
+            'message' => (string)($attempt['message'] ?? ''),
+            'response_ms' => $attempt['response_ms'] ?? null,
+        ];
+        if (!empty($attempt['reachable'])) {
+            return [
+                'ok' => true,
+                'reachable' => true,
+                'message' => (string)$attempt['message'],
+                'method' => 'tcp',
+                'port_used' => $port,
+                'response_ms' => $attempt['response_ms'] ?? null,
+                'alternatives_tried' => $alternativesTried,
+            ];
+        }
+    }
+
+    $triedList = implode(', ', array_map(static function ($row) {
+        return (string)($row['port'] ?? '');
+    }, $alternativesTried));
+
+    return [
+        'ok' => true,
+        'reachable' => false,
+        'message' => 'No TCP response on tried ports: ' . $triedList . '.',
+        'method' => 'tcp',
+        'port_used' => null,
+        'response_ms' => null,
+        'alternatives_tried' => $alternativesTried,
+    ];
+}
+
+/**
+ * @return array{ok: bool, open: bool, message: string, response_ms?: float|null}
+ */
+function itm_ipam_check_tcp_port(string $ip, int $port, int $timeoutSec = 3): array
+{
+    $socketResult = itm_ipam_socket_ping($ip, $port, (float)$timeoutSec);
+    if (!$socketResult['ok']) {
+        return [
+            'ok' => false,
+            'open' => false,
+            'message' => (string)$socketResult['message'],
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'open' => !empty($socketResult['open']),
+        'message' => (string)$socketResult['message'],
+        'response_ms' => $socketResult['response_ms'] ?? null,
+    ];
+}
+
+/**
+ * Why: Subnet index ping tool returns one JSON payload for TCP reachability and optional port checks.
  *
  * @return array{ok: bool, error?: string, ip?: string, ping?: array<string, mixed>, port?: array<string, mixed>|null}
  */
@@ -203,34 +287,45 @@ function itm_ipam_run_ping_port_check(string $ip, string $portRaw): array
         return ['ok' => false, 'error' => 'Ping IP is required.'];
     }
 
-    $ping = itm_ipam_ping_ipv4($ip);
-    if (!$ping['ok']) {
-        return ['ok' => false, 'error' => (string)$ping['message']];
+    $portRaw = itm_ipam_trim_user_input($portRaw);
+    $userPort = 0;
+    if ($portRaw !== '') {
+        if (!ctype_digit($portRaw)) {
+            return ['ok' => false, 'error' => 'Port must be a number between 1 and 65535.'];
+        }
+        $userPort = (int)$portRaw;
+        if ($userPort < 1 || $userPort > 65535) {
+            return ['ok' => false, 'error' => 'Port must be between 1 and 65535.'];
+        }
+    }
+
+    $probe = itm_ipam_probe_host_reachability($ip, $userPort > 0 ? $userPort : 80);
+    if (empty($probe['ok'])) {
+        return ['ok' => false, 'error' => (string)($probe['message'] ?? 'Reachability check failed.')];
     }
 
     $result = [
         'ok' => true,
         'ip' => $ip,
-        'ping' => $ping,
+        'ping' => [
+            'ok' => true,
+            'reachable' => !empty($probe['reachable']),
+            'message' => (string)($probe['message'] ?? ''),
+            'method' => (string)($probe['method'] ?? 'tcp'),
+            'port_used' => $probe['port_used'] ?? null,
+            'response_ms' => $probe['response_ms'] ?? null,
+            'alternatives_tried' => $probe['alternatives_tried'] ?? [],
+        ],
         'port' => null,
     ];
 
-    $portRaw = itm_ipam_trim_user_input($portRaw);
-    if ($portRaw === '') {
-        return $result;
+    if ($userPort > 0) {
+        $portCheck = itm_ipam_check_tcp_port($ip, $userPort);
+        if (!$portCheck['ok']) {
+            return ['ok' => false, 'error' => (string)$portCheck['message']];
+        }
+        $result['port'] = $portCheck;
     }
-
-    if (!ctype_digit($portRaw)) {
-        return ['ok' => false, 'error' => 'Port must be a number between 1 and 65535.'];
-    }
-
-    $port = (int)$portRaw;
-    $portCheck = itm_ipam_check_tcp_port($ip, $port);
-    if (!$portCheck['ok']) {
-        return ['ok' => false, 'error' => (string)$portCheck['message']];
-    }
-
-    $result['port'] = $portCheck;
 
     return $result;
 }
