@@ -58,14 +58,29 @@ function extractCodeBlock(string $source, int $bracePos): string
     return substr($source, $start);
 }
 
+/**
+ * Why: CLI output should name skipped paths relative to the project root.
+ */
+function csrf_coverage_relative_path(string $root, string $path): string
+{
+    $prefix = $root . DIRECTORY_SEPARATOR;
+    if (strpos($path, $prefix) === 0) {
+        return str_replace('\\', '/', substr($path, strlen($prefix)));
+    }
+
+    return str_replace('\\', '/', $path);
+}
+
 // Begin recursive directory scan
 $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
 );
 
 $missing = [];
+$skipped = [];
 $scanned = 0;
 $handlerScanned = 0;
+$handlersSkippedNoMutation = 0;
 
 foreach ($iterator as $fileInfo) {
     if (!$fileInfo->isFile()) {
@@ -126,6 +141,7 @@ foreach ($iterator as $fileInfo) {
 
             // If the block doesn't change state, it doesn't strictly need CSRF protection
             if (preg_match($stateMutationPattern, $block) !== 1) {
+                $handlersSkippedNoMutation++;
                 continue;
             }
 
@@ -153,8 +169,13 @@ foreach ($iterator as $fileInfo) {
     }
 
     // Why: includes/*.php hook libraries (e.g. ipam_crud_hooks) mutate via helpers; callers enforce CSRF.
-    $relativePath = str_replace('\\', '/', str_replace($root . DIRECTORY_SEPARATOR, '', $path));
+    $relativePath = csrf_coverage_relative_path($root, $path);
     if (strpos($relativePath, 'includes/') === 0) {
+        $skipped[] = [
+            $relativePath,
+            'includes/ hook library: no direct if (REQUEST_METHOD ... POST) entrypoint; '
+            . 'uses $_POST/mutations inside functions only — CSRF must be enforced by the requiring module before calling these helpers',
+        ];
         continue;
     }
 
@@ -166,6 +187,15 @@ foreach ($iterator as $fileInfo) {
 // Final output of results
 if (empty($missing)) {
     echo "CSRF coverage check passed. Scanned {$scanned} PHP files and {$handlerScanned} POST handlers with no uncovered state-changing POST handlers.\n";
+    if ($handlersSkippedNoMutation > 0) {
+        echo "POST handlers skipped (read-only / no state mutation in block): {$handlersSkippedNoMutation}\n";
+    }
+    if (!empty($skipped)) {
+        echo "\nSkipped (trusted — not direct POST endpoints):\n";
+        foreach ($skipped as $entry) {
+            echo " - {$entry[0]}: {$entry[1]}\n";
+        }
+    }
     exit(0);
 }
 
@@ -173,7 +203,13 @@ echo "CSRF coverage check found potential gaps:\n";
 foreach ($missing as $entry) {
     $path = $entry[0];
     $reason = $entry[1];
-    $relative = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
+    $relative = csrf_coverage_relative_path($root, $path);
     echo " - {$relative}: {$reason}\n";
+}
+if (!empty($skipped)) {
+    echo "\nSkipped (trusted — not direct POST endpoints):\n";
+    foreach ($skipped as $entry) {
+        echo " - {$entry[0]}: {$entry[1]}\n";
+    }
 }
 exit(1);
