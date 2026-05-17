@@ -101,6 +101,12 @@
                     <td>Open in the browser to audit module-to-table mapping. CLI redirect: <code>php scripts/crud_tables.php &gt; crud_tables.html</code></td>
                 </tr>
                 <tr>
+                    <td><a href="update_all_created_at.php">update_all_created_at.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-both">Browser + CLI</span></td>
+                    <td>After importing <code>database.sql</code>, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>
+                    <td>Open <a href="update_all_created_at.php">update_all_created_at.php</a> while logged in. Optional CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
+                </tr>
+                <tr>
                     <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
                     <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
                     <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong> (e.g. Location id=1 and id=4 for the same tenant).</td>
@@ -195,12 +201,6 @@
                     <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged.</td>
                     <td><code>php scripts/normalize_database_sql_created_at.php</code> — edits <code>database.sql</code> before import (not the live database).</td>
-                </tr>
-                <tr>
-                    <td>update_all_created_at.php</td>
-                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
-                    <td>After importing <code>database.sql</code>, updates every live row so <code>created_at</code> is one timestamp (default <code>2026-01-01 00:00:01</code>). Use <code>--dry-run</code> to preview row counts first.</td>
-                    <td><code>php scripts/update_all_created_at.php</code> — run after phpMyAdmin import; <code>php scripts/update_all_created_at.php --dry-run</code> to preview only.</td>
                 </tr>
             </tbody>
         </table>
