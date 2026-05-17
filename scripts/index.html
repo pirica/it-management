@@ -1,1 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IT Management — Scripts</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .scripts-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 48px; }
+        .scripts-card { background: var(--card-bg, #fff); border: 1px solid var(--border-color, #d0d7de); border-radius: 8px; margin-bottom: 20px; padding: 18px 20px; }
+        .scripts-muted { color: var(--text-muted, #57606a); margin: 0 0 12px; line-height: 1.5; }
+        .scripts-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+        .scripts-table th, .scripts-table td { border: 1px solid var(--border-color, #d0d7de); padding: 10px 12px; text-align: left; vertical-align: top; }
+        .scripts-table th { background: var(--table-header-bg, #f6f8fa); }
+        .scripts-table code { font-size: 0.88rem; word-break: break-word; }
+        .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+        .scripts-badge-web { background: #ddf4ff; color: #0969da; }
+        .scripts-badge-cli { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
+        .scripts-badge-both { background: #dafbe1; color: #116329; }
+        .scripts-toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 8px; padding: 0; list-style: none; }
+        .scripts-toc a { color: #0969da; text-decoration: none; }
+        .scripts-toc a:hover { text-decoration: underline; }
+        h1 { margin: 0 0 8px; }
+        h2 { margin: 0 0 12px; font-size: 1.15rem; }
+        .scripts-cli-hint { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--table-header-bg, #f6f8fa); border: 1px solid var(--border-color, #d0d7de); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<div class="scripts-wrap">
+    <div class="scripts-card">
+        <h1>Scripts directory</h1>
+        <p class="scripts-muted">
+            Maintenance, audits, and developer tools for the IT Management System.
+            Open <strong>Browser</strong> links directly in this site (log in when required).
+            Run <strong>CLI</strong> commands from the project root with PHP 7.4+.
+        </p>
+        <ul class="scripts-toc">
+            <li><a href="#docs">Documentation</a></li>
+            <li><a href="#browser">Browser tools</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#database">Database</a></li>
+            <li><a href="#idf">IDF &amp; equipment</a></li>
+            <li><a href="#static">Static analysis (CLI)</a></li>
+            <li><a href="#migrations">One-time migrations (CLI)</a></li>
+        </ul>
+        <div class="scripts-cli-hint">
+            <strong>CLI example (Laragon):</strong>
+            <code>C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php [options]</code><br>
+            <strong>From project root:</strong> <code>php scripts/&lt;script&gt;.php [options]</code>
+        </div>
+    </div>
 
+    <div class="scripts-card" id="docs">
+        <h2>Documentation</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="api.php">api.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td>HTML reference for JSON API endpoints (auth, CSRF, module import routes, request/response examples).</td>
+                    <td>Open in the browser after deploy. Use as the source of truth when calling <code>/modules/*/index.php</code> JSON handlers or shared APIs documented in the file.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="browser">
+        <h2>Browser tools</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="DBdesign.php">DBdesign.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td>ER-style diagram generated from <code>database.sql</code> (Mermaid render, zoom, SVG/PNG export).</td>
+                    <td>
+                        Open <a href="DBdesign.php">DBdesign.php</a>. Optional:
+                        <a href="DBdesign.php?format=mermaid">?format=mermaid</a>,
+                        <a href="DBdesign.php?format=json">?format=json</a>.
+                        CLI: <code>php scripts/DBdesign.php --mermaid</code> or <code>--json</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="crud_tables.php">crud_tables.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td>Lists every module folder and the first <code>$crud_table =</code> line found in <code>index.php</code>, with links to each module.</td>
+                    <td>Open in the browser to audit module-to-table mapping. CLI redirect: <code>php scripts/crud_tables.php &gt; crud_tables.html</code></td>
+                </tr>
+                <tr>
+                    <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong> (e.g. Location id=1 and id=4 for the same tenant).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open the UI, choose <em>Scan mode</em>, <em>Company</em>, <em>Risk filter</em>, and <em>Output</em> (table or JSON), then click <strong>Run scan</strong>.
+                        Equivalent CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php --company=4</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-both">Both</span></td>
+                    <td>Same FK dropdown risk scan as above; in the browser it loads the UI file.</td>
+                    <td>
+                        Browser: same as <code>detect_fk_dropdown_ui_risk_ui.php</code>.
+                        CLI options: <code>--company=N</code>, <code>--json</code>, <code>--data-only</code>, <code>--code-only</code>, <code>--help</code>.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="security">
+        <h2>Security</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="test_sql_injection.php">test_sql_injection.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-web">Browser</span></td>
+                    <td>JSON sandbox to test SQL-injection signature detection and safe prepared-statement execution (GET/POST).</td>
+                    <td>
+                        <strong>Requires login</strong> and active <code>company_id</code>.
+                        GET/POST JSON with a test payload; POST must include a valid CSRF token.
+                        Use only in dev/staging — not a public endpoint.
+                    </td>
+                </tr>
+                <tr>
+                    <td>sql_injection_matrix_test.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Runs a fixed table of injection payloads through <code>lib/sql_injection_detector.php</code> and reports pass/fail.</td>
+                    <td><code>php scripts/sql_injection_matrix_test.php</code> — exit code non-zero if any case fails.</td>
+                </tr>
+                <tr>
+                    <td>check_sql_injection_coverage.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Static scan: flags PHP files where queries may use user input without binding/sanitization.</td>
+                    <td><code>php scripts/check_sql_injection_coverage.php</code> — run after CRUD/SQL changes (AGENTS.md requirement).</td>
+                </tr>
+                <tr>
+                    <td>check_csrf_coverage.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Static scan: finds POST handlers that change data without a known CSRF guard.</td>
+                    <td><code>php scripts/check_csrf_coverage.php</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="database">
+        <h2>Database</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>analyze_database_health.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Runs <code>ANALYZE TABLE</code> on every base table and prints per-table success/failure (avoids phpMyAdmin stopping on first error).</td>
+                    <td><code>php scripts/analyze_database_health.php</code> — uses <code>config/config.php</code> DB connection.</td>
+                </tr>
+                <tr>
+                    <td>repair_table_from_schema.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Rebuilds one InnoDB table from <code>database.sql</code> when metadata drift causes “doesn't exist in engine” errors.</td>
+                    <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="idf">
+        <h2>IDF &amp; equipment</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="idfs_sync_human_test.php">idfs_sync_human_test.php</a></td>
+                    <td><span class="scripts-badge scripts-badge-both">Both</span></td>
+                    <td>End-to-end HTTP regression for IDF rack/device flows; asserts sync across <code>idf_ports</code>, <code>switch_ports</code>, <code>equipment</code>, <code>idf_links</code>.</td>
+                    <td>
+                        CLI (recommended): <code>php scripts/idfs_sync_human_test.php</code><br>
+                        Optional env: <code>ITM_BASE_URL</code>, <code>ITM_USER</code>, <code>ITM_PASS</code>, <code>ITM_COMPANY_ID</code>, <code>ITM_IDF_ID</code>.<br>
+                        Browser: plain-text output for debugging. Required before IDF-related PRs per AGENTS.md.
+                    </td>
+                </tr>
+                <tr>
+                    <td>idfs_api_payload_dry_run.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Validates IDF device API JSON payloads offline (no MySQL).</td>
+                    <td>
+                        <code>php scripts/idfs_api_payload_dry_run.php --samples</code><br>
+                        <code>php scripts/idfs_api_payload_dry_run.php --endpoint=port_update --file=payload.json</code><br>
+                        <code>php scripts/idfs_api_payload_dry_run.php --endpoint=link_create --json='{"port_id_a":1,"port_id_b":2}'</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td>idf_device_port_sort_test.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Proves RJ45 ports sort before fiber (SFP) in IDF device SQL; optional live MySQL checks.</td>
+                    <td>
+                        <code>php scripts/idf_device_port_sort_test.php</code><br>
+                        <code>php scripts/idf_device_port_sort_test.php --offline-only</code> (skip DB tests)
+                    </td>
+                </tr>
+                <tr>
+                    <td>migrate_equipment_poe_active.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>One-time: adds <code>equipment_poe.active</code> default 1 if the column is missing.</td>
+                    <td><code>php scripts/migrate_equipment_poe_active.php</code> — env: <code>ITM_DB_HOST</code>, <code>ITM_DB_USER</code>, <code>ITM_DB_PASS</code>, <code>ITM_DB_NAME</code></td>
+                </tr>
+                <tr>
+                    <td>migrate_equipment_poe_watts.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>One-time: adds <code>equipment_poe.watts</code> and splits legacy combined name values.</td>
+                    <td><code>php scripts/migrate_equipment_poe_watts.php</code> — same DB env vars as above.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="static">
+        <h2>Static analysis (CLI)</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>check_ui_configuration_coverage.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Verifies modules implement UI configuration hooks: table actions origin, new button position, export toolbar, back/save alignment.</td>
+                    <td><code>php scripts/check_ui_configuration_coverage.php</code> — exits <code>2</code> if any module fails; skips <code>idfs</code> module.</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="scripts-muted" style="margin-top:12px;">
+            Library (not run directly): <code>lib/sql_injection_detector.php</code> — used by <code>sql_injection_matrix_test.php</code> and runtime guards.
+        </p>
+    </div>
+
+    <div class="scripts-card" id="migrations">
+        <h2>One-time migrations (CLI)</h2>
+        <p class="scripts-muted">Run once per environment when upgrading schema; safe to re-run only where noted in each script header.</p>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th>Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>migrate_equipment_poe_active.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Adds <code>active</code> column to <code>equipment_poe</code>.</td>
+                    <td><code>php scripts/migrate_equipment_poe_active.php</code></td>
+                </tr>
+                <tr>
+                    <td>migrate_equipment_poe_watts.php</td>
+                    <td><span class="scripts-badge scripts-badge-cli">CLI</span></td>
+                    <td>Adds <code>watts</code> and migrates legacy POE name strings.</td>
+                    <td><code>php scripts/migrate_equipment_poe_watts.php</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card">
+        <p class="scripts-muted" style="margin:0;">
+            Back to app: <a href="../index.php">Home</a> ·
+            This page: <code>/scripts/index.html</code>
+        </p>
+    </div>
+</div>
+</body>
+</html>
