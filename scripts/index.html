@@ -145,6 +145,15 @@
             </thead>
             <tbody>
                 <tr>
+                    <td><a href="test_form_failed_save_display.php">test_form_failed_save_display.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Scans all module create forms for SQL-quoted re-display after failed saves (e.g. <code>value="'USA'"</code>); optional runtime POST tests per module.</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="test_form_failed_save_display.php">test_form_failed_save_display.php</a>, run static scan, optionally enable <em>Runtime HTTP tests</em>.
+                        CLI: <code>php scripts/test_form_failed_save_display.php</code> · runtime: <code>--runtime</code> with <code>ITM_TEST_BASE_URL</code> and <code>ITM_TEST_COOKIE</code>.
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="test_sql_injection.php">test_sql_injection.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>JSON sandbox to test SQL-injection signature detection and safe prepared-statement execution (GET/POST).</td>
