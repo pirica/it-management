@@ -8,6 +8,7 @@
  */
 
 require '../../config/config.php';
+itm_ensure_companies_company_unique($conn);
 
 // Security: Only allow state-changing deletions via POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

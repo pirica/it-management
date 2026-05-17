@@ -7,6 +7,7 @@
  */
 
 require '../../config/config.php';
+itm_ensure_companies_company_unique($conn);
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');

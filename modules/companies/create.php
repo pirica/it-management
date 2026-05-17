@@ -8,6 +8,7 @@
  */
 
 require '../../config/config.php';
+itm_ensure_companies_company_unique($conn);
 
 // Determine if we are in Edit mode based on the presence of an ID
 $id = (int)($_GET['id'] ?? 0);
