@@ -7,6 +7,47 @@
  * and global security middleware (authentication & CSRF).
  */
 
+/**
+ * Why: Local `.env` keeps API keys out of git while remaining optional for Laragon/dev installs.
+ */
+function itm_load_dotenv_file($path)
+{
+    if (!is_string($path) || $path === '' || !is_readable($path)) {
+        return;
+    }
+    $lines = @file($path, FILE_IGNORE_NEW_LINES);
+    if (!is_array($lines)) {
+        return;
+    }
+    foreach ($lines as $line) {
+        $line = trim((string)$line);
+        if ($line === '' || strpos($line, '#') === 0) {
+            continue;
+        }
+        $eqPos = strpos($line, '=');
+        if ($eqPos === false) {
+            continue;
+        }
+        $name = trim(substr($line, 0, $eqPos));
+        $value = trim(substr($line, $eqPos + 1));
+        if ($name === '') {
+            continue;
+        }
+        if (
+            (strlen($value) >= 2 && $value[0] === '"' && substr($value, -1) === '"')
+            || (strlen($value) >= 2 && $value[0] === "'" && substr($value, -1) === "'")
+        ) {
+            $value = substr($value, 1, -1);
+        }
+        if (getenv($name) === false) {
+            putenv($name . '=' . $value);
+            $_ENV[$name] = $value;
+        }
+    }
+}
+
+itm_load_dotenv_file(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env');
+
 // Database Configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
@@ -19,6 +60,14 @@ define('APP_VERSION', '1.0.0');
 define('APP_ENV', 'production'); // development or production
 define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
 define('MAILERLITE_URL', 'https://connect.mailerlite.com/api/emails/single');
+
+// IP2WHOIS hosted-domains lookup (Network Discovery on IP Subnets). Set IP2WHOIS_API_KEY in `.env` or server env.
+$itm_ip2whois_api_key = trim((string)getenv('IP2WHOIS_API_KEY'));
+if ($itm_ip2whois_api_key === '') {
+    $itm_ip2whois_api_key = trim((string)getenv('ITM_IP2WHOIS_API_KEY'));
+}
+define('IP2WHOIS_API_KEY', $itm_ip2whois_api_key);
+define('IP2WHOIS_DOMAINS_URL', 'https://domains.ip2whois.com/domains');
 
 // PHP compatibility polyfills for older hosting environments.
 // Why: Some shared hosts still run PHP < 8.0 where native str_* helpers do not exist.

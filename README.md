@@ -41,12 +41,13 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
 7. Open `http://localhost/it-management/` in your browser.
+8. (Optional) Copy `.env.example` to `.env` and set `IP2WHOIS_API_KEY` for Network Discovery domain enrichment (see below).
 
 ## Modules
 
 - Equipment — Manage IT equipment
 - IDFs — Rack layout, positions, ports, and cable links
-- IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment
+- IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment (includes **Network Discovery** TCP scan under IP Subnets)
 - Rack planner — Visual rack elevation and component placement
 - Printers — Track printers and supplies
 - Workstations — Manage workstations
@@ -104,6 +105,43 @@ Then re-run:
 - Keep `debug.php` for development/troubleshooting only.
 - Before any production release, remove or block access to `debug.php` to avoid exposing sensitive system and database information.
 
+## Network Discovery & IP2WHOIS
+
+**IP Subnets** → **Search** → **Network Discovery** scans an IPv4 range (up to 255 addresses) using TCP connect probes (no shell/`exec`). Responding hosts can be added to the **IP Addresses** inventory when they match a company subnet.
+
+### Optional: hosted domains (IP2WHOIS)
+
+When `IP2WHOIS_API_KEY` is configured, each live host is looked up via the IP2WHOIS **Hosted Domains** API:
+
+```bash
+curl "https://domains.ip2whois.com/domains?ip=8.8.8.8&key=YOUR_KEY"
+```
+
+The scan log and results table show returned domain names. On **Add to inventory**, the first domain may be used as the IP row `hostname` when equipment has no hostname.
+
+### Configure the API key
+
+1. Copy `.env.example` to `.env` in the project root.
+2. Set your key (do not commit `.env`):
+
+```env
+IP2WHOIS_API_KEY=your_license_key_here
+```
+
+3. Restart Apache/PHP so `config/config.php` reloads environment values.
+
+Alternatively set a server environment variable (Apache example):
+
+```apache
+SetEnv IP2WHOIS_API_KEY your_license_key_here
+```
+
+Alias: `ITM_IP2WHOIS_API_KEY` is also accepted.
+
+If the key is missing, discovery still runs; IP2WHOIS steps are skipped and noted in the activity log.
+
+Register / plans: [IP2WHOIS](https://www.ip2whois.com/register) — free tier limits apply (domains per query depends on plan).
+
 ## Secrets Management (Required)
 
 Move secrets out of source control immediately. `config/config.php` currently defines DB credentials and API key constants inline, which is risky for leaks and difficult rotation. Use environment variables (or a server-local config file excluded from git) and fail fast when missing.
@@ -122,6 +160,7 @@ SetEnv ITM_DB_NAME itmanagement
 SetEnv ITM_DB_USER root
 SetEnv ITM_DB_PASS change_me
 SetEnv ITM_API_KEY change_me
+SetEnv IP2WHOIS_API_KEY your_ip2whois_key
 ```
 
 Then load and validate them in `config/config.php`:
