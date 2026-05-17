@@ -1324,3 +1324,241 @@ input[type="submit"] {
         font-size: 15px;
     }
 }
+
+/* Floor Plans gallery */
+.itm-floor-plan-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.itm-floor-plan-toolbar-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.itm-floor-plan-title {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+.itm-floor-plan-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .itm-floor-plan-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.itm-floor-plan-sidebar-title {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.itm-folder-tree {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+}
+
+.itm-folder-tree-children {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.itm-folder-tree-item a {
+    display: block;
+    padding: 6px 8px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.itm-folder-tree-item.is-active a,
+.itm-folder-tree-item a:hover {
+    background: var(--accent-muted, rgba(9, 105, 218, 0.12));
+}
+
+.itm-folder-manage {
+    margin-top: 10px;
+}
+
+.itm-folder-form {
+    margin-top: 10px;
+}
+
+.itm-floor-plan-dropzone {
+    margin-bottom: 16px;
+    padding: 20px;
+    border: 2px dashed var(--border-color, #d0d7de);
+    border-radius: 8px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.itm-floor-plan-dropzone.is-dragover {
+    border-color: var(--accent-color, #0969da);
+    background: var(--accent-muted, rgba(9, 105, 218, 0.08));
+}
+
+.itm-dropzone-hint {
+    margin: 0 0 12px;
+    opacity: 0.85;
+}
+
+.itm-floor-plan-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.itm-floor-plan-card {
+    border: 1px solid var(--border-color, #d0d7de);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card-bg, #fff);
+    display: flex;
+    flex-direction: column;
+}
+
+.itm-floor-plan-thumb-link {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: var(--bg-muted, #f6f8fa);
+    overflow: hidden;
+}
+
+.itm-floor-plan-thumb-link img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.itm-floor-plan-pdf-thumb,
+.itm-floor-plan-cad-thumb {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color, #0969da);
+}
+
+.itm-floor-plan-cad-thumb {
+    font-size: 1.25rem;
+    letter-spacing: 0.05em;
+}
+
+.itm-floor-plan-card.is-dragging {
+    opacity: 0.55;
+    outline: 2px dashed var(--accent-color, #0969da);
+}
+
+.itm-folder-drop-target.is-drop-hover > a,
+.itm-folder-drop-target.is-drop-hover {
+    background: var(--accent-muted, rgba(9, 105, 218, 0.18));
+    outline: 2px dashed var(--accent-color, #0969da);
+}
+
+.itm-drop-hint {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.itm-floor-plan-cad-view {
+    padding: 24px;
+    text-align: center;
+}
+
+.itm-floor-plan-card-body {
+    padding: 10px 12px;
+}
+
+.itm-floor-plan-card-body h3 {
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.itm-floor-plan-meta,
+.itm-floor-plan-tags {
+    margin: 0 0 4px;
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+.itm-gallery-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 24px;
+    opacity: 0.8;
+}
+
+.itm-floor-plan-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.itm-floor-plan-modal[hidden] {
+    display: none;
+}
+
+.itm-floor-plan-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.itm-floor-plan-modal-content {
+    position: relative;
+    z-index: 1;
+    max-width: min(96vw, 1100px);
+    max-height: 92vh;
+    overflow: auto;
+    background: var(--card-bg, #fff);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.itm-floor-plan-preview-body img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.itm-floor-plan-pdf-frame {
+    width: 100%;
+    min-height: 70vh;
+    border: 0;
+}
+
+.itm-floor-plan-view-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.itm-floor-plan-view-card .itm-floor-plan-view-preview {
+    text-align: center;
+}
