@@ -8,8 +8,6 @@ SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 SET collation_connection = 'utf8mb4_unicode_ci';
 SET FOREIGN_KEY_CHECKS=0;
-
-
 -- Table structure for `access_levels`
 DROP TABLE IF EXISTS `access_levels`;
 CREATE TABLE `access_levels` (
@@ -24,7 +22,6 @@ CREATE TABLE `access_levels` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `access_levels_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `access_levels`
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Full');
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Full');
@@ -41,7 +38,6 @@ INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Read
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('3', '9', 'Read Only');
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('4', '12', 'Read Only');
 INSERT INTO `access_levels` (`company_id`, `id`, `name`) VALUES ('5', '15', 'Read Only');
-
 -- Table structure for `assignment_types`
 DROP TABLE IF EXISTS `assignment_types`;
 CREATE TABLE `assignment_types` (
@@ -56,7 +52,6 @@ CREATE TABLE `assignment_types` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `assignment_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `assignment_types`
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Department');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('2', '4', 'Department');
@@ -73,7 +68,6 @@ INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('2', '6', 'S
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('3', '9', 'Shared');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('4', '12', 'Shared');
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`) VALUES ('5', '15', 'Shared');
-
 -- Table structure for `companies`
 DROP TABLE IF EXISTS `companies`;
 CREATE TABLE `companies` (
@@ -95,14 +89,12 @@ CREATE TABLE `companies` (
   UNIQUE KEY `incode` (`incode`),
   KEY `active` (`active`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `companies`
-INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('1', 'TechCorp Global', 'TC001', 'New York', 'USA', '+1-212-555-0101', 'info@techcorp.example', 'https://techcorp.example', 'US-TC-1001', 'Head office company profile', '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('2', 'DataCenter Plus', 'DCP001', 'Dallas', 'USA', '+1-972-555-0102', 'contact@datacenterplus.example', 'https://datacenterplus.example', 'US-DCP-1002', '', '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('3', 'Network Solutions', 'NSI001', 'San Francisco', 'USA', '+1-415-555-0103', 'hello@networksolutions.example', 'https://networksolutions.example', 'US-NSI-1003', '', '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('4', 'CloudTech Services', 'CTS001', 'Seattle', 'USA', '+1-206-555-0104', 'support@cloudtech.example', 'https://cloudtech.example', 'US-CTS-1004', '', '1', '2026-03-28 19:43:17', NULL);
-INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('5', 'Enterprise IT', 'EIT001', 'Boston', 'USA', '+1-617-555-0105', 'office@enterpriseit.example', 'https://enterpriseit.example', 'US-EIT-1005', '', '1', '2026-03-28 19:43:17', NULL);
-
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('1', 'TechCorp Global', 'TC001', 'New York', 'USA', '+1-212-555-0101', 'info@techcorp.example', 'https://techcorp.example', 'US-TC-1001', 'Head office company profile', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('2', 'DataCenter Plus', 'DCP001', 'Dallas', 'USA', '+1-972-555-0102', 'contact@datacenterplus.example', 'https://datacenterplus.example', 'US-DCP-1002', '', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('3', 'Network Solutions', 'NSI001', 'San Francisco', 'USA', '+1-415-555-0103', 'hello@networksolutions.example', 'https://networksolutions.example', 'US-NSI-1003', '', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('4', 'CloudTech Services', 'CTS001', 'Seattle', 'USA', '+1-206-555-0104', 'support@cloudtech.example', 'https://cloudtech.example', 'US-CTS-1004', '', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('5', 'Enterprise IT', 'EIT001', 'Boston', 'USA', '+1-617-555-0105', 'office@enterpriseit.example', 'https://enterpriseit.example', 'US-EIT-1005', '', '1', '2026-01-01 00:00:01', NULL);
 -- Table structure for `departments`
 DROP TABLE IF EXISTS `departments`;
 CREATE TABLE `departments` (
@@ -118,7 +110,6 @@ CREATE TABLE `departments` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `departments`
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('1', '1', 'IT Operations', 'IT', 'Core IT operations team', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('2', '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', '1');
@@ -145,8 +136,6 @@ INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `a
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('23', '5', 'Human Resources', 'HR', 'Human resources department', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('24', '5', 'Housekeeping', 'HK', 'Housekeeping operations', '1');
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `active`) VALUES ('25', '5', 'Front Office', 'FO', 'Front Office', '1');
-
-
 -- Table structure for `budget_categories`
 DROP TABLE IF EXISTS `budget_categories`;
 CREATE TABLE `budget_categories` (
@@ -162,7 +151,6 @@ CREATE TABLE `budget_categories` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `budget_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `budget_categories`
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('1', '1', 'Revenue', 'Revenue-related general ledger accounts', '1');
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('4', '2', 'Revenue', 'Revenue-related general ledger accounts', '1');
@@ -179,7 +167,6 @@ INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `act
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('9', '3', 'Capital Expense', 'Capital expense accounts', '1');
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('12', '4', 'Capital Expense', 'Capital expense accounts', '1');
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`) VALUES ('15', '5', 'Capital Expense', 'Capital expense accounts', '1');
-
 -- Table structure for `cost_centers`
 DROP TABLE IF EXISTS `cost_centers`;
 CREATE TABLE `cost_centers` (
@@ -198,7 +185,6 @@ CREATE TABLE `cost_centers` (
   CONSTRAINT `cost_centers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `cost_centers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `cost_centers`
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('1', '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1');
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('4', '2', '6', 'Infrastructure', 'CC-IT-INFRA', '1');
@@ -215,7 +201,6 @@ INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`,
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('9', '3', '14', 'Room Maintenance', 'CC-HK-RM', '1');
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('12', '4', '19', 'Room Maintenance', 'CC-HK-RM', '1');
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`) VALUES ('15', '5', '24', 'Room Maintenance', 'CC-HK-RM', '1');
-
 -- Table structure for `gl_accounts`
 DROP TABLE IF EXISTS `gl_accounts`;
 CREATE TABLE `gl_accounts` (
@@ -234,7 +219,6 @@ CREATE TABLE `gl_accounts` (
   CONSTRAINT `gl_accounts_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `gl_accounts_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `budget_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `gl_accounts`
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('1', '1', '6100', 'IT Maintenance Contracts', '2', '1');
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('4', '2', '6100', 'IT Maintenance Contracts', '5', '1');
@@ -251,7 +235,6 @@ INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('9', '3', '7100', 'Capital IT Equipment', '9', '1');
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('12', '4', '7100', 'Capital IT Equipment', '12', '1');
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`) VALUES ('15', '5', '7100', 'Capital IT Equipment', '15', '1');
-
 -- Table structure for `annual_budgets`
 DROP TABLE IF EXISTS `annual_budgets`;
 CREATE TABLE `annual_budgets` (
@@ -274,7 +257,6 @@ CREATE TABLE `annual_budgets` (
   CONSTRAINT `annual_budgets_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `annual_budgets_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `annual_budgets`
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026', '48000.00', '1', '1');
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('3', '2', '4', '4', '2026', '48000.00', '1', '1');
@@ -286,7 +268,6 @@ INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('6', '3', '7', '8', '2026', '36000.00', '1', '1');
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('8', '4', '10', '11', '2026', '36000.00', '1', '1');
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`) VALUES ('10', '5', '13', '14', '2026', '36000.00', '1', '1');
-
 -- Table structure for `monthly_budgets`
 DROP TABLE IF EXISTS `monthly_budgets`;
 CREATE TABLE `monthly_budgets` (
@@ -306,7 +287,6 @@ CREATE TABLE `monthly_budgets` (
   CONSTRAINT `monthly_budgets_ibfk_annual_budget` FOREIGN KEY (`annual_budget_id`) REFERENCES `annual_budgets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `monthly_budgets_chk_month` CHECK ((`month` between 1 and 12))
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `monthly_budgets`
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('1', '1', '1', '1', '4000.00', '1');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('3', '2', '3', '1', '4000.00', '1');
@@ -318,7 +298,6 @@ INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, 
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('6', '3', '6', '1', '3000.00', '1');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('8', '4', '8', '1', '3000.00', '1');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`) VALUES ('10', '5', '10', '1', '3000.00', '1');
-
 -- Table structure for `expenses`
 DROP TABLE IF EXISTS `expenses`;
 CREATE TABLE `expenses` (
@@ -342,14 +321,12 @@ CREATE TABLE `expenses` (
   CONSTRAINT `expenses_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `expenses_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `expenses`
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('1', '1', '1', '1', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('2', '2', '4', '4', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('3', '3', '7', '7', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('4', '4', '10', '10', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`) VALUES ('5', '5', '13', '13', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', '1');
-
 -- Table structure for `forecast_revisions_status`
 DROP TABLE IF EXISTS `forecast_revisions_status`;
 CREATE TABLE `forecast_revisions_status` (
@@ -364,7 +341,6 @@ CREATE TABLE `forecast_revisions_status` (
   KEY `forecast_revisions_status_company_id` (`company_id`),
   CONSTRAINT `forecast_revisions_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `forecast_revisions_status`
 INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, `active`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Draft', 'Draft projection before finance review', 1, NULL, NULL),
@@ -397,7 +373,6 @@ INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, 
 (28, 5, 'Gm Review', NULL, 1, NULL, NULL),
 (29, 5, 'Approved', NULL, 1, NULL, NULL),
 (30, 5, 'Rejected', NULL, 1, NULL, NULL);
-
 -- Table structure for `forecast_revisions`
 DROP TABLE IF EXISTS `forecast_revisions`;
 CREATE TABLE `forecast_revisions` (
@@ -435,7 +410,6 @@ CREATE TABLE `forecast_revisions` (
   CONSTRAINT `forecast_revisions_ibfk_gm_approved_by` FOREIGN KEY (`gm_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `forecast_revisions_chk_month` CHECK ((`month` between 1 and 12))
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `forecast_revisions`
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('1', '1', '1', '1', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('3', '2', '4', '4', '2026', '2', '4200.00', '7', '0', '1', NULL, NULL, 'Draft projection before finance review', '1');
@@ -447,7 +421,6 @@ INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_acco
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('6', '3', '7', '8', '2026', '2', '3150.00', '14', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('8', '4', '10', '11', '2026', '2', '3150.00', '20', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
 INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`) VALUES ('10', '5', '13', '14', '2026', '2', '3150.00', '26', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1');
-
 -- Table structure for `approvals_stage`
 DROP TABLE IF EXISTS `approvals_stage`;
 CREATE TABLE `approvals_stage` (
@@ -463,7 +436,6 @@ CREATE TABLE `approvals_stage` (
   KEY `approvals_stage_company_id` (`company_id`),
   CONSTRAINT `approvals_stage_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `approvals_stage`
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('1', '1', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('3', '2', 'Finance Review', 'Finance team review stage before general manager approval.', '1');
@@ -475,7 +447,6 @@ INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `acti
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('6', '3', 'GM Review', 'General manager review stage before final approval.', '1');
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('8', '4', 'GM Review', 'General manager review stage before final approval.', '1');
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`) VALUES ('10', '5', 'GM Review', 'General manager review stage before final approval.', '1');
-
 -- Table structure for `approvals`
 DROP TABLE IF EXISTS `approvals`;
 CREATE TABLE `approvals` (
@@ -502,7 +473,6 @@ CREATE TABLE `approvals` (
   CONSTRAINT `approvals_ibfk_status` FOREIGN KEY (`status`) REFERENCES `forecast_revisions_status` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvals_ibfk_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `approvals`
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('1', '1', '2', '1', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('3', '2', '4', '3', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1');
@@ -514,7 +484,6 @@ INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `s
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('6', '3', '5', '5', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('8', '4', '7', '7', '1', NULL, NULL, 'Draft not submitted yet.', '1');
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`) VALUES ('10', '5', '9', '9', '1', NULL, NULL, 'Draft not submitted yet.', '1');
-
 -- Table structure for `approver_type`
 DROP TABLE IF EXISTS `approver_type`;
 CREATE TABLE `approver_type` (
@@ -528,7 +497,6 @@ CREATE TABLE `approver_type` (
   KEY `approver_type_company_id` (`company_id`),
   CONSTRAINT `approver_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `approver_type`
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('1', '1', 'GM Approval', '1');
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('2', '1', 'HOD Approval', '1');
@@ -550,7 +518,6 @@ INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `a
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('18', '3', 'HRD Approval', '1');
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('19', '4', 'HRD Approval', '1');
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`) VALUES ('20', '5', 'HRD Approval', '1');
-
 -- Table structure for `approvers`
 DROP TABLE IF EXISTS `approvers`;
 CREATE TABLE `approvers` (
@@ -575,11 +542,9 @@ CREATE TABLE `approvers` (
   CONSTRAINT `approvers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvers_ibfk_approver_type` FOREIGN KEY (`approver_type_id`) REFERENCES `approver_type` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `approvers`
 INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `approver_type_id`, `active`) VALUES ('1', '1', '1', '1', '1', '1', '1');
 INSERT INTO `approvers` (`id`, `company_id`, `employee_id`, `employee_position_id`, `department_id`, `approver_type_id`, `active`) VALUES ('2', '1', '2', '2', '1', '2', '1');
-
 -- Table structure for `employee_assignment_history`
 DROP TABLE IF EXISTS `employee_assignment_history`;
 CREATE TABLE `employee_assignment_history` (
@@ -614,7 +579,6 @@ CREATE TABLE `employee_assignment_history` (
   CONSTRAINT `employee_assignment_history_ibfk_assigned_by_user` FOREIGN KEY (`assigned_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employee_assignment_history_ibfk_received_by_user` FOREIGN KEY (`received_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `employee_assignment_history`
 INSERT INTO `employee_assignment_history` (`id`, `company_id`, `employee_id`, `asset_description`, `sim_imei`, `assigned_date`, `returned_date`, `condition_on_return`, `signed_handover`, `comments`, `assigned_by_user_id`, `received_by_user_id`, `active`) VALUES
 (1, 1, 1, 'Laptop Dell Latitude 7420', NULL, '2026-01-15', NULL, NULL, 1, 'Primary company laptop assigned during onboarding.', 1, 1, 1),
@@ -622,7 +586,6 @@ INSERT INTO `employee_assignment_history` (`id`, `company_id`, `employee_id`, `a
 (3, 3, 10, 'Office key card - Main entrance', NULL, '2026-02-10', '2026-04-10', 'Good', 1, 'Returned after department transfer.', 1, 1, 1),
 (4, 4, 13, 'HP LaserJet printer', NULL, '2026-03-05', NULL, NULL, 0, 'Shared printer assigned to front desk supervisor.', 1, NULL, 1),
 (5, 5, 16, 'SIM card only', '352099001122334', '2026-03-20', NULL, NULL, 1, 'Data-only SIM issued for field device.', 1, 1, 1);
-
 -- Table structure for `employee_onboarding_requests`
 DROP TABLE IF EXISTS `employee_onboarding_requests`;
 CREATE TABLE `employee_onboarding_requests` (
@@ -698,14 +661,12 @@ CREATE TABLE `employee_onboarding_requests` (
   CONSTRAINT `employee_onboarding_requests_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employee_onboarding_requests_ibfk_4` FOREIGN KEY (`employee_position_id`) REFERENCES `employee_positions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employee_onboarding_requests_ibfk_3` FOREIGN KEY (`office_key_card_dep`) REFERENCES `departments` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `employee_onboarding_requests`
-INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `employee_position_id`, `first_name`, `last_name`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_dep`, `comments`, `starting_date`, `requested_by`, `requested_by_date`, `requested_on`, `hod_approval`, `hod_approval_date`, `hrd_approval`, `hrd_approval_date`, `ism_approval`, `ism_approval_date`, `gm_approval`, `gm_approval_date`, `fin_approval`, `fin_approval_date`, `status_hod`, `status_hrd`, `status_ism`, `status_gm`, `status_fin`, `email_sent_hod`, `email_sent_hod_at`, `email_sent_hrd`, `email_sent_hrd_at`, `email_sent_ism`, `email_sent_ism_at`, `email_sent_gm`, `email_sent_gm_at`, `email_sent_fin`, `email_sent_fin_at`, `active`, `created_at`, `updated_at`) VALUES
-(1, 1, 4, 3, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-03-28 19:43:17', NULL),
-(5, 5, 4, 15, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-03-28 19:43:17', NULL),
-(6, 2, 4, 6, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-03-28 19:43:17', NULL),
-(7, 3, 4, 9, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-03-28 19:43:17', NULL),
-(8, 4, 4, 12, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-03-28 19:43:17', NULL);
+INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `employee_position_id`, `first_name`, `last_name`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_dep`, `comments`, `starting_date`, `requested_by`, `requested_by_date`, `requested_on`, `hod_approval`, `hod_approval_date`, `hrd_approval`, `hrd_approval_date`, `ism_approval`, `ism_approval_date`, `gm_approval`, `gm_approval_date`, `fin_approval`, `fin_approval_date`, `status_hod`, `status_hrd`, `status_ism`, `status_gm`, `status_fin`, `email_sent_hod`, `email_sent_hod_at`, `email_sent_hrd`, `email_sent_hrd_at`, `email_sent_ism`, `email_sent_ism_at`, `email_sent_gm`, `email_sent_gm_at`, `email_sent_fin`, `email_sent_fin_at`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 4, 3, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-01-01 00:00:01', NULL),
+(5, 5, 4, 15, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-01-01 00:00:01', NULL),
+(6, 2, 4, 6, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-01-01 00:00:01', NULL),
+(7, 3, 4, 9, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-01-01 00:00:01', NULL),
+(8, 4, 4, 12, 'NICKY', 'SCHOUTEN', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'NICKY SCHOUTEN', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-01-01 00:00:01', NULL);
 -- Table structure for `employee_statuses`
 DROP TABLE IF EXISTS `employee_statuses`;
 CREATE TABLE `employee_statuses` (
@@ -720,7 +681,6 @@ CREATE TABLE `employee_statuses` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `employee_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `employee_statuses`
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Active');
@@ -747,7 +707,6 @@ INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('2', '10', 
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('3', '15', 'Terminated');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('4', '20', 'Terminated');
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`) VALUES ('5', '25', 'Terminated');
-
 -- Table structure for `employee_positions`
 DROP TABLE IF EXISTS `employee_positions`;
 CREATE TABLE `employee_positions` (
@@ -766,7 +725,6 @@ CREATE TABLE `employee_positions` (
   CONSTRAINT `employee_positions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `employee_positions_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `employee_positions`
 INSERT INTO `employee_positions` (`id`, `company_id`, `department_id`, `name`, `description`, `active`) VALUES
 (1, 1, 1, 'IT Manager', 'Leads hotel IT operations and vendor coordination.', 1),
@@ -784,7 +742,6 @@ INSERT INTO `employee_positions` (`id`, `company_id`, `department_id`, `name`, `
 (13, 5, 21, 'IT Manager', 'Leads hotel IT operations and vendor coordination.', 1),
 (14, 5, 21, 'System Administrator', 'Maintains hotel servers, PMS integrations, and backups.', 1),
 (15, 5, 22, 'Trainee', 'Entry-level operational role for hospitality onboarding.', 1);
-
 -- Table structure for `employee_system_access`
 DROP TABLE IF EXISTS `employee_system_access`;
 CREATE TABLE `employee_system_access` (
@@ -819,7 +776,6 @@ CREATE TABLE `employee_system_access` (
   KEY `fk_employee_system_access_employee` (`employee_id`),
   CONSTRAINT `fk_employee_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_employee_system_access_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `employees`
 DROP TABLE IF EXISTS `employees`;
 CREATE TABLE `employees` (
@@ -889,7 +845,6 @@ CREATE TABLE `employees` (
   CONSTRAINT `employees_ibfk_6` FOREIGN KEY (`employment_status_id`) REFERENCES `employee_statuses` (`id`),
   CONSTRAINT `employees_ibfk_7` FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `equipment`
 DROP TABLE IF EXISTS `equipment`;
 CREATE TABLE `equipment` (
@@ -989,14 +944,12 @@ CREATE TABLE `equipment` (
   CONSTRAINT `equipment_ibfk_8` FOREIGN KEY (`printer_device_type_id`) REFERENCES `printer_device_types` (`id`),
   CONSTRAINT `equipment_ibfk_9` FOREIGN KEY (`workstation_device_type_id`) REFERENCES `workstation_device_types` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment`
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 1, 2, 1, 1, 1, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 1, '2025-01-10', 8500.00, NULL, NULL, 4, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 3, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-03-28 19:43:17', '2026-04-26 22:07:32');
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (2, 2, 13, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 9, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-03-28 19:43:17', '2026-04-26 22:06:38');
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (3, 3, 25, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 17, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-03-28 19:43:17', '2026-04-26 22:07:18');
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (4, 4, 37, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 25, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 13, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-03-28 19:43:17', '2026-04-26 22:04:17');
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (5, 5, 49, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 33, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 20, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-03-28 19:43:17', '2026-04-26 22:06:55');
-
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 1, 2, 1, 1, 1, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 1, '2025-01-10', 8500.00, NULL, NULL, 4, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 3, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-01 00:00:01', '2026-04-26 22:07:32');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (2, 2, 13, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 9, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-01 00:00:01', '2026-04-26 22:06:38');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (3, 3, 25, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 17, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-01 00:00:01', '2026-04-26 22:07:18');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (4, 4, 37, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 25, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 13, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-01 00:00:01', '2026-04-26 22:04:17');
+INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`) VALUES (5, 5, 49, NULL, NULL, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 33, '2025-01-10', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 20, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-01 00:00:01', '2026-04-26 22:06:55');
 -- Table structure for `equipment_environment`
 DROP TABLE IF EXISTS `equipment_environment`;
 CREATE TABLE `equipment_environment` (
@@ -1009,7 +962,6 @@ CREATE TABLE `equipment_environment` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_environment_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_environment`
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Managed');
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Managed');
@@ -1021,7 +973,6 @@ INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('2', '4
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Unmanaged');
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Unmanaged');
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Unmanaged');
-
 -- Table structure for `equipment_fiber`
 DROP TABLE IF EXISTS `equipment_fiber`;
 CREATE TABLE `equipment_fiber` (
@@ -1034,7 +985,6 @@ CREATE TABLE `equipment_fiber` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_fiber_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_fiber`
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('1', '3', 'QSFP 40 Gbps');
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('2', '4', 'QSFP 40 Gbps');
@@ -1051,7 +1001,6 @@ INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('2', '6', 'SF
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('3', '9', 'SFP+ 10 Gbps');
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('4', '12', 'SFP+ 10 Gbps');
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`) VALUES ('5', '15', 'SFP+ 10 Gbps');
-
 -- Table structure for `equipment_fiber_patch`
 DROP TABLE IF EXISTS `equipment_fiber_patch`;
 CREATE TABLE `equipment_fiber_patch` (
@@ -1064,7 +1013,6 @@ CREATE TABLE `equipment_fiber_patch` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_fiber_patch_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_fiber_patch`
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Patch Panel A');
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Patch Panel A');
@@ -1076,7 +1024,6 @@ INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('2', '4
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Patch Panel B');
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Patch Panel B');
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Patch Panel B');
-
 -- Table structure for `equipment_fiber_rack`
 DROP TABLE IF EXISTS `equipment_fiber_rack`;
 CREATE TABLE `equipment_fiber_rack` (
@@ -1089,7 +1036,6 @@ CREATE TABLE `equipment_fiber_rack` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_fiber_rack_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_fiber_rack`
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Rack A');
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Rack A');
@@ -1101,7 +1047,6 @@ INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('2', '4'
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Rack B');
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Rack B');
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Rack B');
-
 -- Table structure for `equipment_fiber_count`
 DROP TABLE IF EXISTS `equipment_fiber_count`;
 CREATE TABLE `equipment_fiber_count` (
@@ -1114,7 +1059,6 @@ CREATE TABLE `equipment_fiber_count` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_fiber_count_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_fiber_count`
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('1', '1', '1');
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('2', '5', '1');
@@ -1136,7 +1080,6 @@ INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('2', '8
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('3', '12', '4');
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('4', '16', '4');
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`) VALUES ('5', '20', '4');
-
 -- Table structure for `idf_ports`
 DROP TABLE IF EXISTS `idf_ports`;
 CREATE TABLE `idf_ports` (
@@ -1185,9 +1128,6 @@ CREATE TABLE `idf_ports` (
   KEY `idf_ports_poe_idx` (`poe_id`),
   CONSTRAINT `idf_ports_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-
 -- Table structure for `equipment_poe`
 DROP TABLE IF EXISTS `equipment_poe`;
 CREATE TABLE `equipment_poe` (
@@ -1202,7 +1142,6 @@ CREATE TABLE `equipment_poe` (
   UNIQUE KEY `uq_equipment_poe_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_poe_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_poe`
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`) VALUES ('1', '1', 'PoE (802.3af)', 'Up to 15.4W', '1');
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`) VALUES ('2', '4', 'PoE (802.3af)', 'Up to 15.4W', '1');
@@ -1225,7 +1164,6 @@ ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_layout` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `idf_ports_ibfk_management` FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe_id`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL;
-
 -- Table structure for `equipment_rj45`
 DROP TABLE IF EXISTS `equipment_rj45`;
 CREATE TABLE `equipment_rj45` (
@@ -1238,7 +1176,6 @@ CREATE TABLE `equipment_rj45` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_rj45_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_rj45`
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('1', '2', '16 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('2', '5', '16 ports');
@@ -1260,7 +1197,6 @@ INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('2', '8', '8 p
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('3', '12', '8 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('4', '16', '8 ports');
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`) VALUES ('5', '20', '8 ports');
-
 -- Table structure for `rj45_speed`
 DROP TABLE IF EXISTS `rj45_speed`;
 CREATE TABLE `rj45_speed` (
@@ -1279,7 +1215,6 @@ CREATE TABLE `rj45_speed` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `rj45_speed_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `rj45_speed`
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('1', '1', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1');
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('2', '1', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1');
@@ -1313,7 +1248,6 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`) VALUES ('30', '5', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_rj45_speed` FOREIGN KEY (`rj45_speed_id`) REFERENCES `rj45_speed` (`id`) ON DELETE SET NULL;
-
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
 CREATE TABLE `equipment_statuses` (
@@ -1326,7 +1260,6 @@ CREATE TABLE `equipment_statuses` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_statuses`
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '9', 'Active');
@@ -1368,7 +1301,6 @@ INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('2', '16',
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('3', '24', 'Reserved');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('4', '32', 'Reserved');
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`) VALUES ('5', '40', 'Reserved');
-
 -- Table structure for `equipment_types`
 DROP TABLE IF EXISTS `equipment_types`;
 CREATE TABLE `equipment_types` (
@@ -1385,7 +1317,6 @@ CREATE TABLE `equipment_types` (
   UNIQUE KEY `code` (`company_id`,`code`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `equipment_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `equipment_types`
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '1', 'Switch', 'SWITCH', '🔀', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('1', '2', 'Server', 'SRV', '🖥️', '1');
@@ -1447,7 +1378,6 @@ INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_e
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('5', '58', 'Phone', 'PHONE', '📞', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('5', '59', 'CCTV', 'CCCTV', '🎥', '1');
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES ('5', '60', 'Other', 'OTHER', NULL, '1');
-
 -- Table structure for `idf_links`
 DROP TABLE IF EXISTS `idf_links`;
 CREATE TABLE `idf_links` (
@@ -1501,9 +1431,6 @@ CREATE TABLE `idf_links` (
   CONSTRAINT `idf_links_ibfk_cable_color` FOREIGN KEY (`cable_color_id`) REFERENCES `cable_colors` (`id`) ON DELETE SET NULL,
   KEY `company_id` (`company_id`),
   CONSTRAINT `idf_links_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-
 -- Table structure for `idf_device_type`
 DROP TABLE IF EXISTS `idf_device_type`;
 CREATE TABLE `idf_device_type` (
@@ -1519,7 +1446,6 @@ CREATE TABLE `idf_device_type` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `idf_device_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `idf_device_type`
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('6', '2', 'switch', '🔀', '1', CURRENT_TIMESTAMP, NULL);
@@ -1546,7 +1472,6 @@ INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('15', '3', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('20', '4', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('25', '5', 'other', '📦', '1', CURRENT_TIMESTAMP, NULL);
-
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
@@ -1576,8 +1501,6 @@ CREATE TABLE `idf_positions` (
   CONSTRAINT `idf_positions_ibfk_idf` FOREIGN KEY (`idf_id`) REFERENCES `idfs` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idf_positions_ibfk_layout` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
 -- Table structure for `idfs`
 DROP TABLE IF EXISTS `idfs`;
 CREATE TABLE `idfs` (
@@ -1599,14 +1522,12 @@ CREATE TABLE `idfs` (
   CONSTRAINT `idfs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idfs_ibfk_location` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE,
   CONSTRAINT `idfs_ibfk_rack` FOREIGN KEY (`rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `idfs`
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('1', '1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('2', '2', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('3', '3', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('4', '4', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('5', '5', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-03-31 00:25:58');
-
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('1', '1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('2', '2', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('3', '3', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('4', '4', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
+INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('5', '5', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
 -- Table structure for `inventory_categories`
 DROP TABLE IF EXISTS `inventory_categories`;
 CREATE TABLE `inventory_categories` (
@@ -1621,7 +1542,6 @@ CREATE TABLE `inventory_categories` (
   UNIQUE KEY `code` (`company_id`,`code`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `inventory_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `inventory_categories`
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Cables - Ethernet', 'CBL-ETH', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '7', 'Cables - Ethernet', 'CBL-ETH', '1');
@@ -1653,7 +1573,6 @@ INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '18', 'Other', 'OTH', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '24', 'Other', 'OTH', '1');
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '30', 'Other', 'OTH', '1');
-
 -- Table structure for `inventory_items`
 DROP TABLE IF EXISTS `inventory_items`;
 CREATE TABLE `inventory_items` (
@@ -1691,7 +1610,6 @@ CREATE TABLE `inventory_items` (
   CONSTRAINT `inventory_items_ibfk_5` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
   CONSTRAINT `inventory_items_ibfk_6` FOREIGN KEY (`last_user_id`) REFERENCES `employees` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `inventory_items`
 INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 1, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 1, 1, 1, NULL, '2026-05-17 05:08:05'),
@@ -1699,7 +1617,6 @@ INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`
 (3, 3, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 13, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 3, 3, 1, NULL, '2026-05-17 05:07:05'),
 (4, 4, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 19, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 4, 4, 1, NULL, '2026-05-17 05:05:19'),
 (5, 5, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 25, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 5, 5, 1, NULL, '2026-05-17 05:07:27');
-
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
 CREATE TABLE `it_locations` (
@@ -1723,14 +1640,12 @@ CREATE TABLE `it_locations` (
   KEY `type_id` (`type_id`),
   CONSTRAINT `it_locations_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `it_locations_ibfk_2` FOREIGN KEY (`type_id`) REFERENCES `location_types` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `it_locations`
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', NULL, NULL);
-
 -- Table structure for `location_types`
 DROP TABLE IF EXISTS `location_types`;
 CREATE TABLE `location_types` (
@@ -1743,7 +1658,6 @@ CREATE TABLE `location_types` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `location_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `location_types`
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Branch');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Branch');
@@ -1780,7 +1694,6 @@ INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('2', '14', 'Wa
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('3', '21', 'Warehouse');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('4', '28', 'Warehouse');
 INSERT INTO `location_types` (`company_id`, `id`, `name`) VALUES ('5', '35', 'Warehouse');
-
 -- Table structure for `manufacturers`
 DROP TABLE IF EXISTS `manufacturers`;
 CREATE TABLE `manufacturers` (
@@ -1796,7 +1709,6 @@ CREATE TABLE `manufacturers` (
   UNIQUE KEY `code` (`company_id`,`code`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `manufacturers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `manufacturers`
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Cisco Systems', 'CSCO', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '9', 'Cisco Systems', 'CSCO', '1');
@@ -1838,9 +1750,6 @@ INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUE
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '24', 'Microsoft', 'MSFT', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '32', 'Microsoft', 'MSFT', '1');
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '40', 'Microsoft', 'MSFT', '1');
-
-
-
 -- Table structure for `catalogs`
 DROP TABLE IF EXISTS `catalogs`;
 CREATE TABLE `catalogs` (
@@ -1866,63 +1775,59 @@ CREATE TABLE `catalogs` (
   CONSTRAINT `catalogs_ibfk_equipment_type` FOREIGN KEY (`equipment_type_id`) REFERENCES `equipment_types` (`id`) ON DELETE SET NULL,
   CONSTRAINT `catalogs_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL,
   CONSTRAINT `catalogs_ibfk_manufacturer` FOREIGN KEY (`manufacturer_id`) REFERENCES `manufacturers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Dumping data for table `catalogs`
 --
 
-INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`, `created_at`, `updated_at`) VALUES
-(1, 1, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, 'https://fls-na.amaz', 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:57'),
-(2, 1, 'Cisco Catalyst C9200L-24P-4G-A', 1, 'https://webobjects2.cdw.com/is/image/CDW/5404745?$product_minithumb$', 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:38'),
-(3, 1, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, 'https://c1.neweggimages.com/WebResource/Themes/logo_newegg_400400.png', 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:33'),
-(4, 1, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, 'https://www.bhphotovideo.com/', 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:20'),
-(5, 1, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, 'https://www.bestbuy.com/', 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:23:29'),
-(7, 1, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, 'https://media.officedepot.com/image/upload/w_130,h_63,c_fill/assets/OfficeDepot_OfficeMax.png', 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:33', '2026-04-13 01:20:28'),
-(8, 1, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, 'https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg?quality=82&width=1080&height=1080&fit=bounds&canvas=1080%2C1080&ha=3c5509fab31c1f6d', 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:33', '2026-04-13 01:20:22'),
-(9, 1, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, 'https://www.adorama.com/images/cms/36471Adorama-OG-Preview_30309.jpg', 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:33', '2026-04-13 01:20:12'),
-(10, 1, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, 'https://www.insight.com/content/dam/insight-web/en_US/thumbnail/insight-thumbnail.png', 1599.00, 1, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:33', '2026-04-12 16:51:50'),
-(11, 5, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:34', NULL),
-(13, 3, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:34', NULL),
-(14, 2, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 16:49:34', NULL),
-(15, 5, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:34', NULL),
-(17, 3, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:34', NULL),
-(18, 2, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 16:49:34', NULL),
-(19, 5, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:34', NULL),
-(21, 3, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:34', NULL),
-(22, 2, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 16:49:34', NULL),
-(23, 5, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:34', NULL),
-(25, 3, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:34', NULL),
-(26, 2, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 16:49:34', NULL),
-(27, 5, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:34', NULL),
-(29, 3, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:34', NULL),
-(30, 2, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 16:49:34', NULL),
-(31, 5, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 16:49:34', NULL),
-(33, 3, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 16:49:34', NULL),
-(34, 2, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 16:49:34', NULL),
-(35, 5, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:34', NULL),
-(37, 3, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:34', NULL),
-(38, 2, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 16:49:34', NULL),
-(39, 5, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:34', NULL),
-(41, 3, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:34', NULL),
-(42, 2, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 16:49:34', NULL),
-(43, 5, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:34', NULL),
-(45, 3, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:34', NULL),
-(46, 2, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 16:49:34', NULL),
-(47, 5, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:34', NULL),
-(49, 3, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:34', NULL),
-(50, 2, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 16:49:34', NULL),
-(84, 4, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-04-12 17:29:32', NULL),
-(85, 4, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-04-12 17:29:32', NULL),
-(86, 4, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-04-12 17:29:32', NULL),
-(87, 4, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-04-12 17:29:32', NULL),
-(88, 4, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-04-12 17:29:32', NULL),
-(89, 4, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-04-12 17:29:32', NULL),
-(90, 4, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-04-12 17:29:32', NULL),
-(91, 4, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-04-12 17:29:32', NULL),
-(92, 4, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-04-12 17:29:32', NULL),
-(93, 4, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-04-12 17:29:32', NULL);
-
-
+INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, 'https://fls-na.amaz', 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-01-01 00:00:01', '2026-04-13 01:23:57'),
+(2, 1, 'Cisco Catalyst C9200L-24P-4G-A', 1, 'https://webobjects2.cdw.com/is/image/CDW/5404745?$product_minithumb$', 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-01-01 00:00:01', '2026-04-13 01:23:38'),
+(3, 1, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, 'https://c1.neweggimages.com/WebResource/Themes/logo_newegg_400400.png', 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-01-01 00:00:01', '2026-04-13 01:23:33'),
+(4, 1, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, 'https://www.bhphotovideo.com/', 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-01-01 00:00:01', '2026-04-13 01:23:20'),
+(5, 1, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, 'https://www.bestbuy.com/', 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-01-01 00:00:01', '2026-04-13 01:23:29'),
+(7, 1, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, 'https://media.officedepot.com/image/upload/w_130,h_63,c_fill/assets/OfficeDepot_OfficeMax.png', 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-01-01 00:00:01', '2026-04-13 01:20:28'),
+(8, 1, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, 'https://media.sweetwater.com/m/products/image/3c5509fab3bELb9Waebi8c1dQ7M237dDRNdrmnkr.jpg?quality=82&width=1080&height=1080&fit=bounds&canvas=1080%2C1080&ha=3c5509fab31c1f6d', 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', '2026-04-13 01:20:22'),
+(9, 1, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, 'https://www.adorama.com/images/cms/36471Adorama-OG-Preview_30309.jpg', 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', '2026-04-13 01:20:12'),
+(10, 1, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, 'https://www.insight.com/content/dam/insight-web/en_US/thumbnail/insight-thumbnail.png', 1599.00, 1, 1, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', '2026-04-12 16:51:50'),
+(11, 5, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-01-01 00:00:01', NULL),
+(13, 3, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-01-01 00:00:01', NULL),
+(14, 2, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-01-01 00:00:01', NULL),
+(15, 5, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-01-01 00:00:01', NULL),
+(17, 3, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-01-01 00:00:01', NULL),
+(18, 2, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-01-01 00:00:01', NULL),
+(19, 5, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-01-01 00:00:01', NULL),
+(21, 3, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-01-01 00:00:01', NULL),
+(22, 2, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-01-01 00:00:01', NULL),
+(23, 5, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-01-01 00:00:01', NULL),
+(25, 3, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-01-01 00:00:01', NULL),
+(26, 2, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-01-01 00:00:01', NULL),
+(27, 5, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-01-01 00:00:01', NULL),
+(29, 3, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-01-01 00:00:01', NULL),
+(30, 2, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-01-01 00:00:01', NULL),
+(31, 5, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-01-01 00:00:01', NULL),
+(33, 3, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-01-01 00:00:01', NULL),
+(34, 2, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-01-01 00:00:01', NULL),
+(35, 5, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-01-01 00:00:01', NULL),
+(37, 3, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-01-01 00:00:01', NULL),
+(38, 2, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-01-01 00:00:01', NULL),
+(39, 5, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', NULL),
+(41, 3, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', NULL),
+(42, 2, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', NULL),
+(43, 5, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', NULL),
+(45, 3, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', NULL),
+(46, 2, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', NULL),
+(47, 5, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', NULL),
+(49, 3, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', NULL),
+(50, 2, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', NULL),
+(84, 4, 'HPE Instant On 1830 48G 24p Class4 PoE 4SFP 370W', 1, NULL, 500.00, NULL, 3, 'https://www.amazon.com/', 1, '2026-01-01 00:00:01', NULL),
+(85, 4, 'Cisco Catalyst C9200L-24P-4G-A', 1, NULL, 3899.00, NULL, 1, 'https://www.cdw.com/product/cisco-catalyst-9200l-24port-poe-4x1/5404745', 1, '2026-01-01 00:00:01', NULL),
+(86, 4, 'Ubiquiti UniFi Switch Pro 24 PoE (USW-Pro-24-PoE)', 1, NULL, 699.00, NULL, 5, 'https://www.newegg.com/', 1, '2026-01-01 00:00:01', NULL),
+(87, 4, 'TP-Link Omada TL-SG2428P 24-Port Gigabit PoE+', 1, NULL, 329.99, NULL, NULL, 'https://www.bhphotovideo.com/', 1, '2026-01-01 00:00:01', NULL),
+(88, 4, 'NETGEAR GS108 8-Port Gigabit Ethernet Unmanaged Switch', 1, NULL, 39.99, NULL, NULL, 'https://www.bestbuy.com/', 1, '2026-01-01 00:00:01', NULL),
+(89, 4, 'D-Link DGS-108 8-Port Gigabit Desktop Switch', 1, NULL, 29.99, NULL, NULL, 'https://www.walmart.com/', 1, '2026-01-01 00:00:01', NULL),
+(90, 4, 'Ubiquiti UniFi Switch USW Pro 24 PoE', 1, NULL, 698.99, NULL, 5, 'https://www.officedepot.com/a/products/5901320/Ubiquiti-UniFi-Switch-USW-Pro-24/', 1, '2026-01-01 00:00:01', NULL),
+(91, 4, 'Ubiquiti Networks UniFi Switch 24 PoE', 1, NULL, 379.00, NULL, 5, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', NULL),
+(92, 4, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 1, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', NULL),
+(93, 4, 'Cisco Meraki MS120-24P Cloud Managed Switch', 1, NULL, 1599.00, NULL, 1, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', NULL);
 -- Table structure for `patches_updates_status`
 DROP TABLE IF EXISTS `patches_updates_status`;
 CREATE TABLE `patches_updates_status` (
@@ -1938,7 +1843,6 @@ CREATE TABLE `patches_updates_status` (
   UNIQUE KEY `patches_updates_status_company_name_unique` (`company_id`,`name`),
   KEY `patches_updates_status_company_idx` (`company_id`),
   CONSTRAINT `patches_updates_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `patches_updates_status`
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','1', 'Open', '#FF0000', '0', '1');
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('1','2', 'In Progress', '#FFA500', '0', '1');
@@ -1960,7 +1864,6 @@ INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_cl
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','18', 'In Progress', '#FFA500', '0', '1');
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','19', 'Resolved', '#00FF00', '0', '1');
 INSERT INTO `patches_updates_status` (`company_id`,`id`, `name`, `color`, `is_closed`, `active`) VALUES ('5','20', 'Closed', '#808080', '1', '1');
-
 -- Table structure for `patches_updates_level`
 DROP TABLE IF EXISTS `patches_updates_level`;
 CREATE TABLE `patches_updates_level` (
@@ -1973,7 +1876,6 @@ CREATE TABLE `patches_updates_level` (
   UNIQUE KEY `patches_updates_level_company_level_unique` (`company_id`,`level`),
   KEY `patches_updates_level_company_idx` (`company_id`),
   CONSTRAINT `patches_updates_level_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `patches_updates_level`
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','1','Critical');
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('1','2','High');
@@ -2000,7 +1902,6 @@ INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','22'
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','23','Medium');
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','24','Low');
 INSERT INTO `patches_updates_level` (`company_id`,`id`,`level`) VALUES ('5','25','Other');
-
 -- Table structure for `patches_updates`
 DROP TABLE IF EXISTS `patches_updates`;
 CREATE TABLE `patches_updates` (
@@ -2049,7 +1950,6 @@ CREATE TABLE `patches_updates` (
   CONSTRAINT `patches_updates_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `patches_updates_status` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patches_updates_ibfk_level` FOREIGN KEY (`level_id`) REFERENCES `patches_updates_level` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patches_updates_ibfk_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `printer_device_types`
 DROP TABLE IF EXISTS `printer_device_types`;
 CREATE TABLE `printer_device_types` (
@@ -2062,7 +1962,6 @@ CREATE TABLE `printer_device_types` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `printer_device_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `printer_device_types`
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'All-in-One');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '10', 'All-in-One');
@@ -2109,7 +2008,6 @@ INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('2', '18
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('3', '27', 'Wide-Format');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('4', '36', 'Wide-Format');
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`) VALUES ('5', '45', 'Wide-Format');
-
 -- Table structure for `rack_statuses`
 DROP TABLE IF EXISTS `rack_statuses`;
 CREATE TABLE `rack_statuses` (
@@ -2122,7 +2020,6 @@ CREATE TABLE `rack_statuses` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `rack_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `rack_statuses`
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('2', '5', 'Active');
@@ -2144,7 +2041,6 @@ INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('2', '8', 'Main
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Maintenance');
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Maintenance');
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`) VALUES ('5', '20', 'Maintenance');
-
 -- Table structure for `racks`
 DROP TABLE IF EXISTS `racks`;
 CREATE TABLE `racks` (
@@ -2165,15 +2061,12 @@ CREATE TABLE `racks` (
   CONSTRAINT `racks_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `racks_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE CASCADE,
   CONSTRAINT `racks_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `rack_statuses` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `racks`
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('1', '1', '1', 'Main Rack A', 'RACK-A', '1', '1');
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('2', '2', '2', 'Main Rack A', 'RACK-A', '5', '1');
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('3', '3', '3', 'Main Rack A', 'RACK-A', '9', '1');
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('4', '4', '4', 'Main Rack A', 'RACK-A', '13', '1');
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`) VALUES ('5', '5', '5', 'Main Rack A', 'RACK-A', '17', '1');
-
-
 -- Table structure for `user_sidebar_preferences`
 DROP TABLE IF EXISTS `user_sidebar_preferences`;
 CREATE TABLE `user_sidebar_preferences` (
@@ -2193,7 +2086,6 @@ CREATE TABLE `user_sidebar_preferences` (
   KEY `idx_user_sidebar_pref_company_user_type_order` (`company_id`,`user_id`,`entry_type`,`display_order`),
   CONSTRAINT `fk_user_sidebar_pref_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `user_sidebar_preferences`
 -- Why: seed default sidebar layout for all 5 base companies and rely on table defaults for timestamps.
 INSERT INTO `user_sidebar_preferences` (`company_id`, `user_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
@@ -2312,8 +2204,6 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'rj45_speed' AS entry_id, 'reference_data' AS section_id, 62 AS display_order
 ) AS t
 ORDER BY c.company_id, FIELD(t.entry_type, 'section', 'item'), t.display_order, t.entry_id;
-
-
 -- Table structure for `supplier_statuses`
 DROP TABLE IF EXISTS `supplier_statuses`;
 CREATE TABLE `supplier_statuses` (
@@ -2326,7 +2216,6 @@ CREATE TABLE `supplier_statuses` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `supplier_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `supplier_statuses`
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Active');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Active');
@@ -2353,7 +2242,6 @@ INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('2', '10', 
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('3', '15', 'Preferred');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('4', '20', 'Preferred');
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`) VALUES ('5', '25', 'Preferred');
-
 -- Table structure for `suppliers`
 DROP TABLE IF EXISTS `suppliers`;
 CREATE TABLE `suppliers` (
@@ -2374,14 +2262,12 @@ CREATE TABLE `suppliers` (
   KEY `status_id` (`status_id`),
   CONSTRAINT `suppliers_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `suppliers_ibfk_2` FOREIGN KEY (`status_id`) REFERENCES `supplier_statuses` (`id`)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `suppliers`
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1');
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('2', '2', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '6', '1');
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('3', '3', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '11', '1');
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('4', '4', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '16', '1');
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`) VALUES ('5', '5', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '21', '1');
-
 -- Table structure for `cable_colors`
 DROP TABLE IF EXISTS `cable_colors`;
 CREATE TABLE `cable_colors` (
@@ -2396,7 +2282,6 @@ CREATE TABLE `cable_colors` (
   UNIQUE KEY `color_name` (`company_id`,`color_name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `cable_colors_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `cable_colors`
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('1', '1', 'Gray', '#808080', NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('2', '11', 'Gray', '#808080', NULL);
@@ -2448,7 +2333,6 @@ INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comm
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('3', '30', 'Other', NULL, NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('4', '40', 'Other', NULL, NULL);
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`) VALUES ('5', '50', 'Other', NULL, NULL);
-
 -- Table structure for `switch_port_numbering_layout`
 DROP TABLE IF EXISTS `switch_port_numbering_layout`;
 CREATE TABLE `switch_port_numbering_layout` (
@@ -2461,7 +2345,6 @@ CREATE TABLE `switch_port_numbering_layout` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `switch_port_numbering_layout_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `switch_port_numbering_layout`
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('1', '2', 'Horizontal');
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('2', '3', 'Horizontal');
@@ -2473,7 +2356,6 @@ INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES (
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('3', '6', 'Vertical');
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('4', '8', 'Vertical');
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`) VALUES ('5', '10', 'Vertical');
-
 -- Table structure for `switch_port_types`
 DROP TABLE IF EXISTS `switch_port_types`;
 CREATE TABLE `switch_port_types` (
@@ -2486,7 +2368,6 @@ CREATE TABLE `switch_port_types` (
   UNIQUE KEY `type` (`company_id`,`type`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `switch_port_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `switch_port_types`
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('1', '1', 'RJ45');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('2', '4', 'RJ45');
@@ -2500,7 +2381,6 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('4', '11', 
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`) VALUES ('5', '14', 'SFP');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`);
-
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
 CREATE TABLE `switch_ports` (
@@ -2564,7 +2444,6 @@ CREATE TABLE `switch_ports` (
   CONSTRAINT `switch_ports_ibfk_11` FOREIGN KEY (`rack_id`) REFERENCES `racks` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_12` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `switch_ports_ibfk_management` FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `switch_ports`
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`) VALUES ('1', '1', '1', NULL, 'RJ45', '1', '0', '17', '1', NULL, NULL, NULL, NULL, NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`) VALUES ('25', '2', '2', NULL, 'RJ45', '1', '0', '26', '11', NULL, NULL, NULL, NULL, NULL, '', '2026-03-31 00:39:19');
@@ -2686,7 +2565,6 @@ INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `por
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`) VALUES ('72', '3', '3', NULL, 'RJ45', '24', '0', '35', '21', NULL, NULL, NULL, NULL, NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`) VALUES ('96', '4', '4', NULL, 'RJ45', '24', '0', '5', '31', NULL, NULL, NULL, NULL, NULL, '', '2026-03-31 00:39:19');
 INSERT INTO `switch_ports` (`id`, `company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`) VALUES ('120', '5', '5', NULL, 'RJ45', '24', '0', '44', '41', NULL, NULL, NULL, NULL, NULL, '', '2026-03-31 00:39:19');
-
 -- Table structure for `switch_status`
 DROP TABLE IF EXISTS `switch_status`;
 CREATE TABLE `switch_status` (
@@ -2702,7 +2580,6 @@ CREATE TABLE `switch_status` (
   KEY `color_id` (`color_id`),
   CONSTRAINT `switch_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `switch_status_ibfk_color` FOREIGN KEY (`color_id`) REFERENCES `cable_colors` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `switch_status`
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('4', '4', 'Disabled', '31');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('1', '10', 'Disabled', '1');
@@ -2751,7 +2628,6 @@ INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`) VALUES ('5', '45', 'Up', '46');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`);
-
 -- Table structure for `system_access`
 DROP TABLE IF EXISTS `system_access`;
 CREATE TABLE `system_access` (
@@ -2767,7 +2643,6 @@ CREATE TABLE `system_access` (
   UNIQUE KEY `uq_system_access_company_name` (`company_id`,`name`),
   KEY `idx_system_access_company` (`company_id`),
   CONSTRAINT `fk_system_access_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `system_access`
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('1', '1', 'network_access', 'Network Access', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('16', '2', 'network_access', 'Network Access', '1');
@@ -2864,7 +2739,6 @@ INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUE
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('93', '3', 'mobile_email', 'Mobile Email', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('94', '4', 'mobile_email', 'Mobile Email', '1');
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`) VALUES ('95', '5', 'mobile_email', 'Mobile Email', '1');
-
 -- Table structure for `ticket_categories`
 DROP TABLE IF EXISTS `ticket_categories`;
 CREATE TABLE `ticket_categories` (
@@ -2879,7 +2753,6 @@ CREATE TABLE `ticket_categories` (
   UNIQUE KEY `code` (`company_id`,`code`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `ticket_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `ticket_categories`
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('1', '1', 'Hardware Issue', 'HW', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('2', '6', 'Hardware Issue', 'HW', '1');
@@ -2906,7 +2779,6 @@ INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) V
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('3', '15', 'Other', 'OTHER', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('4', '20', 'Other', 'OTHER', '1');
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`) VALUES ('5', '25', 'Other', 'OTHER', '1');
-
 -- Table structure for `ticket_priorities`
 DROP TABLE IF EXISTS `ticket_priorities`;
 CREATE TABLE `ticket_priorities` (
@@ -2922,7 +2794,6 @@ CREATE TABLE `ticket_priorities` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `ticket_priorities_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `ticket_priorities`
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('1', '1', 'Low', '1', '#0000FF', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('2', '6', 'Low', '1', '#0000FF', '1');
@@ -2949,7 +2820,6 @@ INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('3', '15', 'Critical', '5', '#8B0000', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('4', '20', 'Critical', '5', '#8B0000', '1');
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`) VALUES ('5', '25', 'Critical', '5', '#8B0000', '1');
-
 -- Table structure for `ticket_statuses`
 DROP TABLE IF EXISTS `ticket_statuses`;
 CREATE TABLE `ticket_statuses` (
@@ -2965,7 +2835,6 @@ CREATE TABLE `ticket_statuses` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `ticket_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `ticket_statuses`
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1');
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('2', '5', 'Open', '#FF0000', '0', '1');
@@ -2987,7 +2856,6 @@ INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`,
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('3', '12', 'Closed', '#808080', '1', '1');
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('4', '16', 'Closed', '#808080', '1', '1');
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`) VALUES ('5', '20', 'Closed', '#808080', '1', '1');
-
 -- Table structure for `tickets`
 DROP TABLE IF EXISTS `tickets`;
 CREATE TABLE `tickets` (
@@ -3022,14 +2890,12 @@ CREATE TABLE `tickets` (
   CONSTRAINT `tickets_ibfk_5` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `tickets_ibfk_6` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `tickets_ibfk_7` FOREIGN KEY (`asset_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `tickets`
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', '#0969da', NULL, '2026-03-28 19:43:17');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', '#0969da', NULL, '2026-03-28 19:43:17');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '1', '1', '3', '#0969da', NULL, '2026-03-28 19:43:17');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', '#0969da', NULL, '2026-03-28 19:43:17');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', '#0969da', NULL, '2026-03-28 19:43:17');
-
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', '#0969da', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', '#0969da', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '1', '1', '3', '#0969da', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', '#0969da', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', '#0969da', NULL, '2026-01-01 00:00:01');
 -- Table structure for `ui_configuration`
 DROP TABLE IF EXISTS `ui_configuration`;
 CREATE TABLE `ui_configuration` (
@@ -3052,21 +2918,12 @@ CREATE TABLE `ui_configuration` (
   UNIQUE KEY `uq_ui_configuration_company_user` (`company_id`,`user_id`),
   CONSTRAINT `fk_ui_configuration_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `ui_configuration`
-INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-03-28 19:43:17', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES
-(2, 2, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_2.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-03-28 19:43:17', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES
-(3, 3, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_3.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-03-28 19:43:17', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES
-(4, 4, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_4.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-03-28 19:43:17', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES
-(5, 5, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_5.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-03-28 19:43:17', '2026-03-28 19:43:17');
-
-
-
+INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (1, 1, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (2, 2, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_2.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (3, 3, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_3.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (4, 4, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_4.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (5, 5, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_5.ico', '{"is_access_point":1,"is_cctv":1,"is_firewall":1,"is_other":1,"is_phone":1,"is_port_patch_panel":1,"is_pos":1,"is_printer":1,"is_router":1,"is_server":1,"is_switch":1,"is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
 -- Table structure for `user_roles`
 DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles` (
@@ -3081,7 +2938,6 @@ CREATE TABLE `user_roles` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `user_roles_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `user_roles`
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Admin');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '6', 'Admin');
@@ -3108,7 +2964,6 @@ INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('2', '10', 'User')
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('3', '15', 'User');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('4', '20', 'User');
 INSERT INTO `user_roles` (`company_id`, `id`, `name`) VALUES ('5', '25', 'User');
-
 -- Table structure for `users`
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
@@ -3141,10 +2996,8 @@ CREATE TABLE `users` (
   CONSTRAINT `users_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`),
   CONSTRAINT `users_ibfk_3` FOREIGN KEY (`access_level_id`) REFERENCES `access_levels` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `users`
-INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '1', '1', '1', '2026-03-28 19:43:17');
-
+INSERT INTO `users` (`id`, `company_id`, `username`, `email`, `password`, `first_name`, `last_name`, `phone`, `role_id`, `access_level_id`, `active`, `created_at`) VALUES ('1', '1', 'admin', 'admin@techcorp.example', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', 'System', 'Admin', NULL, '1', '1', '1', '2026-01-01 00:00:01');
 -- Table structure for `registration_invitations`
 DROP TABLE IF EXISTS `registration_invitations`;
 CREATE TABLE `registration_invitations` (
@@ -3172,14 +3025,12 @@ CREATE TABLE `registration_invitations` (
   CONSTRAINT `fk_registration_invitations_role` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_registration_invitations_access_level` FOREIGN KEY (`access_level_id`) REFERENCES `access_levels` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `registration_invitations`
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:00');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('2', '2', 'new.user@datacenterplus.example', 'INVITE-DATACENTERPLUS-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:10');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('3', '3', 'new.user@networksolutions.example', 'INVITE-NETWORKSOLUTIONS-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:20');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('4', '4', 'new.user@cloudtech.example', 'INVITE-CLOUDTECH-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:30');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('5', '5', 'new.user@enterpriseit.example', 'INVITE-ENTERPRISEIT-001', '1', '1', '1', NULL, NULL, '1', '2026-03-28 19:44:40');
-
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '1', '1', NULL, NULL, '1', '2026-01-01 00:00:01');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('2', '2', 'new.user@datacenterplus.example', 'INVITE-DATACENTERPLUS-001', '1', '1', '1', NULL, NULL, '1', '2026-01-01 00:00:01');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('3', '3', 'new.user@networksolutions.example', 'INVITE-NETWORKSOLUTIONS-001', '1', '1', '1', NULL, NULL, '1', '2026-01-01 00:00:01');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('4', '4', 'new.user@cloudtech.example', 'INVITE-CLOUDTECH-001', '1', '1', '1', NULL, NULL, '1', '2026-01-01 00:00:01');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('5', '5', 'new.user@enterpriseit.example', 'INVITE-ENTERPRISEIT-001', '1', '1', '1', NULL, NULL, '1', '2026-01-01 00:00:01');
 -- Table structure for `attempts`
 -- Why: Unified security telemetry table for login and password reset events (legacy module folders were merged into modules/attempts).
 DROP TABLE IF EXISTS `attempts`;
@@ -3198,7 +3049,6 @@ CREATE TABLE `attempts` (
   KEY `idx_attempts_source_type_email_time` (`attempt_source`,`attempt_type`,`email`,`created_at`),
   KEY `idx_attempts_source_type_user_time` (`attempt_source`,`attempt_type`,`user_id`,`created_at`),
   CONSTRAINT `fk_attempts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `user_companies`
 DROP TABLE IF EXISTS `user_companies`;
 CREATE TABLE `user_companies` (
@@ -3216,14 +3066,12 @@ CREATE TABLE `user_companies` (
   CONSTRAINT `fk_user_companies_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_user_companies_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_user_companies_granted_by` FOREIGN KEY (`granted_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `user_companies`
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '1', NULL, '1');
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '2', NULL, '1');
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '3', NULL, '1');
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '4', NULL, '1');
 INSERT INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `active`) VALUES ('1', '5', NULL, '1');
-
 -- Table structure for `role_hierarchy`
 DROP TABLE IF EXISTS `role_hierarchy`;
 CREATE TABLE `role_hierarchy` (
@@ -3238,7 +3086,6 @@ CREATE TABLE `role_hierarchy` (
   UNIQUE KEY `uq_role_hierarchy_company_order` (`company_id`,`hierarchy_order`),
   CONSTRAINT `fk_role_hierarchy_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_hierarchy_role` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `role_hierarchy`
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('1', '1', '1');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('2', '6', '1');
@@ -3265,7 +3112,6 @@ INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('3', '15', '5');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('4', '20', '5');
 INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`) VALUES ('5', '25', '5');
-
 -- Table structure for `role_module_permissions`
 DROP TABLE IF EXISTS `role_module_permissions`;
 CREATE TABLE `role_module_permissions` (
@@ -3285,7 +3131,6 @@ CREATE TABLE `role_module_permissions` (
   UNIQUE KEY `uq_role_module_permissions` (`company_id`,`role_id`,`module_name`),
   CONSTRAINT `fk_role_module_permissions_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_module_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `role_module_permissions`
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('1', '1', 'ALL', '1', '1', '1', '1', '1', '1');
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('2', '6', 'ALL', '1', '1', '1', '1', '1', '1');
@@ -3302,7 +3147,6 @@ INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('3', '15', 'Tickets', '1', '1', '1', '1', '1', '1');
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('4', '20', 'Tickets', '1', '1', '1', '1', '1', '1');
 INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES ('5', '25', 'Tickets', '1', '1', '1', '1', '1', '1');
-
 -- Table structure for `role_assignment_rights`
 DROP TABLE IF EXISTS `role_assignment_rights`;
 CREATE TABLE `role_assignment_rights` (
@@ -3317,7 +3161,6 @@ CREATE TABLE `role_assignment_rights` (
   CONSTRAINT `fk_role_assignment_rights_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_assignment_rights_role` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_assignment_rights_target_role` FOREIGN KEY (`can_assign_role_id`) REFERENCES `user_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `role_assignment_rights`
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('1', '1', '2');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('2', '6', '9');
@@ -3364,7 +3207,6 @@ INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('3', '13', '15');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('4', '18', '20');
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`) VALUES ('5', '23', '25');
-
 -- Table structure for `audit_logs`
 DROP TABLE IF EXISTS `audit_logs`;
 CREATE TABLE `audit_logs` (
@@ -3397,7 +3239,6 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_logs_company_changed` (`company_id`,`changed_at`),
   CONSTRAINT `audit_logs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `audit_logs_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `vlans`
 DROP TABLE IF EXISTS `vlans`;
 CREATE TABLE `vlans` (
@@ -3417,7 +3258,6 @@ CREATE TABLE `vlans` (
   UNIQUE KEY `uniq_vlans_company_vlan_name` (`company_id`,`vlan_name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `vlans_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `vlans`
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('2', '2', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
@@ -3426,7 +3266,6 @@ INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`) VALUES ('5', '5', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL;
-
 -- Table structure for `ip_subnets`
 DROP TABLE IF EXISTS `ip_addresses`;
 DROP TABLE IF EXISTS `ip_subnets`;
@@ -3452,7 +3291,6 @@ CREATE TABLE `ip_subnets` (
   CONSTRAINT `ip_subnets_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ip_subnets_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `ip_addresses`
 CREATE TABLE `ip_addresses` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -3477,7 +3315,6 @@ CREATE TABLE `ip_addresses` (
   CONSTRAINT `ip_addresses_ibfk_subnet` FOREIGN KEY (`subnet_id`) REFERENCES `ip_subnets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ip_addresses_ibfk_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `ip_subnets` (synced from local dev database sample rows)
 INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix_length`, `gateway_ip`, `dns1_ip`, `dns2_ip`, `dhcp_enabled`, `description`, `active`) VALUES
 ('1', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
@@ -3485,7 +3322,6 @@ INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix
 ('3', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
 ('4', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1'),
 ('5', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1');
-
 -- Table structure for `warranty_types`
 DROP TABLE IF EXISTS `warranty_types`;
 CREATE TABLE `warranty_types` (
@@ -3498,7 +3334,6 @@ CREATE TABLE `warranty_types` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `warranty_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `warranty_types`
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('1', '4', 'Enterprise');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '7', 'Enterprise');
@@ -3530,7 +3365,6 @@ INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('2', '12', 'St
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('3', '18', 'Standard');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('4', '24', 'Standard');
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`) VALUES ('5', '30', 'Standard');
-
 -- Table structure for `workstation_device_types`
 DROP TABLE IF EXISTS `workstation_device_types`;
 CREATE TABLE `workstation_device_types` (
@@ -3543,7 +3377,6 @@ CREATE TABLE `workstation_device_types` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `workstation_device_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `workstation_device_types`
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('1', '3', 'All-in-One');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2', '9', 'All-in-One');
@@ -3585,7 +3418,6 @@ INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('2',
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('3', '24', 'Thin-Client');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('4', '32', 'Thin-Client');
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`) VALUES ('5', '40', 'Thin-Client');
-
 -- Table structure for `workstation_modes`
 DROP TABLE IF EXISTS `workstation_modes`;
 CREATE TABLE `workstation_modes` (
@@ -3606,7 +3438,6 @@ CREATE TABLE `workstation_modes` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `workstation_modes_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `workstation_modes`
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('1', '1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('2', '12', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1');
@@ -3663,10 +3494,8 @@ INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('3', '33', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('4', '44', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`) VALUES ('5', '55', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1');
-
 ALTER TABLE `employees`
   ADD CONSTRAINT `employees_ibfk_workstation_mode` FOREIGN KEY (`workstation_mode_id`) REFERENCES `workstation_modes` (`id`);
-
 -- Table structure for `workstation_office`
 DROP TABLE IF EXISTS `workstation_office`;
 CREATE TABLE `workstation_office` (
@@ -3679,7 +3508,6 @@ CREATE TABLE `workstation_office` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `workstation_office_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `workstation_office`
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('1', '1', 'None');
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('2', '5', 'None');
@@ -3701,7 +3529,6 @@ INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('2', '8', 
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('3', '12', 'Office 365');
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('4', '16', 'Office 365');
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`) VALUES ('5', '20', 'Office 365');
-
 -- Table structure for `workstation_os_types`
 DROP TABLE IF EXISTS `workstation_os_types`;
 CREATE TABLE `workstation_os_types` (
@@ -3714,7 +3541,6 @@ CREATE TABLE `workstation_os_types` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `workstation_os_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `workstation_os_types`
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('1', '1', 'Windows');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '16', 'Windows');
@@ -3791,7 +3617,6 @@ INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('2', '30
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('3', '45', 'Other');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('4', '60', 'Other');
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`) VALUES ('5', '75', 'Other');
-
 -- Table structure for `workstation_os_versions`
 DROP TABLE IF EXISTS `workstation_os_versions`;
 CREATE TABLE `workstation_os_versions` (
@@ -3804,7 +3629,6 @@ CREATE TABLE `workstation_os_versions` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `workstation_os_versions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `workstation_os_versions`
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('1', '1', '24H2');
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('2', '5', '24H2');
@@ -3826,7 +3650,6 @@ INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('2', 
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('3', '12', '10 LTSC');
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('4', '16', '10 LTSC');
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`) VALUES ('5', '20', '10 LTSC');
-
 -- Table structure for `workstation_ram`
 DROP TABLE IF EXISTS `workstation_ram`;
 CREATE TABLE `workstation_ram` (
@@ -3839,7 +3662,6 @@ CREATE TABLE `workstation_ram` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `workstation_ram_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `workstation_ram`
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('1', '1', '4 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '7', '4 GB');
@@ -3871,7 +3693,6 @@ INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('2', '12', '1
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('3', '18', '128 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('4', '24', '128 GB');
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`) VALUES ('5', '30', '128 GB');
-
 -- Replicate shared table data to all companies
 SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
 INSERT IGNORE INTO `access_levels` (`company_id`, `name`) SELECT c.`id`, t.`name` FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -4245,8 +4066,7 @@ CREATE TRIGGER `trg_access_levels_audit_delete` AFTER DELETE ON `access_levels` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'access_levels', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_assignment_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_assignment_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_assignment_types_audit_delete`;
@@ -4263,8 +4083,7 @@ CREATE TRIGGER `trg_assignment_types_audit_delete` AFTER DELETE ON `assignment_t
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'assignment_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_companies_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_companies_audit_update`;
 DROP TRIGGER IF EXISTS `trg_companies_audit_delete`;
@@ -4281,8 +4100,7 @@ CREATE TRIGGER `trg_companies_audit_delete` AFTER DELETE ON `companies` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'companies', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company', OLD.`company`, 'incode', OLD.`incode`, 'city', OLD.`city`, 'country', OLD.`country`, 'phone', OLD.`phone`, 'email', OLD.`email`, 'website', OLD.`website`, 'vat', OLD.`vat`, 'comments', OLD.`comments`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_departments_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_departments_audit_update`;
 DROP TRIGGER IF EXISTS `trg_departments_audit_delete`;
@@ -4299,8 +4117,7 @@ CREATE TRIGGER `trg_departments_audit_delete` AFTER DELETE ON `departments` FOR 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'departments', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'description', OLD.`description`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_delete`;
@@ -4317,8 +4134,7 @@ CREATE TRIGGER `trg_employee_onboarding_requests_audit_delete` AFTER DELETE ON `
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_onboarding_requests', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'employee_position_id', OLD.`employee_position_id`, 'first_name', OLD.`first_name`, 'last_name', OLD.`last_name`, 'department_name', OLD.`department_name`, 'request_date', OLD.`request_date`, 'termination_date', OLD.`termination_date`, 'network_access', OLD.`network_access`, 'micros_emc', OLD.`micros_emc`, 'opera', OLD.`opera`, 'micros_card', OLD.`micros_card`, 'pms_id', OLD.`pms_id`, 'synergy_mms', OLD.`synergy_mms`, 'email_account', OLD.`email_account`, 'landline_phone', OLD.`landline_phone`, 'hu_the_lobby', OLD.`hu_the_lobby`, 'mobile_phone', OLD.`mobile_phone`, 'navision', OLD.`navision`, 'mobile_email', OLD.`mobile_email`, 'onq_ri', OLD.`onq_ri`, 'birchstreet', OLD.`birchstreet`, 'delphi', OLD.`delphi`, 'omina', OLD.`omina`, 'vingcard_system', OLD.`vingcard_system`, 'digital_rev', OLD.`digital_rev`, 'office_key_card', OLD.`office_key_card`, 'office_key_card_dep', OLD.`office_key_card_dep`, 'comments', OLD.`comments`, 'starting_date', OLD.`starting_date`, 'requested_by', OLD.`requested_by`, 'requested_by_date', OLD.`requested_by_date`, 'requested_on', OLD.`requested_on`, 'hod_approval', OLD.`hod_approval`, 'hod_approval_date', OLD.`hod_approval_date`, 'hrd_approval', OLD.`hrd_approval`, 'hrd_approval_date', OLD.`hrd_approval_date`, 'ism_approval', OLD.`ism_approval`, 'ism_approval_date', OLD.`ism_approval_date`, 'gm_approval', OLD.`gm_approval`, 'gm_approval_date', OLD.`gm_approval_date`, 'fin_approval', OLD.`fin_approval`, 'fin_approval_date', OLD.`fin_approval_date`, 'status_hod', OLD.`status_hod`, 'status_hrd', OLD.`status_hrd`, 'status_ism', OLD.`status_ism`, 'status_gm', OLD.`status_gm`, 'status_fin', OLD.`status_fin`, 'email_sent_hod', OLD.`email_sent_hod`, 'email_sent_hod_at', OLD.`email_sent_hod_at`, 'email_sent_hrd', OLD.`email_sent_hrd`, 'email_sent_hrd_at', OLD.`email_sent_hrd_at`, 'email_sent_ism', OLD.`email_sent_ism`, 'email_sent_ism_at', OLD.`email_sent_ism_at`, 'email_sent_gm', OLD.`email_sent_gm`, 'email_sent_gm_at', OLD.`email_sent_gm_at`, 'email_sent_fin', OLD.`email_sent_fin`, 'email_sent_fin_at', OLD.`email_sent_fin_at`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_employee_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_statuses_audit_delete`;
@@ -4335,8 +4151,7 @@ CREATE TRIGGER `trg_employee_statuses_audit_delete` AFTER DELETE ON `employee_st
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_employee_positions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_positions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_positions_audit_delete`;
@@ -4353,8 +4168,7 @@ CREATE TRIGGER `trg_employee_positions_audit_delete` AFTER DELETE ON `employee_p
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_positions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'department_id', OLD.`department_id`, 'name', OLD.`name`, 'description', OLD.`description`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_employee_system_access_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_system_access_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_system_access_audit_delete`;
@@ -4371,8 +4185,7 @@ CREATE TRIGGER `trg_employee_system_access_audit_delete` AFTER DELETE ON `employ
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_system_access', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'network_access', OLD.`network_access`, 'micros_emc', OLD.`micros_emc`, 'opera_username', OLD.`opera_username`, 'micros_card', OLD.`micros_card`, 'pms_id', OLD.`pms_id`, 'synergy_mms', OLD.`synergy_mms`, 'hu_the_lobby', OLD.`hu_the_lobby`, 'navision', OLD.`navision`, 'onq_ri', OLD.`onq_ri`, 'birchstreet', OLD.`birchstreet`, 'delphi', OLD.`delphi`, 'omina', OLD.`omina`, 'vingcard_system', OLD.`vingcard_system`, 'digital_rev', OLD.`digital_rev`, 'office_key_card', OLD.`office_key_card`, 'changed_at', OLD.`changed_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_employees_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employees_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employees_audit_delete`;
@@ -4389,8 +4202,7 @@ CREATE TRIGGER `trg_employees_audit_delete` AFTER DELETE ON `employees` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employees', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'duplicate', OLD.`duplicate`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'first_name', OLD.`first_name`, 'last_name', OLD.`last_name`, 'display_name', OLD.`display_name`, 'email', OLD.`email`, 'phone', OLD.`phone`, 'mobile_phone', OLD.`mobile_phone`, 'work_phone', OLD.`work_phone`, 'deck', OLD.`deck`, 'extension', OLD.`extension`, 'employee_code', OLD.`employee_code`, 'external_id', OLD.`external_id`, 'username', OLD.`username`, 'department_id', OLD.`department_id`, 'job_code', OLD.`job_code`, 'job_title', OLD.`job_title`, 'comments', OLD.`comments`, 'request_date', OLD.`request_date`, 'requested_by', OLD.`requested_by`, 'termination_requested_by', OLD.`termination_requested_by`, 'termination_date', OLD.`termination_date`, 'network_access', OLD.`network_access`, 'micros_emc', OLD.`micros_emc`, 'opera_username', OLD.`opera_username`, 'micros_card', OLD.`micros_card`, 'pms_id', OLD.`pms_id`, 'synergy_mms', OLD.`synergy_mms`, 'hu_the_lobby', OLD.`hu_the_lobby`, 'navision', OLD.`navision`, 'onq_ri', OLD.`onq_ri`, 'birchstreet', OLD.`birchstreet`, 'delphi', OLD.`delphi`, 'omina', OLD.`omina`, 'vingcard_system', OLD.`vingcard_system`, 'digital_rev', OLD.`digital_rev`, 'office_key_card', OLD.`office_key_card`, 'office_key_card_department_id', OLD.`office_key_card_department_id`, 'location_id', OLD.`location_id`, 'employment_status_id', OLD.`employment_status_id`, 'workstation_mode_id', OLD.`workstation_mode_id`, 'assignment_type_id', OLD.`assignment_type_id`, 'raw_status_code', OLD.`raw_status_code`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_audit_delete`;
@@ -4407,8 +4219,7 @@ CREATE TRIGGER `trg_equipment_audit_delete` AFTER DELETE ON `equipment` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_type_id', OLD.`equipment_type_id`, 'manufacturer_id', OLD.`manufacturer_id`, 'location_id', OLD.`location_id`, 'rack_id', OLD.`rack_id`, 'idf_id', OLD.`idf_id`, 'name', OLD.`name`, 'serial_number', OLD.`serial_number`, 'model', OLD.`model`, 'hostname', OLD.`hostname`, 'ip_address', OLD.`ip_address`, 'patch_port', OLD.`patch_port`, 'mac_address', OLD.`mac_address`, 'status_id', OLD.`status_id`, 'purchase_date', OLD.`purchase_date`, 'purchase_cost', OLD.`purchase_cost`, 'warranty_expiry', OLD.`warranty_expiry`, 'certificate_expiry', OLD.`certificate_expiry`, 'warranty_type_id', OLD.`warranty_type_id`, 'printer_device_type_id', OLD.`printer_device_type_id`, 'printer_color_capable', OLD.`printer_color_capable`, 'printer_scan', OLD.`printer_scan`, 'workstation_device_type_id', OLD.`workstation_device_type_id`, 'workstation_os_type_id', OLD.`workstation_os_type_id`, 'workstation_office_id', OLD.`workstation_office_id`, 'workstation_processor', OLD.`workstation_processor`, 'workstation_storage', OLD.`workstation_storage`, 'workstation_os_installed_on', OLD.`workstation_os_installed_on`, 'workstation_ram_id', OLD.`workstation_ram_id`, 'workstation_os_version_id', OLD.`workstation_os_version_id`, 'rj45_speed_id', OLD.`rj45_speed_id`, 'switch_rj45_id', OLD.`switch_rj45_id`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'switch_fiber_id', OLD.`switch_fiber_id`, 'switch_fiber_patch_id', OLD.`switch_fiber_patch_id`, 'switch_fiber_rack_id', OLD.`switch_fiber_rack_id`, 'switch_fiber_ports_number', OLD.`switch_fiber_ports_number`, 'switch_fiber_port_label', OLD.`switch_fiber_port_label`, 'switch_poe_id', OLD.`switch_poe_id`, 'switch_environment_id', OLD.`switch_environment_id`, 'notes', OLD.`notes`, 'photo_filename', OLD.`photo_filename`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_environment_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_environment_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_environment_audit_delete`;
@@ -4425,8 +4236,7 @@ CREATE TRIGGER `trg_equipment_environment_audit_delete` AFTER DELETE ON `equipme
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_environment', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_audit_delete`;
@@ -4443,8 +4253,7 @@ CREATE TRIGGER `trg_equipment_fiber_audit_delete` AFTER DELETE ON `equipment_fib
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_patch_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_patch_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_patch_audit_delete`;
@@ -4461,8 +4270,7 @@ CREATE TRIGGER `trg_equipment_fiber_patch_audit_delete` AFTER DELETE ON `equipme
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber_patch', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_rack_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_rack_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_rack_audit_delete`;
@@ -4479,8 +4287,7 @@ CREATE TRIGGER `trg_equipment_fiber_rack_audit_delete` AFTER DELETE ON `equipmen
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber_rack', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_count_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_count_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_count_audit_delete`;
@@ -4497,8 +4304,7 @@ CREATE TRIGGER `trg_equipment_fiber_count_audit_delete` AFTER DELETE ON `equipme
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber_count', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_delete`;
@@ -4515,8 +4321,7 @@ CREATE TRIGGER `trg_equipment_poe_audit_delete` AFTER DELETE ON `equipment_poe` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'watts', OLD.`watts`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_rj45_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_rj45_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_rj45_audit_delete`;
@@ -4533,8 +4338,7 @@ CREATE TRIGGER `trg_equipment_rj45_audit_delete` AFTER DELETE ON `equipment_rj45
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_rj45', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_update`;
 DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_delete`;
@@ -4551,8 +4355,7 @@ CREATE TRIGGER `trg_rj45_speed_audit_delete` AFTER DELETE ON `rj45_speed` FOR EA
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rj45_speed', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cable_type', OLD.`cable_type`, 'max_speed', OLD.`max_speed`, 'bandwidth', OLD.`bandwidth`, 'max_distance_full_speed', OLD.`max_distance_full_speed`, 'notes', OLD.`notes`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_statuses_audit_delete`;
@@ -4569,8 +4372,7 @@ CREATE TRIGGER `trg_equipment_statuses_audit_delete` AFTER DELETE ON `equipment_
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_equipment_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_types_audit_delete`;
@@ -4587,8 +4389,7 @@ CREATE TRIGGER `trg_equipment_types_audit_delete` AFTER DELETE ON `equipment_typ
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_idf_links_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_links_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_links_audit_delete`;
@@ -4605,8 +4406,7 @@ CREATE TRIGGER `trg_idf_links_audit_delete` AFTER DELETE ON `idf_links` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_links', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'port_id_a', OLD.`port_id_a`, 'port_id_b', OLD.`port_id_b`, 'equipment_id', OLD.`equipment_id`, 'equipment_hostname', OLD.`equipment_hostname`, 'equipment_port_type', OLD.`equipment_port_type`, 'equipment_port', OLD.`equipment_port`, 'equipment_vlan_id', OLD.`equipment_vlan_id`, 'equipment_label', OLD.`equipment_label`, 'equipment_comments', OLD.`equipment_comments`, 'equipment_status_id', OLD.`equipment_status_id`, 'equipment_color_id', OLD.`equipment_color_id`, 'cable_color_id', OLD.`cable_color_id`, 'cable_color_hex', OLD.`cable_color_hex`, 'cable_label', OLD.`cable_label`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_idf_device_type_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_device_type_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_device_type_audit_delete`;
@@ -4623,8 +4423,7 @@ CREATE TRIGGER `trg_idf_device_type_audit_delete` AFTER DELETE ON `idf_device_ty
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_device_type', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idfdevicetype_name', OLD.`idfdevicetype_name`, 'field_edit_emoji', OLD.`field_edit_emoji`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_idf_ports_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_ports_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_ports_audit_delete`;
@@ -4641,8 +4440,7 @@ CREATE TRIGGER `trg_idf_ports_audit_delete` AFTER DELETE ON `idf_ports` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_ports', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'position_id', OLD.`position_id`, 'port_no', OLD.`port_no`, 'port_type', OLD.`port_type`, 'label', OLD.`label`, 'status_id', OLD.`status_id`, 'connected_to', OLD.`connected_to`, 'vlan_id', OLD.`vlan_id`, 'speed_id', OLD.`speed_id`, 'rj45_speed_id', OLD.`rj45_speed_id`, 'poe_id', OLD.`poe_id`, 'cable_color', OLD.`cable_color`, 'hex_color', OLD.`hex_color`, 'notes', OLD.`notes`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_idf_positions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_positions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_positions_audit_delete`;
@@ -4659,8 +4457,7 @@ CREATE TRIGGER `trg_idf_positions_audit_delete` AFTER DELETE ON `idf_positions` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idf_id', OLD.`idf_id`, 'position_no', OLD.`position_no`, 'device_type', OLD.`device_type`, 'device_name', OLD.`device_name`, 'equipment_id', OLD.`equipment_id`, 'rj45_count', OLD.`rj45_count`, 'sfp_count', OLD.`sfp_count`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_delete`;
@@ -4677,8 +4474,7 @@ CREATE TRIGGER `trg_idfs_audit_delete` AFTER DELETE ON `idfs` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idfs', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'location_id', OLD.`location_id`, 'name', OLD.`name`, 'idf_code', OLD.`idf_code`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_inventory_categories_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_inventory_categories_audit_update`;
 DROP TRIGGER IF EXISTS `trg_inventory_categories_audit_delete`;
@@ -4695,8 +4491,7 @@ CREATE TRIGGER `trg_inventory_categories_audit_delete` AFTER DELETE ON `inventor
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'inventory_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_inventory_items_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_inventory_items_audit_update`;
 DROP TRIGGER IF EXISTS `trg_inventory_items_audit_delete`;
@@ -4713,8 +4508,7 @@ CREATE TRIGGER `trg_inventory_items_audit_delete` AFTER DELETE ON `inventory_ite
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'inventory_items', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'item_code', OLD.`item_code`, 'serial', OLD.`serial`, 'category_id', OLD.`category_id`, 'manufacturer_id', OLD.`manufacturer_id`, 'quantity_on_hand', OLD.`quantity_on_hand`, 'quantity_minimum', OLD.`quantity_minimum`, 'price_eur', OLD.`price_eur`, 'last_user_id', OLD.`last_user_id`, 'last_user_manual', OLD.`last_user_manual`, 'comments', OLD.`comments`, 'location_id', OLD.`location_id`, 'supplier_id', OLD.`supplier_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_it_locations_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_it_locations_audit_update`;
 DROP TRIGGER IF EXISTS `trg_it_locations_audit_delete`;
@@ -4731,8 +4525,7 @@ CREATE TRIGGER `trg_it_locations_audit_delete` AFTER DELETE ON `it_locations` FO
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'it_locations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'location_code', OLD.`location_code`, 'address', OLD.`address`, 'city', OLD.`city`, 'state', OLD.`state`, 'country', OLD.`country`, 'postal_code', OLD.`postal_code`, 'phone', OLD.`phone`, 'type_id', OLD.`type_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_delete`;
@@ -4749,9 +4542,7 @@ CREATE TRIGGER `trg_location_types_audit_delete` AFTER DELETE ON `location_types
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'location_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_catalogs_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_catalogs_audit_update`;
 DROP TRIGGER IF EXISTS `trg_catalogs_audit_delete`;
@@ -4768,8 +4559,7 @@ CREATE TRIGGER `trg_catalogs_audit_delete` AFTER DELETE ON `catalogs` FOR EACH R
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'catalogs', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'model', OLD.`model`, 'equipment_type_id', OLD.`equipment_type_id`, 'image_url', OLD.`image_url`, 'price', OLD.`price`, 'supplier_id', OLD.`supplier_id`, 'manufacturer_id', OLD.`manufacturer_id`, 'product_url', OLD.`product_url`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_manufacturers_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_manufacturers_audit_update`;
 DROP TRIGGER IF EXISTS `trg_manufacturers_audit_delete`;
@@ -4786,8 +4576,7 @@ CREATE TRIGGER `trg_manufacturers_audit_delete` AFTER DELETE ON `manufacturers` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'manufacturers', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_patches_updates_status_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_status_audit_update`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_status_audit_delete`;
@@ -4804,8 +4593,7 @@ CREATE TRIGGER `trg_patches_updates_status_audit_delete` AFTER DELETE ON `patche
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_status', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'color', OLD.`color`, 'is_closed', OLD.`is_closed`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_update`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_delete`;
@@ -4822,8 +4610,7 @@ CREATE TRIGGER `trg_patches_updates_level_audit_delete` AFTER DELETE ON `patches
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'level', OLD.`level`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_patches_updates_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_audit_update`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_audit_delete`;
@@ -4840,8 +4627,7 @@ CREATE TRIGGER `trg_patches_updates_audit_delete` AFTER DELETE ON `patches_updat
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'ip', OLD.`ip`, 'id_external', OLD.`id_external`, 'inncode', OLD.`inncode`, 'dest', OLD.`dest`, 'dest_ip', OLD.`dest_ip`, 'severity', OLD.`severity`, 'vuln_description', OLD.`vuln_description`, 'base_score', OLD.`base_score`, 'remediation', OLD.`remediation`, 'cve', OLD.`cve`, 'host_ip', OLD.`host_ip`, 'host_mac_manufacturer', OLD.`host_mac_manufacturer`, 'days_since_last_seen', OLD.`days_since_last_seen`, 'host_health_score', OLD.`host_health_score`, 'host_health_reason', OLD.`host_health_reason`, 'host_resolution_priority', OLD.`host_resolution_priority`, 'host_workload_type', OLD.`host_workload_type`, 'operating_system', OLD.`operating_system`, 'business_function', OLD.`business_function`, 'data_source', OLD.`data_source`, 'date', OLD.`date`, 'last_user_department', OLD.`last_user_department`, 'problem', OLD.`problem`, 'troubleshooting', OLD.`troubleshooting`, 'patches_updates_photos', OLD.`patches_updates_photos`, 'status_id', OLD.`status_id`, 'level_id', OLD.`level_id`, 'created_by', OLD.`created_by`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_printer_device_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_printer_device_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_printer_device_types_audit_delete`;
@@ -4858,8 +4644,7 @@ CREATE TRIGGER `trg_printer_device_types_audit_delete` AFTER DELETE ON `printer_
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'printer_device_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_rack_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_rack_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_rack_statuses_audit_delete`;
@@ -4876,8 +4661,7 @@ CREATE TRIGGER `trg_rack_statuses_audit_delete` AFTER DELETE ON `rack_statuses` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rack_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_racks_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_racks_audit_update`;
 DROP TRIGGER IF EXISTS `trg_racks_audit_delete`;
@@ -4894,9 +4678,7 @@ CREATE TRIGGER `trg_racks_audit_delete` AFTER DELETE ON `racks` FOR EACH ROW BEG
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'racks', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'location_id', OLD.`location_id`, 'name', OLD.`name`, 'rack_code', OLD.`rack_code`, 'status_id', OLD.`status_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_delete`;
@@ -4913,8 +4695,7 @@ CREATE TRIGGER `trg_supplier_statuses_audit_delete` AFTER DELETE ON `supplier_st
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'supplier_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_suppliers_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_suppliers_audit_update`;
 DROP TRIGGER IF EXISTS `trg_suppliers_audit_delete`;
@@ -4931,8 +4712,7 @@ CREATE TRIGGER `trg_suppliers_audit_delete` AFTER DELETE ON `suppliers` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'suppliers', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'supplier_code', OLD.`supplier_code`, 'contact_person', OLD.`contact_person`, 'email', OLD.`email`, 'phone', OLD.`phone`, 'status_id', OLD.`status_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_update`;
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_delete`;
@@ -4949,8 +4729,7 @@ CREATE TRIGGER `trg_cable_colors_audit_delete` AFTER DELETE ON `cable_colors` FO
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'cable_colors', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'color_name', OLD.`color_name`, 'hex_color', OLD.`hex_color`, 'comments', OLD.`comments`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_switch_port_numbering_layout_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_port_numbering_layout_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_port_numbering_layout_audit_delete`;
@@ -4967,8 +4746,7 @@ CREATE TRIGGER `trg_switch_port_numbering_layout_audit_delete` AFTER DELETE ON `
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_port_numbering_layout', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_switch_port_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_port_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_port_types_audit_delete`;
@@ -4985,8 +4763,7 @@ CREATE TRIGGER `trg_switch_port_types_audit_delete` AFTER DELETE ON `switch_port
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_port_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'type', OLD.`type`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_switch_ports_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_ports_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_ports_audit_delete`;
@@ -5003,8 +4780,7 @@ CREATE TRIGGER `trg_switch_ports_audit_delete` AFTER DELETE ON `switch_ports` FO
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_ports', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'port_type', OLD.`port_type`, 'port_number', OLD.`port_number`, 'to_patch_port', OLD.`to_patch_port`, 'status_id', OLD.`status_id`, 'color_id', OLD.`color_id`, 'rj45_speed_id', OLD.`rj45_speed_id`, 'vlan_id', OLD.`vlan_id`, 'comments', OLD.`comments`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_switch_status_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_status_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_status_audit_delete`;
@@ -5021,8 +4797,7 @@ CREATE TRIGGER `trg_switch_status_audit_delete` AFTER DELETE ON `switch_status` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_status', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'status', OLD.`status`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_system_access_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_system_access_audit_update`;
 DROP TRIGGER IF EXISTS `trg_system_access_audit_delete`;
@@ -5039,8 +4814,7 @@ CREATE TRIGGER `trg_system_access_audit_delete` AFTER DELETE ON `system_access` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'system_access', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'code', OLD.`code`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_ticket_categories_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ticket_categories_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ticket_categories_audit_delete`;
@@ -5057,8 +4831,7 @@ CREATE TRIGGER `trg_ticket_categories_audit_delete` AFTER DELETE ON `ticket_cate
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ticket_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_ticket_priorities_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ticket_priorities_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ticket_priorities_audit_delete`;
@@ -5075,8 +4848,7 @@ CREATE TRIGGER `trg_ticket_priorities_audit_delete` AFTER DELETE ON `ticket_prio
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ticket_priorities', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'level', OLD.`level`, 'color', OLD.`color`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_ticket_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ticket_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ticket_statuses_audit_delete`;
@@ -5093,8 +4865,7 @@ CREATE TRIGGER `trg_ticket_statuses_audit_delete` AFTER DELETE ON `ticket_status
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ticket_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'color', OLD.`color`, 'is_closed', OLD.`is_closed`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_tickets_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_tickets_audit_update`;
 DROP TRIGGER IF EXISTS `trg_tickets_audit_delete`;
@@ -5111,8 +4882,7 @@ CREATE TRIGGER `trg_tickets_audit_delete` AFTER DELETE ON `tickets` FOR EACH ROW
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'ui_color', OLD.`ui_color`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DELIMITER $$
 DROP TRIGGER IF EXISTS `trg_user_sidebar_preferences_audit_insert`$$
 DROP TRIGGER IF EXISTS `trg_user_sidebar_preferences_audit_update`$$
@@ -5132,8 +4902,7 @@ CREATE TRIGGER `trg_user_sidebar_preferences_audit_delete` AFTER DELETE ON `user
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `username`, `user_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_delete`;
@@ -5150,8 +4919,7 @@ CREATE TRIGGER `trg_ui_configuration_audit_delete` AFTER DELETE ON `ui_configura
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ui_configuration', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'table_actions_position', OLD.`table_actions_position`, 'new_button_position', OLD.`new_button_position`, 'export_buttons_position', OLD.`export_buttons_position`, 'back_save_position', OLD.`back_save_position`, 'enable_all_error_reporting', OLD.`enable_all_error_reporting`, 'enable_audit_logs', OLD.`enable_audit_logs`, 'records_per_page', OLD.`records_per_page`, 'app_name', OLD.`app_name`, 'favicon_path', OLD.`favicon_path`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_user_roles_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_user_roles_audit_update`;
 DROP TRIGGER IF EXISTS `trg_user_roles_audit_delete`;
@@ -5168,8 +4936,7 @@ CREATE TRIGGER `trg_user_roles_audit_delete` AFTER DELETE ON `user_roles` FOR EA
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_roles', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_users_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_users_audit_update`;
 DROP TRIGGER IF EXISTS `trg_users_audit_delete`;
@@ -5186,8 +4953,7 @@ CREATE TRIGGER `trg_users_audit_delete` AFTER DELETE ON `users` FOR EACH ROW BEG
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'users', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'username', OLD.`username`, 'email', OLD.`email`, 'password', OLD.`password`, 'reset_token', OLD.`reset_token`, 'reset_token_hash', OLD.`reset_token_hash`, 'reset_token_expires_at', OLD.`reset_token_expires_at`, 'first_name', OLD.`first_name`, 'last_name', OLD.`last_name`, 'phone', OLD.`phone`, 'role_id', OLD.`role_id`, 'access_level_id', OLD.`access_level_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_update`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_delete`;
@@ -5204,8 +4970,7 @@ CREATE TRIGGER `trg_attempts_audit_delete` AFTER DELETE ON `attempts` FOR EACH R
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `users` WHERE `id` = OLD.`user_id` LIMIT 1), (SELECT `company_id` FROM `users` WHERE `email` = OLD.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_user_id, @app_username, @app_email, 'attempts', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'user_id', OLD.`user_id`, 'email', OLD.`email`, 'attempt_source', OLD.`attempt_source`, 'attempt_type', OLD.`attempt_type`, 'ip_address', OLD.`ip_address`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_user_companies_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_user_companies_audit_update`;
 DROP TRIGGER IF EXISTS `trg_user_companies_audit_delete`;
@@ -5222,8 +4987,7 @@ CREATE TRIGGER `trg_user_companies_audit_delete` AFTER DELETE ON `user_companies
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_companies', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'user_id', OLD.`user_id`, 'company_id', OLD.`company_id`, 'granted_by_user_id', OLD.`granted_by_user_id`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_role_hierarchy_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_role_hierarchy_audit_update`;
 DROP TRIGGER IF EXISTS `trg_role_hierarchy_audit_delete`;
@@ -5240,8 +5004,7 @@ CREATE TRIGGER `trg_role_hierarchy_audit_delete` AFTER DELETE ON `role_hierarchy
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_hierarchy', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'hierarchy_order', OLD.`hierarchy_order`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_delete`;
@@ -5258,8 +5021,7 @@ CREATE TRIGGER `trg_role_module_permissions_audit_delete` AFTER DELETE ON `role_
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'module_name', OLD.`module_name`, 'can_view', OLD.`can_view`, 'can_create', OLD.`can_create`, 'can_edit', OLD.`can_edit`, 'can_delete', OLD.`can_delete`, 'can_import', OLD.`can_import`, 'can_export', OLD.`can_export`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_update`;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_delete`;
@@ -5276,8 +5038,7 @@ CREATE TRIGGER `trg_role_assignment_rights_audit_delete` AFTER DELETE ON `role_a
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_assignment_rights', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'can_assign_role_id', OLD.`can_assign_role_id`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_vlans_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_vlans_audit_update`;
 DROP TRIGGER IF EXISTS `trg_vlans_audit_delete`;
@@ -5294,8 +5055,7 @@ CREATE TRIGGER `trg_vlans_audit_delete` AFTER DELETE ON `vlans` FOR EACH ROW BEG
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'vlans', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_number', OLD.`vlan_number`, 'vlan_name', OLD.`vlan_name`, 'vlan_color', OLD.`vlan_color`, 'subnet', OLD.`subnet`, 'ip', OLD.`ip`, 'comments', OLD.`comments`, 'gateway_ip', OLD.`gateway_ip`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_warranty_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_warranty_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_warranty_types_audit_delete`;
@@ -5312,8 +5072,7 @@ CREATE TRIGGER `trg_warranty_types_audit_delete` AFTER DELETE ON `warranty_types
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'warranty_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_workstation_device_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_device_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_device_types_audit_delete`;
@@ -5330,8 +5089,7 @@ CREATE TRIGGER `trg_workstation_device_types_audit_delete` AFTER DELETE ON `work
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_device_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_workstation_modes_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_modes_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_modes_audit_delete`;
@@ -5348,8 +5106,7 @@ CREATE TRIGGER `trg_workstation_modes_audit_delete` AFTER DELETE ON `workstation
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_modes', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'mode_name', OLD.`mode_name`, 'mode_code', OLD.`mode_code`, 'description', OLD.`description`, 'monitor_count', OLD.`monitor_count`, 'has_keyboard_mouse', OLD.`has_keyboard_mouse`, 'pos', OLD.`pos`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_workstation_office_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_office_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_office_audit_delete`;
@@ -5366,8 +5123,7 @@ CREATE TRIGGER `trg_workstation_office_audit_delete` AFTER DELETE ON `workstatio
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_office', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_workstation_os_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_types_audit_delete`;
@@ -5384,8 +5140,7 @@ CREATE TRIGGER `trg_workstation_os_types_audit_delete` AFTER DELETE ON `workstat
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_os_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_workstation_os_versions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_versions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_versions_audit_delete`;
@@ -5402,8 +5157,7 @@ CREATE TRIGGER `trg_workstation_os_versions_audit_delete` AFTER DELETE ON `works
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_os_versions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
+DELIMITER;
 DROP TRIGGER IF EXISTS `trg_workstation_ram_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_ram_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_ram_audit_delete`;
@@ -5420,9 +5174,7 @@ CREATE TRIGGER `trg_workstation_ram_audit_delete` AFTER DELETE ON `workstation_r
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_ram', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER ;
-
-
+DELIMITER;
 -- Table structure for `rack_planner`
 DROP TABLE IF EXISTS `rack_planner`;
 CREATE TABLE `rack_planner` (
@@ -5440,7 +5192,6 @@ CREATE TABLE `rack_planner` (
   KEY `rack_planner_company_id` (`company_id`),
   CONSTRAINT `rack_planner_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Data for `rack_planner`
 INSERT INTO `rack_planner` (`company_id`, `id`, `name`, `rack_units`, `layout_json`, `notes`, `active`) VALUES
 (1, 1, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 1.', 1),
@@ -5448,6 +5199,4 @@ INSERT INTO `rack_planner` (`company_id`, `id`, `name`, `rack_units`, `layout_js
 (3, 3, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 3.', 1),
 (4, 4, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 4.', 1),
 (5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 1);
-
-
 SET FOREIGN_KEY_CHECKS=1;
