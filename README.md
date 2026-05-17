@@ -38,6 +38,10 @@ High-level request flow from web entry points through shared core into company-s
 
 ![Architecture overview](docs/readme/architecture.png)
 
+**Database schema** — core table relationships for the company-scoped multi-tenant data model.
+
+![Database schema overview](docs/readme/database-diagram.png)
+
 ## Installation
 
 1. Extract the project files into your web root.
