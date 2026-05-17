@@ -5,6 +5,37 @@
         return value || fallback;
     }
 
+    function isBulkCheckboxColumn(cell) {
+        if (!cell) return false;
+        return !!cell.querySelector('input[type="checkbox"]');
+    }
+
+    // Why: bulk-select checkbox columns stay leftmost; Actions follows checkbox in Settings "left" mode.
+    function placeActionCellAfterBulkCheckbox(row, actionCell) {
+        if (!actionCell || actionCell.parentNode !== row) return;
+        const first = row.firstElementChild;
+        const anchor = (first && isBulkCheckboxColumn(first)) ? first.nextElementSibling : row.firstElementChild;
+        if (actionCell !== anchor) {
+            row.insertBefore(actionCell, anchor);
+        }
+    }
+
+    function placeActionCellAtRowEnd(row, actionCell) {
+        if (!actionCell || actionCell.parentNode !== row) return;
+        if (row.lastElementChild !== actionCell) {
+            row.appendChild(actionCell);
+        }
+    }
+
+    function placeActionCloneBeforeBulkCheckbox(row, clone) {
+        const first = row.firstElementChild;
+        if (first && isBulkCheckboxColumn(first)) {
+            row.insertBefore(clone, first);
+            return;
+        }
+        row.insertBefore(clone, row.firstElementChild);
+    }
+
     function applyTableActionsPosition() {
         const mode = configValue('table_actions_position', 'left_right');
         const tables = document.querySelectorAll('.content .card table');
@@ -16,6 +47,20 @@
             rows.forEach((row) => {
                 row.querySelectorAll('[data-itm-actions-clone="1"]').forEach((clone) => clone.remove());
             });
+
+            // Why: some partial tables (e.g. IT Locations linked floor plans) marked only the Actions header.
+            const headerActionCell = table.querySelector('thead [data-itm-actions-origin="1"]');
+            if (headerActionCell) {
+                table.querySelectorAll('tbody tr').forEach((row) => {
+                    if (row.querySelector('[data-itm-actions-origin="1"]')) {
+                        return;
+                    }
+                    const actionTd = row.querySelector('td.itm-actions-cell');
+                    if (actionTd) {
+                        actionTd.dataset.itmActionsOrigin = '1';
+                    }
+                });
+            }
 
             let actionCells = rows.map((row) => row.querySelector('[data-itm-actions-origin="1"]'));
             const hasMappedActionCells = actionCells.some((cell) => !!cell);
@@ -60,25 +105,25 @@
 
                 if (mode === 'left') {
                     actionCell.classList.add('itm-actions-left');
-                    row.insertBefore(actionCell, row.firstElementChild);
+                    placeActionCellAfterBulkCheckbox(row, actionCell);
                     return;
                 }
 
                 if (mode === 'right') {
                     actionCell.classList.add('itm-actions-right');
-                    row.appendChild(actionCell);
+                    placeActionCellAtRowEnd(row, actionCell);
                     return;
                 }
 
                 actionCell.classList.add('itm-actions-right');
-                row.appendChild(actionCell);
+                placeActionCellAtRowEnd(row, actionCell);
 
                 const leftClone = actionCell.cloneNode(true);
                 leftClone.dataset.itmActionsClone = '1';
                 leftClone.removeAttribute('data-itm-actions-origin');
                 leftClone.classList.remove('itm-actions-right', 'itm-actions-left-right');
-                leftClone.classList.add('itm-actions-left');
-                row.insertBefore(leftClone, row.firstElementChild);
+                leftClone.classList.add('itm-actions-left', 'itm-actions-cell');
+                placeActionCloneBeforeBulkCheckbox(row, leftClone);
             });
         });
     }
