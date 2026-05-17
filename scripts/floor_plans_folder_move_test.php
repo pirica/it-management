@@ -2,15 +2,22 @@
 /**
  * Regression tests for Floor Plans folder reparenting (move folder).
  *
- * Usage:
+ * Usage (Laragon PHP 7.4+):
  *   php scripts/floor_plans_folder_move_test.php
+ *
+ * Windows Laragon example:
+ *   C:\laragon\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\floor_plans_folder_move_test.php
  *
  * Optional env:
  *   ITM_DB_HOST, ITM_DB_USER, ITM_DB_PASS, ITM_DB_NAME
  *   ITM_TEST_COMPANY_ID (default: 1)
  */
 
-declare(strict_types=1);
+if (version_compare(PHP_VERSION, '7.1.0', '<')) {
+    fwrite(STDERR, "This script requires PHP 7.1 or newer (nullable return types).\n");
+    fwrite(STDERR, 'Your CLI reports PHP ' . PHP_VERSION . ". Use Laragon's PHP 7.4 binary.\n");
+    exit(1);
+}
 
 define('ITM_CLI_SCRIPT', true);
 
@@ -18,22 +25,22 @@ $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
 require $projectRoot . '/modules/floor_plans/gallery_helpers.php';
 
-function fp_test_out(string $message): void
+function fp_test_out($message)
 {
     echo $message . PHP_EOL;
 }
 
-function fp_test_pass(string $message): void
+function fp_test_pass($message)
 {
     fp_test_out('[PASS] ' . $message);
 }
 
-function fp_test_fail(string $message): void
+function fp_test_fail($message)
 {
     throw new RuntimeException('[FAIL] ' . $message);
 }
 
-function fp_test_assert(bool $condition, string $message): void
+function fp_test_assert($condition, $message)
 {
     if (!$condition) {
         fp_test_fail($message);
@@ -41,7 +48,10 @@ function fp_test_assert(bool $condition, string $message): void
     fp_test_pass($message);
 }
 
-function fp_test_db_parent_id(mysqli $conn, int $folderId, int $companyId): ?int
+/**
+ * @return int|null
+ */
+function fp_test_db_parent_id(mysqli $conn, $folderId, $companyId)
 {
     $stmt = mysqli_prepare($conn, 'SELECT parent_folder_id FROM floor_plan_folders WHERE id=? AND company_id=? LIMIT 1');
     if (!$stmt) {
@@ -58,7 +68,7 @@ function fp_test_db_parent_id(mysqli $conn, int $folderId, int $companyId): ?int
     return fp_folder_parent_id_from_db_value($row['parent_folder_id'] ?? null);
 }
 
-function fp_test_insert_folder(mysqli $conn, int $companyId, ?int $parentId, string $name): int
+function fp_test_insert_folder(mysqli $conn, $companyId, $parentId, $name)
 {
     if ($parentId === null || $parentId <= 0) {
         $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plan_folders (company_id, parent_folder_id, name, active) VALUES (?, NULL, ?, 1)');
@@ -82,7 +92,7 @@ function fp_test_insert_folder(mysqli $conn, int $companyId, ?int $parentId, str
     return $id;
 }
 
-function fp_test_delete_folder(mysqli $conn, int $folderId, int $companyId): void
+function fp_test_delete_folder(mysqli $conn, $folderId, $companyId)
 {
     $stmt = mysqli_prepare($conn, 'DELETE FROM floor_plan_folders WHERE id=? AND company_id=? LIMIT 1');
     if (!$stmt) {
@@ -97,6 +107,7 @@ $companyId = (int)(getenv('ITM_TEST_COMPANY_ID') ?: 1);
 $failures = 0;
 
 fp_test_out('Floor Plans folder move regression');
+fp_test_out('PHP ' . PHP_VERSION);
 fp_test_out('Company ID: ' . $companyId);
 
 try {
@@ -152,7 +163,8 @@ try {
     fp_test_delete_folder($conn, $grandId, $companyId);
     fp_test_delete_folder($conn, $childId, $companyId);
     fp_test_delete_folder($conn, $rootId, $companyId);
-    $dupTopRes = mysqli_query($conn, "SELECT id FROM floor_plan_folders WHERE company_id={$companyId} AND name='" . mysqli_real_escape_string($conn, $dupName) . "' LIMIT 1");
+    $dupNameEsc = mysqli_real_escape_string($conn, $dupName);
+    $dupTopRes = mysqli_query($conn, 'SELECT id FROM floor_plan_folders WHERE company_id=' . (int)$companyId . " AND name='" . $dupNameEsc . "' LIMIT 1");
     if ($dupTopRes && ($dupTopRow = mysqli_fetch_assoc($dupTopRes))) {
         fp_test_delete_folder($conn, (int)$dupTopRow['id'], $companyId);
     }
