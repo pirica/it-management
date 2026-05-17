@@ -28,10 +28,19 @@ if (!function_exists('itm_database_sql_unique_audit_resolve_scope_column')) {
     /**
      * @param array<int, string> $columns
      */
-    function itm_database_sql_unique_audit_resolve_scope_column(array $columns): string
+    function itm_database_sql_unique_audit_resolve_scope_column(array $columns, string $table = ''): string
     {
+        if ($table === 'user_companies' && in_array('user_id', $columns, true)) {
+            return 'user_id';
+        }
+
         if (in_array('name', $columns, true)) {
             return 'name';
+        }
+
+        $companyIdx = array_search('company_id', $columns, true);
+        if ($companyIdx !== false && isset($columns[$companyIdx + 1])) {
+            return $columns[$companyIdx + 1];
         }
 
         if (count($columns) >= 3) {
@@ -72,7 +81,7 @@ if (!function_exists('itm_database_sql_unique_audit_parse')) {
             $body = (string) $match[2];
             $columnDefs = itm_database_sql_unique_audit_parse_column_defs($body);
             $hasCompanyId = in_array('company_id', $columnDefs, true);
-            $scopeColumn = $hasCompanyId ? itm_database_sql_unique_audit_resolve_scope_column($columnDefs) : '';
+            $scopeColumn = $hasCompanyId ? itm_database_sql_unique_audit_resolve_scope_column($columnDefs, $table) : '';
 
             $uniques = [];
             if (preg_match('/PRIMARY\s+KEY\s*\(([^)]+)\)/i', $body, $pkMatch)) {
@@ -183,9 +192,28 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'skip' => 0,
         ];
 
+        $auditExemptTables = [
+            'audit_logs',
+        ];
+
         foreach ($parsed as $tableRow) {
             $table = (string) $tableRow['table'];
             $scopeColumn = (string) $tableRow['scope_column'];
+
+            if (in_array($table, $auditExemptTables, true)) {
+                $summary['skip']++;
+                $lines[] = [
+                    'table' => $table,
+                    'status' => 'skip',
+                    'unique_count' => (int) $tableRow['unique_count'],
+                    'scope_column' => $scopeColumn,
+                    'scope_unique' => '',
+                    'has_scope_unique' => false,
+                    'message' => 'Append-only log table; tenant scope UNIQUE not required.',
+                    'alter_sql' => '',
+                ];
+                continue;
+            }
 
             if (!$tableRow['has_company_id']) {
                 $summary['skip']++;
