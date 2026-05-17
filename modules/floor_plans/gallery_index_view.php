@@ -112,8 +112,8 @@ $fpCreateUrl = $modulePath . '/create.php';
                     <input type="hidden" name="unfiled" value="1">
                 <?php endif; ?>
                 <div class="form-group" style="margin:0;flex:1;">
-                    <label for="gallerySearch">Search file, folder, tag, or linked IT location</label>
-                    <input type="text" id="gallerySearch" name="search" value="<?php echo sanitize($gallerySearch); ?>" placeholder="Search by name, folder, tag, or linked IT location...">
+                    <label for="gallerySearch">Search file, folder, tag, IT location, or extension (e.g. pdf, png)</label>
+                    <input type="text" id="gallerySearch" name="search" value="<?php echo sanitize($gallerySearch); ?>" placeholder="Name, folder, tag, IT location, or extension (pdf, png, dwg)...">
                 </div>
                 <div class="form-actions" style="margin:0;">
                     <button type="submit" class="btn btn-primary">Search</button>
@@ -126,7 +126,7 @@ $fpCreateUrl = $modulePath . '/create.php';
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <input type="hidden" name="fp_action" value="upload_files">
             <input type="hidden" name="folder_id" value="<?php echo (int)$galleryFolderId; ?>">
-            <p class="itm-dropzone-hint">Drag and drop images, PDFs, or AutoCAD files (DWG, DXF, DWF, DWS) here, or click to browse (max 20MB each). Drag cards onto folders to move them.</p>
+            <p class="itm-dropzone-hint">Drag and drop images, PDFs, or AutoCAD files (DWG, DXF, DWF, DWS) here, or click to browse (max 20MB each). Use the ⠿ handle on a file card or folder row to drag-move onto another folder.</p>
             <input type="file" name="gallery_files[]" id="galleryFilesInput" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.dwg,.dxf,.dwf,.dws,image/*,application/pdf" multiple>
             <div class="form-group" style="margin-top:12px;">
                 <label for="uploadItLocation"><?php echo sanitize(fp_it_location_link_label_optional()); ?></label>
@@ -139,13 +139,13 @@ $fpCreateUrl = $modulePath . '/create.php';
             <button type="submit" class="btn btn-primary">Upload files</button>
         </form>
 
-        <form id="floorPlanMoveForm" method="POST" style="display:none;">
+        <form id="floorPlanMoveForm" method="POST" action="index.php" style="display:none;">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <input type="hidden" name="fp_action" value="move_file">
             <input type="hidden" name="plan_id" id="floorPlanMovePlanId" value="">
             <input type="hidden" name="folder_id" id="floorPlanMoveFolderId" value="">
         </form>
-        <form id="floorPlanMoveFolderForm" method="POST" style="display:none;">
+        <form id="floorPlanMoveFolderForm" method="POST" action="index.php" style="display:none;">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <input type="hidden" name="fp_action" value="folder_move">
             <input type="hidden" name="move_folder_id" id="floorPlanMoveFolderSourceId" value="">
@@ -165,8 +165,9 @@ $fpCreateUrl = $modulePath . '/create.php';
                     $fpPreviewKind = fp_resolve_preview_kind($fpMime, $fpExt);
                     $fpTags = trim((string)($fpItem['tag_names'] ?? ''));
                     ?>
-                    <article class="itm-floor-plan-card" draggable="true" data-plan-id="<?php echo $fpId; ?>">
-                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>">
+                    <article class="itm-floor-plan-card" data-plan-id="<?php echo $fpId; ?>">
+                        <span class="itm-plan-drag-handle" draggable="true" data-plan-id="<?php echo $fpId; ?>" title="Drag to move file" aria-label="Drag to move file">⠿</span>
+                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>">
                             <?php if ($fpPreviewKind === 'pdf'): ?>
                                 <div class="itm-floor-plan-pdf-thumb">PDF</div>
                             <?php elseif ($fpPreviewKind === 'cad'): ?>

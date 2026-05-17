@@ -79,6 +79,20 @@ function fp_normalize_extension(string $originalName): string {
     return $ext;
 }
 
+/**
+ * Normalizes gallery search text for file_ext matching so ".pdf" and "pdf" both hit stored "pdf".
+ */
+function fp_search_ext_like_pattern(string $searchRaw): string {
+    if (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) {
+        return $searchRaw;
+    }
+    $ext = strtolower(ltrim(trim($searchRaw), '.'));
+    if ($ext === '') {
+        return '%%';
+    }
+    return '%' . $ext . '%';
+}
+
 function fp_is_cad_extension(string $ext): bool {
     return in_array(strtolower($ext), FLOOR_PLAN_CAD_EXTENSIONS, true);
 }
@@ -568,12 +582,14 @@ function fp_fetch_gallery_items(mysqli $conn, int $companyId, string $searchRaw,
 
     if ($searchRaw !== '') {
         $like = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-        $where .= ' AND (fp.display_name LIKE ? OR f.name LIKE ? OR t.name LIKE ? OR loc.name LIKE ?)';
+        $extLike = fp_search_ext_like_pattern($searchRaw);
+        $where .= ' AND (fp.display_name LIKE ? OR f.name LIKE ? OR t.name LIKE ? OR loc.name LIKE ? OR fp.file_ext LIKE ?)';
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
-        $types .= 'ssss';
+        $params[] = $extLike;
+        $types .= 'sssss';
     }
 
     $sql = 'SELECT fp.id, fp.folder_id, fp.it_location_id, fp.display_name, fp.stored_filename, fp.mime_type, fp.file_ext, fp.file_size, fp.created_at,
@@ -682,8 +698,12 @@ function fp_render_folder_tree_html(array $tree, int $selectedFolderId, bool $un
         $id = (int)$node['id'];
         $isActive = ($selectedFolderId === $id && !$unfiledSelected) ? ' is-active' : '';
         $pad = 8 + ($depth * 14);
-        $html .= '<li class="itm-folder-tree-item itm-folder-tree-folder itm-folder-drop-target' . $isActive . '" draggable="true" data-folder-id="' . $id . '" data-folder-drop-id="' . $id . '">';
-        $html .= '<a href="index.php?folder_id=' . $id . '" style="padding-left:' . (int)$pad . 'px;">📁 ' . sanitize((string)$node['name']) . ' <span class="itm-drop-hint">(drop)</span></a>';
+        $html .= '<li class="itm-folder-tree-item itm-folder-tree-folder itm-folder-drop-target' . $isActive . '" data-folder-id="' . $id . '" data-folder-drop-id="' . $id . '">';
+        $html .= '<div class="itm-folder-tree-row" style="padding-left:' . (int)$pad . 'px;">';
+        $html .= '<span class="itm-folder-drag-handle" draggable="true" data-folder-id="' . $id . '" title="Drag to move folder" aria-label="Drag to move folder">⠿</span>';
+        $html .= '<a href="index.php?folder_id=' . $id . '" draggable="false">📁 ' . sanitize((string)$node['name']) . '</a>';
+        $html .= '<span class="itm-drop-hint">(drop)</span>';
+        $html .= '</div>';
         if (!empty($node['children'])) {
             $html .= '<ul class="itm-folder-tree-children">' . fp_render_folder_tree_html($node['children'], $selectedFolderId, $unfiledSelected, $depth + 1) . '</ul>';
         }
