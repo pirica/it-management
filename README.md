@@ -41,11 +41,10 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
 7. Open `http://localhost/it-management/` in your browser.
-8. (Optional) Copy `.env.example` to `.env` and set `IP2WHOIS_API_KEY` for Network Discovery domain enrichment (see below).
 
 ## Modules
 
-- Equipment — Manage IT equipment
+- Equipment — Manage IT equipment with Switch Port Manager
 - IDFs — Rack layout, positions, ports, and cable links
 - IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment (includes **Network Discovery** TCP scan under IP Subnets)
 - Rack planner — Visual rack elevation and component placement
@@ -57,7 +56,9 @@ Captured from a local Laragon-style install at `http://localhost/it-management/`
 - Departments — Department management
 - Employees — Employee tracking
 - Companies — Multi-company support
-- Budget — Annual/Monthly Budgets, Forecasts, Expenses and Reports
+- Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
+- Audit Logs
+
 
 ## System Requirements
 
