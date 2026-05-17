@@ -208,31 +208,31 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
         $status = 'table_no_module';
         $moduleFolder = '';
         $crudTable = '';
-        $notes = 'No modules/' . $tableName . '/index.php and no module maps $crud_table here.';
+        $notes = itm_single_line_text('No modules/' . $tableName . '/index.php and no module maps $crud_table here.');
 
         if ($moduleByName && $crudOnNameModule === $tableName) {
             $status = 'matched';
             $moduleFolder = $tableName;
             $crudTable = $tableName;
-            $notes = 'modules/' . $tableName . '/ maps this table.';
+            $notes = itm_single_line_text('modules/' . $tableName . '/ maps this table.');
             $summary['matched']++;
         } elseif ($moduleByName && $crudOnNameModule !== '' && $crudOnNameModule !== $tableName) {
             $status = 'mismatch';
             $moduleFolder = $tableName;
             $crudTable = $crudOnNameModule;
-            $notes = 'Folder name matches table but module maps a different table.';
+            $notes = itm_single_line_text('Folder name matches table but module maps a different table.');
             $summary['mismatch']++;
         } elseif ($moduleByName) {
             $status = 'matched';
             $moduleFolder = $tableName;
             $crudTable = $crudOnNameModule !== '' ? $crudOnNameModule : $tableName;
-            $notes = 'modules/' . $tableName . '/index.php present (inferred mapping).';
+            $notes = itm_single_line_text('modules/' . $tableName . '/index.php present (inferred mapping).');
             $summary['matched']++;
         } elseif (!empty($linkedModules)) {
             $status = 'matched';
             $moduleFolder = implode(', ', $linkedModules);
             $crudTable = $tableName;
-            $notes = 'Mapped via $crud_table from: ' . $moduleFolder . '.';
+            $notes = itm_single_line_text('Mapped via $crud_table from: ' . $moduleFolder . '.');
             $summary['matched']++;
         } else {
             $summary['table_no_module']++;
@@ -265,27 +265,27 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
 
         if (!$hasIndex) {
             $status = 'no_index';
-            $notes = 'Module folder exists without index.php.';
+            $notes = itm_single_line_text('Module folder exists without index.php.');
             $moduleSummary['no_index']++;
         } elseif ($crudTable === '') {
             $status = 'mismatch';
-            $notes = 'index.php has no $crud_table assignment.';
+            $notes = itm_single_line_text('index.php has no $crud_table assignment.');
             $moduleSummary['mismatch']++;
         } elseif (!isset($tableSet[$crudTable])) {
             $status = 'module_no_table';
-            $notes = '$crud_table not found in database.sql CREATE TABLE list.';
+            $notes = itm_single_line_text('$crud_table not found in database.sql CREATE TABLE list.');
             $moduleSummary['module_no_table']++;
         } elseif ($crudTable !== $moduleName && !isset($tableSet[$moduleName])) {
             $status = 'matched';
-            $notes = 'Module name differs from table; $crud_table exists in database.sql.';
+            $notes = itm_single_line_text('Module name differs from table; $crud_table exists in database.sql.');
             $moduleSummary['matched']++;
         } elseif ($crudTable !== $moduleName && isset($tableSet[$moduleName])) {
             $status = 'matched';
-            $notes = 'Module folder matches a table name; $crud_table maps another existing table.';
+            $notes = itm_single_line_text('Module folder matches a table name; $crud_table maps another existing table.');
             $moduleSummary['matched']++;
         } else {
             $moduleSummary['matched']++;
-            $notes = 'Module folder and $crud_table align with database.sql.';
+            $notes = itm_single_line_text('Module folder and $crud_table align with database.sql.');
         }
 
         $mappedColumns = ($crudTable !== '' && isset($tableColumnsMap[$crudTable])) ? $tableColumnsMap[$crudTable] : [];
@@ -344,6 +344,7 @@ if ($itmIsCli) {
 
     echo "TABLES" . ($cliShowAll ? '' : ' (missing or mismatch only)') . "\n";
     echo str_repeat('-', 120) . "\n";
+    echo "table | status | module_folder | crud_table | columns\n";
     foreach ($report['tables'] as $row) {
         if (!$cliShowAll && ($row['status'] === 'matched' || $row['status'] === 'expected_internal')) {
             continue;
@@ -360,6 +361,7 @@ if ($itmIsCli) {
 
     echo "\nMODULES" . ($cliShowAll ? '' : ' (issues only)') . "\n";
     echo str_repeat('-', 120) . "\n";
+    echo "module | status | crud_table | in_sql | columns | notes\n";
     foreach ($report['modules'] as $row) {
         if (!$cliShowAll && $row['status'] === 'matched') {
             continue;
@@ -371,7 +373,7 @@ if ($itmIsCli) {
             $row['crud_table'] !== '' ? $row['crud_table'] : '-',
             !empty($row['table_in_sql']) ? 'yes' : 'no',
             $row['columns_inline'] !== '' ? $row['columns_inline'] : '-',
-            $row['notes']
+            itm_single_line_text((string)$row['notes'])
         );
     }
 
@@ -414,9 +416,11 @@ function itm_compare_status_badge_class(string $status): string
     <style>
         .report-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 48px; }
         .report-card { background: var(--card-bg, #fff); border: 1px solid var(--border-color, #d0d7de); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
-        .report-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
-        .report-table th, .report-table td { border: 1px solid var(--border-color, #d0d7de); padding: 8px 10px; text-align: left; vertical-align: top; }
+        .report-table-scroll { overflow-x: auto; max-width: 100%; }
+        .report-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+        .report-table th, .report-table td { border: 1px solid var(--border-color, #d0d7de); padding: 8px 10px; text-align: left; vertical-align: middle; white-space: nowrap; }
         .report-table th { background: var(--table-header-bg, #f6f8fa); }
+        .report-table .itm-cell-columns { white-space: nowrap; }
         .report-muted { color: var(--text-muted, #57606a); margin: 0 0 12px; line-height: 1.5; }
         .report-summary { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 0 0 12px; }
     </style>
@@ -445,6 +449,7 @@ function itm_compare_status_badge_class(string $status): string
 
     <div class="report-card">
         <h2 style="margin-top:0;">Tables</h2>
+        <div class="report-table-scroll">
         <table class="report-table">
             <thead>
                 <tr>
@@ -452,25 +457,29 @@ function itm_compare_status_badge_class(string $status): string
                     <th>Status</th>
                     <th>Module folder</th>
                     <th>$crud_table</th>
+                    <th>Columns</th>
                     <th>Notes</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($report['tables'] as $row): ?>
                     <tr>
-                        <td><code><?php echo $esc($row['table']); ?></code></td>
-                        <td><span class="badge <?php echo $esc(itm_compare_status_badge_class((string)$row['status'])); ?>"><?php echo $esc($row['status']); ?></span></td>
-                        <td><?php echo $row['module_folder'] !== '' ? '<code>' . $esc($row['module_folder']) . '</code>' : '—'; ?></td>
-                        <td><?php echo $row['crud_table'] !== '' ? '<code>' . $esc($row['crud_table']) . '</code>' : '—'; ?></td>
-                        <td><?php echo $esc($row['notes']); ?></td>
+                        <td><code><?php echo $esc(itm_single_line_text((string)$row['table'])); ?></code></td>
+                        <td><span class="badge <?php echo $esc(itm_compare_status_badge_class((string)$row['status'])); ?>"><?php echo $esc(itm_single_line_text((string)$row['status'])); ?></span></td>
+                        <td><?php echo $row['module_folder'] !== '' ? '<code>' . $esc(itm_single_line_text((string)$row['module_folder'])) . '</code>' : '—'; ?></td>
+                        <td><?php echo $row['crud_table'] !== '' ? '<code>' . $esc(itm_single_line_text((string)$row['crud_table'])) . '</code>' : '—'; ?></td>
+                        <td class="itm-cell-columns"><?php echo $row['columns_inline'] !== '' ? $esc(itm_single_line_text((string)$row['columns_inline'])) : '—'; ?></td>
+                        <td><?php echo $esc(itm_single_line_text((string)$row['notes'])); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     </div>
 
     <div class="report-card">
         <h2 style="margin-top:0;">Modules</h2>
+        <div class="report-table-scroll">
         <table class="report-table">
             <thead>
                 <tr>
@@ -478,21 +487,24 @@ function itm_compare_status_badge_class(string $status): string
                     <th>Status</th>
                     <th>$crud_table</th>
                     <th>In database.sql</th>
+                    <th>Columns</th>
                     <th>Notes</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($report['modules'] as $row): ?>
                     <tr>
-                        <td><a href="../modules/<?php echo $esc($row['module']); ?>/"><code><?php echo $esc($row['module']); ?></code></a></td>
-                        <td><span class="badge <?php echo $esc(itm_compare_status_badge_class((string)$row['status'])); ?>"><?php echo $esc($row['status']); ?></span></td>
-                        <td><?php echo $row['crud_table'] !== '' ? '<code>' . $esc($row['crud_table']) . '</code>' : '—'; ?></td>
+                        <td><a href="../modules/<?php echo $esc($row['module']); ?>/"><code><?php echo $esc(itm_single_line_text((string)$row['module'])); ?></code></a></td>
+                        <td><span class="badge <?php echo $esc(itm_compare_status_badge_class((string)$row['status'])); ?>"><?php echo $esc(itm_single_line_text((string)$row['status'])); ?></span></td>
+                        <td><?php echo $row['crud_table'] !== '' ? '<code>' . $esc(itm_single_line_text((string)$row['crud_table'])) . '</code>' : '—'; ?></td>
                         <td><?php echo !empty($row['table_in_sql']) ? 'Yes' : 'No'; ?></td>
-                        <td><?php echo $esc($row['notes']); ?></td>
+                        <td class="itm-cell-columns"><?php echo $row['columns_inline'] !== '' ? $esc(itm_single_line_text((string)$row['columns_inline'])) : '—'; ?></td>
+                        <td><?php echo $esc(itm_single_line_text((string)$row['notes'])); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 </body>
