@@ -1623,9 +1623,15 @@ CREATE TABLE `location_types` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`company_id`,`name`),
+  UNIQUE KEY `uq_location_types_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `location_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Manual migration (existing databases only — skip if import uses CREATE TABLE above):
+-- ALTER TABLE `location_types` ADD UNIQUE KEY `uq_location_types_company_name` (`company_id`, `name`);
+-- If ALTER fails with duplicate key name, drop legacy/extra uniques first, e.g.:
+-- ALTER TABLE `location_types` DROP INDEX `name`;
+-- ALTER TABLE `location_types` DROP INDEX `company_id_2`;
+-- Then re-run the ADD UNIQUE line above.
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Branch', '2026-01-01 00:00:01');
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'Branch', '2026-01-01 00:00:01');
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '15', 'Branch', '2026-01-01 00:00:01');

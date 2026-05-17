@@ -106,3 +106,94 @@ if (!function_exists('itm_ensure_it_locations_type_id_nullable')) {
         return true;
     }
 }
+
+/**
+ * Why: Legacy DBs may lack tenant-scoped uniqueness on location type names.
+ */
+if (!function_exists('itm_ensure_location_types_company_name_unique')) {
+    function itm_ensure_location_types_company_name_unique($conn) {
+        static $checked = false;
+        if ($checked || !($conn instanceof mysqli)) {
+            return true;
+        }
+        $checked = true;
+
+        $targetIndex = 'uq_location_types_company_name';
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT INDEX_NAME, SEQ_IN_INDEX, COLUMN_NAME
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = ?
+               AND NON_UNIQUE = 0
+               AND INDEX_NAME <> ?
+             ORDER BY INDEX_NAME, SEQ_IN_INDEX'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        $table = 'location_types';
+        $primary = 'PRIMARY';
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $primary);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return false;
+        }
+        $res = mysqli_stmt_get_result($stmt);
+        $indexes = [];
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $indexName = (string) ($row['INDEX_NAME'] ?? '');
+            if ($indexName === '') {
+                continue;
+            }
+            $indexes[$indexName][] = (string) ($row['COLUMN_NAME'] ?? '');
+        }
+        mysqli_stmt_close($stmt);
+
+        $hasTarget = false;
+        $legacyComposite = [];
+        foreach ($indexes as $indexName => $columns) {
+            if ($columns === ['company_id', 'name']) {
+                if ($indexName === $targetIndex) {
+                    $hasTarget = true;
+                } else {
+                    $legacyComposite[] = $indexName;
+                }
+            }
+        }
+
+        if ($hasTarget) {
+            foreach ($legacyComposite as $legacyIndex) {
+                mysqli_query($conn, 'ALTER TABLE `location_types` DROP INDEX `' . str_replace('`', '``', $legacyIndex) . '`');
+            }
+            return true;
+        }
+
+        if (count($legacyComposite) > 0) {
+            mysqli_query(
+                $conn,
+                'ALTER TABLE `location_types` RENAME INDEX `'
+                . str_replace('`', '``', $legacyComposite[0])
+                . '` TO `'
+                . $targetIndex
+                . '`'
+            );
+            for ($i = 1, $legacyCount = count($legacyComposite); $i < $legacyCount; $i++) {
+                mysqli_query(
+                    $conn,
+                    'ALTER TABLE `location_types` DROP INDEX `'
+                    . str_replace('`', '``', $legacyComposite[$i])
+                    . '`'
+                );
+            }
+            return true;
+        }
+
+        return mysqli_query(
+            $conn,
+            'ALTER TABLE `location_types` ADD UNIQUE KEY `'
+            . $targetIndex
+            . '` (`company_id`, `name`)'
+        ) === true;
+    }
+}
