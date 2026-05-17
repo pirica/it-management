@@ -956,12 +956,28 @@ $offset = ($page - 1) * $perPage;
                     <table data-itm-db-import-endpoint="index.php">
                         <thead>
                             <tr>
-                                <th style="width:36px;"><input type="checkbox" id="select-all-rows"></th>
-                                <th><a href="?sort=name&dir=<?php echo ($sort === 'name' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($search); ?>">Name <?php echo ($sort === 'name') ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?></a></th>
-                                <th><a href="?sort=rack_units&dir=<?php echo ($sort === 'rack_units' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($search); ?>">Units <?php echo ($sort === 'rack_units') ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?></a></th>
+                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                                <?php
+                                $rackPlannerSortQueryBase = 'search=' . urlencode($search) . '&page=' . (int)$page;
+                                $rackPlannerSortLinkStyle = 'text-decoration:none;color:inherit;';
+                                ?>
+                                <th>
+                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=name&dir=<?php echo ($sort === 'name' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                        Name<?php if ($sort === 'name'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=rack_units&dir=<?php echo ($sort === 'rack_units' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                        Units<?php if ($sort === 'rack_units'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    </a>
+                                </th>
                                 <th>Notes</th>
-                                <th><a href="?sort=active&dir=<?php echo ($sort === 'active' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>&search=<?php echo urlencode($search); ?>">Active <?php echo ($sort === 'active') ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?></a></th>
-                                <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                                <th>
+                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=active&dir=<?php echo ($sort === 'active' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                        Active<?php if ($sort === 'active'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    </a>
+                                </th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
