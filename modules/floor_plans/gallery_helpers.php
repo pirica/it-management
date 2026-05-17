@@ -343,7 +343,8 @@ function fp_folder_name_exists(mysqli $conn, int $companyId, ?int $parentFolderI
 function fp_collect_folder_descendant_ids(array $folders, int $rootId): array {
     $ids = [$rootId];
     foreach ($folders as $folder) {
-        if ((int)($folder['parent_folder_id'] ?? 0) === $rootId) {
+        $parentId = fp_folder_parent_id_from_db_value($folder['parent_folder_id'] ?? null);
+        if ($parentId === $rootId) {
             $childId = (int)$folder['id'];
             $ids = array_merge($ids, fp_collect_folder_descendant_ids($folders, $childId));
         }
@@ -367,10 +368,18 @@ function fp_folder_parent_id_from_row(?array $folderRow): ?int
         return null;
     }
     $parent = $folderRow['parent_folder_id'] ?? null;
-    if ($parent === null || $parent === '') {
+    if ($parent === null || $parent === '' || (int)$parent <= 0) {
         return null;
     }
     return (int)$parent;
+}
+
+function fp_folder_parent_id_from_db_value($rawParent): ?int
+{
+    if ($rawParent === null || $rawParent === '' || (int)$rawParent <= 0) {
+        return null;
+    }
+    return (int)$rawParent;
 }
 
 function fp_can_move_folder_to_parent(array $folders, int $folderId, ?int $newParentId): bool
@@ -402,7 +411,7 @@ function fp_move_folder_to_parent(mysqli $conn, int $companyId, int $folderId, ?
     $currentParentId = fp_folder_parent_id_from_row($folderRow);
     $normalizedParent = ($newParentId !== null && $newParentId > 0) ? $newParentId : null;
     if ($currentParentId === $normalizedParent) {
-        return '';
+        return '__NOOP__';
     }
 
     $folderName = trim((string)($folderRow['name'] ?? ''));
