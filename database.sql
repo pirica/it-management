@@ -3633,26 +3633,28 @@ SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
 INSERT IGNORE INTO `access_levels` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `assignment_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`description`, t.`active`, '2026-01-01 00:00:01' FROM `budget_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `gl_accounts` (`company_id`, `account_code`, `account_name`, `category_id`, `active`)
+INSERT IGNORE INTO `gl_accounts` (`company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`)
 SELECT
     c.`id`,
     ga.`account_code`,
     ga.`account_name`,
     target_bc.`id`,
-    ga.`active`
+    ga.`active`,
+    '2026-01-01 00:00:01'
 FROM `gl_accounts` ga
 JOIN `companies` c ON c.`id` <> ga.`company_id`
 LEFT JOIN `budget_categories` source_bc ON source_bc.`id` = ga.`category_id`
 LEFT JOIN `budget_categories` target_bc ON target_bc.`company_id` = c.`id` AND target_bc.`name` = source_bc.`name`
 WHERE ga.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `employee_statuses` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `employee_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `employee_positions` (`company_id`, `department_id`, `name`, `description`, `active`)
+INSERT IGNORE INTO `employee_positions` (`company_id`, `department_id`, `name`, `description`, `active`, `created_at`)
 SELECT
     c.`id`,
     d_target.`id`,
     t.`name`,
     t.`description`,
-    t.`active`
+    t.`active`,
+    '2026-01-01 00:00:01'
 FROM `employee_positions` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `departments` d_source ON d_source.`id` = t.`department_id`
@@ -3697,7 +3699,7 @@ INSERT IGNORE INTO `workstation_os_versions` (`company_id`, `name`, `created_at`
 INSERT IGNORE INTO `workstation_ram` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `workstation_ram` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `departments` (`company_id`, `name`, `code`, `description`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`active`, '2026-01-01 00:00:01' FROM `departments` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT INTO `employee_onboarding_requests` (`company_id`, `employee_id`, `employee_position_id`, `first_name`, `last_name`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_dep`, `comments`, `starting_date`, `requested_by`, `requested_by_date`, `requested_on`, `hod_approval`, `hod_approval_date`, `hrd_approval`, `hrd_approval_date`, `ism_approval`, `ism_approval_date`, `gm_approval`, `gm_approval_date`, `fin_approval`, `fin_approval_date`, `status_hod`, `status_hrd`, `status_ism`, `status_gm`, `status_fin`, `email_sent_hod`, `email_sent_hod_at`, `email_sent_hrd`, `email_sent_hrd_at`, `email_sent_ism`, `email_sent_ism_at`, `email_sent_gm`, `email_sent_gm_at`, `email_sent_fin`, `email_sent_fin_at`, `created_at`)
-SELECT c.`id`, t.`employee_id`, ep_target.`id`, t.`first_name`, t.`last_name`, t.`department_name`, t.`request_date`, t.`termination_date`, t.`network_access`, t.`micros_emc`, t.`opera`, t.`micros_card`, t.`pms_id`, t.`synergy_mms`, t.`email_account`, t.`landline_phone`, t.`hu_the_lobby`, t.`mobile_phone`, t.`navision`, t.`mobile_email`, t.`onq_ri`, t.`birchstreet`, t.`delphi`, t.`omina`, t.`vingcard_system`, t.`digital_rev`, t.`office_key_card`, t.`office_key_card_dep`, t.`comments`, t.`starting_date`, t.`requested_by`, t.`requested_by_date`, t.`requested_on`, t.`hod_approval`, t.`hod_approval_date`, t.`hrd_approval`, t.`hrd_approval_date`, t.`ism_approval`, t.`ism_approval_date`, t.`gm_approval`, t.`gm_approval_date`, t.`fin_approval`, t.`fin_approval_date`, COALESCE(NULLIF(t.`status_hod`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_hrd`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_ism`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_gm`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_fin`, ''), 'Waiting'), COALESCE(t.`email_sent_hod`, 0), t.`email_sent_hod_at`, COALESCE(t.`email_sent_hrd`, 0), t.`email_sent_hrd_at`, COALESCE(t.`email_sent_ism`, 0), t.`email_sent_ism_at`, COALESCE(t.`email_sent_gm`, 0), t.`email_sent_gm_at`, COALESCE(t.`email_sent_fin`, 0), t.`email_sent_fin_at`, t.`created_at`
+SELECT c.`id`, t.`employee_id`, ep_target.`id`, t.`first_name`, t.`last_name`, t.`department_name`, t.`request_date`, t.`termination_date`, t.`network_access`, t.`micros_emc`, t.`opera`, t.`micros_card`, t.`pms_id`, t.`synergy_mms`, t.`email_account`, t.`landline_phone`, t.`hu_the_lobby`, t.`mobile_phone`, t.`navision`, t.`mobile_email`, t.`onq_ri`, t.`birchstreet`, t.`delphi`, t.`omina`, t.`vingcard_system`, t.`digital_rev`, t.`office_key_card`, t.`office_key_card_dep`, t.`comments`, t.`starting_date`, t.`requested_by`, t.`requested_by_date`, t.`requested_on`, t.`hod_approval`, t.`hod_approval_date`, t.`hrd_approval`, t.`hrd_approval_date`, t.`ism_approval`, t.`ism_approval_date`, t.`gm_approval`, t.`gm_approval_date`, t.`fin_approval`, t.`fin_approval_date`, COALESCE(NULLIF(t.`status_hod`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_hrd`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_ism`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_gm`, ''), 'Waiting'), COALESCE(NULLIF(t.`status_fin`, ''), 'Waiting'), COALESCE(t.`email_sent_hod`, 0), t.`email_sent_hod_at`, COALESCE(t.`email_sent_hrd`, 0), t.`email_sent_hrd_at`, COALESCE(t.`email_sent_ism`, 0), t.`email_sent_ism_at`, COALESCE(t.`email_sent_gm`, 0), t.`email_sent_gm_at`, COALESCE(t.`email_sent_fin`, 0), t.`email_sent_fin_at`, '2026-01-01 00:00:01'
 FROM `employee_onboarding_requests` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `employee_positions` ep_source ON ep_source.`id` = t.`employee_position_id`
@@ -3743,7 +3745,7 @@ SELECT
     t.`switch_fiber_port_label`,
     poe_target.`id`,
     env_target.`id`,
-    t.`notes`, t.`photo_filename`, t.`active`, t.`created_at`, t.`updated_at`
+    t.`notes`, t.`photo_filename`, t.`active`, '2026-01-01 00:00:01', t.`updated_at`
 FROM `equipment` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `equipment_types` et_source ON et_source.`id` = t.`equipment_type_id`
@@ -3799,9 +3801,9 @@ LEFT JOIN `equipment_environment` env_target ON env_target.`company_id` = c.`id`
 WHERE t.`company_id` = @replicate_source_company_id
   AND COALESCE(et_target.`id`, et_fallback.`id`) IS NOT NULL
   AND COALESCE(es_target.`id`, es_fallback.`id`) IS NOT NULL;
-INSERT IGNORE INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status_id`, `connected_to`, `vlan_id`, `speed_id`, `rj45_speed_id`, `poe_id`, `cable_color`, `hex_color`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status_id`, t.`connected_to`, t.`vlan_id`, t.`speed_id`, t.`rj45_speed_id`, t.`poe_id`, t.`cable_color`, t.`hex_color`, t.`notes`, t.`updated_at`, '2026-01-01 00:00:01' FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status_id`, `connected_to`, `vlan_id`, `speed_id`, `rj45_speed_id`, `poe_id`, `cable_color`, `hex_color`, `notes`, `created_at`, `updated_at`) SELECT c.`id`, t.`position_id`, t.`port_no`, t.`port_type`, t.`label`, t.`status_id`, t.`connected_to`, t.`vlan_id`, t.`speed_id`, t.`rj45_speed_id`, t.`poe_id`, t.`cable_color`, t.`hex_color`, t.`notes`, '2026-01-01 00:00:01', t.`updated_at` FROM `idf_ports` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT INTO `idf_device_type` (`company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`)
-SELECT c.`id`, t.`idfdevicetype_name`, t.`field_edit_emoji`, t.`active`, t.`created_at`, t.`updated_at`
+SELECT c.`id`, t.`idfdevicetype_name`, t.`field_edit_emoji`, t.`active`, '2026-01-01 00:00:01', t.`updated_at`
 FROM `idf_device_type` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 WHERE t.`company_id` = @replicate_source_company_id
@@ -3812,15 +3814,15 @@ WHERE t.`company_id` = @replicate_source_company_id
       AND t_existing.`idfdevicetype_name` = t.`idfdevicetype_name`
   );
 INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `rj45_count`, `sfp_count`, `notes`, `created_at`, `updated_at`)
-SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`rj45_count`, t.`sfp_count`, t.`notes`, t.`created_at`, t.`updated_at`
+SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`rj45_count`, t.`sfp_count`, t.`notes`, '2026-01-01 00:00:01', t.`updated_at`
 FROM `idf_positions` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `idf_device_type` dt_source ON dt_source.`id` = t.`device_type`
 LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_target.`idfdevicetype_name` = dt_source.`idfdevicetype_name`
 WHERE t.`company_id` = @replicate_source_company_id
   AND dt_target.`id` IS NOT NULL;
-INSERT IGNORE INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, t.`created_at` FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`)
+INSERT IGNORE INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, '2026-01-01 00:00:01' FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_user_id`, `last_user_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`)
 SELECT
     c.`id`,
     t.`name`,
@@ -3836,7 +3838,8 @@ SELECT
     t.`comments`,
     l_target.`id`,
     s_target.`id`,
-    t.`active`
+    t.`active`,
+    '2026-01-01 00:00:01'
 FROM `inventory_items` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `inventory_categories` ic_source ON ic_source.`id` = t.`category_id`
@@ -3851,7 +3854,7 @@ WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `it_locations` (`company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`location_code`, t.`address`, t.`city`, t.`state`, t.`country`, t.`postal_code`, t.`phone`, t.`type_id`, t.`active`, '2026-01-01 00:00:01' FROM `it_locations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `racks` (`company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`rack_code`, t.`status_id`, t.`active`, '2026-01-01 00:00:01' FROM `racks` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `suppliers` (`company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`supplier_code`, t.`contact_person`, t.`email`, t.`phone`, t.`status_id`, t.`active`, '2026-01-01 00:00:01' FROM `suppliers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `updated_at`)
+INSERT IGNORE INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `created_at`, `updated_at`)
 SELECT
     c.`id`,
     e_target.`id`,
@@ -3867,6 +3870,7 @@ SELECT
     t.`fiber_rack_id`,
     t.`idf_id`,
     t.`comments`,
+    '2026-01-01 00:00:01',
     t.`updated_at`
 FROM `switch_ports` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
@@ -3895,8 +3899,8 @@ INSERT IGNORE INTO `system_access` (`company_id`, `code`, `name`, `active`, `cre
 INSERT IGNORE INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) SELECT c.`id`, ur_target.`id`, rh.`hierarchy_order`, '2026-01-01 00:00:01' FROM `role_hierarchy` rh JOIN `companies` c ON c.`id` <> rh.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rh.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rh.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) SELECT c.`id`, ur_target.`id`, rmp.`module_name`, rmp.`can_view`, rmp.`can_create`, rmp.`can_edit`, rmp.`can_delete`, rmp.`can_import`, rmp.`can_export`, '2026-01-01 00:00:01' FROM `role_module_permissions` rmp JOIN `companies` c ON c.`id` <> rmp.`company_id` JOIN `user_roles` ur_source ON ur_source.`id` = rmp.`role_id` JOIN `user_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rmp.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) SELECT c.`id`, ur_granter_target.`id`, ur_target_target.`id`, '2026-01-01 00:00:01' FROM `role_assignment_rights` rar JOIN `companies` c ON c.`id` <> rar.`company_id` JOIN `user_roles` ur_granter_source ON ur_granter_source.`id` = rar.`role_id` JOIN `user_roles` ur_target_source ON ur_target_source.`id` = rar.`can_assign_role_id` JOIN `user_roles` ur_granter_target ON ur_granter_target.`company_id` = c.`id` AND ur_granter_target.`name` = ur_granter_source.`name` JOIN `user_roles` ur_target_target ON ur_target_target.`company_id` = c.`id` AND ur_target_target.`name` = ur_target_source.`name` WHERE rar.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`)
-SELECT u.`id`, c.`id`, NULL
+INSERT IGNORE INTO `user_companies` (`user_id`, `company_id`, `granted_by_user_id`, `created_at`)
+SELECT u.`id`, c.`id`, NULL, '2026-01-01 00:00:01'
 FROM `users` u
 JOIN `companies` c ON c.`active` = 1
 WHERE NOT EXISTS (
@@ -3917,7 +3921,7 @@ SELECT
     u_assignee_target.`id`,
     e_target.`id`,
     t.`ui_color`,
-    t.`created_at`
+    '2026-01-01 00:00:01'
 FROM `tickets` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `ticket_categories` tc_source ON tc_source.`id` = t.`category_id`
@@ -3968,7 +3972,7 @@ SELECT
     t.`app_name`,
     t.`favicon_path`,
     t.`equipment_type_sidebar_visibility`,
-    t.`created_at`,
+    '2026-01-01 00:00:01',
     t.`updated_at`
 FROM `ui_configuration` t
 JOIN `companies` c
