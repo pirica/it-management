@@ -178,7 +178,9 @@ function itm_sql_rewrite_insert_statement(string $statement, string $targetCreat
     return rtrim($prefix) . ' ' . implode(",\n", $rewrittenRows) . ';';
 }
 
-$parts = preg_split('/;\s*\n/', $sql);
+// Why: do not split on the semicolon in "DELIMITER ;" (restore after rebuild).
+$sqlProtected = preg_replace('/^DELIMITER\s+;\s*$/mi', 'DELIMITER __ITM_SEMICOLON__', $sql) ?? $sql;
+$parts = preg_split('/;\s*\n/', $sqlProtected);
 if (!is_array($parts)) {
     fwrite(STDERR, "Unable to split SQL statements.\n");
     exit(1);
@@ -208,6 +210,9 @@ $output = implode(";\n", $rebuilt);
 if ($output !== '' && substr($sql, -1) === ';') {
     $output .= ';';
 }
+
+$output = str_replace('DELIMITER __ITM_SEMICOLON__', 'DELIMITER ;', $output);
+$output = preg_replace('/^DELIMITER;\s*$/m', 'DELIMITER ;', $output) ?? $output;
 
 file_put_contents($schemaPath, $output);
 echo "[OK] Updated created_at literals in {$updatedCount} INSERT statement(s).\n";

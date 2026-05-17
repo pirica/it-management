@@ -4066,7 +4066,7 @@ CREATE TRIGGER `trg_access_levels_audit_delete` AFTER DELETE ON `access_levels` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'access_levels', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_assignment_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_assignment_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_assignment_types_audit_delete`;
@@ -4083,7 +4083,7 @@ CREATE TRIGGER `trg_assignment_types_audit_delete` AFTER DELETE ON `assignment_t
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'assignment_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_companies_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_companies_audit_update`;
 DROP TRIGGER IF EXISTS `trg_companies_audit_delete`;
@@ -4100,7 +4100,7 @@ CREATE TRIGGER `trg_companies_audit_delete` AFTER DELETE ON `companies` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'companies', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company', OLD.`company`, 'incode', OLD.`incode`, 'city', OLD.`city`, 'country', OLD.`country`, 'phone', OLD.`phone`, 'email', OLD.`email`, 'website', OLD.`website`, 'vat', OLD.`vat`, 'comments', OLD.`comments`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_departments_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_departments_audit_update`;
 DROP TRIGGER IF EXISTS `trg_departments_audit_delete`;
@@ -4117,7 +4117,7 @@ CREATE TRIGGER `trg_departments_audit_delete` AFTER DELETE ON `departments` FOR 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'departments', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'description', OLD.`description`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_delete`;
@@ -4134,7 +4134,7 @@ CREATE TRIGGER `trg_employee_onboarding_requests_audit_delete` AFTER DELETE ON `
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_onboarding_requests', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'employee_position_id', OLD.`employee_position_id`, 'first_name', OLD.`first_name`, 'last_name', OLD.`last_name`, 'department_name', OLD.`department_name`, 'request_date', OLD.`request_date`, 'termination_date', OLD.`termination_date`, 'network_access', OLD.`network_access`, 'micros_emc', OLD.`micros_emc`, 'opera', OLD.`opera`, 'micros_card', OLD.`micros_card`, 'pms_id', OLD.`pms_id`, 'synergy_mms', OLD.`synergy_mms`, 'email_account', OLD.`email_account`, 'landline_phone', OLD.`landline_phone`, 'hu_the_lobby', OLD.`hu_the_lobby`, 'mobile_phone', OLD.`mobile_phone`, 'navision', OLD.`navision`, 'mobile_email', OLD.`mobile_email`, 'onq_ri', OLD.`onq_ri`, 'birchstreet', OLD.`birchstreet`, 'delphi', OLD.`delphi`, 'omina', OLD.`omina`, 'vingcard_system', OLD.`vingcard_system`, 'digital_rev', OLD.`digital_rev`, 'office_key_card', OLD.`office_key_card`, 'office_key_card_dep', OLD.`office_key_card_dep`, 'comments', OLD.`comments`, 'starting_date', OLD.`starting_date`, 'requested_by', OLD.`requested_by`, 'requested_by_date', OLD.`requested_by_date`, 'requested_on', OLD.`requested_on`, 'hod_approval', OLD.`hod_approval`, 'hod_approval_date', OLD.`hod_approval_date`, 'hrd_approval', OLD.`hrd_approval`, 'hrd_approval_date', OLD.`hrd_approval_date`, 'ism_approval', OLD.`ism_approval`, 'ism_approval_date', OLD.`ism_approval_date`, 'gm_approval', OLD.`gm_approval`, 'gm_approval_date', OLD.`gm_approval_date`, 'fin_approval', OLD.`fin_approval`, 'fin_approval_date', OLD.`fin_approval_date`, 'status_hod', OLD.`status_hod`, 'status_hrd', OLD.`status_hrd`, 'status_ism', OLD.`status_ism`, 'status_gm', OLD.`status_gm`, 'status_fin', OLD.`status_fin`, 'email_sent_hod', OLD.`email_sent_hod`, 'email_sent_hod_at', OLD.`email_sent_hod_at`, 'email_sent_hrd', OLD.`email_sent_hrd`, 'email_sent_hrd_at', OLD.`email_sent_hrd_at`, 'email_sent_ism', OLD.`email_sent_ism`, 'email_sent_ism_at', OLD.`email_sent_ism_at`, 'email_sent_gm', OLD.`email_sent_gm`, 'email_sent_gm_at', OLD.`email_sent_gm_at`, 'email_sent_fin', OLD.`email_sent_fin`, 'email_sent_fin_at', OLD.`email_sent_fin_at`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employee_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_statuses_audit_delete`;
@@ -4151,7 +4151,7 @@ CREATE TRIGGER `trg_employee_statuses_audit_delete` AFTER DELETE ON `employee_st
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employee_positions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_positions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_positions_audit_delete`;
@@ -4168,7 +4168,7 @@ CREATE TRIGGER `trg_employee_positions_audit_delete` AFTER DELETE ON `employee_p
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_positions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'department_id', OLD.`department_id`, 'name', OLD.`name`, 'description', OLD.`description`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employee_system_access_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employee_system_access_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employee_system_access_audit_delete`;
@@ -4185,7 +4185,7 @@ CREATE TRIGGER `trg_employee_system_access_audit_delete` AFTER DELETE ON `employ
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employee_system_access', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'network_access', OLD.`network_access`, 'micros_emc', OLD.`micros_emc`, 'opera_username', OLD.`opera_username`, 'micros_card', OLD.`micros_card`, 'pms_id', OLD.`pms_id`, 'synergy_mms', OLD.`synergy_mms`, 'hu_the_lobby', OLD.`hu_the_lobby`, 'navision', OLD.`navision`, 'onq_ri', OLD.`onq_ri`, 'birchstreet', OLD.`birchstreet`, 'delphi', OLD.`delphi`, 'omina', OLD.`omina`, 'vingcard_system', OLD.`vingcard_system`, 'digital_rev', OLD.`digital_rev`, 'office_key_card', OLD.`office_key_card`, 'changed_at', OLD.`changed_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employees_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_employees_audit_update`;
 DROP TRIGGER IF EXISTS `trg_employees_audit_delete`;
@@ -4202,7 +4202,7 @@ CREATE TRIGGER `trg_employees_audit_delete` AFTER DELETE ON `employees` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'employees', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'duplicate', OLD.`duplicate`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'first_name', OLD.`first_name`, 'last_name', OLD.`last_name`, 'display_name', OLD.`display_name`, 'email', OLD.`email`, 'phone', OLD.`phone`, 'mobile_phone', OLD.`mobile_phone`, 'work_phone', OLD.`work_phone`, 'deck', OLD.`deck`, 'extension', OLD.`extension`, 'employee_code', OLD.`employee_code`, 'external_id', OLD.`external_id`, 'username', OLD.`username`, 'department_id', OLD.`department_id`, 'job_code', OLD.`job_code`, 'job_title', OLD.`job_title`, 'comments', OLD.`comments`, 'request_date', OLD.`request_date`, 'requested_by', OLD.`requested_by`, 'termination_requested_by', OLD.`termination_requested_by`, 'termination_date', OLD.`termination_date`, 'network_access', OLD.`network_access`, 'micros_emc', OLD.`micros_emc`, 'opera_username', OLD.`opera_username`, 'micros_card', OLD.`micros_card`, 'pms_id', OLD.`pms_id`, 'synergy_mms', OLD.`synergy_mms`, 'hu_the_lobby', OLD.`hu_the_lobby`, 'navision', OLD.`navision`, 'onq_ri', OLD.`onq_ri`, 'birchstreet', OLD.`birchstreet`, 'delphi', OLD.`delphi`, 'omina', OLD.`omina`, 'vingcard_system', OLD.`vingcard_system`, 'digital_rev', OLD.`digital_rev`, 'office_key_card', OLD.`office_key_card`, 'office_key_card_department_id', OLD.`office_key_card_department_id`, 'location_id', OLD.`location_id`, 'employment_status_id', OLD.`employment_status_id`, 'workstation_mode_id', OLD.`workstation_mode_id`, 'assignment_type_id', OLD.`assignment_type_id`, 'raw_status_code', OLD.`raw_status_code`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_audit_delete`;
@@ -4219,7 +4219,7 @@ CREATE TRIGGER `trg_equipment_audit_delete` AFTER DELETE ON `equipment` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_type_id', OLD.`equipment_type_id`, 'manufacturer_id', OLD.`manufacturer_id`, 'location_id', OLD.`location_id`, 'rack_id', OLD.`rack_id`, 'idf_id', OLD.`idf_id`, 'name', OLD.`name`, 'serial_number', OLD.`serial_number`, 'model', OLD.`model`, 'hostname', OLD.`hostname`, 'ip_address', OLD.`ip_address`, 'patch_port', OLD.`patch_port`, 'mac_address', OLD.`mac_address`, 'status_id', OLD.`status_id`, 'purchase_date', OLD.`purchase_date`, 'purchase_cost', OLD.`purchase_cost`, 'warranty_expiry', OLD.`warranty_expiry`, 'certificate_expiry', OLD.`certificate_expiry`, 'warranty_type_id', OLD.`warranty_type_id`, 'printer_device_type_id', OLD.`printer_device_type_id`, 'printer_color_capable', OLD.`printer_color_capable`, 'printer_scan', OLD.`printer_scan`, 'workstation_device_type_id', OLD.`workstation_device_type_id`, 'workstation_os_type_id', OLD.`workstation_os_type_id`, 'workstation_office_id', OLD.`workstation_office_id`, 'workstation_processor', OLD.`workstation_processor`, 'workstation_storage', OLD.`workstation_storage`, 'workstation_os_installed_on', OLD.`workstation_os_installed_on`, 'workstation_ram_id', OLD.`workstation_ram_id`, 'workstation_os_version_id', OLD.`workstation_os_version_id`, 'rj45_speed_id', OLD.`rj45_speed_id`, 'switch_rj45_id', OLD.`switch_rj45_id`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'switch_fiber_id', OLD.`switch_fiber_id`, 'switch_fiber_patch_id', OLD.`switch_fiber_patch_id`, 'switch_fiber_rack_id', OLD.`switch_fiber_rack_id`, 'switch_fiber_ports_number', OLD.`switch_fiber_ports_number`, 'switch_fiber_port_label', OLD.`switch_fiber_port_label`, 'switch_poe_id', OLD.`switch_poe_id`, 'switch_environment_id', OLD.`switch_environment_id`, 'notes', OLD.`notes`, 'photo_filename', OLD.`photo_filename`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_environment_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_environment_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_environment_audit_delete`;
@@ -4236,7 +4236,7 @@ CREATE TRIGGER `trg_equipment_environment_audit_delete` AFTER DELETE ON `equipme
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_environment', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_audit_delete`;
@@ -4253,7 +4253,7 @@ CREATE TRIGGER `trg_equipment_fiber_audit_delete` AFTER DELETE ON `equipment_fib
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_patch_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_patch_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_patch_audit_delete`;
@@ -4270,7 +4270,7 @@ CREATE TRIGGER `trg_equipment_fiber_patch_audit_delete` AFTER DELETE ON `equipme
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber_patch', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_rack_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_rack_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_rack_audit_delete`;
@@ -4287,7 +4287,7 @@ CREATE TRIGGER `trg_equipment_fiber_rack_audit_delete` AFTER DELETE ON `equipmen
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber_rack', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_count_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_count_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_fiber_count_audit_delete`;
@@ -4304,7 +4304,7 @@ CREATE TRIGGER `trg_equipment_fiber_count_audit_delete` AFTER DELETE ON `equipme
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_fiber_count', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_poe_audit_delete`;
@@ -4321,7 +4321,7 @@ CREATE TRIGGER `trg_equipment_poe_audit_delete` AFTER DELETE ON `equipment_poe` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_poe', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'watts', OLD.`watts`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_rj45_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_rj45_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_rj45_audit_delete`;
@@ -4338,7 +4338,7 @@ CREATE TRIGGER `trg_equipment_rj45_audit_delete` AFTER DELETE ON `equipment_rj45
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_rj45', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_update`;
 DROP TRIGGER IF EXISTS `trg_rj45_speed_audit_delete`;
@@ -4355,7 +4355,7 @@ CREATE TRIGGER `trg_rj45_speed_audit_delete` AFTER DELETE ON `rj45_speed` FOR EA
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rj45_speed', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cable_type', OLD.`cable_type`, 'max_speed', OLD.`max_speed`, 'bandwidth', OLD.`bandwidth`, 'max_distance_full_speed', OLD.`max_distance_full_speed`, 'notes', OLD.`notes`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_statuses_audit_delete`;
@@ -4372,7 +4372,7 @@ CREATE TRIGGER `trg_equipment_statuses_audit_delete` AFTER DELETE ON `equipment_
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_equipment_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_equipment_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_equipment_types_audit_delete`;
@@ -4389,7 +4389,7 @@ CREATE TRIGGER `trg_equipment_types_audit_delete` AFTER DELETE ON `equipment_typ
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'equipment_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_idf_links_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_links_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_links_audit_delete`;
@@ -4406,7 +4406,7 @@ CREATE TRIGGER `trg_idf_links_audit_delete` AFTER DELETE ON `idf_links` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_links', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'port_id_a', OLD.`port_id_a`, 'port_id_b', OLD.`port_id_b`, 'equipment_id', OLD.`equipment_id`, 'equipment_hostname', OLD.`equipment_hostname`, 'equipment_port_type', OLD.`equipment_port_type`, 'equipment_port', OLD.`equipment_port`, 'equipment_vlan_id', OLD.`equipment_vlan_id`, 'equipment_label', OLD.`equipment_label`, 'equipment_comments', OLD.`equipment_comments`, 'equipment_status_id', OLD.`equipment_status_id`, 'equipment_color_id', OLD.`equipment_color_id`, 'cable_color_id', OLD.`cable_color_id`, 'cable_color_hex', OLD.`cable_color_hex`, 'cable_label', OLD.`cable_label`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_idf_device_type_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_device_type_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_device_type_audit_delete`;
@@ -4423,7 +4423,7 @@ CREATE TRIGGER `trg_idf_device_type_audit_delete` AFTER DELETE ON `idf_device_ty
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_device_type', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idfdevicetype_name', OLD.`idfdevicetype_name`, 'field_edit_emoji', OLD.`field_edit_emoji`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_idf_ports_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_ports_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_ports_audit_delete`;
@@ -4440,7 +4440,7 @@ CREATE TRIGGER `trg_idf_ports_audit_delete` AFTER DELETE ON `idf_ports` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_ports', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'position_id', OLD.`position_id`, 'port_no', OLD.`port_no`, 'port_type', OLD.`port_type`, 'label', OLD.`label`, 'status_id', OLD.`status_id`, 'connected_to', OLD.`connected_to`, 'vlan_id', OLD.`vlan_id`, 'speed_id', OLD.`speed_id`, 'rj45_speed_id', OLD.`rj45_speed_id`, 'poe_id', OLD.`poe_id`, 'cable_color', OLD.`cable_color`, 'hex_color', OLD.`hex_color`, 'notes', OLD.`notes`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_idf_positions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idf_positions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idf_positions_audit_delete`;
@@ -4457,7 +4457,7 @@ CREATE TRIGGER `trg_idf_positions_audit_delete` AFTER DELETE ON `idf_positions` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idf_id', OLD.`idf_id`, 'position_no', OLD.`position_no`, 'device_type', OLD.`device_type`, 'device_name', OLD.`device_name`, 'equipment_id', OLD.`equipment_id`, 'rj45_count', OLD.`rj45_count`, 'sfp_count', OLD.`sfp_count`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_update`;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_delete`;
@@ -4474,7 +4474,7 @@ CREATE TRIGGER `trg_idfs_audit_delete` AFTER DELETE ON `idfs` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idfs', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'location_id', OLD.`location_id`, 'name', OLD.`name`, 'idf_code', OLD.`idf_code`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_inventory_categories_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_inventory_categories_audit_update`;
 DROP TRIGGER IF EXISTS `trg_inventory_categories_audit_delete`;
@@ -4491,7 +4491,7 @@ CREATE TRIGGER `trg_inventory_categories_audit_delete` AFTER DELETE ON `inventor
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'inventory_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_inventory_items_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_inventory_items_audit_update`;
 DROP TRIGGER IF EXISTS `trg_inventory_items_audit_delete`;
@@ -4508,7 +4508,7 @@ CREATE TRIGGER `trg_inventory_items_audit_delete` AFTER DELETE ON `inventory_ite
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'inventory_items', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'item_code', OLD.`item_code`, 'serial', OLD.`serial`, 'category_id', OLD.`category_id`, 'manufacturer_id', OLD.`manufacturer_id`, 'quantity_on_hand', OLD.`quantity_on_hand`, 'quantity_minimum', OLD.`quantity_minimum`, 'price_eur', OLD.`price_eur`, 'last_user_id', OLD.`last_user_id`, 'last_user_manual', OLD.`last_user_manual`, 'comments', OLD.`comments`, 'location_id', OLD.`location_id`, 'supplier_id', OLD.`supplier_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_it_locations_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_it_locations_audit_update`;
 DROP TRIGGER IF EXISTS `trg_it_locations_audit_delete`;
@@ -4525,7 +4525,7 @@ CREATE TRIGGER `trg_it_locations_audit_delete` AFTER DELETE ON `it_locations` FO
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'it_locations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'location_code', OLD.`location_code`, 'address', OLD.`address`, 'city', OLD.`city`, 'state', OLD.`state`, 'country', OLD.`country`, 'postal_code', OLD.`postal_code`, 'phone', OLD.`phone`, 'type_id', OLD.`type_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_delete`;
@@ -4542,7 +4542,7 @@ CREATE TRIGGER `trg_location_types_audit_delete` AFTER DELETE ON `location_types
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'location_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_catalogs_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_catalogs_audit_update`;
 DROP TRIGGER IF EXISTS `trg_catalogs_audit_delete`;
@@ -4559,7 +4559,7 @@ CREATE TRIGGER `trg_catalogs_audit_delete` AFTER DELETE ON `catalogs` FOR EACH R
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'catalogs', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'model', OLD.`model`, 'equipment_type_id', OLD.`equipment_type_id`, 'image_url', OLD.`image_url`, 'price', OLD.`price`, 'supplier_id', OLD.`supplier_id`, 'manufacturer_id', OLD.`manufacturer_id`, 'product_url', OLD.`product_url`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_manufacturers_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_manufacturers_audit_update`;
 DROP TRIGGER IF EXISTS `trg_manufacturers_audit_delete`;
@@ -4576,7 +4576,7 @@ CREATE TRIGGER `trg_manufacturers_audit_delete` AFTER DELETE ON `manufacturers` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'manufacturers', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_patches_updates_status_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_status_audit_update`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_status_audit_delete`;
@@ -4593,7 +4593,7 @@ CREATE TRIGGER `trg_patches_updates_status_audit_delete` AFTER DELETE ON `patche
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_status', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'color', OLD.`color`, 'is_closed', OLD.`is_closed`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_update`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_level_audit_delete`;
@@ -4610,7 +4610,7 @@ CREATE TRIGGER `trg_patches_updates_level_audit_delete` AFTER DELETE ON `patches
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates_level', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'level', OLD.`level`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_patches_updates_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_audit_update`;
 DROP TRIGGER IF EXISTS `trg_patches_updates_audit_delete`;
@@ -4627,7 +4627,7 @@ CREATE TRIGGER `trg_patches_updates_audit_delete` AFTER DELETE ON `patches_updat
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'patches_updates', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'ip', OLD.`ip`, 'id_external', OLD.`id_external`, 'inncode', OLD.`inncode`, 'dest', OLD.`dest`, 'dest_ip', OLD.`dest_ip`, 'severity', OLD.`severity`, 'vuln_description', OLD.`vuln_description`, 'base_score', OLD.`base_score`, 'remediation', OLD.`remediation`, 'cve', OLD.`cve`, 'host_ip', OLD.`host_ip`, 'host_mac_manufacturer', OLD.`host_mac_manufacturer`, 'days_since_last_seen', OLD.`days_since_last_seen`, 'host_health_score', OLD.`host_health_score`, 'host_health_reason', OLD.`host_health_reason`, 'host_resolution_priority', OLD.`host_resolution_priority`, 'host_workload_type', OLD.`host_workload_type`, 'operating_system', OLD.`operating_system`, 'business_function', OLD.`business_function`, 'data_source', OLD.`data_source`, 'date', OLD.`date`, 'last_user_department', OLD.`last_user_department`, 'problem', OLD.`problem`, 'troubleshooting', OLD.`troubleshooting`, 'patches_updates_photos', OLD.`patches_updates_photos`, 'status_id', OLD.`status_id`, 'level_id', OLD.`level_id`, 'created_by', OLD.`created_by`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_printer_device_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_printer_device_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_printer_device_types_audit_delete`;
@@ -4644,7 +4644,7 @@ CREATE TRIGGER `trg_printer_device_types_audit_delete` AFTER DELETE ON `printer_
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'printer_device_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_rack_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_rack_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_rack_statuses_audit_delete`;
@@ -4661,7 +4661,7 @@ CREATE TRIGGER `trg_rack_statuses_audit_delete` AFTER DELETE ON `rack_statuses` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rack_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_racks_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_racks_audit_update`;
 DROP TRIGGER IF EXISTS `trg_racks_audit_delete`;
@@ -4678,7 +4678,7 @@ CREATE TRIGGER `trg_racks_audit_delete` AFTER DELETE ON `racks` FOR EACH ROW BEG
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'racks', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'location_id', OLD.`location_id`, 'name', OLD.`name`, 'rack_code', OLD.`rack_code`, 'status_id', OLD.`status_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_delete`;
@@ -4695,7 +4695,7 @@ CREATE TRIGGER `trg_supplier_statuses_audit_delete` AFTER DELETE ON `supplier_st
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'supplier_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_suppliers_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_suppliers_audit_update`;
 DROP TRIGGER IF EXISTS `trg_suppliers_audit_delete`;
@@ -4712,7 +4712,7 @@ CREATE TRIGGER `trg_suppliers_audit_delete` AFTER DELETE ON `suppliers` FOR EACH
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'suppliers', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'supplier_code', OLD.`supplier_code`, 'contact_person', OLD.`contact_person`, 'email', OLD.`email`, 'phone', OLD.`phone`, 'status_id', OLD.`status_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_update`;
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_delete`;
@@ -4729,7 +4729,7 @@ CREATE TRIGGER `trg_cable_colors_audit_delete` AFTER DELETE ON `cable_colors` FO
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'cable_colors', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'color_name', OLD.`color_name`, 'hex_color', OLD.`hex_color`, 'comments', OLD.`comments`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_switch_port_numbering_layout_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_port_numbering_layout_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_port_numbering_layout_audit_delete`;
@@ -4746,7 +4746,7 @@ CREATE TRIGGER `trg_switch_port_numbering_layout_audit_delete` AFTER DELETE ON `
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_port_numbering_layout', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_switch_port_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_port_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_port_types_audit_delete`;
@@ -4763,7 +4763,7 @@ CREATE TRIGGER `trg_switch_port_types_audit_delete` AFTER DELETE ON `switch_port
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_port_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'type', OLD.`type`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_switch_ports_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_ports_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_ports_audit_delete`;
@@ -4780,7 +4780,7 @@ CREATE TRIGGER `trg_switch_ports_audit_delete` AFTER DELETE ON `switch_ports` FO
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_ports', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'port_type', OLD.`port_type`, 'port_number', OLD.`port_number`, 'to_patch_port', OLD.`to_patch_port`, 'status_id', OLD.`status_id`, 'color_id', OLD.`color_id`, 'rj45_speed_id', OLD.`rj45_speed_id`, 'vlan_id', OLD.`vlan_id`, 'comments', OLD.`comments`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_switch_status_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_switch_status_audit_update`;
 DROP TRIGGER IF EXISTS `trg_switch_status_audit_delete`;
@@ -4797,7 +4797,7 @@ CREATE TRIGGER `trg_switch_status_audit_delete` AFTER DELETE ON `switch_status` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'switch_status', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'status', OLD.`status`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_system_access_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_system_access_audit_update`;
 DROP TRIGGER IF EXISTS `trg_system_access_audit_delete`;
@@ -4814,7 +4814,7 @@ CREATE TRIGGER `trg_system_access_audit_delete` AFTER DELETE ON `system_access` 
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'system_access', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'code', OLD.`code`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_ticket_categories_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ticket_categories_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ticket_categories_audit_delete`;
@@ -4831,7 +4831,7 @@ CREATE TRIGGER `trg_ticket_categories_audit_delete` AFTER DELETE ON `ticket_cate
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ticket_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_ticket_priorities_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ticket_priorities_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ticket_priorities_audit_delete`;
@@ -4848,7 +4848,7 @@ CREATE TRIGGER `trg_ticket_priorities_audit_delete` AFTER DELETE ON `ticket_prio
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ticket_priorities', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'level', OLD.`level`, 'color', OLD.`color`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_ticket_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ticket_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ticket_statuses_audit_delete`;
@@ -4865,7 +4865,7 @@ CREATE TRIGGER `trg_ticket_statuses_audit_delete` AFTER DELETE ON `ticket_status
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ticket_statuses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'color', OLD.`color`, 'is_closed', OLD.`is_closed`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_tickets_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_tickets_audit_update`;
 DROP TRIGGER IF EXISTS `trg_tickets_audit_delete`;
@@ -4882,7 +4882,7 @@ CREATE TRIGGER `trg_tickets_audit_delete` AFTER DELETE ON `tickets` FOR EACH ROW
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'ui_color', OLD.`ui_color`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DELIMITER $$
 DROP TRIGGER IF EXISTS `trg_user_sidebar_preferences_audit_insert`$$
 DROP TRIGGER IF EXISTS `trg_user_sidebar_preferences_audit_update`$$
@@ -4902,7 +4902,7 @@ CREATE TRIGGER `trg_user_sidebar_preferences_audit_delete` AFTER DELETE ON `user
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `username`, `user_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_sidebar_preferences', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_update`;
 DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_delete`;
@@ -4919,7 +4919,7 @@ CREATE TRIGGER `trg_ui_configuration_audit_delete` AFTER DELETE ON `ui_configura
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ui_configuration', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'table_actions_position', OLD.`table_actions_position`, 'new_button_position', OLD.`new_button_position`, 'export_buttons_position', OLD.`export_buttons_position`, 'back_save_position', OLD.`back_save_position`, 'enable_all_error_reporting', OLD.`enable_all_error_reporting`, 'enable_audit_logs', OLD.`enable_audit_logs`, 'records_per_page', OLD.`records_per_page`, 'app_name', OLD.`app_name`, 'favicon_path', OLD.`favicon_path`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_user_roles_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_user_roles_audit_update`;
 DROP TRIGGER IF EXISTS `trg_user_roles_audit_delete`;
@@ -4936,7 +4936,7 @@ CREATE TRIGGER `trg_user_roles_audit_delete` AFTER DELETE ON `user_roles` FOR EA
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_roles', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_users_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_users_audit_update`;
 DROP TRIGGER IF EXISTS `trg_users_audit_delete`;
@@ -4953,7 +4953,7 @@ CREATE TRIGGER `trg_users_audit_delete` AFTER DELETE ON `users` FOR EACH ROW BEG
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'users', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'username', OLD.`username`, 'email', OLD.`email`, 'password', OLD.`password`, 'reset_token', OLD.`reset_token`, 'reset_token_hash', OLD.`reset_token_hash`, 'reset_token_expires_at', OLD.`reset_token_expires_at`, 'first_name', OLD.`first_name`, 'last_name', OLD.`last_name`, 'phone', OLD.`phone`, 'role_id', OLD.`role_id`, 'access_level_id', OLD.`access_level_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_update`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_delete`;
@@ -4970,7 +4970,7 @@ CREATE TRIGGER `trg_attempts_audit_delete` AFTER DELETE ON `attempts` FOR EACH R
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `users` WHERE `id` = OLD.`user_id` LIMIT 1), (SELECT `company_id` FROM `users` WHERE `email` = OLD.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_user_id, @app_username, @app_email, 'attempts', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'user_id', OLD.`user_id`, 'email', OLD.`email`, 'attempt_source', OLD.`attempt_source`, 'attempt_type', OLD.`attempt_type`, 'ip_address', OLD.`ip_address`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_user_companies_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_user_companies_audit_update`;
 DROP TRIGGER IF EXISTS `trg_user_companies_audit_delete`;
@@ -4987,7 +4987,7 @@ CREATE TRIGGER `trg_user_companies_audit_delete` AFTER DELETE ON `user_companies
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'user_companies', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'user_id', OLD.`user_id`, 'company_id', OLD.`company_id`, 'granted_by_user_id', OLD.`granted_by_user_id`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_role_hierarchy_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_role_hierarchy_audit_update`;
 DROP TRIGGER IF EXISTS `trg_role_hierarchy_audit_delete`;
@@ -5004,7 +5004,7 @@ CREATE TRIGGER `trg_role_hierarchy_audit_delete` AFTER DELETE ON `role_hierarchy
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_hierarchy', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'hierarchy_order', OLD.`hierarchy_order`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_role_module_permissions_audit_delete`;
@@ -5021,7 +5021,7 @@ CREATE TRIGGER `trg_role_module_permissions_audit_delete` AFTER DELETE ON `role_
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_module_permissions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'module_name', OLD.`module_name`, 'can_view', OLD.`can_view`, 'can_create', OLD.`can_create`, 'can_edit', OLD.`can_edit`, 'can_delete', OLD.`can_delete`, 'can_import', OLD.`can_import`, 'can_export', OLD.`can_export`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_update`;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_delete`;
@@ -5038,7 +5038,7 @@ CREATE TRIGGER `trg_role_assignment_rights_audit_delete` AFTER DELETE ON `role_a
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'role_assignment_rights', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'role_id', OLD.`role_id`, 'can_assign_role_id', OLD.`can_assign_role_id`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_vlans_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_vlans_audit_update`;
 DROP TRIGGER IF EXISTS `trg_vlans_audit_delete`;
@@ -5055,7 +5055,7 @@ CREATE TRIGGER `trg_vlans_audit_delete` AFTER DELETE ON `vlans` FOR EACH ROW BEG
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'vlans', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_number', OLD.`vlan_number`, 'vlan_name', OLD.`vlan_name`, 'vlan_color', OLD.`vlan_color`, 'subnet', OLD.`subnet`, 'ip', OLD.`ip`, 'comments', OLD.`comments`, 'gateway_ip', OLD.`gateway_ip`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_warranty_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_warranty_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_warranty_types_audit_delete`;
@@ -5072,7 +5072,7 @@ CREATE TRIGGER `trg_warranty_types_audit_delete` AFTER DELETE ON `warranty_types
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'warranty_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_workstation_device_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_device_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_device_types_audit_delete`;
@@ -5089,7 +5089,7 @@ CREATE TRIGGER `trg_workstation_device_types_audit_delete` AFTER DELETE ON `work
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_device_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_workstation_modes_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_modes_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_modes_audit_delete`;
@@ -5106,7 +5106,7 @@ CREATE TRIGGER `trg_workstation_modes_audit_delete` AFTER DELETE ON `workstation
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_modes', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'mode_name', OLD.`mode_name`, 'mode_code', OLD.`mode_code`, 'description', OLD.`description`, 'monitor_count', OLD.`monitor_count`, 'has_keyboard_mouse', OLD.`has_keyboard_mouse`, 'pos', OLD.`pos`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_workstation_office_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_office_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_office_audit_delete`;
@@ -5123,7 +5123,7 @@ CREATE TRIGGER `trg_workstation_office_audit_delete` AFTER DELETE ON `workstatio
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_office', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_workstation_os_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_types_audit_delete`;
@@ -5140,7 +5140,7 @@ CREATE TRIGGER `trg_workstation_os_types_audit_delete` AFTER DELETE ON `workstat
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_os_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_workstation_os_versions_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_versions_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_os_versions_audit_delete`;
@@ -5157,7 +5157,7 @@ CREATE TRIGGER `trg_workstation_os_versions_audit_delete` AFTER DELETE ON `works
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_os_versions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_workstation_ram_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_workstation_ram_audit_update`;
 DROP TRIGGER IF EXISTS `trg_workstation_ram_audit_delete`;
@@ -5174,7 +5174,7 @@ CREATE TRIGGER `trg_workstation_ram_audit_delete` AFTER DELETE ON `workstation_r
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'workstation_ram', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
-DELIMITER;
+DELIMITER ;
 -- Table structure for `rack_planner`
 DROP TABLE IF EXISTS `rack_planner`;
 CREATE TABLE `rack_planner` (
