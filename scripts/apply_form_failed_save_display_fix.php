@@ -5,7 +5,7 @@
  * Why: Bulk-fix static failures from test_form_failed_save_display.php without
  * hand-editing hundreds of duplicated module files.
  *
- * CLI: php scripts/apply_form_failed_save_display_fix.php [--dry-run] [--all-modules]
+ * CLI: php scripts/apply_form_failed_save_display_fix.php [--dry-run] [--module=name]
  */
 
 declare(strict_types=1);
@@ -15,7 +15,6 @@ require_once dirname(__DIR__) . '/config/config.php';
 require_once dirname(__DIR__) . '/includes/form_failed_save_test.php';
 
 $dryRun = in_array('--dry-run', $argv ?? [], true);
-$includeProtected = in_array('--all-modules', $argv ?? [], true);
 $onlyModules = [];
 foreach ($argv ?? [] as $arg) {
     if (strpos($arg, '--module=') === 0) {
@@ -561,16 +560,12 @@ function itm_apply_form_display_fix_to_file(string $path, bool $dryRun): array
     return ['changed' => $changed, 'notes' => $notes];
 }
 
-$protected = $includeProtected ? [] : itm_form_failed_save_test_protected_modules();
 $changedFiles = 0;
 $skipped = 0;
 
 foreach (glob(ROOT_PATH . 'modules/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
     $module = basename($moduleDir);
     if ($onlyModules && !in_array($module, $onlyModules, true)) {
-        continue;
-    }
-    if (in_array($module, $protected, true)) {
         continue;
     }
 

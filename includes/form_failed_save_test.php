@@ -56,6 +56,37 @@ if (!function_exists('itm_form_failed_save_test_discover_modules')) {
     }
 }
 
+if (!function_exists('itm_form_failed_save_test_is_protected_module')) {
+    function itm_form_failed_save_test_is_protected_module(string $module): bool
+    {
+        return in_array($module, itm_form_failed_save_test_protected_modules(), true);
+    }
+}
+
+if (!function_exists('itm_form_failed_save_test_resolve_modules')) {
+    /**
+     * @param array{module_filter?: string, limit?: int} $options
+     * @return array{modules: array<int, string>}
+     */
+    function itm_form_failed_save_test_resolve_modules(string $modulesRoot, array $options = []): array
+    {
+        $moduleFilter = isset($options['module_filter']) ? trim((string) $options['module_filter']) : '';
+        $limit = isset($options['limit']) ? max(0, (int) $options['limit']) : 0;
+
+        $modules = itm_form_failed_save_test_discover_modules($modulesRoot);
+        if ($moduleFilter !== '') {
+            $modules = array_values(array_filter($modules, static function ($m) use ($moduleFilter) {
+                return $m === $moduleFilter;
+            }));
+        }
+        if ($limit > 0) {
+            $modules = array_slice($modules, 0, $limit);
+        }
+
+        return ['modules' => $modules];
+    }
+}
+
 if (!function_exists('itm_form_failed_save_test_scan_file')) {
     /**
      * @return array{status: string, notes: string}
@@ -597,19 +628,9 @@ if (!function_exists('itm_form_failed_save_test_run')) {
     {
         $doStatic = !array_key_exists('static', $options) || !empty($options['static']);
         $doRuntime = !empty($options['runtime']);
-        $moduleFilter = isset($options['module_filter']) ? trim((string) $options['module_filter']) : '';
-        $limit = isset($options['limit']) ? max(0, (int) $options['limit']) : 0;
 
         $probe = itm_form_failed_save_test_probe();
-        $modules = itm_form_failed_save_test_discover_modules($modulesRoot);
-        if ($moduleFilter !== '') {
-            $modules = array_values(array_filter($modules, static function ($m) use ($moduleFilter) {
-                return $m === $moduleFilter;
-            }));
-        }
-        if ($limit > 0) {
-            $modules = array_slice($modules, 0, $limit);
-        }
+        $modules = itm_form_failed_save_test_resolve_modules($modulesRoot, $options)['modules'];
 
         $staticResults = [];
         $runtimeResults = [];
