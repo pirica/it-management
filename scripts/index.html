@@ -12,6 +12,8 @@
         .scripts-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
         .scripts-table th, .scripts-table td { border: 1px solid var(--border-color, #d0d7de); padding: 10px 12px; text-align: left; vertical-align: top; }
         .scripts-table th { background: var(--table-header-bg, #f6f8fa); }
+        .scripts-table th:first-child,
+        .scripts-table td:first-child,
         .scripts-table th.scripts-access-col,
         .scripts-table td.scripts-access-cell { white-space: nowrap; width: 1%; }
         .scripts-table code { font-size: 0.88rem; word-break: break-word; }
@@ -188,7 +190,7 @@
             <tbody>
                 <tr>
                     <td><a href="analyze_database_health.php">analyze_database_health.php</a></td>
-                    <td><span class="scripts-badge scripts-badge-both">Browser + CLI</span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs <code>ANALYZE TABLE</code> on every base table and lists per-table success/failure (avoids phpMyAdmin stopping on first error).</td>
                     <td>Open <a href="analyze_database_health.php">analyze_database_health.php</a> while logged in. Optional CLI: <code>php scripts/analyze_database_health.php</code></td>
                 </tr>
