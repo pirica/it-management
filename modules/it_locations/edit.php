@@ -193,6 +193,9 @@ function cr_it_location_type_name($conn, $companyId, $typeId) {
     }
 
     $typeKey = (int)$typeId;
+    if ($typeKey <= 0) {
+        return '';
+    }
     if (isset($typeCache[$companyKey][$typeKey])) {
         return $typeCache[$companyKey][$typeKey];
     }
