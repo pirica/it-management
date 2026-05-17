@@ -13,6 +13,10 @@ function itm_ipam_parse_cidr(string $cidr): array
         return ['ok' => false, 'error' => 'CIDR is required.'];
     }
 
+    if (!str_contains($cidr, '/') && itm_ipam_is_valid_ipv4($cidr)) {
+        $cidr .= '/24';
+    }
+
     if (!preg_match('#^(\d{1,3}(?:\.\d{1,3}){3})\s*/\s*(\d{1,2})$#', $cidr, $matches)) {
         return ['ok' => false, 'error' => 'CIDR must look like 10.0.0.0/24.'];
     }
@@ -66,6 +70,32 @@ function itm_ipam_trim_user_input($value): string
         $value = substr($value, 1, -1);
     }
     return trim($value);
+}
+
+/**
+ * Why: Gateway/DNS fields must belong to the subnet being saved, not just be valid IPv4.
+ */
+function itm_ipam_ipv4_in_cidr(string $ip, string $networkIp, int $prefixLength): bool
+{
+    if (!itm_ipam_is_valid_ipv4($ip) || !itm_ipam_is_valid_ipv4($networkIp)) {
+        return false;
+    }
+    if ($prefixLength < 0 || $prefixLength > 32) {
+        return false;
+    }
+
+    $ipLong = ip2long($ip);
+    $netLong = ip2long($networkIp);
+    if ($ipLong === false || $netLong === false) {
+        return false;
+    }
+    if ($prefixLength === 0) {
+        return true;
+    }
+
+    $mask = (0xFFFFFFFF << (32 - $prefixLength)) & 0xFFFFFFFF;
+
+    return ($ipLong & $mask) === ($netLong & $mask);
 }
 
 function itm_ipam_is_valid_ipv4(string $ip): bool

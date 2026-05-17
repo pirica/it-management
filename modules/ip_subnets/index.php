@@ -888,6 +888,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         itm_ipam_apply_derived_sql_to_data($conn, $crud_table, $data, $_POST);
     }
 
+    if (($crud_table ?? '') === 'ip_subnets' && function_exists('itm_ipam_assert_subnet_save_ready')) {
+        itm_ipam_assert_subnet_save_ready($data, $_POST, $errors);
+    }
+
     if (empty($errors)) {
         if ($crud_action === 'create') {
             $fields = []; $values = [];
@@ -1187,6 +1191,30 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
+                            <?php elseif (($crud_table ?? '') === 'ip_subnets' && $name === 'cidr'): ?>
+                                <input
+                                    type="text"
+                                    name="cidr"
+                                    value="<?php echo sanitize($displayVal); ?>"
+                                    required
+                                    inputmode="decimal"
+                                    autocomplete="off"
+                                    placeholder="10.0.0.0/24"
+                                    pattern="^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$"
+                                    title="Enter a valid CIDR, for example 192.168.10.0/24"
+                                >
+                                <small style="display:block;margin-top:4px;color:#57606a;">Example: 192.168.10.0/24 (a plain IPv4 address defaults to /24)</small>
+                            <?php elseif (($crud_table ?? '') === 'ip_subnets' && in_array($name, ['gateway_ip', 'dns1_ip', 'dns2_ip'], true)): ?>
+                                <input
+                                    type="text"
+                                    name="<?php echo sanitize($name); ?>"
+                                    value="<?php echo sanitize($displayVal); ?>"
+                                    inputmode="decimal"
+                                    autocomplete="off"
+                                    placeholder="Must be inside the subnet CIDR"
+                                    pattern="^\d{1,3}(\.\d{1,3}){3}$"
+                                    title="Enter a valid IPv4 address within the subnet"
+                                >
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -1287,5 +1315,33 @@ document.addEventListener('change', function (event) {
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
+<?php if (($crud_table ?? '') === 'ip_subnets' && in_array($crud_action, ['create', 'edit'], true)): ?>
+<script>
+(function () {
+    const form = document.querySelector('form.form-grid');
+    if (!form) { return; }
+
+    const cidrInput = form.querySelector('input[name="cidr"]');
+    if (!cidrInput) { return; }
+
+    const cidrPattern = /^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/;
+
+    form.addEventListener('submit', function (event) {
+        const value = (cidrInput.value || '').trim();
+        if (value === '') {
+            event.preventDefault();
+            window.alert('CIDR is required.');
+            cidrInput.focus();
+            return;
+        }
+        if (!cidrPattern.test(value)) {
+            event.preventDefault();
+            window.alert('CIDR must look like 10.0.0.0/24.');
+            cidrInput.focus();
+        }
+    });
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

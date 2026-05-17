@@ -150,14 +150,8 @@ function itm_ipam_prepare_post_before_crud(
         }
 
         $post['cidr'] = (string)$parsed['cidr'];
-
-        if (!empty($parsed['normalized_from'])) {
-            $_SESSION['crud_success'] = 'CIDR was adjusted to the network address '
-                . (string)$parsed['cidr']
-                . ' (you entered '
-                . (string)$parsed['normalized_from']
-                . ').';
-        }
+        $networkIp = (string)$parsed['network_ip'];
+        $prefixLength = (int)$parsed['prefix_length'];
 
         foreach (['gateway_ip', 'dns1_ip', 'dns2_ip'] as $ipField) {
             if (!array_key_exists($ipField, $post)) {
@@ -170,10 +164,14 @@ function itm_ipam_prepare_post_before_crud(
             }
             if (!itm_ipam_is_valid_ipv4($raw)) {
                 $errors[] = ucwords(str_replace('_', ' ', $ipField)) . ' must be a valid IPv4 address.';
+                continue;
+            }
+            if (!itm_ipam_ipv4_in_cidr($raw, $networkIp, $prefixLength)) {
+                $errors[] = ucwords(str_replace('_', ' ', $ipField)) . ' must be inside the subnet CIDR (' . $post['cidr'] . ').';
             }
         }
 
-        if ($company_id > 0 && !$errors) {
+        if ($company_id > 0 && empty($errors)) {
             $exclude = ($action === 'edit' && $editId > 0) ? $editId : 0;
             $stmtDup = mysqli_prepare(
                 $conn,
@@ -189,6 +187,14 @@ function itm_ipam_prepare_post_before_crud(
                     $errors[] = 'CIDR must be unique for this company.';
                 }
             }
+        }
+
+        if (empty($errors) && !empty($parsed['normalized_from'])) {
+            $_SESSION['crud_success'] = 'CIDR was adjusted to the network address '
+                . (string)$parsed['cidr']
+                . ' (you entered '
+                . (string)$parsed['normalized_from']
+                . ').';
         }
 
         return;
@@ -278,6 +284,24 @@ function itm_ipam_apply_derived_sql_to_data(mysqli $conn, string $table, array &
 
     $data['network_ip'] = "'" . mysqli_real_escape_string($conn, (string)$parsed['network_ip']) . "'";
     $data['prefix_length'] = (string)(int)$parsed['prefix_length'];
+}
+
+/**
+ * Why: Final guard so create/edit cannot INSERT when CIDR validation failed but generic CRUD still built SQL.
+ */
+function itm_ipam_assert_subnet_save_ready(array $data, array $post, array &$errors): void
+{
+    $parsed = itm_ipam_parse_cidr(itm_ipam_trim_user_input($post['cidr'] ?? ''));
+    if (!$parsed['ok']) {
+        $errors[] = (string)$parsed['error'];
+        return;
+    }
+
+    $networkIp = $data['network_ip'] ?? 'NULL';
+    $prefixLength = $data['prefix_length'] ?? 'NULL';
+    if ($networkIp === 'NULL' || $prefixLength === 'NULL') {
+        $errors[] = 'Valid CIDR is required before saving.';
+    }
 }
 
 /**
