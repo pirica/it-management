@@ -3,6 +3,9 @@
  * Normalize seed created_at timestamps in database.sql (INSERT data only).
  *
  * Usage: php scripts/normalize_database_sql_created_at.php
+ *
+ * Use Laragon PHP 7.4 if `php -v` shows an older CLI (PATH often points at PHP 7.0):
+ * C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts/normalize_database_sql_created_at.php
  */
 
 declare(strict_types=1);
@@ -25,7 +28,7 @@ if ($sql === '') {
 /**
  * @return array<int, string>
  */
-function itm_sql_split_csv_values(string $valuesPart): array
+function itm_sql_split_csv_values($valuesPart)
 {
     $values = [];
     $current = '';
@@ -77,7 +80,7 @@ function itm_sql_join_csv_values(array $values): string
     return implode(', ', $values);
 }
 
-function itm_sql_is_created_at_literal(string $token): bool
+function itm_sql_is_created_at_literal($token)
 {
     if (!preg_match("/^'([0-9]{4}-[0-9]{2}-[0-9]{2}(?: [0-9]{2}:[0-9]{2}:[0-9]{2})?)'$/", $token)) {
         return false;
@@ -86,7 +89,7 @@ function itm_sql_is_created_at_literal(string $token): bool
     return true;
 }
 
-function itm_sql_normalize_created_at_token(string $token, string $target): string
+function itm_sql_normalize_created_at_token($token, $target)
 {
     if (!itm_sql_is_created_at_literal($token)) {
         return $token;
@@ -98,7 +101,7 @@ function itm_sql_normalize_created_at_token(string $token, string $target): stri
 /**
  * @return string|null
  */
-function itm_sql_rewrite_insert_statement(string $statement, string $targetCreatedAt): ?string
+function itm_sql_rewrite_insert_statement($statement, $targetCreatedAt)
 {
     if (!preg_match(
         '/\bINSERT\s+(?:IGNORE\s+)?INTO\s+`([^`]+)`\s*\(([^)]+)\)\s*VALUES\s*(.+)\s*;\s*$/is',
@@ -121,7 +124,7 @@ function itm_sql_rewrite_insert_statement(string $statement, string $targetCreat
     }
 
     $rows = [];
-  $depth = 0;
+    $depth = 0;
     $rowStart = -1;
     $len = strlen($valuesSection);
 
