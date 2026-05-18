@@ -24,41 +24,17 @@ $fpTagValue = implode(', ', $fpTagNames);
         <label for="folder_id">Folder</label>
         <select name="folder_id" id="folder_id">
             <option value="">— Unfiled —</option>
-            <?php foreach ($fpFolders as $fpFolder): ?>
+            <?php echo fp_render_folder_select_options($fpFolders, $fpCurrentFolderId > 0 ? $fpCurrentFolderId : null); ?>
+            <?php if ($fpCurrentFolderId > 0 && fp_folder_row_by_id($fpFolders, $fpCurrentFolderId) === null): ?>
                 <?php
-                $fpFid = (int)$fpFolder['id'];
-                $fpSelected = ($fpCurrentFolderId === $fpFid);
-                if (!$fpSelected && $fpCurrentFolderId > 0 && !fp_folder_belongs_to_company($conn, $fpCurrentFolderId, (int)$company_id)) {
-                    $fpSelected = false;
-                }
-                ?>
-                <option value="<?php echo $fpFid; ?>" <?php echo $fpSelected ? 'selected' : ''; ?>><?php echo sanitize((string)$fpFolder['name']); ?></option>
-            <?php endforeach; ?>
-            <?php if ($fpCurrentFolderId > 0): ?>
-                <?php
-                $fpPersistedLabel = '';
-                foreach ($fpFolders as $fpFolder) {
-                    if ((int)$fpFolder['id'] === $fpCurrentFolderId) {
-                        $fpPersistedLabel = (string)$fpFolder['name'];
-                        break;
-                    }
-                }
+                $fpPersistedLabel = fp_folder_breadcrumb_label($fpFolders, $fpCurrentFolderId);
                 if ($fpPersistedLabel === '') {
                     $fpRes = mysqli_query($conn, 'SELECT name FROM floor_plan_folders WHERE id=' . (int)$fpCurrentFolderId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
                     $fpRow = ($fpRes) ? mysqli_fetch_assoc($fpRes) : null;
                     $fpPersistedLabel = (string)($fpRow['name'] ?? ('Folder #' . $fpCurrentFolderId));
                 }
-                $fpInList = false;
-                foreach ($fpFolders as $fpFolder) {
-                    if ((int)$fpFolder['id'] === $fpCurrentFolderId) {
-                        $fpInList = true;
-                        break;
-                    }
-                }
-                if (!$fpInList):
                 ?>
-                    <option value="<?php echo (int)$fpCurrentFolderId; ?>" selected><?php echo sanitize($fpPersistedLabel); ?></option>
-                <?php endif; ?>
+                <option value="<?php echo (int)$fpCurrentFolderId; ?>" selected><?php echo sanitize($fpPersistedLabel); ?></option>
             <?php endif; ?>
         </select>
     </div>

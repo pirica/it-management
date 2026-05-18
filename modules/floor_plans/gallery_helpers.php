@@ -314,6 +314,72 @@ function fp_build_folder_tree(array $folders, $parentId = null): array {
     return $tree;
 }
 
+/**
+ * Why: View screens and breadcrumbs need the full path (General → Level 1), not only the leaf folder name.
+ */
+function fp_folder_breadcrumb_label(array $folders, int $folderId, string $separator = ' → '): string
+{
+    if ($folderId <= 0 || empty($folders)) {
+        return '';
+    }
+    $byId = [];
+    foreach ($folders as $folder) {
+        $id = (int)($folder['id'] ?? 0);
+        if ($id > 0) {
+            $byId[$id] = $folder;
+        }
+    }
+    $parts = [];
+    $current = $folderId;
+    $guard = 0;
+    while ($current > 0 && isset($byId[$current]) && $guard < 64) {
+        $name = trim((string)($byId[$current]['name'] ?? ''));
+        if ($name !== '') {
+            array_unshift($parts, $name);
+        }
+        $parentId = fp_folder_parent_id_from_row($byId[$current]);
+        $current = ($parentId !== null && $parentId > 0) ? $parentId : 0;
+        $guard++;
+    }
+    return implode($separator, $parts);
+}
+
+/**
+ * Why: Folder dropdowns mirror the gallery tree (root names flat; nested folders prefixed with em dashes).
+ */
+function fp_folder_select_option_label(string $name, int $depth): string
+{
+    if ($depth <= 0) {
+        return $name;
+    }
+    return str_repeat('— ', $depth) . $name;
+}
+
+function fp_render_folder_select_options(array $folders, ?int $selectedFolderId): string
+{
+    $tree = fp_build_folder_tree($folders, null);
+    return fp_render_folder_select_options_from_tree($tree, $selectedFolderId, 0);
+}
+
+function fp_render_folder_select_options_from_tree(array $tree, ?int $selectedFolderId, int $depth): string
+{
+    $html = '';
+    foreach ($tree as $node) {
+        $id = (int)($node['id'] ?? 0);
+        if ($id <= 0) {
+            continue;
+        }
+        $isSelected = ($selectedFolderId !== null && $selectedFolderId > 0 && $selectedFolderId === $id);
+        $label = fp_folder_select_option_label((string)($node['name'] ?? ''), $depth);
+        $html .= '<option value="' . $id . '"' . ($isSelected ? ' selected' : '') . '>'
+            . sanitize($label) . '</option>';
+        if (!empty($node['children'])) {
+            $html .= fp_render_folder_select_options_from_tree($node['children'], $selectedFolderId, $depth + 1);
+        }
+    }
+    return $html;
+}
+
 function fp_folder_has_children(mysqli $conn, int $folderId, int $companyId): bool {
     $stmt = mysqli_prepare($conn, 'SELECT id FROM floor_plan_folders WHERE parent_folder_id=? AND company_id=? LIMIT 1');
     if (!$stmt) {
@@ -476,9 +542,8 @@ function fp_render_folder_move_options_from_tree(array $tree, array $blocked, ?i
             continue;
         }
         $isSelected = ($selectedParentId !== null && $selectedParentId === $id);
-        $prefix = $depth > 0 ? str_repeat('— ', $depth) : '';
         $html .= '<option value="' . $id . '"' . ($isSelected ? ' selected' : '') . '>'
-            . sanitize($prefix . (string)$node['name']) . '</option>';
+            . sanitize(fp_folder_select_option_label((string)$node['name'], $depth)) . '</option>';
         if (!empty($node['children'])) {
             $html .= fp_render_folder_move_options_from_tree($node['children'], $blocked, $selectedParentId, $depth + 1);
         }
@@ -681,6 +746,19 @@ function fp_fetch_gallery_items(mysqli $conn, int $companyId, string $searchRaw,
         $items[] = $row;
     }
     mysqli_stmt_close($stmt);
+    if (!empty($items)) {
+        $folderRows = fp_fetch_folders($conn, $companyId);
+        foreach ($items as $idx => $item) {
+            $folderId = (int)($item['folder_id'] ?? 0);
+            if ($folderId <= 0) {
+                continue;
+            }
+            $pathLabel = fp_folder_breadcrumb_label($folderRows, $folderId);
+            if ($pathLabel !== '') {
+                $items[$idx]['folder_name'] = $pathLabel;
+            }
+        }
+    }
     return $items;
 }
 

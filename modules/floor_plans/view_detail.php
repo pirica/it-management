@@ -11,10 +11,16 @@ $fpTags = fp_get_tags_for_plan($conn, $fpPlanId, (int)$company_id);
 $fpFolderLabel = '—';
 if (!empty($data['folder_id'])) {
     $fpFid = (int)$data['folder_id'];
-    $fpRes = mysqli_query($conn, 'SELECT name FROM floor_plan_folders WHERE id=' . $fpFid . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
-    $fpRow = ($fpRes) ? mysqli_fetch_assoc($fpRes) : null;
-    if ($fpRow) {
-        $fpFolderLabel = (string)$fpRow['name'];
+    $fpFoldersForPath = fp_fetch_folders($conn, (int)$company_id);
+    $fpPathLabel = fp_folder_breadcrumb_label($fpFoldersForPath, $fpFid);
+    if ($fpPathLabel !== '') {
+        $fpFolderLabel = $fpPathLabel;
+    } else {
+        $fpRes = mysqli_query($conn, 'SELECT name FROM floor_plan_folders WHERE id=' . $fpFid . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+        $fpRow = ($fpRes) ? mysqli_fetch_assoc($fpRes) : null;
+        if ($fpRow) {
+            $fpFolderLabel = (string)$fpRow['name'];
+        }
     }
 }
 $fpLocationLabel = '—';
@@ -64,6 +70,7 @@ if (!empty($data['created_by_user_id'])) {
             <tr><th>Created</th><td><?php echo sanitize((string)($data['created_at'] ?? '—')); ?></td></tr>
         </tbody>
     </table>
+    <p class="itm-dropzone-hint" style="margin-top:12px;">To move this file between folders, open the <a href="index.php">Gallery</a> and drag the file card (⠿ handle) onto a folder row.</p>
     <p style="margin-top:16px;">
         <a href="index.php" class="btn">Gallery</a>
         <a href="edit.php?id=<?php echo $fpPlanId; ?>" class="btn btn-primary">Edit</a>
