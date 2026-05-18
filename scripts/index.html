@@ -348,7 +348,7 @@
                         Baseline: <code>scripts/data/index_table_compliance_baseline.txt</code>. Skips protection-zone modules and <code>rack_planner</code>.
                     </td>
                     <td>
-                        Browser: plain-text report. CLI: <code>php scripts/check_index_table_compliance.php</code> — smoke step 4; exit <code>1</code> on new violations.<br>
+                        Browser: HTML report in <code>&lt;pre&gt;</code>. CLI: <code>php scripts/check_index_table_compliance.php</code> — smoke step 4; exit <code>1</code> on new violations.<br>
                         <code>--strict</code> · <code>--write-baseline</code>
                     </td>
                 </tr>
@@ -376,7 +376,7 @@
             </tbody>
         </table>
         <p class="scripts-muted" style="margin-top:12px;">
-            Library (not run directly): <code>lib/sql_injection_detector.php</code> — used by <code>sql_injection_matrix_test.php</code> and runtime guards.
+            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> — detector for matrix/runtime guards; CLI output wrapper for browser <code>&lt;pre&gt;</code> reports.
         </p>
     </div>
 
