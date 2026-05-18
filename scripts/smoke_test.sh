@@ -13,7 +13,7 @@
 #
 # Environment:
 #   PHP_BIN=php              PHP executable (default: php)
-#   SMOKE_SKIP_UI_CONFIG=1   Skip UI layout audit (used in CI until legacy gaps are fixed)
+#   SMOKE_SKIP_UI_CONFIG=1   Skip UI layout audit (CI: other legacy gaps; is_* façades are excluded in the checker)
 
 set -euo pipefail
 
