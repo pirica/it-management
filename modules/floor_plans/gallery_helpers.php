@@ -545,6 +545,28 @@ function fp_parse_tag_input(string $raw): array {
     return array_values(array_unique($names));
 }
 
+/**
+ * Snapshot a floor_plans row for audit_logs (company-scoped when possible).
+ */
+function fp_audit_fetch_floor_plan(mysqli $conn, int $planId, int $companyId)
+{
+    if ($planId <= 0 || !function_exists('itm_fetch_audit_record')) {
+        return null;
+    }
+    return itm_fetch_audit_record($conn, 'floor_plans', $planId, $companyId);
+}
+
+/**
+ * Why: Gallery delete flows share one helper; logging here covers delete_file, bulk delete, and delete.php.
+ */
+function fp_audit_log_floor_plan(mysqli $conn, int $planId, int $companyId, string $action, $oldValues = null, $newValues = null): void
+{
+    if ($planId <= 0 || !function_exists('itm_log_audit')) {
+        return;
+    }
+    itm_log_audit($conn, 'floor_plans', $planId, $action, $oldValues, $newValues);
+}
+
 function fp_delete_plans_by_ids(mysqli $conn, array $ids, int $companyId): void {
     if (empty($ids) || $companyId <= 0) {
         return;
@@ -556,11 +578,23 @@ function fp_delete_plans_by_ids(mysqli $conn, array $ids, int $companyId): void 
         return;
     }
     $in = implode(',', $idList);
+    $auditBeforeDelete = [];
+    if (function_exists('itm_log_audit') && function_exists('itm_fetch_audit_record')) {
+        foreach ($idList as $planId) {
+            $snapshot = fp_audit_fetch_floor_plan($conn, $planId, $companyId);
+            if ($snapshot !== null) {
+                $auditBeforeDelete[$planId] = $snapshot;
+            }
+        }
+    }
     $res = mysqli_query($conn, 'SELECT id, stored_filename FROM floor_plans WHERE company_id=' . (int)$companyId . ' AND id IN (' . $in . ')');
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         fp_unlink_stored_file($companyId, (string)($row['stored_filename'] ?? ''));
     }
     mysqli_query($conn, 'DELETE FROM floor_plans WHERE company_id=' . (int)$companyId . ' AND id IN (' . $in . ')');
+    foreach ($auditBeforeDelete as $planId => $oldValues) {
+        fp_audit_log_floor_plan($conn, (int)$planId, $companyId, 'DELETE', $oldValues, null);
+    }
 }
 
 function fp_fetch_gallery_items(mysqli $conn, int $companyId, string $searchRaw, ?int $folderFilter, bool $unfiledOnly): array {

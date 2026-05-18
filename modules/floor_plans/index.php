@@ -694,21 +694,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
                 $uploadErrors[] = 'Could not store ' . $displayName . ' on disk.';
                 continue;
             }
+            $storedFilenameOldValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
             $upd = mysqli_prepare($conn, 'UPDATE floor_plans SET stored_filename=? WHERE id=? AND company_id=? LIMIT 1');
             if ($upd) {
                 mysqli_stmt_bind_param($upd, 'sii', $storedFilename, $planId, $company_id);
                 mysqli_stmt_execute($upd);
                 mysqli_stmt_close($upd);
             }
+            if ($storedFilenameOldValues !== null) {
+                $storedFilenameNewValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+                fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'UPDATE', $storedFilenameOldValues, $storedFilenameNewValues);
+            }
             fp_apply_plan_it_location($conn, $planId, (int)$company_id, $locationParam);
             $tagRaw = trim((string)($_POST['upload_tags'] ?? ''));
             if ($tagRaw !== '') {
                 fp_save_tags_for_plan($conn, $planId, (int)$company_id, fp_parse_tag_input($tagRaw));
             }
-            if (function_exists('itm_log_audit') && function_exists('itm_fetch_audit_record')) {
-                $newValues = itm_fetch_audit_record($conn, 'floor_plans', $planId, (int)$company_id);
-                itm_log_audit($conn, 'floor_plans', $planId, 'INSERT', null, $newValues);
-            }
+            $newValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+            fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'INSERT', null, $newValues);
             $uploadedCount++;
         }
         if ($uploadedCount === 0 && empty($uploadErrors)) {
@@ -727,16 +730,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
         if ($planId <= 0 || $displayName === '') {
             $_SESSION['crud_error'] = 'File name is required.';
         } else {
-            $oldValues = function_exists('itm_fetch_audit_record') ? itm_fetch_audit_record($conn, 'floor_plans', $planId, (int)$company_id) : null;
+            $oldValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
             $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET display_name=? WHERE id=? AND company_id=? LIMIT 1');
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'sii', $displayName, $planId, $company_id);
                 mysqli_stmt_execute($stmt);
                 mysqli_stmt_close($stmt);
-                if (function_exists('itm_log_audit')) {
-                    $newValues = itm_fetch_audit_record($conn, 'floor_plans', $planId, (int)$company_id);
-                    itm_log_audit($conn, 'floor_plans', $planId, 'UPDATE', $oldValues, $newValues);
-                }
+                $newValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+                fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'UPDATE', $oldValues, $newValues);
             }
         }
         header('Location: ' . $listUrl . $redirectSuffix);
@@ -751,15 +752,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
             $_SESSION['crud_error'] = 'File not found.';
         } elseif ($targetFolderId > 0 && !fp_folder_belongs_to_company($conn, $targetFolderId, (int)$company_id)) {
             $_SESSION['crud_error'] = 'Invalid folder.';
-        } elseif ($targetFolderId > 0) {
-            $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET folder_id=? WHERE id=? AND company_id=? LIMIT 1');
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'iii', $targetFolderId, $planId, $company_id);
-                mysqli_stmt_execute($stmt);
-                mysqli_stmt_close($stmt);
-            }
         } else {
-            mysqli_query($conn, 'UPDATE floor_plans SET folder_id=NULL WHERE id=' . (int)$planId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+            $moveOldValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+            if ($targetFolderId > 0) {
+                $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET folder_id=? WHERE id=? AND company_id=? LIMIT 1');
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, 'iii', $targetFolderId, $planId, $company_id);
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_close($stmt);
+                }
+            } else {
+                mysqli_query($conn, 'UPDATE floor_plans SET folder_id=NULL WHERE id=' . (int)$planId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+            }
+            if ($moveOldValues !== null) {
+                $moveNewValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+                fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'UPDATE', $moveOldValues, $moveNewValues);
+            }
         }
         header('Location: ' . $listUrl . ($targetFolderId > 0 ? '?folder_id=' . $targetFolderId : ''));
         exit;
@@ -1050,6 +1058,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'edit' && $crud_ta
     } elseif ($resolvedLocationId === -1) {
         $errors[] = 'Invalid linked IT location.';
     } else {
+        $editOldValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
         if ($targetFolderId > 0) {
             $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET display_name=?, folder_id=? WHERE id=? AND company_id=? LIMIT 1');
             if ($stmt) {
@@ -1067,6 +1076,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'edit' && $crud_ta
         }
         fp_apply_plan_it_location($conn, $planId, (int)$company_id, $resolvedLocationId);
         fp_save_tags_for_plan($conn, $planId, (int)$company_id, fp_parse_tag_input((string)($_POST['tag_names'] ?? '')));
+        if ($editOldValues !== null) {
+            $editNewValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+            fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'UPDATE', $editOldValues, $editNewValues);
+        }
         header('Location: view.php?id=' . $planId);
         exit;
     }
