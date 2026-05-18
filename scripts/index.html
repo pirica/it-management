@@ -124,10 +124,10 @@
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Same FK dropdown risk scan as above; in the browser it loads the UI file.</td>
+                    <td>FK dropdown risk scan. Non-CLI requests are forwarded to <code>detect_fk_dropdown_ui_risk_ui.php</code>; CLI runs the scanner directly.</td>
                     <td>
-                        Browser: same as <code>detect_fk_dropdown_ui_risk_ui.php</code>.
-                        CLI options: <code>--company=N</code>, <code>--json</code>, <code>--data-only</code>, <code>--code-only</code>, <code>--help</code>.
+                        Browser: open this URL (loads the UI). CLI:
+                        <code>--company=N</code>, <code>--json</code>, <code>--data-only</code>, <code>--code-only</code>, <code>--help</code>.
                     </td>
                 </tr>
             </tbody>
@@ -135,7 +135,8 @@
     </div>
 
     <div class="scripts-card" id="security">
-        <h2>Security</h2>
+        <h2>Security (interactive)</h2>
+        <p class="scripts-muted">Browser-first sandboxes and form tests. Repo-wide static scanners are under <a href="#ci">CI &amp; static analysis</a>.</p>
         <table class="scripts-table">
             <thead>
                 <tr>
@@ -363,7 +364,7 @@
                     <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — smoke step 5; exits <code>2</code> on failure; skips <code>idfs</code>.</td>
                 </tr>
                 <tr>
-                    <td>smoke_test.sh</td>
+                    <td>sql_injection_matrix_test.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code>, (2) CSRF, (3) SQLi, (4) index compliance, (5) UI config (optional). Bash only — not a PHP URL.</td>
                     <td><code>bash scripts/smoke_test.sh</code> — <code>SMOKE_SKIP_UI_CONFIG=1</code> skips step 5.</td>
