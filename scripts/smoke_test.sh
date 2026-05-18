@@ -13,7 +13,7 @@
 #
 # Environment:
 #   PHP_BIN=php              PHP executable (default: php)
-#   SMOKE_SKIP_UI_CONFIG=1   Skip UI layout audit (CI: other legacy gaps; is_* façades are excluded in the checker)
+#   SMOKE_SKIP_UI_CONFIG=1   Skip UI layout audit (optional; exemptions are in scripts/data/ui_configuration_excluded_*.txt)
 
 set -euo pipefail
 
@@ -68,5 +68,6 @@ if [[ "${SMOKE_SKIP_UI_CONFIG:-0}" == "1" ]]; then
 else
   run_check "check_ui_configuration_coverage.php"
 fi
+# Excluded modules/prefixes: scripts/data/ui_configuration_excluded_modules.txt, ui_configuration_excluded_prefixes.txt
 
 echo "==> All smoke tests passed."
