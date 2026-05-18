@@ -325,7 +325,7 @@
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF, (3) SQLi, (4) index-table compliance, (5) UI config (optional).</td>
-                    <td><code>bash scripts/smoke_test.sh</code> — <code>SMOKE_SKIP_UI_CONFIG=1</code> skips step 5.</td>
+                    <td><code>bash scripts/smoke_test.sh</code> — step 5 runs by default; <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip. Exemptions: <code>scripts/data/ui_configuration_excluded_modules.txt</code> and <code>ui_configuration_excluded_prefixes.txt</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="check_csrf_coverage.php">check_csrf_coverage.php</a></td>
@@ -355,7 +355,7 @@
                     <td><a href="check_ui_configuration_coverage.php">check_ui_configuration_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>UI configuration hooks: table actions, new button, export toolbar, back/save on forms.</td>
-                    <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — smoke step 5; exits <code>2</code> on failure; skips <code>idfs</code> and prefixes in <code>scripts/data/ui_configuration_excluded_prefixes.txt</code> (e.g. <code>is_*</code> equipment façades).</td>
+                    <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — smoke step 5; exits <code>2</code> on failure. Skips modules in <code>scripts/data/ui_configuration_excluded_modules.txt</code> (e.g. <code>audit_logs</code>, <code>ip_subnets</code>, <code>rack_planner</code>) and prefixes in <code>ui_configuration_excluded_prefixes.txt</code> (e.g. <code>is_*</code>).</td>
                 </tr>
                 <tr>
                     <td><a href="check_audit_logs_coverage.php">check_audit_logs_coverage.php</a></td>
