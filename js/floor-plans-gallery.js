@@ -1,6 +1,6 @@
 /**
  * Floor Plans gallery: upload dropzone, preview modal, drag files/folders to folders.
- * Why: drag handles avoid native link-drag behavior on folder/file anchors.
+ * Why: custom MIME types and delegated drops avoid native image/link drag breaking file moves.
  */
 (function () {
     const dropzone = document.getElementById('floorPlanDropzone');
@@ -14,10 +14,13 @@
     const moveFolderForm = document.getElementById('floorPlanMoveFolderForm');
     const moveFolderSourceInput = document.getElementById('floorPlanMoveFolderSourceId');
     const moveFolderParentInput = document.getElementById('floorPlanMoveFolderParentId');
+    const folderTree = document.querySelector('.itm-folder-tree');
+    const planDragMime = 'application/x-itm-floor-plan';
     const folderDragMime = 'application/x-itm-floor-folder';
     const folderDragPlainPrefix = 'itm-folder:';
     let activeFolderDragId = 0;
     let activePlanDragId = 0;
+    let dropHoverTarget = null;
 
     if (dropzone && fileInput) {
         dropzone.addEventListener('dragover', function (event) {
@@ -82,6 +85,18 @@
         document.querySelectorAll('.itm-folder-drop-target.is-drop-hover').forEach(function (el) {
             el.classList.remove('is-drop-hover');
         });
+        dropHoverTarget = null;
+    }
+
+    function setDropHover(target) {
+        if (dropHoverTarget === target) {
+            return;
+        }
+        clearDropTargets();
+        dropHoverTarget = target;
+        if (target) {
+            target.classList.add('is-drop-hover');
+        }
     }
 
     function submitFileMove(planId, folderId) {
@@ -102,11 +117,27 @@
         moveFolderForm.submit();
     }
 
+    function transferHasType(event, mime) {
+        if (!event.dataTransfer || !event.dataTransfer.types) {
+            return false;
+        }
+        const types = event.dataTransfer.types;
+        for (let i = 0; i < types.length; i++) {
+            if (types[i] === mime) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function readFolderDragId(event) {
         if (activeFolderDragId > 0) {
             return activeFolderDragId;
         }
         if (!event.dataTransfer) {
+            return 0;
+        }
+        if (transferHasType(event, planDragMime)) {
             return 0;
         }
         let raw = event.dataTransfer.getData(folderDragMime) || '';
@@ -127,7 +158,13 @@
         if (!event.dataTransfer) {
             return 0;
         }
-        const raw = event.dataTransfer.getData('text/plain') || '';
+        if (transferHasType(event, folderDragMime)) {
+            return 0;
+        }
+        let raw = event.dataTransfer.getData(planDragMime) || '';
+        if (!raw) {
+            raw = event.dataTransfer.getData('text/plain') || '';
+        }
         if (raw.indexOf(folderDragPlainPrefix) === 0) {
             return 0;
         }
@@ -135,34 +172,133 @@
         return planId > 0 ? planId : 0;
     }
 
+    function beginPlanDrag(planId, event) {
+        if (!planId || !event.dataTransfer) {
+            return false;
+        }
+        activePlanDragId = planId;
+        activeFolderDragId = 0;
+        event.dataTransfer.setData(planDragMime, String(planId));
+        event.dataTransfer.setData('text/plain', String(planId));
+        event.dataTransfer.effectAllowed = 'move';
+        const card = event.currentTarget && event.currentTarget.closest
+            ? event.currentTarget.closest('.itm-floor-plan-card')
+            : null;
+        if (card) {
+            card.classList.add('is-dragging');
+        }
+        return true;
+    }
+
+    function beginFolderDrag(folderId, event) {
+        if (!folderId || !event.dataTransfer) {
+            return false;
+        }
+        activeFolderDragId = folderId;
+        activePlanDragId = 0;
+        const payload = folderDragPlainPrefix + String(folderId);
+        event.dataTransfer.setData(folderDragMime, String(folderId));
+        event.dataTransfer.setData('text/plain', payload);
+        event.dataTransfer.effectAllowed = 'move';
+        const row = event.currentTarget && event.currentTarget.closest
+            ? event.currentTarget.closest('.itm-folder-tree-folder')
+            : null;
+        if (row) {
+            row.classList.add('is-dragging');
+        }
+        return true;
+    }
+
+    function resolveDropTarget(node) {
+        if (!node || !node.closest) {
+            return null;
+        }
+        return node.closest('.itm-folder-drop-target');
+    }
+
+    function handleFolderDrop(target, event) {
+        const folderDragId = readFolderDragId(event);
+        if (!folderDragId) {
+            return false;
+        }
+
+        let parentId = null;
+        if (target.getAttribute('data-folder-reparent-root') === '1') {
+            parentId = null;
+        } else {
+            const targetFolderId = parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
+            if (targetFolderId <= 0) {
+                activeFolderDragId = 0;
+                return true;
+            }
+            if (targetFolderId === folderDragId) {
+                activeFolderDragId = 0;
+                return true;
+            }
+            parentId = targetFolderId;
+        }
+        activeFolderDragId = 0;
+        submitFolderMove(folderDragId, parentId);
+        return true;
+    }
+
+    function handleFileDrop(target, event) {
+        const planId = readFileDragId(event);
+        if (!planId) {
+            return false;
+        }
+
+        if (target.getAttribute('data-folder-reparent-root') === '1') {
+            activePlanDragId = 0;
+            return true;
+        }
+
+        const unfiled = target.getAttribute('data-folder-drop-unfiled') === '1';
+        const folderId = unfiled
+            ? 0
+            : parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
+        activePlanDragId = 0;
+        submitFileMove(planId, folderId);
+        return true;
+    }
+
     function bindDragHandles() {
-        document.querySelectorAll('.itm-plan-drag-handle[draggable="true"]').forEach(function (handle) {
-            if (handle.getAttribute('data-itm-drag-bound') === '1') {
+        document.querySelectorAll('.itm-floor-plan-card[data-plan-id]').forEach(function (card) {
+            if (card.getAttribute('data-itm-card-drag-bound') === '1') {
                 return;
             }
-            handle.setAttribute('data-itm-drag-bound', '1');
-            handle.addEventListener('dragstart', function (event) {
-                const planId = parseInt(handle.getAttribute('data-plan-id') || '0', 10);
-                if (!planId || !event.dataTransfer) {
+            card.setAttribute('data-itm-card-drag-bound', '1');
+            card.setAttribute('draggable', 'true');
+
+            card.addEventListener('dragstart', function (event) {
+                if (event.target.closest('.itm-actions-wrap, form, button, input, select, textarea')) {
+                    event.preventDefault();
                     return;
                 }
-                activePlanDragId = planId;
-                activeFolderDragId = 0;
-                event.dataTransfer.setData('text/plain', String(planId));
-                event.dataTransfer.effectAllowed = 'move';
-                const card = handle.closest('.itm-floor-plan-card');
-                if (card) {
-                    card.classList.add('is-dragging');
+                const planId = parseInt(card.getAttribute('data-plan-id') || '0', 10);
+                if (!beginPlanDrag(planId, event)) {
+                    event.preventDefault();
+                    return;
                 }
                 event.stopPropagation();
             });
-            handle.addEventListener('dragend', function () {
+            card.addEventListener('dragend', function () {
                 activePlanDragId = 0;
-                document.querySelectorAll('.itm-floor-plan-card.is-dragging').forEach(function (card) {
-                    card.classList.remove('is-dragging');
-                });
+                card.classList.remove('is-dragging');
                 clearDropTargets();
             });
+
+            card.querySelectorAll('img').forEach(function (img) {
+                img.setAttribute('draggable', 'false');
+                img.addEventListener('dragstart', function (event) {
+                    event.preventDefault();
+                });
+            });
+        });
+
+        document.querySelectorAll('.itm-plan-drag-handle').forEach(function (handle) {
+            handle.setAttribute('draggable', 'false');
+            handle.setAttribute('aria-grabbed', 'false');
         });
 
         document.querySelectorAll('.itm-folder-drag-handle[draggable="true"]').forEach(function (handle) {
@@ -172,18 +308,9 @@
             handle.setAttribute('data-itm-drag-bound', '1');
             handle.addEventListener('dragstart', function (event) {
                 const folderId = parseInt(handle.getAttribute('data-folder-id') || '0', 10);
-                if (!folderId || !event.dataTransfer) {
+                if (!beginFolderDrag(folderId, event)) {
+                    event.preventDefault();
                     return;
-                }
-                activeFolderDragId = folderId;
-                activePlanDragId = 0;
-                const payload = folderDragPlainPrefix + String(folderId);
-                event.dataTransfer.setData(folderDragMime, String(folderId));
-                event.dataTransfer.setData('text/plain', payload);
-                event.dataTransfer.effectAllowed = 'move';
-                const row = handle.closest('.itm-folder-tree-folder');
-                if (row) {
-                    row.classList.add('is-dragging');
                 }
                 event.stopPropagation();
             });
@@ -198,61 +325,51 @@
     }
 
     function bindDropTargets() {
-        document.querySelectorAll('.itm-folder-drop-target').forEach(function (target) {
-            if (target.getAttribute('data-itm-drop-bound') === '1') {
+        if (!folderTree || folderTree.getAttribute('data-itm-drop-bound') === '1') {
+            return;
+        }
+        folderTree.setAttribute('data-itm-drop-bound', '1');
+
+        folderTree.addEventListener('dragover', function (event) {
+            const target = resolveDropTarget(event.target);
+            if (!target) {
                 return;
             }
-            target.setAttribute('data-itm-drop-bound', '1');
-            target.addEventListener('dragover', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                if (event.dataTransfer) {
-                    event.dataTransfer.dropEffect = 'move';
-                }
-                target.classList.add('is-drop-hover');
-            });
-            target.addEventListener('dragleave', function (event) {
-                event.stopPropagation();
-                target.classList.remove('is-drop-hover');
-            });
-            target.addEventListener('drop', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'move';
+            }
+            setDropHover(target);
+        });
+
+        folderTree.addEventListener('dragleave', function (event) {
+            const target = resolveDropTarget(event.target);
+            if (!target || !dropHoverTarget) {
+                return;
+            }
+            const related = event.relatedTarget;
+            if (related && dropHoverTarget.contains(related)) {
+                return;
+            }
+            if (target === dropHoverTarget) {
                 clearDropTargets();
+            }
+        });
 
-                const folderDragId = readFolderDragId(event);
-                if (folderDragId) {
-                    let parentId = null;
-                    if (target.getAttribute('data-folder-reparent-root') === '1') {
-                        parentId = null;
-                    } else {
-                        const targetFolderId = parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
-                        if (targetFolderId <= 0) {
-                            activeFolderDragId = 0;
-                            return;
-                        }
-                        if (targetFolderId === folderDragId) {
-                            activeFolderDragId = 0;
-                            return;
-                        }
-                        parentId = targetFolderId;
-                    }
-                    activeFolderDragId = 0;
-                    submitFolderMove(folderDragId, parentId);
-                    return;
-                }
+        folderTree.addEventListener('drop', function (event) {
+            const target = resolveDropTarget(event.target);
+            if (!target) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            clearDropTargets();
 
-                const planId = readFileDragId(event);
-                if (!planId) {
-                    return;
-                }
-                const unfiled = target.getAttribute('data-folder-drop-unfiled') === '1';
-                const folderId = unfiled
-                    ? 0
-                    : parseInt(target.getAttribute('data-folder-drop-id') || '0', 10);
-                activePlanDragId = 0;
-                submitFileMove(planId, folderId);
-            });
+            if (handleFolderDrop(target, event)) {
+                return;
+            }
+            handleFileDrop(target, event);
         });
     }
 
