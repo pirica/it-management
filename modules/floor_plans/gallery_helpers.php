@@ -44,9 +44,7 @@ function fp_gallery_access_error(mysqli $conn): string
 
 function fp_company_upload_dir(int $companyId): string {
     $base = FLOOR_PLAN_UPLOAD_PATH . (int)$companyId . DIRECTORY_SEPARATOR;
-    if (!is_dir($base)) {
-        @mkdir($base, 0775, true);
-    }
+    itm_ensure_upload_directory($base, 'upload');
     return $base;
 }
 

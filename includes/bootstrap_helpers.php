@@ -252,3 +252,100 @@ if (!function_exists('itm_ensure_companies_company_unique')) {
         ) === true;
     }
 }
+
+/**
+ * Why: Upload trees are created with 0775 for the app user; Apache must not execute scripts placed there.
+ */
+if (!function_exists('itm_upload_dir_htaccess_upload_policy')) {
+    function itm_upload_dir_htaccess_upload_policy()
+    {
+        return <<<'HTACCESS'
+# ITM upload hardening — do not remove (managed by itm_ensure_upload_directory)
+Options -Indexes -ExecCGI -MultiViews
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(php|phtml|php3|php4|php5|phar|cgi|pl|py|asp|aspx|jsp|sh|exe|bat|cmd)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(?i)\.(php|phtml|php3|php4|php5|phar|cgi|pl|py|asp|aspx|jsp|sh|exe|bat|cmd)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+RemoveHandler .php .phtml .phar .cgi .pl .py
+RemoveType .php .phtml .phar .cgi .pl .py
+HTACCESS;
+    }
+}
+
+if (!function_exists('itm_upload_dir_htaccess_deny_all_policy')) {
+    function itm_upload_dir_htaccess_deny_all_policy()
+    {
+        return <<<'HTACCESS'
+# ITM backup hardening — do not remove (managed by itm_ensure_upload_directory)
+Options -Indexes -ExecCGI
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
+HTACCESS;
+    }
+}
+
+/**
+ * Creates a directory (0775) and writes Apache rules so uploaded files are not executed.
+ *
+ * @param string $directory Absolute path with or without trailing separator
+ * @param string $policy upload|deny_all
+ * @return bool
+ */
+if (!function_exists('itm_ensure_upload_directory')) {
+    function itm_ensure_upload_directory($directory, $policy = 'upload')
+    {
+        $directory = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string) $directory), DIRECTORY_SEPARATOR);
+        if ($directory === '') {
+            return false;
+        }
+
+        if (!is_dir($directory) && !@mkdir($directory, 0775, true) && !is_dir($directory)) {
+            return false;
+        }
+
+        $marker = 'ITM upload hardening';
+        if ($policy === 'deny_all') {
+            $marker = 'ITM backup hardening';
+            $htaccessBody = itm_upload_dir_htaccess_deny_all_policy();
+        } else {
+            $htaccessBody = itm_upload_dir_htaccess_upload_policy();
+        }
+
+        $htaccessPath = $directory . DIRECTORY_SEPARATOR . '.htaccess';
+        $shouldWriteHtaccess = true;
+        if (is_file($htaccessPath)) {
+            $existing = @file_get_contents($htaccessPath);
+            $shouldWriteHtaccess = !is_string($existing) || strpos($existing, $marker) === false;
+        }
+        if ($shouldWriteHtaccess) {
+            @file_put_contents($htaccessPath, $htaccessBody, LOCK_EX);
+        }
+
+        if ($policy !== 'deny_all') {
+            $indexPath = $directory . DIRECTORY_SEPARATOR . 'index.html';
+            if (!is_file($indexPath)) {
+                @file_put_contents($indexPath, "<!DOCTYPE html><html><head><title></title></head><body></body></html>\n", LOCK_EX);
+            }
+        }
+
+        return is_dir($directory) && is_file($htaccessPath);
+    }
+}
