@@ -45,6 +45,7 @@
             <li><a href="#static">Static analysis (CLI)</a></li>
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
+            <li><a href="#ui-modules">UI &amp; modules</a></li>
         </ul>
         <div class="scripts-cli-hint">
             <strong>CLI example (Laragon):</strong>
@@ -190,6 +191,42 @@
                         Optional: <code>--module=rack_planner</code>, <code>--json</code>
                     </td>
                 </tr>
+                <tr>
+                    <td>check_index_table_compliance.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        Static scan of module <code>index.php</code> list screens (plus module-local <code>require</code>/<code>include</code> PHP such as <code>includes/partials/render.php</code>). Enforces AGENTS.md index-table hooks and POST safety:
+                        <ul style="margin:8px 0 0 18px;padding:0;">
+                            <li><code>data-itm-db-import-endpoint</code> on the list <code>&lt;table&gt;</code> (Excel import save-to-database via <code>table-tools.js</code>)</li>
+                            <li><code>data-itm-actions-origin="1"</code> on Actions <code>&lt;th&gt;</code> and <code>&lt;td&gt;</code> (layout engine / <code>table_actions_position</code>)</li>
+                            <li>Known POST CSRF guards when index handlers mutate data (<code>itm_require_post_csrf</code>, <code>cr_require_valid_csrf_token</code>, etc.)</li>
+                            <li><code>csrf_token</code> hidden fields on POST forms</li>
+                            <li><code>itm-actions-cell</code> when an Actions column is present</li>
+                        </ul>
+                        Skips protection-zone modules and <code>rack_planner</code>. Grandfathers legacy gaps via <code>scripts/data/index_table_compliance_baseline.txt</code> (57 modules); CI fails only on <strong>new</strong> violations outside that list.
+                    </td>
+                    <td>
+                        <code>php scripts/check_index_table_compliance.php</code> — exit <code>1</code> on new violations (baseline-aware).<br>
+                        <code>php scripts/check_index_table_compliance.php --strict</code> — report all modules, ignore baseline.<br>
+                        <code>php scripts/check_index_table_compliance.php --write-baseline</code> — refresh grandfather list (use sparingly).<br>
+                        After fixing a module, remove its slug from <code>scripts/data/index_table_compliance_baseline.txt</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td>smoke_test.sh</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        CI/local smoke runner (GitHub Actions <code>.github/workflows/smoke.yml</code>):
+                        <ol style="margin:8px 0 0 18px;padding:0;">
+                            <li><code>php -l</code> on every <code>*.php</code> file</li>
+                            <li><code>check_csrf_coverage.php</code></li>
+                            <li><code>check_sql_injection_coverage.php</code></li>
+                            <li><code>check_index_table_compliance.php</code></li>
+                            <li><code>check_ui_configuration_coverage.php</code> (optional — skipped when <code>SMOKE_SKIP_UI_CONFIG=1</code>)</li>
+                        </ol>
+                    </td>
+                    <td><code>bash scripts/smoke_test.sh</code> — set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip step 5 (UI layout audit) until legacy gaps are cleared.</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -279,6 +316,42 @@
         </table>
     </div>
 
+    <div class="scripts-card" id="ui-modules">
+        <h2>UI &amp; modules</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists <code>modules/*/index.php</code> folders that are <strong>not</strong> on the sidebar (including policy-hidden internal modules such as <code>floor_plan_folders</code>, <code>floor_plan_tags</code>, <code>floor_plan_item_tags</code>).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a> or
+                        <a href="list_modules_not_on_sidebar.php?format=json">?format=json</a>.<br>
+                        CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Compares every <code>CREATE TABLE</code> in <code>database.sql</code> with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a> or
+                        <a href="compare_database_sql_modules.php?format=json">?format=json</a>.<br>
+                        CLI: <code>php scripts/compare_database_sql_modules.php</code> · JSON: <code>--json</code> · exit code <code>1</code> when gaps exist.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <div class="scripts-card" id="static">
         <h2>Static analysis (CLI)</h2>
         <table class="scripts-table">
@@ -291,6 +364,12 @@
                 </tr>
             </thead>
             <tbody>
+                <tr>
+                    <td>check_index_table_compliance.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Index list-table contract audit (import endpoint, action-column markers, POST CSRF). Documented in the <a href="#security">Security</a> section; runs in CI smoke step 4.</td>
+                    <td><code>php scripts/check_index_table_compliance.php</code> · baseline: <code>scripts/data/index_table_compliance_baseline.txt</code></td>
+                </tr>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

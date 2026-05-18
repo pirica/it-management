@@ -78,6 +78,10 @@
  * expanded patches_updates fields for mixed Excel/CSV import layouts.
  * Patches Updates scanner import stores vendor text from "Host MAC" columns in
  * host_mac_manufacturer to avoid mislabeling manufacturer data as a physical MAC address.
+ * Floor Plans gallery (`modules/floor_plans/`) accepts multipart uploads on `index.php` via
+ * `fp_action=upload_files` (images, PDF, and AutoCAD DWG/DXF/DWF/DWS, 20MB max) into
+ * `floor_plans/{company_id}/`, optional nullable link from floor plan to `it_locations` (`it_location_id`), nested folder CRUD,
+ * drag-and-drop move files and nested folders between parents (including root), tag assignment, and gallery search (name, folder, tag, IT location, file extension).
  * Scanner import aliases also map external source "id" headers into id_external to keep internal IDs untouched.
  * Employees create/edit/view now use a workstation_mode_id relation to workstation_modes (mode_name select + quick-add in forms, label rendering in detail view).
  * Employees create/edit/view/index now also use assignment_type_id relation to assignment_types (name select + quick-add in forms, label rendering in list/detail views).
