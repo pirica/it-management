@@ -52,18 +52,19 @@ if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDow
     <div class="itm-floor-plan-view-preview">
         <?php if ($fpPreviewKind === 'pdf'): ?>
             <iframe src="<?php echo sanitize($fpUrl); ?>#view=FitH" title="PDF preview" class="itm-floor-plan-pdf-frame"></iframe>
-            <p>
-                <a href="<?php echo sanitize($fpUrl); ?>" class="btn btn-primary" download="<?php echo sanitize($fpDownloadName); ?>">Download PDF</a>
-                <a href="<?php echo sanitize($fpUrl); ?>" target="_blank" rel="noopener" class="btn">Open in new tab</a>
-            </p>
-            <p class="itm-dropzone-hint">Signed or protected PDFs may disable Save in the browser viewer; use <strong>Download PDF</strong> to save a copy.</p>
         <?php elseif ($fpPreviewKind === 'image'): ?>
             <img src="<?php echo sanitize($fpUrl); ?>" alt="<?php echo sanitize((string)($data['display_name'] ?? '')); ?>" class="itm-floor-plan-view-image">
         <?php else: ?>
             <div class="itm-floor-plan-cad-view">
                 <p>AutoCAD / CAD file preview is not available in the browser.</p>
-                <p><a href="<?php echo sanitize($fpUrl); ?>" class="btn btn-primary" download>Download <?php echo sanitize(strtoupper($fpExt)); ?> file</a></p>
             </div>
+        <?php endif; ?>
+        <p class="itm-floor-plan-file-actions">
+            <a href="<?php echo sanitize($fpUrl); ?>" class="btn btn-primary" download="<?php echo sanitize($fpDownloadName); ?>">Download file</a>
+            <a href="<?php echo sanitize($fpUrl); ?>" target="_blank" rel="noopener" class="btn">Open in new tab</a>
+        </p>
+        <?php if ($fpPreviewKind === 'pdf'): ?>
+            <p class="itm-dropzone-hint">Signed or protected PDFs may disable Save in the browser viewer; use <strong>Download file</strong> to save a copy.</p>
         <?php endif; ?>
     </div>
     <table style="margin-top:16px;">
