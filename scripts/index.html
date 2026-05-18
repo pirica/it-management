@@ -42,9 +42,9 @@
             <li><a href="#docs">Documentation</a></li>
             <li><a href="#browser">Browser tools</a></li>
             <li><a href="#security">Security</a></li>
+            <li><a href="#static">Static analysis (CLI)</a></li>
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
-            <li><a href="#static">Static analysis (CLI)</a></li>
         </ul>
         <div class="scripts-cli-hint">
             <strong>CLI example (Laragon):</strong>
@@ -181,6 +181,15 @@
                     <td>Static scan: finds POST handlers that change data without a known CSRF guard.</td>
                     <td><code>php scripts/check_csrf_coverage.php</code></td>
                 </tr>
+                <tr>
+                    <td>check_audit_logs_coverage.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static scan: verifies modules have audit trail coverage for INSERT/UPDATE/DELETE via <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk delete helpers, or <code>trg_{table}_audit_*</code> triggers in <code>database.sql</code>.</td>
+                    <td>
+                        <code>php scripts/check_audit_logs_coverage.php</code> — exits <code>2</code> when a module mutates data with no audit path.<br>
+                        Optional: <code>--module=rack_planner</code>, <code>--json</code>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -287,6 +296,12 @@
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verifies modules implement UI configuration hooks: table actions origin, new button position, export toolbar, back/save alignment.</td>
                     <td><code>php scripts/check_ui_configuration_coverage.php</code> — exits <code>2</code> if any module fails; skips <code>idfs</code> module.</td>
+                </tr>
+                <tr>
+                    <td>check_audit_logs_coverage.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Same audit coverage scan as the Security section entry: module PHP hooks plus <code>database.sql</code> triggers.</td>
+                    <td><code>php scripts/check_audit_logs_coverage.php</code> — see Security for options.</td>
                 </tr>
             </tbody>
         </table>
