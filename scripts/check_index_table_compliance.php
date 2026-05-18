@@ -23,6 +23,9 @@ if ($root === false) {
     exit(2);
 }
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Index table compliance check');
+
 $modulesDir = $root . DIRECTORY_SEPARATOR . 'modules';
 $baselinePath = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'index_table_compliance_baseline.txt';
 

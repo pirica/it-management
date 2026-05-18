@@ -16,6 +16,9 @@ if ($root === false) {
     exit(2);
 }
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('SQL injection coverage check');
+
 $ignorePaths = [
     DIRECTORY_SEPARATOR . '.git' . DIRECTORY_SEPARATOR,
 ];
@@ -113,16 +116,13 @@ foreach ($iterator as $fileInfo) {
 
 // Reporting
 if (empty($issues)) {
-    echo "<br>";
     echo "SQL injection static check passed. Scanned {$scanned} PHP files and found no high-confidence direct-query findings.\n";
     exit(0);
 }
 
-echo"<br>";
 echo "SQL injection static check found potential issues:\n";
 foreach ($issues as $issue) {
     echo sprintf(" - %s:%d %s\n", $issue['path'], $issue['line'], $issue['reason']);
-    echo"<br>";
 }
 
 exit(1);
