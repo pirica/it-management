@@ -45,6 +45,7 @@
             <li><a href="#static">Static analysis (CLI)</a></li>
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
+            <li><a href="#ui-modules">UI &amp; modules</a></li>
         </ul>
         <div class="scripts-cli-hint">
             <strong>CLI example (Laragon):</strong>
@@ -330,8 +331,15 @@
                 <tr>
                     <td>check_index_table_compliance.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Index list-table contract audit (import endpoint, action-column markers, POST CSRF). Documented in the <a href="#security">Security</a> section; runs in CI smoke step 4.</td>
-                    <td><code>php scripts/check_index_table_compliance.php</code> · baseline: <code>scripts/data/index_table_compliance_baseline.txt</code></td>
+                    <td>
+                        Index list-table contract audit (import endpoint, action-column markers, POST CSRF on index handlers).
+                        Skips protection-zone modules and <code>rack_planner</code>. Baseline: <code>scripts/data/index_table_compliance_baseline.txt</code>.
+                        Runs in CI via <code>scripts/smoke_test.sh</code> step 4.
+                    </td>
+                    <td>
+                        <code>php scripts/check_index_table_compliance.php</code> — exit <code>1</code> on new violations.<br>
+                        <code>php scripts/check_index_table_compliance.php --strict</code> · <code>--write-baseline</code>
+                    </td>
                 </tr>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
@@ -342,8 +350,14 @@
                 <tr>
                     <td>check_audit_logs_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Same audit coverage scan as the Security section entry: module PHP hooks plus <code>database.sql</code> triggers.</td>
+                    <td>Same audit coverage scan as the <a href="#security">Security</a> section entry: module PHP hooks plus <code>database.sql</code> triggers.</td>
                     <td><code>php scripts/check_audit_logs_coverage.php</code> — see Security for options.</td>
+                </tr>
+                <tr>
+                    <td>smoke_test.sh</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): syntax lint, CSRF, SQLi, index-table compliance, optional UI config audit.</td>
+                    <td><code>bash scripts/smoke_test.sh</code> — set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip UI layout step.</td>
                 </tr>
             </tbody>
         </table>
