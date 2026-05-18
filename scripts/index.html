@@ -24,6 +24,7 @@
         .scripts-toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 8px; padding: 0; list-style: none; }
         .scripts-toc a { color: #0969da; text-decoration: none; }
         .scripts-toc a:hover { text-decoration: underline; }
+        .scripts-toc a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
         h1 { margin: 0 0 8px; }
         h2 { margin: 0 0 12px; font-size: 1.15rem; }
         .scripts-cli-hint { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--table-header-bg, #f6f8fa); border: 1px solid var(--border-color, #d0d7de); font-size: 0.9rem; }
@@ -47,6 +48,7 @@
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
             <li><a href="#ui-modules">UI &amp; modules</a></li>
+            <li><a href="http://localhost/phpmyadmin" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
         </ul>
         <div class="scripts-cli-hint">
             <strong>CLI example (Laragon):</strong>
@@ -192,6 +194,12 @@
                 </tr>
             </thead>
             <tbody>
+                <tr>
+                    <td><a href="http://localhost/phpmyadmin" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Local MySQL admin UI for schema inspection, ad-hoc SQL, and imports (database <code>itmanagement</code> on typical Laragon installs).</td>
+                    <td>Open <a href="http://localhost/phpmyadmin" target="_blank" rel="noopener noreferrer">http://localhost/phpmyadmin</a> in a new tab. Default dev: user <code>root</code>, password per your Laragon/MySQL setup (often blank locally).</td>
+                </tr>
                 <tr>
                     <td><a href="analyze_database_health.php">analyze_database_health.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
