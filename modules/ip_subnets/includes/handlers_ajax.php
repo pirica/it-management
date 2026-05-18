@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Ping IP / port check from list view (AJAX).
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST'

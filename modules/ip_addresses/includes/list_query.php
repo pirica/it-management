@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // FETCH LIST DATA
 $itmIpAddressFocusedList = in_array($crud_action, ['index', 'list_all'], true);
 $itmSubnetFilterId = max(0, (int)($_GET['subnet_id'] ?? 0));

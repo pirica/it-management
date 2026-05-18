@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 function rack_planner_component_catalog(): array
 {
     return [

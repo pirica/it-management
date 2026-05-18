@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true)) {
     $itm_content_type = isset($_SERVER['CONTENT_TYPE']) ? strtolower(trim((string) $_SERVER['CONTENT_TYPE'])) : '';

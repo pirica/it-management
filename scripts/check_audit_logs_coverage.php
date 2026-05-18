@@ -17,6 +17,14 @@
 
 declare(strict_types=1);
 
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/plain; charset=utf-8');
+    http_response_code(501);
+    echo "This script must be run from the command line.\n";
+    echo "Example: php scripts/check_audit_logs_coverage.php\n";
+    exit(1);
+}
+
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
     fwrite(STDERR, "Unable to resolve project root.\n");
@@ -179,7 +187,22 @@ function audit_logs_module_has_mutations(string $source, array $schemaTables): b
         return true;
     }
 
-    return preg_match('/mysqli_prepare\s*\(\s*\$conn\s*,\s*["\'][^"\']*\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM)\b/i', $source) === 1;
+    if (preg_match('/mysqli_prepare\s*\(\s*\$conn\s*,\s*["\'][^"\']*\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM)\b/i', $source) === 1) {
+        return true;
+    }
+
+    // Why: Standard CRUD modules build SQL with cr_escape_identifier($crud_table) instead of literal table names.
+    if (preg_match('/\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s*[\'"]\s*\.\s*cr_escape_identifier\s*\(/i', $source) === 1) {
+        return true;
+    }
+    if (
+        preg_match('/cr_escape_identifier\s*\(\s*\$crud_table\s*\)/i', $source) === 1
+        && preg_match('/\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM)\b/i', $source) === 1
+    ) {
+        return true;
+    }
+
+    return false;
 }
 
 function audit_logs_module_has_php_audit_hooks(string $source): bool
@@ -306,6 +329,18 @@ function audit_logs_assess_module(
     }
 
     if (!$hasMutations) {
+        if ($phpAudit && $crudTable !== null) {
+            return [
+                'status' => 'pass',
+                'details' => 'Audit path: PHP (itm_run_query / itm_log_audit / bulk helper); dynamic SQL mutations inferred from CRUD helpers',
+                'crud_table' => $crudTable,
+                'php_audit' => $phpAudit,
+                'db_trigger' => $dbTrigger,
+                'mutated_tables' => $mutatedTables,
+                'uncovered_tables' => $uncoveredTables,
+            ];
+        }
+
         return [
             'status' => 'n/a',
             'details' => 'No INSERT/UPDATE/DELETE mutations detected in module PHP',

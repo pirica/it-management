@@ -11,9 +11,21 @@
 
 declare(strict_types=1);
 
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/plain; charset=utf-8');
+    http_response_code(501);
+    echo "This script must be run from the command line.\n";
+    echo "Example: php scripts/idfs_api_payload_dry_run.php --samples\n";
+    exit(1);
+}
+
 function itm_dry_fail(string $message, int $code = 1): void
 {
-    fwrite(STDERR, "ERROR: {$message}" . PHP_EOL);
+    if (defined('STDERR')) {
+        fwrite(STDERR, "ERROR: {$message}" . PHP_EOL);
+    } else {
+        echo "ERROR: {$message}" . PHP_EOL;
+    }
     exit($code);
 }
 

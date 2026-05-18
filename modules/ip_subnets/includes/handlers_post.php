@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Handle Excel/CSV database import requests from table-tools.js.
 $requestContentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
 $isJsonImportRequest = false;

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Inline notes save from IP list (AJAX).
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST'

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // FETCH LIST DATA
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }

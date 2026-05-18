@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Data Fetching
 $data = ['id' => 0, 'name' => '', 'rack_units' => 42, 'layout_json' => '{"version":1,"units":42,"devices":[]}', 'notes' => '', 'active' => 1];
 if (in_array($crud_action, ['edit', 'view'])) {

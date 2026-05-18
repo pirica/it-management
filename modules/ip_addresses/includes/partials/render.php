@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // View partial: mutating POST handlers call cr_require_valid_csrf_token() in ../handlers_post.php.
 ?>
 <!DOCTYPE html>

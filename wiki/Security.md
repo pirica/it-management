@@ -57,31 +57,23 @@ define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
 
 ### Environment variables (recommended)
 
-Set in Apache vhost (or systemd/container runtime):
+The application reads optional settings from a project-root `.env` file (see `itm_load_dotenv_file()` in `config/config.php`) and from the process environment. Database credentials are still defined as constants in `config/config.php` unless you customize that file for your deployment.
+
+Set in Apache vhost (or systemd/container runtime) when needed:
 
 ```apache
-SetEnv ITM_DB_HOST localhost
-SetEnv ITM_DB_NAME itmanagement
-SetEnv ITM_DB_USER root
-SetEnv ITM_DB_PASS change_me
-SetEnv ITM_API_KEY change_me
+SetEnv ITM_APP_URL https://itm.example.com/app/
+SetEnv ITM_ALLOWED_HOSTS itm.example.com,www.itm.example.com
 SetEnv IP2WHOIS_API_KEY your_ip2whois_key
 ```
 
-Load and validate in `config/config.php`:
+Optional IP2WHOIS alias:
 
-```php
-$itmDbHost = getenv('ITM_DB_HOST') ?: '';
-$itmDbName = getenv('ITM_DB_NAME') ?: '';
-$itmDbUser = getenv('ITM_DB_USER') ?: '';
-$itmDbPass = getenv('ITM_DB_PASS') ?: '';
-$itmApiKey = getenv('ITM_API_KEY') ?: '';
-
-if ($itmDbHost === '' || $itmDbName === '' || $itmDbUser === '' || $itmApiKey === '') {
-    http_response_code(500);
-    exit('Configuration error: required environment variables are missing.');
-}
+```apache
+SetEnv ITM_IP2WHOIS_API_KEY your_ip2whois_key
 ```
+
+`config/config.php` already consumes `ITM_APP_URL`, `ITM_ALLOWED_HOSTS`, and `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` for URL hardening and Network Discovery. There is no `ITM_API_KEY` or `ITM_DB_*` loader in the current runtime—do not document or require those names unless you add matching code first.
 
 ### Alternative: server-local config file
 
