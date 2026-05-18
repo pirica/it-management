@@ -5241,4 +5241,21 @@ INSERT INTO `rack_planner` (`company_id`, `id`, `name`, `rack_units`, `layout_js
 (3, 3, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 3.', 1, '2026-01-01 00:00:01'),
 (4, 4, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 4.', 1, '2026-01-01 00:00:01'),
 (5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 1, '2026-01-01 00:00:01');
+DROP TRIGGER IF EXISTS `trg_rack_planner_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_rack_planner_audit_update`;
+DROP TRIGGER IF EXISTS `trg_rack_planner_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_rack_planner_audit_insert` AFTER INSERT ON `rack_planner` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rack_planner', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'rack_units', NEW.`rack_units`, 'layout_json', NEW.`layout_json`, 'notes', NEW.`notes`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_rack_planner_audit_update` AFTER UPDATE ON `rack_planner` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rack_planner', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'rack_units', NEW.`rack_units`, 'layout_json', NEW.`layout_json`, 'notes', NEW.`notes`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_rack_planner_audit_delete` AFTER DELETE ON `rack_planner` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'rack_planner', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
 SET FOREIGN_KEY_CHECKS=1;
