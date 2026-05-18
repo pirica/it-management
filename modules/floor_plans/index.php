@@ -532,6 +532,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
                 mysqli_stmt_bind_param($stmt, 'is', $company_id, $name);
                 if (!mysqli_stmt_execute($stmt)) {
                     $_SESSION['crud_error'] = 'Could not create folder.';
+                } else {
+                    $newFolderId = (int)mysqli_insert_id($conn);
+                    if ($newFolderId > 0) {
+                        $folderNewValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $newFolderId, (int)$company_id);
+                        fp_audit_log_record($conn, 'floor_plan_folders', $newFolderId, (int)$company_id, 'INSERT', null, $folderNewValues);
+                    }
                 }
                 mysqli_stmt_close($stmt);
             }
@@ -541,6 +547,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
                 mysqli_stmt_bind_param($stmt, 'iis', $company_id, $parentId, $name);
                 if (!mysqli_stmt_execute($stmt)) {
                     $_SESSION['crud_error'] = 'Could not create folder.';
+                } else {
+                    $newFolderId = (int)mysqli_insert_id($conn);
+                    if ($newFolderId > 0) {
+                        $folderNewValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $newFolderId, (int)$company_id);
+                        fp_audit_log_record($conn, 'floor_plan_folders', $newFolderId, (int)$company_id, 'INSERT', null, $folderNewValues);
+                    }
                 }
                 mysqli_stmt_close($stmt);
             }
@@ -563,11 +575,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
             if (fp_folder_name_exists($conn, (int)$company_id, $parentId, $name, $folderId)) {
                 $_SESSION['crud_error'] = 'A folder with that name already exists at this level.';
             } else {
+                $folderOldValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $folderId, (int)$company_id);
                 $stmt = mysqli_prepare($conn, 'UPDATE floor_plan_folders SET name=? WHERE id=? AND company_id=? LIMIT 1');
                 if ($stmt) {
                     mysqli_stmt_bind_param($stmt, 'sii', $name, $folderId, $company_id);
                     if (!mysqli_stmt_execute($stmt)) {
                         $_SESSION['crud_error'] = 'Could not rename folder.';
+                    } elseif ($folderOldValues !== null) {
+                        $folderNewValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $folderId, (int)$company_id);
+                        fp_audit_log_record($conn, 'floor_plan_folders', $folderId, (int)$company_id, 'UPDATE', $folderOldValues, $folderNewValues);
                     }
                     mysqli_stmt_close($stmt);
                 }
@@ -605,10 +621,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
         } elseif (fp_folder_has_children($conn, $folderId, (int)$company_id) || fp_folder_has_files($conn, $folderId, (int)$company_id)) {
             $_SESSION['crud_error'] = 'Remove subfolders and files before deleting this folder.';
         } else {
+            $folderOldValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $folderId, (int)$company_id);
             $stmt = mysqli_prepare($conn, 'DELETE FROM floor_plan_folders WHERE id=? AND company_id=? LIMIT 1');
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'ii', $folderId, $company_id);
-                mysqli_stmt_execute($stmt);
+                if (mysqli_stmt_execute($stmt) && $folderOldValues !== null) {
+                    fp_audit_log_record($conn, 'floor_plan_folders', $folderId, (int)$company_id, 'DELETE', $folderOldValues, null);
+                }
                 mysqli_stmt_close($stmt);
             }
         }

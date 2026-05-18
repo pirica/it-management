@@ -447,11 +447,16 @@ function fp_move_folder_to_parent(mysqli $conn, int $companyId, int $folderId, ?
         }
         mysqli_stmt_bind_param($stmt, 'iii', $normalizedParent, $folderId, $companyId);
     }
+    $folderOldValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $folderId, $companyId);
     if (!mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
         return 'Could not move folder.';
     }
     mysqli_stmt_close($stmt);
+    if ($folderOldValues !== null) {
+        $folderNewValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $folderId, $companyId);
+        fp_audit_log_record($conn, 'floor_plan_folders', $folderId, $companyId, 'UPDATE', $folderOldValues, $folderNewValues);
+    }
     return '';
 }
 
@@ -517,8 +522,13 @@ function fp_save_tags_for_plan(mysqli $conn, int $planId, int $companyId, array 
             $ins = mysqli_prepare($conn, 'INSERT INTO floor_plan_tags (company_id, name, active) VALUES (?, ?, 1)');
             if ($ins) {
                 mysqli_stmt_bind_param($ins, 'is', $companyId, $name);
-                mysqli_stmt_execute($ins);
-                $tagId = (int)mysqli_insert_id($conn);
+                if (mysqli_stmt_execute($ins)) {
+                    $tagId = (int)mysqli_insert_id($conn);
+                    if ($tagId > 0) {
+                        $tagNewValues = fp_audit_fetch_record($conn, 'floor_plan_tags', $tagId, $companyId);
+                        fp_audit_log_record($conn, 'floor_plan_tags', $tagId, $companyId, 'INSERT', null, $tagNewValues);
+                    }
+                }
                 mysqli_stmt_close($ins);
             }
         }
@@ -546,14 +556,27 @@ function fp_parse_tag_input(string $raw): array {
 }
 
 /**
- * Snapshot a floor_plans row for audit_logs (company-scoped when possible).
+ * Snapshot a gallery table row for audit_logs (company-scoped when possible).
  */
-function fp_audit_fetch_floor_plan(mysqli $conn, int $planId, int $companyId)
+function fp_audit_fetch_record(mysqli $conn, string $table, int $recordId, int $companyId)
 {
-    if ($planId <= 0 || !function_exists('itm_fetch_audit_record')) {
+    if ($recordId <= 0 || !function_exists('itm_fetch_audit_record') || !itm_is_safe_identifier($table)) {
         return null;
     }
-    return itm_fetch_audit_record($conn, 'floor_plans', $planId, $companyId);
+    return itm_fetch_audit_record($conn, $table, $recordId, $companyId);
+}
+
+function fp_audit_log_record(mysqli $conn, string $table, int $recordId, int $companyId, string $action, $oldValues = null, $newValues = null): void
+{
+    if ($recordId <= 0 || !function_exists('itm_log_audit') || !itm_is_safe_identifier($table)) {
+        return;
+    }
+    itm_log_audit($conn, $table, $recordId, $action, $oldValues, $newValues);
+}
+
+function fp_audit_fetch_floor_plan(mysqli $conn, int $planId, int $companyId)
+{
+    return fp_audit_fetch_record($conn, 'floor_plans', $planId, $companyId);
 }
 
 /**
@@ -561,10 +584,7 @@ function fp_audit_fetch_floor_plan(mysqli $conn, int $planId, int $companyId)
  */
 function fp_audit_log_floor_plan(mysqli $conn, int $planId, int $companyId, string $action, $oldValues = null, $newValues = null): void
 {
-    if ($planId <= 0 || !function_exists('itm_log_audit')) {
-        return;
-    }
-    itm_log_audit($conn, 'floor_plans', $planId, $action, $oldValues, $newValues);
+    fp_audit_log_record($conn, 'floor_plans', $planId, $companyId, $action, $oldValues, $newValues);
 }
 
 function fp_delete_plans_by_ids(mysqli $conn, array $ids, int $companyId): void {
@@ -672,6 +692,10 @@ function fp_seed_sample_folders_and_tags(mysqli $conn, int $companyId): int {
             if (mysqli_stmt_execute($rootStmt)) {
                 $inserted++;
                 $rootId = (int)mysqli_insert_id($conn);
+                if ($rootId > 0) {
+                    $rootNewValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $rootId, $companyId);
+                    fp_audit_log_record($conn, 'floor_plan_folders', $rootId, $companyId, 'INSERT', null, $rootNewValues);
+                }
                 mysqli_stmt_close($rootStmt);
                 $childStmt = mysqli_prepare($conn, 'INSERT INTO floor_plan_folders (company_id, parent_folder_id, name, active) VALUES (?, ?, ?, 1)');
                 if ($childStmt) {
@@ -679,6 +703,11 @@ function fp_seed_sample_folders_and_tags(mysqli $conn, int $companyId): int {
                     mysqli_stmt_bind_param($childStmt, 'iis', $companyId, $rootId, $childName);
                     if (mysqli_stmt_execute($childStmt)) {
                         $inserted++;
+                        $childId = (int)mysqli_insert_id($conn);
+                        if ($childId > 0) {
+                            $childNewValues = fp_audit_fetch_record($conn, 'floor_plan_folders', $childId, $companyId);
+                            fp_audit_log_record($conn, 'floor_plan_folders', $childId, $companyId, 'INSERT', null, $childNewValues);
+                        }
                     }
                     mysqli_stmt_close($childStmt);
                 }
@@ -693,6 +722,11 @@ function fp_seed_sample_folders_and_tags(mysqli $conn, int $companyId): int {
             mysqli_stmt_bind_param($tagStmt, 'is', $companyId, $tagName);
             if (mysqli_stmt_execute($tagStmt) && mysqli_affected_rows($conn) > 0) {
                 $inserted++;
+                $tagId = (int)mysqli_insert_id($conn);
+                if ($tagId > 0) {
+                    $tagNewValues = fp_audit_fetch_record($conn, 'floor_plan_tags', $tagId, $companyId);
+                    fp_audit_log_record($conn, 'floor_plan_tags', $tagId, $companyId, 'INSERT', null, $tagNewValues);
+                }
             }
             mysqli_stmt_close($tagStmt);
         }
