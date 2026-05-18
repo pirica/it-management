@@ -6,10 +6,13 @@
  * Modules can satisfy that via PHP helpers (itm_run_query / itm_log_audit / bulk helpers)
  * or database triggers defined in database.sql (trg_{table}_audit_*).
  *
- * Usage:
+ * Usage (PHP 7.4+ with MySQLi, from repository root):
  *   php scripts/check_audit_logs_coverage.php
  *   php scripts/check_audit_logs_coverage.php --module=rack_planner
  *   php scripts/check_audit_logs_coverage.php --json
+ *
+ * Windows Laragon when `php` on PATH is too old:
+ *   <laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\check_audit_logs_coverage.php
  */
 
 declare(strict_types=1);
@@ -152,7 +155,10 @@ function audit_logs_read_module_source(array $phpFiles): string
     return implode("\n", $chunks);
 }
 
-function audit_logs_extract_crud_table(string $indexContent): ?string
+/**
+ * @return string|null
+ */
+function audit_logs_extract_crud_table(string $indexContent)
 {
     if (preg_match('/\$crud_table\s*=\s*\$crud_table\s*\?\?\s*[\'"]([a-zA-Z0-9_]+)[\'"]/', $indexContent, $match)) {
         return $match[1];
