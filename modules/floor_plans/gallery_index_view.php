@@ -167,10 +167,17 @@ $fpCreateUrl = $modulePath . '/create.php';
                     $fpExt = (string)$fpItem['file_ext'];
                     $fpPreviewKind = fp_resolve_preview_kind($fpMime, $fpExt);
                     $fpTags = trim((string)($fpItem['tag_names'] ?? ''));
+                    $fpDownloadName = preg_replace('/[^\w.\-]+/u', '_', (string)($fpItem['display_name'] ?? 'floor-plan'));
+                    if ($fpDownloadName === '') {
+                        $fpDownloadName = 'floor-plan';
+                    }
+                    if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDownloadName)) {
+                        $fpDownloadName .= '.' . $fpExt;
+                    }
                     ?>
                     <article class="itm-floor-plan-card" data-plan-id="<?php echo $fpId; ?>">
                         <span class="itm-plan-drag-handle" draggable="true" data-plan-id="<?php echo $fpId; ?>" title="Drag to move file" aria-label="Drag to move file">⠿</span>
-                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>">
+                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>" data-preview-download-name="<?php echo sanitize($fpDownloadName); ?>">
                             <?php if ($fpPreviewKind === 'pdf'): ?>
                                 <div class="itm-floor-plan-pdf-thumb">PDF</div>
                             <?php elseif ($fpPreviewKind === 'cad'): ?>
