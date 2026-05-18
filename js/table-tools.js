@@ -447,10 +447,71 @@
         table.parentNode.insertBefore(emptyState, table.nextSibling);
     }
 
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildViewPdfPreviewHtml(table) {
+        const card = table.closest('[data-itm-pdf-preview]');
+        if (!card) {
+            return '';
+        }
+
+        const preview = card.querySelector('.itm-floor-plan-view-preview');
+        if (!preview) {
+            return '';
+        }
+
+        const image = preview.querySelector('img.itm-floor-plan-view-image');
+        if (image && image.src) {
+            const alt = escapeHtml(image.getAttribute('alt') || 'Floor plan');
+            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;text-align:center;">`
+                + `<img src="${escapeHtml(image.src)}" alt="${alt}" style="max-width:100%;height:auto;display:block;margin:0 auto;">`
+                + `</div>`;
+        }
+
+        const pdfFrame = preview.querySelector('iframe.itm-floor-plan-pdf-frame');
+        if (pdfFrame && pdfFrame.src) {
+            const src = escapeHtml(pdfFrame.src.split('#')[0]);
+            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;">`
+                + `<iframe src="${src}" title="Floor plan PDF" style="width:100%;min-height:70vh;border:0;"></iframe>`
+                + `</div>`;
+        }
+
+        const cadBlock = preview.querySelector('.itm-floor-plan-cad-view');
+        if (cadBlock) {
+            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;">${cadBlock.innerHTML}</div>`;
+        }
+
+        return '';
+    }
+
+    function triggerViewPdfPrint(printWindow) {
+        const previewImage = printWindow.document.querySelector('.itm-pdf-preview-wrap img');
+        const finish = () => {
+            printWindow.focus();
+            printWindow.print();
+            setTimeout(() => printWindow.close(), 200);
+        };
+
+        if (previewImage && !previewImage.complete) {
+            previewImage.addEventListener('load', finish, { once: true });
+            previewImage.addEventListener('error', finish, { once: true });
+            return;
+        }
+
+        finish();
+    }
+
     function exportViewAsPdf(table) {
         const heading = table.closest('.content')?.querySelector('h1');
         const filenameBase = sanitizeFilename(heading ? heading.textContent : document.title);
         const clone = table.cloneNode(true);
+        const previewHtml = buildViewPdfPreviewHtml(table);
         const printWindow = window.open('', '_blank');
 
         if (!printWindow) {
@@ -467,18 +528,18 @@
                     table { width: 100%; border-collapse: collapse; }
                     th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
                     th { background: #f6f8fa; width: 240px; }
+                    .itm-pdf-preview-wrap { page-break-inside: avoid; }
                 </style>
             </head>
             <body>
                 <h2>${filenameBase.replace(/-/g, ' ')}</h2>
+                ${previewHtml}
                 ${clone.outerHTML}
             </body>
             </html>
         `);
         printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        setTimeout(() => printWindow.close(), 200);
+        triggerViewPdfPrint(printWindow);
     }
 
     function attachViewTools(table) {
