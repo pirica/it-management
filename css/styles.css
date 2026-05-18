@@ -1634,6 +1634,15 @@ input[type="submit"] {
     display: block;
 }
 
+.itm-floor-plan-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #d0d7de);
+}
+
 .itm-floor-plan-pdf-frame {
     width: 100%;
     min-height: 70vh;
