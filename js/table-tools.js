@@ -474,11 +474,17 @@
                 + `</div>`;
         }
 
+        const previewKind = (card.getAttribute('data-itm-pdf-preview-kind') || '').toLowerCase();
         const pdfFrame = preview.querySelector('iframe.itm-floor-plan-pdf-frame');
-        if (pdfFrame && pdfFrame.src) {
-            const src = escapeHtml(pdfFrame.src.split('#')[0]);
-            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;">`
-                + `<iframe src="${src}" title="Floor plan PDF" style="width:100%;min-height:70vh;border:0;"></iframe>`
+        if (previewKind === 'pdf' || (pdfFrame && pdfFrame.src)) {
+            const fileUrl = escapeHtml(card.getAttribute('data-itm-pdf-file-url') || pdfFrame.src.split('#')[0]);
+            const fileName = escapeHtml(card.getAttribute('data-itm-pdf-file-name') || 'floor-plan.pdf');
+            return `<div class="itm-pdf-preview-wrap itm-pdf-preview-file" style="margin:0 0 16px;padding:12px;border:1px solid #d0d7de;border-radius:8px;">`
+                + `<p><strong>Floor plan file (PDF)</strong></p>`
+                + `<p>The PDF is not embedded in this printout. Browsers disable Save for many signed or protected PDFs when they are shown inside a viewer.</p>`
+                + `<p><a href="${fileUrl}" download="${fileName}">Download original PDF</a>`
+                + ` · <a href="${fileUrl}" target="_blank" rel="noopener">Open in new tab</a></p>`
+                + `<p style="font-size:12px;color:#57606a;">Use <strong>Download original PDF</strong> to save the file. Use the print dialog&rsquo;s <strong>Save as PDF</strong> / <strong>Microsoft Print to PDF</strong> to save this summary page.</p>`
                 + `</div>`;
         }
 
@@ -558,6 +564,22 @@
         pdfBtn.addEventListener('click', () => exportViewAsPdf(table));
 
         toolbar.appendChild(pdfBtn);
+
+        const card = table.closest('[data-itm-pdf-preview]');
+        const fileUrl = card ? (card.getAttribute('data-itm-pdf-file-url') || '').trim() : '';
+        if (fileUrl !== '') {
+            const downloadLink = document.createElement('a');
+            downloadLink.href = fileUrl;
+            downloadLink.className = 'btn btn-sm';
+            downloadLink.textContent = '💾 Download file';
+            const fileName = card.getAttribute('data-itm-pdf-file-name') || '';
+            if (fileName !== '') {
+                downloadLink.setAttribute('download', fileName);
+            }
+            downloadLink.rel = 'noopener';
+            toolbar.appendChild(downloadLink);
+        }
+
         table.parentNode.insertBefore(toolbar, table);
     }
 
