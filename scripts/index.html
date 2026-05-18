@@ -182,6 +182,12 @@
                     <td>Static scan: finds POST handlers that change data without a known CSRF guard.</td>
                     <td><code>php scripts/check_csrf_coverage.php</code></td>
                 </tr>
+                <tr>
+                    <td>smoke_test.sh</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>CI/local smoke runner: <code>php -l</code> on all PHP files, then CSRF, SQL injection, and UI configuration audits.</td>
+                    <td><code>bash scripts/smoke_test.sh</code> — GitHub Actions workflow <code>.github/workflows/smoke.yml</code>; set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip the UI audit.</td>
+                </tr>
             </tbody>
         </table>
     </div>
