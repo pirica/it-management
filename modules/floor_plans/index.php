@@ -766,26 +766,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
     if ($fpAction === 'move_file') {
         $planId = (int)($_POST['plan_id'] ?? 0);
         $targetFolderId = (int)($_POST['folder_id'] ?? 0);
-        $folderParam = $targetFolderId > 0 ? $targetFolderId : null;
         if ($planId <= 0) {
             $_SESSION['crud_error'] = 'File not found.';
         } elseif ($targetFolderId > 0 && !fp_folder_belongs_to_company($conn, $targetFolderId, (int)$company_id)) {
             $_SESSION['crud_error'] = 'Invalid folder.';
         } else {
             $moveOldValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
-            if ($targetFolderId > 0) {
-                $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET folder_id=? WHERE id=? AND company_id=? LIMIT 1');
-                if ($stmt) {
-                    mysqli_stmt_bind_param($stmt, 'iii', $targetFolderId, $planId, $company_id);
-                    mysqli_stmt_execute($stmt);
-                    mysqli_stmt_close($stmt);
-                }
+            if ($moveOldValues === null) {
+                $_SESSION['crud_error'] = 'File not found.';
             } else {
-                mysqli_query($conn, 'UPDATE floor_plans SET folder_id=NULL WHERE id=' . (int)$planId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
-            }
-            if ($moveOldValues !== null) {
-                $moveNewValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
-                fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'UPDATE', $moveOldValues, $moveNewValues);
+                $currentFolderId = (int)($moveOldValues['folder_id'] ?? 0);
+                $alreadyInTarget = ($targetFolderId > 0 && $currentFolderId === $targetFolderId)
+                    || ($targetFolderId <= 0 && $currentFolderId <= 0);
+                $moved = false;
+                if (!$alreadyInTarget) {
+                    if ($targetFolderId > 0) {
+                        $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET folder_id=? WHERE id=? AND company_id=? LIMIT 1');
+                        if ($stmt) {
+                            mysqli_stmt_bind_param($stmt, 'iii', $targetFolderId, $planId, $company_id);
+                            mysqli_stmt_execute($stmt);
+                            $moved = mysqli_stmt_affected_rows($stmt) > 0;
+                            mysqli_stmt_close($stmt);
+                        }
+                    } else {
+                        $stmt = mysqli_prepare($conn, 'UPDATE floor_plans SET folder_id=NULL WHERE id=? AND company_id=? LIMIT 1');
+                        if ($stmt) {
+                            mysqli_stmt_bind_param($stmt, 'ii', $planId, $company_id);
+                            mysqli_stmt_execute($stmt);
+                            $moved = mysqli_stmt_affected_rows($stmt) > 0;
+                            mysqli_stmt_close($stmt);
+                        }
+                    }
+                }
+                if (!$alreadyInTarget && !$moved) {
+                    $_SESSION['crud_error'] = 'Could not move file.';
+                } elseif (!$alreadyInTarget) {
+                    $moveNewValues = fp_audit_fetch_floor_plan($conn, $planId, (int)$company_id);
+                    fp_audit_log_floor_plan($conn, $planId, (int)$company_id, 'UPDATE', $moveOldValues, $moveNewValues);
+                }
             }
         }
         header('Location: ' . $listUrl . ($targetFolderId > 0 ? '?folder_id=' . $targetFolderId : ''));
