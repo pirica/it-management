@@ -150,6 +150,20 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 * **Preserve file encoding and structure:** Do not change charset, BOM behavior, or module layout unless requested.
 * **If a change must be bulk-applied, state why in the PR description** and confirm the scope before continuing.
 
+### PR review without Codex (mandatory)
+* **Do not depend on a GitHub Codex subscription** for merge readiness. Reviews and fixes are done in-repo via **Cursor** (this agent), optional **Bugbot**, manual IDE review, and the scripts below — same intent as external P1/P2 bot comments, without renewing Codex.
+* **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
+  * `php -l` on every touched `.php` file.
+  * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
+  * `php scripts/check_audit_logs_coverage.php` when CRUD or audit-related paths changed.
+  * `php scripts/check_database_sql_company_name_uniques.php` when `database.sql` or tenant unique keys changed.
+  * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
+  * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
+  * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or the Laragon 7.4 path from Setup) — hard-fail if any `[FAIL]`.
+  * Smoke/CI workflows in `.github/workflows/` when present; list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
+* **GitHub Codex connector (optional for maintainers):** to stop new automated Codex review threads on `pirica/it-management`, disable or uninstall the **Codex GitHub App / connector** under **Repository → Settings → Integrations** (or the org’s installed apps). Existing comments remain as history only; they are not required to address before merge if the in-repo review pass above passes.
+* **CI and repo scripts stay authoritative:** smoke workflows and maintenance scripts (for example `check_audit_logs_coverage.php`, `check_database_sql_company_name_uniques.php`) are owned by the repository and must keep passing without Codex.
+
 ### Module Consistency Guardrail (Mandatory)
 When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
 * **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
