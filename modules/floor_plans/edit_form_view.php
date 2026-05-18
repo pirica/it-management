@@ -5,6 +5,12 @@
 $fpPlanId = (int)($data['id'] ?? 0);
 $fpFolders = fp_fetch_folders($conn, (int)$company_id);
 $fpCurrentFolderId = (int)($data['folder_id'] ?? 0);
+if ($fpCurrentFolderId > 0 && (int)$company_id > 0) {
+    $fpCurrentFolderId = itm_fk_resolve_company_equivalent_id($conn, [
+        'REFERENCED_TABLE_NAME' => 'floor_plan_folders',
+        'REFERENCED_COLUMN_NAME' => 'id',
+    ], (int)$company_id, $fpCurrentFolderId);
+}
 $fpTags = fp_get_tags_for_plan($conn, $fpPlanId, (int)$company_id);
 $fpTagNames = [];
 foreach ($fpTags as $fpTag) {

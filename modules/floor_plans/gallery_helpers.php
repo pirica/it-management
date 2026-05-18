@@ -836,6 +836,12 @@ function fp_seed_sample_folders_and_tags(mysqli $conn, int $companyId): int {
 
 function fp_render_it_location_select(mysqli $conn, int $companyId, string $fieldName, string $fieldId, $selectedValue): string {
     $selectedId = (int)$selectedValue;
+    if ($selectedId > 0 && $companyId > 0) {
+        $selectedId = itm_fk_resolve_company_equivalent_id($conn, [
+            'REFERENCED_TABLE_NAME' => 'it_locations',
+            'REFERENCED_COLUMN_NAME' => 'id',
+        ], $companyId, $selectedId);
+    }
     $options = fp_fetch_it_location_options($conn, $companyId);
     $html = '<select name="' . sanitize($fieldName) . '" id="' . sanitize($fieldId) . '">';
     $html .= '<option value="">— No IT location link —</option>';
