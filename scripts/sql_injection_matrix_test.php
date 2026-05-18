@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib/sql_injection_detector.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('SQL injection matrix test');
 
 /**
  * Compact, table-driven SQL injection test matrix.

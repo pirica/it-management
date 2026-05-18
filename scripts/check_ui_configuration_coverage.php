@@ -17,6 +17,9 @@ if (!is_dir($modulesDir)) {
     exit(1);
 }
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('UI configuration coverage check');
+
 $excludeModules = ['idfs'];
 
 /**
