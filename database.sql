@@ -366,6 +366,8 @@ CREATE TABLE `floor_plan_tags` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `floor_plan_tags_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Manual migration (existing databases only):
+-- ALTER TABLE `floor_plan_tags` ADD UNIQUE KEY `uq_floor_plan_tags_company_name` (`company_id`, `name`);
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Ground Floor', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('2', '1', 'Building A', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('3', '2', 'Ground Floor', '1', '2026-01-01 00:00:01');
