@@ -225,6 +225,7 @@ define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
+require_once ROOT_PATH . 'includes/user_dropdown_helpers.php';
 
 // Ensure required upload and backup directories exist (writable, non-executable over HTTP)
 itm_ensure_upload_directory(UPLOAD_PATH, 'upload');

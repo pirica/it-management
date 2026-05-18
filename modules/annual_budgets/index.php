@@ -132,78 +132,18 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
  * Resolves a user display label for *_by fields when schema does not declare a foreign key.
  */
 function cr_user_label_by_id($conn, $company_id, $rawId) {
-    if ($rawId === null || $rawId === '') {
-        return '';
-    }
-
-    $id = (int)$rawId;
-    if ($id <= 0) {
-        return '';
-    }
-
-    $whereCompany = ($company_id > 0)
-        ? ' WHERE id=' . $id . ' AND company_id=' . (int)$company_id
-        : ' WHERE id=' . $id;
-    $sql = 'SELECT username, first_name, last_name FROM `users`' . $whereCompany . ' LIMIT 1';
-    $res = mysqli_query($conn, $sql);
-
-    if ((!$res || mysqli_num_rows($res) === 0) && $company_id > 0) {
-        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `users` WHERE id=' . $id . ' LIMIT 1');
-    }
-
-    if ($res && ($row = mysqli_fetch_assoc($res))) {
-        $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-        if ($fullName !== '') {
-            return $fullName;
-        }
-
-        $username = trim((string)($row['username'] ?? ''));
-        if ($username !== '') {
-            return $username;
-        }
-    }
-
-    return '';
+    return itm_user_label_by_id_for_company($conn, (int)$company_id, $rawId);
 }
-
 
 /**
  * Loads selectable users for *_by edit/create fields.
  */
 function cr_user_options($conn, $company_id) {
-    $where = ($company_id > 0)
-        ? ' WHERE company_id=' . (int)$company_id
-        : '';
-    $sql = 'SELECT id, username, first_name, last_name FROM `users`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
-    $res = mysqli_query($conn, $sql);
-    $options = [];
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-        $username = trim((string)($row['username'] ?? ''));
-        $label = $fullName !== '' ? $fullName : ($username !== '' ? $username : ('User #' . (int)$row['id']));
-        $options[] = ['id' => (int)$row['id'], 'label' => $label];
-    }
-    return $options;
+    return itm_user_options_for_company($conn, (int)$company_id);
 }
 
 function cr_append_selected_user_option($conn, $company_id, $options, $selectedValue) {
-    $selectedId = (int)$selectedValue;
-    if ($selectedId <= 0) {
-        return $options;
-    }
-
-    foreach ($options as $option) {
-        if ((int)$option['id'] === $selectedId) {
-            return $options;
-        }
-    }
-
-    $label = cr_user_label_by_id($conn, $company_id, $selectedId);
-    if ($label !== '') {
-        $options[] = ['id' => $selectedId, 'label' => $label];
-    }
-
-    return $options;
+    return itm_user_append_selected_option($conn, (int)$company_id, (array)$options, $selectedValue);
 }
 
 function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
@@ -676,6 +616,13 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     if (!$data) { $errors[] = 'Record not found.'; }
 }
 
+if ($crud_action === 'create' && empty($data['created_by']) && isset($_SESSION['user_id'])) {
+    $defaultCreatorId = (int)$_SESSION['user_id'];
+    if ($defaultCreatorId > 0) {
+        $data['created_by'] = (string)$defaultCreatorId;
+    }
+}
+
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
 
 // Handle sample data seeding for empty companies in list view
@@ -735,7 +682,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         if (preg_match('/(_by|_by_user_id)$/', (string)$name)) {
             $userValue = trim((string)($_POST[$name] ?? ''));
-            $data[$name] = ($userValue === '') ? 'NULL' : (string)(int)$userValue;
+            if ($userValue === '' && $crud_action === 'create' && $name === 'created_by') {
+                $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+                if ($sessionUserId > 0) {
+                    $userValue = (string)$sessionUserId;
+                }
+            }
+            if ($userValue === '') {
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
+            } else {
+                $resolvedUserId = (string)(int)$userValue;
+                $data[$name] = $resolvedUserId;
+                $sqlValues[$name] = $resolvedUserId;
+            }
             continue;
         }
 
@@ -1077,13 +1037,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </label>
                             <?php elseif (preg_match('/(_by|_by_user_id)$/', (string)$name)): ?>
                                 <?php
+                                    $userSelectedId = (int)$displayVal;
                                     $userOpts = cr_user_options($conn, (int)$company_id);
-                                    $userOpts = cr_append_selected_user_option($conn, (int)$company_id, $userOpts, $displayVal);
+                                    $userOpts = cr_append_selected_user_option($conn, (int)$company_id, $userOpts, $userSelectedId);
                                 ?>
                                 <select name="<?php echo sanitize($name); ?>">
                                     <option value="">-- Select --</option>
                                     <?php foreach ($userOpts as $userOpt): ?>
-                                        <option value="<?php echo (int)$userOpt['id']; ?>" <?php echo ((string)$displayVal === (string)$userOpt['id']) ? 'selected' : ''; ?>><?php echo sanitize($userOpt['label']); ?></option>
+                                        <option value="<?php echo (int)$userOpt['id']; ?>" <?php echo ($userSelectedId > 0 && $userSelectedId === (int)$userOpt['id']) ? 'selected' : ''; ?>><?php echo sanitize($userOpt['label']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             <?php elseif (isset($fkMap[$name])): ?>
