@@ -584,7 +584,7 @@ function fp_save_tags_for_plan(mysqli $conn, int $planId, int $companyId, array 
         }
         mysqli_stmt_close($stmt);
         if ($tagId <= 0) {
-            $ins = mysqli_prepare($conn, 'INSERT INTO floor_plan_tags (company_id, name, active) VALUES (?, ?, 1)');
+            $ins = mysqli_prepare($conn, 'INSERT IGNORE INTO floor_plan_tags (company_id, name, active) VALUES (?, ?, 1)');
             if ($ins) {
                 mysqli_stmt_bind_param($ins, 'is', $companyId, $name);
                 if (mysqli_stmt_execute($ins)) {
@@ -595,6 +595,18 @@ function fp_save_tags_for_plan(mysqli $conn, int $planId, int $companyId, array 
                     }
                 }
                 mysqli_stmt_close($ins);
+            }
+            if ($tagId <= 0) {
+                $retry = mysqli_prepare($conn, 'SELECT id FROM floor_plan_tags WHERE company_id=? AND name=? LIMIT 1');
+                if ($retry) {
+                    mysqli_stmt_bind_param($retry, 'is', $companyId, $name);
+                    mysqli_stmt_execute($retry);
+                    $retryRes = mysqli_stmt_get_result($retry);
+                    if ($retryRes && ($retryRow = mysqli_fetch_assoc($retryRes))) {
+                        $tagId = (int)$retryRow['id'];
+                    }
+                    mysqli_stmt_close($retry);
+                }
             }
         }
         if ($tagId > 0) {
