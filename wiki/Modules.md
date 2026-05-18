@@ -1,5 +1,13 @@
 # Modules Overview
 
+## Development guardrails
+
+Module work must follow the wiki guardrails (also in repository `AGENTS.md`):
+
+- [Foreign Keys & Display](Foreign-Keys) — labels, dropdowns, tenant-safe lookups
+- [Import Excel (JSON endpoint)](Import-Excel) — `data-itm-db-import-endpoint` and `itm_handle_json_table_import`
+- [IDF Synchronization](IDF-Synchronization) — rack/port/equipment table parity (protection zone)
+
 ## Equipment
 Track IT assets and related details, with support for image uploads.
 
