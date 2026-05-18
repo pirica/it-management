@@ -35,14 +35,15 @@
         <h1>Scripts directory</h1>
         <p class="scripts-muted">
             Maintenance, audits, and developer tools for the IT Management System.
-            Open <strong>Browser</strong> links directly in this site (log in when required).
-            Run <strong>CLI</strong> commands from the project root with PHP 7.4+.
+            <strong>Browser</strong> = HTML UI in this site (log in when noted).
+            <strong>CLI</strong> = terminal or CI from the project root with PHP 7.4+.
+            Scripts marked CLI-only must not be relied on via the browser URL (plain text, timeouts, file writes, or blocked by <code>PHP_SAPI</code> checks).
         </p>
         <ul class="scripts-toc">
             <li><a href="#docs">Documentation</a></li>
             <li><a href="#browser">Browser tools</a></li>
-            <li><a href="#security">Security</a></li>
-            <li><a href="#static">Static analysis (CLI)</a></li>
+            <li><a href="#security">Security (interactive)</a></li>
+            <li><a href="#ci">CI &amp; static analysis</a></li>
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
             <li><a href="#ui-modules">UI &amp; modules</a></li>
@@ -90,7 +91,7 @@
             <tbody>
                 <tr>
                     <td><a href="DBdesign.php">DBdesign.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>ER-style diagram generated from <code>database.sql</code> (Mermaid render, zoom, SVG/PNG export).</td>
                     <td>
                         Open <a href="DBdesign.php">DBdesign.php</a>. Optional:
@@ -101,9 +102,9 @@
                 </tr>
                 <tr>
                     <td><a href="crud_tables.php">crud_tables.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Lists every module folder and the first <code>$crud_table =</code> line found in <code>index.php</code>, with links to each module.</td>
-                    <td>Open in the browser to audit module-to-table mapping. CLI redirect: <code>php scripts/crud_tables.php &gt; crud_tables.html</code></td>
+                    <td>Open in the browser for the HTML report. CLI: <code>php scripts/crud_tables.php</code> (HTML to stdout) or <code>&gt; crud_tables.html</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="update_all_created_at.php">update_all_created_at.php</a></td>
@@ -123,10 +124,10 @@
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Same FK dropdown risk scan as above; in the browser it loads the UI file.</td>
+                    <td>FK dropdown risk scan. Non-CLI requests are forwarded to <code>detect_fk_dropdown_ui_risk_ui.php</code>; CLI runs the scanner directly.</td>
                     <td>
-                        Browser: same as <code>detect_fk_dropdown_ui_risk_ui.php</code>.
-                        CLI options: <code>--company=N</code>, <code>--json</code>, <code>--data-only</code>, <code>--code-only</code>, <code>--help</code>.
+                        Browser: open this URL (loads the UI). CLI:
+                        <code>--company=N</code>, <code>--json</code>, <code>--data-only</code>, <code>--code-only</code>, <code>--help</code>.
                     </td>
                 </tr>
             </tbody>
@@ -134,7 +135,8 @@
     </div>
 
     <div class="scripts-card" id="security">
-        <h2>Security</h2>
+        <h2>Security (interactive)</h2>
+        <p class="scripts-muted">Browser-first sandboxes and form tests. Repo-wide static scanners are under <a href="#ci">CI &amp; static analysis</a>.</p>
         <table class="scripts-table">
             <thead>
                 <tr>
@@ -165,30 +167,12 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>sql_injection_matrix_test.php</td>
+                    <td>apply_form_failed_save_display_fix.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Runs a fixed table of injection payloads through <code>lib/sql_injection_detector.php</code> and reports pass/fail.</td>
-                    <td><code>php scripts/sql_injection_matrix_test.php</code> — exit code non-zero if any case fails.</td>
-                </tr>
-                <tr>
-                    <td>check_sql_injection_coverage.php</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static scan: flags PHP files where queries may use user input without binding/sanitization.</td>
-                    <td><code>php scripts/check_sql_injection_coverage.php</code> — run after CRUD/SQL changes (AGENTS.md requirement).</td>
-                </tr>
-                <tr>
-                    <td>check_csrf_coverage.php</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static scan: finds POST handlers that change data without a known CSRF guard.</td>
-                    <td><code>php scripts/check_csrf_coverage.php</code></td>
-                </tr>
-                <tr>
-                    <td>check_audit_logs_coverage.php</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static scan: verifies modules have audit trail coverage for INSERT/UPDATE/DELETE via <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk delete helpers, or <code>trg_{table}_audit_*</code> triggers in <code>database.sql</code>.</td>
+                    <td>Bulk-applies <code>cr_form_display_value</code> / POST normalization fixes across CRUD entry files (companion to the form test above).</td>
                     <td>
-                        <code>php scripts/check_audit_logs_coverage.php</code> — exits <code>2</code> when a module mutates data with no audit path.<br>
-                        Optional: <code>--module=rack_planner</code>, <code>--json</code>
+                        <code>php scripts/apply_form_failed_save_display_fix.php --dry-run</code><br>
+                        <code>php scripts/apply_form_failed_save_display_fix.php --module=manufacturers</code> — <strong>writes PHP files</strong>.
                     </td>
                 </tr>
             </tbody>
@@ -222,14 +206,14 @@
                 <tr>
                     <td>repair_table_from_schema.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Rebuilds one InnoDB table from <code>database.sql</code> when metadata drift causes "doesn't exist in engine" errors.</td>
+                    <td>Rebuilds one InnoDB table from <code>database.sql</code> when metadata drift causes "doesn't exist in engine" errors. Exits if not CLI (<code>PHP_SAPI !== 'cli'</code>).</td>
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
                     <td>normalize_database_sql_created_at.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged.</td>
-                    <td><code>php scripts/normalize_database_sql_created_at.php</code> — edits <code>database.sql</code> before import (not the live database).</td>
+                    <td><code>php scripts/normalize_database_sql_created_at.php</code> — edits <code>database.sql</code> on disk; not a browser tool.</td>
                 </tr>
             </tbody>
         </table>
@@ -260,7 +244,7 @@
                 <tr>
                     <td>idfs_api_payload_dry_run.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Validates IDF device API JSON payloads offline (no MySQL).</td>
+                    <td>Validates IDF device API JSON payloads offline (no MySQL). Uses <code>argv</code>; no browser UI.</td>
                     <td>
                         <code>php scripts/idfs_api_payload_dry_run.php --samples</code><br>
                         <code>php scripts/idfs_api_payload_dry_run.php --endpoint=port_update --file=payload.json</code><br>
@@ -312,12 +296,19 @@
                         CLI: <code>php scripts/compare_database_sql_modules.php</code> · JSON: <code>--json</code> · exit code <code>1</code> when gaps exist.
                     </td>
                 </tr>
+                <tr>
+                    <td>floor_plans_folder_move_test.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>MySQL regression for Floor Plans folder reparenting (<code>fp_move_floor_plan_folder</code>).</td>
+                    <td><code>php scripts/floor_plans_folder_move_test.php</code> — PHP 7.4+ and DB; optional <code>ITM_TEST_COMPANY_ID</code>.</td>
+                </tr>
             </tbody>
         </table>
     </div>
 
-    <div class="scripts-card" id="static">
-        <h2>Static analysis (CLI)</h2>
+    <div class="scripts-card" id="ci">
+        <h2>CI &amp; static analysis</h2>
+        <p class="scripts-muted">CLI-only: full-repo scans, exit codes for CI, and file writes. Opening these URLs in a browser is unsupported (plain text, timeouts, or blocked).</p>
         <table class="scripts-table">
             <thead>
                 <tr>
@@ -329,35 +320,55 @@
             </thead>
             <tbody>
                 <tr>
+                    <td>smoke_test.sh</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF, (3) SQLi, (4) index-table compliance, (5) UI config (optional).</td>
+                    <td><code>bash scripts/smoke_test.sh</code> — <code>SMOKE_SKIP_UI_CONFIG=1</code> skips step 5.</td>
+                </tr>
+                <tr>
+                    <td>check_csrf_coverage.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static scan: POST handlers that mutate data without a known CSRF guard.</td>
+                    <td><code>php scripts/check_csrf_coverage.php</code> — smoke step 2; AGENTS.md after CRUD changes.</td>
+                </tr>
+                <tr>
+                    <td>check_sql_injection_coverage.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>
+                    <td><code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3.</td>
+                </tr>
+                <tr>
                     <td>check_index_table_compliance.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
-                        Index list-table contract audit (import endpoint, action-column markers, POST CSRF on index handlers).
-                        Skips protection-zone modules and <code>rack_planner</code>. Baseline: <code>scripts/data/index_table_compliance_baseline.txt</code>.
-                        Runs in CI via <code>scripts/smoke_test.sh</code> step 4.
+                        Index list tables: <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF, form <code>csrf_token</code>.
+                        Baseline: <code>scripts/data/index_table_compliance_baseline.txt</code>. Skips protection-zone modules and <code>rack_planner</code>.
                     </td>
                     <td>
-                        <code>php scripts/check_index_table_compliance.php</code> — exit <code>1</code> on new violations.<br>
-                        <code>php scripts/check_index_table_compliance.php --strict</code> · <code>--write-baseline</code>
+                        <code>php scripts/check_index_table_compliance.php</code> — smoke step 4; exit <code>1</code> on new violations.<br>
+                        <code>--strict</code> · <code>--write-baseline</code>
                     </td>
                 </tr>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verifies modules implement UI configuration hooks: table actions origin, new button position, export toolbar, back/save alignment.</td>
-                    <td><code>php scripts/check_ui_configuration_coverage.php</code> — exits <code>2</code> if any module fails; skips <code>idfs</code> module.</td>
+                    <td>UI configuration hooks: table actions, new button, export toolbar, back/save on forms.</td>
+                    <td><code>php scripts/check_ui_configuration_coverage.php</code> — smoke step 5; exits <code>2</code> on failure; skips <code>idfs</code>.</td>
                 </tr>
                 <tr>
                     <td>check_audit_logs_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Same audit coverage scan as the <a href="#security">Security</a> section entry: module PHP hooks plus <code>database.sql</code> triggers.</td>
-                    <td><code>php scripts/check_audit_logs_coverage.php</code> — see Security for options.</td>
+                    <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>database.sql</code>.</td>
+                    <td>
+                        <code>php scripts/check_audit_logs_coverage.php</code> — exit <code>2</code> on failures.<br>
+                        <code>--module=NAME</code> · <code>--json</code> · PHP 7.4+ (no nullable return types on PHP 7.0 CLI).
+                    </td>
                 </tr>
                 <tr>
-                    <td>smoke_test.sh</td>
+                    <td>sql_injection_matrix_test.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): syntax lint, CSRF, SQLi, index-table compliance, optional UI config audit.</td>
-                    <td><code>bash scripts/smoke_test.sh</code> — set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip UI layout step.</td>
+                    <td>Fixed payload matrix against <code>lib/sql_injection_detector.php</code>.</td>
+                    <td><code>php scripts/sql_injection_matrix_test.php</code> — non-zero exit if any case fails.</td>
                 </tr>
             </tbody>
         </table>
