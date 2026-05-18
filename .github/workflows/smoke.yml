@@ -27,6 +27,3 @@ jobs:
 
       - name: Run smoke test runner
         run: bash scripts/smoke_test.sh
-        env:
-          # UI audit skips idfs + is_* (see ui_configuration_excluded_prefixes.txt); CI still skips other legacy gaps.
-          SMOKE_SKIP_UI_CONFIG: '1'

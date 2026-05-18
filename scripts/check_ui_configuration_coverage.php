@@ -6,7 +6,9 @@
  * new buttons, export toolbar, and back/save alignment). This script provides
  * a single verification pass across modules so regressions are easy to spot.
  *
- * Exemptions: see scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades).
+ * Exemptions:
+ *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
+ *   - scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades)
  */
 
 declare(strict_types=1);
@@ -22,19 +24,19 @@ if (!is_dir($modulesDir)) {
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('UI configuration coverage check');
 
-$excludeModules = ['idfs'];
+$excludeModulesFile = __DIR__ . '/data/ui_configuration_excluded_modules.txt';
 $excludePrefixesFile = __DIR__ . '/data/ui_configuration_excluded_prefixes.txt';
 
 /**
  * @return array<int, string>
  */
-function itm_ui_config_load_excluded_prefixes(string $path): array
+function itm_ui_config_load_excluded_list(string $path): array
 {
     if (!is_file($path)) {
         return [];
     }
 
-    $prefixes = [];
+    $entries = [];
     $lines = file($path, FILE_IGNORE_NEW_LINES);
     if (!is_array($lines)) {
         return [];
@@ -45,10 +47,10 @@ function itm_ui_config_load_excluded_prefixes(string $path): array
         if ($line === '' || strpos($line, '#') === 0) {
             continue;
         }
-        $prefixes[] = $line;
+        $entries[] = $line;
     }
 
-    return $prefixes;
+    return $entries;
 }
 
 /**
@@ -173,14 +175,16 @@ function itm_check_back_save(string $formContent, string $filename): array
     return ['status' => 'fail', 'details' => "Could not detect paired back/save controls in {$filename}"];
 }
 
-$excludeModulePrefixes = itm_ui_config_load_excluded_prefixes($excludePrefixesFile);
+$excludeModules = itm_ui_config_load_excluded_list($excludeModulesFile);
+$excludeModulePrefixes = itm_ui_config_load_excluded_list($excludePrefixesFile);
 $modules = itm_list_modules($modulesDir, $excludeModules, $excludeModulePrefixes);
 $totals = ['pass' => 0, 'fail' => 0, 'n/a' => 0];
 $moduleFailures = [];
 
 echo "UI Configuration Coverage Audit\n";
 echo "Root: {$modulesDir}\n";
-echo "Excluded modules: " . implode(', ', $excludeModules) . "\n";
+echo "Excluded modules: " . (empty($excludeModules) ? '(none)' : implode(', ', $excludeModules));
+echo " (from " . basename($excludeModulesFile) . ")\n";
 echo "Excluded prefixes: " . (empty($excludeModulePrefixes) ? '(none)' : implode(', ', $excludeModulePrefixes));
 echo " (from " . basename($excludePrefixesFile) . ")\n\n";
 

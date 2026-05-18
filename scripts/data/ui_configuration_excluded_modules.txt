@@ -1,0 +1,15 @@
+# Module folder names skipped by scripts/check_ui_configuration_coverage.php (smoke step 5).
+# One slug per line. Lines starting with # are comments.
+
+# Protection zone / bespoke screens (no standard index table contract).
+idfs
+
+# Legacy or custom list UIs (non-standard action column / create chrome).
+audit_logs
+budget_report
+expiring
+
+# Thin index.php routers; list/create UI lives under includes/partials/render.php.
+ip_subnets
+ip_addresses
+rack_planner
