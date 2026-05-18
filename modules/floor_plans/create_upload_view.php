@@ -13,9 +13,7 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
         <label for="uploadFolder">Folder</label>
         <select name="folder_id" id="uploadFolder">
             <option value="">— Unfiled —</option>
-            <?php foreach ($fpFolders as $fpFolder): ?>
-                <option value="<?php echo (int)$fpFolder['id']; ?>"><?php echo sanitize((string)$fpFolder['name']); ?></option>
-            <?php endforeach; ?>
+            <?php echo fp_render_folder_select_options($fpFolders, null); ?>
         </select>
     </div>
     <div class="form-group">
