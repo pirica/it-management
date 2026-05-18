@@ -455,6 +455,18 @@
             .replace(/"/g, '&quot;');
     }
 
+    function buildFloorPlanFileLinksHtml(card) {
+        const fileUrl = escapeHtml((card.getAttribute('data-itm-pdf-file-url') || '').trim());
+        const fileName = escapeHtml(card.getAttribute('data-itm-pdf-file-name') || 'floor-plan');
+        if (fileUrl === '') {
+            return '';
+        }
+
+        return `<p style="margin:12px 0 0;">`
+            + `<a href="${fileUrl}" download="${fileName}">Download file</a>`
+            + ` · <a href="${fileUrl}" target="_blank" rel="noopener">Open in new tab</a></p>`;
+    }
+
     function buildViewPdfPreviewHtml(table) {
         const card = table.closest('[data-itm-pdf-preview]');
         if (!card) {
@@ -466,25 +478,43 @@
             return '';
         }
 
+        const fileLinksHtml = buildFloorPlanFileLinksHtml(card);
+
         const image = preview.querySelector('img.itm-floor-plan-view-image');
         if (image && image.src) {
             const alt = escapeHtml(image.getAttribute('alt') || 'Floor plan');
             return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;text-align:center;">`
                 + `<img src="${escapeHtml(image.src)}" alt="${alt}" style="max-width:100%;height:auto;display:block;margin:0 auto;">`
+                + fileLinksHtml
                 + `</div>`;
         }
 
+        const previewKind = (card.getAttribute('data-itm-pdf-preview-kind') || '').toLowerCase();
         const pdfFrame = preview.querySelector('iframe.itm-floor-plan-pdf-frame');
-        if (pdfFrame && pdfFrame.src) {
-            const src = escapeHtml(pdfFrame.src.split('#')[0]);
-            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;">`
-                + `<iframe src="${src}" title="Floor plan PDF" style="width:100%;min-height:70vh;border:0;"></iframe>`
+        if (previewKind === 'pdf' || (pdfFrame && pdfFrame.src)) {
+            const fileUrl = escapeHtml(card.getAttribute('data-itm-pdf-file-url') || pdfFrame.src.split('#')[0]);
+            const fileName = escapeHtml(card.getAttribute('data-itm-pdf-file-name') || 'floor-plan.pdf');
+            return `<div class="itm-pdf-preview-wrap itm-pdf-preview-file" style="margin:0 0 16px;padding:12px;border:1px solid #d0d7de;border-radius:8px;">`
+                + `<p><strong>Floor plan file (PDF)</strong></p>`
+                + `<p>The PDF is not embedded in this printout. Browsers disable Save for many signed or protected PDFs when they are shown inside a viewer.</p>`
+                + `<p><a href="${fileUrl}" download="${fileName}">Download file</a>`
+                + ` · <a href="${fileUrl}" target="_blank" rel="noopener">Open in new tab</a></p>`
+                + `<p style="font-size:12px;color:#57606a;">Use <strong>Download file</strong> for the original. Use the print dialog&rsquo;s <strong>Save as PDF</strong> / <strong>Microsoft Print to PDF</strong> for this summary page.</p>`
                 + `</div>`;
         }
 
         const cadBlock = preview.querySelector('.itm-floor-plan-cad-view');
-        if (cadBlock) {
-            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;">${cadBlock.innerHTML}</div>`;
+        if (cadBlock || previewKind === 'cad' || previewKind === 'download') {
+            const cadNote = cadBlock ? cadBlock.querySelector('p') : null;
+            const cadText = cadNote
+                ? escapeHtml((cadNote.textContent || '').trim())
+                : 'CAD file preview is not available in the browser.';
+            const kindLabel = previewKind === 'cad' ? 'CAD' : 'file';
+            return `<div class="itm-pdf-preview-wrap itm-pdf-preview-file" style="margin:0 0 16px;padding:12px;border:1px solid #d0d7de;border-radius:8px;">`
+                + `<p><strong>Floor plan (${kindLabel})</strong></p>`
+                + `<p>${cadText}</p>`
+                + fileLinksHtml
+                + `</div>`;
         }
 
         return '';
@@ -558,6 +588,7 @@
         pdfBtn.addEventListener('click', () => exportViewAsPdf(table));
 
         toolbar.appendChild(pdfBtn);
+
         table.parentNode.insertBefore(toolbar, table);
     }
 

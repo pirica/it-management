@@ -9,6 +9,7 @@
     const modal = document.getElementById('floorPlanPreviewModal');
     const modalTitle = document.getElementById('floorPlanPreviewTitle');
     const modalBody = document.getElementById('floorPlanPreviewBody');
+    const modalActions = document.getElementById('floorPlanPreviewActions');
     const moveForm = document.getElementById('floorPlanMoveForm');
     const movePlanInput = document.getElementById('floorPlanMovePlanId');
     const moveFolderInput = document.getElementById('floorPlanMoveFolderId');
@@ -91,6 +92,9 @@
         if (modalBody) {
             modalBody.innerHTML = '';
         }
+        if (modalActions) {
+            modalActions.innerHTML = '';
+        }
     }
 
     function escapeHtml(value) {
@@ -101,19 +105,32 @@
             .replace(/"/g, '&quot;');
     }
 
-    function openPreview(url, type, name) {
+    function buildPreviewActionsHtml(url, downloadName) {
+        const safeUrl = escapeHtml(url);
+        const safeName = escapeHtml(downloadName || '');
+        const downloadAttr = safeName !== '' ? ' download="' + safeName + '"' : ' download';
+        return '<a class="btn btn-sm btn-primary" href="' + safeUrl + '"' + downloadAttr + '>Download file</a>'
+            + '<a class="btn btn-sm" href="' + safeUrl + '" target="_blank" rel="noopener">Open in new tab</a>';
+    }
+
+    function openPreview(url, type, name, downloadName) {
         if (!modal || !modalBody || !modalTitle) {
             return;
         }
         modalTitle.textContent = name || 'Preview';
-        if (type === 'pdf') {
-            modalBody.innerHTML = '<iframe class="itm-floor-plan-pdf-frame" src="' + escapeHtml(url) + '#view=FitH" title="PDF preview"></iframe>';
-        } else if (type === 'cad' || type === 'download') {
-            modalBody.innerHTML = '<p>Preview is not available for this file type.</p>'
-                + '<p><a class="btn btn-primary" href="' + escapeHtml(url) + '" download>Download file</a></p>';
-        } else {
-            modalBody.innerHTML = '<img src="' + escapeHtml(url) + '" alt="">';
+        if (modalActions) {
+            modalActions.innerHTML = buildPreviewActionsHtml(url, downloadName);
         }
+        let previewHtml = '';
+        if (type === 'pdf') {
+            previewHtml = '<iframe class="itm-floor-plan-pdf-frame" src="' + escapeHtml(url) + '#view=FitH" title="PDF preview"></iframe>'
+                + '<p class="itm-dropzone-hint" style="margin-top:8px;">Signed or protected PDFs may disable Save in the browser viewer; use <strong>Download file</strong> above.</p>';
+        } else if (type === 'cad' || type === 'download') {
+            previewHtml = '<p>Preview is not available for this file type.</p>';
+        } else {
+            previewHtml = '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name || 'Floor plan') + '">';
+        }
+        modalBody.innerHTML = previewHtml;
         modal.hidden = false;
     }
 
@@ -424,7 +441,8 @@
             openPreview(
                 thumb.getAttribute('data-preview-url') || '',
                 thumb.getAttribute('data-preview-type') || 'image',
-                thumb.getAttribute('data-preview-name') || ''
+                thumb.getAttribute('data-preview-name') || '',
+                thumb.getAttribute('data-preview-download-name') || ''
             );
         }
     });

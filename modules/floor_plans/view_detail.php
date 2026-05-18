@@ -36,18 +36,35 @@ if (!empty($data['created_by_user_id'])) {
 }
 ?>
 <h1><?php echo sanitize((string)($data['display_name'] ?? 'Floor Plan')); ?></h1>
-<div class="card itm-floor-plan-view-card" data-itm-pdf-preview="1">
+<?php
+$fpDownloadName = preg_replace('/[^\w.\-]+/u', '_', (string)($data['display_name'] ?? 'floor-plan'));
+if ($fpDownloadName === '') {
+    $fpDownloadName = 'floor-plan';
+}
+if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDownloadName)) {
+    $fpDownloadName .= '.' . $fpExt;
+}
+?>
+<div class="card itm-floor-plan-view-card" data-itm-pdf-preview="1"
+     data-itm-pdf-preview-kind="<?php echo sanitize($fpPreviewKind); ?>"
+     data-itm-pdf-file-url="<?php echo sanitize($fpUrl); ?>"
+     data-itm-pdf-file-name="<?php echo sanitize($fpDownloadName); ?>">
     <div class="itm-floor-plan-view-preview">
         <?php if ($fpPreviewKind === 'pdf'): ?>
             <iframe src="<?php echo sanitize($fpUrl); ?>#view=FitH" title="PDF preview" class="itm-floor-plan-pdf-frame"></iframe>
-            <p><a href="<?php echo sanitize($fpUrl); ?>" target="_blank" rel="noopener">Open PDF in new tab</a></p>
         <?php elseif ($fpPreviewKind === 'image'): ?>
             <img src="<?php echo sanitize($fpUrl); ?>" alt="<?php echo sanitize((string)($data['display_name'] ?? '')); ?>" class="itm-floor-plan-view-image">
         <?php else: ?>
             <div class="itm-floor-plan-cad-view">
                 <p>AutoCAD / CAD file preview is not available in the browser.</p>
-                <p><a href="<?php echo sanitize($fpUrl); ?>" class="btn btn-primary" download>Download <?php echo sanitize(strtoupper($fpExt)); ?> file</a></p>
             </div>
+        <?php endif; ?>
+        <p class="itm-floor-plan-file-actions">
+            <a href="<?php echo sanitize($fpUrl); ?>" class="btn btn-primary" download="<?php echo sanitize($fpDownloadName); ?>">Download file</a>
+            <a href="<?php echo sanitize($fpUrl); ?>" target="_blank" rel="noopener" class="btn">Open in new tab</a>
+        </p>
+        <?php if ($fpPreviewKind === 'pdf'): ?>
+            <p class="itm-dropzone-hint">Signed or protected PDFs may disable Save in the browser viewer; use <strong>Download file</strong> to save a copy.</p>
         <?php endif; ?>
     </div>
     <table style="margin-top:16px;">

@@ -1634,6 +1634,39 @@ input[type="submit"] {
     display: block;
 }
 
+.itm-floor-plan-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-right: 4px;
+}
+
+.itm-floor-plan-modal-header h3 {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 8px;
+}
+
+.itm-floor-plan-modal-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.itm-floor-plan-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .itm-floor-plan-pdf-frame {
     width: 100%;
     min-height: 70vh;

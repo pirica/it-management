@@ -167,10 +167,17 @@ $fpCreateUrl = $modulePath . '/create.php';
                     $fpExt = (string)$fpItem['file_ext'];
                     $fpPreviewKind = fp_resolve_preview_kind($fpMime, $fpExt);
                     $fpTags = trim((string)($fpItem['tag_names'] ?? ''));
+                    $fpDownloadName = preg_replace('/[^\w.\-]+/u', '_', (string)($fpItem['display_name'] ?? 'floor-plan'));
+                    if ($fpDownloadName === '') {
+                        $fpDownloadName = 'floor-plan';
+                    }
+                    if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDownloadName)) {
+                        $fpDownloadName .= '.' . $fpExt;
+                    }
                     ?>
                     <article class="itm-floor-plan-card" data-plan-id="<?php echo $fpId; ?>">
                         <span class="itm-plan-drag-handle" draggable="true" data-plan-id="<?php echo $fpId; ?>" title="Drag to move file" aria-label="Drag to move file">⠿</span>
-                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>">
+                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>" data-preview-download-name="<?php echo sanitize($fpDownloadName); ?>">
                             <?php if ($fpPreviewKind === 'pdf'): ?>
                                 <div class="itm-floor-plan-pdf-thumb">PDF</div>
                             <?php elseif ($fpPreviewKind === 'cad'): ?>
@@ -224,8 +231,13 @@ $fpCreateUrl = $modulePath . '/create.php';
 <div id="floorPlanPreviewModal" class="itm-floor-plan-modal" hidden>
     <div class="itm-floor-plan-modal-backdrop" data-close-preview="1"></div>
     <div class="itm-floor-plan-modal-content">
-        <button type="button" class="btn btn-sm itm-floor-plan-modal-close" data-close-preview="1">Close</button>
-        <h3 id="floorPlanPreviewTitle"></h3>
+        <div class="itm-floor-plan-modal-header">
+            <h3 id="floorPlanPreviewTitle"></h3>
+            <div class="itm-floor-plan-modal-header-actions">
+                <div id="floorPlanPreviewActions" class="itm-floor-plan-modal-actions"></div>
+                <button type="button" class="btn btn-sm itm-floor-plan-modal-close" data-close-preview="1">Close</button>
+            </div>
+        </div>
         <div id="floorPlanPreviewBody" class="itm-floor-plan-preview-body"></div>
     </div>
 </div>
