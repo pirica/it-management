@@ -36,7 +36,7 @@ if (!empty($data['created_by_user_id'])) {
 }
 ?>
 <h1><?php echo sanitize((string)($data['display_name'] ?? 'Floor Plan')); ?></h1>
-<div class="card itm-floor-plan-view-card">
+<div class="card itm-floor-plan-view-card" data-itm-pdf-preview="1">
     <div class="itm-floor-plan-view-preview">
         <?php if ($fpPreviewKind === 'pdf'): ?>
             <iframe src="<?php echo sanitize($fpUrl); ?>#view=FitH" title="PDF preview" class="itm-floor-plan-pdf-frame"></iframe>
