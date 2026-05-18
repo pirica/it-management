@@ -611,8 +611,18 @@ function fp_delete_plans_by_ids(mysqli $conn, array $ids, int $companyId): void 
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         fp_unlink_stored_file($companyId, (string)($row['stored_filename'] ?? ''));
     }
-    mysqli_query($conn, 'DELETE FROM floor_plans WHERE company_id=' . (int)$companyId . ' AND id IN (' . $in . ')');
+    // Why: Codex review — only write DELETE audit rows when the DB delete actually removed the record.
+    if (!mysqli_query($conn, 'DELETE FROM floor_plans WHERE company_id=' . (int)$companyId . ' AND id IN (' . $in . ')')) {
+        return;
+    }
     foreach ($auditBeforeDelete as $planId => $oldValues) {
+        $stillExists = mysqli_query(
+            $conn,
+            'SELECT 1 FROM floor_plans WHERE id=' . (int)$planId . ' AND company_id=' . (int)$companyId . ' LIMIT 1'
+        );
+        if ($stillExists && mysqli_num_rows($stillExists) > 0) {
+            continue;
+        }
         fp_audit_log_floor_plan($conn, (int)$planId, $companyId, 'DELETE', $oldValues, null);
     }
 }
