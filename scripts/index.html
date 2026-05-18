@@ -42,10 +42,9 @@
             <li><a href="#docs">Documentation</a></li>
             <li><a href="#browser">Browser tools</a></li>
             <li><a href="#security">Security</a></li>
+            <li><a href="#static">Static analysis (CLI)</a></li>
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
-            <li><a href="#ui-modules">UI &amp; modules</a></li>
-            <li><a href="#static">Static analysis (CLI)</a></li>
         </ul>
         <div class="scripts-cli-hint">
             <strong>CLI example (Laragon):</strong>
@@ -183,40 +182,13 @@
                     <td><code>php scripts/check_csrf_coverage.php</code></td>
                 </tr>
                 <tr>
-                    <td>check_index_table_compliance.php</td>
+                    <td>check_audit_logs_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static scan: verifies modules have audit trail coverage for INSERT/UPDATE/DELETE via <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk delete helpers, or <code>trg_{table}_audit_*</code> triggers in <code>database.sql</code>.</td>
                     <td>
-                        Static scan of module <code>index.php</code> list screens (plus module-local <code>require</code>/<code>include</code> PHP such as <code>includes/partials/render.php</code>). Enforces AGENTS.md index-table hooks and POST safety:
-                        <ul style="margin:8px 0 0 18px;padding:0;">
-                            <li><code>data-itm-db-import-endpoint</code> on the list <code>&lt;table&gt;</code> (Excel import save-to-database via <code>table-tools.js</code>)</li>
-                            <li><code>data-itm-actions-origin="1"</code> on Actions <code>&lt;th&gt;</code> and <code>&lt;td&gt;</code> (layout engine / <code>table_actions_position</code>)</li>
-                            <li>Known POST CSRF guards when index handlers mutate data (<code>itm_require_post_csrf</code>, <code>cr_require_valid_csrf_token</code>, etc.)</li>
-                            <li><code>csrf_token</code> hidden fields on POST forms</li>
-                            <li><code>itm-actions-cell</code> when an Actions column is present</li>
-                        </ul>
-                        Skips protection-zone modules and <code>rack_planner</code>. Grandfathers legacy gaps via <code>scripts/data/index_table_compliance_baseline.txt</code> (57 modules); CI fails only on <strong>new</strong> violations outside that list.
+                        <code>php scripts/check_audit_logs_coverage.php</code> — exits <code>2</code> when a module mutates data with no audit path.<br>
+                        Optional: <code>--module=rack_planner</code>, <code>--json</code>
                     </td>
-                    <td>
-                        <code>php scripts/check_index_table_compliance.php</code> — exit <code>1</code> on new violations (baseline-aware).<br>
-                        <code>php scripts/check_index_table_compliance.php --strict</code> — report all modules, ignore baseline.<br>
-                        <code>php scripts/check_index_table_compliance.php --write-baseline</code> — refresh grandfather list (use sparingly).<br>
-                        After fixing a module, remove its slug from <code>scripts/data/index_table_compliance_baseline.txt</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td>smoke_test.sh</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>
-                        CI/local smoke runner (GitHub Actions <code>.github/workflows/smoke.yml</code>):
-                        <ol style="margin:8px 0 0 18px;padding:0;">
-                            <li><code>php -l</code> on every <code>*.php</code> file</li>
-                            <li><code>check_csrf_coverage.php</code></li>
-                            <li><code>check_sql_injection_coverage.php</code></li>
-                            <li><code>check_index_table_compliance.php</code></li>
-                            <li><code>check_ui_configuration_coverage.php</code> (optional — skipped when <code>SMOKE_SKIP_UI_CONFIG=1</code>)</li>
-                        </ol>
-                    </td>
-                    <td><code>bash scripts/smoke_test.sh</code> — set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip step 5 (UI layout audit) until legacy gaps are cleared.</td>
                 </tr>
             </tbody>
         </table>
@@ -366,6 +338,12 @@
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verifies modules implement UI configuration hooks: table actions origin, new button position, export toolbar, back/save alignment.</td>
                     <td><code>php scripts/check_ui_configuration_coverage.php</code> — exits <code>2</code> if any module fails; skips <code>idfs</code> module.</td>
+                </tr>
+                <tr>
+                    <td>check_audit_logs_coverage.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Same audit coverage scan as the Security section entry: module PHP hooks plus <code>database.sql</code> triggers.</td>
+                    <td><code>php scripts/check_audit_logs_coverage.php</code> — see Security for options.</td>
                 </tr>
             </tbody>
         </table>
