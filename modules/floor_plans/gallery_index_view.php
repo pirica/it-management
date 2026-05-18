@@ -122,12 +122,15 @@ $fpCreateUrl = $modulePath . '/create.php';
             </form>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" class="card itm-floor-plan-dropzone" id="floorPlanDropzone">
+        <form method="POST" enctype="multipart/form-data" class="card itm-floor-plan-upload-form" id="floorPlanUploadForm">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <input type="hidden" name="fp_action" value="upload_files">
             <input type="hidden" name="folder_id" value="<?php echo (int)$galleryFolderId; ?>">
-            <p class="itm-dropzone-hint">Drag and drop images, PDFs, or AutoCAD files (DWG, DXF, DWF, DWS) here, or click to browse (max 20MB each). Drag a file card (thumbnail or ⠿ handle) onto a folder row to move it. Use the ⠿ handle on a folder row to reorganize folders.</p>
-            <input type="file" name="gallery_files[]" id="galleryFilesInput" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.dwg,.dxf,.dwf,.dws,image/*,application/pdf" multiple>
+            <div id="floorPlanUploadTarget" class="itm-floor-plan-upload-target" role="button" tabindex="0" aria-label="Upload floor plan files">
+                <p class="itm-dropzone-hint">Drag and drop images, PDFs, or AutoCAD files (DWG, DXF, DWF, DWS) here, or click to browse (max 20MB each).</p>
+                <input type="file" name="gallery_files[]" id="galleryFilesInput" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.dwg,.dxf,.dwf,.dws,image/*,application/pdf" multiple>
+            </div>
+            <p class="itm-dropzone-hint itm-dropzone-hint-secondary">Drag a file card (thumbnail or ⠿ handle) onto a folder row to move it. Use the ⠿ handle on a folder row to reorganize folders.</p>
             <div class="form-group" style="margin-top:12px;">
                 <label for="uploadItLocation"><?php echo sanitize(fp_it_location_link_label_optional()); ?></label>
                 <?php echo fp_render_it_location_select($conn, (int)$company_id, 'it_location_id', 'uploadItLocation', ''); ?>

@@ -3,7 +3,8 @@
  * Why: custom MIME types and delegated drops avoid native image/link drag breaking file moves.
  */
 (function () {
-    const dropzone = document.getElementById('floorPlanDropzone');
+    const uploadForm = document.getElementById('floorPlanUploadForm');
+    const uploadTarget = document.getElementById('floorPlanUploadTarget');
     const fileInput = document.getElementById('galleryFilesInput');
     const modal = document.getElementById('floorPlanPreviewModal');
     const modalTitle = document.getElementById('floorPlanPreviewTitle');
@@ -22,28 +23,63 @@
     let activePlanDragId = 0;
     let dropHoverTarget = null;
 
-    if (dropzone && fileInput) {
-        dropzone.addEventListener('dragover', function (event) {
-            if (event.dataTransfer && event.dataTransfer.types && event.dataTransfer.types.indexOf('Files') !== -1) {
-                event.preventDefault();
-                dropzone.classList.add('is-dragover');
+    function isExternalFileDrag(event) {
+        return !!(event.dataTransfer && event.dataTransfer.types && event.dataTransfer.types.indexOf('Files') !== -1);
+    }
+
+    if (uploadTarget && fileInput) {
+        uploadTarget.addEventListener('dragover', function (event) {
+            if (!isExternalFileDrag(event)) {
+                return;
             }
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.add('is-dragover');
         });
-        dropzone.addEventListener('dragleave', function () {
-            dropzone.classList.remove('is-dragover');
-        });
-        dropzone.addEventListener('drop', function (event) {
-            if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
-                event.preventDefault();
-                dropzone.classList.remove('is-dragover');
-                fileInput.files = event.dataTransfer.files;
+        uploadTarget.addEventListener('dragleave', function (event) {
+            const related = event.relatedTarget;
+            if (related && uploadTarget.contains(related)) {
+                return;
             }
+            uploadTarget.classList.remove('is-dragover');
         });
-        dropzone.addEventListener('click', function (event) {
-            if (event.target === fileInput || event.target.closest('button') || event.target.closest('select')) {
+        uploadTarget.addEventListener('drop', function (event) {
+            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.remove('is-dragover');
+            fileInput.files = event.dataTransfer.files;
+        });
+        uploadTarget.addEventListener('click', function (event) {
+            if (event.target === fileInput) {
                 return;
             }
             fileInput.click();
+        });
+        uploadTarget.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                fileInput.click();
+            }
+        });
+    }
+
+    if (uploadForm) {
+        uploadForm.addEventListener('dragover', function (event) {
+            if (isExternalFileDrag(event)) {
+                event.preventDefault();
+            }
+        });
+        uploadForm.addEventListener('drop', function (event) {
+            if (!uploadTarget || uploadTarget.contains(event.target)) {
+                return;
+            }
+            if (isExternalFileDrag(event)) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
         });
     }
 
