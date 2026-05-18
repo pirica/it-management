@@ -337,19 +337,13 @@ CREATE TABLE `floor_plan_folders` (
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
   KEY `parent_folder_id` (`parent_folder_id`),
+  UNIQUE KEY `uq_floor_plan_folders_company_name` (`company_id`,`name`),
   CONSTRAINT `floor_plan_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('4', '2', '3', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('5', '3', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('6', '3', '5', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('7', '4', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('8', '4', '7', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('9', '5', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('10', '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
+-- Manual migration (existing databases only):
+-- ALTER TABLE `floor_plan_folders` ADD UNIQUE KEY `uq_floor_plan_folders_company_name` (`company_id`, `name`);
+-- floor_plan_folders seed: paste INSERT rows exported from your local DB (see scripts/export_floor_plan_folders_seed.php).
 -- Table structure for `floor_plan_tags`
 CREATE TABLE `floor_plan_tags` (
   `id` int NOT NULL AUTO_INCREMENT,
