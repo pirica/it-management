@@ -589,21 +589,6 @@
 
         toolbar.appendChild(pdfBtn);
 
-        const card = table.closest('[data-itm-pdf-preview]');
-        const fileUrl = card ? (card.getAttribute('data-itm-pdf-file-url') || '').trim() : '';
-        if (fileUrl !== '') {
-            const downloadLink = document.createElement('a');
-            downloadLink.href = fileUrl;
-            downloadLink.className = 'btn btn-sm';
-            downloadLink.textContent = '💾 Download file';
-            const fileName = card.getAttribute('data-itm-pdf-file-name') || '';
-            if (fileName !== '') {
-                downloadLink.setAttribute('download', fileName);
-            }
-            downloadLink.rel = 'noopener';
-            toolbar.appendChild(downloadLink);
-        }
-
         table.parentNode.insertBefore(toolbar, table);
     }
 
