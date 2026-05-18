@@ -185,7 +185,7 @@
                 <tr>
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>CI/local smoke runner: <code>php -l</code> on all PHP files, then CSRF, SQL injection, and UI configuration audits.</td>
+                    <td>CI/local smoke runner: <code>php -l</code> on all PHP files, then CSRF, SQL injection, index table compliance, and UI configuration audits.</td>
                     <td><code>bash scripts/smoke_test.sh</code> — GitHub Actions workflow <code>.github/workflows/smoke.yml</code>; set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip the UI audit.</td>
                 </tr>
             </tbody>
@@ -325,6 +325,12 @@
                 </tr>
             </thead>
             <tbody>
+                <tr>
+                    <td>check_index_table_compliance.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static scan: index list tables must expose <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF guards, and form <code>csrf_token</code> fields. Uses a baseline file for legacy modules.</td>
+                    <td><code>php scripts/check_index_table_compliance.php</code> — exits <code>1</code> on new violations; <code>--strict</code> ignores baseline; <code>--write-baseline</code> refreshes grandfather list.</td>
+                </tr>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

@@ -5,7 +5,8 @@
 #   1. php -l on every *.php file in the repository
 #   2. scripts/check_csrf_coverage.php
 #   3. scripts/check_sql_injection_coverage.php
-#   4. scripts/check_ui_configuration_coverage.php (optional; see SMOKE_SKIP_UI_CONFIG)
+#   4. scripts/check_index_table_compliance.php
+#   5. scripts/check_ui_configuration_coverage.php (optional; see SMOKE_SKIP_UI_CONFIG)
 #
 # Usage (from repository root):
 #   bash scripts/smoke_test.sh
@@ -26,7 +27,7 @@ echo "==> PHP binary: ${PHP_BIN}"
 "$PHP_BIN" -v
 echo
 
-echo "==> Step 1/4: PHP syntax lint (php -l)"
+echo "==> Step 1/5: PHP syntax lint (php -l)"
 lint_failed=0
 lint_count=0
 while IFS= read -r -d '' file; do
@@ -52,15 +53,18 @@ run_check() {
   echo
 }
 
-step_label="Step 2/4"
+step_label="Step 2/5"
 run_check "check_csrf_coverage.php"
 
-step_label="Step 3/4"
+step_label="Step 3/5"
 run_check "check_sql_injection_coverage.php"
 
-step_label="Step 4/4"
+step_label="Step 4/5"
+run_check "check_index_table_compliance.php"
+
+step_label="Step 5/5"
 if [[ "${SMOKE_SKIP_UI_CONFIG:-0}" == "1" ]]; then
-  echo "==> Step 4/4: check_ui_configuration_coverage.php (skipped — SMOKE_SKIP_UI_CONFIG=1)"
+  echo "==> Step 5/5: check_ui_configuration_coverage.php (skipped — SMOKE_SKIP_UI_CONFIG=1)"
 else
   run_check "check_ui_configuration_coverage.php"
 fi
