@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // HANDLE BULK DELETIONS (from POST)
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // INITIALIZATION
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);

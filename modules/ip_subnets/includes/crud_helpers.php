@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }

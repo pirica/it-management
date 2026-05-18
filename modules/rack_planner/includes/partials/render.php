@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // View partial: mutating POST handlers call itm_require_post_csrf() in ../handlers.php.
 ?>
 <!DOCTYPE html>
