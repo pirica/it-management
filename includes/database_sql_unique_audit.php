@@ -268,6 +268,11 @@ if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
     /**
      * UNIQUE must start with (`company_id`, scope_column); additional scope columns allowed.
      *
+     * Floor plan tables use a 3-part unique with IFNULL on the folder FK in the middle:
+     * - floor_plan_folders: (`company_id`, IFNULL(`parent_folder_id`, 0), `name`)
+     * - floor_plans: (`company_id`, IFNULL(`folder_id`, 0), `display_name`)
+     * Middle expression must be that FK column or IFNULL(that_fk, 0) only (see middle_matches_ifnull_fk).
+     *
      * @param array<int, string> $columns
      */
     function itm_database_sql_unique_audit_unique_matches_scope(array $columns, string $scopeColumn, string $table = ''): bool
