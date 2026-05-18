@@ -1053,6 +1053,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php require ROOT_PATH . 'includes/itm_it_location_linked_floor_plans.php'; ?>
                     <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>

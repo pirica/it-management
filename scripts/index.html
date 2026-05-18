@@ -279,6 +279,42 @@
         </table>
     </div>
 
+    <div class="scripts-card" id="ui-modules">
+        <h2>UI &amp; modules</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists <code>modules/*/index.php</code> folders that are <strong>not</strong> on the sidebar (including policy-hidden internal modules such as <code>floor_plan_folders</code>, <code>floor_plan_tags</code>, <code>floor_plan_item_tags</code>).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a> or
+                        <a href="list_modules_not_on_sidebar.php?format=json">?format=json</a>.<br>
+                        CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Compares every <code>CREATE TABLE</code> in <code>database.sql</code> with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a> or
+                        <a href="compare_database_sql_modules.php?format=json">?format=json</a>.<br>
+                        CLI: <code>php scripts/compare_database_sql_modules.php</code> · JSON: <code>--json</code> · exit code <code>1</code> when gaps exist.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <div class="scripts-card" id="static">
         <h2>Static analysis (CLI)</h2>
         <table class="scripts-table">
@@ -291,6 +327,12 @@
                 </tr>
             </thead>
             <tbody>
+                <tr>
+                    <td>check_index_table_compliance.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Index list-table contract audit (import endpoint, action-column markers, POST CSRF). Documented in the <a href="#security">Security</a> section; runs in CI smoke step 4.</td>
+                    <td><code>php scripts/check_index_table_compliance.php</code> · baseline: <code>scripts/data/index_table_compliance_baseline.txt</code></td>
+                </tr>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

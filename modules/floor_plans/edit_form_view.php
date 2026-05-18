@@ -1,0 +1,77 @@
+<?php
+/**
+ * Edit floor plan metadata (name, folder, tags).
+ */
+$fpPlanId = (int)($data['id'] ?? 0);
+$fpFolders = fp_fetch_folders($conn, (int)$company_id);
+$fpCurrentFolderId = (int)($data['folder_id'] ?? 0);
+$fpTags = fp_get_tags_for_plan($conn, $fpPlanId, (int)$company_id);
+$fpTagNames = [];
+foreach ($fpTags as $fpTag) {
+    $fpTagNames[] = (string)$fpTag['name'];
+}
+$fpTagValue = implode(', ', $fpTagNames);
+?>
+<h1>Edit Floor Plan</h1>
+<form method="POST" class="form-grid" style="max-width:720px;">
+    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+    <input type="hidden" name="id" value="<?php echo $fpPlanId; ?>">
+    <div class="form-group">
+        <label for="display_name">File name</label>
+        <input type="text" name="display_name" id="display_name" value="<?php echo sanitize((string)($data['display_name'] ?? '')); ?>" required>
+    </div>
+    <div class="form-group">
+        <label for="folder_id">Folder</label>
+        <select name="folder_id" id="folder_id">
+            <option value="">— Unfiled —</option>
+            <?php foreach ($fpFolders as $fpFolder): ?>
+                <?php
+                $fpFid = (int)$fpFolder['id'];
+                $fpSelected = ($fpCurrentFolderId === $fpFid);
+                if (!$fpSelected && $fpCurrentFolderId > 0 && !fp_folder_belongs_to_company($conn, $fpCurrentFolderId, (int)$company_id)) {
+                    $fpSelected = false;
+                }
+                ?>
+                <option value="<?php echo $fpFid; ?>" <?php echo $fpSelected ? 'selected' : ''; ?>><?php echo sanitize((string)$fpFolder['name']); ?></option>
+            <?php endforeach; ?>
+            <?php if ($fpCurrentFolderId > 0): ?>
+                <?php
+                $fpPersistedLabel = '';
+                foreach ($fpFolders as $fpFolder) {
+                    if ((int)$fpFolder['id'] === $fpCurrentFolderId) {
+                        $fpPersistedLabel = (string)$fpFolder['name'];
+                        break;
+                    }
+                }
+                if ($fpPersistedLabel === '') {
+                    $fpRes = mysqli_query($conn, 'SELECT name FROM floor_plan_folders WHERE id=' . (int)$fpCurrentFolderId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+                    $fpRow = ($fpRes) ? mysqli_fetch_assoc($fpRes) : null;
+                    $fpPersistedLabel = (string)($fpRow['name'] ?? ('Folder #' . $fpCurrentFolderId));
+                }
+                $fpInList = false;
+                foreach ($fpFolders as $fpFolder) {
+                    if ((int)$fpFolder['id'] === $fpCurrentFolderId) {
+                        $fpInList = true;
+                        break;
+                    }
+                }
+                if (!$fpInList):
+                ?>
+                    <option value="<?php echo (int)$fpCurrentFolderId; ?>" selected><?php echo sanitize($fpPersistedLabel); ?></option>
+                <?php endif; ?>
+            <?php endif; ?>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="it_location_id"><?php echo sanitize(fp_it_location_link_label_optional()); ?></label>
+        <?php echo fp_render_it_location_select($conn, (int)$company_id, 'it_location_id', 'it_location_id', $data['it_location_id'] ?? ''); ?>
+    </div>
+    <div class="form-group">
+        <label for="tag_names">Tags (comma-separated)</label>
+        <input type="text" name="tag_names" id="tag_names" value="<?php echo sanitize($fpTagValue); ?>">
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="view.php?id=<?php echo $fpPlanId; ?>" class="btn">Cancel</a>
+    </div>
+</form>

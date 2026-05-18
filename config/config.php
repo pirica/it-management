@@ -197,24 +197,41 @@ define('TICKET_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR,
 define('TICKET_UPLOAD_URL', BASE_URL . 'tickets_photos/');
 define('BACKUP_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'backups'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('BACKUP_URL', BASE_URL . 'backups/');
+define('FLOOR_PLAN_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'floor_plans'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+define('FLOOR_PLAN_UPLOAD_URL', BASE_URL . 'floor_plans/');
+define('FLOOR_PLAN_MAX_FILE_SIZE', 20971520);
+define('FLOOR_PLAN_ALLOWED_TYPES', [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/acad',
+    'application/x-acad',
+    'application/autocad',
+    'application/x-autocad',
+    'image/vnd.dwg',
+    'application/dxf',
+    'application/x-dxf',
+    'application/octet-stream',
+]);
+define('FLOOR_PLAN_ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'dwg', 'dxf', 'dwf', 'dws']);
+define('FLOOR_PLAN_CAD_EXTENSIONS', ['dwg', 'dxf', 'dwf', 'dws']);
 
 // Upload Restrictions
 define('MAX_FILE_SIZE', 5242880); // 5MB limit
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 
-// Ensure required upload and backup directories exist
-if (!is_dir(UPLOAD_PATH)) {
-    @mkdir(UPLOAD_PATH, 0775, true);
-}
-if (!is_dir(TICKET_UPLOAD_PATH)) {
-    @mkdir(TICKET_UPLOAD_PATH, 0775, true);
-}
-if (!is_dir(BACKUP_PATH)) {
-    @mkdir(BACKUP_PATH, 0775, true);
-}
+// Load helpers needed before upload directory bootstrap
+require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+
+// Ensure required upload and backup directories exist (writable, non-executable over HTTP)
+itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
+itm_ensure_upload_directory(TICKET_UPLOAD_PATH, 'upload');
+itm_ensure_upload_directory(BACKUP_PATH, 'deny_all');
+itm_ensure_upload_directory(FLOOR_PLAN_UPLOAD_PATH, 'upload');
 
 // Load secondary configuration and library files
-require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
