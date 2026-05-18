@@ -10,6 +10,12 @@ This project is a PHP + MySQL web application for managing IT operations includi
 - [Modules Overview](Modules)
 - [Security & Audits](Security)
 
+### Development guardrails (mirrors `AGENTS.md`)
+
+- [Foreign Keys & Display](Foreign-Keys)
+- [Import Excel (JSON endpoint)](Import-Excel)
+- [IDF Synchronization](IDF-Synchronization)
+
 ## Tech Stack
 
 - PHP 7.4.33
@@ -35,3 +41,8 @@ You can use this structure in your GitHub Wiki sidebar:
 2. Installation
 3. Modules
 4. Security
+5. Foreign Keys & Display
+6. Import Excel
+7. IDF Synchronization
+
+Agent and contributor guardrails in the repository are defined in [`AGENTS.md`](../AGENTS.md); the wiki pages above summarize the FK, import, and IDF sync sections for human readers.
