@@ -183,10 +183,40 @@
                     <td><code>php scripts/check_csrf_coverage.php</code></td>
                 </tr>
                 <tr>
+                    <td>check_index_table_compliance.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        Static scan of module <code>index.php</code> list screens (plus module-local <code>require</code>/<code>include</code> PHP such as <code>includes/partials/render.php</code>). Enforces AGENTS.md index-table hooks and POST safety:
+                        <ul style="margin:8px 0 0 18px;padding:0;">
+                            <li><code>data-itm-db-import-endpoint</code> on the list <code>&lt;table&gt;</code> (Excel import save-to-database via <code>table-tools.js</code>)</li>
+                            <li><code>data-itm-actions-origin="1"</code> on Actions <code>&lt;th&gt;</code> and <code>&lt;td&gt;</code> (layout engine / <code>table_actions_position</code>)</li>
+                            <li>Known POST CSRF guards when index handlers mutate data (<code>itm_require_post_csrf</code>, <code>cr_require_valid_csrf_token</code>, etc.)</li>
+                            <li><code>csrf_token</code> hidden fields on POST forms</li>
+                            <li><code>itm-actions-cell</code> when an Actions column is present</li>
+                        </ul>
+                        Skips protection-zone modules and <code>rack_planner</code>. Grandfathers legacy gaps via <code>scripts/data/index_table_compliance_baseline.txt</code> (57 modules); CI fails only on <strong>new</strong> violations outside that list.
+                    </td>
+                    <td>
+                        <code>php scripts/check_index_table_compliance.php</code> — exit <code>1</code> on new violations (baseline-aware).<br>
+                        <code>php scripts/check_index_table_compliance.php --strict</code> — report all modules, ignore baseline.<br>
+                        <code>php scripts/check_index_table_compliance.php --write-baseline</code> — refresh grandfather list (use sparingly).<br>
+                        After fixing a module, remove its slug from <code>scripts/data/index_table_compliance_baseline.txt</code>.
+                    </td>
+                </tr>
+                <tr>
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>CI/local smoke runner: <code>php -l</code> on all PHP files, then CSRF, SQL injection, index table compliance, and UI configuration audits.</td>
-                    <td><code>bash scripts/smoke_test.sh</code> — GitHub Actions workflow <code>.github/workflows/smoke.yml</code>; set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip the UI audit.</td>
+                    <td>
+                        CI/local smoke runner (GitHub Actions <code>.github/workflows/smoke.yml</code>):
+                        <ol style="margin:8px 0 0 18px;padding:0;">
+                            <li><code>php -l</code> on every <code>*.php</code> file</li>
+                            <li><code>check_csrf_coverage.php</code></li>
+                            <li><code>check_sql_injection_coverage.php</code></li>
+                            <li><code>check_index_table_compliance.php</code></li>
+                            <li><code>check_ui_configuration_coverage.php</code> (optional — skipped when <code>SMOKE_SKIP_UI_CONFIG=1</code>)</li>
+                        </ol>
+                    </td>
+                    <td><code>bash scripts/smoke_test.sh</code> — set <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip step 5 (UI layout audit) until legacy gaps are cleared.</td>
                 </tr>
             </tbody>
         </table>
@@ -328,8 +358,8 @@
                 <tr>
                     <td>check_index_table_compliance.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static scan: index list tables must expose <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF guards, and form <code>csrf_token</code> fields. Uses a baseline file for legacy modules.</td>
-                    <td><code>php scripts/check_index_table_compliance.php</code> — exits <code>1</code> on new violations; <code>--strict</code> ignores baseline; <code>--write-baseline</code> refreshes grandfather list.</td>
+                    <td>Index list-table contract audit (import endpoint, action-column markers, POST CSRF). Documented in the <a href="#security">Security</a> section; runs in CI smoke step 4.</td>
+                    <td><code>php scripts/check_index_table_compliance.php</code> · baseline: <code>scripts/data/index_table_compliance_baseline.txt</code></td>
                 </tr>
                 <tr>
                     <td>check_ui_configuration_coverage.php</td>
