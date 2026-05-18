@@ -34,6 +34,10 @@ if (!function_exists('itm_database_sql_unique_audit_resolve_scope_column')) {
             return 'user_id';
         }
 
+        if ($table === 'floor_plans' && in_array('display_name', $columns, true)) {
+            return 'display_name';
+        }
+
         if (in_array('name', $columns, true)) {
             return 'name';
         }
@@ -91,18 +95,11 @@ if (!function_exists('itm_database_sql_unique_audit_parse')) {
                 ];
             }
 
-            if (preg_match_all(
-                '/UNIQUE\s+KEY\s+`([^`]+)`\s*\(([^)]+)\)/i',
-                $body,
-                $uniqueMatches,
-                PREG_SET_ORDER
-            )) {
-                foreach ($uniqueMatches as $uniqueMatch) {
-                    $uniques[] = [
-                        'key' => (string) $uniqueMatch[1],
-                        'columns' => itm_database_sql_unique_audit_split_columns((string) $uniqueMatch[2]),
-                    ];
-                }
+            foreach (itm_database_sql_unique_audit_parse_unique_keys($body) as $uniqueMatch) {
+                $uniques[] = [
+                    'key' => (string) $uniqueMatch['key'],
+                    'columns' => itm_database_sql_unique_audit_split_columns((string) $uniqueMatch['columns']),
+                ];
             }
 
             $scopeUniqueKey = '';
@@ -110,7 +107,7 @@ if (!function_exists('itm_database_sql_unique_audit_parse')) {
             $hasScopeUnique = false;
             if ($scopeColumn !== '') {
                 foreach ($uniques as $unique) {
-                    if (itm_database_sql_unique_audit_unique_matches_scope($unique['columns'], $scopeColumn)) {
+                    if (itm_database_sql_unique_audit_unique_matches_scope($unique['columns'], $scopeColumn, $table)) {
                         $hasScopeUnique = true;
                         $scopeUniqueKey = $unique['key'];
                         $scopeUniqueColumns = $unique['columns'];
@@ -136,19 +133,101 @@ if (!function_exists('itm_database_sql_unique_audit_parse')) {
     }
 }
 
+if (!function_exists('itm_database_sql_unique_audit_read_balanced_parens')) {
+    function itm_database_sql_unique_audit_read_balanced_parens(string $body, int $openPos): string
+    {
+        if ($openPos < 0 || $openPos >= strlen($body) || $body[$openPos] !== '(') {
+            return '';
+        }
+        $depth = 0;
+        $length = strlen($body);
+        $content = '';
+        for ($i = $openPos; $i < $length; $i++) {
+            $char = $body[$i];
+            if ($char === '(') {
+                $depth++;
+                if ($depth > 1) {
+                    $content .= $char;
+                }
+                continue;
+            }
+            if ($char === ')') {
+                $depth--;
+                if ($depth === 0) {
+                    break;
+                }
+                $content .= $char;
+                continue;
+            }
+            if ($depth >= 1) {
+                $content .= $char;
+            }
+        }
+
+        return $content;
+    }
+}
+
+if (!function_exists('itm_database_sql_unique_audit_parse_unique_keys')) {
+    /**
+     * @return array<int, array{key: string, columns: string}>
+     */
+    function itm_database_sql_unique_audit_parse_unique_keys(string $body): array
+    {
+        $uniques = [];
+        $offset = 0;
+        while (preg_match('/UNIQUE\s+KEY\s+`([^`]+)`\s*\(/i', $body, $match, PREG_OFFSET_CAPTURE, $offset)) {
+            $key = (string) $match[1][0];
+            $openPos = (int) $match[0][1] + strlen((string) $match[0][0]) - 1;
+            $columnList = itm_database_sql_unique_audit_read_balanced_parens($body, $openPos);
+            if ($columnList !== '') {
+                $uniques[] = [
+                    'key' => $key,
+                    'columns' => $columnList,
+                ];
+            }
+            $offset = $openPos + strlen($columnList) + 2;
+        }
+
+        return $uniques;
+    }
+}
+
 if (!function_exists('itm_database_sql_unique_audit_split_columns')) {
     /**
      * @return array<int, string>
      */
     function itm_database_sql_unique_audit_split_columns(string $columnList): array
     {
-        $parts = array_map('trim', explode(',', $columnList));
         $columns = [];
-        foreach ($parts as $part) {
-            $part = trim($part, " \t\n\r`");
-            if ($part !== '') {
-                $columns[] = $part;
+        $current = '';
+        $depth = 0;
+        $length = strlen($columnList);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $columnList[$i];
+            if ($char === '(') {
+                $depth++;
+                $current .= $char;
+                continue;
             }
+            if ($char === ')') {
+                $depth--;
+                $current .= $char;
+                continue;
+            }
+            if ($char === ',' && $depth === 0) {
+                $part = trim($current, " \t\n\r`");
+                if ($part !== '') {
+                    $columns[] = $part;
+                }
+                $current = '';
+                continue;
+            }
+            $current .= $char;
+        }
+        $part = trim($current, " \t\n\r`");
+        if ($part !== '') {
+            $columns[] = $part;
         }
 
         return $columns;
@@ -161,14 +240,53 @@ if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
      *
      * @param array<int, string> $columns
      */
-    function itm_database_sql_unique_audit_unique_matches_scope(array $columns, string $scopeColumn): bool
+    function itm_database_sql_unique_audit_unique_matches_scope(array $columns, string $scopeColumn, string $table = ''): bool
     {
         if (count($columns) < 2) {
             return false;
         }
 
-        return strtolower($columns[0]) === 'company_id'
-            && strtolower($columns[1]) === strtolower($scopeColumn);
+        if (strtolower($columns[0]) !== 'company_id') {
+            return false;
+        }
+
+        if (strtolower($columns[1]) === strtolower($scopeColumn)) {
+            return true;
+        }
+
+        if (count($columns) < 3) {
+            return false;
+        }
+
+        $lastColumn = strtolower((string) $columns[count($columns) - 1]);
+        $middleColumn = strtolower((string) $columns[1]);
+
+        if ($scopeColumn === 'name' && $table === 'floor_plan_folders' && $lastColumn === 'name') {
+            return strpos($middleColumn, 'parent_folder_id') !== false || strpos($middleColumn, 'ifnull') !== false;
+        }
+
+        if ($scopeColumn === 'display_name' && $table === 'floor_plans' && $lastColumn === 'display_name') {
+            return strpos($middleColumn, 'folder_id') !== false || strpos($middleColumn, 'ifnull') !== false;
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_database_sql_unique_audit_suggested_alter_sql')) {
+    function itm_database_sql_unique_audit_suggested_alter_sql(string $table, string $scopeColumn): string
+    {
+        if ($table === 'floor_plan_folders' && $scopeColumn === 'name') {
+            return 'ALTER TABLE `floor_plan_folders` ADD UNIQUE KEY `uq_floor_plan_folders_company_parent_name` '
+                . '(`company_id`, (IFNULL(`parent_folder_id`, 0)), `name`);';
+        }
+        if ($table === 'floor_plans' && $scopeColumn === 'display_name') {
+            return 'ALTER TABLE `floor_plans` ADD UNIQUE KEY `uq_floor_plans_company_folder_display_name` '
+                . '(`company_id`, (IFNULL(`folder_id`, 0)), `display_name`);';
+        }
+
+        return 'ALTER TABLE `' . $table . '` ADD UNIQUE KEY `uq_' . $table . '_company_scope` (`company_id`, `'
+            . $scopeColumn . '`);';
     }
 }
 
@@ -274,8 +392,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
                 ? '(`' . implode('`, `', $scopeUniqueCols) . '`)'
                 : '(`company_id`, `' . $scopeColumn . '`)';
 
-            $alterSql = 'ALTER TABLE `' . $table . '` ADD UNIQUE KEY `uq_' . $table . '_company_scope` (`company_id`, `'
-                . $scopeColumn . '`);';
+            $alterSql = itm_database_sql_unique_audit_suggested_alter_sql($table, $scopeColumn);
 
             $ok = (int) $tableRow['unique_count'] === $requiredUniqueCount
                 && (!empty($tableRow['has_scope_unique']) || $hasIdCompanyUnique);

@@ -345,6 +345,7 @@ CREATE TABLE `floor_plan_folders` (
 -- Do NOT add UNIQUE (`company_id`, `folder_id`) on `floor_plans` — that allows only one file per folder.
 -- ALTER TABLE `floor_plan_folders` DROP INDEX `uq_floor_plan_folders_company_name`;
 -- ALTER TABLE `floor_plan_folders` ADD UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, (IFNULL(`parent_folder_id`, 0)), `name`);
+-- ALTER TABLE `floor_plans` ADD UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`, (IFNULL(`folder_id`, 0)), `display_name`);
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
@@ -400,6 +401,7 @@ CREATE TABLE `floor_plans` (
   KEY `folder_id` (`folder_id`),
   KEY `it_location_id` (`it_location_id`),
   KEY `created_by_user_id` (`created_by_user_id`),
+  UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`,(ifnull(`folder_id`,0)),`display_name`),
   CONSTRAINT `floor_plans_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
