@@ -129,10 +129,6 @@ function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
 }
 
 /**
- * Ensures edit forms preserve persisted FK selections even if option lists are tenant-filtered.
- */
-
-/**
  * Resolves a user display label for *_by fields when schema does not declare a foreign key.
  */
 function cr_user_label_by_id($conn, $company_id, $rawId) {
@@ -211,23 +207,16 @@ function cr_append_selected_user_option($conn, $company_id, $options, $selectedV
 }
 
 function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
-    $selectedId = (int)$selectedValue;
-    if ($selectedId <= 0) {
-        return $options;
-    }
-
-    foreach ((array)$options as $opt) {
-        if ((int)($opt['id'] ?? 0) === $selectedId) {
-            return $options;
+    return itm_fk_append_selected_option(
+        $conn,
+        $fk,
+        (int)$company_id,
+        (array)$options,
+        $selectedValue,
+        static function ($conn, $fk, $companyId, $resolvedId) {
+            return cr_fk_label_by_id($conn, $fk, (int)$companyId, (int)$resolvedId);
         }
-    }
-
-    $resolvedLabel = cr_fk_label_by_id($conn, $fk, (int)$company_id, $selectedId);
-    if ($resolvedLabel !== '') {
-        $options[] = ['id' => $selectedId, 'label' => $resolvedLabel];
-    }
-
-    return $options;
+    );
 }
 
 /**
