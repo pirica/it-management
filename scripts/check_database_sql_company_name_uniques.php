@@ -2,8 +2,16 @@
 /**
  * Audit database.sql for tenant unique-key policy.
  *
- * Scope: `name` when present, else 3rd column after `id` + `company_id`.
- * Pass: PRIMARY + UNIQUE starting with (`company_id`, scope_column); exactly 2 uniques.
+ * Scope column (per table): `name` when present, else the 3rd column after `id` + `company_id`
+ * (e.g. `display_name` on `floor_plans`). `user_companies` uses `user_id`.
+ *
+ * Pass: exactly 2 uniques — PRIMARY KEY (`id`) plus one business UNIQUE led by `company_id`
+ * and the scope column (wider composites allowed, e.g. monthly_budgets adds `month`).
+ *
+ * Floor plan exceptions (middle column must be the intended FK, not any IFNULL):
+ * - floor_plan_folders: (`company_id`, IFNULL(`parent_folder_id`, 0), `name`)
+ * - floor_plans: (`company_id`, IFNULL(`folder_id`, 0), `display_name`)
+ *   Do not use UNIQUE (`company_id`, `folder_id`) alone — that allows only one file per folder.
  *
  * Browser: open while logged in (read-only audit; results on load).
  * CLI: php scripts/check_database_sql_company_name_uniques.php
@@ -38,6 +46,9 @@ if ($itmIsCli) {
     fwrite(STDOUT, 'Pass: ' . $result['summary']['pass'] . PHP_EOL);
     fwrite(STDOUT, 'Fail: ' . $result['summary']['fail'] . PHP_EOL);
     fwrite(STDOUT, 'Skip: ' . $result['summary']['skip'] . PHP_EOL . PHP_EOL);
+    fwrite(STDOUT, 'Scope rules: `name` when present, else 3rd column after id+company_id.' . PHP_EOL);
+    fwrite(STDOUT, 'Floor plans: folders = company + IFNULL(parent_folder_id,0) + name;' . PHP_EOL);
+    fwrite(STDOUT, '  files = company + IFNULL(folder_id,0) + display_name (not company+folder_id only).' . PHP_EOL . PHP_EOL);
 
     foreach ($result['lines'] as $line) {
         $flag = strtoupper((string) $line['status']);
@@ -76,7 +87,7 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>database.sql company+name unique audit</title>
+    <title>database.sql tenant unique-key audit</title>
     <link rel="stylesheet" href="<?= itm_db_sql_unique_escape($baseUrl . 'css/styles.css'); ?>">
     <style>
         .itm-dsu-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -107,15 +118,28 @@ header('Content-Type: text/html; charset=utf-8');
 <body>
 <div class="itm-dsu-wrap">
     <div class="itm-dsu-card">
-        <h1>database.sql — company + name unique audit</h1>
+        <h1>database.sql — tenant unique-key audit</h1>
         <p class="itm-dsu-muted">
             Parses <code>database.sql</code> for every table with <code>company_id</code>.
-            Scope column: <code>name</code> when present, otherwise the <strong>3rd column</strong> after <code>id</code> and <code>company_id</code>
-            (e.g. <code>annual_budget_id</code> on <code>monthly_budgets</code>).
-            <strong>Pass (true):</strong> exactly <strong>2</strong> uniques — <code>PRIMARY KEY</code> + a <code>UNIQUE</code> that starts with
-            <code>(company_id, scope_column)</code> (wider composites are OK).
-            <strong>Fail (false):</strong> only one unique, missing scope unique, or extra uniques.
-            Only tables <em>without</em> <code>company_id</code> are skipped.
+            <strong>Scope column:</strong> <code>name</code> when present, otherwise the <strong>3rd column</strong> after
+            <code>id</code> and <code>company_id</code> (e.g. <code>annual_budget_id</code> on <code>monthly_budgets</code>,
+            <code>display_name</code> on <code>floor_plans</code>). <code>user_companies</code> uses <code>user_id</code>.
+        </p>
+        <p class="itm-dsu-muted">
+            <strong>Pass:</strong> exactly <strong>2</strong> uniques — <code>PRIMARY KEY</code> (<code>id</code>) plus one business
+            <code>UNIQUE</code> led by <code>(company_id, scope_column)</code> (wider composites are OK).
+            <strong>Fail:</strong> missing scope unique, only one unique, or extra uniques.
+            Tables without <code>company_id</code> (and exempt tables such as <code>audit_logs</code>) are skipped.
+        </p>
+        <p class="itm-dsu-muted">
+            <strong>Floor plan gallery (required shape):</strong>
+            <code>floor_plan_folders</code> —
+            <code>(company_id, IFNULL(parent_folder_id, 0), name)</code>;
+            <code>floor_plans</code> —
+            <code>(company_id, IFNULL(folder_id, 0), display_name)</code>.
+            The audit accepts only <code>parent_folder_id</code> / <code>folder_id</code> (plain or that exact
+            <code>IFNULL(..., 0)</code>), not other expressions such as <code>IFNULL(created_by_user_id, 0)</code>.
+            Do <strong>not</strong> add <code>UNIQUE (company_id, folder_id)</code> on <code>floor_plans</code> — that allows only one file per folder.
         </p>
         <p class="itm-dsu-muted">
             Example: <code>ALTER TABLE `location_types` ADD UNIQUE KEY `uq_location_types_company_name` (`company_id`, `name`);</code>
