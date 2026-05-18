@@ -587,7 +587,7 @@ function fp_save_tags_for_plan(mysqli $conn, int $planId, int $companyId, array 
             $ins = mysqli_prepare($conn, 'INSERT IGNORE INTO floor_plan_tags (company_id, name, active) VALUES (?, ?, 1)');
             if ($ins) {
                 mysqli_stmt_bind_param($ins, 'is', $companyId, $name);
-                if (mysqli_stmt_execute($ins)) {
+                if (mysqli_stmt_execute($ins) && mysqli_stmt_affected_rows($ins) > 0) {
                     $tagId = (int)mysqli_insert_id($conn);
                     if ($tagId > 0) {
                         $tagNewValues = fp_audit_fetch_record($conn, 'floor_plan_tags', $tagId, $companyId);
