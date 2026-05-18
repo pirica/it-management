@@ -231,8 +231,13 @@ $fpCreateUrl = $modulePath . '/create.php';
 <div id="floorPlanPreviewModal" class="itm-floor-plan-modal" hidden>
     <div class="itm-floor-plan-modal-backdrop" data-close-preview="1"></div>
     <div class="itm-floor-plan-modal-content">
-        <button type="button" class="btn btn-sm itm-floor-plan-modal-close" data-close-preview="1">Close</button>
-        <h3 id="floorPlanPreviewTitle"></h3>
+        <div class="itm-floor-plan-modal-header">
+            <h3 id="floorPlanPreviewTitle"></h3>
+            <div class="itm-floor-plan-modal-header-actions">
+                <div id="floorPlanPreviewActions" class="itm-floor-plan-modal-actions"></div>
+                <button type="button" class="btn btn-sm itm-floor-plan-modal-close" data-close-preview="1">Close</button>
+            </div>
+        </div>
         <div id="floorPlanPreviewBody" class="itm-floor-plan-preview-body"></div>
     </div>
 </div>
