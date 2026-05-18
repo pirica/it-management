@@ -136,6 +136,9 @@ Every module (excluding the Protection Zone) must implement:
   * Note: `https://nelsonsalvador.myddns.me/phpmyadmin/` currently returns upstream TLS/certificate errors; use HTTP for phpMyAdmin checks.
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging.
+* **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled.
+  * **Linux, macOS, CI, and any host where `php` is on PATH:** `php scripts/<script>.php`
+  * **Windows (Laragon) when `php` is not on PATH:** use the Laragon 7.4 binary, e.g. `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\<script>.php` (replace `<laragon-root>` with your install path; do not use a system PHP 8.x build that lacks MySQLi).
 
 ---
 
@@ -197,8 +200,9 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * **Wrapper consistency finding (switch_ports):** if `create.php`, `edit.php`, `view.php`, `delete.php`, or `list_all.php` are wrappers that route to `index.php`, `index.php` must not overwrite wrapper-provided `$crud_action` values.
   * **High-Density Support:** Rack position validation supports up to **250** positions. Batch updates (move/reorder) use temporary offsets (1000) to avoid unique constraint collisions.
   * **Mandatory human-flow testing for every affected workflow:** execute human-flow regression for each changed Create/Edit/Update/Delete/Copy/Move path before PR.
-    * Required regression command:
-      * `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
+    * Required regression command (from repository root):
+      * **Default (Linux, macOS, CI, PATH):** `php scripts/idfs_sync_human_test.php`
+      * **Windows Laragon fallback (when `php` is not on PATH):** `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
     * If any workflow or command run reports `[FAIL]`, the task is not complete.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
