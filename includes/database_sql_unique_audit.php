@@ -234,6 +234,36 @@ if (!function_exists('itm_database_sql_unique_audit_split_columns')) {
     }
 }
 
+if (!function_exists('itm_database_sql_unique_audit_normalize_unique_expr')) {
+    function itm_database_sql_unique_audit_normalize_unique_expr(string $expr): string
+    {
+        $expr = strtolower($expr);
+        $expr = str_replace(['`', ' ', "\t", "\n", "\r"], '', $expr);
+        while (strlen($expr) >= 2 && $expr[0] === '(' && substr($expr, -1) === ')') {
+            $expr = substr($expr, 1, -1);
+        }
+
+        return $expr;
+    }
+}
+
+if (!function_exists('itm_database_sql_unique_audit_middle_matches_ifnull_fk')) {
+    /**
+     * Accept only the intended folder FK (plain column or IFNULL(fk, 0)), not other IFNULL expressions.
+     */
+    function itm_database_sql_unique_audit_middle_matches_ifnull_fk(string $middleColumn, string $fkColumn): bool
+    {
+        $fkColumn = strtolower($fkColumn);
+        $normalized = itm_database_sql_unique_audit_normalize_unique_expr($middleColumn);
+
+        if ($normalized === $fkColumn) {
+            return true;
+        }
+
+        return $normalized === 'ifnull(' . $fkColumn . ',0)';
+    }
+}
+
 if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
     /**
      * UNIQUE must start with (`company_id`, scope_column); additional scope columns allowed.
@@ -259,14 +289,14 @@ if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
         }
 
         $lastColumn = strtolower((string) $columns[count($columns) - 1]);
-        $middleColumn = strtolower((string) $columns[1]);
+        $middleColumn = (string) $columns[1];
 
         if ($scopeColumn === 'name' && $table === 'floor_plan_folders' && $lastColumn === 'name') {
-            return strpos($middleColumn, 'parent_folder_id') !== false || strpos($middleColumn, 'ifnull') !== false;
+            return itm_database_sql_unique_audit_middle_matches_ifnull_fk($middleColumn, 'parent_folder_id');
         }
 
         if ($scopeColumn === 'display_name' && $table === 'floor_plans' && $lastColumn === 'display_name') {
-            return strpos($middleColumn, 'folder_id') !== false || strpos($middleColumn, 'ifnull') !== false;
+            return itm_database_sql_unique_audit_middle_matches_ifnull_fk($middleColumn, 'folder_id');
         }
 
         return false;
