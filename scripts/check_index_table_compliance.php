@@ -173,7 +173,8 @@ function itc_collect_module_sources(string $moduleDir, string $indexPath): array
         ];
 
         foreach ($patterns as $pattern) {
-            if (preg_match_all($pattern, $source, $matches) !== 1) {
+            $matchCount = preg_match_all($pattern, $source, $matches);
+            if ($matchCount === false || $matchCount === 0) {
                 continue;
             }
             foreach ($matches[1] as $relative) {
