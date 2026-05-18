@@ -17,17 +17,15 @@
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/plain; charset=utf-8');
-    http_response_code(501);
-    echo "This script must be run from the command line.\n";
-    echo "Example: php scripts/check_audit_logs_coverage.php\n";
-    exit(1);
-}
-
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
-    fwrite(STDERR, "Unable to resolve project root.\n");
+    if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+        fwrite(STDERR, "Unable to resolve project root.\n");
+    } else {
+        header('Content-Type: text/plain; charset=utf-8');
+        http_response_code(500);
+        echo "Unable to resolve project root.\n";
+    }
     exit(2);
 }
 
@@ -42,21 +40,29 @@ $options = [
     'help' => false,
 ];
 
-foreach (array_slice($argv, 1) as $arg) {
-    if ($arg === '--help' || $arg === '-h') {
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    foreach (array_slice($argv, 1) as $arg) {
+        if ($arg === '--help' || $arg === '-h') {
+            $options['help'] = true;
+            continue;
+        }
+        if ($arg === '--json') {
+            $options['json'] = true;
+            continue;
+        }
+        if (strpos($arg, '--module=') === 0) {
+            $options['module'] = trim(substr($arg, 9));
+            continue;
+        }
+        fwrite(STDERR, "Unknown option: {$arg}\n");
+        exit(2);
+    }
+} else {
+    $options['json'] = isset($_GET['json']);
+    $options['module'] = trim((string)($_GET['module'] ?? ''));
+    if (isset($_GET['help'])) {
         $options['help'] = true;
-        continue;
     }
-    if ($arg === '--json') {
-        $options['json'] = true;
-        continue;
-    }
-    if (strpos($arg, '--module=') === 0) {
-        $options['module'] = trim(substr($arg, 9));
-        continue;
-    }
-    fwrite(STDERR, "Unknown option: {$arg}\n");
-    exit(2);
 }
 
 if ($options['help']) {
@@ -66,6 +72,9 @@ if ($options['help']) {
     echo "  --module=NAME   Limit scan to one module folder\n";
     echo "  --json          Machine-readable output\n";
     echo "  --help          Show this help\n";
+    if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+        echo "\nBrowser query: ?module=rack_planner or ?json=1\n";
+    }
     exit(0);
 }
 
@@ -424,7 +433,8 @@ $schemaTables = $dbMaps['schema_tables'];
 $modules = audit_logs_list_modules($modulesDir, $options['module']);
 
 if ($options['module'] !== '' && empty($modules)) {
-    fwrite(STDERR, "Module not found: {$options['module']}\n");
+    itm_script_output_begin('Audit logs coverage check');
+    echo "Module not found: {$options['module']}\n";
     exit(2);
 }
 

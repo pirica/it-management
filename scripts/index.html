@@ -244,10 +244,9 @@
                 </tr>
                 <tr>
                     <td><a href="idfs_api_payload_dry_run.php">idfs_api_payload_dry_run.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Validates IDF device API JSON payloads offline (no MySQL). Plain-text output; CLI flags required for full runs.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Validates IDF device API JSON payloads offline (no MySQL). Requires CLI flags for payload validation.</td>
                     <td>
-                        Browser: open URL (limited without CLI flags). CLI:
                         <code>php scripts/idfs_api_payload_dry_run.php --samples</code>,
                         <code>--endpoint=port_update --file=payload.json</code>,
                         <code>--endpoint=link_create --json='{"port_id_a":1,"port_id_b":2}'</code>
