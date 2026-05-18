@@ -1,8 +1,8 @@
-# IT Management System
+<h1 align="center">IT Management System</h1>
 
-A complete IT Asset Management System built with PHP and MySQL, multi-company support.
+<p align="center">A complete IT Asset Management System built with PHP and MySQL, multi-company support.</p>
 
-## Features
+<h2 align="center">Features</h2>
 
 - ✅ Complete CRUD operations across modules
 - ✅ GitHub Copilot-inspired light/dark theme
@@ -13,41 +13,41 @@ A complete IT Asset Management System built with PHP and MySQL, multi-company su
 - ✅ Responsive design
 - ✅ API
 
-## Screenshots
+<h2 align="center">Screenshots</h2>
 
-Captured from a local Laragon-style install at `http://localhost/it-management/` (default light theme after sign-in).
+<p align="center">Captured from a local Laragon-style install at <code>http://localhost/it-management/</code> (default light theme after sign-in).</p>
 
-**Dashboard** — tenant overview with quick stats and settings shortcut.
+<p align="center"><strong>Dashboard</strong> — tenant overview with quick stats and settings shortcut.</p>
 
-![Dashboard overview](docs/readme/dashboard.png)
+<p align="center"><img src="docs/readme/dashboard.png" alt="Dashboard overview" /></p>
 
-**Equipment** — module list with search, sort, and table tools (export / import).
+<p align="center"><strong>Equipment</strong> — module list with search, sort, and table tools (export / import).</p>
 
-![Equipment module list](docs/readme/equipment.png)
+<p align="center"><img src="docs/readme/equipment.png" alt="Equipment module list" /></p>
 
-**IDF rack** — visual rack layout with positions, port grid, and linked device management.
+<p align="center"><strong>IDF rack</strong> — visual rack layout with positions, port grid, and linked device management.</p>
 
-![IDF rack view](docs/readme/idf.png)
+<p align="center"><img src="docs/readme/idf.png" alt="IDF rack view" /></p>
 
-**Rack planner** — drag-and-drop rack elevation with patch panels, switches, and servers by RU.
+<p align="center"><strong>Rack planner</strong> — drag-and-drop rack elevation with patch panels, switches, and servers by RU.</p>
 
-![Rack planner](docs/readme/rack_planner.png)
+<p align="center"><img src="docs/readme/rack_planner.png" alt="Rack planner" /></p>
 
-**Floor Plans** — gallery with nested folders, tags, and uploads (images, PDF, AutoCAD); optional link to IT Locations; drag-and-drop to move files and folders (see [Floor Plans gallery](#floor-plans-gallery)).
+<p align="center"><strong>Floor Plans</strong> — gallery with nested folders, tags, and uploads (images, PDF, AutoCAD); optional link to IT Locations; drag-and-drop to move files and folders (see <a href="#floor-plans-gallery">Floor Plans gallery</a>).</p>
 
-![Floor Plans gallery](docs/readme/floor_plans.png)
+<p align="center"><img src="docs/readme/floor_plans.png" alt="Floor Plans gallery" /></p>
 
-## Architecture
+<h2 align="center">Architecture</h2>
 
-High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.
+<p align="center">High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.</p>
 
-![Architecture overview](docs/readme/architecture.png)
+<p align="center"><img src="docs/readme/architecture.png" alt="Architecture overview" /></p>
 
-**Database schema** — core table relationships for the company-scoped multi-tenant data model.
+<p align="center"><strong>Database schema</strong> — core table relationships for the company-scoped multi-tenant data model.</p>
 
-![Database schema overview](docs/readme/database-diagram.png)
+<p align="center"><img src="docs/readme/database-diagram.png" alt="Database schema overview" /></p>
 
-## Installation
+<h2 align="center">Installation</h2>
 
 1. Extract the project files into your web root.
 2. Import `database.sql` into MySQL.
@@ -60,7 +60,7 @@ High-level request flow from web entry points through shared core into company-s
 
 For an existing database, apply the Floor Plans tables from `database.sql` (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`) if they are not already present.
 
-## Modules
+<h2 align="center">Modules</h2>
 
 - Equipment — Manage IT equipment with Switch Port Manager
 - IDFs — Rack layout, positions, ports, and cable links
@@ -79,7 +79,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Audit Logs
 
 
-## Floor Plans gallery
+<h2 align="center">Floor Plans gallery</h2>
 
 Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layouts and drawings per company.
 
@@ -97,7 +97,7 @@ Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layo
 
 **Setup:** import the Floor Plans section from `database.sql` on existing databases. If tables are missing, the gallery shows an explicit migration message instead of a generic company error.
 
-## System Requirements
+<h2 align="center">System Requirements</h2>
 
 - PHP 7.4.33
 - MySQL 8.0+
@@ -105,7 +105,7 @@ Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layo
 - Apache 2.4+
 - No Composer required
 
-## PHP 7.4.33 Compatibility
+<h2 align="center">PHP 7.4.33 Compatibility</h2>
 
 - The codebase is maintained to run on PHP 7.4.33.
 - Compatibility validation should include:
@@ -114,7 +114,7 @@ Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layo
     - `php scripts/check_csrf_coverage.php`
     - `php scripts/check_sql_injection_coverage.php`
 
-## Security Checks
+<h2 align="center">Security Checks</h2>
 
 Run these scripts to audit baseline security coverage:
 
@@ -123,7 +123,7 @@ Run these scripts to audit baseline security coverage:
 - SQL injection static audit:
   - `php scripts/check_sql_injection_coverage.php`
 
-## Database Analyze Troubleshooting (phpMyAdmin)
+<h2 align="center">Database Analyze Troubleshooting (phpMyAdmin)</h2>
 
 If phpMyAdmin returns an error when using **Analyze table** at the database level, run:
 
@@ -139,12 +139,12 @@ Then re-run:
 
 - `php scripts/analyze_database_health.php`
 
-## Production Deployment Note
+<h2 align="center">Production Deployment Note</h2>
 
 - Keep `debug.php` for development/troubleshooting only.
 - Before any production release, remove or block access to `debug.php` to avoid exposing sensitive system and database information.
 
-## Network Discovery & IP2WHOIS
+<h2 align="center">Network Discovery & IP2WHOIS</h2>
 
 **IP Subnets** → **Search** → **Network Discovery** scans an IPv4 range (up to 255 addresses) using TCP connect probes (no shell/`exec`). Responding hosts can be added to the **IP Addresses** inventory when they match a company subnet.
 
@@ -181,7 +181,7 @@ If the key is missing, discovery still runs; IP2WHOIS steps are skipped and note
 
 Register / plans: [IP2WHOIS](https://www.ip2whois.com/register) — free tier limits apply (domains per query depends on plan).
 
-## Secrets Management (Required)
+<h2 align="center">Secrets Management (Required)</h2>
 
 Move secrets out of source control immediately. `config/config.php` currently defines DB credentials and API key constants inline, which is risky for leaks and difficult rotation. Use environment variables (or a server-local config file excluded from git) and fail fast when missing.
 
