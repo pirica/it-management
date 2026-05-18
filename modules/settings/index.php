@@ -444,7 +444,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Unsupported favicon file type.';
                 } else {
                     $faviconsDirFs = ROOT_PATH . 'images/favicons/';
-                    if (!is_dir($faviconsDirFs) && !mkdir($faviconsDirFs, 0775, true) && !is_dir($faviconsDirFs)) {
+                    if (!itm_ensure_upload_directory($faviconsDirFs, 'upload')) {
                         $error = 'Unable to prepare favicon storage directory.';
                     } else {
                         $faviconFileName = 'company_' . (int)$company_id . '.ico';

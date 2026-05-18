@@ -222,22 +222,16 @@ define('FLOOR_PLAN_CAD_EXTENSIONS', ['dwg', 'dxf', 'dwf', 'dws']);
 define('MAX_FILE_SIZE', 5242880); // 5MB limit
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 
-// Ensure required upload and backup directories exist
-if (!is_dir(UPLOAD_PATH)) {
-    @mkdir(UPLOAD_PATH, 0775, true);
-}
-if (!is_dir(TICKET_UPLOAD_PATH)) {
-    @mkdir(TICKET_UPLOAD_PATH, 0775, true);
-}
-if (!is_dir(BACKUP_PATH)) {
-    @mkdir(BACKUP_PATH, 0775, true);
-}
-if (!is_dir(FLOOR_PLAN_UPLOAD_PATH)) {
-    @mkdir(FLOOR_PLAN_UPLOAD_PATH, 0775, true);
-}
+// Load helpers needed before upload directory bootstrap
+require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+
+// Ensure required upload and backup directories exist (writable, non-executable over HTTP)
+itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
+itm_ensure_upload_directory(TICKET_UPLOAD_PATH, 'upload');
+itm_ensure_upload_directory(BACKUP_PATH, 'deny_all');
+itm_ensure_upload_directory(FLOOR_PLAN_UPLOAD_PATH, 'upload');
 
 // Load secondary configuration and library files
-require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';

@@ -1622,9 +1622,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
             }
 
-            if (!is_dir(UPLOAD_PATH)) {
-                @mkdir(UPLOAD_PATH, 0775, true);
-            }
+            itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
 
             $ext = pathinfo((string)$currentFile['name'], PATHINFO_EXTENSION);
             $photoFilename = 'equipment_' . time() . '_' . mt_rand(1000, 9999) . '_' . $index . '.' . strtolower((string)$ext);
