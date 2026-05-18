@@ -5,6 +5,8 @@
  * Why: the application exposes per-company layout toggles (table actions,
  * new buttons, export toolbar, and back/save alignment). This script provides
  * a single verification pass across modules so regressions are easy to spot.
+ *
+ * Exemptions: see scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades).
  */
 
 declare(strict_types=1);
@@ -21,11 +23,38 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('UI configuration coverage check');
 
 $excludeModules = ['idfs'];
+$excludePrefixesFile = __DIR__ . '/data/ui_configuration_excluded_prefixes.txt';
 
 /**
  * @return array<int, string>
  */
-function itm_list_modules(string $modulesDir, array $excludeModules): array
+function itm_ui_config_load_excluded_prefixes(string $path): array
+{
+    if (!is_file($path)) {
+        return [];
+    }
+
+    $prefixes = [];
+    $lines = file($path, FILE_IGNORE_NEW_LINES);
+    if (!is_array($lines)) {
+        return [];
+    }
+
+    foreach ($lines as $line) {
+        $line = trim((string)$line);
+        if ($line === '' || strpos($line, '#') === 0) {
+            continue;
+        }
+        $prefixes[] = $line;
+    }
+
+    return $prefixes;
+}
+
+/**
+ * @return array<int, string>
+ */
+function itm_list_modules(string $modulesDir, array $excludeModules, array $excludeModulePrefixes): array
 {
     $items = scandir($modulesDir) ?: [];
     $modules = [];
@@ -36,6 +65,17 @@ function itm_list_modules(string $modulesDir, array $excludeModules): array
         }
 
         if (in_array($item, $excludeModules, true)) {
+            continue;
+        }
+
+        $skipByPrefix = false;
+        foreach ($excludeModulePrefixes as $prefix) {
+            if ($prefix !== '' && strpos($item, $prefix) === 0) {
+                $skipByPrefix = true;
+                break;
+            }
+        }
+        if ($skipByPrefix) {
             continue;
         }
 
@@ -133,13 +173,16 @@ function itm_check_back_save(string $formContent, string $filename): array
     return ['status' => 'fail', 'details' => "Could not detect paired back/save controls in {$filename}"];
 }
 
-$modules = itm_list_modules($modulesDir, $excludeModules);
+$excludeModulePrefixes = itm_ui_config_load_excluded_prefixes($excludePrefixesFile);
+$modules = itm_list_modules($modulesDir, $excludeModules, $excludeModulePrefixes);
 $totals = ['pass' => 0, 'fail' => 0, 'n/a' => 0];
 $moduleFailures = [];
 
 echo "UI Configuration Coverage Audit\n";
 echo "Root: {$modulesDir}\n";
-echo "Excluded modules: " . implode(', ', $excludeModules) . "\n\n";
+echo "Excluded modules: " . implode(', ', $excludeModules) . "\n";
+echo "Excluded prefixes: " . (empty($excludeModulePrefixes) ? '(none)' : implode(', ', $excludeModulePrefixes));
+echo " (from " . basename($excludePrefixesFile) . ")\n\n";
 
 foreach ($modules as $module) {
     $modulePath = $modulesDir . '/' . $module;
