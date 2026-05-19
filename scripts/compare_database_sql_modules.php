@@ -405,6 +405,9 @@ function itm_compare_status_badge_class(string $status): string
     }
     return 'badge-warning';
 }
+
+require_once __DIR__ . '/lib/script_browser_nav.php';
+$itmCompareBaseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
 ?>
 <!doctype html>
 <html lang="en">
@@ -427,6 +430,7 @@ function itm_compare_status_badge_class(string $status): string
 </head>
 <body>
 <div class="report-wrap">
+<?php itm_script_browser_nav_echo($itmCompareBaseUrl); ?>
     <div class="report-card">
         <h1 style="margin-top:0;">database.sql tables vs modules/</h1>
         <p class="report-muted">
@@ -442,7 +446,6 @@ function itm_compare_status_badge_class(string $status): string
         </div>
         <p>
             <a class="btn btn-sm" href="?format=json">JSON</a>
-            <a class="btn btn-sm" href="index.html">Scripts index</a>
             <a class="btn btn-sm" href="../index.php">Home</a>
         </p>
     </div>
@@ -464,10 +467,10 @@ function itm_compare_status_badge_class(string $status): string
             <tbody>
                 <?php foreach ($report['tables'] as $row): ?>
                     <tr>
-                        <td><code><?php echo $esc(itm_single_line_text((string)$row['table'])); ?></code></td>
+                        <td><?php echo itm_script_format_table_link((string)$row['table']); ?></td>
                         <td><span class="badge <?php echo $esc(itm_compare_status_badge_class((string)$row['status'])); ?>"><?php echo $esc(itm_single_line_text((string)$row['status'])); ?></span></td>
-                        <td><?php echo $row['module_folder'] !== '' ? '<code>' . $esc(itm_single_line_text((string)$row['module_folder'])) . '</code>' : '—'; ?></td>
-                        <td><?php echo $row['crud_table'] !== '' ? '<code>' . $esc(itm_single_line_text((string)$row['crud_table'])) . '</code>' : '—'; ?></td>
+                        <td><?php echo $row['module_folder'] !== '' ? itm_script_format_module_link((string)$row['module_folder'], $itmCompareBaseUrl) : '—'; ?></td>
+                        <td><?php echo $row['crud_table'] !== '' ? itm_script_format_table_link((string)$row['crud_table']) : '—'; ?></td>
                         <td class="itm-cell-columns"><?php echo $row['columns_inline'] !== '' ? $esc(itm_single_line_text((string)$row['columns_inline'])) : '—'; ?></td>
                         <td><?php echo $esc(itm_single_line_text((string)$row['notes'])); ?></td>
                     </tr>
@@ -494,9 +497,9 @@ function itm_compare_status_badge_class(string $status): string
             <tbody>
                 <?php foreach ($report['modules'] as $row): ?>
                     <tr>
-                        <td><a href="../modules/<?php echo $esc($row['module']); ?>/"><code><?php echo $esc(itm_single_line_text((string)$row['module'])); ?></code></a></td>
+                        <td><?php echo itm_script_format_module_link((string)$row['module'], $itmCompareBaseUrl); ?></td>
                         <td><span class="badge <?php echo $esc(itm_compare_status_badge_class((string)$row['status'])); ?>"><?php echo $esc(itm_single_line_text((string)$row['status'])); ?></span></td>
-                        <td><?php echo $row['crud_table'] !== '' ? '<code>' . $esc(itm_single_line_text((string)$row['crud_table'])) . '</code>' : '—'; ?></td>
+                        <td><?php echo $row['crud_table'] !== '' ? itm_script_format_table_link((string)$row['crud_table']) : '—'; ?></td>
                         <td><?php echo !empty($row['table_in_sql']) ? 'Yes' : 'No'; ?></td>
                         <td class="itm-cell-columns"><?php echo $row['columns_inline'] !== '' ? $esc(itm_single_line_text((string)$row['columns_inline'])) : '—'; ?></td>
                         <td><?php echo $esc(itm_single_line_text((string)$row['notes'])); ?></td>

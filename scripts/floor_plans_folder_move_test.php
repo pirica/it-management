@@ -5,8 +5,7 @@
  * Usage (Laragon PHP 7.4+):
  *   php scripts/floor_plans_folder_move_test.php
  *
- * Windows Laragon example:
- *   C:\laragon\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\floor_plans_folder_move_test.php
+ * Browser: open this script URL for a plain-language pass/fail log.
  *
  * Optional env:
  *   ITM_DB_HOST, ITM_DB_USER, ITM_DB_PASS, ITM_DB_NAME
@@ -25,9 +24,54 @@ $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
 require $projectRoot . '/modules/floor_plans/gallery_helpers.php';
 
+function fp_test_is_cli(): bool
+{
+    return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+}
+
+function fp_test_eol(): string
+{
+    return fp_test_is_cli() ? PHP_EOL : '<br>' . PHP_EOL;
+}
+
+function fp_test_esc(string $text): string
+{
+    return fp_test_is_cli() ? $text : htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+}
+
 function fp_test_out($message)
 {
-    echo $message . PHP_EOL;
+    echo fp_test_esc((string)$message) . fp_test_eol();
+    if (!fp_test_is_cli() && function_exists('flush')) {
+        @flush();
+    }
+}
+
+function fp_test_browser_init(): void
+{
+    if (fp_test_is_cli()) {
+        return;
+    }
+    if (!headers_sent()) {
+        header('Content-Type: text/html; charset=UTF-8');
+    }
+    require_once __DIR__ . '/lib/script_browser_nav.php';
+    $baseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Floor Plans folder move test</title></head>'
+        . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:920px;">';
+    itm_script_browser_nav_echo($baseUrl);
+    echo '<p style="color:#57606a;margin:0 0 14px;">Regression for '
+        . itm_script_external_link_html(itm_script_module_index_url($baseUrl, 'modules/floor_plans/index.php'), 'Floor Plans module')
+        . ' · table '
+        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('floor_plan_folders'), 'floor_plan_folders')
+        . ' (helper <code>fp_move_folder_to_parent</code>).</p>';
+}
+
+function fp_test_browser_close(): void
+{
+    if (!fp_test_is_cli()) {
+        echo '</body></html>';
+    }
 }
 
 function fp_test_pass($message)
@@ -103,6 +147,8 @@ function fp_test_delete_folder(mysqli $conn, $folderId, $companyId)
     mysqli_stmt_close($stmt);
 }
 
+fp_test_browser_init();
+
 $companyId = (int)(getenv('ITM_TEST_COMPANY_ID') ?: 1);
 $failures = 0;
 
@@ -137,7 +183,7 @@ try {
 
     $allFolders = fp_fetch_folders($conn, $companyId);
     $err = fp_move_folder_to_parent($conn, $companyId, $childId, null, $allFolders);
-    fp_test_assert($err === '__NOOP__', 'no-op move to same parent returns __NOOP__');
+    fp_test_assert($err === '__NOOP__', 'no-op when folder already at target parent (same location)');
 
     $allFolders = fp_fetch_folders($conn, $companyId);
     $err = fp_move_folder_to_parent($conn, $companyId, $childId, $rootId, $allFolders);
@@ -177,9 +223,11 @@ try {
 if ($failures > 0) {
     fp_test_out('');
     fp_test_out('Result: FAILED');
+    fp_test_browser_close();
     exit(1);
 }
 
 fp_test_out('');
 fp_test_out('Result: OK');
+fp_test_browser_close();
 exit(0);

@@ -288,6 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 header('Content-Type: text/html; charset=utf-8');
+require_once __DIR__ . '/lib/script_browser_nav.php';
 ?>
 <!doctype html>
 <html lang="en">
@@ -318,6 +319,7 @@ header('Content-Type: text/html; charset=utf-8');
 </head>
 <body>
 <div class="itm-created-at-wrap">
+<?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="itm-created-at-card">
         <h1>Update all <code>created_at</code></h1>
         <p class="itm-created-at-muted">
@@ -326,8 +328,7 @@ header('Content-Type: text/html; charset=utf-8');
             (default <code>2026-01-01 00:00:01</code>). <code>updated_at</code> and other date columns are not changed.
         </p>
         <p class="itm-created-at-muted">
-            <a href="<?= itm_update_all_created_at_escape($baseUrl . 'scripts/index.html'); ?>">Scripts index</a>
-            · CLI optional: <code>php scripts/update_all_created_at.php --dry-run</code>
+            CLI optional: <code>php scripts/update_all_created_at.php --dry-run</code>
         </p>
     </div>
 
@@ -392,7 +393,7 @@ header('Content-Type: text/html; charset=utf-8');
                     ?>
                 <tr>
                     <td><span class="itm-created-at-badge <?= $badgeClass; ?>"><?= itm_update_all_created_at_escape($statusLabel); ?></span></td>
-                    <td><?= itm_update_all_created_at_escape($line['table']); ?></td>
+                    <td><?= itm_script_format_table_link((string)$line['table']); ?></td>
                     <td><?= $line['rows'] > 0 ? (int) $line['rows'] : '—'; ?></td>
                     <td><?= itm_update_all_created_at_escape($line['message']); ?></td>
                 </tr>

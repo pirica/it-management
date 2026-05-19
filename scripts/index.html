@@ -128,7 +128,7 @@
                     <td><a href="update_all_created_at.php">update_all_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>After importing <code>database.sql</code>, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>
-                    <td>Open <a href="update_all_created_at.php">update_all_created_at.php</a> while logged in. Optional CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
+                    <td><strong>Log in first.</strong> Open <a href="update_all_created_at.php">update_all_created_at.php</a> (HTML + <strong>← Scripts index</strong>). CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
                 </tr>
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
@@ -259,10 +259,10 @@
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
-                    <td><a href="normalize_database_sql_created_at.php">normalize_database_sql_created_at.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged.</td>
-                    <td>Browser: plain-text log (<strong>writes</strong> <code>database.sql</code>). Prefer CLI: <code>php scripts/normalize_database_sql_created_at.php</code></td>
+                    <td>normalize_database_sql_created_at.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Writes</strong> <code>database.sql</code>.</td>
+                    <td><strong>CLI only</strong> (browser shows instructions + <strong>← Scripts index</strong>): <code>php scripts/normalize_database_sql_created_at.php</code></td>
                 </tr>
                 <tr>
                     <td>export_floor_plan_folders_seed.php</td>
@@ -296,7 +296,7 @@
                     <td>
                         CLI (recommended): <code>php scripts/idfs_sync_human_test.php</code><br>
                         Optional env: <code>ITM_BASE_URL</code>, <code>ITM_USER</code>, <code>ITM_PASS</code>, <code>ITM_COMPANY_ID</code>, <code>ITM_IDF_ID</code>.<br>
-                        Browser: plain-text output for debugging. Required before IDF-related PRs per AGENTS.md.
+                        Browser: HTML log with <strong>← Scripts index</strong> and module/table links (debugging). Required before IDF-related PRs per AGENTS.md.
                     </td>
                 </tr>
                 <tr>
@@ -358,8 +358,8 @@
                 <tr>
                     <td><a href="floor_plans_folder_move_test.php">floor_plans_folder_move_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>MySQL regression for Floor Plans folder reparenting (<code>fp_move_floor_plan_folder</code>).</td>
-                    <td>Browser: plain-text log (needs DB). CLI: <code>php scripts/floor_plans_folder_move_test.php</code> — PHP 7.4+; optional <code>ITM_TEST_COMPANY_ID</code>.</td>
+                    <td>MySQL regression for Floor Plans folder reparenting (<code>fp_move_folder_to_parent</code> in <code>gallery_helpers.php</code>).</td>
+                    <td>Browser: HTML log with module/table links (needs DB). CLI: <code>php scripts/floor_plans_folder_move_test.php</code> — optional <code>ITM_TEST_COMPANY_ID</code>.</td>
                 </tr>
             </tbody>
         </table>
@@ -432,7 +432,7 @@
             </tbody>
         </table>
         <p class="scripts-muted" style="margin-top:12px;">
-            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> — detector for matrix/runtime guards; CLI output wrapper for browser <code>&lt;pre&gt;</code> reports.
+            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, module/phpMyAdmin deep links).
         </p>
     </div>
 

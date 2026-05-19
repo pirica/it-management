@@ -81,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 header('Content-Type: text/html; charset=utf-8');
+require_once __DIR__ . '/lib/script_browser_nav.php';
 ?>
 <!doctype html>
 <html lang="en">
@@ -117,6 +118,7 @@ header('Content-Type: text/html; charset=utf-8');
 </head>
 <body>
 <div class="itm-dsu-wrap">
+<?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="itm-dsu-card">
         <h1>database.sql — tenant unique-key audit</h1>
         <p class="itm-dsu-muted">
@@ -143,7 +145,6 @@ header('Content-Type: text/html; charset=utf-8');
         </p>
         <p class="itm-dsu-muted">
             Example: <code>ALTER TABLE `location_types` ADD UNIQUE KEY `uq_location_types_company_name` (`company_id`, `name`);</code>
-            · <a href="<?= itm_db_sql_unique_escape($baseUrl . 'scripts/index.html'); ?>">Scripts index</a>
         </p>
     </div>
 
@@ -209,7 +210,7 @@ header('Content-Type: text/html; charset=utf-8');
                     ?>
                 <tr class="<?= itm_db_sql_unique_escape($rowClass); ?>" data-status="<?= itm_db_sql_unique_escape($statusLabel); ?>">
                     <td class="itm-dsu-col-compact" data-sort-value="<?= itm_db_sql_unique_escape($statusLabel); ?>"><span class="itm-dsu-badge <?= $badgeClass; ?>"><?= itm_db_sql_unique_escape($statusLabel); ?></span></td>
-                    <td class="itm-dsu-col-compact" data-sort-value="<?= itm_db_sql_unique_escape($line['table']); ?>"><code><?= itm_db_sql_unique_escape($line['table']); ?></code></td>
+                    <td class="itm-dsu-col-compact" data-sort-value="<?= itm_db_sql_unique_escape($line['table']); ?>"><?= itm_script_format_table_link((string)$line['table']); ?></td>
                     <td class="itm-dsu-col-compact" data-sort-value="<?= (int) $line['unique_count']; ?>"><?= (int) $line['unique_count']; ?></td>
                     <td class="itm-dsu-col-compact" data-sort-value="<?= itm_db_sql_unique_escape($scopeColumn !== '' ? $scopeColumn : ''); ?>"><?php if ($scopeColumn !== ''): ?><code><?= itm_db_sql_unique_escape($scopeColumn); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>
                     <td data-sort-value="<?= itm_db_sql_unique_escape($scopeUnique !== '' ? $scopeUnique : ''); ?>"><?php if ($scopeUnique !== ''): ?><code><?= itm_db_sql_unique_escape($scopeUnique); ?></code><?php else: ?><span class="itm-dsu-dash">—</span><?php endif; ?></td>

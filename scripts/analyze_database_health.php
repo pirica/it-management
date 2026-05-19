@@ -284,7 +284,11 @@ header('Content-Type: text/html; charset=utf-8');
     </style>
 </head>
 <body>
+<?php
+require_once __DIR__ . '/lib/script_browser_nav.php';
+?>
 <div class="itm-analyze-wrap">
+<?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="itm-analyze-card">
         <h1>Analyze database tables</h1>
         <p class="itm-analyze-muted">
@@ -292,8 +296,7 @@ header('Content-Type: text/html; charset=utf-8');
             and lists per-table results (unlike phpMyAdmin, which can stop on the first error).
         </p>
         <p class="itm-analyze-muted">
-            <a href="<?= itm_analyze_database_health_escape($baseUrl . 'scripts/index.html'); ?>">Scripts index</a>
-            · CLI optional: <code>php scripts/analyze_database_health.php</code>
+            CLI optional: <code>php scripts/analyze_database_health.php</code>
         </p>
     </div>
 
@@ -343,7 +346,7 @@ header('Content-Type: text/html; charset=utf-8');
                     ?>
                 <tr>
                     <td><span class="itm-analyze-badge <?= $badgeClass; ?>"><?= itm_analyze_database_health_escape(strtoupper($line['level'])); ?></span></td>
-                    <td><?= itm_analyze_database_health_escape($line['table']); ?></td>
+                    <td><?= itm_script_format_table_link((string)$line['table']); ?></td>
                     <td><?= itm_analyze_database_health_escape($line['message']); ?></td>
                     <td><?php if ($line['hint'] !== ''): ?><code><?= itm_analyze_database_health_escape($line['hint']); ?></code><?php else: ?>—<?php endif; ?></td>
                 </tr>

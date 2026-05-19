@@ -102,7 +102,8 @@ foreach ($rows as $index => $row) {
     echo '<td><strong>' . $moduleEscaped . '</strong></td>';
     echo '<td><code>' . $mappingText . '</code></td>';
     echo '<td><span class="' . $statusClass . '">' . $statusLabel . '</span></td>';
-    echo '<td><a href="../' . $sidebarEscaped . '" target=blank>' . $sidebarEscaped . '</a></td>';
+    $moduleHref = '../' . $sidebarEscaped;
+    echo '<td>' . itm_script_external_link_html($moduleHref, $sidebarEscaped) . '</td>';
     echo '</tr>';
 }
 
