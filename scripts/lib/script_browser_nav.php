@@ -51,6 +51,19 @@ if (!function_exists('itm_script_default_database_name')) {
     }
 }
 
+if (!function_exists('itm_script_phpmyadmin_base_url')) {
+    /**
+     * Laragon/local phpMyAdmin entry point (see scripts/index.html).
+     *
+     * Why: browser scripts are run by operators against MySQL on their machine. The app may
+     * be opened via a remote hostname while phpMyAdmin stays on localhost — not on the app host.
+     */
+    function itm_script_phpmyadmin_base_url(): string
+    {
+        return 'http://localhost/phpmyadmin';
+    }
+}
+
 if (!function_exists('itm_script_phpmyadmin_table_url')) {
     function itm_script_phpmyadmin_table_url($tableName, $databaseName = ''): string
     {
@@ -60,7 +73,8 @@ if (!function_exists('itm_script_phpmyadmin_table_url')) {
             $databaseName = itm_script_default_database_name();
         }
 
-        return 'http://localhost/phpmyadmin/index.php?route=/table/sql&db='
+        return rtrim(itm_script_phpmyadmin_base_url(), '/')
+            . '/index.php?route=/table/sql&db='
             . rawurlencode($databaseName)
             . '&table='
             . rawurlencode($tableName);
