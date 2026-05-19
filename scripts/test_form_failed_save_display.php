@@ -114,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 header('Content-Type: text/html; charset=utf-8');
+require_once __DIR__ . '/lib/script_browser_nav.php';
 ?>
 <!doctype html>
 <html lang="en">
@@ -143,6 +144,7 @@ header('Content-Type: text/html; charset=utf-8');
 </head>
 <body>
 <div class="itm-fst-wrap">
+<?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="itm-fst-card">
         <h1>Form failed-save display test</h1>
         <p class="itm-fst-muted">
@@ -152,7 +154,6 @@ header('Content-Type: text/html; charset=utf-8');
         </p>
         <p class="itm-fst-muted">
             Probe string: <code><?= itm_form_failed_save_display_escape(itm_form_failed_save_test_probe()); ?></code>
-            · <a href="<?= itm_form_failed_save_display_escape($baseUrl . 'scripts/index.html'); ?>">Scripts index</a>
         </p>
     </div>
 
@@ -226,7 +227,7 @@ header('Content-Type: text/html; charset=utf-8');
                     ?>
                 <tr>
                     <td><span class="itm-fst-badge <?= $badge; ?>"><?= itm_form_failed_save_display_escape(strtoupper((string) $row['status'])); ?></span></td>
-                    <td><code><?= itm_form_failed_save_display_escape($row['module']); ?></code></td>
+                    <td><?= itm_script_format_module_link((string)$row['module'], $baseUrl); ?></td>
                     <td><?= $details ? itm_form_failed_save_display_escape(implode(' · ', $details)) : '—'; ?></td>
                 </tr>
                 <?php endforeach; ?>
@@ -263,7 +264,7 @@ header('Content-Type: text/html; charset=utf-8');
                     ?>
                 <tr>
                     <td><span class="itm-fst-badge <?= $badge; ?>"><?= itm_form_failed_save_display_escape(strtoupper((string) $row['status'])); ?></span></td>
-                    <td><code><?= itm_form_failed_save_display_escape($row['module']); ?></code></td>
+                    <td><?= itm_script_format_module_link((string)$row['module'], $baseUrl); ?></td>
                     <td><?= (int) $row['http_status']; ?></td>
                     <td><?= itm_form_failed_save_display_escape($row['notes']); ?></td>
                 </tr>

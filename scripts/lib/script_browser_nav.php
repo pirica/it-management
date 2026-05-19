@@ -5,6 +5,13 @@
  * Why: Every HTML report should link back to the scripts catalog and deep-link modules/tables.
  */
 
+if (!function_exists('itm_script_is_cli_sapi')) {
+    function itm_script_is_cli_sapi(): bool
+    {
+        return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+    }
+}
+
 if (!function_exists('itm_script_browser_nav_html')) {
     /**
      * @param string $baseUrl App BASE_URL with trailing slash, or empty for relative scripts/ paths
@@ -99,5 +106,48 @@ if (!function_exists('itm_script_external_link_html')) {
         return '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer">'
             . htmlspecialchars((string)$label, ENT_QUOTES, 'UTF-8')
             . '</a>';
+    }
+}
+
+if (!function_exists('itm_script_format_module_link')) {
+    /**
+     * @param string $moduleName Folder under modules/ (no path prefix)
+     * @param string $baseUrl Optional BASE_URL with trailing slash
+     */
+    function itm_script_format_module_link($moduleName, $baseUrl = ''): string
+    {
+        $moduleName = trim((string)$moduleName);
+        if ($moduleName === '') {
+            return '';
+        }
+        if (itm_script_is_cli_sapi()) {
+            return $moduleName;
+        }
+
+        if ($baseUrl !== '') {
+            $href = itm_script_module_index_url($baseUrl, 'modules/' . $moduleName . '/index.php');
+        } else {
+            $href = '../modules/' . rawurlencode($moduleName) . '/index.php';
+        }
+
+        return itm_script_external_link_html($href, $moduleName);
+    }
+}
+
+if (!function_exists('itm_script_format_table_link')) {
+    function itm_script_format_table_link($tableName, $databaseName = ''): string
+    {
+        $tableName = trim((string)$tableName);
+        if ($tableName === '') {
+            return '';
+        }
+        if (itm_script_is_cli_sapi()) {
+            return $tableName;
+        }
+
+        return itm_script_external_link_html(
+            itm_script_phpmyadmin_table_url($tableName, $databaseName),
+            $tableName
+        );
     }
 }

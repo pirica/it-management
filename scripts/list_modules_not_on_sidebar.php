@@ -140,6 +140,8 @@ if ($asJson) {
 }
 
 header('Content-Type: text/html; charset=utf-8');
+require_once __DIR__ . '/lib/script_browser_nav.php';
+$itmListSidebarBaseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
 $esc = static function ($value): string {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 };
@@ -163,6 +165,7 @@ $esc = static function ($value): string {
 </head>
 <body>
 <div class="report-wrap">
+<?php itm_script_browser_nav_echo($itmListSidebarBaseUrl); ?>
     <div class="report-card">
         <h1 style="margin-top:0;">Modules not on the sidebar</h1>
         <p class="report-muted">
@@ -180,7 +183,6 @@ $esc = static function ($value): string {
         </p>
         <p>
             <a class="btn btn-sm" href="?format=json">JSON</a>
-            <a class="btn btn-sm" href="index.html">Scripts index</a>
             <a class="btn btn-sm" href="../index.php">Home</a>
         </p>
     </div>
@@ -201,10 +203,13 @@ $esc = static function ($value): string {
                 <tbody>
                     <?php foreach ($report['not_on_sidebar'] as $row): ?>
                         <tr>
-                            <td><code><?php echo $esc($row['module']); ?></code></td>
-                            <td><code><?php echo $esc($row['crud_table'] ?? '(unknown)'); ?></code></td>
+                            <td><?php echo itm_script_format_module_link((string)$row['module'], $itmListSidebarBaseUrl); ?></td>
+                            <td><?php
+                                $crudTable = (string)($row['crud_table'] ?? '');
+                                echo $crudTable !== '' ? itm_script_format_table_link($crudTable) : $esc('(unknown)');
+                            ?></td>
                             <td><?php echo $esc($row['reason']); ?></td>
-                            <td><a href="../modules/<?php echo $esc($row['module']); ?>/"><?php echo $esc('modules/' . $row['module'] . '/'); ?></a></td>
+                            <td><?php echo itm_script_external_link_html('../modules/' . rawurlencode((string)$row['module']) . '/', 'modules/' . $row['module'] . '/'); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

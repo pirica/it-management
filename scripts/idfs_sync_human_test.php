@@ -29,19 +29,66 @@ function itm_test_is_cli()
     return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 }
 
-function itm_test_ensure_plain_text_response_headers()
+function itm_test_eol()
+{
+    return itm_test_is_cli() ? PHP_EOL : '<br>' . PHP_EOL;
+}
+
+function itm_test_esc_line($message)
+{
+    $text = rtrim((string)$message);
+    return itm_test_is_cli() ? $text : htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+}
+
+function itm_test_browser_init()
 {
     static $initialized = false;
-    if ($initialized || itm_test_is_cli() || headers_sent()) {
+    if ($initialized || itm_test_is_cli()) {
         return;
     }
-    header('Content-Type: text/plain; charset=UTF-8');
     $initialized = true;
+    if (!headers_sent()) {
+        header('Content-Type: text/html; charset=UTF-8');
+    }
+    require_once __DIR__ . '/lib/script_browser_nav.php';
+    $baseUrl = getenv('ITM_BASE_URL') ?: 'http://localhost/it-management';
+    if (defined('BASE_URL') && (string)BASE_URL !== '') {
+        $baseUrl = (string)BASE_URL;
+    }
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>IDF sync human test</title></head>'
+        . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:960px;">';
+    itm_script_browser_nav_echo($baseUrl);
+    echo '<p style="color:#57606a;margin:0 0 14px;">End-to-end sync across '
+        . itm_script_external_link_html(itm_script_module_index_url($baseUrl, 'modules/idfs/index.php'), 'IDF module')
+        . ' · tables '
+        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('idf_ports'), 'idf_ports')
+        . ', '
+        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('switch_ports'), 'switch_ports')
+        . ', '
+        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('equipment'), 'equipment')
+        . ', '
+        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('idf_links'), 'idf_links')
+        . '. CLI is recommended for CI.</p>';
+}
+
+function itm_test_browser_close()
+{
+    if (!itm_test_is_cli()) {
+        echo '</body></html>';
+    }
+}
+
+function itm_test_ensure_plain_text_response_headers()
+{
+    if (itm_test_is_cli() || headers_sent()) {
+        return;
+    }
+    itm_test_browser_init();
 }
 
 function itm_test_write_line($message, $isError = false)
 {
-    $line = rtrim((string)$message) . PHP_EOL;
+    $line = itm_test_esc_line($message) . itm_test_eol();
 
     if (itm_test_is_cli()) {
         $stream = null;
@@ -930,6 +977,8 @@ $createdTempEquipmentIds = [];
 $createdTempPositionIds = [];
 $createdTempLinkIds = [];
 $itmTestExitCode = 0;
+
+itm_test_browser_init();
 
 try {
     $db = itm_test_db_connect();
@@ -2014,6 +2063,7 @@ try {
     if (is_file($cookieFile)) {
         @unlink($cookieFile);
     }
+    itm_test_browser_close();
 }
 
 exit($itmTestExitCode);

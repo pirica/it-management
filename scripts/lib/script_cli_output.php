@@ -4,10 +4,12 @@
  * <pre> keeps line breaks and column alignment without per-script <br> hacks.
  */
 
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'script_browser_nav.php';
+
 if (!function_exists('itm_script_cli_is_cli')) {
     function itm_script_cli_is_cli()
     {
-        return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+        return itm_script_is_cli_sapi();
     }
 
     function itm_script_output_begin($pageTitle = 'Script output')
@@ -25,7 +27,9 @@ if (!function_exists('itm_script_cli_is_cli')) {
         $title = htmlspecialchars($pageTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>'
             . $title
-            . '</title><style>body{font-family:Consolas,"Courier New",monospace;font-size:13px;margin:16px;line-height:1.4;}pre{margin:0;white-space:pre-wrap;word-break:break-word;}</style></head><body><pre>';
+            . '</title><style>body{font-family:Consolas,"Courier New",monospace;font-size:13px;margin:16px;line-height:1.4;}pre{margin:0;white-space:pre-wrap;word-break:break-word;}</style></head><body>';
+        itm_script_browser_nav_echo();
+        echo '<pre>';
 
         register_shutdown_function('itm_script_output_end');
     }
@@ -37,23 +41,6 @@ if (!function_exists('itm_script_cli_is_cli')) {
             return;
         }
         $closed = true;
-        echo '</pre><p style="font-family:sans-serif;font-size:14px;"><a href="index.html">← Scripts index</a></p></body></html>';
-    }
-
-    /**
-     * Why: Browser reports (e.g. audit coverage) should open module folders in a new tab without breaking CLI/plain output.
-     */
-    function itm_script_format_module_link($moduleName)
-    {
-        $moduleName = (string)$moduleName;
-        if ($moduleName === '' || itm_script_cli_is_cli()) {
-            return $moduleName;
-        }
-
-        $href = '../modules/' . rawurlencode($moduleName) . '/index.php';
-        $escModule = htmlspecialchars($moduleName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $escHref = htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        return '<a href="' . $escHref . '" target="_blank" rel="noopener noreferrer">' . $escModule . '</a>';
+        echo '</pre></body></html>';
     }
 }
