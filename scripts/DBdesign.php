@@ -274,7 +274,12 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
     </script>
 </head>
 <body>
+<?php
+require_once __DIR__ . '/lib/script_browser_nav.php';
+$itm_dbdesign_base = defined('BASE_URL') ? (string)BASE_URL : '../';
+?>
 <div class="wrap">
+    <?php itm_script_browser_nav_echo($itm_dbdesign_base); ?>
     <div class="card">
         <h1>Database SQL Diagram</h1>
         <p class="muted">Generated from <code>database.sql</code> (drawdb-style ER overview).</p>

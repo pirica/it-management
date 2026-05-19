@@ -22,10 +22,18 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 * `config/`: Core settings and `config.php`.
 * `includes/`: UI components (headers, sidebars) and utility functions.
 * `modules/`: Feature-specific CRUD logic.
-* `scripts/`: Maintenance, security audits, and CLI tools.
+* `scripts/`: Maintenance, security audits, and CLI tools. Catalog: `scripts/index.html`.
 * `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, and `backups/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
+
+### Scripts directory (mandatory for new tools)
+* **Catalog:** Every script under `scripts/` must be documented in `scripts/index.html` with: what it does, how to run (browser URL and CLI flags), and Browser vs CLI access.
+* **Browser UI navigation:** HTML reports must include **← Scripts index** linking to `scripts/index.html` via `scripts/lib/script_browser_nav.php` (`itm_script_browser_nav_echo($baseUrl)`).
+* **Human-readable output:** Prefer plain-language result rows over raw codes only (example: “Duplicate dropdown option” instead of only `duplicate_dropdown_risk`). CLI may stay text-only; browser tables should explain the problem and suggested fix.
+* **Deep links (browser):** When output names a **module** (`modules/<name>/`) or **database table**, link them in a new tab (`target="_blank"`): use `itm_script_external_link_html()`, `itm_script_module_index_url()`, and `itm_script_phpmyadmin_table_url()` from `scripts/lib/script_browser_nav.php`.
+* **CLI:** Run from repo root: `php scripts/<script>.php [options]` (Laragon: PHP 7.4.33 binary when `php` is not on PATH). List exact commands in the PR when checks ran.
+
 ---
 
 ## 🏗 Coding Standards

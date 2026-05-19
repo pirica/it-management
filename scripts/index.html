@@ -62,9 +62,12 @@
         <h1>Scripts directory</h1>
         <p class="scripts-muted">
             Maintenance, audits, and developer tools for the IT Management System.
-            <strong>Browser</strong> = open the script URL (HTML UI when built; otherwise a plain-text report).
+            <strong>Browser</strong> = open the script URL (HTML UI when built; otherwise a plain-text report). Every browser script must show <strong>← Scripts index</strong> back to this page (use <code>scripts/lib/script_browser_nav.php</code>).
             <strong>CLI</strong> = terminal or CI from the project root with PHP 7.4+ (preferred for exit codes and long scans).
             <strong>CLI-only</strong> = <code>smoke_test.sh</code> (bash), explicit <code>PHP_SAPI !== 'cli'</code> guards, or unsafe unattended file writes.
+        </p>
+        <p class="scripts-muted">
+            <strong>New script checklist:</strong> add a row below (what it does + how to run), use human-readable HTML output when listing modules/tables, and link module folders (<code>modules/…/</code>) and database tables (phpMyAdmin) with <code>target="_blank"</code> where applicable.
         </p>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
@@ -133,19 +136,19 @@
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong> (e.g. Location id=1 and id=4 for the same tenant).</td>
+                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong>. Results are plain-language summaries with links to <code>modules/…/</code>, phpMyAdmin tables, and edit screens (new tab).</td>
                     <td>
-                        <strong>Log in first.</strong> Open the UI, choose <em>Scan mode</em>, <em>Company</em>, <em>Risk filter</em>, and <em>Output</em> (table or JSON), then click <strong>Run scan</strong>.
-                        Equivalent CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php --company=4</code>
+                        <strong>Log in first.</strong> Open the UI → <strong>← Scripts index</strong> at top → choose scan mode, company, risk filter, output (table/JSON) → <strong>Run scan</strong>.
+                        CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php</code> · <code>--company=N</code> · <code>--json</code> · <code>--data-only</code> · <code>--code-only</code> · <code>--repair-catalogs</code> (one-time legacy DB cleanup).
                     </td>
                 </tr>
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>FK dropdown risk scan. Non-CLI requests are forwarded to <code>detect_fk_dropdown_ui_risk_ui.php</code>; CLI runs the scanner directly.</td>
+                    <td>Same scanner as the UI. Browser requests load <code>detect_fk_dropdown_ui_risk_ui.php</code>; CLI prints human-readable lines (or JSON with <code>--json</code>).</td>
                     <td>
-                        Browser: open this URL (loads the UI). CLI:
-                        <code>--company=N</code>, <code>--json</code>, <code>--data-only</code>, <code>--code-only</code>, <code>--help</code>.
+                        Browser: opens the UI. CLI:
+                        <code>php scripts/detect_fk_dropdown_ui_risk.php [--company=N] [--json] [--data-only] [--code-only] [--repair-catalogs] [--help]</code>.
                     </td>
                 </tr>
             </tbody>

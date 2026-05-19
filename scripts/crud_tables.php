@@ -23,6 +23,8 @@ $moduleDirs = array_values(array_filter(scandir($modulesPath), static function (
 
 sort($moduleDirs, SORT_NATURAL | SORT_FLAG_CASE);
 
+require_once __DIR__ . '/lib/script_browser_nav.php';
+
 header('Content-Type: text/html; charset=UTF-8');
 
 $rows = [];
@@ -77,6 +79,7 @@ echo '</style>';
 echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
+echo itm_script_browser_nav_html();
 echo '<h1>CRUD Table Mapper</h1>';
 echo '<p>Total modules scanned: <strong>' . count($rows) . '</strong></p>';
 echo '<table>';

@@ -307,7 +307,9 @@ $projectJsonEndpoints = [
     </style>
 </head>
 <body>
+<?php require_once __DIR__ . '/lib/script_browser_nav.php'; ?>
 <div class="container">
+    <?php itm_script_browser_nav_echo('../'); ?>
     <div class="card">
         <h1>IT Management API Documentation</h1>
         <p>Comprehensive API documentation for the <strong>actual JSON endpoints available in this project</strong>, including authentication model, validation, error handling, and examples.</p>

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 require_once ROOT_PATH . 'includes' . DIRECTORY_SEPARATOR . 'detect_fk_dropdown_ui_risk_lib.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'script_browser_nav.php';
 
 /**
  * @param mixed $value
@@ -107,6 +108,7 @@ header('Content-Type: text/html; charset=utf-8');
 </head>
 <body>
 <div class="fk-risk-wrap">
+    <?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="fk-risk-card">
         <h1>FK Dropdown UI Risk Scanner</h1>
         <p class="fk-risk-muted">Find cross-tenant FK rows and modules that append persisted FK ids without tenant resolution (duplicate select options).</p>
@@ -177,9 +179,9 @@ header('Content-Type: text/html; charset=utf-8');
                 <span>duplicate_dropdown_risk: <strong><?= (int)($summary['duplicate_dropdown_data'] ?? 0); ?></strong></span>
             </div>
             <?php if ($dataIssues === [] && $codeIssues === []): ?>
-                <p><strong>[OK]</strong> No matching FK dropdown UI risks for the selected filters.</p>
+                <p><strong>OK</strong> — No matching FK dropdown UI risks for the selected filters.</p>
             <?php else: ?>
-                <p class="fk-risk-muted"><strong>[FAIL]</strong> Review findings below. <code>duplicate_dropdown_risk</code> usually means two dropdown options for the same logical FK value.</p>
+                <p class="fk-risk-muted"><strong>Action needed</strong> — Review the findings below. <em>Duplicate dropdown option</em> means the edit screen can show two select choices for the same logical value (for example two “Switch” equipment types).</p>
             <?php endif; ?>
         <?php endif; ?>
     </div>
@@ -198,11 +200,10 @@ header('Content-Type: text/html; charset=utf-8');
             <thead>
                 <tr>
                     <th>Risk</th>
-                    <th>Table / row</th>
-                    <th>FK</th>
-                    <th>Tenant match</th>
-                    <th>Business key</th>
-                    <th>Open</th>
+                    <th>What is wrong</th>
+                    <th>Record</th>
+                    <th>Reference data</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -210,28 +211,42 @@ header('Content-Type: text/html; charset=utf-8');
                 <?php
                 $risk = (string)($issue['risk'] ?? '');
                 $badgeClass = $risk === 'duplicate_dropdown_risk' ? 'fk-risk-badge-danger' : 'fk-risk-badge-warn';
-                $editUrl = $baseUrl . (string)($issue['module'] ?? '') . 'edit.php?id=' . (int)($issue['child_id'] ?? 0);
+                $childTable = (string)($issue['child_table'] ?? '');
+                $refTable = (string)($issue['ref_table'] ?? '');
+                $modulePath = (string)($issue['module'] ?? itm_script_module_path_from_table($childTable));
+                $editUrl = $baseUrl . $modulePath . 'edit.php?id=' . (int)($issue['child_id'] ?? 0);
+                $moduleUrl = itm_script_module_index_url($baseUrl, $modulePath);
+                $tablePmaUrl = $childTable !== '' ? itm_script_phpmyadmin_table_url($childTable) : '';
+                $refPmaUrl = $refTable !== '' ? itm_script_phpmyadmin_table_url($refTable) : '';
                 ?>
                 <tr>
-                    <td><span class="fk-risk-badge <?= $badgeClass; ?>"><?= itm_fk_risk_ui_escape($risk); ?></span></td>
+                    <td><span class="fk-risk-badge <?= $badgeClass; ?>"><?= itm_fk_risk_ui_escape(itm_detect_fk_risk_label($risk)); ?></span></td>
+                    <td><?= itm_fk_risk_ui_escape(itm_detect_fk_data_issue_summary($issue)); ?></td>
                     <td>
-                        <?= itm_fk_risk_ui_escape((string)($issue['child_table'] ?? '')); ?>
-                        #<?= (int)($issue['child_id'] ?? 0); ?><br>
-                        company <?= (int)($issue['child_company_id'] ?? 0); ?>
+                        <?php if ($childTable !== ''): ?>
+                            Table <?= itm_script_external_link_html($tablePmaUrl, $childTable); ?><br>
+                        <?php endif; ?>
+                        Row #<?= (int)($issue['child_id'] ?? 0); ?> · Company <?= (int)($issue['child_company_id'] ?? 0); ?>
                     </td>
                     <td>
-                        <?= itm_fk_risk_ui_escape((string)($issue['fk_column'] ?? '')); ?>=<?= (int)($issue['stored_fk_id'] ?? 0); ?><br>
-                        ref company <?= (int)($issue['stored_ref_company_id'] ?? 0); ?>
-                    </td>
-                    <td>
+                        <?php if ($refTable !== ''): ?>
+                            <?= itm_script_external_link_html($refPmaUrl, $refTable); ?><br>
+                        <?php endif; ?>
+                        <?= itm_fk_risk_ui_escape(itm_detect_fk_column_label((string)($issue['fk_column'] ?? ''))); ?>:
+                        stored id <?= (int)($issue['stored_fk_id'] ?? 0); ?> (company <?= (int)($issue['stored_ref_company_id'] ?? 0); ?>)
                         <?php if ((int)($issue['tenant_equivalent_id'] ?? 0) > 0): ?>
-                            tenant id <?= (int)$issue['tenant_equivalent_id']; ?>
-                        <?php else: ?>
-                            —
+                            <br>Should use id <?= (int)$issue['tenant_equivalent_id']; ?>
+                        <?php endif; ?>
+                        <?php if ((string)($issue['business_key'] ?? '') !== ''): ?>
+                            <br><span class="fk-risk-muted"><?= itm_fk_risk_ui_escape((string)$issue['business_key']); ?></span>
                         <?php endif; ?>
                     </td>
-                    <td><?= itm_fk_risk_ui_escape((string)($issue['business_key'] ?? '')); ?></td>
-                    <td><a href="<?= itm_fk_risk_ui_escape($editUrl); ?>">Edit</a></td>
+                    <td>
+                        <?= itm_script_external_link_html($editUrl, 'Edit row'); ?>
+                        <?php if ($moduleUrl !== ''): ?>
+                            <br><?= itm_script_external_link_html($moduleUrl, 'Open module'); ?>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -241,23 +256,34 @@ header('Content-Type: text/html; charset=utf-8');
 
     <?php if ($scanScope !== 'data_only' && $codeIssues !== []): ?>
     <div class="fk-risk-card">
-        <h2>Module code (append without tenant resolve)</h2>
+        <h2>Module code risks</h2>
         <table class="fk-risk-table">
             <thead>
                 <tr>
                     <th>Risk</th>
+                    <th>What is wrong</th>
                     <th>Module</th>
                     <th>File</th>
-                    <th>Note</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($codeIssues as $issue): ?>
+                <?php
+                $modulePath = (string)($issue['module'] ?? '');
+                $moduleUrl = itm_script_module_index_url($baseUrl, $modulePath);
+                $moduleLabel = trim($modulePath, '/');
+                ?>
                 <tr>
-                    <td><span class="fk-risk-badge fk-risk-badge-warn"><?= itm_fk_risk_ui_escape((string)($issue['risk'] ?? '')); ?></span></td>
-                    <td><?= itm_fk_risk_ui_escape((string)($issue['module'] ?? '')); ?></td>
+                    <td><span class="fk-risk-badge fk-risk-badge-warn"><?= itm_fk_risk_ui_escape(itm_detect_fk_risk_label((string)($issue['risk'] ?? ''))); ?></span></td>
+                    <td><?= itm_fk_risk_ui_escape(itm_detect_fk_code_issue_summary($issue)); ?></td>
+                    <td>
+                        <?php if ($moduleUrl !== ''): ?>
+                            <?= itm_script_external_link_html($moduleUrl, $moduleLabel); ?>
+                        <?php else: ?>
+                            <?= itm_fk_risk_ui_escape($moduleLabel); ?>
+                        <?php endif; ?>
+                    </td>
                     <td><code><?= itm_fk_risk_ui_escape((string)($issue['file'] ?? '')); ?></code></td>
-                    <td><?= itm_fk_risk_ui_escape((string)($issue['note'] ?? '')); ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
