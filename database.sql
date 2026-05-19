@@ -1900,16 +1900,6 @@ INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image
 (91, 4, 'Ubiquiti Networks UniFi Switch 24 PoE', 37, NULL, 379.00, NULL, 29, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', NULL),
 (92, 4, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 37, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', NULL),
 (93, 4, 'Cisco Meraki MS120-24P Cloud Managed Switch', 37, NULL, 1599.00, NULL, 25, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', NULL);
--- Why: Legacy sample-data seeding copied company-1 catalog rows onto other tenants but kept company-1 FK ids.
-DELETE c FROM `catalogs` c
-INNER JOIN `equipment_types` et ON et.id = c.equipment_type_id
-WHERE c.company_id > 0 AND et.company_id > 0 AND c.company_id <> et.company_id;
-DELETE c FROM `catalogs` c
-INNER JOIN `manufacturers` m ON m.id = c.manufacturer_id
-WHERE c.manufacturer_id IS NOT NULL AND c.company_id > 0 AND m.company_id > 0 AND c.company_id <> m.company_id;
-DELETE c FROM `catalogs` c
-INNER JOIN `suppliers` s ON s.id = c.supplier_id
-WHERE c.supplier_id IS NOT NULL AND c.company_id > 0 AND s.company_id > 0 AND c.company_id <> s.company_id;
 -- Table structure for `patches_updates_status`
 DROP TABLE IF EXISTS `patches_updates_status`;
 CREATE TABLE `patches_updates_status` (
@@ -3799,7 +3789,7 @@ INSERT IGNORE INTO `location_types` (`company_id`, `name`, `created_at`) SELECT 
 INSERT IGNORE INTO `manufacturers` (`company_id`, `name`, `code`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`active`, '2026-01-01 00:00:01' FROM `manufacturers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `forecast_revisions_status` (`company_id`, `status`, `active`, `created_at`) SELECT c.`id`, t.`status`, t.`active`, '2026-01-01 00:00:01' FROM `forecast_revisions_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `approvals_stage` (`company_id`, `stage`, `active`, `created_at`) SELECT c.`id`, t.`stage`, t.`active`, '2026-01-01 00:00:01' FROM `approvals_stage` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `catalogs` (`company_id`, `model`, `equipment_type_id`, `image_url`, `price`, `supplier_id`, `manufacturer_id`, `product_url`, `active`, `created_at`) SELECT c.`id`, t.`model`, t.`equipment_type_id`, t.`image_url`, t.`price`, t.`supplier_id`, t.`manufacturer_id`, t.`product_url`, t.`active`, '2026-01-01 00:00:01' FROM `catalogs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+-- Why: catalogs are seeded per tenant in the INSERT block above (with tenant FK ids). Replicating company-1 rows here duplicated models and kept company-1 equipment_type_id/manufacturer_id/supplier_id values.
 INSERT IGNORE INTO `printer_device_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `printer_device_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `rack_statuses` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `rack_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `supplier_statuses` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `supplier_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -4109,6 +4099,16 @@ WHERE t.`company_id` = @replicate_source_company_id
         AND u.`user_id` = t.`user_id`
   );
 INSERT IGNORE INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active`, '2026-01-01 00:00:01' FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+-- Why: Remove catalog rows whose FK parents belong to another company (legacy replicate row or partial import).
+DELETE c FROM `catalogs` c
+INNER JOIN `equipment_types` et ON et.id = c.equipment_type_id
+WHERE c.company_id > 0 AND et.company_id > 0 AND c.company_id <> et.company_id;
+DELETE c FROM `catalogs` c
+INNER JOIN `manufacturers` m ON m.id = c.manufacturer_id
+WHERE c.manufacturer_id IS NOT NULL AND c.company_id > 0 AND m.company_id > 0 AND c.company_id <> m.company_id;
+DELETE c FROM `catalogs` c
+INNER JOIN `suppliers` s ON s.id = c.supplier_id
+WHERE c.supplier_id IS NOT NULL AND c.company_id > 0 AND s.company_id > 0 AND c.company_id <> s.company_id;
 -- Workstations are tenant-specific and reference tenant-bound records.
 -- Keep this table empty on bootstrap to avoid cross-company foreign key mismatches.
 
