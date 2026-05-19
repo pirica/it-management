@@ -57,5 +57,14 @@ $apiDb = itm_humanize_api_error_message('DB error: Column \'name\' cannot be nul
 itm_test_assert('API DB error prefix humanized', stripos($apiDb, 'Name') !== false);
 itm_test_assert('API message has no DB error prefix', stripos($apiDb, 'DB error:') === false);
 
+$rawDuplicate = itm_normalize_user_error_message("Duplicate entry '1-2' for key 'approvers.uk_company_employee'");
+itm_test_assert('raw duplicate infers 1062 guidance', stripos($rawDuplicate, 'already exists') !== false);
+
+$rawFkDelete = itm_normalize_user_error_message('Cannot delete or update a parent row: a foreign key constraint fails (`itmanagement`.`rack_positions`, CONSTRAINT `fk_rack_positions_rack`)');
+itm_test_assert('raw FK delete infers 1451 guidance', stripos($rawFkDelete, 'cannot be deleted') !== false);
+
+$rawFkInsert = itm_normalize_user_error_message('Cannot add or update a child row: a foreign key constraint fails (`itmanagement`.`approvers`, CONSTRAINT `fk_approvers_employee`)');
+itm_test_assert('raw FK insert infers 1452 guidance', stripos($rawFkInsert, 'no longer available') !== false);
+
 fwrite(STDOUT, "\nFailures: {$failures}\n");
 exit($failures > 0 ? 1 : 0);

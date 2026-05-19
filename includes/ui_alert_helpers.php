@@ -38,6 +38,37 @@ if (!function_exists('itm_error_message_looks_like_raw_mysql')) {
     }
 }
 
+if (!function_exists('itm_infer_mysql_error_code_from_message')) {
+    /**
+     * Map raw mysqli text to errno branches used by itm_format_db_constraint_error().
+     *
+     * Why: Callers often pass mysqli_error() without errno; duplicate/FK guidance lives in the 1062/1451/1452 switch.
+     */
+    function itm_infer_mysql_error_code_from_message($message) {
+        $text = trim((string)$message);
+        if ($text === '') {
+            return 0;
+        }
+
+        if (stripos($text, 'Duplicate entry') !== false) {
+            return 1062;
+        }
+
+        if (stripos($text, 'foreign key constraint fails') !== false) {
+            if (preg_match('/Cannot delete or update a parent row/i', $text)) {
+                return 1451;
+            }
+            if (preg_match('/Cannot add or update a child row/i', $text)) {
+                return 1452;
+            }
+
+            return 1451;
+        }
+
+        return 0;
+    }
+}
+
 if (!function_exists('itm_normalize_user_error_message')) {
     function itm_normalize_user_error_message($message) {
         $text = trim((string)$message);
@@ -51,7 +82,11 @@ if (!function_exists('itm_normalize_user_error_message')) {
 
         if (function_exists('itm_error_message_looks_like_raw_mysql') && itm_error_message_looks_like_raw_mysql($text)) {
             if (function_exists('itm_format_db_constraint_error')) {
-                return itm_format_db_constraint_error(0, $text);
+                $errorCode = function_exists('itm_infer_mysql_error_code_from_message')
+                    ? itm_infer_mysql_error_code_from_message($text)
+                    : 0;
+
+                return itm_format_db_constraint_error($errorCode, $text);
             }
         }
 

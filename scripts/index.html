@@ -187,7 +187,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="apply_human_friendly_error_display.php">apply_human_friendly_error_display.php</a></td>
+                    <td>apply_human_friendly_error_display.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Replaces duplicated <code>alert alert-error</code> blocks with <code>itm_render_alert_errors()</code> across module PHP files (all modules, including protection-zone folders).</td>
                     <td>
@@ -199,8 +199,8 @@
                 <tr>
                     <td><a href="../js/itm-user-errors.js">itm-user-errors.js</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Global JS helpers <code>itmNotifyError()</code> / <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
-                    <td>Included on all standard pages via header. IDF modals and Excel import use this instead of raw <code>window.alert</code> when available.</td>
+                    <td>Global JS helpers <code>itmNotifyError()</code>, <code>itmNotifyAjaxError()</code> (modal-aware), and <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
+                    <td>Included on all standard pages via header. IDF modals use <code>itmNotifyAjaxError()</code> so errors render inside the open modal instead of behind the backdrop.</td>
                 </tr>
             </tbody>
         </table>

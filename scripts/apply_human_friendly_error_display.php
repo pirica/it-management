@@ -10,6 +10,17 @@ declare(strict_types=1);
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }
+
+// Why: In a browser $argv is absent and $dryRun defaults false, which would rewrite module PHP files.
+if (PHP_SAPI !== 'cli') {
+    if (!headers_sent()) {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=UTF-8');
+    }
+    echo "This script is CLI-only. Run: php scripts/apply_human_friendly_error_display.php --dry-run\n";
+    exit(1);
+}
+
 require_once dirname(__DIR__) . '/config/config.php';
 
 $dryRun = in_array('--dry-run', $argv ?? [], true);
