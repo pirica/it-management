@@ -27,12 +27,57 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 * **Required Dirs:** `images/`, `tickets_photos/`, and `backups/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
 
-### Scripts directory (mandatory for new tools)
-* **Catalog:** Every script under `scripts/` must be documented in `scripts/index.html` with: what it does, how to run (browser URL and CLI flags), and Browser vs CLI access.
-* **Browser UI navigation:** HTML reports must include **← Scripts index** linking to `scripts/index.html` via `scripts/lib/script_browser_nav.php` (`itm_script_browser_nav_echo($baseUrl)`).
-* **Human-readable output:** Prefer plain-language result rows over raw codes only (example: “Duplicate dropdown option” instead of only `duplicate_dropdown_risk`). CLI may stay text-only; browser tables should explain the problem and suggested fix.
-* **Deep links (browser):** When output names a **module** (`modules/<name>/`) or **database table**, link them in a new tab (`target="_blank"`): use `itm_script_external_link_html()`, `itm_script_module_index_url()`, and `itm_script_phpmyadmin_table_url()` from `scripts/lib/script_browser_nav.php`.
-* **CLI:** Run from repo root: `php scripts/<script>.php [options]` (Laragon: PHP 7.4.33 binary when `php` is not on PATH). List exact commands in the PR when checks ran.
+### Scripts directory (`scripts/`) — mandatory for every tool
+
+The live catalog is **`scripts/index.html`**. Before merge, **verify every runnable file under `scripts/`** (and any new script you add) against this checklist.
+
+#### 1. Catalog entry in `scripts/index.html` (required for every new script)
+
+Add a table row with:
+
+| Column | Content |
+|--------|---------|
+| **Script** | Filename (link if browser-safe to open) |
+| **Access** | **Browser**, **CLI**, or both; mark **CLI-only** for bash, file writers, or `PHP_SAPI !== 'cli'` guards |
+| **What it does** | Plain-language purpose (one short paragraph) |
+| **How to use** | Exact browser URL/path, query flags, env vars, and CLI command: `php scripts/<name>.php [options]` |
+
+Do not add a script under `scripts/` without updating `scripts/index.html`.
+
+#### 2. Browser scripts (`scripts/*.php` opened in the browser)
+
+* **Back link (required):** Every HTML report must show **← Scripts index** at the top, linking to `scripts/index.html`.
+  * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo($baseUrl)` (`$baseUrl` = `BASE_URL` when `config.php` is loaded, else `''`).
+  * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
+* **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
+* **Deep links (required when names appear):** If a row names a **module folder** or **database table**, link it in a **new tab** (`target="_blank"`):
+  * **Modules:** `itm_script_format_module_link($moduleName, $baseUrl)` or `itm_script_external_link_html()` + `itm_script_module_index_url()`.
+  * **phpMyAdmin:** use **`http://localhost/phpmyadmin/`** only (Laragon/local MySQL admin — not the app hostname). Helpers: `itm_script_phpmyadmin_base_url()`, `itm_script_phpmyadmin_link_html()`, `itm_script_format_table_link()` (table name as label, same phpMyAdmin home URL). All via `itm_script_external_link_html()` for `rel="noopener noreferrer"`.
+* **Exceptions (document in catalog):** JSON-only endpoints (e.g. `test_sql_injection.php`) and CLI entry points that redirect to a UI (e.g. `detect_fk_dropdown_ui_risk.php` → `detect_fk_dropdown_ui_risk_ui.php`) do not need HTML nav on the CLI path.
+
+#### 3. CLI scripts
+
+* Run from repository root: `php scripts/<script>.php [options]`.
+* **Windows Laragon** when `php` is not on PATH: `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\<script>.php`.
+* **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
+* List exact commands and outcomes in the PR description when checks ran.
+
+#### 4. Shared libraries (do not duplicate ad hoc)
+
+| File | Use |
+|------|-----|
+| `scripts/lib/script_browser_nav.php` | **← Scripts index**, module links, phpMyAdmin home links (`target="_blank"`) |
+| `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
+| `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
+
+#### 5. Pre-merge verification (scripts)
+
+When adding or changing anything under `scripts/`:
+
+1. Confirm a row exists in **`scripts/index.html`** (what / how / access).
+2. Open the script in the **browser** (if applicable) — **← Scripts index** visible; module/table names are linked.
+3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
+4. Run the script’s CLI command once when behavior is non-trivial.
 
 ---
 
