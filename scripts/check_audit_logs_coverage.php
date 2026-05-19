@@ -5,6 +5,8 @@
  * Why: AGENTS.md requires INSERT/UPDATE/DELETE traceability in audit_logs when enabled.
  * Modules can satisfy that via PHP helpers (itm_run_query / itm_log_audit / bulk helpers)
  * or database triggers defined in database.sql (trg_{table}_audit_*).
+ * Also compares every CREATE TABLE in database.sql against trg_{table}_audit_insert
+ * (audit_logs is exempt) and exits non-zero when schema triggers are missing.
  *
  * Usage (PHP 7.4+ with MySQLi, from repository root):
  *   php scripts/check_audit_logs_coverage.php
@@ -108,6 +110,41 @@ function audit_logs_load_database_sql_maps(string $databaseSqlPath): array
     }
 
     return ['triggers' => $triggers, 'schema_tables' => $schemaTables];
+}
+
+/**
+ * Tables that intentionally have no audit triggers (audit destination, etc.).
+ *
+ * @return array<string, bool>
+ */
+function audit_logs_trigger_exempt_tables(): array
+{
+    return [
+        'audit_logs' => true,
+    ];
+}
+
+/**
+ * @param array<string, bool> $schemaTables
+ * @param array<string, bool> $triggerTables
+ * @return array<int, string>
+ */
+function audit_logs_schema_tables_missing_triggers(array $schemaTables, array $triggerTables): array
+{
+    $exempt = audit_logs_trigger_exempt_tables();
+    $missing = [];
+
+    foreach (array_keys($schemaTables) as $tableName) {
+        if (!empty($exempt[$tableName])) {
+            continue;
+        }
+        if (empty($triggerTables[$tableName])) {
+            $missing[] = $tableName;
+        }
+    }
+
+    sort($missing, SORT_NATURAL | SORT_FLAG_CASE);
+    return $missing;
 }
 
 /**
@@ -238,7 +275,7 @@ function audit_logs_collect_tables_from_sql(string $sql, array $schemaTables): a
 {
     $tables = [];
 
-    if (preg_match_all('/\bINSERT\s+INTO\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $matches)) {
+    if (preg_match_all('/\bINSERT(?:\s+IGNORE)?\s+INTO\s+`?([a-zA-Z0-9_]+)`?/i', $sql, $matches)) {
         foreach ($matches[1] as $tableName) {
             $tableName = (string)$tableName;
             if (isset($schemaTables[$tableName])) {
@@ -276,6 +313,14 @@ function audit_logs_extract_mutated_tables(string $source, array $schemaTables):
     $tables = audit_logs_collect_tables_from_sql($source, $schemaTables);
 
     if (preg_match_all('/mysqli_prepare\s*\(\s*\$conn\s*,\s*["\']([^"\']+)["\']/is', $source, $matches)) {
+        foreach ($matches[1] as $sqlFragment) {
+            foreach (audit_logs_collect_tables_from_sql((string)$sqlFragment, $schemaTables) as $tableName) {
+                $tables[$tableName] = $tableName;
+            }
+        }
+    }
+
+    if (preg_match_all('/mysqli_query\s*\(\s*\$conn\s*,\s*["\']([^"\']+)["\']/is', $source, $matches)) {
         foreach ($matches[1] as $sqlFragment) {
             foreach (audit_logs_collect_tables_from_sql((string)$sqlFragment, $schemaTables) as $tableName) {
                 $tables[$tableName] = $tableName;
@@ -430,6 +475,7 @@ function audit_logs_assess_module(
 $dbMaps = audit_logs_load_database_sql_maps($databaseSqlPath);
 $triggerTables = $dbMaps['triggers'];
 $schemaTables = $dbMaps['schema_tables'];
+$schemaTablesMissingTriggers = audit_logs_schema_tables_missing_triggers($schemaTables, $triggerTables);
 $modules = audit_logs_list_modules($modulesDir, $options['module']);
 
 if ($options['module'] !== '' && empty($modules)) {
@@ -456,7 +502,9 @@ if ($options['json']) {
     echo json_encode(
         [
             'database_sql' => $databaseSqlPath,
+            'schema_table_count' => count($schemaTables),
             'trigger_table_count' => count($triggerTables),
+            'schema_tables_missing_triggers' => $schemaTablesMissingTriggers,
             'totals' => $totals,
             'modules' => $results,
         ],
@@ -469,7 +517,14 @@ itm_script_output_begin('Audit logs coverage check');
 
 echo "Audit Logs Coverage Check\n";
 echo "Root: {$root}\n";
-echo 'Trigger tables in database.sql: ' . count($triggerTables) . "\n\n";
+echo 'Schema tables in database.sql: ' . count($schemaTables) . "\n";
+echo 'Tables with trg_*_audit_insert in database.sql: ' . count($triggerTables) . "\n";
+if (!empty($schemaTablesMissingTriggers)) {
+    echo 'Schema tables missing audit triggers: ' . implode(', ', $schemaTablesMissingTriggers) . "\n";
+} else {
+    echo "Schema tables missing audit triggers: (none)\n";
+}
+echo "\n";
 
 foreach ($results as $row) {
     $label = str_pad(strtoupper($row['status']), 4, ' ', STR_PAD_RIGHT);
@@ -505,6 +560,15 @@ if ($totals['warn'] > 0) {
         }
         echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}\n";
     }
+}
+
+if (!empty($schemaTablesMissingTriggers)) {
+    echo "\nSchema gaps (add trg_{table}_audit_insert/update/delete in database.sql):\n";
+    foreach ($schemaTablesMissingTriggers as $tableName) {
+        echo " - {$tableName}\n";
+    }
+    echo "\nNote: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows.\n";
+    exit(2);
 }
 
 echo "\nNote: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows.\n";
