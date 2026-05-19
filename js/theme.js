@@ -37,6 +37,14 @@ function updateSidebarAccessibility(isCollapsed) {
     const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
     if (sidebarToggleBtn) {
         sidebarToggleBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+        sidebarToggleBtn.setAttribute('title', isCollapsed ? 'Show sidebar' : 'Hide sidebar');
+    }
+
+    const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+    if (sidebarCollapseBtn) {
+        sidebarCollapseBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+        sidebarCollapseBtn.setAttribute('title', isCollapsed ? 'Show sidebar' : 'Hide sidebar');
+        sidebarCollapseBtn.setAttribute('aria-label', isCollapsed ? 'Show sidebar' : 'Hide sidebar');
     }
 }
 
@@ -108,6 +116,16 @@ function initSidebar() {
     if (sidebarToggleBtn && sidebarToggleBtn.dataset.sidebarBound !== 'true') {
         sidebarToggleBtn.addEventListener('click', toggleSidebar);
         sidebarToggleBtn.dataset.sidebarBound = 'true';
+    }
+
+    const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+    if (sidebarCollapseBtn && sidebarCollapseBtn.dataset.sidebarBound !== 'true') {
+        sidebarCollapseBtn.addEventListener('click', () => {
+            if (!document.body.classList.contains('sidebar-collapsed')) {
+                toggleSidebar();
+            }
+        });
+        sidebarCollapseBtn.dataset.sidebarBound = 'true';
     }
 
     document.addEventListener('keydown', (event) => {

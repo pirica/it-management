@@ -41,8 +41,20 @@ foreach ($sectionsById as $section) {
 ?>
 <div class="sidebar" id="appSidebar" role="navigation" aria-label="Main navigation">
     <div class="sidebar-header">
-        <h3><?php echo sanitize($app_name ?? itm_ui_config_app_name($sidebarConfig)); ?></h3>
-        <p><?php echo sanitize($_SESSION['company_name'] ?? 'Company'); ?></p>
+        <button
+            type="button"
+            id="sidebarCollapseBtn"
+            class="btn btn-sm sidebar-collapse-btn"
+            title="Hide sidebar"
+            aria-label="Hide sidebar"
+            aria-controls="appSidebar"
+            aria-expanded="true"
+            data-sidebar-bound="false"
+        >⏮</button>
+        <div class="sidebar-header-text">
+            <h3><?php echo sanitize($app_name ?? itm_ui_config_app_name($sidebarConfig)); ?></h3>
+            <p><?php echo sanitize($_SESSION['company_name'] ?? 'Company'); ?></p>
+        </div>
     </div>
 
     <?php foreach ($orderedSections as $section): ?>
