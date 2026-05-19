@@ -55,29 +55,36 @@ if (!function_exists('itm_script_phpmyadmin_base_url')) {
     /**
      * Laragon/local phpMyAdmin entry point (see scripts/index.html).
      *
-     * Why: browser scripts are run by operators against MySQL on their machine. The app may
-     * be opened via a remote hostname while phpMyAdmin stays on localhost — not on the app host.
+     * Why: browser scripts link to the operator's local phpMyAdmin home, not per-table routes.
      */
     function itm_script_phpmyadmin_base_url(): string
     {
-        return 'http://localhost/phpmyadmin';
+        return 'http://localhost/phpmyadmin/';
+    }
+}
+
+if (!function_exists('itm_script_phpmyadmin_link_html')) {
+    /**
+     * @param string $label Link text (defaults to phpMyAdmin home label)
+     */
+    function itm_script_phpmyadmin_link_html($label = 'phpMyAdmin'): string
+    {
+        if (itm_script_is_cli_sapi()) {
+            return (string)$label;
+        }
+
+        return itm_script_external_link_html(itm_script_phpmyadmin_base_url(), $label);
     }
 }
 
 if (!function_exists('itm_script_phpmyadmin_table_url')) {
+    /**
+     * @param string $tableName Unused; kept for callers that pass a table label context
+     * @param string $databaseName Unused
+     */
     function itm_script_phpmyadmin_table_url($tableName, $databaseName = ''): string
     {
-        $tableName = (string)$tableName;
-        $databaseName = (string)$databaseName;
-        if ($databaseName === '') {
-            $databaseName = itm_script_default_database_name();
-        }
-
-        return rtrim(itm_script_phpmyadmin_base_url(), '/')
-            . '/index.php?route=/table/sql&db='
-            . rawurlencode($databaseName)
-            . '&table='
-            . rawurlencode($tableName);
+        return itm_script_phpmyadmin_base_url();
     }
 }
 
@@ -159,9 +166,6 @@ if (!function_exists('itm_script_format_table_link')) {
             return $tableName;
         }
 
-        return itm_script_external_link_html(
-            itm_script_phpmyadmin_table_url($tableName, $databaseName),
-            $tableName
-        );
+        return itm_script_external_link_html(itm_script_phpmyadmin_base_url(), $tableName);
     }
 }
