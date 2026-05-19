@@ -960,6 +960,14 @@ function cr_department_name_options($conn, $company_id) {
 }
 
 function cr_ensure_fk_selected_option($conn, &$opts, $fk, $selectedId, $company_id) {
+    $resolved = function_exists('itm_fk_append_selected_option')
+        ? itm_fk_append_selected_option($conn, $fk, (int)$company_id, $opts, $selectedId)
+        : null;
+    if (is_array($resolved)) {
+        $opts = $resolved;
+        return;
+    }
+
     $selectedId = (int)$selectedId;
     if ($selectedId <= 0) {
         return;
@@ -2270,9 +2278,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
                                         <?php elseif ($name === 'employee_position_id' && isset($fkMap[$name])): ?>
                                             <?php
-                                                $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                                cr_ensure_fk_selected_option($conn, $opts, $fkMap[$name], (int)$displayVal, (int)$company_id);
-                                                $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                                $fkRow = $fkMap[$name];
+                                                $fkSelectedId = (int)$displayVal;
+                                                if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                                    $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
+                                                }
+                                                $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                                cr_ensure_fk_selected_option($conn, $opts, $fkRow, $fkSelectedId, (int)$company_id);
+                                                $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                                 $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                             ?>
                                             <div style="display:flex;gap:8px;align-items:center;">
@@ -2287,7 +2300,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 >
                                                     <option value="">-- Select --</option>
                                                     <?php foreach ($opts as $opt): ?>
-                                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                                     <?php endforeach; ?>
                                                     <option value="__add_new__">➕</option>
                                                 </select>
@@ -2333,9 +2346,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 >
                                             <?php elseif (isset($fkMap[$name])): ?>
                                                 <?php
-                                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                                    cr_ensure_fk_selected_option($conn, $opts, $fkMap[$name], (int)$displayVal, (int)$company_id);
-                                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                                    $fkRow = $fkMap[$name];
+                                                    $fkSelectedId = (int)$displayVal;
+                                                    if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                                        $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
+                                                    }
+                                                    $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                                    cr_ensure_fk_selected_option($conn, $opts, $fkRow, $fkSelectedId, (int)$company_id);
+                                                    $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                                 ?>
                                                 <select
@@ -2349,7 +2367,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 >
                                                     <option value="">-- Select --</option>
                                                     <?php foreach ($opts as $opt): ?>
-                                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                                     <?php endforeach; ?>
                                                     <option value="__add_new__">➕</option>
                                                 </select>
@@ -2404,9 +2422,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                     <?php
-                                        $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                        cr_ensure_fk_selected_option($conn, $opts, $fkMap[$name], (int)$displayVal, (int)$company_id);
-                                        $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                        $fkRow = $fkMap[$name];
+                                        $fkSelectedId = (int)$displayVal;
+                                        if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                            $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
+                                        }
+                                        $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                        cr_ensure_fk_selected_option($conn, $opts, $fkRow, $fkSelectedId, (int)$company_id);
+                                        $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                         $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                     ?>
                                 <select
@@ -2420,7 +2443,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
