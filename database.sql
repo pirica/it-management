@@ -4732,6 +4732,23 @@ CREATE TRIGGER `trg_racks_audit_delete` AFTER DELETE ON `racks` FOR EACH ROW BEG
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'racks', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'location_id', OLD.`location_id`, 'name', OLD.`name`, 'rack_code', OLD.`rack_code`, 'status_id', OLD.`status_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_registration_invitations_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_registration_invitations_audit_update`;
+DROP TRIGGER IF EXISTS `trg_registration_invitations_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_registration_invitations_audit_insert` AFTER INSERT ON `registration_invitations` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'registration_invitations', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'email', NEW.`email`, 'invitation_code', NEW.`invitation_code`, 'invited_by_user_id', NEW.`invited_by_user_id`, 'role_id', NEW.`role_id`, 'access_level_id', NEW.`access_level_id`, 'expires_at', NEW.`expires_at`, 'accepted_at', NEW.`accepted_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_registration_invitations_audit_update` AFTER UPDATE ON `registration_invitations` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'registration_invitations', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'email', OLD.`email`, 'invitation_code', OLD.`invitation_code`, 'invited_by_user_id', OLD.`invited_by_user_id`, 'role_id', OLD.`role_id`, 'access_level_id', OLD.`access_level_id`, 'expires_at', OLD.`expires_at`, 'accepted_at', OLD.`accepted_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'email', NEW.`email`, 'invitation_code', NEW.`invitation_code`, 'invited_by_user_id', NEW.`invited_by_user_id`, 'role_id', NEW.`role_id`, 'access_level_id', NEW.`access_level_id`, 'expires_at', NEW.`expires_at`, 'accepted_at', NEW.`accepted_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_registration_invitations_audit_delete` AFTER DELETE ON `registration_invitations` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'registration_invitations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'email', OLD.`email`, 'invitation_code', OLD.`invitation_code`, 'invited_by_user_id', OLD.`invited_by_user_id`, 'role_id', OLD.`role_id`, 'access_level_id', OLD.`access_level_id`, 'expires_at', OLD.`expires_at`, 'accepted_at', OLD.`accepted_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_update`;
 DROP TRIGGER IF EXISTS `trg_supplier_statuses_audit_delete`;
