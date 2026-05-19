@@ -179,15 +179,15 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>test_db_error_messages.php</td>
+                    <td><a href="test_db_error_messages.php">test_db_error_messages.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Asserts human-friendly output from <code>itm_format_db_constraint_error()</code> and <code>itm_render_alert_errors()</code> (e.g. NOT NULL → “Please select a value for Employee”, no <code>Database error:</code> prefix).</td>
+                    <td>Asserts human-friendly output from <code>itm_format_db_constraint_error()</code>, <code>itm_render_alert_errors()</code>, and <code>itm_humanize_api_error_message()</code> (e.g. NOT NULL → “Please select a value for Employee”; strips <code>Database error:</code> / <code>DB error:</code> prefixes).</td>
                     <td>
-                        <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code> or <code>includes/ui_alert_helpers.php</code>.
+                        <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code>, <code>includes/ui_alert_helpers.php</code>, or IDF/header flash paths.
                     </td>
                 </tr>
                 <tr>
-                    <td>apply_human_friendly_error_display.php</td>
+                    <td><a href="apply_human_friendly_error_display.php">apply_human_friendly_error_display.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Replaces duplicated <code>alert alert-error</code> blocks with <code>itm_render_alert_errors()</code> across module PHP files (all modules, including protection-zone folders).</td>
                     <td>
@@ -247,6 +247,15 @@
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged.</td>
                     <td>Browser: plain-text log (<strong>writes</strong> <code>database.sql</code>). Prefer CLI: <code>php scripts/normalize_database_sql_created_at.php</code></td>
+                </tr>
+                <tr>
+                    <td>export_floor_plan_folders_seed.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>database.sql</code>-style <code>INSERT</code> statements for pasting into seed data.</td>
+                    <td>
+                        <code>php scripts/export_floor_plan_folders_seed.php</code><br>
+                        <code>php scripts/export_floor_plan_folders_seed.php --company=1</code> — stdout INSERTs; exit <code>1</code> when no rows.
+                    </td>
                 </tr>
             </tbody>
         </table>
