@@ -83,6 +83,24 @@ function cr_require_valid_csrf_token() {
     itm_require_post_csrf();
 }
 
+/**
+ * Why: Capture full row state before destructive operations so audit logs
+ * can record reliable DELETE payloads for single, bulk, and clear-table flows.
+ */
+function cr_collect_audit_rows_for_where($conn, $table, $whereSql) {
+    $rows = [];
+    $sql = 'SELECT `id` FROM ' . cr_escape_identifier($table) . $whereSql;
+    $result = mysqli_query($conn, $sql);
+    while ($result && ($row = mysqli_fetch_assoc($result))) {
+        $rowId = (int)($row['id'] ?? 0);
+        if ($rowId <= 0) {
+            continue;
+        }
+        $rows[$rowId] = itm_fetch_audit_record($conn, $table, $rowId, (int)($GLOBALS['company_id'] ?? 0));
+    }
+    return $rows;
+}
+
 // Module initialization
 $columns = cr_table_columns($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -123,8 +141,13 @@ if ($bulkAction === 'clear_table') {
     if ($hasCompany && $company_id > 0) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
+    $deleteAuditRows = cr_collect_audit_rows_for_where($conn, $crud_table, $where);
     $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-    if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+    if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        foreach ($deleteAuditRows as $deletedId => $oldValues) {
+            itm_log_audit($conn, $crud_table, (int)$deletedId, 'DELETE', $oldValues, null);
+        }
+    } else {
         $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
     header('Location: ' . $listUrl);
@@ -146,8 +169,13 @@ if ($bulkAction === 'bulk_delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
+        $deleteAuditRows = cr_collect_audit_rows_for_where($conn, $crud_table, $where);
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            foreach ($deleteAuditRows as $deletedId => $oldValues) {
+                itm_log_audit($conn, $crud_table, (int)$deletedId, 'DELETE', $oldValues, null);
+            }
+        } else {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     } else {
@@ -172,8 +200,11 @@ if ($id > 0) {
     if ($hasCompany && $company_id > 0) {
         $where .= ' AND company_id=' . (int)$company_id;
     }
+    $deleteAuditOldValues = itm_fetch_audit_record($conn, $crud_table, $id, $company_id);
     $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-    if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+    if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        itm_log_audit($conn, $crud_table, $id, 'DELETE', $deleteAuditOldValues, null);
+    } else {
         $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }

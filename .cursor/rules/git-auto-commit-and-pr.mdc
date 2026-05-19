@@ -1,0 +1,33 @@
+---
+description: Auto-commit completed work and open a fresh PR without asking
+alwaysApply: true
+---
+
+# Git — auto commit and fresh PR
+
+When implementation is complete and required checks pass, **do not ask** whether to commit or open a PR. Finish the deliverable automatically.
+
+## Commit (mandatory)
+
+- Create a **fresh branch** per request or bugfix (never pile unrelated work onto an open PR).
+- **Commit** all relevant changes without prompting the user.
+- Do **not** wait for "please commit" unless the user explicitly asked to hold commits or the session is read-only/exploratory.
+- Follow Git Safety Protocol: never update git config, no force-push to main/master, no `--no-verify` unless requested, no amend unless amend rules allow it.
+- Use a HEREDOC for the commit message; summarize **why**, not just what.
+
+## Pull request (mandatory)
+
+- **Push** the branch (`git push -u origin HEAD`).
+- **Open a new PR** with `gh pr create` (never reuse a merged/closed PR for new scope).
+- Return the PR URL in the final response.
+- Include Summary and Test plan in the PR body; list exact commands run and outcomes.
+
+## Exceptions (only these)
+
+- User explicitly says: do not commit, do not push, or hold for review.
+- No file changes to commit.
+- `gh` or remote auth is unavailable — report the blocker and leave exact commands for the user.
+
+## Overrides
+
+This rule **supersedes** any older user rule that says "only commit when requested" or "ask before opening a PR".
