@@ -253,7 +253,16 @@ function cr_append_selected_user_option($conn, $company_id, $options, $selectedV
 
 function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
     if (function_exists('itm_fk_append_selected_option')) {
-        return itm_fk_append_selected_option($conn, $fk, (int)$company_id, $options, $selectedValue);
+        return itm_fk_append_selected_option(
+            $conn,
+            $fk,
+            (int)$company_id,
+            $options,
+            $selectedValue,
+            static function ($conn, $fk, $companyId, $resolvedId) {
+                return cr_fk_label_by_id($conn, $fk, (int)$companyId, (int)$resolvedId);
+            }
+        );
     }
 
     $selectedId = (int)$selectedValue;
