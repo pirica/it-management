@@ -14,7 +14,7 @@ $csrfToken = itm_get_csrf_token();
     <div class="header-left">
         <h4 class="header-title">
             <!-- Mobile-friendly sidebar toggle -->
-            <button type="button" id="sidebarToggleBtn" class="btn btn-sm sidebar-toggle-btn" title="Hide/Show Dashboard Menu" data-sidebar-bound="false" aria-controls="appSidebar" aria-expanded="false">☰</button>
+            <button type="button" id="sidebarToggleBtn" class="btn btn-sm sidebar-toggle-btn" title="Show sidebar" data-sidebar-bound="false" aria-controls="appSidebar" aria-expanded="false">☰</button>
             ⚙️ <strong><?php echo sanitize($_SESSION['company_name'] ?? 'System'); ?></strong>
         </h4>
     </div>
