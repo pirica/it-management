@@ -417,3 +417,97 @@ if (!function_exists('itm_detect_fk_filter_issues_by_risk')) {
         }));
     }
 }
+
+if (!function_exists('itm_detect_fk_risk_label')) {
+    function itm_detect_fk_risk_label($riskCode): string
+    {
+        $map = [
+            'duplicate_dropdown_risk' => 'Duplicate dropdown option',
+            'cross_tenant_fk' => 'Cross-tenant foreign key',
+            'wrong_or_missing_tenant_row' => 'Missing tenant FK row',
+            'append_without_tenant_resolve' => 'Append FK without tenant resolve',
+            'duplicate_dropdown_code_risk' => 'Duplicate dropdown (code pattern)',
+        ];
+
+        $riskCode = (string)$riskCode;
+
+        return $map[$riskCode] ?? ucwords(str_replace('_', ' ', $riskCode));
+    }
+}
+
+if (!function_exists('itm_detect_fk_column_label')) {
+    function itm_detect_fk_column_label($columnName): string
+    {
+        $columnName = str_replace('_', ' ', trim((string)$columnName));
+        if (substr($columnName, -3) === ' id') {
+            $columnName = substr($columnName, 0, -3);
+        }
+
+        return $columnName === '' ? 'Foreign key' : ucwords($columnName);
+    }
+}
+
+if (!function_exists('itm_detect_fk_data_issue_summary')) {
+    /**
+     * @param array<string, mixed> $issue
+     */
+    function itm_detect_fk_data_issue_summary(array $issue): string
+    {
+        $childCompanyId = (int)($issue['child_company_id'] ?? 0);
+        $storedFkId = (int)($issue['stored_fk_id'] ?? 0);
+        $refCompanyId = (int)($issue['stored_ref_company_id'] ?? 0);
+        $tenantEquivalentId = (int)($issue['tenant_equivalent_id'] ?? 0);
+        $fkColumn = (string)($issue['fk_column'] ?? '');
+        $refTable = (string)($issue['ref_table'] ?? '');
+        $businessKey = (string)($issue['business_key'] ?? '');
+        $risk = (string)($issue['risk'] ?? '');
+        $fkLabel = itm_detect_fk_column_label($fkColumn);
+
+        if ($risk === 'duplicate_dropdown_risk' && $tenantEquivalentId > 0) {
+            return sprintf(
+                'Company %d row stores %s = %d (from company %d). Edit forms show two options; use tenant %s id %d (%s).',
+                $childCompanyId,
+                $fkLabel,
+                $storedFkId,
+                $refCompanyId,
+                $refTable !== '' ? $refTable : 'reference',
+                $tenantEquivalentId,
+                $businessKey
+            );
+        }
+
+        if ($risk === 'wrong_or_missing_tenant_row') {
+            return sprintf(
+                'Company %d row stores %s = %d (company %d) but no matching %s exists for this tenant (%s).',
+                $childCompanyId,
+                $fkLabel,
+                $storedFkId,
+                $refCompanyId,
+                $refTable !== '' ? $refTable : 'reference row',
+                $businessKey
+            );
+        }
+
+        return sprintf(
+            'Company %d row stores %s = %d pointing at company %d (%s).',
+            $childCompanyId,
+            $fkLabel,
+            $storedFkId,
+            $refCompanyId,
+            $businessKey
+        );
+    }
+}
+
+if (!function_exists('itm_detect_fk_code_issue_summary')) {
+    /**
+     * @param array<string, mixed> $issue
+     */
+    function itm_detect_fk_code_issue_summary(array $issue): string
+    {
+        $module = trim((string)($issue['module'] ?? ''), '/');
+        $risk = itm_detect_fk_risk_label((string)($issue['risk'] ?? ''));
+
+        return $risk . ' in ' . ($module !== '' ? $module : 'module') . ': dropdown may append a persisted FK id from another tenant without resolving to the active company.';
+    }
+}

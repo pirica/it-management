@@ -129,22 +129,10 @@ if ($options['json']) {
         fwrite(STDOUT, "  duplicate_dropdown_risk: " . (int)($report['summary']['duplicate_dropdown_data'] ?? 0) . "\n\n");
 
         foreach ($dataIssues as $issue) {
-            $line = sprintf(
-                '[%s] %s id=%d company=%d %s=%d (ref company %d)',
-                strtoupper((string)$issue['risk']),
-                (string)$issue['child_table'],
-                (int)$issue['child_id'],
-                (int)$issue['child_company_id'],
-                (string)$issue['fk_column'],
-                (int)$issue['stored_fk_id'],
-                (int)$issue['stored_ref_company_id']
-            );
-            if ((int)$issue['tenant_equivalent_id'] > 0) {
-                $line .= ' -> tenant id ' . (int)$issue['tenant_equivalent_id'];
-            }
-            $line .= ' {' . (string)$issue['business_key'] . '}';
-            fwrite(STDOUT, $line . "\n");
-            fwrite(STDOUT, '  screen: ' . (string)$issue['module'] . "edit.php?id=" . (int)$issue['child_id'] . "\n");
+            $riskLabel = itm_detect_fk_risk_label((string)($issue['risk'] ?? ''));
+            fwrite(STDOUT, '[' . strtoupper($riskLabel) . '] ' . itm_detect_fk_data_issue_summary($issue) . "\n");
+            fwrite(STDOUT, '  table: ' . (string)($issue['child_table'] ?? '') . ' row #' . (int)($issue['child_id'] ?? 0) . "\n");
+            fwrite(STDOUT, '  edit: ' . (string)($issue['module'] ?? '') . 'edit.php?id=' . (int)($issue['child_id'] ?? 0) . "\n");
         }
 
         if ($dataIssues !== []) {
@@ -155,12 +143,9 @@ if ($options['json']) {
     if (!$options['data_only']) {
         fwrite(STDOUT, "Module code without tenant FK resolve: " . count($codeIssues) . "\n\n");
         foreach ($codeIssues as $issue) {
-            fwrite(STDOUT, sprintf(
-                "[%s] %s\n  %s\n",
-                strtoupper((string)$issue['risk']),
-                (string)$issue['module'],
-                (string)$issue['note']
-            ));
+            fwrite(STDOUT, '[' . strtoupper(itm_detect_fk_risk_label((string)($issue['risk'] ?? ''))) . '] '
+                . itm_detect_fk_code_issue_summary($issue) . "\n");
+            fwrite(STDOUT, '  file: ' . (string)($issue['file'] ?? '') . "\n");
         }
     }
 
