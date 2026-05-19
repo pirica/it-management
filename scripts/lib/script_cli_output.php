@@ -39,4 +39,21 @@ if (!function_exists('itm_script_cli_is_cli')) {
         $closed = true;
         echo '</pre><p style="font-family:sans-serif;font-size:14px;"><a href="index.html">← Scripts index</a></p></body></html>';
     }
+
+    /**
+     * Why: Browser reports (e.g. audit coverage) should open module folders in a new tab without breaking CLI/plain output.
+     */
+    function itm_script_format_module_link($moduleName)
+    {
+        $moduleName = (string)$moduleName;
+        if ($moduleName === '' || itm_script_cli_is_cli()) {
+            return $moduleName;
+        }
+
+        $href = '../modules/' . rawurlencode($moduleName) . '/index.php';
+        $escModule = htmlspecialchars($moduleName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $escHref = htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        return '<a href="' . $escHref . '" target="_blank" rel="noopener noreferrer">' . $escModule . '</a>';
+    }
 }

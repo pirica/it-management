@@ -28,9 +28,35 @@
         h1 { margin: 0 0 8px; }
         h2 { margin: 0 0 12px; font-size: 1.15rem; }
         .scripts-cli-hint { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--table-header-bg, #f6f8fa); border: 1px solid var(--border-color, #d0d7de); font-size: 0.9rem; }
+        .scripts-top-nav { position: sticky; top: 0; z-index: 100; margin: 0 0 16px; padding: 10px 20px; background: var(--card-bg, #fff); border-bottom: 1px solid var(--border-color, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); }
+        .scripts-top-nav-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+        .scripts-top-nav-brand { font-weight: 700; color: var(--text-color, #24292f); text-decoration: none; white-space: nowrap; }
+        .scripts-top-nav-brand:hover { text-decoration: underline; }
+        .scripts-top-nav-links { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; padding: 0; list-style: none; flex: 1 1 auto; }
+        .scripts-top-nav-links a { color: #0969da; text-decoration: none; font-size: 0.9rem; white-space: nowrap; }
+        .scripts-top-nav-links a:hover { text-decoration: underline; }
+        .scripts-top-nav-links a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
+        .scripts-top-nav-home { color: #0969da; text-decoration: none; font-size: 0.9rem; white-space: nowrap; margin-left: auto; }
+        .scripts-top-nav-home:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+<nav class="scripts-top-nav" aria-label="Scripts directory sections">
+    <div class="scripts-top-nav-inner">
+        <a class="scripts-top-nav-brand" href="index.html">Scripts</a>
+        <ul class="scripts-top-nav-links">
+            <li><a href="#docs">Documentation</a></li>
+            <li><a href="#browser">Browser tools</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#ci">CI &amp; static analysis</a></li>
+            <li><a href="#database">Database</a></li>
+            <li><a href="#idf">IDF &amp; equipment</a></li>
+            <li><a href="#ui-modules">UI &amp; modules</a></li>
+            <li><a href="http://localhost/phpmyadmin" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
+        </ul>
+        <a class="scripts-top-nav-home" href="../index.php">← Home</a>
+    </div>
+</nav>
 <div class="scripts-wrap">
     <div class="scripts-card">
         <h1>Scripts directory</h1>
@@ -40,16 +66,6 @@
             <strong>CLI</strong> = terminal or CI from the project root with PHP 7.4+ (preferred for exit codes and long scans).
             <strong>CLI-only</strong> = <code>smoke_test.sh</code> (bash), explicit <code>PHP_SAPI !== 'cli'</code> guards, or unsafe unattended file writes.
         </p>
-        <ul class="scripts-toc">
-            <li><a href="#docs">Documentation</a></li>
-            <li><a href="#browser">Browser tools</a></li>
-            <li><a href="#security">Security (interactive)</a></li>
-            <li><a href="#ci">CI &amp; static analysis</a></li>
-            <li><a href="#database">Database</a></li>
-            <li><a href="#idf">IDF &amp; equipment</a></li>
-            <li><a href="#ui-modules">UI &amp; modules</a></li>
-            <li><a href="http://localhost/phpmyadmin" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
-        </ul>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
             <code>C:\&lt;folder&gt;\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php [options]</code><br>

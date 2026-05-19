@@ -474,7 +474,8 @@ echo 'Trigger tables in database.sql: ' . count($triggerTables) . "\n\n";
 foreach ($results as $row) {
     $label = str_pad(strtoupper($row['status']), 4, ' ', STR_PAD_RIGHT);
     $tableLabel = $row['crud_table'] !== null ? $row['crud_table'] : '(no $crud_table)';
-    echo "[{$label}] {$row['module']} :: {$tableLabel} — {$row['details']}\n";
+    $moduleLabel = itm_script_format_module_link($row['module']);
+    echo "[{$label}] {$moduleLabel} :: {$tableLabel} — {$row['details']}\n";
 }
 
 echo "\n==== Summary ====\n";
@@ -490,7 +491,7 @@ if ($totals['fail'] > 0) {
         if ($row['status'] !== 'fail') {
             continue;
         }
-        echo " - {$row['module']}: {$row['details']}\n";
+        echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}\n";
     }
     echo "\nNote: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows.\n";
     exit(2);
@@ -502,7 +503,7 @@ if ($totals['warn'] > 0) {
         if ($row['status'] !== 'warn') {
             continue;
         }
-        echo " - {$row['module']}: {$row['details']}\n";
+        echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}\n";
     }
 }
 
