@@ -160,9 +160,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <?php endif; ?>
             </div>
 
-            <?php if ($inventoryError !== ''): ?>
-                <div class="alert alert-danger"><?php echo sanitize($inventoryError); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($inventoryError ?? ''); ?>
 
             <!-- SEARCH BAR -->
             <div class="card" style="margin-bottom:16px;">

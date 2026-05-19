@@ -1956,9 +1956,7 @@ if (!empty($_SESSION['crud_success'])) {
             <?php if ($successMessage !== ''): ?>
                 <div class="alert alert-success"><?php echo sanitize($successMessage); ?></div>
             <?php endif; ?>
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <!-- LIST VIEW -->

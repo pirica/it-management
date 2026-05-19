@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: index.php');
             exit;
         }
-        $errors[] = 'Could not save employee: ' . mysqli_error($conn);
+        $errors[] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
     }
 }
 
@@ -144,7 +144,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                 <a href="index.php" class="btn">🔙</a>
             </div>
 
-            <?php foreach ($errors as $error): ?><div class="alert alert-error"><?php echo sanitize($error); ?></div><?php endforeach; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <div class="card">
                 <form method="POST">

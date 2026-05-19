@@ -190,7 +190,7 @@ if ($company_id > 0) {
             $fallbackSql = sprintf($baseSqlNoWarrantyJoin, $field, $field, $field, $field, $field);
             $stmt = mysqli_prepare($conn, $fallbackSql);
             if (!$stmt) {
-                $fetchError = 'Unable to prepare expiring equipment query for ' . $field . '. DB says: ' . (string)mysqli_error($conn);
+                $fetchError = 'Unable to load expiring equipment for ' . $field . '. ' . itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
                 $debugInfo[] = 'Fallback query also failed for ' . $field . '.';
                 continue;
             }
@@ -200,7 +200,7 @@ if ($company_id > 0) {
 
         mysqli_stmt_bind_param($stmt, 'i', $company_id);
         if (!mysqli_stmt_execute($stmt)) {
-            $fetchError = 'Unable to execute expiring equipment query for ' . $field . '. DB says: ' . (string)mysqli_stmt_error($stmt);
+            $fetchError = 'Unable to load expiring equipment for ' . $field . '. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
             $debugInfo[] = 'Execution failed for ' . $field . '.';
             mysqli_stmt_close($stmt);
             continue;
@@ -353,7 +353,7 @@ if ($moduleTitle === '') {
             <?php if ($company_id <= 0): ?>
                 <div class="card"><p>Please select a company to view expiration timelines.</p></div>
             <?php elseif ($fetchError !== ''): ?>
-                <div class="card"><p class="alert alert-error"><?php echo sanitize($fetchError); ?></p></div>
+                <div class="card"><?php echo itm_render_alert_errors($fetchError ?? ''); ?></div>
             <?php endif; ?>
 
             <?php

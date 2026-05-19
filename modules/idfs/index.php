@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
         $newId = (int)mysqli_insert_id($conn);
         mysqli_stmt_close($stmt);
     } else {
-        $_SESSION['crud_error'] = 'DB error preparing statement: ' . mysqli_error($conn);
+        $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
         header('Location: index.php');
         exit;
     }
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
     if ($updateStmt) {
         mysqli_stmt_bind_param($updateStmt, 'iisssiii', $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active, $idf_id, $company_id);
         if (!mysqli_stmt_execute($updateStmt)) {
-            $_SESSION['crud_error'] = 'DB error updating IDF: ' . mysqli_stmt_error($updateStmt);
+            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($updateStmt), mysqli_stmt_error($updateStmt));
             mysqli_stmt_close($updateStmt);
             header('Location: index.php?edit_idf=' . $idf_id);
             exit;
@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
         }
         mysqli_stmt_close($updateStmt);
     } else {
-        $_SESSION['crud_error'] = 'DB error preparing update statement: ' . mysqli_error($conn);
+        $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
         header('Location: index.php?edit_idf=' . $idf_id);
         exit;
     }

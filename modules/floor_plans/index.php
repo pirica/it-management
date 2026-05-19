@@ -1339,9 +1339,7 @@ $listTableColspan = count($uiColumns) + 1 + ($showBulkActions ? 1 : 0);
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if ($crud_action === 'index'): ?>
                 <?php require __DIR__ . '/gallery_index_view.php'; ?>
@@ -1473,9 +1471,7 @@ $listTableColspan = count($uiColumns) + 1 + ($showBulkActions ? 1 : 0);
             <?php elseif ($crud_action === 'create'): ?>
                 <?php require __DIR__ . '/create_upload_view.php'; ?>
             <?php elseif ($crud_action === 'edit'): ?>
-                <?php if (!empty($errors)): ?>
-                    <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-                <?php endif; ?>
+                <?php echo itm_render_alert_errors($errors); ?>
                 <?php if (!empty($data)): ?>
                     <?php require __DIR__ . '/edit_form_view.php'; ?>
                 <?php endif; ?>

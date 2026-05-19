@@ -5,9 +5,7 @@
 $fpListUrl = $modulePath . '/list_all.php';
 $fpCreateUrl = $modulePath . '/create.php';
 ?>
-<?php if (!empty($fpGalleryAccessError)): ?>
-    <div class="alert alert-error"><?php echo sanitize($fpGalleryAccessError); ?></div>
-<?php endif; ?>
+<?php echo itm_render_alert_errors($fpGalleryAccessError ?? ''); ?>
 <div data-itm-new-button-managed="server" class="itm-floor-plan-toolbar">
     <div class="itm-floor-plan-toolbar-left">
         <a href="<?php echo sanitize($fpCreateUrl); ?>" class="btn btn-primary">➕ Upload</a>

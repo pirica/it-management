@@ -435,7 +435,7 @@ $monthOptions = [
             </div>
 
             <?php if ($reportError !== ''): ?>
-                <div class="alert alert-error"><?php echo sanitize($reportError); ?></div>
+                <?php echo itm_render_alert_errors($reportError ?? ''); ?>
             <?php endif; ?>
 
             <div class="card">

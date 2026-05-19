@@ -1541,9 +1541,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">

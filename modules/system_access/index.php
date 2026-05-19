@@ -260,9 +260,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
             <?php foreach ($messages as $message): ?>
                 <div class="alert alert-success" style="margin-bottom:10px;"><?php echo sanitize($message); ?></div>
             <?php endforeach; ?>
-            <?php foreach ($errors as $error): ?>
-                <div class="alert alert-danger" style="margin-bottom:10px;"><?php echo sanitize($error); ?></div>
-            <?php endforeach; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <!-- TABLE MAINTENANCE -->
             <div class="card" style="margin-bottom:16px;">

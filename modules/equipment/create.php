@@ -2064,9 +2064,7 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
             <?php if ($success): ?>
                 <div class="alert alert-success">Equipment updated successfully.</div>
             <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($error ?? ''); ?>
             <div class="card">
                 <form id="equipmentForm" method="POST" enctype="multipart/form-data"
                       data-original-idf-id="<?php echo sanitize((string)($originalData['idf_id'] ?? '')); ?>"

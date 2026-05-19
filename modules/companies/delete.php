@@ -115,7 +115,7 @@ function companies_delete_company_with_related_data($conn, $companyId, &$error =
             if (!mysqli_stmt_execute($stmtDeleteByCompany)) {
                 $dbError = mysqli_error($conn);
                 mysqli_stmt_close($stmtDeleteByCompany);
-                throw new RuntimeException('Cleanup failed for table ' . $tableName . ': ' . $dbError);
+                throw new RuntimeException('Cleanup failed for table ' . $tableName . ': ' . itm_format_db_constraint_error(mysqli_errno($conn), $dbError));
             }
             mysqli_stmt_close($stmtDeleteByCompany);
         }

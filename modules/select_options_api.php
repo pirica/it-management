@@ -308,7 +308,7 @@ if ($existing && mysqli_num_rows($existing) > 0) {
 
     if (!mysqli_query($conn, $insertSql)) {
         http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Insert failed: ' . mysqli_error($conn)]);
+        echo json_encode(['ok' => false, 'error' => itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn))]);
         exit;
     }
 

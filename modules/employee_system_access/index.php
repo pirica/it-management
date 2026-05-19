@@ -228,9 +228,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                 <a href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'export' => 'csv'])); ?>" class="btn btn-primary">⬇ Export CSV</a>
             </div>
 
-            <?php if ($employeeSystemAccessError !== ''): ?>
-                <div class="alert alert-danger"><?php echo sanitize($employeeSystemAccessError); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($employeeSystemAccessError ?? ''); ?>
 
             <!-- Search Filter -->
             <div class="card" style="margin-bottom:16px;">

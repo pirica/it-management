@@ -642,9 +642,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($error ?? ''); ?>
 
 
             <div class="card" style="margin-bottom:20px;">

@@ -181,7 +181,7 @@ function cr_try_query($conn, $sql, &$error = null) {
 function cr_humanize_db_error($message) {
     $raw = trim((string)$message);
     if ($raw === '') {
-        return 'An unexpected database error occurred.';
+        return itm_format_db_constraint_error(0, '');
     }
 
     $lower = strtolower($raw);
@@ -189,7 +189,7 @@ function cr_humanize_db_error($message) {
         return 'This switch port type is already used by one or more switch ports and cannot be renamed or deleted.';
     }
 
-    return $raw;
+    return itm_format_db_constraint_error(0, $raw);
 }
 
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
@@ -456,8 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             header('Location: ' . $listUrl);
             exit;
         }
-        $dbError = cr_humanize_db_error($saveError ?? mysqli_error($conn));
-        $errors[] = 'Database error: ' . $dbError;
+        $errors[] = cr_humanize_db_error($saveError ?? mysqli_error($conn));
     }
 }
 
@@ -495,9 +494,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
