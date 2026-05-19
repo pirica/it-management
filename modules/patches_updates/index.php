@@ -1230,19 +1230,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                     if ($displayVal !== '' && !in_array($displayVal, ['__new__', '__add_new__'], true)) {
-                                        $hasSelectedOption = false;
-                                        foreach ($opts as $opt) {
-                                            if ((string)($opt['id'] ?? '') === (string)$displayVal) {
-                                                $hasSelectedOption = true;
-                                                break;
-                                            }
-                                        }
-                                        if (!$hasSelectedOption) {
-                                            $selectedOption = cr_fk_option_by_id($conn, $fkMap[$name], $displayVal, (int)$company_id);
-                                            if ($selectedOption) {
-                                                $opts[] = $selectedOption;
-                                            }
-                                        }
+                                        $opts = itm_fk_append_selected_option($conn, $fkMap[$name], (int)$company_id, $opts, $displayVal);
                                     }
                                 ?>
                                 <select
