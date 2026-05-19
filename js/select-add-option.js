@@ -404,7 +404,11 @@
                         input.innerHTML = buildSelectOptionsHtml(result.options || [], true);
                         input.value = String(result.selected_id);
                     } catch (error) {
-                        window.alert(error.message || 'Could not add the value right now.');
+                        if (window.itmNotifyError) {
+                            window.itmNotifyError(error.message || 'Could not add the value right now.');
+                        } else {
+                            window.alert(error.message || 'Could not add the value right now.');
+                        }
                         input.value = '';
                     }
 
@@ -537,7 +541,11 @@
             }));
             selectEl.dispatchEvent(new Event('change', { bubbles: true }));
         } catch (error) {
-            window.alert(error.message || 'Could not add the value right now.');
+            if (window.itmNotifyError) {
+                window.itmNotifyError(error.message || 'Could not add the value right now.');
+            } else {
+                window.alert(error.message || 'Could not add the value right now.');
+            }
             selectEl.value = selectEl.dataset.previousValue || '';
         } finally {
             selectEl.disabled = false;

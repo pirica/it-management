@@ -659,7 +659,7 @@ function cr_switch_port_sync_snapshot($conn, $companyId, $snapshot, &$syncError 
             $companyId
         );
         if (!mysqli_stmt_execute($stmtUpdate)) {
-            $syncError = 'Unable to sync IDF port update: ' . mysqli_stmt_error($stmtUpdate);
+            $syncError = 'Unable to sync IDF port update. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtUpdate), mysqli_stmt_error($stmtUpdate));
             mysqli_stmt_close($stmtUpdate);
             return false;
         }
@@ -694,7 +694,7 @@ function cr_switch_port_sync_snapshot($conn, $companyId, $snapshot, &$syncError 
             $commentsValue
         );
         if (!mysqli_stmt_execute($stmtInsert)) {
-            $syncError = 'Unable to sync IDF port insert: ' . mysqli_stmt_error($stmtInsert);
+            $syncError = 'Unable to sync IDF port insert. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtInsert), mysqli_stmt_error($stmtInsert));
             mysqli_stmt_close($stmtInsert);
             return false;
         }
@@ -728,7 +728,7 @@ function cr_switch_port_sync_snapshot($conn, $companyId, $snapshot, &$syncError 
                 $idfPortId
             );
             if (!mysqli_stmt_execute($stmtLinkMeta)) {
-                $syncError = 'Unable to sync IDF link metadata: ' . mysqli_stmt_error($stmtLinkMeta);
+                $syncError = 'Unable to sync IDF link metadata. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtLinkMeta), mysqli_stmt_error($stmtLinkMeta));
                 mysqli_stmt_close($stmtLinkMeta);
                 return false;
             }
@@ -746,7 +746,7 @@ function cr_switch_port_sync_snapshot($conn, $companyId, $snapshot, &$syncError 
         if ($stmtLinkColor) {
             mysqli_stmt_bind_param($stmtLinkColor, 'isiii', $colorId, $hexColor, $companyId, $idfPortId, $idfPortId);
             if (!mysqli_stmt_execute($stmtLinkColor)) {
-                $syncError = 'Unable to sync IDF link color: ' . mysqli_stmt_error($stmtLinkColor);
+                $syncError = 'Unable to sync IDF link color. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtLinkColor), mysqli_stmt_error($stmtLinkColor));
                 mysqli_stmt_close($stmtLinkColor);
                 return false;
             }
@@ -813,7 +813,7 @@ function cr_switch_port_delete_synced_snapshots($conn, $companyId, $snapshots, &
         if ($stmtDeleteLinks) {
             mysqli_stmt_bind_param($stmtDeleteLinks, 'iii', $companyId, $idfPortId, $idfPortId);
             if (!mysqli_stmt_execute($stmtDeleteLinks)) {
-                $syncError = 'Unable to delete synced IDF links: ' . mysqli_stmt_error($stmtDeleteLinks);
+                $syncError = 'Unable to delete synced IDF links. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtDeleteLinks), mysqli_stmt_error($stmtDeleteLinks));
                 mysqli_stmt_close($stmtDeleteLinks);
                 return false;
             }
@@ -829,7 +829,7 @@ function cr_switch_port_delete_synced_snapshots($conn, $companyId, $snapshots, &
         if ($stmtDeletePort) {
             mysqli_stmt_bind_param($stmtDeletePort, 'ii', $companyId, $idfPortId);
             if (!mysqli_stmt_execute($stmtDeletePort)) {
-                $syncError = 'Unable to delete synced IDF port: ' . mysqli_stmt_error($stmtDeletePort);
+                $syncError = 'Unable to delete synced IDF port. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtDeletePort), mysqli_stmt_error($stmtDeletePort));
                 mysqli_stmt_close($stmtDeletePort);
                 return false;
             }

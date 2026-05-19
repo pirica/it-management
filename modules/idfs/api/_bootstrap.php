@@ -44,7 +44,13 @@ function idf_ok(array $payload = []) {
 
 function idf_fail(string $msg, int $code = 400) {
     http_response_code($code);
-    echo json_encode(['ok' => false, 'error' => $msg]);
+    $friendly = function_exists('itm_humanize_api_error_message')
+        ? itm_humanize_api_error_message($msg)
+        : $msg;
+    if ($friendly === '') {
+        $friendly = 'We could not complete this action. Please try again.';
+    }
+    echo json_encode(['ok' => false, 'error' => $friendly]);
     exit;
 }
 

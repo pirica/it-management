@@ -53,5 +53,9 @@ $rendered = itm_render_alert_errors(['Database error: Column \'employee_id\' can
 itm_test_assert('render includes itm-alert', strpos($rendered, 'itm-alert') !== false);
 itm_test_assert('render humanizes mysql text', stripos($rendered, 'Employee') !== false);
 
+$apiDb = itm_humanize_api_error_message('DB error: Column \'name\' cannot be null');
+itm_test_assert('API DB error prefix humanized', stripos($apiDb, 'Name') !== false);
+itm_test_assert('API message has no DB error prefix', stripos($apiDb, 'DB error:') === false);
+
 fwrite(STDOUT, "\nFailures: {$failures}\n");
 exit($failures > 0 ? 1 : 0);

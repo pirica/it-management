@@ -197,7 +197,11 @@
             if (!message) {
                 message = 'Import failed while saving to database.';
             }
-            window.alert(message);
+            if (window.itmNotifyError) {
+                window.itmNotifyError(message);
+            } else {
+                window.alert(message);
+            }
             return true;
         }
 

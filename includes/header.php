@@ -31,18 +31,20 @@ $csrfToken = itm_get_csrf_token();
 <?php
 // Display one-time session-based notifications (Flash Messages)
 if (!empty($_SESSION['crud_error'])) {
-    echo '<div class="crud_error">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
+    echo itm_render_alert_errors((string)$_SESSION['crud_error']);
     unset($_SESSION['crud_error']);
 }
 
 if (!empty($_SESSION['crud_success'])) {
-    echo '<div class="crud_success">' . htmlspecialchars($_SESSION['crud_success']) . '</div>';
+    echo itm_render_alert_errors((string)$_SESSION['crud_success'], 'success');
     unset($_SESSION['crud_success']);
 }
 ?>
+<div id="itm-js-alert-region" class="itm-js-alert-region" aria-live="polite"></div>
 
 <!-- Load Theme Logic Early -->
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
+<script src="<?php echo BASE_URL; ?>js/itm-user-errors.js"></script>
 
 <script>
 /**
