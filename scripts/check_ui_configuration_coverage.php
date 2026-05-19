@@ -211,7 +211,8 @@ foreach ($modules as $module) {
         $totals[$status]++;
 
         $label = str_pad($status, 4, ' ', STR_PAD_RIGHT);
-        echo "[{$label}] {$module} :: {$checkName} - {$result['details']}\n";
+        $moduleLabel = itm_script_format_module_link($module);
+        echo "[{$label}] {$moduleLabel} :: {$checkName} - {$result['details']}\n";
 
         if ($status === 'fail') {
             $moduleFailures[$module][] = "{$checkName}: {$result['details']}";
@@ -229,7 +230,7 @@ echo 'N/A : ' . $totals['n/a'] . "\n";
 if ($totals['fail'] > 0) {
     echo "\nModules with failures:\n";
     foreach ($moduleFailures as $module => $failures) {
-        echo "- {$module}\n";
+        echo '- ' . itm_script_format_module_link($module) . "\n";
         foreach ($failures as $failure) {
             echo "    * {$failure}\n";
         }
