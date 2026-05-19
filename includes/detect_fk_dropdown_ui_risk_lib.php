@@ -299,14 +299,18 @@ if (!function_exists('itm_detect_fk_code_issues')) {
 
             $hasAppendFk = strpos($content, 'cr_append_selected_fk_option') !== false
                 || (strpos($content, 'cr_fk_options_with_selected') !== false && strpos($content, 'function cr_fk_options_with_selected') !== false)
-                || (bool)preg_match('/\$opts\[\]\s*=\s*\[\s*[\'"]id[\'"]\s*=>/i', $content);
+                || (bool)preg_match('/\$opts\[\]\s*=\s*\[\s*[\'"]id[\'"]\s*=>/i', $content)
+                || (bool)preg_match('/\$opts\[\]\s*=\s*\$selectedFkOption\b/i', $content)
+                || (strpos($content, 'cr_fk_option_by_id') !== false && strpos($content, '$opts[]') !== false);
 
             if (!$hasAppendFk) {
                 continue;
             }
 
             $hasResolve = strpos($content, 'itm_fk_resolve_company_equivalent_id') !== false
-                || strpos($content, 'itm_fk_append_selected_option') !== false;
+                || strpos($content, 'itm_fk_append_selected_option') !== false
+                || (strpos($content, 'function cr_append_selected_fk_option') !== false
+                    && strpos($content, 'itm_fk_append_selected_option') !== false);
 
             if ($hasResolve) {
                 continue;

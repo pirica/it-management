@@ -235,6 +235,46 @@ function cr_fk_option_by_id($conn, $fk, $company_id, $valueId) {
 }
 
 /**
+ * Resolves FK label text for list/view cells using tenant-safe id mapping when available.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    }
+
+    $resolved = cr_fk_option_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    return is_array($resolved) ? (string)($resolved['label'] ?? '') : '';
+}
+
+/**
+ * Ensures edit selects include the persisted value without duplicating cross-tenant seed ids.
+ */
+function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
+    if (function_exists('itm_fk_append_selected_option')) {
+        return itm_fk_append_selected_option($conn, $fk, (int)$company_id, $options, $selectedValue);
+    }
+
+    $selectedId = (int)$selectedValue;
+    if ($selectedId <= 0) {
+        return $options;
+    }
+
+    foreach ($options as $option) {
+        if ((int)($option['id'] ?? 0) === $selectedId) {
+            return $options;
+        }
+    }
+
+    $resolvedLabel = cr_fk_label_by_id($conn, $fk, (int)$company_id, $selectedId);
+    if ($resolvedLabel === '') {
+        $resolvedLabel = (string)$selectedId;
+    }
+
+    $options[] = ['id' => $selectedId, 'label' => $resolvedLabel];
+    return $options;
+}
+
+/**
  * Preloads foreign-key display labels so list views show human names instead of numeric IDs.
  */
 function cr_fk_display_maps($conn, $fkMap, $uiColumns, $company_id) {
@@ -465,6 +505,18 @@ function cr_render_cell_value($table, $field, $value) {
             return sanitize($text);
         }
         return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">🔗 Open</a>';
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
     }
 
     // Interactive email links with Outlook deep-link support.
@@ -1795,6 +1847,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 }
                 continue;
             }
+
+            $postedFkId = (int)$value;
+            if ($postedFkId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                $postedFkId = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$name], (int)$company_id, $postedFkId);
+            }
+            $data[$name] = $postedFkId > 0 ? $postedFkId : null;
+            continue;
         }
 
         // Generic value processing and numeric validation
@@ -2050,8 +2109,11 @@ if (!empty($_SESSION['crud_success'])) {
                                                     $fkDisplayRowCache[$f] = [];
                                                 }
                                                 if (!array_key_exists($fkDisplayKey, $fkDisplayRowCache[$f])) {
-                                                    $resolvedFk = cr_fk_option_by_id($conn, $fkMap[$f], (int)$company_id, (int)$fkDisplayKey);
-                                                    $fkDisplayRowCache[$f][$fkDisplayKey] = $resolvedFk ? (string)($resolvedFk['label'] ?? '') : '';
+                                                    $fkDisplayId = (int)$fkDisplayKey;
+                                                    if ($fkDisplayId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                                        $fkDisplayId = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$f], (int)$company_id, $fkDisplayId);
+                                                    }
+                                                    $fkDisplayRowCache[$f][$fkDisplayKey] = cr_fk_label_by_id($conn, $fkMap[$f], (int)$company_id, $fkDisplayId);
                                                 }
                                                 if ($fkDisplayRowCache[$f][$fkDisplayKey] !== '') {
                                                     $displayValue = $fkDisplayRowCache[$f][$fkDisplayKey];
@@ -2133,36 +2195,28 @@ if (!empty($_SESSION['crud_success'])) {
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                    $fkRow = $fkMap[$name];
+                                    $fkSelectedId = (int)$displayVal;
+                                    if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                        $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
+                                    }
+                                    $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                    $opts = cr_append_selected_fk_option($conn, $fkRow, (int)$company_id, $opts, $fkSelectedId);
+                                    $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
-
-                                    $hasSelectedOption = false;
-                                    foreach ($opts as $itmOpt) {
-                                        if ((string)($itmOpt['id'] ?? '') === (string)$displayVal) {
-                                            $hasSelectedOption = true;
-                                            break;
-                                        }
-                                    }
-                                    if (!$hasSelectedOption && trim((string)$displayVal) !== '') {
-                                        $selectedFkOption = cr_fk_option_by_id($conn, $fkMap[$name], (int)$company_id, (int)$displayVal);
-                                        if ($selectedFkOption) {
-                                            $opts[] = $selectedFkOption;
-                                        }
-                                    }
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                    data-add-table="<?php echo sanitize($fkRow['REFERENCED_TABLE_NAME']); ?>"
+                                    data-add-id-col="<?php echo sanitize($fkRow['REFERENCED_COLUMN_NAME']); ?>"
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
@@ -2203,9 +2257,13 @@ if (!empty($_SESSION['crud_success'])) {
                                         if ($detailFkKey !== '' && isset($fkDisplayMaps[$f][$detailFkKey])) {
                                             $detailDisplayValue = $fkDisplayMaps[$f][$detailFkKey];
                                         } elseif ($detailFkKey !== '' && isset($fkMap[$f])) {
-                                            $fallbackFkOption = cr_fk_option_by_id($conn, $fkMap[$f], (int)$company_id, (int)$detailFkKey);
-                                            if ($fallbackFkOption && isset($fallbackFkOption['label'])) {
-                                                $detailDisplayValue = (string)$fallbackFkOption['label'];
+                                            $detailFkId = (int)$detailFkKey;
+                                            if ($detailFkId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                                $detailFkId = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$f], (int)$company_id, $detailFkId);
+                                            }
+                                            $detailFkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$company_id, $detailFkId);
+                                            if ($detailFkLabel !== '') {
+                                                $detailDisplayValue = $detailFkLabel;
                                             }
                                         }
                                     ?>
