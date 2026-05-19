@@ -74,6 +74,8 @@ if (!function_exists('itm_detect_fk_business_key_columns')) {
             'location_types' => ['name'],
             'access_levels' => ['name'],
             'user_roles' => ['name'],
+            'approvals_stage' => ['stage'],
+            'forecast_revisions_status' => ['status'],
         ];
 
         if (isset($map[$table])) {
