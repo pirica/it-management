@@ -6,10 +6,10 @@
  * new buttons, export toolbar, and back/save alignment). This script provides
  * a single verification pass across modules so regressions are easy to spot.
  *
- * Entry wrappers: create.php, edit.php, and view.php are checked for CRUD delegation.
- * delete.php and list_all.php use separate rules (wrapper OR standalone entry file).
- * Entry helpers
- * reports module helpers, cross-module, and shared includes with found/MISSING status.
+ * CRUD entry files (create/edit/view/list_all/delete): wrapper to index.php OR standalone
+ * screen/handler on disk — not "Wrapper not found" when the file is a full CRUD copy.
+ * Require/include audits run only when a missing CRUD delegate is reported (no per-file
+ * duplicate sidebar/header lines).
  *
  * Exemptions:
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
@@ -355,11 +355,11 @@ function itm_ui_resolve_entry_form_source(string $modulePath, string $entryConte
 }
 
 /**
- * Whether the module exposes delete (file and/or index.php actions pointing at delete.php).
+ * Whether the module uses a CRUD entry file (exists on disk and/or linked from index.php).
  */
-function itm_module_uses_delete(string $indexContent, string $deletePath): bool
+function itm_module_uses_entry_file(string $indexContent, string $entryPath, string $entryBasename): bool
 {
-    if (is_file($deletePath)) {
+    if (is_file($entryPath)) {
         return true;
     }
 
@@ -367,219 +367,183 @@ function itm_module_uses_delete(string $indexContent, string $deletePath): bool
         return false;
     }
 
-    return preg_match('#delete\.php#i', $indexContent) === 1;
+    return preg_match('#' . preg_quote($entryBasename, '#') . '#i', $indexContent) === 1;
 }
 
 /**
- * Delete entry files are usually standalone POST handlers, not index.php wrappers.
- *
- * @return array{status:string,details:string}
+ * @return string
  */
-function itm_check_delete_entry(string $modulePath, string $indexContent, string $deletePath, string $deleteContent): array
+function itm_entry_screen_label(string $entryBasename): string
 {
-    if (!itm_module_uses_delete($indexContent, $deletePath)) {
-        return ['status' => 'n/a', 'details' => 'Delete not used (no delete.php and no delete.php action in index.php)'];
-    }
+    $labels = [
+        'create.php' => 'Create',
+        'edit.php' => 'Edit',
+        'view.php' => 'View',
+        'list_all.php' => 'List-all',
+        'delete.php' => 'Delete',
+    ];
 
-    if (!is_file($deletePath)) {
-        return ['status' => 'fail', 'details' => 'index.php references delete.php but delete.php is missing on disk'];
-    }
+    return $labels[$entryBasename] ?? ucfirst(str_replace('.php', '', $entryBasename));
+}
 
-    $wrapper = itm_ui_detect_entry_wrapper($deleteContent, $modulePath);
-    if ($wrapper['is_wrapper']) {
-        if (!$wrapper['target_exists']) {
-            return [
-                'status' => 'fail',
-                'details' => 'Wrapper references ' . $wrapper['target_label'] . ' but that file was not found on disk',
-            ];
-        }
-
-        $chain = itm_ui_resolve_entry_form_source($modulePath, $deleteContent, 'delete.php')['chain'];
-        $via = empty($chain) ? $wrapper['target_label'] : implode(' → ', $chain);
-
-        return ['status' => 'pass', 'details' => 'Wrapper found — delete.php delegates to ' . $via];
-    }
-
+/**
+ * @return array<int, string>
+ */
+function itm_standalone_entry_signals(string $entryBasename, string $entryContent): array
+{
     $signals = [];
-    if (stripos($deleteContent, 'itm_require_post_csrf') !== false) {
-        $signals[] = 'CSRF';
-    }
-    if (preg_match('#\$_SERVER\s*\[\s*[\'"]REQUEST_METHOD[\'"]\s*\]#i', $deleteContent) === 1) {
-        $signals[] = 'POST guard';
-    }
-    if (stripos($deleteContent, 'bulk') !== false || stripos($deleteContent, 'DELETE') !== false) {
-        $signals[] = 'delete logic';
-    }
+    $actionMap = [
+        'create.php' => 'create',
+        'edit.php' => 'edit',
+        'view.php' => 'view',
+        'list_all.php' => 'list_all',
+        'delete.php' => 'delete',
+    ];
 
-    $hint = $signals === [] ? 'standalone handler' : implode(', ', $signals);
-
-    return ['status' => 'pass', 'details' => 'Delete handler present (' . $hint . '; not a wrapper)'];
-}
-
-/**
- * Whether the module exposes list-all (file and/or index.php links to list_all.php).
- */
-function itm_module_uses_list_all(string $indexContent, string $listAllPath): bool
-{
-    if (is_file($listAllPath)) {
-        return true;
+    if (isset($actionMap[$entryBasename])
+        && preg_match(
+            '#\$crud_action\s*=\s*[\'"]' . preg_quote($actionMap[$entryBasename], '#') . '[\'"]#i',
+            $entryContent
+        ) === 1
+    ) {
+        $signals[] = 'crud_action=' . $actionMap[$entryBasename];
     }
 
-    if ($indexContent === '') {
-        return false;
+    if (in_array($entryBasename, ['create.php', 'edit.php'], true) && stripos($entryContent, '<form') !== false) {
+        $signals[] = 'form UI';
     }
 
-    return preg_match('#list_all\.php#i', $indexContent) === 1;
-}
-
-/**
- * list_all.php is often a full list screen (shared CRUD copy), not require index.php.
- *
- * @return array{status:string,details:string}
- */
-function itm_check_list_all_entry(string $modulePath, string $indexContent, string $listAllPath, string $listAllContent): array
-{
-    if (!itm_module_uses_list_all($indexContent, $listAllPath)) {
-        return ['status' => 'n/a', 'details' => 'List-all not used (no list_all.php and no list_all.php link in index.php)'];
-    }
-
-    if (!is_file($listAllPath)) {
-        return ['status' => 'fail', 'details' => 'index.php references list_all.php but list_all.php is missing on disk'];
-    }
-
-    $wrapper = itm_ui_detect_entry_wrapper($listAllContent, $modulePath);
-    if ($wrapper['is_wrapper']) {
-        if (!$wrapper['target_exists']) {
-            return [
-                'status' => 'fail',
-                'details' => 'Wrapper references ' . $wrapper['target_label'] . ' but that file was not found on disk',
-            ];
+    if ($entryBasename === 'view.php') {
+        if (preg_match('#view\.php\?id=#i', $entryContent) === 1 || stripos($entryContent, 'read-only') !== false) {
+            $signals[] = 'detail view';
         }
-
-        $chain = itm_ui_resolve_entry_form_source($modulePath, $listAllContent, 'list_all.php')['chain'];
-        $via = empty($chain) ? $wrapper['target_label'] : implode(' → ', $chain);
-
-        return ['status' => 'pass', 'details' => 'Wrapper found — list_all.php delegates to ' . $via];
     }
 
-    $signals = [];
-    if (preg_match('#\$crud_action\s*=\s*[\'"]list_all[\'"]#i', $listAllContent) === 1) {
-        $signals[] = 'crud_action=list_all';
-    }
-    if (stripos($listAllContent, '<table') !== false) {
-        $signals[] = 'table UI';
-    }
-    if (stripos($listAllContent, 'data-itm-db-import-endpoint') !== false) {
-        $signals[] = 'import endpoint';
+    if ($entryBasename === 'list_all.php') {
+        if (stripos($entryContent, '<table') !== false) {
+            $signals[] = 'table UI';
+        }
+        if (stripos($entryContent, 'data-itm-db-import-endpoint') !== false) {
+            $signals[] = 'import endpoint';
+        }
     }
 
-    $hint = $signals === [] ? 'standalone list screen' : implode(', ', $signals);
+    if ($entryBasename === 'delete.php') {
+        if (stripos($entryContent, 'itm_require_post_csrf') !== false
+            || stripos($entryContent, 'cr_require_valid_csrf_token') !== false
+            || stripos($entryContent, 'require_valid_csrf') !== false) {
+            $signals[] = 'CSRF';
+        }
+        if (preg_match('#\$_SERVER\s*\[\s*[\'"]REQUEST_METHOD[\'"]\s*\]#i', $entryContent) === 1) {
+            $signals[] = 'POST guard';
+        }
+        if (stripos($entryContent, 'bulk') !== false
+            || stripos($entryContent, 'single_delete') !== false
+            || stripos($entryContent, 'clear_table') !== false
+            || preg_match('#\bDELETE\s+FROM\b#i', $entryContent) === 1) {
+            $signals[] = 'delete logic';
+        }
+    }
 
-    return ['status' => 'pass', 'details' => 'List-all entry present (' . $hint . '; not a wrapper)'];
+    return $signals;
 }
 
 /**
- * @return array{status:string,details:string}
+ * Standalone delete.php must expose handler wiring, not merely exist on disk.
+ *
+ * @param array<int, string> $signals
+ * @return array{status:string,details:string}|null
  */
-function itm_check_entry_wrapper(string $entryPath, string $entryContent, string $modulePath, string $entryBasename): array
+function itm_check_delete_standalone_handler(array $signals)
 {
-    if (!is_file($entryPath)) {
-        return ['status' => 'n/a', 'details' => 'No ' . $entryBasename];
-    }
-
-    $wrapper = itm_ui_detect_entry_wrapper($entryContent, $modulePath);
-    if (!$wrapper['is_wrapper']) {
-        return ['status' => 'n/a', 'details' => 'Wrapper not found'];
-    }
-
-    if (!$wrapper['target_exists']) {
+    if ($signals === []) {
         return [
             'status' => 'fail',
-            'details' => 'Wrapper references ' . $wrapper['target_label'] . ' but that file was not found on disk',
+            'details' => 'Delete handler missing expected indicators (POST guard, CSRF, delete logic, or crud_action=delete)',
         ];
     }
 
-    $chain = itm_ui_resolve_entry_form_source($modulePath, $entryContent, $entryBasename)['chain'];
-    $via = empty($chain) ? $wrapper['target_label'] : implode(' → ', $chain);
+    $hasPost = in_array('POST guard', $signals, true);
+    $hasCsrf = in_array('CSRF', $signals, true);
+    $hasDelete = in_array('delete logic', $signals, true);
 
-    return ['status' => 'pass', 'details' => 'Wrapper found — ' . $entryBasename . ' delegates to ' . $via];
+    if (!$hasPost) {
+        return [
+            'status' => 'fail',
+            'details' => 'Delete handler missing POST guard ($_SERVER REQUEST_METHOD check)',
+        ];
+    }
+
+    if (!$hasCsrf && !$hasDelete) {
+        return [
+            'status' => 'fail',
+            'details' => 'Delete handler missing CSRF protection and delete logic',
+        ];
+    }
+
+    return null;
 }
 
 /**
+ * Wrapper delegate OR standalone CRUD entry screen (shared master-template copies).
+ *
  * @return array{status:string,details:string}
  */
-function itm_check_entry_helpers(string $entryPath, string $entryContent, string $modulePath, string $entryBasename, string $indexContent = ''): array
-{
-    if ($entryBasename === 'delete.php' && !itm_module_uses_delete($indexContent, $entryPath)) {
-        return ['status' => 'n/a', 'details' => 'Delete not used'];
-    }
+function itm_check_module_entry_file(
+    string $modulePath,
+    string $indexContent,
+    string $entryPath,
+    string $entryContent,
+    string $entryBasename
+): array {
+    $screenLabel = itm_entry_screen_label($entryBasename);
 
-    if ($entryBasename === 'list_all.php' && !itm_module_uses_list_all($indexContent, $entryPath)) {
-        return ['status' => 'n/a', 'details' => 'List-all not used'];
+    if (!itm_module_uses_entry_file($indexContent, $entryPath, $entryBasename)) {
+        return [
+            'status' => 'n/a',
+            'details' => $screenLabel . ' not used (no ' . $entryBasename . ' and no ' . $entryBasename . ' link in index.php)',
+        ];
     }
 
     if (!is_file($entryPath)) {
-        return ['status' => 'n/a', 'details' => 'No ' . $entryBasename];
+        return [
+            'status' => 'fail',
+            'details' => 'index.php references ' . $entryBasename . ' but ' . $entryBasename . ' is missing on disk',
+        ];
     }
 
-    $requires = itm_ui_parse_entry_requires($entryContent, $modulePath);
-    if ($requires === []) {
-        return ['status' => 'n/a', 'details' => 'Wrapper not found; no require/include targets'];
-    }
-
-    $groups = [
-        'crud_entry' => [],
-        'module_helper' => [],
-        'cross_module' => [],
-        'shared_include' => [],
-        'other' => [],
-    ];
-    $hasMissing = false;
-
-    foreach ($requires as $require) {
-        if ($require['category'] === 'config') {
-            continue;
+    $wrapper = itm_ui_detect_entry_wrapper($entryContent, $modulePath);
+    if ($wrapper['is_wrapper']) {
+        if (!$wrapper['target_exists']) {
+            return [
+                'status' => 'fail',
+                'details' => 'Wrapper references ' . $wrapper['target_label'] . ' but that file was not found on disk',
+            ];
         }
 
-        $label = $require['relative'] . ($require['exists'] ? ' (found)' : ' (MISSING)');
-        if (!$require['exists']) {
-            $hasMissing = true;
+        $chain = itm_ui_resolve_entry_form_source($modulePath, $entryContent, $entryBasename)['chain'];
+        $via = empty($chain) ? $wrapper['target_label'] : implode(' → ', $chain);
+
+        return ['status' => 'pass', 'details' => 'Wrapper found — ' . $entryBasename . ' delegates to ' . $via];
+    }
+
+    $signals = itm_standalone_entry_signals($entryBasename, $entryContent);
+
+    if ($entryBasename === 'delete.php') {
+        $reject = itm_check_delete_standalone_handler($signals);
+        if ($reject !== null) {
+            return $reject;
         }
 
-        $bucket = $require['category'];
-        if (!isset($groups[$bucket])) {
-            $bucket = 'other';
-        }
-        $groups[$bucket][] = $label;
+        return [
+            'status' => 'pass',
+            'details' => 'Delete handler present (' . implode(', ', $signals) . '; not a wrapper)',
+        ];
     }
 
-    $parts = [];
-    if ($groups['crud_entry'] !== []) {
-        $parts[] = 'CRUD: ' . implode(', ', $groups['crud_entry']);
-    }
-    if ($groups['module_helper'] !== []) {
-        $parts[] = 'Module helpers: ' . implode(', ', $groups['module_helper']);
-    }
-    if ($groups['cross_module'] !== []) {
-        $parts[] = 'Cross-module: ' . implode(', ', $groups['cross_module']);
-    }
-    if ($groups['shared_include'] !== []) {
-        $parts[] = 'Shared includes: ' . implode(', ', $groups['shared_include']);
-    }
-    if ($groups['other'] !== []) {
-        $parts[] = 'Other: ' . implode(', ', $groups['other']);
-    }
+    $hint = $signals === [] ? 'standalone entry file' : implode(', ', $signals);
 
-    if ($parts === []) {
-        return ['status' => 'n/a', 'details' => 'Wrapper not found; only config bootstrap requires'];
-    }
-
-    $details = implode('; ', $parts);
-    if ($hasMissing) {
-        return ['status' => 'fail', 'details' => $details];
-    }
-
-    return ['status' => 'pass', 'details' => $details];
+    return ['status' => 'pass', 'details' => $screenLabel . ' entry present (' . $hint . '; not a wrapper)'];
 }
 
 /**
@@ -610,9 +574,9 @@ function itm_check_back_save_entry(string $modulePath, string $entryPath, string
         return ['status' => 'n/a', 'details' => 'No ' . $entryBasename];
     }
 
-    $wrapperCheck = itm_check_entry_wrapper($entryPath, $entryContent, $modulePath, $entryBasename);
-    if ($wrapperCheck['status'] === 'fail') {
-        return $wrapperCheck;
+    $entryCheck = itm_check_module_entry_file($modulePath, '', $entryPath, $entryContent, $entryBasename);
+    if ($entryCheck['status'] === 'fail') {
+        return $entryCheck;
     }
 
     $resolved = itm_ui_resolve_entry_form_source($modulePath, $entryContent, $entryBasename);
@@ -621,16 +585,25 @@ function itm_check_back_save_entry(string $modulePath, string $entryPath, string
         : $entryBasename . ' via ' . implode(' → ', $resolved['chain']);
 
     $result = itm_check_back_save($resolved['content'], $viaLabel);
-    if ($wrapperCheck['status'] === 'pass' && $result['status'] === 'n/a' && stripos($result['details'], 'No form') !== false) {
+    if ($result['status'] !== 'n/a' || stripos($result['details'], 'No form') === false) {
+        return $result;
+    }
+
+    if (itm_ui_detect_entry_wrapper($entryContent, $modulePath)['is_wrapper']) {
         $result['details'] = 'Wrapper found but delegated file has no detectable form (' . $viaLabel . ')';
         $result['status'] = 'fail';
+
+        return $result;
     }
 
-    if ($wrapperCheck['status'] === 'n/a' && $result['status'] === 'n/a' && stripos($result['details'], 'No form') !== false) {
-        $result['details'] = 'Wrapper not found — no form in ' . $entryBasename;
+    if (in_array($entryBasename, ['create.php', 'edit.php'], true)) {
+        $result['details'] = itm_entry_screen_label($entryBasename) . ' entry has no detectable form in ' . $entryBasename;
+        $result['status'] = 'fail';
+
+        return $result;
     }
 
-    return $result;
+    return ['status' => 'n/a', 'details' => 'No form expected in ' . $entryBasename];
 }
 
 $excludeModules = itm_ui_config_load_excluded_list($excludeModulesFile);
@@ -666,15 +639,11 @@ foreach ($modules as $module) {
         'Table Actions' => itm_check_table_actions($indexContent),
         '+ New Button' => itm_check_new_button($indexContent, is_file($createPath)),
         'Export Buttons' => itm_check_export_toolbar_support($indexContent),
-        'Create wrapper (create.php)' => itm_check_entry_wrapper($createPath, $createContent, $modulePath, 'create.php'),
-        'Edit wrapper (edit.php)' => itm_check_entry_wrapper($editPath, $editContent, $modulePath, 'edit.php'),
-        'View wrapper (view.php)' => itm_check_entry_wrapper($viewPath, $viewContent, $modulePath, 'view.php'),
-        'List-all entry (list_all.php)' => itm_check_list_all_entry($modulePath, $indexContent, $listAllPath, $listAllContent),
-        'Delete entry (delete.php)' => itm_check_delete_entry($modulePath, $indexContent, $deletePath, $deleteContent),
-        'Entry helpers (create.php)' => itm_check_entry_helpers($createPath, $createContent, $modulePath, 'create.php'),
-        'Entry helpers (edit.php)' => itm_check_entry_helpers($editPath, $editContent, $modulePath, 'edit.php'),
-        'Entry helpers (delete.php)' => itm_check_entry_helpers($deletePath, $deleteContent, $modulePath, 'delete.php', $indexContent),
-        'Entry helpers (list_all.php)' => itm_check_entry_helpers($listAllPath, $listAllContent, $modulePath, 'list_all.php', $indexContent),
+        'Create entry (create.php)' => itm_check_module_entry_file($modulePath, $indexContent, $createPath, $createContent, 'create.php'),
+        'Edit entry (edit.php)' => itm_check_module_entry_file($modulePath, $indexContent, $editPath, $editContent, 'edit.php'),
+        'View entry (view.php)' => itm_check_module_entry_file($modulePath, $indexContent, $viewPath, $viewContent, 'view.php'),
+        'List-all entry (list_all.php)' => itm_check_module_entry_file($modulePath, $indexContent, $listAllPath, $listAllContent, 'list_all.php'),
+        'Delete entry (delete.php)' => itm_check_module_entry_file($modulePath, $indexContent, $deletePath, $deleteContent, 'delete.php'),
         'Back & Save (create.php)' => itm_check_back_save_entry($modulePath, $createPath, $createContent, 'create.php'),
         'Back & Save (edit.php)' => itm_check_back_save_entry($modulePath, $editPath, $editContent, 'edit.php'),
     ];
