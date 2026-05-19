@@ -11,6 +11,9 @@
  * Require/include audits run only when a missing CRUD delegate is reported (no per-file
  * duplicate sidebar/header lines).
  *
+ * List table contract (index.php, or list_all.php when index has no table): Search,
+ * pagination via Settings records_per_page, and bulk Select to Delete / Clear Table.
+ *
  * Exemptions:
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
  *   - scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades)
@@ -159,6 +162,158 @@ function itm_check_export_toolbar_support(string $indexContent): array
     }
 
     return ['status' => 'fail', 'details' => 'Table exists but no .card wrapper was detected'];
+}
+
+/**
+ * @return array{content:string,source:string}
+ */
+function itm_ui_resolve_list_table_screen(string $indexContent, string $listAllContent): array
+{
+    if ($indexContent !== '' && stripos($indexContent, '<table') !== false) {
+        return ['content' => $indexContent, 'source' => 'index.php'];
+    }
+
+    if ($listAllContent !== '' && stripos($listAllContent, '<table') !== false) {
+        return ['content' => $listAllContent, 'source' => 'list_all.php'];
+    }
+
+    return ['content' => $indexContent, 'source' => 'index.php'];
+}
+
+/**
+ * @return array{status:string,details:string}
+ */
+function itm_check_search(string $listContent, string $sourceLabel): array
+{
+    if ($listContent === '' || stripos($listContent, '<table') === false) {
+        return ['status' => 'n/a', 'details' => 'No table in ' . $sourceLabel];
+    }
+
+    $hasSearchParam = preg_match('#\$_GET\s*\[\s*[\'"]search[\'"]\s*\]#', $listContent) === 1
+        || stripos($listContent, '$searchRaw') !== false;
+    $hasSearchInput = preg_match('#name\s*=\s*["\']search["\']#i', $listContent) === 1;
+    $hasSearchQuery = stripos($listContent, 'searchConditions') !== false
+        || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc)#i', $listContent) === 1);
+
+    if ($hasSearchParam && $hasSearchInput && $hasSearchQuery) {
+        return ['status' => 'pass', 'details' => 'Search input and server-side query detected in ' . $sourceLabel];
+    }
+
+    $missing = [];
+    if (!$hasSearchParam) {
+        $missing[] = 'GET/search variable';
+    }
+    if (!$hasSearchInput) {
+        $missing[] = 'search input';
+    }
+    if (!$hasSearchQuery) {
+        $missing[] = 'server-side search conditions';
+    }
+
+    return [
+        'status' => 'fail',
+        'details' => 'Table in ' . $sourceLabel . ' missing search wiring: ' . implode(', ', $missing),
+    ];
+}
+
+/**
+ * @return array{status:string,details:string}
+ */
+function itm_check_pagination(string $listContent, string $sourceLabel): array
+{
+    if ($listContent === '' || stripos($listContent, '<table') === false) {
+        return ['status' => 'n/a', 'details' => 'No table in ' . $sourceLabel];
+    }
+
+    $usesRecordsPerPage = stripos($listContent, 'itm_resolve_records_per_page') !== false;
+    $hasPerPageVar = preg_match('#\$perPage\s*=#', $listContent) === 1;
+    $hasLimitPaging = preg_match('#LIMIT\s+[^\n;]*\$perPage#i', $listContent) === 1
+        || (stripos($listContent, 'LIMIT') !== false && stripos($listContent, '$offset') !== false);
+    $hasPageState = preg_match('#\$_GET\s*\[\s*[\'"]page[\'"]\s*\]#', $listContent) === 1
+        || preg_match('#\$page\s*=#', $listContent) === 1;
+    $hasPageNav = (stripos($listContent, 'Previous') !== false
+            || stripos($listContent, 'Prev') !== false
+            || stripos($listContent, '«') !== false)
+        && stripos($listContent, 'Next') !== false;
+    $hasRowTotal = stripos($listContent, '$totalPages') !== false || stripos($listContent, '$totalRows') !== false;
+
+    if ($usesRecordsPerPage && $hasPerPageVar && $hasLimitPaging && $hasPageState && $hasPageNav && $hasRowTotal) {
+        return [
+            'status' => 'pass',
+            'details' => 'Pagination uses itm_resolve_records_per_page() in ' . $sourceLabel,
+        ];
+    }
+
+    $missing = [];
+    if (!$usesRecordsPerPage) {
+        $missing[] = 'itm_resolve_records_per_page()';
+    }
+    if (!$hasPerPageVar) {
+        $missing[] = '$perPage';
+    }
+    if (!$hasLimitPaging) {
+        $missing[] = 'LIMIT/OFFSET paging';
+    }
+    if (!$hasPageState) {
+        $missing[] = 'page query state';
+    }
+    if (!$hasPageNav) {
+        $missing[] = 'page navigation controls';
+    }
+    if (!$hasRowTotal) {
+        $missing[] = 'total row/page count';
+    }
+
+    return [
+        'status' => 'fail',
+        'details' => 'Table in ' . $sourceLabel . ' missing pagination wiring: ' . implode(', ', $missing),
+    ];
+}
+
+/**
+ * @return array{status:string,details:string}
+ */
+function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel, bool $hasDeleteFile): array
+{
+    if ($listContent === '' || stripos($listContent, '<table') === false) {
+        return ['status' => 'n/a', 'details' => 'No table in ' . $sourceLabel];
+    }
+
+    if (!$hasDeleteFile) {
+        return ['status' => 'n/a', 'details' => 'Module has no delete.php'];
+    }
+
+    $hasBulkDelete = stripos($listContent, 'bulk_delete') !== false;
+    $hasClearTable = stripos($listContent, 'clear_table') !== false;
+    $hasSelectControl = stripos($listContent, 'Select to Delete') !== false
+        || stripos($listContent, 'bulk-delete-toggle') !== false;
+    $hasRecordsPerPageGate = stripos($listContent, 'showBulkActions') !== false
+        && preg_match('#\$totalRows\s*>=\s*\$perPage#', $listContent) === 1;
+
+    if ($hasBulkDelete && $hasClearTable && $hasSelectControl) {
+        $details = 'Select to Delete and Clear Table controls detected in ' . $sourceLabel;
+        if ($hasRecordsPerPageGate) {
+            $details .= ' (gated when count >= records_per_page)';
+        }
+
+        return ['status' => 'pass', 'details' => $details];
+    }
+
+    $missing = [];
+    if (!$hasBulkDelete) {
+        $missing[] = 'bulk_delete action';
+    }
+    if (!$hasClearTable) {
+        $missing[] = 'clear_table action';
+    }
+    if (!$hasSelectControl) {
+        $missing[] = 'Select to Delete control';
+    }
+
+    return [
+        'status' => 'fail',
+        'details' => 'Table in ' . $sourceLabel . ' missing bulk actions: ' . implode(', ', $missing),
+    ];
 }
 
 /**
@@ -634,11 +789,17 @@ foreach ($modules as $module) {
     $viewContent = itm_read_file_or_empty($viewPath);
     $listAllContent = itm_read_file_or_empty($listAllPath);
     $deleteContent = itm_read_file_or_empty($deletePath);
+    $listScreen = itm_ui_resolve_list_table_screen($indexContent, $listAllContent);
+    $listContent = $listScreen['content'];
+    $listSource = $listScreen['source'];
 
     $checks = [
         'Table Actions' => itm_check_table_actions($indexContent),
         '+ New Button' => itm_check_new_button($indexContent, is_file($createPath)),
         'Export Buttons' => itm_check_export_toolbar_support($indexContent),
+        'Search' => itm_check_search($listContent, $listSource),
+        'Pagination (records per page)' => itm_check_pagination($listContent, $listSource),
+        'Bulk delete actions' => itm_check_bulk_delete_actions($listContent, $listSource, is_file($deletePath)),
         'Create entry (create.php)' => itm_check_module_entry_file($modulePath, $indexContent, $createPath, $createContent, 'create.php'),
         'Edit entry (edit.php)' => itm_check_module_entry_file($modulePath, $indexContent, $editPath, $editContent, 'edit.php'),
         'View entry (view.php)' => itm_check_module_entry_file($modulePath, $indexContent, $viewPath, $viewContent, 'view.php'),

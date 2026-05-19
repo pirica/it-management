@@ -3,6 +3,9 @@
 
 # Protection zone / bespoke screens (no standard index table contract).
 idfs
+employees
+equipment
+settings
 
 # Legacy or custom list UIs (non-standard action column / create chrome).
 audit_logs
