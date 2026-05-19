@@ -76,6 +76,9 @@ if (!function_exists('itm_detect_fk_business_key_columns')) {
             'user_roles' => ['name'],
             'approvals_stage' => ['stage'],
             'forecast_revisions_status' => ['status'],
+            'employees' => ['first_name', 'last_name'],
+            'employee_positions' => ['name'],
+            'approver_type' => ['approver_type_description'],
         ];
 
         if (isset($map[$table])) {
