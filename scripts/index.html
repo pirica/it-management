@@ -259,6 +259,21 @@
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
+                    <td>repair_catalogs_cross_tenant_fks.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        Repairs <code>catalogs</code> rows that store FK ids from another tenant (typical after seed copy: company 2–5 rows still point at company-1 <code>equipment_types</code>, <code>manufacturers</code>, or <code>suppliers</code>).
+                        Uses the same business-key matching as <code>detect_fk_dropdown_ui_risk.php</code> and only updates rows with <code>duplicate_dropdown_risk</code> where a tenant-equivalent id exists.
+                        Does <strong>not</strong> modify <code>database.sql</code>.
+                    </td>
+                    <td>
+                        Dry-run (prints <code>UPDATE</code> statements): <code>php scripts/repair_catalogs_cross_tenant_fks.php</code><br>
+                        Apply: <code>php scripts/repair_catalogs_cross_tenant_fks.php --apply</code><br>
+                        One tenant: <code>php scripts/repair_catalogs_cross_tenant_fks.php --company=4</code> · <code>--help</code><br>
+                        Pair with <a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a> before/after; module UI fix is in <code>modules/catalogs/</code> (#1671).
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="normalize_database_sql_created_at.php">normalize_database_sql_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged.</td>
