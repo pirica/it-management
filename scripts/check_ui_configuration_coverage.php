@@ -6,10 +6,9 @@
  * new buttons, export toolbar, and back/save alignment). This script provides
  * a single verification pass across modules so regressions are easy to spot.
  *
- * Entry wrappers: create.php, edit.php, view.php, and list_all.php are checked for
- * CRUD delegation with on-disk verification. delete.php uses a separate rule:
- * detect delete usage from index.php/delete.php, pass for wrapper OR standalone
- * POST handler (most modules), n/a only when delete is not used. Entry helpers
+ * Entry wrappers: create.php, edit.php, and view.php are checked for CRUD delegation.
+ * delete.php and list_all.php use separate rules (wrapper OR standalone entry file).
+ * Entry helpers
  * reports module helpers, cross-module, and shared includes with found/MISSING status.
  *
  * Exemptions:
@@ -418,6 +417,68 @@ function itm_check_delete_entry(string $modulePath, string $indexContent, string
 }
 
 /**
+ * Whether the module exposes list-all (file and/or index.php links to list_all.php).
+ */
+function itm_module_uses_list_all(string $indexContent, string $listAllPath): bool
+{
+    if (is_file($listAllPath)) {
+        return true;
+    }
+
+    if ($indexContent === '') {
+        return false;
+    }
+
+    return preg_match('#list_all\.php#i', $indexContent) === 1;
+}
+
+/**
+ * list_all.php is often a full list screen (shared CRUD copy), not require index.php.
+ *
+ * @return array{status:string,details:string}
+ */
+function itm_check_list_all_entry(string $modulePath, string $indexContent, string $listAllPath, string $listAllContent): array
+{
+    if (!itm_module_uses_list_all($indexContent, $listAllPath)) {
+        return ['status' => 'n/a', 'details' => 'List-all not used (no list_all.php and no list_all.php link in index.php)'];
+    }
+
+    if (!is_file($listAllPath)) {
+        return ['status' => 'fail', 'details' => 'index.php references list_all.php but list_all.php is missing on disk'];
+    }
+
+    $wrapper = itm_ui_detect_entry_wrapper($listAllContent, $modulePath);
+    if ($wrapper['is_wrapper']) {
+        if (!$wrapper['target_exists']) {
+            return [
+                'status' => 'fail',
+                'details' => 'Wrapper references ' . $wrapper['target_label'] . ' but that file was not found on disk',
+            ];
+        }
+
+        $chain = itm_ui_resolve_entry_form_source($modulePath, $listAllContent, 'list_all.php')['chain'];
+        $via = empty($chain) ? $wrapper['target_label'] : implode(' → ', $chain);
+
+        return ['status' => 'pass', 'details' => 'Wrapper found — list_all.php delegates to ' . $via];
+    }
+
+    $signals = [];
+    if (preg_match('#\$crud_action\s*=\s*[\'"]list_all[\'"]#i', $listAllContent) === 1) {
+        $signals[] = 'crud_action=list_all';
+    }
+    if (stripos($listAllContent, '<table') !== false) {
+        $signals[] = 'table UI';
+    }
+    if (stripos($listAllContent, 'data-itm-db-import-endpoint') !== false) {
+        $signals[] = 'import endpoint';
+    }
+
+    $hint = $signals === [] ? 'standalone list screen' : implode(', ', $signals);
+
+    return ['status' => 'pass', 'details' => 'List-all entry present (' . $hint . '; not a wrapper)'];
+}
+
+/**
  * @return array{status:string,details:string}
  */
 function itm_check_entry_wrapper(string $entryPath, string $entryContent, string $modulePath, string $entryBasename): array
@@ -451,6 +512,10 @@ function itm_check_entry_helpers(string $entryPath, string $entryContent, string
 {
     if ($entryBasename === 'delete.php' && !itm_module_uses_delete($indexContent, $entryPath)) {
         return ['status' => 'n/a', 'details' => 'Delete not used'];
+    }
+
+    if ($entryBasename === 'list_all.php' && !itm_module_uses_list_all($indexContent, $entryPath)) {
+        return ['status' => 'n/a', 'details' => 'List-all not used'];
     }
 
     if (!is_file($entryPath)) {
@@ -604,11 +669,12 @@ foreach ($modules as $module) {
         'Create wrapper (create.php)' => itm_check_entry_wrapper($createPath, $createContent, $modulePath, 'create.php'),
         'Edit wrapper (edit.php)' => itm_check_entry_wrapper($editPath, $editContent, $modulePath, 'edit.php'),
         'View wrapper (view.php)' => itm_check_entry_wrapper($viewPath, $viewContent, $modulePath, 'view.php'),
-        'List-all wrapper (list_all.php)' => itm_check_entry_wrapper($listAllPath, $listAllContent, $modulePath, 'list_all.php'),
+        'List-all entry (list_all.php)' => itm_check_list_all_entry($modulePath, $indexContent, $listAllPath, $listAllContent),
         'Delete entry (delete.php)' => itm_check_delete_entry($modulePath, $indexContent, $deletePath, $deleteContent),
         'Entry helpers (create.php)' => itm_check_entry_helpers($createPath, $createContent, $modulePath, 'create.php'),
         'Entry helpers (edit.php)' => itm_check_entry_helpers($editPath, $editContent, $modulePath, 'edit.php'),
         'Entry helpers (delete.php)' => itm_check_entry_helpers($deletePath, $deleteContent, $modulePath, 'delete.php', $indexContent),
+        'Entry helpers (list_all.php)' => itm_check_entry_helpers($listAllPath, $listAllContent, $modulePath, 'list_all.php', $indexContent),
         'Back & Save (create.php)' => itm_check_back_save_entry($modulePath, $createPath, $createContent, 'create.php'),
         'Back & Save (edit.php)' => itm_check_back_save_entry($modulePath, $editPath, $editContent, 'edit.php'),
     ];
