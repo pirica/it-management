@@ -1317,7 +1317,7 @@ function idfRemovePosition(positionNo) {
         position_no: clickedPosition
     })
         .then(() => reloadIdfRackView())
-        .catch(err => alert(err.message));
+        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
 }
 
 function closeModalIfBackdrop(e){ if(e.target.id === 'idfModalBackdrop') closeModal(); }
@@ -1464,7 +1464,7 @@ function openDeviceModal(positionNo, positionId) {
                 refreshPortCountInputs(form);
                 openModal();
             })
-            .catch(err => alert(err.message));
+            .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
     } else {
         refreshPortCountInputs(form);
         syncFieldsFromEquipment(form, false);
@@ -1585,7 +1585,7 @@ function saveDevice() {
     };
     apiPost('position_save.php', payload)
         .then(() => reloadIdfRackView())
-        .catch(err => alert(err.message));
+        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
 }
 
 function setupFiberPortsNumberQuickAdd() {
@@ -1688,13 +1688,13 @@ function copyDevice() {
     };
     apiPost('position_copy.php', payload)
         .then(() => reloadIdfRackView())
-        .catch(err => alert(err.message));
+        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
 }
 
 function idfMove(idfId, positionNo, dir) {
     apiPost('position_move.php', {csrf_token: CSRF, idf_id: idfId, position_no: positionNo, dir})
         .then(() => reloadIdfRackView())
-        .catch(err => alert(err.message));
+        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
 }
 
 function idfDeleteDevice(positionId, deviceName) {
@@ -1703,7 +1703,7 @@ function idfDeleteDevice(positionId, deviceName) {
     if (!confirm(`Are you sure you want to delete this device${deviceLabel} from rack position?\n\nThis will permanently delete all related data, including ports, cable links, and synchronization records. This action cannot be undone.`)) return;
     apiPost('position_delete.php', {csrf_token: CSRF, position_id: positionId})
         .then(() => reloadIdfRackView())
-        .catch(err => alert(err.message));
+        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
 }
 
 function onPortClick(portId, portElement) {

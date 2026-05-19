@@ -13,7 +13,7 @@ if (!function_exists('itm_error_message_looks_like_raw_mysql')) {
             return false;
         }
 
-        if (stripos($text, 'Database error:') === 0) {
+        if (stripos($text, 'Database error:') === 0 || stripos($text, 'DB error:') === 0) {
             return true;
         }
 
@@ -43,6 +43,10 @@ if (!function_exists('itm_normalize_user_error_message')) {
         $text = trim((string)$message);
         if ($text === '') {
             return '';
+        }
+
+        if (preg_match('/^(?:Database error|DB error):?\s*(.+)$/is', $text, $prefixMatch)) {
+            $text = trim((string)($prefixMatch[1] ?? ''));
         }
 
         if (function_exists('itm_error_message_looks_like_raw_mysql') && itm_error_message_looks_like_raw_mysql($text)) {
@@ -113,5 +117,11 @@ if (!function_exists('itm_render_alert_errors')) {
         $html .= '</div></div>';
 
         return $html;
+    }
+}
+
+if (!function_exists('itm_humanize_api_error_message')) {
+    function itm_humanize_api_error_message($message) {
+        return itm_normalize_user_error_message($message);
     }
 }

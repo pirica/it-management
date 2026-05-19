@@ -1044,16 +1044,16 @@ input[type="color"] {
     padding: 14px 20px;
     margin: 12px 0;
     border-radius: 8px;
-    background-color: #ffe6e9;
-    color: #a71d2a;
-    border: 1px solid #f1b0b7;
+    background-color: rgba(218, 54, 51, 0.12);
+    color: var(--danger);
+    border: 1px solid var(--danger);
     font-size: 14px;
 }
 
 .crud_error::before {
     content: "✖";
     font-weight: bold;
-    color: #dc3545;
+    color: var(--danger);
 }
 .crud_success {
     display: flex;
@@ -1062,16 +1062,28 @@ input[type="color"] {
     padding: 14px 20px;
     margin: 12px 0;
     border-radius: 8px;
-    background-color: #e6ffed;
-    color: #1e7e34;
-    border: 1px solid #b7ebc6;
+    background-color: rgba(31, 127, 55, 0.12);
+    color: var(--success);
+    border: 1px solid var(--success);
     font-size: 14px;
 }
 
 .crud_success::before {
     content: "✔";
     font-weight: bold;
-    color: #28a745;
+    color: var(--success);
+}
+
+.itm-js-alert-region {
+    margin-bottom: 12px;
+}
+
+.itm-js-alert-region .itm-alert {
+    margin-bottom: 10px;
+}
+
+.itm-js-alert-region .itm-alert:last-child {
+    margin-bottom: 0;
 }
 
 /* Port visualizer keeps contrast consistent in both light and dark themes. */

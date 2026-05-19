@@ -196,6 +196,12 @@
                         <code>php scripts/apply_human_friendly_error_display.php --module=approvers</code>
                     </td>
                 </tr>
+                <tr>
+                    <td><a href="../js/itm-user-errors.js">itm-user-errors.js</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Global JS helpers <code>itmNotifyError()</code> / <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
+                    <td>Included on all standard pages via header. IDF modals and Excel import use this instead of raw <code>window.alert</code> when available.</td>
+                </tr>
             </tbody>
         </table>
     </div>

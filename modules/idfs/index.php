@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_idf'])) {
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'iiisssi', $company_id, $location_id, $rack_id, $name, $idf_code_val, $notes_val, $active);
         if (!mysqli_stmt_execute($stmt)) {
-            $_SESSION['crud_error'] = 'DB error creating IDF: ' . mysqli_stmt_error($stmt);
+            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
             mysqli_stmt_close($stmt);
             header('Location: index.php');
             exit;
@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
     if ($deleteStmt) {
         mysqli_stmt_bind_param($deleteStmt, 'ii', $idf_id, $company_id);
         if (!mysqli_stmt_execute($deleteStmt)) {
-            $_SESSION['crud_error'] = 'DB error deleting IDF: ' . mysqli_stmt_error($deleteStmt);
+            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($deleteStmt), mysqli_stmt_error($deleteStmt));
             mysqli_stmt_close($deleteStmt);
             header('Location: index.php');
             exit;
@@ -236,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         if (mysqli_stmt_execute($stmtSeed)) {
             $_SESSION['crud_success'] = 'Sample IDF data added.';
         } else {
-            $_SESSION['crud_error'] = 'Unable to add sample IDF data: ' . mysqli_stmt_error($stmtSeed);
+            $_SESSION['crud_error'] = 'Unable to add sample IDF data. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtSeed), mysqli_stmt_error($stmtSeed));
         }
         mysqli_stmt_close($stmtSeed);
     } else {
