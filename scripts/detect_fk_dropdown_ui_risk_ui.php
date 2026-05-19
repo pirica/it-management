@@ -214,23 +214,20 @@ header('Content-Type: text/html; charset=utf-8');
                 $childTable = (string)($issue['child_table'] ?? '');
                 $refTable = (string)($issue['ref_table'] ?? '');
                 $modulePath = (string)($issue['module'] ?? itm_script_module_path_from_table($childTable));
-                $editUrl = $baseUrl . $modulePath . 'edit.php?id=' . (int)($issue['child_id'] ?? 0);
-                $moduleUrl = itm_script_module_index_url($baseUrl, $modulePath);
-                $tablePmaUrl = $childTable !== '' ? itm_script_phpmyadmin_table_url($childTable) : '';
-                $refPmaUrl = $refTable !== '' ? itm_script_phpmyadmin_table_url($refTable) : '';
+                $editUrl = itm_script_module_relative_href_from_path($modulePath, 'edit.php?id=' . (int)($issue['child_id'] ?? 0));
                 ?>
                 <tr>
                     <td><span class="fk-risk-badge <?= $badgeClass; ?>"><?= itm_fk_risk_ui_escape(itm_detect_fk_risk_label($risk)); ?></span></td>
                     <td><?= itm_fk_risk_ui_escape(itm_detect_fk_data_issue_summary($issue)); ?></td>
                     <td>
                         <?php if ($childTable !== ''): ?>
-                            Table <?= itm_script_external_link_html($tablePmaUrl, $childTable); ?><br>
+                            Table <?= itm_script_format_table_link($childTable); ?><br>
                         <?php endif; ?>
                         Row #<?= (int)($issue['child_id'] ?? 0); ?> · Company <?= (int)($issue['child_company_id'] ?? 0); ?>
                     </td>
                     <td>
                         <?php if ($refTable !== ''): ?>
-                            <?= itm_script_external_link_html($refPmaUrl, $refTable); ?><br>
+                            <?= itm_script_format_table_link($refTable); ?><br>
                         <?php endif; ?>
                         <?= itm_fk_risk_ui_escape(itm_detect_fk_column_label((string)($issue['fk_column'] ?? ''))); ?>:
                         stored id <?= (int)($issue['stored_fk_id'] ?? 0); ?> (company <?= (int)($issue['stored_ref_company_id'] ?? 0); ?>)
@@ -242,9 +239,11 @@ header('Content-Type: text/html; charset=utf-8');
                         <?php endif; ?>
                     </td>
                     <td>
-                        <?= itm_script_external_link_html($editUrl, 'Edit row'); ?>
-                        <?php if ($moduleUrl !== ''): ?>
-                            <br><?= itm_script_external_link_html($moduleUrl, 'Open module'); ?>
+                        <?php if ($editUrl !== ''): ?>
+                            <?= itm_script_external_link_html($editUrl, 'Edit row'); ?>
+                        <?php endif; ?>
+                        <?php if ($modulePath !== ''): ?>
+                            <br><?= itm_script_format_module_path_link($modulePath, 'Open module'); ?>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -270,15 +269,14 @@ header('Content-Type: text/html; charset=utf-8');
             <?php foreach ($codeIssues as $issue): ?>
                 <?php
                 $modulePath = (string)($issue['module'] ?? '');
-                $moduleUrl = itm_script_module_index_url($baseUrl, $modulePath);
                 $moduleLabel = trim($modulePath, '/');
                 ?>
                 <tr>
                     <td><span class="fk-risk-badge fk-risk-badge-warn"><?= itm_fk_risk_ui_escape(itm_detect_fk_risk_label((string)($issue['risk'] ?? ''))); ?></span></td>
                     <td><?= itm_fk_risk_ui_escape(itm_detect_fk_code_issue_summary($issue)); ?></td>
                     <td>
-                        <?php if ($moduleUrl !== ''): ?>
-                            <?= itm_script_external_link_html($moduleUrl, $moduleLabel); ?>
+                        <?php if ($modulePath !== ''): ?>
+                            <?= itm_script_format_module_path_link($modulePath, $moduleLabel); ?>
                         <?php else: ?>
                             <?= itm_fk_risk_ui_escape($moduleLabel); ?>
                         <?php endif; ?>

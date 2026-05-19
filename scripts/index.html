@@ -67,7 +67,7 @@
             <strong>CLI-only</strong> = <code>smoke_test.sh</code> (bash), explicit <code>PHP_SAPI !== 'cli'</code> guards, or unsafe unattended file writes.
         </p>
         <p class="scripts-muted">
-            <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report (<code>scripts/lib/script_browser_nav.php</code>), human-readable results, and <code>target="_blank"</code> links for module folders and table names (phpMyAdmin: <code>http://localhost/phpmyadmin/</code> only).
+            <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report, human-readable results, <code>target="_blank"</code> relative links to <code>../modules/…</code> when a module folder exists, and table names linked only when <code>modules/&lt;table&gt;/</code> exists. <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin/</code>) is linked from this catalog page only—not inside other scripts.
         </p>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
@@ -136,7 +136,7 @@
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong>. Results are plain-language summaries with links to <code>modules/…/</code>, phpMyAdmin tables, and edit screens (new tab).</td>
+                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong>. Results are plain-language summaries with links to <code>modules/…/</code> and edit screens (new tab) when a module folder exists.</td>
                     <td>
                         <strong>Log in first.</strong> Open the UI → <strong>← Scripts index</strong> at top → choose scan mode, company, risk filter, output (table/JSON) → <strong>Run scan</strong>.
                         CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php</code> · <code>--company=N</code> · <code>--json</code> · <code>--data-only</code> · <code>--code-only</code> · <code>--repair-catalogs</code> (one-time legacy DB cleanup).
@@ -435,7 +435,7 @@
             </tbody>
         </table>
         <p class="scripts-muted" style="margin-top:12px;">
-            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, module/phpMyAdmin deep links).
+            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, relative module / table→module links).
         </p>
     </div>
 

@@ -50,9 +50,10 @@ Do not add a script under `scripts/` without updating `scripts/index.html`.
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo($baseUrl)` (`$baseUrl` = `BASE_URL` when `config.php` is loaded, else `''`).
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
 * **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
-* **Deep links (required when names appear):** If a row names a **module folder** or **database table**, link it in a **new tab** (`target="_blank"`):
-  * **Modules:** `itm_script_format_module_link($moduleName, $baseUrl)` or `itm_script_external_link_html()` + `itm_script_module_index_url()`.
-  * **phpMyAdmin:** use **`http://localhost/phpmyadmin/`** only (Laragon/local MySQL admin — not the app hostname). Helpers: `itm_script_phpmyadmin_base_url()`, `itm_script_phpmyadmin_link_html()`, `itm_script_format_table_link()` (table name as label, same phpMyAdmin home URL). All via `itm_script_external_link_html()` for `rel="noopener noreferrer"`.
+* **Deep links (required when names appear):** Use **relative** URLs from `scripts/` (`../modules/…`) and **`target="_blank"`** via `itm_script_external_link_html()` — do **not** build links from `BASE_URL` (avoids bad hosts like `https://localhost/…`).
+  * **Module folder:** `itm_script_format_module_link($moduleName)` or `itm_script_format_module_path_link('modules/name/')`.
+  * **Database table name:** if `modules/<table>/index.php` exists, link the table name to that module (`itm_script_format_table_link($tableName)`); otherwise show plain text (no link).
+  * **phpMyAdmin:** link **`http://localhost/phpmyadmin/`** only in **`scripts/index.html`** — do **not** add phpMyAdmin links inside other script output.
 * **Exceptions (document in catalog):** JSON-only endpoints (e.g. `test_sql_injection.php`) and CLI entry points that redirect to a UI (e.g. `detect_fk_dropdown_ui_risk.php` → `detect_fk_dropdown_ui_risk_ui.php`) do not need HTML nav on the CLI path.
 
 #### 3. CLI scripts
@@ -66,7 +67,7 @@ Do not add a script under `scripts/` without updating `scripts/index.html`.
 
 | File | Use |
 |------|-----|
-| `scripts/lib/script_browser_nav.php` | **← Scripts index**, module links, phpMyAdmin home links (`target="_blank"`) |
+| `scripts/lib/script_browser_nav.php` | **← Scripts index**, relative module links, table→module links when folder exists (`target="_blank"`) |
 | `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
 
