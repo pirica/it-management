@@ -224,13 +224,17 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 * **Reviews and fixes are done in-repo via **Cursor**, optional **Bugbot**, manual IDE review, and the scripts below — same intent as external P1/P2 bot comments.
 
 ### GitHub PR review comments (mandatory)
-* **Read all GitHub PR feedback** before considering a PR merge-ready: use `gh pr view`, `gh api graphql` / review-thread endpoints, or the PR URL. Include human reviewers, **Bugbot**, and actionable CI/check annotations when present.
+* **Read all GitHub PR feedback** before considering a PR merge-ready: use `gh pr view`, `gh api repos/{owner}/{repo}/pulls/{number}/comments`, GraphQL review-thread endpoints, or the PR URL. Include human reviewers, **Bugbot**, **Codex**, and actionable CI/check annotations when present.
 * **One actionable comment → one fresh Cursor chat:** for each distinct review comment or coherent thread that requests a change, **start a new forked/isolated agent chat** scoped to that item only. Do not mix unrelated review threads in the same session unless they share one root cause.
 * **Implement on a fresh branch + new PR:** address the comment with code/docs changes per **NEW PR always** (commit, push, `gh pr create` when checks pass). Link the resolving PR in the GitHub reply when applicable.
-* **Always reply on GitHub with a status label:** every addressed review thread must receive an explicit reply that **starts with exactly** **`Fix`** or **`Not Fixed`** (that spelling and capitalization), then a short rationale on the same line or the next.
-  * **`Fix`:** the concern is resolved in a merged commit or an open linked PR; state what changed.
+* **Auto-fix when asked to address review comments:** for each actionable thread, (1) verify whether `master` already contains the fix, (2) if not, patch on a **fresh branch + new PR**, (3) run the relevant checks (`php -l` on touched files, plus any script named in the comment or PR scope), (4) post the GitHub reply below. Do not assume silence means done.
+* **Always reply on GitHub with a status label:** every addressed review thread must receive an explicit reply that **starts with exactly** **`Fix`** or **`Not Fixed`** (that spelling and capitalization). Do **not** use `Fixed`, `fixed`, `Won't fix`, or other variants—the label must be searchable and consistent.
+  * **`Fix`:** the concern is resolved in a merged commit or an open linked PR; state what changed (file, commit/PR number, or command run).
   * **`Not Fixed`:** intentional deferral, out of scope, or blocked; state why and cite a follow-up issue/PR if planned.
 * **Do not leave actionable review threads silent:** if a comment asked for a change, respond with **`Fix`** or **`Not Fixed`**—never only push code without a labeled GitHub reply.
+* **Merged PRs still need replies:** if a PR merged with silent bot/human threads, post retroactive **`Fix`** / **`Not Fixed`** replies on each thread after verifying `master` (or cite the PR that already fixed it). Example reply command:
+  `gh api repos/pirica/it-management/pulls/{pr}/comments -X POST -f body="Fix — …" -F in_reply_to={comment_id}`
+* **AGENTS.md updates for process rules:** document new review/reply requirements in **`AGENTS.md` on a fresh branch + new PR** (do not fold into an unrelated feature PR).
 
 * **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
   * `php -l` on every touched `.php` file.
