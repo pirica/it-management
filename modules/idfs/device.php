@@ -3018,7 +3018,7 @@ function savePort() {
             return null;
         })
         .then(() => finishInlineMutationOrReload())
-        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
+        .catch(err => (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(err.message) : alert(err.message)));
 }
 
 function findPortMetaByRef(portRef) {
@@ -3112,7 +3112,7 @@ function regeneratePorts() {
     if (!confirm('Regenerate ports? This will DELETE and recreate ports 1..port_count.')) return;
     apiPost('ports_regen.php', {csrf_token: CSRF, position_id: POSITION_ID})
         .then(() => finishInlineMutationOrReload())
-        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
+        .catch(err => (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(err.message) : alert(err.message)));
 }
 
 function idfPortsExportExcel() {
@@ -3402,7 +3402,7 @@ function createLink() {
                 openPortModal(payload.port_id_a);
                 return;
             }
-            (window.itmNotifyError ? window.itmNotifyError(message) : alert(message));
+            (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(message) : alert(message));
         });
 }
 
@@ -3478,7 +3478,7 @@ async function loadEquipmentPorts(equipmentId) {
     } catch (err) {
         select.innerHTML = '<option value="">Failed to load equipment ports</option>';
         select.disabled = true;
-        (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message));
+        (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(err.message) : alert(err.message));
     }
 }
 
@@ -3934,7 +3934,7 @@ function saveCableColorFromModal() {
         updateCableColorSwatch('', activeCableColorSelect);
         closeCableColorModal(true);
     }).catch((error) => {
-        (window.itmNotifyError ? window.itmNotifyError(error.message) : alert(error.message));
+        (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(error.message) : alert(error.message));
     });
 }
 
@@ -3977,7 +3977,7 @@ function saveStatusFromModal() {
         activeStatusSelect.dataset.previousValue = String(statusId);
         closeStatusModal(true);
     }).catch((error) => {
-        (window.itmNotifyError ? window.itmNotifyError(error.message) : alert(error.message));
+        (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(error.message) : alert(error.message));
     });
 }
 
@@ -3985,7 +3985,7 @@ function unlinkPort(linkId) {
     if (!confirm('Remove this cable link?')) return;
     apiPost('link_delete.php', {csrf_token: CSRF, link_id: Number(linkId)})
         .then(() => finishInlineMutationOrReload())
-        .catch(err => (window.itmNotifyError ? window.itmNotifyError(err.message) : alert(err.message)));
+        .catch(err => (window.itmNotifyAjaxError ? window.itmNotifyAjaxError(err.message) : alert(err.message)));
 }
 
 async function idfDeviceExportImage() {

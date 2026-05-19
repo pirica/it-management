@@ -104,6 +104,11 @@ if (!function_exists('itm_fk_resolve_company_equivalent_id')) {
             return $storedId;
         }
 
+        // Why: employee names are not unique per company; remapping by first/last name can reassign the wrong person.
+        if ($refTable === 'employees') {
+            return $storedId;
+        }
+
         $refColumns = itm_fk_table_column_names($conn, $refTable);
         if (!in_array('company_id', $refColumns, true)) {
             return $storedId;

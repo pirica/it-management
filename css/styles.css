@@ -1078,6 +1078,14 @@ input[type="color"] {
     margin-bottom: 12px;
 }
 
+.itm-modal-alert-region {
+    margin-bottom: 12px;
+}
+
+.itm-modal-alert-region .itm-alert {
+    margin-bottom: 0;
+}
+
 .itm-js-alert-region .itm-alert {
     margin-bottom: 10px;
 }
