@@ -4619,15 +4619,15 @@ DROP TRIGGER IF EXISTS `trg_floor_plan_item_tags_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_floor_plan_item_tags_audit_insert` AFTER INSERT ON `floor_plan_item_tags` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'floor_plan_item_tags', COALESCE(NEW.`floor_plan_id`, 0), 'INSERT', NULL, JSON_OBJECT('floor_plan_id', NEW.`floor_plan_id`, 'tag_id', NEW.`tag_id`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `floor_plans` WHERE `id` = NEW.`floor_plan_id` LIMIT 1), (SELECT `company_id` FROM `floor_plan_tags` WHERE `id` = NEW.`tag_id` LIMIT 1)), @app_user_id, @app_username, @app_email, 'floor_plan_item_tags', COALESCE(NEW.`floor_plan_id`, 0), 'INSERT', NULL, JSON_OBJECT('floor_plan_id', NEW.`floor_plan_id`, 'tag_id', NEW.`tag_id`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_floor_plan_item_tags_audit_update` AFTER UPDATE ON `floor_plan_item_tags` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'floor_plan_item_tags', COALESCE(NEW.`floor_plan_id`, OLD.`floor_plan_id`, 0), 'UPDATE', JSON_OBJECT('floor_plan_id', OLD.`floor_plan_id`, 'tag_id', OLD.`tag_id`), JSON_OBJECT('floor_plan_id', NEW.`floor_plan_id`, 'tag_id', NEW.`tag_id`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `floor_plans` WHERE `id` = COALESCE(NEW.`floor_plan_id`, OLD.`floor_plan_id`) LIMIT 1), (SELECT `company_id` FROM `floor_plan_tags` WHERE `id` = COALESCE(NEW.`tag_id`, OLD.`tag_id`) LIMIT 1)), @app_user_id, @app_username, @app_email, 'floor_plan_item_tags', COALESCE(NEW.`floor_plan_id`, OLD.`floor_plan_id`, 0), 'UPDATE', JSON_OBJECT('floor_plan_id', OLD.`floor_plan_id`, 'tag_id', OLD.`tag_id`), JSON_OBJECT('floor_plan_id', NEW.`floor_plan_id`, 'tag_id', NEW.`tag_id`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_floor_plan_item_tags_audit_delete` AFTER DELETE ON `floor_plan_item_tags` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'floor_plan_item_tags', COALESCE(OLD.`floor_plan_id`, 0), 'DELETE', JSON_OBJECT('floor_plan_id', OLD.`floor_plan_id`, 'tag_id', OLD.`tag_id`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `floor_plans` WHERE `id` = OLD.`floor_plan_id` LIMIT 1), (SELECT `company_id` FROM `floor_plan_tags` WHERE `id` = OLD.`tag_id` LIMIT 1)), @app_user_id, @app_username, @app_email, 'floor_plan_item_tags', COALESCE(OLD.`floor_plan_id`, 0), 'DELETE', JSON_OBJECT('floor_plan_id', OLD.`floor_plan_id`, 'tag_id', OLD.`tag_id`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_floor_plans_audit_insert`;
