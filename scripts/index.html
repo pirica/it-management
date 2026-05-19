@@ -52,7 +52,7 @@
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
             <li><a href="#ui-modules">UI &amp; modules</a></li>
-            <li><a href="http://localhost/phpmyadmin" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
+            <li><a href="http://localhost/phpmyadmin/" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
         </ul>
         <a class="scripts-top-nav-home" href="../index.php">← Home</a>
     </div>
@@ -67,7 +67,7 @@
             <strong>CLI-only</strong> = <code>smoke_test.sh</code> (bash), explicit <code>PHP_SAPI !== 'cli'</code> guards, or unsafe unattended file writes.
         </p>
         <p class="scripts-muted">
-            <strong>New script checklist:</strong> add a row below (what it does + how to run), use human-readable HTML output when listing modules/tables, and link module folders (<code>modules/…/</code>) and database tables (phpMyAdmin) with <code>target="_blank"</code> where applicable.
+            <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report, human-readable results, <code>target="_blank"</code> relative links to <code>../modules/…</code> when a module folder exists, and table names linked only when <code>modules/&lt;table&gt;/</code> exists. <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin/</code>) is linked from this catalog page only—not inside other scripts.
         </p>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
@@ -136,7 +136,7 @@
                 <tr>
                     <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong>. Results are plain-language summaries with links to <code>modules/…/</code>, phpMyAdmin tables, and edit screens (new tab).</td>
+                    <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong>. Results are plain-language summaries with links to <code>modules/…/</code> and edit screens (new tab) when a module folder exists.</td>
                     <td>
                         <strong>Log in first.</strong> Open the UI → <strong>← Scripts index</strong> at top → choose scan mode, company, risk filter, output (table/JSON) → <strong>Run scan</strong>.
                         CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php</code> · <code>--company=N</code> · <code>--json</code> · <code>--data-only</code> · <code>--code-only</code> · <code>--repair-catalogs</code> (one-time legacy DB cleanup).
@@ -198,7 +198,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="test_db_error_messages.php">test_db_error_messages.php</a></td>
+                    <td>test_db_error_messages.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Asserts human-friendly output from <code>itm_format_db_constraint_error()</code>, <code>itm_render_alert_errors()</code>, and <code>itm_humanize_api_error_message()</code> (e.g. NOT NULL → “Please select a value for Employee”; strips <code>Database error:</code> / <code>DB error:</code> prefixes).</td>
                     <td>
@@ -238,10 +238,10 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="http://localhost/phpmyadmin" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></td>
+                    <td><a href="http://localhost/phpmyadmin/" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Local MySQL admin UI for schema inspection, ad-hoc SQL, and imports (database <code>itmanagement</code> on typical Laragon installs).</td>
-                    <td>Open <a href="http://localhost/phpmyadmin" target="_blank" rel="noopener noreferrer">http://localhost/phpmyadmin</a> in a new tab. Default dev: user <code>root</code>, password per your Laragon/MySQL setup (often blank locally).</td>
+                    <td>Open <a href="http://localhost/phpmyadmin/" target="_blank" rel="noopener noreferrer">http://localhost/phpmyadmin/</a> in a new tab. Default dev: user <code>root</code>, password per your Laragon/MySQL setup (often blank locally).</td>
                 </tr>
                 <tr>
                     <td><a href="analyze_database_health.php">analyze_database_health.php</a></td>
@@ -435,7 +435,7 @@
             </tbody>
         </table>
         <p class="scripts-muted" style="margin-top:12px;">
-            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, module/phpMyAdmin deep links).
+            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, relative module / table→module links).
         </p>
     </div>
 

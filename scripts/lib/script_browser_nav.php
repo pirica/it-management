@@ -2,7 +2,8 @@
 /**
  * Shared navigation and outbound links for browser-run scripts under scripts/.
  *
- * Why: Every HTML report should link back to the scripts catalog and deep-link modules/tables.
+ * Why: Every HTML report links back to the scripts catalog. Module/table names link to
+ * modules/ only when a folder exists; phpMyAdmin is linked from scripts/index.html only.
  */
 
 if (!function_exists('itm_script_is_cli_sapi')) {
@@ -12,18 +13,24 @@ if (!function_exists('itm_script_is_cli_sapi')) {
     }
 }
 
+if (!function_exists('itm_script_repo_root_path')) {
+    function itm_script_repo_root_path(): string
+    {
+        if (defined('ROOT_PATH')) {
+            return (string)ROOT_PATH;
+        }
+
+        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR;
+    }
+}
+
 if (!function_exists('itm_script_browser_nav_html')) {
     /**
-     * @param string $baseUrl App BASE_URL with trailing slash, or empty for relative scripts/ paths
+     * @param string $baseUrl Unused; kept for callers. Nav always uses relative scripts/index.html.
      */
     function itm_script_browser_nav_html($baseUrl = ''): string
     {
-        $indexHref = 'index.html';
-        if ($baseUrl !== '') {
-            $indexHref = rtrim((string)$baseUrl, '/') . '/scripts/index.html';
-        }
-
-        $indexEsc = htmlspecialchars($indexHref, ENT_QUOTES, 'UTF-8');
+        $indexEsc = htmlspecialchars('index.html', ENT_QUOTES, 'UTF-8');
 
         return '<nav class="itm-script-nav" aria-label="Scripts navigation" style="margin:0 0 16px;padding:10px 14px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;font-size:0.9rem;">'
             . '<a href="' . $indexEsc . '" style="color:#0969da;text-decoration:none;font-weight:600;">← Scripts index</a>'
@@ -33,58 +40,6 @@ if (!function_exists('itm_script_browser_nav_html')) {
     function itm_script_browser_nav_echo($baseUrl = ''): void
     {
         echo itm_script_browser_nav_html($baseUrl);
-    }
-}
-
-if (!function_exists('itm_script_default_database_name')) {
-    function itm_script_default_database_name(): string
-    {
-        if (defined('DB_NAME') && (string)DB_NAME !== '') {
-            return (string)DB_NAME;
-        }
-        $fromEnv = getenv('DB_NAME');
-        if ($fromEnv !== false && (string)$fromEnv !== '') {
-            return (string)$fromEnv;
-        }
-
-        return 'itmanagement';
-    }
-}
-
-if (!function_exists('itm_script_phpmyadmin_base_url')) {
-    /**
-     * Laragon/local phpMyAdmin entry point (see scripts/index.html).
-     *
-     * Why: browser scripts link to the operator's local phpMyAdmin home, not per-table routes.
-     */
-    function itm_script_phpmyadmin_base_url(): string
-    {
-        return 'http://localhost/phpmyadmin/';
-    }
-}
-
-if (!function_exists('itm_script_phpmyadmin_link_html')) {
-    /**
-     * @param string $label Link text (defaults to phpMyAdmin home label)
-     */
-    function itm_script_phpmyadmin_link_html($label = 'phpMyAdmin'): string
-    {
-        if (itm_script_is_cli_sapi()) {
-            return (string)$label;
-        }
-
-        return itm_script_external_link_html(itm_script_phpmyadmin_base_url(), $label);
-    }
-}
-
-if (!function_exists('itm_script_phpmyadmin_table_url')) {
-    /**
-     * @param string $tableName Unused; kept for callers that pass a table label context
-     * @param string $databaseName Unused
-     */
-    function itm_script_phpmyadmin_table_url($tableName, $databaseName = ''): string
-    {
-        return itm_script_phpmyadmin_base_url();
     }
 }
 
@@ -100,15 +55,54 @@ if (!function_exists('itm_script_module_path_from_table')) {
     }
 }
 
-if (!function_exists('itm_script_module_index_url')) {
-    function itm_script_module_index_url($baseUrl, $modulePath): string
+if (!function_exists('itm_script_table_has_module')) {
+    function itm_script_table_has_module($tableName): bool
     {
-        $modulePath = (string)$modulePath;
+        static $cache = [];
+        $tableName = trim((string)$tableName);
+        if ($tableName === '') {
+            return false;
+        }
+        if (array_key_exists($tableName, $cache)) {
+            return $cache[$tableName];
+        }
+
+        $root = itm_script_repo_root_path();
+        $cache[$tableName] = is_file($root . 'modules' . DIRECTORY_SEPARATOR . $tableName . DIRECTORY_SEPARATOR . 'index.php');
+
+        return $cache[$tableName];
+    }
+}
+
+if (!function_exists('itm_script_module_relative_href')) {
+    function itm_script_module_relative_href($moduleName, $page = 'index.php'): string
+    {
+        $moduleName = trim((string)$moduleName);
+        $page = trim((string)$page);
+        if ($moduleName === '') {
+            return '';
+        }
+        if ($page === '') {
+            $page = 'index.php';
+        }
+
+        return '../modules/' . rawurlencode($moduleName) . '/' . $page;
+    }
+}
+
+if (!function_exists('itm_script_module_relative_href_from_path')) {
+    function itm_script_module_relative_href_from_path($modulePath, $page = 'index.php'): string
+    {
+        $modulePath = trim((string)$modulePath, '/');
+        $page = trim((string)$page);
         if ($modulePath === '') {
             return '';
         }
+        if ($page === '') {
+            $page = 'index.php';
+        }
 
-        return rtrim((string)$baseUrl, '/') . '/' . ltrim($modulePath, '/');
+        return '../' . $modulePath . '/' . $page;
     }
 }
 
@@ -133,30 +127,59 @@ if (!function_exists('itm_script_external_link_html')) {
 if (!function_exists('itm_script_format_module_link')) {
     /**
      * @param string $moduleName Folder under modules/ (no path prefix)
-     * @param string $baseUrl Optional BASE_URL with trailing slash
+     * @param string $baseUrl Unused; kept for callers
+     * @param string $label Optional link text (defaults to module folder name)
      */
-    function itm_script_format_module_link($moduleName, $baseUrl = ''): string
+    function itm_script_format_module_link($moduleName, $baseUrl = '', $label = ''): string
     {
         $moduleName = trim((string)$moduleName);
         if ($moduleName === '') {
             return '';
         }
+        if ($label === '') {
+            $label = $moduleName;
+        }
         if (itm_script_is_cli_sapi()) {
-            return $moduleName;
+            return (string)$label;
         }
 
-        if ($baseUrl !== '') {
-            $href = itm_script_module_index_url($baseUrl, 'modules/' . $moduleName . '/index.php');
-        } else {
-            $href = '../modules/' . rawurlencode($moduleName) . '/index.php';
+        return itm_script_external_link_html(
+            itm_script_module_relative_href($moduleName),
+            (string)$label
+        );
+    }
+}
+
+if (!function_exists('itm_script_format_module_path_link')) {
+    /**
+     * @param string $modulePath e.g. modules/catalogs/
+     * @param string $label Optional link text
+     */
+    function itm_script_format_module_path_link($modulePath, $label = ''): string
+    {
+        $modulePath = trim((string)$modulePath);
+        if ($modulePath === '') {
+            return '';
+        }
+        if ($label === '') {
+            $label = trim(str_replace('\\', '/', $modulePath), '/');
+        }
+        if (itm_script_is_cli_sapi()) {
+            return (string)$label;
         }
 
-        return itm_script_external_link_html($href, $moduleName);
+        return itm_script_external_link_html(
+            itm_script_module_relative_href_from_path($modulePath),
+            (string)$label
+        );
     }
 }
 
 if (!function_exists('itm_script_format_table_link')) {
-    function itm_script_format_table_link($tableName, $databaseName = ''): string
+    /**
+     * Link table name to modules/&lt;table&gt;/ when that module exists; otherwise plain text.
+     */
+    function itm_script_format_table_link($tableName, $baseUrl = ''): string
     {
         $tableName = trim((string)$tableName);
         if ($tableName === '') {
@@ -165,7 +188,10 @@ if (!function_exists('itm_script_format_table_link')) {
         if (itm_script_is_cli_sapi()) {
             return $tableName;
         }
+        if (itm_script_table_has_module($tableName)) {
+            return itm_script_format_module_link($tableName, $baseUrl);
+        }
 
-        return itm_script_external_link_html(itm_script_phpmyadmin_base_url(), $tableName);
+        return htmlspecialchars($tableName, ENT_QUOTES, 'UTF-8');
     }
 }

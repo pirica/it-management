@@ -51,23 +51,18 @@ function itm_test_browser_init()
         header('Content-Type: text/html; charset=UTF-8');
     }
     require_once __DIR__ . '/lib/script_browser_nav.php';
-    $baseUrl = getenv('ITM_BASE_URL') ?: 'http://localhost/it-management';
-    if (defined('BASE_URL') && (string)BASE_URL !== '') {
-        $baseUrl = (string)BASE_URL;
+    $itmIdfSyncTableLabels = ['idf_ports', 'switch_ports', 'equipment', 'idf_links'];
+    $itmIdfSyncTableLinks = [];
+    foreach ($itmIdfSyncTableLabels as $itmIdfSyncTableName) {
+        $itmIdfSyncTableLinks[] = itm_script_format_table_link($itmIdfSyncTableName);
     }
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>IDF sync human test</title></head>'
         . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:960px;">';
-    itm_script_browser_nav_echo($baseUrl);
+    itm_script_browser_nav_echo();
     echo '<p style="color:#57606a;margin:0 0 14px;">End-to-end sync across '
-        . itm_script_external_link_html(itm_script_module_index_url($baseUrl, 'modules/idfs/index.php'), 'IDF module')
+        . itm_script_format_module_link('idfs', '', 'IDF module')
         . ' · tables '
-        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('idf_ports'), 'idf_ports')
-        . ', '
-        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('switch_ports'), 'switch_ports')
-        . ', '
-        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('equipment'), 'equipment')
-        . ', '
-        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('idf_links'), 'idf_links')
+        . implode(', ', $itmIdfSyncTableLinks)
         . '. CLI is recommended for CI.</p>';
 }
 

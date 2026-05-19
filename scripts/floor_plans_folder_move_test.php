@@ -56,15 +56,12 @@ function fp_test_browser_init(): void
         header('Content-Type: text/html; charset=UTF-8');
     }
     require_once __DIR__ . '/lib/script_browser_nav.php';
-    $baseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Floor Plans folder move test</title></head>'
         . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:920px;">';
-    itm_script_browser_nav_echo($baseUrl);
+    itm_script_browser_nav_echo();
     echo '<p style="color:#57606a;margin:0 0 14px;">Regression for '
-        . itm_script_external_link_html(itm_script_module_index_url($baseUrl, 'modules/floor_plans/index.php'), 'Floor Plans module')
-        . ' · table '
-        . itm_script_external_link_html(itm_script_phpmyadmin_table_url('floor_plan_folders'), 'floor_plan_folders')
-        . ' (helper <code>fp_move_folder_to_parent</code>).</p>';
+        . itm_script_format_module_link('floor_plans', '', 'Floor Plans module')
+        . ' · table <code>floor_plan_folders</code> (helper <code>fp_move_folder_to_parent</code>).</p>';
 }
 
 function fp_test_browser_close(): void
