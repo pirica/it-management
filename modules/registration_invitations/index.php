@@ -971,35 +971,30 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $selectedOptionExists = false;
-                                    foreach ($opts as $optRow) {
-                                        if ((string)$displayVal === (string)($optRow['id'] ?? '')) {
-                                            $selectedOptionExists = true;
-                                            break;
-                                        }
+                                    $fkRow = $fkMap[$name];
+                                    $fkSelectedId = (int)$displayVal;
+                                    if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                        $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
                                     }
-                                    if (!$selectedOptionExists && $displayVal !== '' && strtoupper((string)$displayVal) !== 'NULL') {
-                                        $fallbackLabel = cr_fk_label_for_value($conn, $fkMap[$name], (int)$company_id, $displayVal);
-                                        if ($fallbackLabel !== '') {
-                                            $opts[] = ['id' => (int)$displayVal, 'label' => $fallbackLabel];
-                                        }
+                                    $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                    if (function_exists('itm_fk_append_selected_option')) {
+                                        $opts = itm_fk_append_selected_option($conn, $fkRow, (int)$company_id, $opts, $fkSelectedId);
                                     }
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                    $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                    data-add-table="<?php echo sanitize($fkRow['REFERENCED_TABLE_NAME']); ?>"
+                                    data-add-id-col="<?php echo sanitize($fkRow['REFERENCED_COLUMN_NAME']); ?>"
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>

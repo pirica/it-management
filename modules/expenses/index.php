@@ -207,6 +207,10 @@ function cr_append_selected_user_option($conn, $company_id, $options, $selectedV
 }
 
 function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
+    if (function_exists('itm_fk_append_selected_option')) {
+        return itm_fk_append_selected_option($conn, $fk, (int)$company_id, $options, $selectedValue);
+    }
+
     $selectedId = (int)$selectedValue;
     if ($selectedId <= 0) { return $options; }
 
@@ -305,7 +309,12 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     if (isset($GLOBALS['fkMap'][$field])) {
-        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), $value);
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
         if ($resolvedLabel !== '') {
             return sanitize($resolvedLabel);
         }
@@ -1092,23 +1101,28 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 </select>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $opts = cr_append_selected_fk_option($conn, $fkMap[$name], (int)$company_id, $opts, $displayVal);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                    $fkRow = $fkMap[$name];
+                                    $fkSelectedId = (int)$displayVal;
+                                    if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                        $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
+                                    }
+                                    $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                    $opts = cr_append_selected_fk_option($conn, $fkRow, (int)$company_id, $opts, $fkSelectedId);
+                                    $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                    data-add-table="<?php echo sanitize($fkRow['REFERENCED_TABLE_NAME']); ?>"
+                                    data-add-id-col="<?php echo sanitize($fkRow['REFERENCED_COLUMN_NAME']); ?>"
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
