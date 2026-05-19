@@ -650,18 +650,8 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
-                                    $hasSelectedOption = false;
-                                    foreach ($opts as $existingOpt) {
-                                        if ((string)$displayVal !== '' && (string)$displayVal === (string)$existingOpt['id']) {
-                                            $hasSelectedOption = true;
-                                            break;
-                                        }
-                                    }
-                                    if ((string)$displayVal !== '' && !$hasSelectedOption) {
-                                        $fallbackOption = cr_fk_option_by_id($conn, $fkMap[$name], (int)$displayVal, (int)$company_id);
-                                        if (is_array($fallbackOption)) {
-                                            $opts[] = $fallbackOption;
-                                        }
+                                    if ((string)$displayVal !== '') {
+                                        $opts = itm_fk_append_selected_option($conn, $fkMap[$name], (int)$company_id, $opts, $displayVal);
                                     }
                                 ?>
                                 <select

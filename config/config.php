@@ -894,6 +894,42 @@ if (!function_exists('itm_parse_database_sql_inserts')) {
 }
 
 /**
+ * Outbound foreign keys for a table (cached per request).
+ *
+ * @return array<string, array<string, string>>
+ */
+if (!function_exists('itm_table_outbound_fk_map')) {
+    function itm_table_outbound_fk_map($conn, $tableName) {
+        static $cache = [];
+        $tableName = (string)$tableName;
+        if (isset($cache[$tableName])) {
+            return $cache[$tableName];
+        }
+
+        $cache[$tableName] = [];
+        if (!itm_is_safe_identifier($tableName)) {
+            return $cache[$tableName];
+        }
+
+        $tableEsc = mysqli_real_escape_string($conn, $tableName);
+        $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = '{$tableEsc}'
+              AND REFERENCED_TABLE_NAME IS NOT NULL";
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $columnName = (string)($row['COLUMN_NAME'] ?? '');
+            if ($columnName !== '') {
+                $cache[$tableName][$columnName] = $row;
+            }
+        }
+
+        return $cache[$tableName];
+    }
+}
+
+/**
  * Inserts sample rows for a module table from database.sql when empty.
  */
 if (!function_exists('itm_seed_table_from_database_sql')) {
@@ -954,6 +990,13 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             }
         }
 
+        if ($sourceHasCompanyRows && !$sourceHasRequestedCompanyRows) {
+            $error = 'No sample rows found in database.sql for this company.';
+            return 0;
+        }
+
+        $tableFkMap = itm_table_outbound_fk_map($conn, $tableName);
+
         $insertCount = 0;
         foreach ($tableRows as $rowEntry) {
             $rawColumns = $rowEntry['columns'] ?? [];
@@ -998,8 +1041,31 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                     continue;
                 }
 
+                $valueToken = (string)$rawValues[$index];
+                if (
+                    isset($tableFkMap[$columnName])
+                    && function_exists('itm_fk_resolve_company_equivalent_id')
+                ) {
+                    $rawFkToken = trim($valueToken);
+                    if ($rawFkToken !== '' && strtoupper($rawFkToken) !== 'NULL') {
+                        $rawFkToken = trim($rawFkToken, "'\"");
+                        $storedFkId = (int)$rawFkToken;
+                        if ($storedFkId > 0) {
+                            $resolvedFkId = itm_fk_resolve_company_equivalent_id(
+                                $conn,
+                                $tableFkMap[$columnName],
+                                $companyId,
+                                $storedFkId
+                            );
+                            if ($resolvedFkId > 0) {
+                                $valueToken = (string)(int)$resolvedFkId;
+                            }
+                        }
+                    }
+                }
+
                 $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
-                $targetValues[] = (string)$rawValues[$index];
+                $targetValues[] = $valueToken;
             }
 
             if (empty($targetColumns)) {
