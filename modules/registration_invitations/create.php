@@ -538,24 +538,6 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
-/**
- * Why: Capture full row state before destructive operations so audit logs
- * can record reliable DELETE payloads for single, bulk, and clear-table flows.
- */
-function cr_collect_audit_rows_for_where($conn, $table, $whereSql) {
-    $rows = [];
-    $sql = 'SELECT `id` FROM ' . cr_escape_identifier($table) . $whereSql;
-    $result = mysqli_query($conn, $sql);
-    while ($result && ($row = mysqli_fetch_assoc($result))) {
-        $rowId = (int)($row['id'] ?? 0);
-        if ($rowId <= 0) {
-            continue;
-        }
-        $rows[$rowId] = itm_fetch_audit_record($conn, $table, $rowId, (int)($GLOBALS['company_id'] ?? 0));
-    }
-    return $rows;
-}
-
 // Module initialization
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
@@ -599,13 +581,10 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteAuditOldValues = itm_fetch_audit_record($conn, $crud_table, $id, $company_id);
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         $dbErrorCode = 0;
         $dbErrorMessage = '';
-        if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            itm_log_audit($conn, $crud_table, $id, 'DELETE', $deleteAuditOldValues, null);
-        } else {
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             header('Location: ' . $listUrl);
             exit;
@@ -651,10 +630,6 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 // Process data entry and updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
-    $updateAuditOldValues = null;
-    if ($crud_action === 'edit' && $editId > 0) {
-        $updateAuditOldValues = itm_fetch_audit_record($conn, $crud_table, $editId, $company_id);
-    }
 
     $allowedRoleOptions = isset($fkMap['role_id'])
         ? cr_filter_invitation_hierarchy_options('role_id', cr_fk_options($conn, $fkMap['role_id'], (int)$company_id), $permissionProfile)
@@ -791,16 +766,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            if ($crud_action === 'create') {
-                $insertedId = (int)mysqli_insert_id($conn);
-                if ($insertedId > 0) {
-                    $insertAuditNewValues = itm_fetch_audit_record($conn, $crud_table, $insertedId, $company_id);
-                    itm_log_audit($conn, $crud_table, $insertedId, 'INSERT', null, $insertAuditNewValues);
-                }
-            } elseif ($crud_action === 'edit' && $editId > 0) {
-                $updateAuditNewValues = itm_fetch_audit_record($conn, $crud_table, $editId, $company_id);
-                itm_log_audit($conn, $crud_table, $editId, 'UPDATE', $updateAuditOldValues, $updateAuditNewValues);
-            }
             header('Location: ' . $listUrl);
             exit;
         }
