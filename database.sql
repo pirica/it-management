@@ -4579,6 +4579,40 @@ CREATE TRIGGER `trg_it_locations_audit_delete` AFTER DELETE ON `it_locations` FO
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'it_locations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'location_code', OLD.`location_code`, 'address', OLD.`address`, 'city', OLD.`city`, 'state', OLD.`state`, 'country', OLD.`country`, 'postal_code', OLD.`postal_code`, 'phone', OLD.`phone`, 'type_id', OLD.`type_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_ip_addresses_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_ip_addresses_audit_update`;
+DROP TRIGGER IF EXISTS `trg_ip_addresses_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_ip_addresses_audit_insert` AFTER INSERT ON `ip_addresses` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ip_addresses', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'subnet_id', NEW.`subnet_id`, 'ip_text', NEW.`ip_text`, 'status', NEW.`status`, 'equipment_id', NEW.`equipment_id`, 'hostname', NEW.`hostname`, 'is_gateway', NEW.`is_gateway`, 'is_dns', NEW.`is_dns`, 'dhcp_managed', NEW.`dhcp_managed`, 'notes', NEW.`notes`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_ip_addresses_audit_update` AFTER UPDATE ON `ip_addresses` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ip_addresses', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'subnet_id', OLD.`subnet_id`, 'ip_text', OLD.`ip_text`, 'status', OLD.`status`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'is_gateway', OLD.`is_gateway`, 'is_dns', OLD.`is_dns`, 'dhcp_managed', OLD.`dhcp_managed`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'subnet_id', NEW.`subnet_id`, 'ip_text', NEW.`ip_text`, 'status', NEW.`status`, 'equipment_id', NEW.`equipment_id`, 'hostname', NEW.`hostname`, 'is_gateway', NEW.`is_gateway`, 'is_dns', NEW.`is_dns`, 'dhcp_managed', NEW.`dhcp_managed`, 'notes', NEW.`notes`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_ip_addresses_audit_delete` AFTER DELETE ON `ip_addresses` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ip_addresses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'subnet_id', OLD.`subnet_id`, 'ip_text', OLD.`ip_text`, 'status', OLD.`status`, 'equipment_id', OLD.`equipment_id`, 'hostname', OLD.`hostname`, 'is_gateway', OLD.`is_gateway`, 'is_dns', OLD.`is_dns`, 'dhcp_managed', OLD.`dhcp_managed`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_ip_subnets_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_ip_subnets_audit_update`;
+DROP TRIGGER IF EXISTS `trg_ip_subnets_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_ip_subnets_audit_insert` AFTER INSERT ON `ip_subnets` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ip_subnets', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'vlan_id', NEW.`vlan_id`, 'cidr', NEW.`cidr`, 'network_ip', NEW.`network_ip`, 'prefix_length', NEW.`prefix_length`, 'gateway_ip', NEW.`gateway_ip`, 'dns1_ip', NEW.`dns1_ip`, 'dns2_ip', NEW.`dns2_ip`, 'dhcp_enabled', NEW.`dhcp_enabled`, 'description', NEW.`description`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_ip_subnets_audit_update` AFTER UPDATE ON `ip_subnets` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ip_subnets', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_id', OLD.`vlan_id`, 'cidr', OLD.`cidr`, 'network_ip', OLD.`network_ip`, 'prefix_length', OLD.`prefix_length`, 'gateway_ip', OLD.`gateway_ip`, 'dns1_ip', OLD.`dns1_ip`, 'dns2_ip', OLD.`dns2_ip`, 'dhcp_enabled', OLD.`dhcp_enabled`, 'description', OLD.`description`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'vlan_id', NEW.`vlan_id`, 'cidr', NEW.`cidr`, 'network_ip', NEW.`network_ip`, 'prefix_length', NEW.`prefix_length`, 'gateway_ip', NEW.`gateway_ip`, 'dns1_ip', NEW.`dns1_ip`, 'dns2_ip', NEW.`dns2_ip`, 'dhcp_enabled', NEW.`dhcp_enabled`, 'description', NEW.`description`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_ip_subnets_audit_delete` AFTER DELETE ON `ip_subnets` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ip_subnets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'vlan_id', OLD.`vlan_id`, 'cidr', OLD.`cidr`, 'network_ip', OLD.`network_ip`, 'prefix_length', OLD.`prefix_length`, 'gateway_ip', OLD.`gateway_ip`, 'dns1_ip', OLD.`dns1_ip`, 'dns2_ip', OLD.`dns2_ip`, 'dhcp_enabled', OLD.`dhcp_enabled`, 'description', OLD.`description`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_update`;
 DROP TRIGGER IF EXISTS `trg_location_types_audit_delete`;
