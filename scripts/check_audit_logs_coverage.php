@@ -510,7 +510,8 @@ if ($options['json']) {
         ],
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
     ) . "\n";
-    exit($totals['fail'] > 0 ? 2 : 0);
+    $jsonExitCode = ($totals['fail'] > 0 || !empty($schemaTablesMissingTriggers)) ? 2 : 0;
+    exit($jsonExitCode);
 }
 
 itm_script_output_begin('Audit logs coverage check');
