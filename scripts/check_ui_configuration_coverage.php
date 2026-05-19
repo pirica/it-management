@@ -6,10 +6,11 @@
  * new buttons, export toolbar, and back/save alignment). This script provides
  * a single verification pass across modules so regressions are easy to spot.
  *
- * Entry wrappers: create.php, edit.php, view.php, list_all.php, and delete.php
- * are checked for CRUD delegation (index/create/edit/view/list_all/delete) with
- * on-disk verification. Entry helpers reports module helpers, cross-module, and
- * shared includes (including ROOT_PATH requires) with found/MISSING status.
+ * Entry wrappers: create.php, edit.php, view.php, and list_all.php are checked for
+ * CRUD delegation with on-disk verification. delete.php uses a separate rule:
+ * detect delete usage from index.php/delete.php, pass for wrapper OR standalone
+ * POST handler (most modules), n/a only when delete is not used. Entry helpers
+ * reports module helpers, cross-module, and shared includes with found/MISSING status.
  *
  * Exemptions:
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
@@ -355,6 +356,68 @@ function itm_ui_resolve_entry_form_source(string $modulePath, string $entryConte
 }
 
 /**
+ * Whether the module exposes delete (file and/or index.php actions pointing at delete.php).
+ */
+function itm_module_uses_delete(string $indexContent, string $deletePath): bool
+{
+    if (is_file($deletePath)) {
+        return true;
+    }
+
+    if ($indexContent === '') {
+        return false;
+    }
+
+    return preg_match('#delete\.php#i', $indexContent) === 1;
+}
+
+/**
+ * Delete entry files are usually standalone POST handlers, not index.php wrappers.
+ *
+ * @return array{status:string,details:string}
+ */
+function itm_check_delete_entry(string $modulePath, string $indexContent, string $deletePath, string $deleteContent): array
+{
+    if (!itm_module_uses_delete($indexContent, $deletePath)) {
+        return ['status' => 'n/a', 'details' => 'Delete not used (no delete.php and no delete.php action in index.php)'];
+    }
+
+    if (!is_file($deletePath)) {
+        return ['status' => 'fail', 'details' => 'index.php references delete.php but delete.php is missing on disk'];
+    }
+
+    $wrapper = itm_ui_detect_entry_wrapper($deleteContent, $modulePath);
+    if ($wrapper['is_wrapper']) {
+        if (!$wrapper['target_exists']) {
+            return [
+                'status' => 'fail',
+                'details' => 'Wrapper references ' . $wrapper['target_label'] . ' but that file was not found on disk',
+            ];
+        }
+
+        $chain = itm_ui_resolve_entry_form_source($modulePath, $deleteContent, 'delete.php')['chain'];
+        $via = empty($chain) ? $wrapper['target_label'] : implode(' → ', $chain);
+
+        return ['status' => 'pass', 'details' => 'Wrapper found — delete.php delegates to ' . $via];
+    }
+
+    $signals = [];
+    if (stripos($deleteContent, 'itm_require_post_csrf') !== false) {
+        $signals[] = 'CSRF';
+    }
+    if (preg_match('#\$_SERVER\s*\[\s*[\'"]REQUEST_METHOD[\'"]\s*\]#i', $deleteContent) === 1) {
+        $signals[] = 'POST guard';
+    }
+    if (stripos($deleteContent, 'bulk') !== false || stripos($deleteContent, 'DELETE') !== false) {
+        $signals[] = 'delete logic';
+    }
+
+    $hint = $signals === [] ? 'standalone handler' : implode(', ', $signals);
+
+    return ['status' => 'pass', 'details' => 'Delete handler present (' . $hint . '; not a wrapper)'];
+}
+
+/**
  * @return array{status:string,details:string}
  */
 function itm_check_entry_wrapper(string $entryPath, string $entryContent, string $modulePath, string $entryBasename): array
@@ -384,8 +447,12 @@ function itm_check_entry_wrapper(string $entryPath, string $entryContent, string
 /**
  * @return array{status:string,details:string}
  */
-function itm_check_entry_helpers(string $entryPath, string $entryContent, string $modulePath, string $entryBasename): array
+function itm_check_entry_helpers(string $entryPath, string $entryContent, string $modulePath, string $entryBasename, string $indexContent = ''): array
 {
+    if ($entryBasename === 'delete.php' && !itm_module_uses_delete($indexContent, $entryPath)) {
+        return ['status' => 'n/a', 'details' => 'Delete not used'];
+    }
+
     if (!is_file($entryPath)) {
         return ['status' => 'n/a', 'details' => 'No ' . $entryBasename];
     }
@@ -538,10 +605,10 @@ foreach ($modules as $module) {
         'Edit wrapper (edit.php)' => itm_check_entry_wrapper($editPath, $editContent, $modulePath, 'edit.php'),
         'View wrapper (view.php)' => itm_check_entry_wrapper($viewPath, $viewContent, $modulePath, 'view.php'),
         'List-all wrapper (list_all.php)' => itm_check_entry_wrapper($listAllPath, $listAllContent, $modulePath, 'list_all.php'),
-        'Delete wrapper (delete.php)' => itm_check_entry_wrapper($deletePath, $deleteContent, $modulePath, 'delete.php'),
+        'Delete entry (delete.php)' => itm_check_delete_entry($modulePath, $indexContent, $deletePath, $deleteContent),
         'Entry helpers (create.php)' => itm_check_entry_helpers($createPath, $createContent, $modulePath, 'create.php'),
         'Entry helpers (edit.php)' => itm_check_entry_helpers($editPath, $editContent, $modulePath, 'edit.php'),
-        'Entry helpers (delete.php)' => itm_check_entry_helpers($deletePath, $deleteContent, $modulePath, 'delete.php'),
+        'Entry helpers (delete.php)' => itm_check_entry_helpers($deletePath, $deleteContent, $modulePath, 'delete.php', $indexContent),
         'Back & Save (create.php)' => itm_check_back_save_entry($modulePath, $createPath, $createContent, 'create.php'),
         'Back & Save (edit.php)' => itm_check_back_save_entry($modulePath, $editPath, $editContent, 'edit.php'),
     ];
