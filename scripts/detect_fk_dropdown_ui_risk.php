@@ -37,6 +37,7 @@ $options = [
     'data_only' => false,
     'help' => false,
     'scan_scope' => 'full',
+    'repair_catalogs' => false,
 ];
 
 foreach (array_slice($argv, 1) as $arg) {
@@ -62,6 +63,10 @@ foreach (array_slice($argv, 1) as $arg) {
         $options['company'] = (int)$m[1];
         continue;
     }
+    if ($arg === '--repair-catalogs') {
+        $options['repair_catalogs'] = true;
+        continue;
+    }
     fwrite(STDERR, "Unknown argument: {$arg}\n");
     exit(2);
 }
@@ -73,8 +78,27 @@ if ($options['help']) {
     fwrite(STDOUT, "  --json        Machine-readable output\n");
     fwrite(STDOUT, "  --code-only   Scan module PHP patterns only (no database)\n");
     fwrite(STDOUT, "  --data-only   Scan database cross-tenant FK rows only\n");
+    fwrite(STDOUT, "  --repair-catalogs  Delete legacy catalog rows with cross-tenant FK ids\n");
     fwrite(STDOUT, "  --help        Show this help\n\n");
     fwrite(STDOUT, "Browser UI: open scripts/detect_fk_dropdown_ui_risk_ui.php\n");
+    exit(0);
+}
+
+if (!empty($options['repair_catalogs'])) {
+    if (!defined('ITM_CLI_SCRIPT')) {
+        define('ITM_CLI_SCRIPT', true);
+    }
+    require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        fwrite(STDERR, "Database connection failed.\n");
+        exit(2);
+    }
+    if (!function_exists('itm_cleanup_catalogs_cross_tenant_fk_rows')) {
+        fwrite(STDERR, "Cleanup helper is not available.\n");
+        exit(2);
+    }
+    $deleted = itm_cleanup_catalogs_cross_tenant_fk_rows($conn);
+    fwrite(STDOUT, "Removed {$deleted} catalog row(s) with cross-tenant FK references.\n");
     exit(0);
 }
 

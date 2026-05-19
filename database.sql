@@ -1900,8 +1900,16 @@ INSERT INTO `catalogs` (`id`, `company_id`, `model`, `equipment_type_id`, `image
 (91, 4, 'Ubiquiti Networks UniFi Switch 24 PoE', 37, NULL, 379.00, NULL, 29, 'https://www.sweetwater.com/store/detail/USW24POE--ubiquiti-networks-unifi-switch-24-poe', 1, '2026-01-01 00:00:01', NULL),
 (92, 4, 'Aruba Instant On 1930 24G 4SFP+ (JL682A)', 37, NULL, 459.99, NULL, NULL, 'https://www.adorama.com/', 1, '2026-01-01 00:00:01', NULL),
 (93, 4, 'Cisco Meraki MS120-24P Cloud Managed Switch', 37, NULL, 1599.00, NULL, 25, 'https://www.insight.com/', 1, '2026-01-01 00:00:01', NULL);
--- Why: Older sample-data seeding duplicated company-1 catalog rows on other tenants with cross-company FK ids.
-DELETE FROM `catalogs` WHERE `id` > 93;
+-- Why: Legacy sample-data seeding copied company-1 catalog rows onto other tenants but kept company-1 FK ids.
+DELETE c FROM `catalogs` c
+INNER JOIN `equipment_types` et ON et.id = c.equipment_type_id
+WHERE c.company_id > 0 AND et.company_id > 0 AND c.company_id <> et.company_id;
+DELETE c FROM `catalogs` c
+INNER JOIN `manufacturers` m ON m.id = c.manufacturer_id
+WHERE c.manufacturer_id IS NOT NULL AND c.company_id > 0 AND m.company_id > 0 AND c.company_id <> m.company_id;
+DELETE c FROM `catalogs` c
+INNER JOIN `suppliers` s ON s.id = c.supplier_id
+WHERE c.supplier_id IS NOT NULL AND c.company_id > 0 AND s.company_id > 0 AND c.company_id <> s.company_id;
 -- Table structure for `patches_updates_status`
 DROP TABLE IF EXISTS `patches_updates_status`;
 CREATE TABLE `patches_updates_status` (
