@@ -38,7 +38,8 @@
 
     function getOpenIdfModalBackdrop() {
         var backdrops = document.querySelectorAll('.idf-modal-backdrop');
-        for (var i = 0; i < backdrops.length; i++) {
+        // Why: Nested quick-add modals (status/cable color) stack on port/link; last open backdrop is topmost.
+        for (var i = backdrops.length - 1; i >= 0; i--) {
             if (backdrops[i].style.display === 'flex') {
                 return backdrops[i];
             }
