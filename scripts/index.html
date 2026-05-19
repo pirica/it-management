@@ -178,6 +178,24 @@
                         <code>php scripts/apply_form_failed_save_display_fix.php --module=manufacturers</code>
                     </td>
                 </tr>
+                <tr>
+                    <td>test_db_error_messages.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Asserts human-friendly output from <code>itm_format_db_constraint_error()</code> and <code>itm_render_alert_errors()</code> (e.g. NOT NULL → “Please select a value for Employee”, no <code>Database error:</code> prefix).</td>
+                    <td>
+                        <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code> or <code>includes/ui_alert_helpers.php</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td>apply_human_friendly_error_display.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Replaces duplicated <code>alert alert-error</code> blocks with <code>itm_render_alert_errors()</code> across module PHP files (all modules, including protection-zone folders).</td>
+                    <td>
+                        <strong>Do not open in browser</strong> — writes PHP without <code>--dry-run</code>. CLI:
+                        <code>php scripts/apply_human_friendly_error_display.php --dry-run</code><br>
+                        <code>php scripts/apply_human_friendly_error_display.php --module=approvers</code>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>

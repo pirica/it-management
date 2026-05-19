@@ -207,7 +207,7 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <h1><?php echo $is_edit ? '✏️ Edit' : '➕ New'; ?> Ticket</h1>
-            <?php if ($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
+            <?php echo itm_render_alert_errors($error ?? ''); ?>
 
             <div class="card">
                 <form id="ticketForm" method="POST" enctype="multipart/form-data">

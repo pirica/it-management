@@ -536,9 +536,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">

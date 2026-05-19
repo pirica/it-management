@@ -192,9 +192,7 @@ if ($selectedLastUserId > 0) {
         <div class="content">
             <h1><?php echo $is_edit ? '✏️ Edit' : '➕ Add'; ?> Inventory Item</h1>
 
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($error ?? ''); ?>
 
             <div class="card">
                 <form method="POST">

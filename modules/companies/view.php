@@ -89,7 +89,7 @@ if ($item === null && $error === '') {
             <h1>🔎 Company Information</h1>
             <div class="card">
                 <?php if ($item === null): ?>
-                    <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
+                    <?php echo itm_render_alert_errors($error ?? ''); ?>
                 <?php else: ?>
                     <table>
                         <tbody>

@@ -298,11 +298,7 @@
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-danger">
-                    <?php foreach ($errors as $error): echo sanitize($error) . '<br>'; endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
             <?php if ($success_msg): ?>
                 <div class="alert alert-success"><?php echo sanitize($success_msg); ?></div>
             <?php endif; ?>

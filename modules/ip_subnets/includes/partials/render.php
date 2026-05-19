@@ -15,9 +15,7 @@
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-error"><?php echo sanitize(implode(' ', $errors)); ?></div>
-            <?php endif; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
             <?php if ($crudSuccessMessage !== ''): ?>
                 <div class="alert alert-success"><?php echo sanitize($crudSuccessMessage); ?></div>
             <?php endif; ?>

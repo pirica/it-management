@@ -555,7 +555,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <!-- NOTIFICATION AREA -->
-            <?php foreach ($errors as $error): ?><div class="alert alert-error"><?php echo sanitize($error); ?></div><?php endforeach; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
             <?php foreach ($messages as $msg): ?><div class="alert alert-success"><?php echo sanitize($msg); ?></div><?php endforeach; ?>
             
             <?php if (!empty($skippedDetails)): ?>

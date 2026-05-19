@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <h1><?php echo $is_edit ? '✏️ Edit' : '➕ Add'; ?> Company</h1>
-            <?php if ($error): ?><div class="alert alert-danger"><?php echo sanitize($error); ?></div><?php endif; ?>
+            <?php echo itm_render_alert_errors($error ?? ''); ?>
             <div class="card">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

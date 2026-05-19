@@ -224,6 +224,7 @@ define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/user_dropdown_helpers.php';
 
@@ -470,14 +471,112 @@ if (!function_exists('itm_run_query')) {
 }
 
 /**
+ * Extracts a column name from common MySQL error message text.
+ */
+if (!function_exists('itm_mysql_error_extract_column')) {
+    function itm_mysql_error_extract_column($message) {
+        $text = (string)$message;
+        if ($text === '') {
+            return '';
+        }
+
+        $patterns = [
+            "/Column '([^']+)' cannot be null/i",
+            "/Field '([^']+)' doesn't have a default value/i",
+            "/Data too long for column '([^']+)'/i",
+            "/Out of range value for column '([^']+)'/i",
+            "/Incorrect .+ value: '.+' for column '([^']+)'/i",
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $match)) {
+                return (string)($match[1] ?? '');
+            }
+        }
+
+        return '';
+    }
+}
+
+/**
+ * Builds a required-field message from a column name.
+ */
+if (!function_exists('itm_format_required_field_error')) {
+    function itm_format_required_field_error($column) {
+        $label = function_exists('itm_humanize_field_name')
+            ? itm_humanize_field_name($column)
+            : ucwords(str_replace('_', ' ', (string)$column));
+
+        if ($label === '') {
+            return 'A required field is missing. Please complete all required fields and try again.';
+        }
+
+        if (function_exists('itm_field_looks_like_fk_select') && itm_field_looks_like_fk_select($column)) {
+            return 'Please select a value for ' . $label . '.';
+        }
+
+        return 'Please enter a value for ' . $label . '.';
+    }
+}
+
+/**
+ * Parses MySQL error codes/messages into user-facing text (non-FK specialized cases).
+ */
+if (!function_exists('itm_parse_mysql_error_message')) {
+    function itm_parse_mysql_error_message($errorCode, $message) {
+        $code = (int)$errorCode;
+        $text = (string)$message;
+        $column = itm_mysql_error_extract_column($text);
+
+        if ($code === 1048 || $code === 1364
+            || stripos($text, 'cannot be null') !== false
+            || stripos($text, "doesn't have a default value") !== false) {
+            if ($column !== '') {
+                return itm_format_required_field_error($column);
+            }
+            return 'A required field is missing. Please complete all required fields and try again.';
+        }
+
+        if ($code === 1406 || stripos($text, 'Data too long for column') !== false) {
+            $label = $column !== '' && function_exists('itm_humanize_field_name')
+                ? itm_humanize_field_name($column)
+                : 'This field';
+            return $label . ' is too long. Shorten the value and try again.';
+        }
+
+        if ($code === 1264 || stripos($text, 'Out of range value for column') !== false) {
+            $label = $column !== '' && function_exists('itm_humanize_field_name')
+                ? itm_humanize_field_name($column)
+                : 'This field';
+            return $label . ' is out of the allowed range.';
+        }
+
+        if ($code === 1292 || stripos($text, 'Incorrect datetime value') !== false
+            || stripos($text, 'Incorrect date value') !== false) {
+            $label = $column !== '' && function_exists('itm_humanize_field_name')
+                ? itm_humanize_field_name($column)
+                : 'Date';
+            return $label . ' has an invalid date or time. Check the format and try again.';
+        }
+
+        return '';
+    }
+}
+
+/**
  * Translates MySQL error codes into user-friendly messages
  */
 if (!function_exists('itm_format_db_constraint_error')) {
     function itm_format_db_constraint_error($errorCode, $fallbackMessage = '') {
+        $fallbackText = (string)$fallbackMessage;
+
+        if ($fallbackText !== '' && stripos($fallbackText, 'Database error:') === 0) {
+            $fallbackText = trim(substr($fallbackText, strlen('Database error:')));
+        }
+
         switch ((int)$errorCode) {
             case 1451:
                 $referenceDetails = '';
-                $fallbackText = (string)$fallbackMessage;
 
                 if ($fallbackText !== '') {
                     $childTable = '';
@@ -504,13 +603,34 @@ if (!function_exists('itm_format_db_constraint_error')) {
             case 1062:
                 return 'A record with the same unique value already exists. Use a different value.';
             default:
-                if ($fallbackMessage !== '') {
-                    return 'Database error: ' . $fallbackMessage;
+                $parsed = itm_parse_mysql_error_message($errorCode, $fallbackText);
+                if ($parsed !== '') {
+                    return $parsed;
                 }
-                return 'A database error occurred. Please try again.';
-            }
+
+                if ($fallbackText !== '' && function_exists('itm_parse_mysql_error_message')) {
+                    $parsedFromMessage = itm_parse_mysql_error_message(0, $fallbackText);
+                    if ($parsedFromMessage !== '') {
+                        return $parsedFromMessage;
+                    }
+                }
+
+                if ($fallbackText !== '') {
+                    if (defined('ROOT_PATH')) {
+                        @error_log('[ITM DB] ' . $fallbackText . PHP_EOL, 3, ROOT_PATH . 'error_log.txt');
+                    }
+                }
+
+                return 'We could not save your changes. Review the required fields and try again.';
         }
     }
+}
+
+if (!function_exists('itm_format_db_error')) {
+    function itm_format_db_error($errorCode, $fallbackMessage = '') {
+        return itm_format_db_constraint_error($errorCode, $fallbackMessage);
+    }
+}
 
 /**
  * Finds all records in other tables that reference a specific record

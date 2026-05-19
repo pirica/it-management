@@ -48,6 +48,58 @@ if (!function_exists('itm_table_has_column')) {
 }
 
 /**
+ * Converts a database column name into a label for validation and error messages.
+ */
+if (!function_exists('itm_humanize_field_name')) {
+    function itm_humanize_field_name($field) {
+        $label = trim((string)$field);
+        if ($label === '') {
+            return '';
+        }
+
+        $map = [
+            'department_id' => 'Department Name',
+            'office_key_card_department_id' => 'Office Key Card Department',
+            'opera_username' => 'OPERA Username',
+            'onq_ri' => 'OnQ R&I',
+            'hu_the_lobby' => 'HU & The Lobby',
+        ];
+
+        if (isset($map[$label])) {
+            return $map[$label];
+        }
+
+        if ($label === 'id') {
+            return 'ID';
+        }
+
+        $label = preg_replace('/_id$/', '', $label);
+        $label = str_replace('_', ' ', (string)$label);
+
+        return ucwords($label);
+    }
+}
+
+/**
+ * Whether a column name typically represents a dropdown/FK selection in forms.
+ */
+if (!function_exists('itm_field_looks_like_fk_select')) {
+    function itm_field_looks_like_fk_select($field) {
+        $name = strtolower(trim((string)$field));
+        if ($name === '') {
+            return false;
+        }
+        if (preg_match('/_id$/', $name) === 1) {
+            return true;
+        }
+        if (preg_match('/_by(_user_id)?$/', $name) === 1) {
+            return true;
+        }
+        return in_array($name, ['company_id', 'created_by', 'updated_by', 'approved_by'], true);
+    }
+}
+
+/**
  * Form display value: never show SQL quote wrappers after a failed save.
  */
 if (!function_exists('itm_cr_form_display_value')) {

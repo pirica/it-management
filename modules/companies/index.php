@@ -165,7 +165,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             </div>
 
             <?php if ($error !== ''): ?>
-                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
+                <?php echo itm_render_alert_errors($error ?? ''); ?>
             <?php endif; ?>
 
             <!-- Search Filter Bar -->
