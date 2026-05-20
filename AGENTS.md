@@ -86,6 +86,25 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/script_browser_nav.php` | **← Scripts index**, relative module links, table→module links when folder exists (`target="_blank"`) |
 | `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
+| `scripts/lib/equipment_type_modules.php` | Canonical `modules/is_*` allowlist (`is_switch`, `is_server`, …); safe removal of regression-test scaffold dirs only (`*_itm_eqdct_*`, `*_itm_edct_*`) |
+
+#### Equipment-type façade modules (`modules/is_*`) and clear-table tests
+
+Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is_switch`, `is_server`, `is_workstation`). They delegate to `modules/equipment/` and must **not** be deleted by maintenance scripts.
+
+| Script | Role |
+|--------|------|
+| `scripts/lib/equipment_type_modules.php` | Shared allowlist + `itm_remove_equipment_regression_test_module_dirs()` / `itm_ensure_canonical_equipment_type_modules()` |
+| `scripts/ensure_equipment_type_modules.php` | Verify or recreate missing canonical `modules/is_*/index.php` wrappers (CLI) |
+| `scripts/cleanup_equipment_test_module_artifacts.php` | **CLI-only:** remove test `equipment_types` rows, ITM test companies, junk `is_*_itm_eqdct_*` folders, then re-ensure canonical façades |
+| `scripts/equipment_delete_clear_table_test.php` | DB regression for equipment `clear_table` + transactional single delete (use type names **`Switch`** / **`Server`**, not suffixed names) |
+| `scripts/employees_delete_clear_table_test.php` | DB regression for employees `clear_table` transaction rollback |
+| `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table helpers (smoke step 7) |
+| `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table transaction (smoke step 6) |
+
+**Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. After local DB regression runs, run `php scripts/cleanup_equipment_test_module_artifacts.php`.
+
+**Smoke / optional DB regression:** `bash scripts/smoke_test.sh` runs the static checkers (steps 6–7). Set `SMOKE_RUN_DB_TESTS=1` to also run `employees_delete_clear_table_test.php` and `equipment_delete_clear_table_test.php` (requires MySQL).
 
 #### 5. Pre-merge verification (scripts)
 
@@ -280,6 +299,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Testing/reporting guardrail (mandatory):**
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
+  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB runs per catalog in `scripts/index.html` (`SMOKE_RUN_DB_TESTS=1` or run the `*_test.php` scripts directly). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **New branch + NEW PR always (mandatory — non-negotiable):**
   * **Every separate request, bugfix, or follow-up** ships on a **fresh branch** and opens a **brand-new pull request**. Do **not** add unrelated commits to an already-open PR “to save time”, and do **not** reuse **PR #N** for **new scope** after merge unless the user explicitly asked to extend that same PR while it is still open.
