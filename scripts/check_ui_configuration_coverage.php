@@ -12,7 +12,8 @@
  * duplicate sidebar/header lines).
  *
  * List table contract (index.php, or list_all.php when index has no table): Search,
- * pagination via Settings records_per_page, and bulk Select to Delete / Clear Table.
+ * column sort (ASC/DESC), pagination via Settings records_per_page, and bulk
+ * Select to Delete / Clear Table.
  *
  * Exemptions:
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
@@ -190,10 +191,11 @@ function itm_check_search(string $listContent, string $sourceLabel): array
     }
 
     $hasSearchParam = preg_match('#\$_GET\s*\[\s*[\'"]search[\'"]\s*\]#', $listContent) === 1
-        || stripos($listContent, '$searchRaw') !== false;
+        || stripos($listContent, '$searchRaw') !== false
+        || preg_match('#\$search\s*=.*\$_GET\s*\[\s*[\'"]search[\'"]\s*\]#s', $listContent) === 1;
     $hasSearchInput = preg_match('#name\s*=\s*["\']search["\']#i', $listContent) === 1;
     $hasSearchQuery = stripos($listContent, 'searchConditions') !== false
-        || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc)#i', $listContent) === 1);
+        || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc|Like)|\$search\s*!==\s*[\'"][\s]*[\'"]#i', $listContent) === 1);
 
     if ($hasSearchParam && $hasSearchInput && $hasSearchQuery) {
         return ['status' => 'pass', 'details' => 'Search input and server-side query detected in ' . $sourceLabel];
@@ -213,6 +215,52 @@ function itm_check_search(string $listContent, string $sourceLabel): array
     return [
         'status' => 'fail',
         'details' => 'Table in ' . $sourceLabel . ' missing search wiring: ' . implode(', ', $missing),
+    ];
+}
+
+/**
+ * @return array{status:string,details:string}
+ */
+function itm_check_sort(string $listContent, string $sourceLabel): array
+{
+    if ($listContent === '' || stripos($listContent, '<table') === false) {
+        return ['status' => 'n/a', 'details' => 'No table in ' . $sourceLabel];
+    }
+
+    $hasSortParam = preg_match('#\$_GET\s*\[\s*[\'"]sort[\'"]\s*\]#', $listContent) === 1
+        || preg_match('#\$sort\s*=.*\$_GET\s*\[\s*[\'"]sort[\'"]\s*\]#s', $listContent) === 1;
+    $hasDirParam = preg_match('#\$_GET\s*\[\s*[\'"]dir[\'"]\s*\]#', $listContent) === 1
+        || preg_match('#\$dir\s*=.*\$_GET\s*\[\s*[\'"]dir[\'"]\s*\]#s', $listContent) === 1
+        || preg_match('#\[\'ASC\'\s*,\s*\'DESC\'\]#', $listContent) === 1;
+    $hasOrderBySort = preg_match('#ORDER\s+BY[^\n;]*(\$sortSql|sortableColumns|\$sort\b)#i', $listContent) === 1;
+    $hasSortUi = strpos($listContent, '▲') !== false
+        || strpos($listContent, '▼') !== false
+        || preg_match('#\$nextDir\s*=#', $listContent) === 1;
+
+    if ($hasSortParam && $hasDirParam && $hasOrderBySort && $hasSortUi) {
+        return [
+            'status' => 'pass',
+            'details' => 'Column sort (ASC/DESC) detected in ' . $sourceLabel,
+        ];
+    }
+
+    $missing = [];
+    if (!$hasSortParam) {
+        $missing[] = 'GET/sort variable';
+    }
+    if (!$hasDirParam) {
+        $missing[] = 'ASC/DESC direction';
+    }
+    if (!$hasOrderBySort) {
+        $missing[] = 'ORDER BY sort wiring';
+    }
+    if (!$hasSortUi) {
+        $missing[] = 'sortable header indicators (▲/▼ or $nextDir)';
+    }
+
+    return [
+        'status' => 'fail',
+        'details' => 'Table in ' . $sourceLabel . ' missing sort wiring: ' . implode(', ', $missing),
     ];
 }
 
@@ -381,8 +429,12 @@ function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel,
         || stripos($listContent, 'bulk-delete-toggle') !== false;
     $hasRecordsPerPageGate = itm_has_bulk_actions_records_per_page_gate($listContent);
     $hasGatedRowCheckboxes = itm_bulk_row_checkbox_cells_gated($listContent);
+    $hasProgressiveBulkSelection = stripos($listContent, 'setSelectionVisibility') !== false
+        && stripos($listContent, 'bulk-delete-toggle') !== false
+        && stripos($listContent, 'Delete Selected') !== false;
 
-    if ($hasBulkDelete && $hasClearTable && $hasSelectControl && $hasRecordsPerPageGate && $hasGatedRowCheckboxes) {
+    if ($hasBulkDelete && $hasClearTable && $hasSelectControl && $hasRecordsPerPageGate
+        && ($hasGatedRowCheckboxes || $hasProgressiveBulkSelection)) {
         return [
             'status' => 'pass',
             'details' => 'Select to Delete and Clear Table controls gated when count >= records_per_page in ' . $sourceLabel,
@@ -402,8 +454,8 @@ function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel,
     if (!$hasRecordsPerPageGate) {
         $missing[] = 'records_per_page visibility gate (showBulkActions = $totalRows >= $perPage or equivalent)';
     }
-    if (!$hasGatedRowCheckboxes) {
-        $missing[] = 'tbody ids[] checkbox cells gated with showBulkActions (column alignment)';
+    if (!$hasGatedRowCheckboxes && !$hasProgressiveBulkSelection) {
+        $missing[] = 'tbody ids[] checkbox cells gated with showBulkActions (column alignment) or progressive bulk selection UI';
     }
 
     return [
@@ -894,6 +946,7 @@ foreach ($modules as $module) {
         '+ New Button' => itm_check_new_button($indexContent, is_file($createPath)),
         'Export Buttons' => itm_check_export_toolbar_support($indexContent),
         'Search' => itm_check_search($listContent, $listSource),
+        'Column sort (ASC/DESC)' => itm_check_sort($listContent, $listSource),
         'Pagination (records per page)' => itm_check_pagination($listContent, $listSource),
         'Bulk delete actions' => itm_check_bulk_delete_actions($listContent, $listSource, is_file($deletePath)),
         'Create entry (create.php)' => itm_check_module_entry_file($modulePath, $indexContent, $createPath, $createContent, 'create.php'),
@@ -904,6 +957,22 @@ foreach ($modules as $module) {
         'Back & Save (create.php)' => itm_check_back_save_entry($modulePath, $createPath, $createContent, 'create.php'),
         'Back & Save (edit.php)' => itm_check_back_save_entry($modulePath, $editPath, $editContent, 'edit.php'),
     ];
+
+    // Why: audit_logs is a read-only history screen (Refresh + filters); it does not follow standard CRUD chrome.
+    if ($module === 'audit_logs') {
+        $checks['+ New Button'] = [
+            'status' => 'n/a',
+            'details' => 'Audit logs are system-generated; index uses Refresh instead of create/add.',
+        ];
+        $checks['Back & Save (create.php)'] = [
+            'status' => 'n/a',
+            'details' => 'Audit logs module does not expose a create form.',
+        ];
+        $checks['Back & Save (edit.php)'] = [
+            'status' => 'n/a',
+            'details' => 'Audit logs module does not expose an edit form.',
+        ];
+    }
 
     foreach ($checks as $checkName => $result) {
         $status = $result['status'];
