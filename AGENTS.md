@@ -108,11 +108,11 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 
 #### Full-module browser QA (5 companies, Laragon)
 
-Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
+Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Runner FK/delete improvements: [PR #1722](https://github.com/pirica/it-management/pull/1722). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **CLI-only:** HTTP session runner — login (`Admin`/`Admin`), dashboard company switch, per-module tenant clear, sample data, list/create/view/edit/list_all, search, sort, JSON import. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. |
+| `scripts/module_browser_qa_runner.php` | **CLI-only:** HTTP session runner — login (`Admin`/`Admin`), dashboard company switch, FK-aware tenant clear, sample data (HTTP then `database.sql` DB seed), list/create/view/edit/list_all, **Export PDF → Export Excel (parse table) → Import Excel**, `single_delete` with FK retry, search, sort. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. |
 | `scripts/module_browser_qa_build_report.php` | **CLI-only:** Builds markdown summary from the JSON (preflight, Expenses pilot table, failure categories). |
 
 **Commands (repository root, Laragon):**
@@ -122,11 +122,25 @@ php scripts/module_browser_qa_runner.php
 php scripts/module_browser_qa_build_report.php
 php scripts/module_browser_qa_runner.php --pilot-only
 php scripts/module_browser_qa_runner.php --module=expenses --company=4
+php scripts/module_browser_qa_runner.php --module=departments --company=1
 ```
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
-**Checklist per standard module (Tier A):** clear tenant rows → **Add sample data** (empty table only) → search → sort → create → view → edit → list_all → export hook → import JSON → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
+**Checklist per standard module (Tier A):** FK-aware **clear** (child tables first) → **Add sample data** (HTTP; on `No sample rows found in database.sql` run `itm_seed_table_from_database_sql()` + FK parents) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** → **import_db** (round-trip from parsed table / `database.sql` row values) → **single_delete** (clears non–Protection Zone blockers, then retries) → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
+
+**FK-aware clear / delete (PR #1722):**
+
+* **Tenant clear** walks inbound FKs (`information_schema`), deletes child rows for the active `company_id`, then clears the module table. MySQL **1451** retries parse the **child table** from the error text (`` `schema`.`child_table` ``), not the schema name.
+* **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries.
+* **Never auto-clear** during FK prep or delete retry: `companies`, `users`, and every **Protection Zone** module (`employees`, `equipment`, `idfs`, `idf_links`, `idf_positions`, `idf_ports`, `audit_logs`, `settings`, `user_companies`, `employee_system_access`, `cable_colors`, `ui_configuration`). If delete is blocked only by Protection Zone tables, the step fails with an explicit note (no data wipe).
+* **Skip destructive clear** on `companies` and `users` at the start of Tier A (same as before).
+
+**Sample / export / import:**
+
+* Sample seed prerequisites are seeded first when configured (e.g. `expenses` → `budget_categories`, `cost_centers`, `gl_accounts`; `employee_positions` → `departments`).
+* **Export Excel** is simulated by parsing the list `<table>` HTML (same columns as `table-tools.js`).
+* **Import Excel** POSTs `import_excel_rows` to `data-itm-db-import-endpoint`; uses export headers with insertable values from `database.sql` when UI labels are not IDs. **`expenses`:** clears tenant `expenses` rows immediately before import because of unique key `uq_expenses_company_scope` (one row per company + cost center).
 
 **Tiers (do not treat all failures alike):**
 
@@ -134,11 +148,10 @@ php scripts/module_browser_qa_runner.php --module=expenses --company=4
 * **Tier B** — Protection Zone: smoke list only; no destructive clear unless explicitly requested.
 * **Tier C** — `is_*` façades: full matrix on `is_switch`; routing smoke on the rest.
 * **Tier D** — bespoke (`budget_report`, `floor_plans`, `rack_planner`, …): navigation smoke only.
-* **Skip destructive clear** on `companies` and `users`.
 
 **Cursor browser:** Use IDE browser for the **Expenses pilot** (all five companies) and spot-checks; use the CLI runner for full ~101×5 coverage. Reports live under **`qa-reports/`** (commit dated `.md` + `.json` when publishing QA results).
 
-**Caveats:** Clearing parent lookup tables before children causes FK-related failures in the automated run — execute **FK-safe waves** (catalogs → budgeting → children). Sort-step failures often mean the visible default column is not `id`; re-run after runner updates or confirm manually via column header links.
+**Caveats:** Run lookup parents before children (see `$lookupWave` in the runner). Sort-step failures often mean the visible default column is not `id`; confirm via column header links. Modules without `data-itm-db-import-endpoint` report `import_db` as N/A.
 
 #### 5. Pre-merge verification (scripts)
 
