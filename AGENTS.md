@@ -127,14 +127,14 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
-**Checklist per standard module (Tier A):** FK-aware **clear** (child tables first) → **Add sample data** (HTTP; on `No sample rows found in database.sql` run `itm_seed_table_from_database_sql()` + FK parents) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** → **import_db** (round-trip from parsed table / `database.sql` row values) → **single_delete** (clears non–Protection Zone blockers, then retries) → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
+**Checklist per standard module (Tier A, including Protection Zone folders):** FK-aware **clear** (child tables first, including Protection Zone tables when they are FK blockers) → **Add sample data** (HTTP; on `No sample rows found in database.sql` run `itm_seed_table_from_database_sql()` + FK parents) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** → **import_db** (round-trip from parsed table / `database.sql` row values) → **single_delete** (clears FK blocker tables for the tenant, then retries) → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
 
 **FK-aware clear / delete (PR #1722):**
 
 * **Tenant clear** walks inbound FKs (`information_schema`), deletes child rows for the active `company_id`, then clears the module table. MySQL **1451** retries parse the **child table** from the error text (`` `schema`.`child_table` ``), not the schema name.
-* **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries.
-* **Never auto-clear** during FK prep or delete retry: `companies`, `users`, and every **Protection Zone** module (`employees`, `equipment`, `idfs`, `idf_links`, `idf_positions`, `idf_ports`, `audit_logs`, `settings`, `user_companies`, `employee_system_access`, `cable_colors`, `ui_configuration`). If delete is blocked only by Protection Zone tables, the step fails with an explicit note (no data wipe).
-* **Skip destructive clear** on `companies` and `users` at the start of Tier A (same as before).
+* **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries — **including Protection Zone tables** when required to unblock the delete.
+* **Never auto-clear** during FK prep or delete retry: **`companies`** and **`users`** only (shared auth).
+* **Skip destructive clear** on `companies` and `users` at the start of each module (same as before).
 
 **Sample / export / import:**
 
@@ -144,8 +144,7 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Tiers (do not treat all failures alike):**
 
-* **Tier A** — standard flattened CRUD (`modules/<slug>/index.php`).
-* **Tier B** — Protection Zone: smoke list only; no destructive clear unless explicitly requested.
+* **Tier A** — standard flattened CRUD (`modules/<slug>/index.php`), **including Protection Zone** modules (full checklist; module *code* in Protection Zone is still edit-only per AGENTS unless requested).
 * **Tier C** — `is_*` façades: full matrix on `is_switch`; routing smoke on the rest.
 * **Tier D** — bespoke (`budget_report`, `floor_plans`, `rack_planner`, …): navigation smoke only.
 
