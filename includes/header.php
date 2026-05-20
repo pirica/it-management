@@ -59,9 +59,13 @@ window.ITM_FAVICON_URL = <?php echo json_encode($favicon_url ?? itm_ui_config_fa
 
 <!-- Global JS Library Dependencies -->
 <script src="<?php echo BASE_URL; ?>js/select-add-option.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="<?php echo BASE_URL; ?>js/vendor/xlsx.full.min.js"></script>
 <script src="<?php echo BASE_URL; ?>js/ui-layout.js"></script>
-<script src="<?php echo BASE_URL; ?>js/table-tools.js"></script>
+<?php
+$itmTableToolsPath = ROOT_PATH . 'js/table-tools.js';
+$itmTableToolsVersion = is_file($itmTableToolsPath) ? (string)filemtime($itmTableToolsPath) : '1';
+?>
+<script src="<?php echo BASE_URL; ?>js/table-tools.js?v=<?php echo sanitize($itmTableToolsVersion); ?>"></script>
 
 <script>
 /**
