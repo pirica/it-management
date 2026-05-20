@@ -964,10 +964,75 @@ function mbqa_tables_never_clear(): array
     return ['companies', 'users'];
 }
 
-/** Row count target so bulk_delete / clear_table UI gates (default records_per_page 25) are exercisable. */
-function mbqa_bulk_row_target(): int
+/** Ideal row count so bulk_delete / clear_table UI gates (default records_per_page 25) are exercisable when schema allows. */
+function mbqa_bulk_row_target_ideal(mysqli $conn): int
 {
-    return 30;
+    return max(30, mbqa_records_per_page($conn) + 1);
+}
+
+/**
+ * Max tenant rows allowed by unique indexes (e.g. expenses: one row per company_id + cost_center_id).
+ */
+function mbqa_unique_scope_capacity(mysqli $conn, string $table, int $companyId): int
+{
+    if (!itm_is_safe_identifier($table) || $companyId <= 0) {
+        return PHP_INT_MAX;
+    }
+
+    $uniqueSets = mbqa_table_unique_column_sets($conn, $table);
+    $fkMap = function_exists('itm_table_outbound_fk_map') ? itm_table_outbound_fk_map($conn, $table) : [];
+    $limiting = [];
+
+    foreach ($uniqueSets as $set) {
+        $nonId = array_values(array_filter($set, static function ($col) {
+            return $col !== 'id';
+        }));
+        if (empty($nonId)) {
+            continue;
+        }
+
+        $setCapacity = PHP_INT_MAX;
+        foreach ($nonId as $col) {
+            if ($col === 'company_id') {
+                continue;
+            }
+
+            $refTable = mbqa_fk_reference_table($col, $fkMap);
+            if ($refTable !== '' && itm_is_safe_identifier($refTable)) {
+                if (itm_table_has_column($conn, $refTable, 'company_id')) {
+                    $colCapacity = mbqa_tenant_row_count($conn, $refTable, $companyId);
+                } else {
+                    $colCapacity = count(mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId));
+                }
+                $setCapacity = min($setCapacity, max(0, $colCapacity));
+            }
+        }
+
+        if ($setCapacity < PHP_INT_MAX) {
+            $limiting[] = max(1, $setCapacity);
+        }
+    }
+
+    if (empty($limiting)) {
+        return PHP_INT_MAX;
+    }
+
+    return max(1, min($limiting));
+}
+
+/**
+ * Row target for add step: pursue bulk-action coverage but never exceed per-tenant unique scope.
+ */
+function mbqa_bulk_row_target_for_table(mysqli $conn, string $table, int $companyId): int
+{
+    $ideal = mbqa_bulk_row_target_ideal($conn);
+    $capacity = mbqa_unique_scope_capacity($conn, $table, $companyId);
+
+    if ($capacity === PHP_INT_MAX) {
+        return $ideal;
+    }
+
+    return max(1, min($ideal, $capacity));
 }
 
 function mbqa_records_per_page(mysqli $conn): int
@@ -1267,40 +1332,58 @@ function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $co
     }
 }
 
-function mbqa_query_first_id(mysqli $conn, string $refTable, int $companyId): int
+/**
+ * @return int[]
+ */
+function mbqa_query_fk_ids_for_tenant(mysqli $conn, string $refTable, int $companyId, int $limit = 200): array
 {
-    if (!itm_is_safe_identifier($refTable)) {
-        return 0;
+    if (!itm_is_safe_identifier($refTable) || $limit <= 0) {
+        return [];
     }
 
     $tableEsc = '`' . str_replace('`', '``', $refTable) . '`';
     if (itm_table_has_column($conn, $refTable, 'company_id')) {
-        $sql = 'SELECT id FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId . ' ORDER BY id ASC LIMIT 1';
+        $sql = 'SELECT id FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId . ' ORDER BY id ASC LIMIT ' . (int)$limit;
     } else {
-        $sql = 'SELECT id FROM ' . $tableEsc . ' ORDER BY id ASC LIMIT 1';
+        $sql = 'SELECT id FROM ' . $tableEsc . ' ORDER BY id ASC LIMIT ' . (int)$limit;
     }
 
+    $ids = [];
     $res = mysqli_query($conn, $sql);
-    if ($res && ($row = mysqli_fetch_assoc($res))) {
-        return (int)($row['id'] ?? 0);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $id = (int)($row['id'] ?? 0);
+        if ($id > 0) {
+            $ids[] = $id;
+        }
     }
 
-    return 0;
+    return $ids;
 }
 
-function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool $ensureParent = true): int
+function mbqa_query_first_id(mysqli $conn, string $refTable, int $companyId): int
+{
+    $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId, 1);
+
+    return $ids[0] ?? 0;
+}
+
+function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool $ensureParent = true, int $sequence = 1): int
 {
     if (!itm_is_safe_identifier($refTable)) {
         return 0;
     }
 
-    $id = mbqa_query_first_id($conn, $refTable, $companyId);
-    if ($id > 0 || !$ensureParent) {
-        return $id;
+    $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
+    if (!empty($ids)) {
+        return (int)$ids[($sequence - 1) % count($ids)];
+    }
+
+    if (!$ensureParent) {
+        return 0;
     }
 
     if (in_array($refTable, mbqa_tables_never_clear(), true)) {
-        return $id;
+        return 0;
     }
 
     static $ensuring = [];
@@ -1314,51 +1397,19 @@ function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool
         itm_seed_table_from_database_sql($conn, $refTable, $companyId, $seedErr);
     }
 
-    $id = mbqa_query_first_id($conn, $refTable, $companyId);
-    if ($id <= 0) {
+    $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
+    if (empty($ids)) {
         mbqa_insert_random_rows($conn, $refTable, $companyId, 1, 1);
-        $id = mbqa_query_first_id($conn, $refTable, $companyId);
+        $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
     }
 
     unset($ensuring[$refTable]);
 
-    return $id;
-}
-
-/**
- * expenses.uq_expenses_company_scope — rotate cost centers so random bulk inserts do not collide.
- */
-function mbqa_pick_expense_cost_center_id(mysqli $conn, int $companyId, int $sequence): int
-{
-    static $cache = [];
-
-    if ($companyId <= 0) {
+    if (empty($ids)) {
         return 0;
     }
 
-    $cacheKey = $companyId . ':' . mbqa_tenant_row_count($conn, 'cost_centers', $companyId);
-    if (!isset($cache[$cacheKey])) {
-        $ids = [];
-        $res = mysqli_query(
-            $conn,
-            'SELECT id FROM `cost_centers` WHERE company_id=' . (int)$companyId . ' ORDER BY id ASC LIMIT 50'
-        );
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $id = (int)($row['id'] ?? 0);
-            if ($id > 0) {
-                $ids[] = $id;
-            }
-        }
-        $cache[$cacheKey] = $ids;
-    }
-
-    if (empty($cache[$cacheKey])) {
-        return 0;
-    }
-
-    $index = ($sequence - 1) % count($cache[$cacheKey]);
-
-    return (int)$cache[$cacheKey][$index];
+    return (int)$ids[($sequence - 1) % count($ids)];
 }
 
 /**
@@ -1406,17 +1457,11 @@ function mbqa_build_random_insert_row(
         $refTable = mbqa_fk_reference_table($name, $fkMap);
         $isFkColumn = ($refTable !== '' || isset($fkMap[$name]));
 
-        if ($table === 'expenses' && $name === 'cost_center_id') {
-            $fkId = mbqa_pick_expense_cost_center_id($conn, $companyId, $sequence);
-            if ($fkId > 0) {
-                $value = (string)$fkId;
-                $bindType = 'i';
-            }
-        } elseif ($isFkColumn) {
+        if ($isFkColumn) {
             if ($refTable === '') {
                 $refTable = mbqa_fk_reference_table($name, $fkMap);
             }
-            $fkId = $refTable !== '' ? mbqa_pick_fk_value($conn, $refTable, $companyId, true) : 0;
+            $fkId = $refTable !== '' ? mbqa_pick_fk_value($conn, $refTable, $companyId, true, $sequence) : 0;
             if ($fkId > 0) {
                 $value = (string)$fkId;
                 $bindType = 'i';
@@ -1487,7 +1532,7 @@ function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, in
     }
 
     if ($parentDepth === 0) {
-        mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, mbqa_bulk_row_target());
+        mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, mbqa_bulk_row_target_for_table($conn, $table, $companyId));
     }
 
     $columnMetas = mbqa_table_column_metas($conn, $table);
@@ -1546,8 +1591,6 @@ function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, in
  */
 function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyId): array
 {
-    $target = mbqa_bulk_row_target();
-
     if (!itm_is_safe_identifier($table) || $companyId <= 0) {
         return ['ok' => false, 'note' => 'Invalid table or company', 'na' => false, 'count' => 0];
     }
@@ -1560,11 +1603,18 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
         return ['ok' => true, 'note' => 'N/A (no company_id)', 'na' => true, 'count' => 0];
     }
 
-    mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, mbqa_bulk_row_target());
+    $target = mbqa_bulk_row_target_for_table($conn, $table, $companyId);
+    $ideal = mbqa_bulk_row_target_ideal($conn);
+    $capacity = mbqa_unique_scope_capacity($conn, $table, $companyId);
+    $targetNote = ($capacity < $ideal && $capacity < PHP_INT_MAX)
+        ? (' target=' . $target . ' capped by unique scope')
+        : (' target=' . $target);
+
+    mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, $target);
 
     $current = mbqa_tenant_row_count($conn, $table, $companyId);
     if ($current >= $target) {
-        return ['ok' => true, 'note' => 'Already ' . $current . ' rows (>=' . $target . ')', 'na' => false, 'count' => $current];
+        return ['ok' => true, 'note' => 'Already ' . $current . ' rows (>=' . $target . ')' . $targetNote, 'na' => false, 'count' => $current];
     }
 
     if ($current === 0 && function_exists('itm_seed_table_from_database_sql')) {
@@ -1580,9 +1630,9 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
     $ok = $final >= $target;
 
     if ($added > 0) {
-        $note = 'inserted ' . $added . ' random row(s); total=' . $final . ' target=' . $target;
+        $note = 'inserted ' . $added . ' random row(s); total=' . $final . $targetNote;
     } else {
-        $note = 'Could not insert random rows; total=' . $final . ' target=' . $target;
+        $note = 'Could not insert random rows; total=' . $final . $targetNote;
         if ($insertResult['last_error'] !== '') {
             $note .= '; ' . $insertResult['last_error'];
         }
