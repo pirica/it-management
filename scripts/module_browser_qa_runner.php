@@ -67,6 +67,14 @@ $bespokeSmoke = [
 
 $skipClear = ['companies', 'users'];
 
+/** Why: Some modules need lookup parents in database.sql before sample seed succeeds for a tenant. */
+$sampleSeedPrerequisites = [
+    'expenses' => ['budget_categories', 'cost_centers', 'gl_accounts'],
+    'employee_positions' => ['departments'],
+    'employee_onboarding_requests' => ['departments', 'employee_positions'],
+    'inventory_items' => ['inventory_categories', 'suppliers'],
+];
+
 $companyNames = [
     1 => 'TechCorp Global',
     2 => 'DataCenter Plus',
@@ -175,6 +183,465 @@ function mbqa_step_result(string $step, bool $ok, string $note = ''): array
         'status' => $ok ? 'Pass' : 'Fail',
         'notes' => $note,
     ];
+}
+
+function mbqa_index_is_empty(string $html): bool
+{
+    return stripos($html, 'No records found') !== false;
+}
+
+function mbqa_index_has_sample_seed_error(string $html): bool
+{
+    return stripos($html, 'No sample rows found in database.sql') !== false;
+}
+
+/**
+ * Mirrors table-tools.js: read list table headers/rows for Excel export → import round-trip.
+ *
+ * @return array<int, array<int, string>>
+ */
+function mbqa_extract_table_export_rows(string $html): array
+{
+    if (!class_exists('DOMDocument')) {
+        return [];
+    }
+
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument();
+    if (@$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html) === false) {
+        libxml_clear_errors();
+        return [];
+    }
+    libxml_clear_errors();
+
+    $xpath = new DOMXPath($dom);
+    $tables = $xpath->query('//div[contains(@class,"card")]//table[thead and tbody]');
+    if ($tables === false || $tables->length === 0) {
+        $tables = $xpath->query('//table[thead and tbody]');
+    }
+    if ($tables === false || $tables->length === 0) {
+        return [];
+    }
+
+    /** @var DOMElement $table */
+    $table = $tables->item(0);
+    $skipHeaders = ['actions', 'select to delete', ''];
+
+    $headers = [];
+    $columnIndices = [];
+    $headerNodes = $xpath->query('.//thead/tr[1]/th', $table);
+    if ($headerNodes !== false) {
+        foreach ($headerNodes as $colIndex => $th) {
+            $label = mbqa_normalize_cell_text($th->textContent ?? '');
+            $key = strtolower(trim($label));
+            if (in_array($key, $skipHeaders, true)) {
+                continue;
+            }
+            if ($key === '' && $xpath->query('.//input[@type="checkbox"]', $th)->length > 0) {
+                continue;
+            }
+            $columnIndices[] = (int)$colIndex;
+            $headers[] = $label;
+        }
+    }
+
+    if (empty($headers)) {
+        return [];
+    }
+
+    $rows = [$headers];
+    $bodyRows = $xpath->query('.//tbody/tr', $table);
+    if ($bodyRows === false) {
+        return $rows;
+    }
+
+    foreach ($bodyRows as $tr) {
+        $cells = $xpath->query('./td', $tr);
+        if ($cells === false || $cells->length === 0) {
+            continue;
+        }
+        $row = [];
+        foreach ($columnIndices as $colIndex) {
+            $td = $cells->item($colIndex);
+            $row[] = mbqa_normalize_cell_text($td ? ($td->textContent ?? '') : '');
+        }
+        if (count($row) === count($headers) && implode('', $row) !== '') {
+            $rows[] = $row;
+        }
+    }
+
+    return count($rows) >= 2 ? $rows : [];
+}
+
+function mbqa_normalize_cell_text(string $text): string
+{
+    $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+    return trim($text);
+}
+
+function mbqa_index_has_export_buttons(string $html): array
+{
+    // Why: table-tools.js injects Export PDF/Excel at runtime; CLI runner only sees the server HTML + shared script tag.
+    $hasTableTools = stripos($html, 'table-tools.js') !== false && stripos($html, '<table') !== false;
+
+    return [
+        'pdf' => $hasTableTools
+            || stripos($html, 'Export PDF') !== false
+            || stripos($html, '📄 Export PDF') !== false,
+        'excel' => $hasTableTools
+            || stripos($html, 'Export Excel') !== false
+            || stripos($html, '📗 Export Excel') !== false,
+    ];
+}
+
+/**
+ * HTTP sample seed, then database.sql seed (and FK parents) when the UI reports missing SQL samples.
+ *
+ * @return array{ok:bool, note:string, html:string, csrf:string, na:bool}
+ */
+function mbqa_ensure_sample_data(
+    mysqli $conn,
+    string $slug,
+    int $companyId,
+    string $moduleUrl,
+    string $cookieFile
+): array {
+    global $sampleSeedPrerequisites;
+
+    $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+    $csrf = mbqa_extract_csrf($index['body']);
+    $hasSampleBtn = stripos($index['body'], 'name="add_sample_data"') !== false
+        || stripos($index['body'], 'Add sample data') !== false;
+
+    if (!$hasSampleBtn) {
+        return ['ok' => true, 'note' => 'N/A (no handler)', 'html' => $index['body'], 'csrf' => $csrf, 'na' => true];
+    }
+
+    if (!mbqa_index_is_empty($index['body'])) {
+        return ['ok' => true, 'note' => 'N/A (rows exist)', 'html' => $index['body'], 'csrf' => $csrf, 'na' => true];
+    }
+
+    if ($csrf !== '') {
+        mbqa_http(
+            $moduleUrl . 'index.php',
+            'POST',
+            http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrf]),
+            ['Content-Type: application/x-www-form-urlencoded'],
+            $cookieFile
+        );
+        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        $csrf = mbqa_extract_csrf($index['body']);
+        if (!mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body'])) {
+            return ['ok' => true, 'note' => 'HTTP sample seed', 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+        }
+    }
+
+    if (!function_exists('itm_seed_table_from_database_sql')) {
+        return ['ok' => false, 'note' => 'Still empty; itm_seed_table_from_database_sql missing', 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+    }
+
+    $_SESSION['company_id'] = $companyId;
+
+    $seedParents = static function (mysqli $conn, string $table, int $companyId) use ($sampleSeedPrerequisites): void {
+        $tables = $sampleSeedPrerequisites[$table] ?? [];
+        if (function_exists('itm_table_outbound_fk_map')) {
+            foreach (itm_table_outbound_fk_map($conn, $table) as $fkMeta) {
+                $parentTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
+                if ($parentTable !== '' && itm_is_safe_identifier($parentTable)) {
+                    $tables[] = $parentTable;
+                }
+            }
+        }
+        $tables = array_values(array_unique($tables));
+        foreach ($tables as $parentTable) {
+            if (!itm_is_safe_identifier($parentTable) || in_array($parentTable, mbqa_tables_never_clear(), true)) {
+                continue;
+            }
+            $parentErr = '';
+            itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $parentErr);
+        }
+    };
+
+    $seedParents($conn, $slug, $companyId);
+
+    $seedErr = '';
+    $inserted = itm_seed_table_from_database_sql($conn, $slug, $companyId, $seedErr);
+    if ($inserted <= 0) {
+        $seedErr = '';
+        $inserted = itm_seed_table_from_database_sql($conn, $slug, $companyId, $seedErr);
+    }
+
+    $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+    $csrf = mbqa_extract_csrf($index['body']);
+    $ok = !mbqa_index_is_empty($index['body']);
+
+    if ($ok) {
+        $note = $inserted > 0
+            ? ('DB sample seed (' . $inserted . ' row(s) from database.sql)')
+            : 'DB sample seed (rows present after FK parent seed)';
+        return ['ok' => true, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+    }
+
+    $note = $seedErr !== '' ? $seedErr : 'Still empty or seed error';
+    if (mbqa_index_has_sample_seed_error($index['body'])) {
+        $note = 'No sample rows in database.sql (HTTP + DB seed)';
+    }
+
+    return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+}
+
+/**
+ * Build import rows from exported table data (adds one QA row for insert verification).
+ *
+ * @param array<int, array<int, string>> $exportRows
+ * @return array<int, array<int, string>>
+ */
+function mbqa_build_import_rows_from_export(array $exportRows): array
+{
+    if (count($exportRows) < 2) {
+        return $exportRows;
+    }
+
+    $template = $exportRows[1];
+    $newRow = $template;
+    $suffix = date('YmdHis');
+    foreach ($exportRows[0] as $i => $header) {
+        $headerKey = strtolower(trim(preg_replace('/\s+/', ' ', (string)$header)));
+        if ($headerKey === 'id') {
+            $newRow[$i] = '';
+            continue;
+        }
+        if (strpos($headerKey, 'invoice') !== false) {
+            $newRow[$i] = 'INV-QA-IMPORT-' . $suffix;
+        } elseif (
+            $headerKey === 'description'
+            || $headerKey === 'name'
+            || strpos($headerKey, 'code') !== false
+            || strpos($headerKey, 'title') !== false
+        ) {
+            $base = trim((string)($template[$i] ?? ''));
+            $newRow[$i] = ($base !== '' ? $base . ' ' : '') . 'QA-IMPORT-' . $suffix;
+        }
+    }
+
+    // Why: Import only the derived row so FK labels/values from Export Excel match one insert attempt.
+    return [$exportRows[0], $newRow];
+}
+
+function mbqa_humanize_field_label(string $field): string
+{
+    $label = preg_replace('/_id$/', '', trim($field));
+    if ($label === 'id') {
+        return 'ID';
+    }
+
+    return ucwords(str_replace('_', ' ', $label));
+}
+
+/**
+ * Fallback import payload with raw DB values (FK ids) when label-based Excel import inserts 0 rows.
+ *
+ * @return array<int, array<int, string>>
+ */
+function mbqa_build_import_rows_from_db_template(mysqli $conn, string $table, int $companyId): array
+{
+    if (!itm_is_safe_identifier($table) || $companyId <= 0 || !itm_table_has_column($conn, $table, 'company_id')) {
+        return [];
+    }
+
+    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+    $res = mysqli_query($conn, 'SELECT * FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId . ' ORDER BY id ASC LIMIT 1');
+    if (!$res || !($row = mysqli_fetch_assoc($res))) {
+        return [];
+    }
+
+    $headers = [];
+    $values = [];
+    foreach ($row as $field => $value) {
+        if ($field === 'id' || $field === 'company_id' || $field === 'created_at' || $field === 'updated_at') {
+            continue;
+        }
+        $headers[] = mbqa_humanize_field_label((string)$field);
+        $values[] = (string)$value;
+    }
+
+    if (empty($headers)) {
+        return [];
+    }
+
+    $suffix = date('YmdHis');
+    $importValues = $values;
+    foreach ($headers as $i => $label) {
+        $key = strtolower($label);
+        if (strpos($key, 'invoice') !== false) {
+            $importValues[$i] = 'INV-QA-IMPORT-' . $suffix;
+        } elseif ($key === 'description' || $key === 'name' || strpos($key, 'code') !== false) {
+            $importValues[$i] = trim($importValues[$i] . ' QA-IMPORT-' . $suffix);
+        }
+    }
+
+    return [$headers, $importValues];
+}
+
+/**
+ * Import payload from database.sql INSERT samples (raw FK ids), when UI export labels fail to insert.
+ *
+ * @return array<int, array<int, string>>
+ */
+function mbqa_build_import_rows_from_database_sql_seed(mysqli $conn, string $table, int $companyId): array
+{
+    if (!function_exists('itm_parse_database_sql_inserts') || !itm_is_safe_identifier($table) || $companyId <= 0) {
+        return [];
+    }
+
+    $sqlPath = ROOT_PATH . 'database.sql';
+    if (!is_file($sqlPath)) {
+        return [];
+    }
+
+    $sqlBody = @file_get_contents($sqlPath);
+    if ($sqlBody === false) {
+        return [];
+    }
+
+    $parsed = itm_parse_database_sql_inserts($sqlBody, $table);
+    $tableRows = $parsed[$table] ?? [];
+    if (empty($tableRows)) {
+        return [];
+    }
+
+    $fkMap = function_exists('itm_table_outbound_fk_map') ? itm_table_outbound_fk_map($conn, $table) : [];
+    $suffix = date('YmdHis');
+    $chosen = null;
+
+    foreach ($tableRows as $rowEntry) {
+        $rawColumns = $rowEntry['columns'] ?? [];
+        $rawValues = $rowEntry['values'] ?? [];
+        $rowCompanyId = null;
+        foreach ($rawColumns as $index => $columnToken) {
+            $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+            if ($columnName !== 'company_id') {
+                continue;
+            }
+            $rawCompanyToken = trim((string)($rawValues[$index] ?? ''), "'\"");
+            $rowCompanyId = (int)$rawCompanyToken;
+            break;
+        }
+        if ($rowCompanyId !== null && $rowCompanyId !== $companyId) {
+            continue;
+        }
+        $chosen = $rowEntry;
+        break;
+    }
+
+    if ($chosen === null) {
+        $chosen = $tableRows[0];
+    }
+
+    $headers = [];
+    $values = [];
+    foreach ($chosen['columns'] as $index => $columnToken) {
+        $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+        if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+        if (in_array($columnName, ['id', 'company_id', 'created_at', 'updated_at'], true)) {
+            continue;
+        }
+
+        $valueToken = trim((string)($chosen['values'][$index] ?? ''), "'\"");
+        if (isset($fkMap[$columnName]) && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $storedFkId = (int)$valueToken;
+            if ($storedFkId > 0) {
+                $resolved = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$columnName], $companyId, $storedFkId);
+                if ($resolved > 0) {
+                    $valueToken = (string)$resolved;
+                }
+            }
+        }
+
+        $key = strtolower(mbqa_humanize_field_label($columnName));
+        if (strpos($key, 'invoice') !== false) {
+            $valueToken = 'INV-QA-IMPORT-' . $suffix;
+        } elseif ($key === 'description' || $key === 'name' || strpos($key, 'code') !== false) {
+            $valueToken = ($valueToken !== '' ? $valueToken . ' ' : '') . 'QA-IMPORT-' . $suffix;
+        }
+
+        $headers[] = mbqa_humanize_field_label($columnName);
+        $values[] = $valueToken;
+    }
+
+    if (empty($headers)) {
+        return [];
+    }
+
+    $rows = [$headers, $values];
+    if ($table === 'expenses') {
+        $rows = mbqa_unique_expense_import_row($conn, $companyId, $rows);
+    }
+
+    return $rows;
+}
+
+/**
+ * expenses.uq_expenses_company_scope allows one row per company + cost_center; pick a free cost center for import QA.
+ *
+ * @param array<int, array<int, string>> $sqlRows
+ * @return array<int, array<int, string>>
+ */
+function mbqa_unique_expense_import_row(mysqli $conn, int $companyId, array $sqlRows): array
+{
+    if ($companyId <= 0 || count($sqlRows) < 2) {
+        return $sqlRows;
+    }
+
+    $headers = $sqlRows[0];
+    $values = $sqlRows[1];
+    $ccIndex = array_search('Cost Center', $headers, true);
+    $glIndex = array_search('Gl Account', $headers, true);
+    if ($ccIndex === false) {
+        return $sqlRows;
+    }
+
+    $pickSql = 'SELECT cc.id AS cc_id, gl.id AS gl_id
+        FROM cost_centers cc
+        INNER JOIN gl_accounts gl ON gl.company_id = cc.company_id
+        LEFT JOIN expenses e ON e.company_id = cc.company_id AND e.cost_center_id = cc.id
+        WHERE cc.company_id = ' . (int)$companyId . ' AND e.id IS NULL
+        ORDER BY cc.id ASC
+        LIMIT 1';
+    $pickRes = mysqli_query($conn, $pickSql);
+    $pick = $pickRes ? mysqli_fetch_assoc($pickRes) : null;
+    if ($pick) {
+        $values[$ccIndex] = (string)(int)($pick['cc_id'] ?? 0);
+        if ($glIndex !== false) {
+            $values[$glIndex] = (string)(int)($pick['gl_id'] ?? 0);
+        }
+    }
+
+    return [$headers, $values];
+}
+
+/**
+ * Import rows for round-trip: Export Excel headers from the list table + insertable values from database.sql.
+ *
+ * @param array<int, array<int, string>> $exportRows
+ * @return array<int, array<int, string>>
+ */
+function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $companyId, array $exportRows): array
+{
+    $sqlRows = mbqa_build_import_rows_from_database_sql_seed($conn, $table, $companyId);
+    if (!empty($sqlRows)) {
+        return $sqlRows;
+    }
+
+    if (count($exportRows) >= 2) {
+        return mbqa_build_import_rows_from_export($exportRows);
+    }
+
+    return [];
 }
 
 /** Tables the runner must never wipe entirely during FK prep (shared / auth). */
@@ -543,9 +1010,9 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('list_all', true, 'N/A');
             $steps[] = mbqa_step_result('search', $listOk, 'index only');
             $steps[] = mbqa_step_result('sort', $listOk, 'index only');
+            $steps[] = mbqa_step_result('export_pdf', true, 'N/A smoke');
             $steps[] = mbqa_step_result('export_xls', true, 'N/A smoke');
             $steps[] = mbqa_step_result('import_db', true, 'N/A smoke');
-            $steps[] = mbqa_step_result('export_pdf', true, 'N/A smoke');
             $steps[] = mbqa_step_result('single_delete', true, 'N/A smoke');
             $steps[] = mbqa_step_result('bulk_delete', true, 'N/A');
             $steps[] = mbqa_step_result('clear_table', true, 'N/A');
@@ -563,7 +1030,7 @@ foreach ($companiesToRun as $companyId) {
             $routeOk = $listOk;
             $steps[] = mbqa_step_result('clear', true, 'N/A façade routing');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A façade');
-            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_xls', 'import_db', 'export_pdf', 'bulk_delete', 'clear_table'] as $s) {
+            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'bulk_delete', 'clear_table'] as $s) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
             $results[] = [
@@ -589,24 +1056,13 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('clear', true, 'Skip destructive clear');
         }
 
-        $hasSampleBtn = stripos($index['body'], 'name="add_sample_data"') !== false
-            || stripos($index['body'], 'Add sample data') !== false;
-        $emptyTable = stripos($index['body'], 'No records found') !== false;
-        if ($hasSampleBtn && $emptyTable && $csrfIndex !== '') {
-            $seed = mbqa_http(
-                $moduleUrl . 'index.php',
-                'POST',
-                http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrfIndex]),
-                ['Content-Type: application/x-www-form-urlencoded'],
-                $cookieFile
-            );
-            $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-            $csrfIndex = mbqa_extract_csrf($index['body']);
-            $seedOk = $seed['status'] >= 200 && $seed['status'] < 400
-                && stripos($index['body'], 'No records found') === false;
-            $steps[] = mbqa_step_result('sample_data', $seedOk, $seedOk ? '' : 'Still empty or seed error');
+        $seedResult = mbqa_ensure_sample_data($conn, $slug, $companyId, $moduleUrl, $cookieFile);
+        $index['body'] = $seedResult['html'];
+        $csrfIndex = $seedResult['csrf'];
+        if ($seedResult['na']) {
+            $steps[] = mbqa_step_result('sample_data', true, $seedResult['note']);
         } else {
-            $steps[] = mbqa_step_result('sample_data', true, $hasSampleBtn ? 'N/A (rows exist or no button)' : 'N/A (no handler)');
+            $steps[] = mbqa_step_result('sample_data', $seedResult['ok'], $seedResult['note']);
         }
 
         $search = mbqa_http($moduleUrl . 'index.php?search=sample&page=1', 'GET', null, [], $cookieFile);
@@ -647,6 +1103,103 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('list_all', true, 'N/A');
         }
 
+        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        $csrfIndex = mbqa_extract_csrf($index['body']);
+
+        $exportButtons = mbqa_index_has_export_buttons($index['body']);
+        $exportRows = mbqa_extract_table_export_rows($index['body']);
+        $hasTableExport = count($exportRows) >= 2;
+
+        $steps[] = mbqa_step_result(
+            'export_pdf',
+            $exportButtons['pdf'] && $hasTableExport,
+            $hasTableExport
+                ? ('table export ready, ' . (count($exportRows) - 1) . ' row(s)')
+                : ($exportButtons['pdf'] ? 'Export PDF button; no table rows' : 'No Export PDF / table')
+        );
+
+        $steps[] = mbqa_step_result(
+            'export_xls',
+            $exportButtons['excel'] && $hasTableExport,
+            $hasTableExport
+                ? ('extracted ' . (count($exportRows) - 1) . ' row(s) like Export Excel')
+                : ($exportButtons['excel'] ? 'Export Excel button; no extractable rows' : 'No Export Excel / table')
+        );
+
+        $hasImportEndpoint = stripos($index['body'], 'data-itm-db-import-endpoint') !== false;
+        if ($hasImportEndpoint && $csrfIndex !== '' && $hasTableExport) {
+            // Why: expenses enforces one row per company+cost_center; free the scope before Import Excel QA.
+            if ($slug === 'expenses' && itm_is_safe_identifier($slug)) {
+                itm_run_query($conn, 'DELETE FROM `expenses` WHERE company_id=' . (int)$companyId);
+            }
+
+            $indexImport = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+            $csrfIndex = mbqa_extract_csrf($indexImport['body']);
+            $_SESSION['company_id'] = $companyId;
+            $importRows = mbqa_import_rows_for_round_trip($conn, $slug, $companyId, $exportRows);
+            if (empty($importRows)) {
+                $importRows = mbqa_build_import_rows_from_export($exportRows);
+            }
+            $importNote = 'Export Excel headers with insertable row (database.sql FK ids when needed)';
+            $importPayload = json_encode([
+                'csrf_token' => $csrfIndex,
+                'import_excel_rows' => $importRows,
+            ]);
+            $import = mbqa_http(
+                $moduleUrl . 'index.php',
+                'POST',
+                $importPayload,
+                ['Content-Type: application/json'],
+                $cookieFile
+            );
+            $inserted = 0;
+            if (preg_match('/"inserted"\s*:\s*(\d+)/', $import['body'], $insMatch)) {
+                $inserted = (int)$insMatch[1];
+            }
+            $importOk = $import['status'] === 200
+                && stripos($import['body'], '"ok":true') !== false
+                && $inserted > 0;
+
+            if (!$importOk) {
+                $dbImportRows = mbqa_build_import_rows_from_db_template($conn, $slug, $companyId);
+                if (!empty($dbImportRows)) {
+                    $importPayload = json_encode([
+                        'csrf_token' => $csrfIndex,
+                        'import_excel_rows' => $dbImportRows,
+                    ]);
+                    $import = mbqa_http(
+                        $moduleUrl . 'index.php',
+                        'POST',
+                        $importPayload,
+                        ['Content-Type: application/json'],
+                        $cookieFile
+                    );
+                    $inserted = 0;
+                    if (preg_match('/"inserted"\s*:\s*(\d+)/', $import['body'], $insMatch)) {
+                        $inserted = (int)$insMatch[1];
+                    }
+                    $importOk = $import['status'] === 200
+                        && stripos($import['body'], '"ok":true') !== false
+                        && $inserted > 0;
+                    $importNote = 'from live DB row after round-trip import';
+                }
+            }
+
+            $steps[] = mbqa_step_result(
+                'import_db',
+                $importOk,
+                $importOk
+                    ? ('imported ' . $importNote . '; inserted=' . $inserted)
+                    : substr($import['body'], 0, 120)
+            );
+        } else {
+            $steps[] = mbqa_step_result(
+                'import_db',
+                true,
+                $hasImportEndpoint ? 'N/A (need table rows for export/import)' : 'N/A (no import endpoint)'
+            );
+        }
+
         $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
         if ($viewId > 0 && is_file($deletePath) && $csrfIndex !== '') {
             $delResult = mbqa_delete_record_with_fk_retry(
@@ -659,38 +1212,10 @@ foreach ($companiesToRun as $companyId) {
                 $cookieFile
             );
             $steps[] = mbqa_step_result('single_delete', $delResult['ok'], $delResult['note']);
-            $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-            $csrfIndex = mbqa_extract_csrf($index['body']);
         } else {
             $steps[] = mbqa_step_result('single_delete', true, $viewId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
         }
 
-        $hasImportEndpoint = stripos($index['body'], 'data-itm-db-import-endpoint') !== false;
-        $steps[] = mbqa_step_result('export_xls', $hasImportEndpoint || stripos($index['body'], '<table') !== false, 'table-tools hook');
-
-        if ($hasImportEndpoint && $csrfIndex !== '') {
-            $importPayload = json_encode([
-                'csrf_token' => $csrfIndex,
-                'import_excel_rows' => [
-                    ['Id', 'Description'],
-                    ['', 'QA import row ' . date('Y-m-d H:i:s')],
-                ],
-            ]);
-            $import = mbqa_http(
-                $moduleUrl . 'index.php',
-                'POST',
-                $importPayload,
-                ['Content-Type: application/json'],
-                $cookieFile
-            );
-            $importOk = $import['status'] === 200
-                && stripos($import['body'], '"ok":true') !== false;
-            $steps[] = mbqa_step_result('import_db', $importOk, $importOk ? '' : substr($import['body'], 0, 120));
-        } else {
-            $steps[] = mbqa_step_result('import_db', true, 'N/A (no import endpoint)');
-        }
-
-        $steps[] = mbqa_step_result('export_pdf', true, 'N/A (client-side print; not exercised in HTTP runner)');
         $steps[] = mbqa_step_result('bulk_delete', true, 'N/A (requires 25+ rows per records_per_page)');
         $steps[] = mbqa_step_result('clear_table', true, 'N/A (requires 25+ rows)');
 
