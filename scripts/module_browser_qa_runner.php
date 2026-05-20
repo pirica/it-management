@@ -435,6 +435,168 @@ function mbqa_humanize_field_label(string $field): string
 }
 
 /**
+ * @return array<string, true> column name => true
+ */
+function mbqa_table_column_names(mysqli $conn, string $table): array
+{
+    if (!itm_is_safe_identifier($table)) {
+        return [];
+    }
+
+    $cols = [];
+    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+    $res = mysqli_query($conn, 'SHOW COLUMNS FROM ' . $tableEsc);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $field = (string)($row['Field'] ?? '');
+        if ($field !== '' && itm_is_safe_identifier($field)) {
+            $cols[$field] = true;
+        }
+    }
+
+    return $cols;
+}
+
+/**
+ * Maps list-table header text (module-specific labels) back to a DB column for import payloads.
+ */
+function mbqa_match_list_header_to_column(string $header, array $columnNames): ?string
+{
+    $normHeader = strtolower(trim(preg_replace('/\s+/', ' ', $header)));
+    if ($normHeader === '' || $normHeader === 'id') {
+        return null;
+    }
+
+    foreach (array_keys($columnNames) as $field) {
+        if (in_array($field, ['id', 'company_id', 'created_at', 'updated_at'], true)) {
+            continue;
+        }
+        if (strtolower(mbqa_humanize_field_label($field)) === $normHeader) {
+            return $field;
+        }
+    }
+
+    foreach (array_keys($columnNames) as $field) {
+        if (!preg_match('/_id$/', (string)$field)) {
+            continue;
+        }
+        $stem = strtolower(preg_replace('/_id$/', '', $field));
+        $stemSpaced = str_replace('_', ' ', $stem);
+        if ($stem !== '' && (strpos($normHeader, $stem) !== false || strpos($normHeader, $stemSpaced) !== false)) {
+            return $field;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Raw insertable values keyed by column name from database.sql (tenant-resolved FK ids).
+ *
+ * @return array<string, string>
+ */
+function mbqa_database_sql_values_by_column(mysqli $conn, string $table, int $companyId): array
+{
+    if (!function_exists('itm_parse_database_sql_inserts') || !itm_is_safe_identifier($table) || $companyId <= 0) {
+        return [];
+    }
+
+    $sqlPath = ROOT_PATH . 'database.sql';
+    if (!is_file($sqlPath)) {
+        return [];
+    }
+
+    $sqlBody = @file_get_contents($sqlPath);
+    if ($sqlBody === false) {
+        return [];
+    }
+
+    $parsed = itm_parse_database_sql_inserts($sqlBody, $table);
+    $tableRows = $parsed[$table] ?? [];
+    if (empty($tableRows)) {
+        return [];
+    }
+
+    $fkMap = function_exists('itm_table_outbound_fk_map') ? itm_table_outbound_fk_map($conn, $table) : [];
+    $suffix = date('YmdHis');
+    $chosen = null;
+
+    foreach ($tableRows as $rowEntry) {
+        $rawColumns = $rowEntry['columns'] ?? [];
+        $rawValues = $rowEntry['values'] ?? [];
+        $rowCompanyId = null;
+        foreach ($rawColumns as $index => $columnToken) {
+            $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+            if ($columnName !== 'company_id') {
+                continue;
+            }
+            $rawCompanyToken = trim((string)($rawValues[$index] ?? ''), "'\"");
+            $rowCompanyId = (int)$rawCompanyToken;
+            break;
+        }
+        if ($rowCompanyId !== null && $rowCompanyId !== $companyId) {
+            continue;
+        }
+        $chosen = $rowEntry;
+        break;
+    }
+
+    if ($chosen === null) {
+        $chosen = $tableRows[0];
+    }
+
+    $byColumn = [];
+    foreach ($chosen['columns'] as $index => $columnToken) {
+        $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+        if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+        if (in_array($columnName, ['id', 'company_id', 'created_at', 'updated_at'], true)) {
+            continue;
+        }
+
+        $valueToken = trim((string)($chosen['values'][$index] ?? ''), "'\"");
+        if (isset($fkMap[$columnName]) && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $storedFkId = (int)$valueToken;
+            if ($storedFkId > 0) {
+                $resolved = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$columnName], $companyId, $storedFkId);
+                if ($resolved > 0) {
+                    $valueToken = (string)$resolved;
+                }
+            }
+        }
+
+        $key = strtolower(mbqa_humanize_field_label($columnName));
+        if (strpos($key, 'invoice') !== false) {
+            $valueToken = 'INV-QA-IMPORT-' . $suffix;
+        } elseif ($key === 'description' || $key === 'name' || strpos($key, 'code') !== false) {
+            $valueToken = ($valueToken !== '' ? $valueToken . ' ' : '') . 'QA-IMPORT-' . $suffix;
+        }
+
+        $byColumn[$columnName] = $valueToken;
+    }
+
+    if ($table === 'expenses' && isset($byColumn['cost_center_id'])) {
+        $pickSql = 'SELECT cc.id AS cc_id, gl.id AS gl_id
+            FROM cost_centers cc
+            INNER JOIN gl_accounts gl ON gl.company_id = cc.company_id
+            LEFT JOIN expenses e ON e.company_id = cc.company_id AND e.cost_center_id = cc.id
+            WHERE cc.company_id = ' . (int)$companyId . ' AND e.id IS NULL
+            ORDER BY cc.id ASC
+            LIMIT 1';
+        $pickRes = mysqli_query($conn, $pickSql);
+        $pick = $pickRes ? mysqli_fetch_assoc($pickRes) : null;
+        if ($pick) {
+            $byColumn['cost_center_id'] = (string)(int)($pick['cc_id'] ?? 0);
+            if (isset($byColumn['gl_account_id'])) {
+                $byColumn['gl_account_id'] = (string)(int)($pick['gl_id'] ?? 0);
+            }
+        }
+    }
+
+    return $byColumn;
+}
+
+/**
  * Fallback import payload with raw DB values (FK ids) when label-based Excel import inserts 0 rows.
  *
  * @return array<int, array<int, string>>
@@ -626,13 +788,28 @@ function mbqa_unique_expense_import_row(mysqli $conn, int $companyId, array $sql
  */
 function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $companyId, array $exportRows): array
 {
+    if (count($exportRows) >= 2) {
+        $importRows = mbqa_build_import_rows_from_export($exportRows);
+        $byColumn = mbqa_database_sql_values_by_column($conn, $table, $companyId);
+        if (!empty($byColumn)) {
+            $columnNames = mbqa_table_column_names($conn, $table);
+            $headers = $importRows[0];
+            $values = $importRows[1];
+            foreach ($headers as $i => $header) {
+                $col = mbqa_match_list_header_to_column((string)$header, $columnNames);
+                if ($col !== null && isset($byColumn[$col])) {
+                    $values[$i] = $byColumn[$col];
+                }
+            }
+            $importRows[1] = $values;
+        }
+
+        return $importRows;
+    }
+
     $sqlRows = mbqa_build_import_rows_from_database_sql_seed($conn, $table, $companyId);
     if (!empty($sqlRows)) {
         return $sqlRows;
-    }
-
-    if (count($exportRows) >= 2) {
-        return mbqa_build_import_rows_from_export($exportRows);
     }
 
     return [];
@@ -883,7 +1060,7 @@ function mbqa_delete_record_with_fk_retry(
             ['Content-Type: application/x-www-form-urlencoded'],
             $cookieFile
         );
-        if ($del['status'] < 200 || $del['status'] >= 500) {
+        if ($del['status'] < 200 || $del['status'] >= 400) {
             return ['ok' => false, 'note' => 'delete HTTP ' . $del['status']];
         }
 

@@ -127,7 +127,7 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
-**Checklist per standard module (Tier A, including Protection Zone folders):** FK-aware **clear** (child tables first, including Protection Zone tables when they are FK blockers) → **Add sample data** (HTTP; on `No sample rows found in database.sql` run `itm_seed_table_from_database_sql()` + FK parents) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** → **import_db** (round-trip from parsed table / `database.sql` row values) → **single_delete** (clears FK blocker tables for the tenant, then retries) → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
+**Checklist per standard module (Tier A, including Protection Zone folders):** FK-aware **clear** (child tables first, including Protection Zone tables when they are FK blockers) → **Add sample data** (HTTP; on `No sample rows found in database.sql` run `itm_seed_table_from_database_sql()` + FK parents) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** → **import_db** (list-table headers from DOM + `database.sql` FK values keyed by column, including custom labels like `Department Name`) → **single_delete** (clears FK blocker tables for the tenant, then retries; treat HTTP 4xx as failure) → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
 
 **FK-aware clear / delete (PR #1722):**
 
