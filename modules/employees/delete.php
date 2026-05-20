@@ -1,39 +1,113 @@
 <?php
 /**
  * Employees Module - Delete
- * 
- * Handles deletion of an employee record.
- * Automatically cleans up associated system access and permission relations
- * to maintain database integrity.
+ *
+ * Handles single, bulk, and clear-table deletion with employee_system_access cleanup.
  */
 
 require '../../config/config.php';
 
-// Only allow POST requests for deletion
+/**
+ * @return string|null Error message, or null when deleted successfully.
+ */
+function employees_delete_record(mysqli $conn, int $companyId, int $id): ?string
+{
+    if ($companyId <= 0 || $id <= 0) {
+        return 'Invalid employee ID.';
+    }
+
+    $usageError = '';
+    if (!itm_can_delete_record($conn, 'employees', 'id', $id, $companyId, $usageError)) {
+        return $usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.';
+    }
+
+    mysqli_query($conn, 'DELETE FROM employee_system_access WHERE employee_id=' . $id . ' AND company_id=' . $companyId);
+
+    if (!mysqli_query($conn, 'DELETE FROM employees WHERE id=' . $id . ' AND company_id=' . $companyId . ' LIMIT 1')) {
+        return 'Delete failed: ' . mysqli_error($conn);
+    }
+
+    if (mysqli_affected_rows($conn) < 1) {
+        return 'Record not found, or it does not belong to this company.';
+    }
+
+    return null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method Not Allowed');
 }
 
-// Validate CSRF token
 itm_require_post_csrf();
 
-$id = (int)($_POST['id'] ?? 0);
-if ($id > 0) {
-    // Check if other system entities (e.g. equipment, tickets) are assigned to this employee
-    $usageError = '';
-    if (!itm_can_delete_record($conn, 'employees', 'id', $id, $company_id, $usageError)) {
-        $_SESSION['crud_error'] = $usageError;
+$companyId = (int)$company_id;
+$bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+
+if ($bulkAction === 'clear_table') {
+    mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId);
+    if (mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
+        if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
+            $_SESSION['crud_success'] = 'All employees were deleted for this company, and ID numbering was reset.';
+        } else {
+            $_SESSION['crud_success'] = 'All employees were deleted for this company.';
+            $_SESSION['crud_error'] = 'Employees were deleted, but resetting ID numbering failed.';
+        }
     } else {
-        // Cascade cleanup of permission data
-        mysqli_query($conn, 'DELETE FROM employee_system_access WHERE employee_id=' . $id . ' AND company_id=' . (int)$company_id);
-        
-        // Final employee record deletion
-        $sql = 'DELETE FROM employees WHERE id=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
-        mysqli_query($conn, $sql);
+        $_SESSION['crud_error'] = 'Could not delete all employees. Please try again.';
     }
+
+    header('Location: index.php');
+    exit;
 }
 
-// Return to the main list
+if ($bulkAction === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if (!is_array($ids)) {
+        $ids = [];
+    }
+
+    $idList = [];
+    foreach ($ids as $rawId) {
+        $employeeId = (int)$rawId;
+        if ($employeeId > 0) {
+            $idList[$employeeId] = $employeeId;
+        }
+    }
+
+    if ($idList === []) {
+        $_SESSION['crud_error'] = 'No records selected for deletion.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $deleteErrors = [];
+    foreach ($idList as $employeeId) {
+        $deleteError = employees_delete_record($conn, $companyId, $employeeId);
+        if ($deleteError !== null) {
+            $deleteErrors[] = 'ID ' . $employeeId . ': ' . $deleteError;
+        }
+    }
+
+    if ($deleteErrors !== []) {
+        $_SESSION['crud_error'] = implode(' ', $deleteErrors);
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
+$id = (int)($_POST['id'] ?? 0);
+if ($id <= 0) {
+    $_SESSION['crud_error'] = 'Invalid employee ID.';
+    header('Location: index.php');
+    exit;
+}
+
+$deleteError = employees_delete_record($conn, $companyId, $id);
+if ($deleteError !== null) {
+    $_SESSION['crud_error'] = $deleteError;
+}
+
 header('Location: index.php');
 exit;

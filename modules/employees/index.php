@@ -237,22 +237,6 @@ $skippedDetails = [];
 $csrfToken = itm_get_csrf_token();
 emp_drop_active_column_if_exists($conn);
 
-// --- ACTION: DELETE ALL ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'delete_all_employees')) {
-    itm_require_post_csrf();
-    $deleteAllSql = 'DELETE FROM employees WHERE company_id=' . (int)$company_id;
-    if (mysqli_query($conn, $deleteAllSql)) {
-        if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
-            $messages[] = 'All employees were deleted for this company, and ID numbering was reset.';
-        } else {
-            $messages[] = 'All employees were deleted for this company.';
-            $errors[] = 'Employees were deleted, but resetting ID numbering failed.';
-        }
-    } else {
-        $errors[] = 'Could not delete all employees. Please try again.';
-    }
-}
-
 // --- ACTION: IMPORT EMPLOYEES ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
     itm_require_post_csrf();
@@ -584,11 +568,15 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <?php else: ?>
                         <a href="index.php?<?php echo sanitize(emp_build_query(['show' => 'duplicates', 'search' => $searchRaw])); ?>" class="btn btn-sm">⚠️ Duplicates (<?php echo (int)$duplicatesCount; ?>)</a>
                     <?php endif; ?>
-                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete ALL employees for this company? This cannot be undone.');">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>"><input type="hidden" name="action" value="delete_all_employees">
-                        <button type="submit" class="btn btn-danger">✖ Delete ALL</button>
-                    </form>
                 </div>
+            </div>
+
+            <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all employees for this company? This cannot be undone.');">Clear Table</button>
+                </form>
             </div>
 
             <!-- SEARCH FILTER -->
@@ -628,6 +616,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                 <table>
                     <thead>
                     <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                         <?php foreach ($columns as $col): ?>
                             <?php $nextDir = ($sort === $col && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(emp_build_query(['sort' => $col, 'dir' => $nextDir, 'show' => $showDuplicatesOnly ? 'duplicates' : null, 'search' => $searchRaw])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize(emp_label($col)); ?><?php if ($sort === $col): ?><?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -639,6 +628,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                         <?php $duplicateReasons = emp_duplicate_reasons_for_row($row, $duplicateValueMaps); ?>
                         <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#ffe8e8;border-left:4px solid #d93025;"' : ''; ?>>
+                            <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                             <?php foreach ($columns as $col): ?>
                                 <td>
                                     <?php if ($col === 'email' && !empty($row[$col])): ?>
@@ -663,14 +653,16 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this employee?');">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>"><input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
                                         <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="<?php echo count($columns) + 1; ?>" style="text-align:center;">No employees found.</td></tr>
+                        <tr><td colspan="<?php echo count($columns) + 2; ?>" style="text-align:center;">No employees found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -745,6 +737,66 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
         const link = event.target.closest('a[data-outlook-link="1"]');
         if (link) { window.location.href = link.getAttribute('data-outlook-href'); }
     });
+})();
+</script>
+<script>
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+</script>
+<script>
+(function () {
+    const selectAllRows = document.getElementById('select-all-rows');
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function () {
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = selectAllRows.checked;
+            });
+        });
+    }
+
+    if (bulkDeleteForm && toggleButton) {
+        setSelectionVisibility(false);
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            if (event.submitter !== toggleButton) {
+                return;
+            }
+
+            if (!selectionMode) {
+                event.preventDefault();
+                selectionMode = true;
+                setSelectionVisibility(true);
+                toggleButton.textContent = 'Delete Selected';
+                return;
+            }
+
+            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
+            if (!anySelected) {
+                event.preventDefault();
+                alert('Please select at least one record to delete.');
+                return;
+            }
+
+            if (!confirm('Delete selected employees?')) {
+                event.preventDefault();
+            }
+        });
+    }
 })();
 </script>
 </body>
