@@ -791,6 +791,7 @@ if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
     $totalRows = (int)($countRow['total_rows'] ?? 0);
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) {
     $page = 1;
@@ -839,6 +840,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <span></span>
                     <?php endif; ?>
                 </div>
+            <?php if ($showBulkActions): ?>
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -846,6 +848,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
+            <?php endif; ?>
 
 
                 <div class="card" style="margin-bottom:16px;">
@@ -867,7 +870,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <table>
                         <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -886,7 +889,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
@@ -908,7 +911,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>

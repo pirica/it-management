@@ -180,6 +180,7 @@ if ($countStmt) {
     mysqli_stmt_close($countStmt);
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) { $page = 1; }
 if ($page > $totalPages) { $page = $totalPages; }
@@ -262,6 +263,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
             <?php endforeach; ?>
             <?php echo itm_render_alert_errors($errors); ?>
 
+            <?php if ($showBulkActions): ?>
             <!-- TABLE MAINTENANCE -->
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
@@ -270,6 +272,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
+            <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -292,7 +295,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <table>
                     <thead>
                     <tr>
-                        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                        <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                         <?php foreach (['code' => 'Code', 'name' => 'Name', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $field, 'dir' => $nextDir, 'page' => $page])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
