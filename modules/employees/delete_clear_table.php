@@ -17,13 +17,29 @@ function employees_clear_table_for_company(mysqli $conn, int $companyId): ?strin
 
     mysqli_begin_transaction($conn);
     try {
-        if (!mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId)) {
+        $accessStmt = mysqli_prepare($conn, 'DELETE FROM employee_system_access WHERE company_id = ?');
+        if (!$accessStmt) {
             throw new RuntimeException('Could not clear employee system access records: ' . mysqli_error($conn));
         }
+        mysqli_stmt_bind_param($accessStmt, 'i', $companyId);
+        if (!mysqli_stmt_execute($accessStmt)) {
+            $accessError = mysqli_error($conn);
+            mysqli_stmt_close($accessStmt);
+            throw new RuntimeException('Could not clear employee system access records: ' . $accessError);
+        }
+        mysqli_stmt_close($accessStmt);
 
-        if (!mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
+        $employeesStmt = mysqli_prepare($conn, 'DELETE FROM employees WHERE company_id = ?');
+        if (!$employeesStmt) {
             throw new RuntimeException('Could not delete all employees: ' . mysqli_error($conn));
         }
+        mysqli_stmt_bind_param($employeesStmt, 'i', $companyId);
+        if (!mysqli_stmt_execute($employeesStmt)) {
+            $employeesError = mysqli_error($conn);
+            mysqli_stmt_close($employeesStmt);
+            throw new RuntimeException('Could not delete all employees: ' . $employeesError);
+        }
+        mysqli_stmt_close($employeesStmt);
 
         mysqli_commit($conn);
         return null;

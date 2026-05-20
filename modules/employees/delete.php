@@ -22,15 +22,36 @@ function employees_delete_record(mysqli $conn, int $companyId, int $id): ?string
         return $usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.';
     }
 
-    mysqli_query($conn, 'DELETE FROM employee_system_access WHERE employee_id=' . $id . ' AND company_id=' . $companyId);
-
-    if (!mysqli_query($conn, 'DELETE FROM employees WHERE id=' . $id . ' AND company_id=' . $companyId . ' LIMIT 1')) {
+    $accessStmt = mysqli_prepare(
+        $conn,
+        'DELETE FROM employee_system_access WHERE employee_id = ? AND company_id = ?'
+    );
+    if (!$accessStmt) {
         return 'Delete failed: ' . mysqli_error($conn);
     }
+    mysqli_stmt_bind_param($accessStmt, 'ii', $id, $companyId);
+    if (!mysqli_stmt_execute($accessStmt)) {
+        $accessError = mysqli_error($conn);
+        mysqli_stmt_close($accessStmt);
+        return 'Delete failed: ' . $accessError;
+    }
+    mysqli_stmt_close($accessStmt);
 
-    if (mysqli_affected_rows($conn) < 1) {
+    $deleteStmt = mysqli_prepare($conn, 'DELETE FROM employees WHERE id = ? AND company_id = ? LIMIT 1');
+    if (!$deleteStmt) {
+        return 'Delete failed: ' . mysqli_error($conn);
+    }
+    mysqli_stmt_bind_param($deleteStmt, 'ii', $id, $companyId);
+    if (!mysqli_stmt_execute($deleteStmt)) {
+        $deleteError = mysqli_error($conn);
+        mysqli_stmt_close($deleteStmt);
+        return 'Delete failed: ' . $deleteError;
+    }
+    if (mysqli_stmt_affected_rows($deleteStmt) < 1) {
+        mysqli_stmt_close($deleteStmt);
         return 'Record not found, or it does not belong to this company.';
     }
+    mysqli_stmt_close($deleteStmt);
 
     return null;
 }
