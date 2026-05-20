@@ -273,26 +273,29 @@ function itm_check_pagination(string $listContent, string $sourceLabel): array
 /**
  * Bulk actions must only be visible when row count meets Settings records_per_page.
  *
+ * Why: reject inverted comparisons (perPage >= totalRows) so the audit cannot pass
+ * modules that show destructive bulk controls on small tables.
+ *
  * @return bool
  */
 function itm_has_bulk_actions_records_per_page_gate(string $listContent): bool
 {
     if (preg_match(
+        '#\$showBulkActions\s*=.*\$perPage\s*(>=|>)\s*\$totalRows#is',
+        $listContent
+    ) === 1) {
+        return false;
+    }
+
+    if (preg_match(
+        '#if\s*\(\s*\$perPage\s*(>=|>)\s*\$totalRows[^)]*\)[\s\S]{0,2500}bulk[-_]delete#i',
+        $listContent
+    ) === 1) {
+        return false;
+    }
+
+    if (preg_match(
         '#\$showBulkActions\s*=.*\$totalRows\s*(>=|>)\s*\$perPage#is',
-        $listContent
-    ) === 1) {
-        return true;
-    }
-
-    if (preg_match(
-        '#\$showBulkActions\s*=.*\$perPage\s*(>=|<=|>|<)\s*\$totalRows#is',
-        $listContent
-    ) === 1) {
-        return true;
-    }
-
-    if (preg_match(
-        '#if\s*\(\s*\$showBulkActions[^)]*\)[\s\S]{0,2500}bulk[-_]delete#i',
         $listContent
     ) === 1) {
         return true;
