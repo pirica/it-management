@@ -1592,13 +1592,14 @@ mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
 if (!mbqa_is_cli_sapi()) {
     $jsonRel = '../qa-reports/module-browser-qa-' . $date . '.json';
     $reportHref = 'module_browser_qa_build_report.php?run=1&amp;date=' . rawurlencode($date);
-    itm_script_output_end();
+    itm_script_output_close_pre();
     echo '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;margin:16px;max-width:720px;">';
     echo '<p><strong>' . ($exitCode === 0 ? 'Completed' : 'Completed with failures') . '</strong> — ';
     echo (int)$summary['pass'] . ' pass, ' . (int)$summary['fail'] . ' fail</p>';
     echo '<p><a href="' . htmlspecialchars($jsonRel, ENT_QUOTES, 'UTF-8') . '">Download JSON</a> · ';
     echo '<a href="' . htmlspecialchars($reportHref, ENT_QUOTES, 'UTF-8') . '">Build markdown report</a> · ';
     echo '<a href="module_browser_qa_runner.php">Run again</a></p></div>';
+    itm_script_output_end();
 }
 
 exit($exitCode);
