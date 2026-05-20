@@ -35,34 +35,44 @@
         return clone;
     }
 
-    function exportTableAsExcel(table) {
-        const { filenameBase } = tableMeta(table);
-        const clone = cloneTableWithoutActions(table);
-
-        // Why: Real .xlsx via SheetJS avoids Excel's "extension doesn't match" warning from HTML saved as .xls.
-        if (window.XLSX && window.XLSX.utils && typeof window.XLSX.writeFile === 'function') {
-            const headerRow = Array.from(clone.querySelectorAll('thead th')).map(getCellText);
-            const rows = [headerRow];
-            clone.querySelectorAll('tbody tr').forEach((row) => {
-                rows.push(Array.from(row.querySelectorAll('td')).map(getCellText));
-            });
-            const sheet = window.XLSX.utils.aoa_to_sheet(rows);
-            const workbook = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(workbook, sheet, 'Sheet1');
-            window.XLSX.writeFile(workbook, `${filenameBase}.xlsx`);
-            return;
+    function exportRowsAsXlsxBlob(rows, filenameBase) {
+        if (!window.XLSX || !window.XLSX.utils || typeof window.XLSX.write !== 'function') {
+            return null;
         }
 
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${clone.outerHTML}</body></html>`;
-        const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        const sheet = window.XLSX.utils.aoa_to_sheet(rows);
+        const workbook = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(workbook, sheet, 'Sheet1');
+        const bytes = window.XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([bytes], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${filenameBase}.xls`;
+        link.download = `${filenameBase}.xlsx`;
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
+        return true;
+    }
+
+    function exportTableAsExcel(table) {
+        const { filenameBase } = tableMeta(table);
+        const clone = cloneTableWithoutActions(table);
+        const headerRow = Array.from(clone.querySelectorAll('thead th')).map(getCellText);
+        const rows = [headerRow];
+        clone.querySelectorAll('tbody tr').forEach((row) => {
+            rows.push(Array.from(row.querySelectorAll('td')).map(getCellText));
+        });
+
+        // Why: Only real OOXML .xlsx — never HTML disguised as .xls (Excel shows a format/extension warning).
+        if (exportRowsAsXlsxBlob(rows, filenameBase)) {
+            return;
+        }
+
+        window.alert('Export Excel is unavailable because the XLSX library did not load. Refresh the page and try again.');
     }
 
     function exportTableAsPdf(table) {
