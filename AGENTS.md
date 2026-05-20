@@ -106,6 +106,40 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 
 **Smoke / optional DB regression:** `bash scripts/smoke_test.sh` runs the static checkers (steps 6–7). Set `SMOKE_RUN_DB_TESTS=1` to also run `employees_delete_clear_table_test.php` and `equipment_delete_clear_table_test.php` (requires MySQL).
 
+#### Full-module browser QA (5 companies, Laragon)
+
+Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
+
+| Script | Role |
+|--------|------|
+| `scripts/module_browser_qa_runner.php` | **CLI-only:** HTTP session runner — login (`Admin`/`Admin`), dashboard company switch, per-module tenant clear, sample data, list/create/view/edit/list_all, search, sort, JSON import. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. |
+| `scripts/module_browser_qa_build_report.php` | **CLI-only:** Builds markdown summary from the JSON (preflight, Expenses pilot table, failure categories). |
+
+**Commands (repository root, Laragon):**
+
+```bash
+php scripts/module_browser_qa_runner.php
+php scripts/module_browser_qa_build_report.php
+php scripts/module_browser_qa_runner.php --pilot-only
+php scripts/module_browser_qa_runner.php --module=expenses --company=4
+```
+
+**Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
+
+**Checklist per standard module (Tier A):** clear tenant rows → **Add sample data** (empty table only) → search → sort → create → view → edit → list_all → export hook → import JSON → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
+
+**Tiers (do not treat all failures alike):**
+
+* **Tier A** — standard flattened CRUD (`modules/<slug>/index.php`).
+* **Tier B** — Protection Zone: smoke list only; no destructive clear unless explicitly requested.
+* **Tier C** — `is_*` façades: full matrix on `is_switch`; routing smoke on the rest.
+* **Tier D** — bespoke (`budget_report`, `floor_plans`, `rack_planner`, …): navigation smoke only.
+* **Skip destructive clear** on `companies` and `users`.
+
+**Cursor browser:** Use IDE browser for the **Expenses pilot** (all five companies) and spot-checks; use the CLI runner for full ~101×5 coverage. Reports live under **`qa-reports/`** (commit dated `.md` + `.json` when publishing QA results).
+
+**Caveats:** Clearing parent lookup tables before children causes FK-related failures in the automated run — execute **FK-safe waves** (catalogs → budgeting → children). Sort-step failures often mean the visible default column is not `id`; re-run after runner updates or confirm manually via column header links.
+
 #### 5. Pre-merge verification (scripts)
 
 When adding or changing anything under `scripts/`:
@@ -204,6 +238,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Testing/reporting guardrail (mandatory):**
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
+  * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** under `scripts/`).
   * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB runs per catalog in `scripts/index.html` (`SMOKE_RUN_DB_TESTS=1` or run the `*_test.php` scripts directly). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
@@ -280,7 +315,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * `http://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
   * Note: `https://nelsonsalvador.myddns.me/phpmyadmin/` currently returns upstream TLS/certificate errors; use HTTP for phpMyAdmin checks.
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
-* **Testing:** Browser screenshots are not supported; rely on verbose error logging.
+* **Testing:** Browser screenshots are not supported; rely on verbose error logging. For full-module CRUD/button regression across five companies, see **Scripts directory → Full-module browser QA** (`module_browser_qa_runner.php`, [PR #1718](https://github.com/pirica/it-management/pull/1718)).
 * **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled.
   * **Linux, macOS, CI, and any host where `php` is on PATH:** `php scripts/<script>.php`
   * **Windows (Laragon) when `php` is not on PATH:** use the Laragon 7.4 binary, e.g. `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\<script>.php` (replace `<laragon-root>` with your install path; do not use a system PHP 8.x build that lacks MySQLi).
