@@ -125,10 +125,11 @@ function mbqa_http(string $url, string $method = 'GET', ?string $body = null, ar
     curl_setopt_array($ch, $opts);
     $raw = curl_exec($ch);
     $errno = curl_errno($ch);
+    $curlError = $raw === false ? (curl_error($ch) ?: 'curl failed') : '';
     $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     if ($raw === false) {
-        return ['status' => 0, 'body' => '', 'headers' => '', 'error' => curl_error($ch) ?: 'curl failed'];
+        return ['status' => 0, 'body' => '', 'headers' => '', 'error' => $errno ? ('curl errno ' . $errno . ': ' . $curlError) : $curlError];
     }
     $headerSize = strpos($raw, "\r\n\r\n");
     $respHeaders = $headerSize !== false ? substr($raw, 0, $headerSize) : '';
@@ -230,6 +231,11 @@ foreach ($companiesToRun as $companyId) {
         'steps' => [mbqa_step_result('company_switch', $companyOk, $companyOk ? '' : 'Company name not found after switch')],
     ];
 
+    // Why: A failed switch leaves the prior tenant active; skip destructive module steps for this company.
+    if (!$companyOk) {
+        continue;
+    }
+
     foreach ($orderedModules as $slug) {
         if (!is_dir($modulesDir . DIRECTORY_SEPARATOR . $slug)) {
             continue;
@@ -248,7 +254,7 @@ foreach ($companiesToRun as $companyId) {
         $steps = [];
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-        $listOk = $index['status'] >= 200 && $index['status'] < 500 && !mbqa_has_fatal($index['body']);
+        $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
         $steps[] = mbqa_step_result('list', $listOk, $listOk ? '' : 'HTTP ' . $index['status']);
 
         if ($tier === 'B' || $tier === 'D') {
