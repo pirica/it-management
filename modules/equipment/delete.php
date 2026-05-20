@@ -212,7 +212,13 @@ $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 if ($bulkAction === 'clear_table') {
     $idList = [];
     $listResult = mysqli_query($conn, 'SELECT id FROM equipment WHERE company_id = ' . $companyId);
-    while ($listResult && ($listRow = mysqli_fetch_assoc($listResult))) {
+    if ($listResult === false) {
+        $_SESSION['crud_error'] = 'Unable to load equipment records for clear table: ' . mysqli_error($conn);
+        header('Location: index.php');
+        exit;
+    }
+
+    while ($listRow = mysqli_fetch_assoc($listResult)) {
         $rowId = (int)($listRow['id'] ?? 0);
         if ($rowId > 0) {
             $idList[$rowId] = $rowId;
