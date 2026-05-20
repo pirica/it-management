@@ -45,16 +45,23 @@ $companyId = (int)$company_id;
 $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 
 if ($bulkAction === 'clear_table') {
-    mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId);
-    if (mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
-        if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
-            $_SESSION['crud_success'] = 'All employees were deleted for this company, and ID numbering was reset.';
-        } else {
-            $_SESSION['crud_success'] = 'All employees were deleted for this company.';
-            $_SESSION['crud_error'] = 'Employees were deleted, but resetting ID numbering failed.';
-        }
+    if (!mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId)) {
+        $_SESSION['crud_error'] = 'Could not clear employee system access records: ' . mysqli_error($conn);
+        header('Location: index.php');
+        exit;
+    }
+
+    if (!mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
+        $_SESSION['crud_error'] = 'Could not delete all employees: ' . mysqli_error($conn);
+        header('Location: index.php');
+        exit;
+    }
+
+    if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
+        $_SESSION['crud_success'] = 'All employees were deleted for this company, and ID numbering was reset.';
     } else {
-        $_SESSION['crud_error'] = 'Could not delete all employees. Please try again.';
+        $_SESSION['crud_success'] = 'All employees were deleted for this company.';
+        $_SESSION['crud_error'] = 'Employees were deleted, but resetting ID numbering failed: ' . mysqli_error($conn);
     }
 
     header('Location: index.php');
