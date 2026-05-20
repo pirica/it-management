@@ -177,6 +177,283 @@ function mbqa_step_result(string $step, bool $ok, string $note = ''): array
     ];
 }
 
+/** Tables the runner must never wipe entirely during FK prep (shared / auth). */
+function mbqa_tables_never_clear(): array
+{
+    return ['companies', 'users'];
+}
+
+/**
+ * Inbound FK children of a table (MySQL information_schema).
+ *
+ * @return array<int, array{child_table:string, child_column:string, parent_column:string}>
+ */
+function mbqa_inbound_fk_refs(mysqli $conn, string $parentTable): array
+{
+    if (!itm_is_safe_identifier($parentTable)) {
+        return [];
+    }
+
+    $sql = 'SELECT kcu.TABLE_NAME AS child_table,
+                   kcu.COLUMN_NAME AS child_column,
+                   kcu.REFERENCED_COLUMN_NAME AS parent_column
+            FROM information_schema.KEY_COLUMN_USAGE kcu
+            WHERE kcu.TABLE_SCHEMA = DATABASE()
+              AND kcu.REFERENCED_TABLE_NAME = ?
+              AND kcu.REFERENCED_COLUMN_NAME IS NOT NULL';
+
+    $refs = [];
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+    mysqli_stmt_bind_param($stmt, 's', $parentTable);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $child = (string)($row['child_table'] ?? '');
+        $col = (string)($row['child_column'] ?? '');
+        $parentCol = (string)($row['parent_column'] ?? 'id');
+        if (!itm_is_safe_identifier($child) || !itm_is_safe_identifier($col) || !itm_is_safe_identifier($parentCol)) {
+            continue;
+        }
+        $refs[] = [
+            'child_table' => $child,
+            'child_column' => $col,
+            'parent_column' => $parentCol,
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return $refs;
+}
+
+/**
+ * Deletes tenant rows from a table (company_id) or rows tied to a parent tenant via FK join.
+ */
+function mbqa_delete_table_company_scoped(
+    mysqli $conn,
+    string $table,
+    int $companyId,
+    ?string $parentTable = null,
+    ?string $childFkColumn = null,
+    ?string $parentPkColumn = 'id'
+): bool {
+    if (!itm_is_safe_identifier($table) || $companyId <= 0) {
+        return false;
+    }
+
+    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+
+    if (itm_table_has_column($conn, $table, 'company_id')) {
+        $sql = 'DELETE FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId;
+        return itm_run_query($conn, $sql) !== false;
+    }
+
+    if (
+        $parentTable !== null
+        && $childFkColumn !== null
+        && itm_is_safe_identifier($parentTable)
+        && itm_is_safe_identifier($childFkColumn)
+        && itm_is_safe_identifier($parentPkColumn)
+        && itm_table_has_column($conn, $parentTable, 'company_id')
+    ) {
+        $parentEsc = '`' . str_replace('`', '``', $parentTable) . '`';
+        $colEsc = '`' . str_replace('`', '``', $childFkColumn) . '`';
+        $pkEsc = '`' . str_replace('`', '``', $parentPkColumn) . '`';
+        $sql = 'DELETE c FROM ' . $tableEsc . ' c INNER JOIN ' . $parentEsc . ' p ON c.' . $colEsc . ' = p.' . $pkEsc
+            . ' WHERE p.company_id=' . (int)$companyId;
+
+        return itm_run_query($conn, $sql) !== false;
+    }
+
+    return false;
+}
+
+/**
+ * Clears inbound FK dependents first, then the target module table for one company.
+ */
+function mbqa_clear_module_table_for_company(mysqli $conn, string $table, int $companyId, string &$note = ''): bool
+{
+    $note = '';
+    if (!itm_is_safe_identifier($table) || $companyId <= 0) {
+        $note = 'Invalid table or company';
+        return false;
+    }
+    if (in_array($table, mbqa_tables_never_clear(), true)) {
+        $note = 'Skip never-clear table';
+        return false;
+    }
+    if (!itm_table_has_column($conn, $table, 'company_id')) {
+        $note = 'No company_id column';
+        return false;
+    }
+
+    $clearedFirst = [];
+    $visited = [];
+
+    $clearRecursive = static function (mysqli $conn, string $target, int $companyId, array &$visited, array &$clearedFirst) use (&$clearRecursive): void {
+        if (isset($visited[$target])) {
+            return;
+        }
+        $visited[$target] = true;
+
+        foreach (mbqa_inbound_fk_refs($conn, $target) as $ref) {
+            $child = $ref['child_table'];
+            if (in_array($child, mbqa_tables_never_clear(), true)) {
+                continue;
+            }
+            $clearRecursive($conn, $child, $companyId, $visited, $clearedFirst);
+            if (mbqa_delete_table_company_scoped($conn, $child, $companyId, $target, $ref['child_column'], $ref['parent_column'])) {
+                $clearedFirst[$child] = $child;
+            }
+        }
+    };
+
+    $clearRecursive($conn, $table, $companyId, $visited, $clearedFirst);
+
+    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+    $sql = 'DELETE FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId;
+    $errCode = 0;
+    $errMsg = '';
+    $ok = itm_run_query($conn, $sql, $errCode, $errMsg) !== false;
+
+    if (!$ok && (int)$errCode === 1451) {
+        for ($attempt = 0; $attempt < 12 && !$ok; $attempt++) {
+            if (preg_match('/`([^`]+)`/i', (string)$errMsg, $m) && itm_is_safe_identifier($m[1])) {
+                $blocker = $m[1];
+                if (!in_array($blocker, mbqa_tables_never_clear(), true)) {
+                    $subNote = '';
+                    mbqa_clear_module_table_for_company($conn, $blocker, $companyId, $subNote);
+                    $clearedFirst[$blocker] = $blocker;
+                }
+            }
+            $errCode = 0;
+            $errMsg = '';
+            $ok = itm_run_query($conn, $sql, $errCode, $errMsg) !== false;
+        }
+    }
+
+    if ($ok) {
+        if (!empty($clearedFirst)) {
+            $note = 'SQL tenant clear (first cleared: ' . implode(', ', array_values($clearedFirst)) . ')';
+        } else {
+            $note = 'SQL tenant clear';
+        }
+    } else {
+        $note = $errMsg !== '' ? ('Clear failed: ' . $errMsg) : 'Clear failed';
+    }
+
+    return $ok;
+}
+
+/**
+ * Parses "in use by: employee_positions (1), …" from module error banners.
+ *
+ * @return string[]
+ */
+function mbqa_parse_in_use_tables(string $html): array
+{
+    $tables = [];
+    if (!preg_match('/in use by:\s*(.+?)(?:\.|<\/)/is', $html, $m)) {
+        return [];
+    }
+    $segment = (string)$m[1];
+    if (preg_match_all('/\b([a-z][a-z0-9_]*)\s*\(\d+\)/i', $segment, $matches)) {
+        foreach ($matches[1] as $name) {
+            if (itm_is_safe_identifier($name)) {
+                $tables[$name] = $name;
+            }
+        }
+    }
+
+    return array_values($tables);
+}
+
+function mbqa_index_still_has_row(string $html, int $id): bool
+{
+    return preg_match('/name="ids\[\]"\s+value="' . preg_quote((string)$id, '/') . '"/', $html) === 1
+        || preg_match('/view\.php\?id=' . preg_quote((string)$id, '/') . '\b/', $html) === 1;
+}
+
+/**
+ * POST delete.php and, on "in use by" errors, clear blockers for the tenant then retry.
+ */
+function mbqa_delete_record_with_fk_retry(
+    mysqli $conn,
+    string $moduleUrl,
+    string $table,
+    int $recordId,
+    int $companyId,
+    string $csrf,
+    string $cookieFile
+): array {
+    if ($recordId <= 0 || $csrf === '') {
+        return ['ok' => false, 'note' => 'N/A no row/csrf'];
+    }
+
+    $cleared = [];
+    for ($attempt = 0; $attempt < 10; $attempt++) {
+        $del = mbqa_http(
+            $moduleUrl . 'delete.php',
+            'POST',
+            http_build_query(['id' => (string)$recordId, 'csrf_token' => $csrf]),
+            ['Content-Type: application/x-www-form-urlencoded'],
+            $cookieFile
+        );
+        if ($del['status'] < 200 || $del['status'] >= 500) {
+            return ['ok' => false, 'note' => 'delete HTTP ' . $del['status']];
+        }
+
+        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        if ($index['status'] !== 200 || mbqa_has_fatal($index['body'])) {
+            return ['ok' => false, 'note' => 'index after delete HTTP ' . $index['status']];
+        }
+
+        if (!mbqa_index_still_has_row($index['body'], $recordId)) {
+            $note = 'deleted id=' . $recordId;
+            if (!empty($cleared)) {
+                $note .= '; first cleared: ' . implode(', ', $cleared);
+            }
+            return ['ok' => true, 'note' => $note];
+        }
+
+        $blockers = mbqa_parse_in_use_tables($index['body']);
+        if (empty($blockers) && function_exists('itm_find_record_usage')) {
+            $usage = itm_find_record_usage($conn, $table, 'id', $recordId, $companyId);
+            foreach ($usage as $row) {
+                $t = (string)($row['table'] ?? '');
+                if ($t !== '' && itm_is_safe_identifier($t)) {
+                    $blockers[] = $t;
+                }
+            }
+            $blockers = array_values(array_unique($blockers));
+        }
+
+        if (empty($blockers)) {
+            return ['ok' => false, 'note' => 'row still listed; no blockers parsed'];
+        }
+
+        $progress = false;
+        foreach ($blockers as $blocker) {
+            if (in_array($blocker, mbqa_tables_never_clear(), true)) {
+                continue;
+            }
+            $subNote = '';
+            if (mbqa_clear_module_table_for_company($conn, $blocker, $companyId, $subNote)) {
+                $cleared[$blocker] = $blocker;
+                $progress = true;
+            }
+        }
+
+        if (!$progress) {
+            return ['ok' => false, 'note' => 'blocked by ' . implode(', ', $blockers)];
+        }
+    }
+
+    return ['ok' => false, 'note' => 'delete retries exhausted'];
+}
+
 $cookieFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_qa_cookies_' . getmypid() . '.txt';
 @unlink($cookieFile);
 
@@ -269,6 +546,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('export_xls', true, 'N/A smoke');
             $steps[] = mbqa_step_result('import_db', true, 'N/A smoke');
             $steps[] = mbqa_step_result('export_pdf', true, 'N/A smoke');
+            $steps[] = mbqa_step_result('single_delete', true, 'N/A smoke');
             $steps[] = mbqa_step_result('bulk_delete', true, 'N/A');
             $steps[] = mbqa_step_result('clear_table', true, 'N/A');
             $results[] = [
@@ -285,7 +563,7 @@ foreach ($companiesToRun as $companyId) {
             $routeOk = $listOk;
             $steps[] = mbqa_step_result('clear', true, 'N/A façade routing');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A façade');
-            foreach (['create', 'view', 'edit', 'list_all', 'search', 'sort', 'export_xls', 'import_db', 'export_pdf', 'bulk_delete', 'clear_table'] as $s) {
+            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_xls', 'import_db', 'export_pdf', 'bulk_delete', 'clear_table'] as $s) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
             $results[] = [
@@ -302,12 +580,11 @@ foreach ($companiesToRun as $companyId) {
         $ids = mbqa_row_ids($index['body']);
 
         if (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
-            $tableSql = '`' . str_replace('`', '``', $slug) . '`';
-            $clearSql = 'DELETE FROM ' . $tableSql . ' WHERE company_id=' . (int)$companyId;
-            $cleared = itm_run_query($conn, $clearSql);
+            $clearNote = '';
+            $cleared = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearNote);
             $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
             $csrfIndex = mbqa_extract_csrf($index['body']);
-            $steps[] = mbqa_step_result('clear', $cleared, $cleared ? 'SQL tenant clear' : 'Clear failed');
+            $steps[] = mbqa_step_result('clear', $cleared, $clearNote !== '' ? $clearNote : ($cleared ? 'SQL tenant clear' : 'Clear failed'));
         } else {
             $steps[] = mbqa_step_result('clear', true, 'Skip destructive clear');
         }
@@ -368,6 +645,24 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('list_all', $la['status'] === 200 && !mbqa_has_fatal($la['body']), 'HTTP ' . $la['status']);
         } else {
             $steps[] = mbqa_step_result('list_all', true, 'N/A');
+        }
+
+        $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
+        if ($viewId > 0 && is_file($deletePath) && $csrfIndex !== '') {
+            $delResult = mbqa_delete_record_with_fk_retry(
+                $conn,
+                $moduleUrl,
+                $slug,
+                $viewId,
+                $companyId,
+                $csrfIndex,
+                $cookieFile
+            );
+            $steps[] = mbqa_step_result('single_delete', $delResult['ok'], $delResult['note']);
+            $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+            $csrfIndex = mbqa_extract_csrf($index['body']);
+        } else {
+            $steps[] = mbqa_step_result('single_delete', true, $viewId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
         }
 
         $hasImportEndpoint = stripos($index['body'], 'data-itm-db-import-endpoint') !== false;
