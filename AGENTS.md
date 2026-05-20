@@ -108,11 +108,11 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 
 #### Full-module browser QA (5 companies, Laragon)
 
-Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Runner FK/delete improvements: [PR #1722](https://github.com/pirica/it-management/pull/1722). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
+Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Runner FK/delete improvements: [PR #1722](https://github.com/pirica/it-management/pull/1722). Add-step / bulk-order / error-log scope: [PR #1742](https://github.com/pirica/it-management/pull/1742). Bulk skip notes: [PR #1740](https://github.com/pirica/it-management/pull/1740). Sample-data FK parents + seed-only id remap: [PR #1744](https://github.com/pirica/it-management/pull/1744). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), dashboard company switch, FK-aware tenant clear, sample data (HTTP then `database.sql` DB seed), list/create/view/edit/list_all, **Export PDF → Export Excel (parse table) → Import Excel**, `single_delete` with FK retry, search, sort. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module `error_log` scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/import/`single_delete`/`clear_table`/end sample restore + `error_log` check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown summary from the JSON (preflight, failure categories, preview in browser). |
 
 **Commands (repository root, Laragon):**
@@ -129,7 +129,7 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
-**Checklist per standard module (Tier A, including Protection Zone folders):** FK-aware **clear** (child tables first, including Protection Zone tables when they are FK blockers) → **Add sample data** (HTTP; on `No sample rows found in database.sql` run `itm_seed_table_from_database_sql()` + FK parents) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** → **import_db** (list-table headers from DOM + `database.sql` FK values keyed by column, including custom labels like `Department Name`) → **single_delete** (clears FK blocker tables for the tenant, then retries; treat HTTP 4xx as failure) → bulk delete/clear table only when `totalRows >= records_per_page` (default 25).
+**Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (delete `error_log.txt` when writable; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (random rows, target ≥ `records_per_page` when schema allows; grow unique-scope parents first) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **import_db** (one insertable row smoke test from export headers + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
 
 **FK-aware clear / delete (PR #1722):**
 
@@ -140,9 +140,10 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Sample / export / import:**
 
-* Sample seed prerequisites are seeded first when configured (e.g. `expenses` → `budget_categories`, `cost_centers`, `gl_accounts`; `employee_positions` → `departments`).
+* Sample seed prerequisites are seeded first when configured (e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; `employee_positions` → `departments`).
+* **`error_log` (PR #1742):** If `error_log.txt` cannot be deleted (e.g. Windows file lock), the runner records the current file size and only attributes **new** lines to the active module — avoids false failures from earlier modules.
 * **Export Excel** is simulated by parsing the list `<table>` HTML (same columns as `table-tools.js`).
-* **Import Excel** POSTs `import_excel_rows` to `data-itm-db-import-endpoint`; uses export headers with insertable values from `database.sql` when UI labels are not IDs. **`expenses`:** clears tenant `expenses` rows immediately before import because of unique key `uq_expenses_company_scope` (one row per company + cost center).
+* **Import Excel** POSTs **one** derived row to `data-itm-db-import-endpoint` (round-trip smoke, not re-import of every exported line). Uses export headers with insertable values from `database.sql` when UI labels are not IDs. **`expenses`:** import picks a **free** `cost_center_id` for the tenant (`uq_expenses_company_scope`); do not expect `inserted` to match export row count.
 
 **Tiers (do not treat all failures alike):**
 
