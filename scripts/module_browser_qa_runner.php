@@ -2293,7 +2293,10 @@ foreach ($companiesToRun as $companyId) {
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
-        $steps[] = mbqa_step_result('list', $listOk, $listOk ? '' : 'HTTP ' . $index['status']);
+        $listNote = $listOk
+            ? ('HTTP ' . $index['status'] . ', no fatal')
+            : ('HTTP ' . $index['status'] . (mbqa_has_fatal($index['body']) ? ', fatal in body' : ''));
+        $steps[] = mbqa_step_result('list', $listOk, $listNote);
 
         if ($tier === 'D') {
             $steps[] = mbqa_step_result('clear', true, 'Skip (bespoke smoke)');
