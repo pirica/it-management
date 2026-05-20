@@ -306,7 +306,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($item = mysqli_fetch_assoc($items)): ?>
                         <tr>
-                            <td><input type="checkbox" name="ids[]" value="<?php echo (int)$item['id']; ?>" form="bulk-delete-form"></td>
+                            <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$item['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo sanitize($item['code']); ?></td>
                             <td><?php echo sanitize($item['name']); ?></td>
                             <td>
@@ -325,7 +325,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="5" style="text-align:center;">No system access records found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 5 : 4; ?>" style="text-align:center;">No system access records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
