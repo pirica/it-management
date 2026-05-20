@@ -6,7 +6,7 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, adds 30 random tenant rows (add step),
  * then bulk_delete/clear_table when row count >= records_per_page.
- * Each module starts by deleting error_log.txt; Tier A ends with HTTP sample_data (empty table) and error_log check.
+ * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -629,12 +629,33 @@ function mbqa_read_error_log_since(int $byteOffset): array
     return ['ok' => false, 'note' => $note, 'count' => $count];
 }
 
-function mbqa_delete_error_log_file(): void
+function mbqa_delete_error_log_file(): bool
 {
     $path = mbqa_error_log_path();
-    if (is_file($path)) {
-        @unlink($path);
+    if (!is_file($path)) {
+        return true;
     }
+
+    return @unlink($path);
+}
+
+/**
+ * Per-module error_log scope: delete when possible; otherwise read only bytes appended after this point.
+ *
+ * @return array{offset:int,note:string}
+ */
+function mbqa_begin_module_error_log_scope(): array
+{
+    if (mbqa_delete_error_log_file()) {
+        return ['offset' => 0, 'note' => 'deleted error_log.txt'];
+    }
+
+    $offset = mbqa_error_log_byte_offset();
+
+    return [
+        'offset' => $offset,
+        'note' => 'error_log.txt not deleted; checking new lines from offset ' . $offset,
+    ];
 }
 
 /**
@@ -2287,9 +2308,9 @@ foreach ($companiesToRun as $companyId) {
         $moduleUrl = $baseUrl . 'modules/' . rawurlencode($slug) . '/';
         $steps = [];
 
-        mbqa_delete_error_log_file();
-        $errorLogOffset = 0;
-        $steps[] = mbqa_step_result('error_log', true, 'deleted error_log.txt');
+        $errorLogScope = mbqa_begin_module_error_log_scope();
+        $errorLogOffset = $errorLogScope['offset'];
+        $steps[] = mbqa_step_result('error_log', true, $errorLogScope['note']);
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
@@ -2400,7 +2421,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result(
                 'bulk_delete',
                 true,
-                'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
+                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
             );
         }
 
@@ -2553,17 +2574,19 @@ foreach ($companiesToRun as $companyId) {
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
-        $rowCount = mbqa_tenant_row_count($conn, $slug, $companyId);
-        $canClearTable = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
+        $canRunClearTable = $rowCountAfterAdd >= $perPage
+            && mbqa_index_shows_bulk_actions($index['body'])
+            && is_file($deletePath)
+            && $csrfIndex !== '';
 
-        if ($canClearTable && is_file($deletePath) && $csrfIndex !== '') {
+        if ($canRunClearTable) {
             $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex);
             $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
         } else {
             $steps[] = mbqa_step_result(
                 'clear_table',
                 true,
-                $canClearTable ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
+                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
             );
         }
 
