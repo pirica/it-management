@@ -449,7 +449,7 @@
                     <td><a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
-                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, company switch, FK-aware tenant clear (clears inbound child tables first), sample data, list/create/view/edit, single delete with FK retry, search, sort, import JSON. Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>.
+                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, company switch, FK-aware tenant clear, sample data (HTTP then <code>database.sql</code> DB seed + FK parents on missing samples), list/create/view/edit, single delete with FK retry, search, sort, Export PDF → Export Excel (parse table) → Import Excel round-trip. Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>.
                     </td>
                     <td>
                         <code>php scripts/module_browser_qa_runner.php</code><br>
