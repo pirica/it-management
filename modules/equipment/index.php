@@ -241,6 +241,7 @@ while ($locationTypeRes && ($locationTypeRow = mysqli_fetch_assoc($locationTypeR
     ];
 }
 $locationTypeExtraOptionsJson = htmlspecialchars(json_encode($locationTypeExtraOptions), ENT_QUOTES, 'UTF-8');
+$equipmentCsrfToken = itm_get_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -285,6 +286,14 @@ if (!empty($_SESSION['crud_success'])) {
             </div>
 
             <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($equipmentCsrfToken); ?>">
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all equipment records for this company? Switches will also remove related switch port data. This cannot be undone.');">Clear Table</button>
+                </form>
+            </div>
+
+            <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <?php if ($hasSelectedSwitch): ?>
                         <input type="hidden" name="switch_id" value="<?php echo (int)$selectedSwitchId; ?>">
@@ -307,6 +316,7 @@ if (!empty($_SESSION['crud_success'])) {
                 <table>
                     <thead>
                     <tr>
+                        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                         <?php foreach ([
                             'id' => 'ID',
                             'name' => 'Name',
@@ -334,6 +344,7 @@ if (!empty($_SESSION['crud_success'])) {
                             $showSwitchPortManagerAction = $isSwitch && in_array((int)$row['id'], $visibleSwitchIds, true);
                             ?>
                             <tr>
+                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['name']); ?></td>
                                 <td><?php echo sanitize($row['equipment_type_name'] ?? '-'); ?></td>
@@ -379,25 +390,29 @@ if (!empty($_SESSION['crud_success'])) {
                                         <a class="btn btn-sm btn-primary" href="<?php echo $switchPortManagerHref; ?>"><?php echo $isSelectedSwitchManagerOpen ? 'Hide Switch Port Manager' : 'Switch Port Manager'; ?></a>
                                     <?php endif; ?>
                                     <?php
-                                    $deleteUrl = './delete.php?id=' . (int)$row['id'];
                                     $deleteConfirmText = $isSwitch
                                         ? 'Delete this switch and all related switch port data? This action cannot be undone.'
                                         : 'Delete this equipment?';
                                     ?>
-                                    <a class="btn btn-sm btn-danger" href="<?php echo $deleteUrl; ?>" data-confirm="<?php echo sanitize($deleteConfirmText); ?>">🗑️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm(<?php echo json_encode($deleteConfirmText); ?>);">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($equipmentCsrfToken); ?>">
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                    </form>
 
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="12" style="text-align:center;">No equipment records found.</td></tr>
+                        <tr><td colspan="13" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
                 <?php if ((int)$company_id > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
-                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($equipmentCsrfToken); ?>">
                             <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
                         </form>
                     </div>
@@ -625,6 +640,66 @@ if (!empty($_SESSION['crud_success'])) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script>
+window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
+</script>
+<script>
+(function () {
+    const selectAllRows = document.getElementById('select-all-rows');
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
+    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]') : [];
+    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
+    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
+    let selectionMode = false;
+
+    function setSelectionVisibility(visible) {
+        if (selectAllHeaderCell) {
+            selectAllHeaderCell.style.display = visible ? '' : 'none';
+        }
+        deleteCells.forEach(function (cell) {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function () {
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = selectAllRows.checked;
+            });
+        });
+    }
+
+    if (bulkDeleteForm && toggleButton) {
+        setSelectionVisibility(false);
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            if (event.submitter !== toggleButton) {
+                return;
+            }
+
+            if (!selectionMode) {
+                event.preventDefault();
+                selectionMode = true;
+                setSelectionVisibility(true);
+                toggleButton.textContent = 'Delete Selected';
+                return;
+            }
+
+            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
+            if (!anySelected) {
+                event.preventDefault();
+                alert('Please select at least one record to delete.');
+                return;
+            }
+
+            if (!confirm('Delete selected equipment records? Switches will also remove related switch port data.')) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
+</script>
 <?php if ($showSwitchPortManager): ?>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
