@@ -55,12 +55,6 @@ foreach ($argvCopy as $arg) {
     }
 }
 
-$protectionZone = [
-    'equipment', 'idfs', 'idf_links', 'idf_positions', 'idf_ports',
-    'audit_logs', 'employees', 'settings', 'user_companies',
-    'employee_system_access', 'cable_colors', 'ui_configuration',
-];
-
 $bespokeSmoke = [
     'budget_report', 'expiring', 'rack_planner', 'floor_plans', 'companies',
 ];
@@ -644,25 +638,10 @@ function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $compa
     return [];
 }
 
-/** Tables the runner must never wipe during FK prep or delete-retry clears (auth + Protection Zone). */
+/** Tables the runner must never wipe during FK prep or delete-retry clears (shared auth only). */
 function mbqa_tables_never_clear(): array
 {
-    return [
-        'companies',
-        'users',
-        'equipment',
-        'idfs',
-        'idf_links',
-        'idf_positions',
-        'idf_ports',
-        'audit_logs',
-        'employees',
-        'settings',
-        'user_companies',
-        'employee_system_access',
-        'cable_colors',
-        'ui_configuration',
-    ];
+    return ['companies', 'users'];
 }
 
 /**
@@ -950,11 +929,6 @@ function mbqa_delete_record_with_fk_retry(
         }
 
         if (!$progress) {
-            $skipped = array_values(array_intersect($blockers, mbqa_tables_never_clear()));
-            if (!empty($skipped)) {
-                return ['ok' => false, 'note' => 'blocked by ' . implode(', ', $blockers) . ' (protection zone; no auto-clear)'];
-            }
-
             return ['ok' => false, 'note' => 'blocked by ' . implode(', ', $blockers)];
         }
     }
@@ -1027,9 +1001,7 @@ foreach ($companiesToRun as $companyId) {
         }
 
         $tier = 'A';
-        if (in_array($slug, $protectionZone, true)) {
-            $tier = 'B';
-        } elseif (in_array($slug, $bespokeSmoke, true)) {
+        if (in_array($slug, $bespokeSmoke, true)) {
             $tier = 'D';
         } elseif (strpos($slug, 'is_') === 0) {
             $tier = 'C';
@@ -1042,8 +1014,8 @@ foreach ($companiesToRun as $companyId) {
         $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
         $steps[] = mbqa_step_result('list', $listOk, $listOk ? '' : 'HTTP ' . $index['status']);
 
-        if ($tier === 'B' || $tier === 'D') {
-            $steps[] = mbqa_step_result('clear', true, 'Skip (protection/bespoke smoke)');
+        if ($tier === 'D') {
+            $steps[] = mbqa_step_result('clear', true, 'Skip (bespoke smoke)');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A smoke');
             $steps[] = mbqa_step_result('create', true, 'N/A smoke');
             $steps[] = mbqa_step_result('view', true, 'N/A smoke');
