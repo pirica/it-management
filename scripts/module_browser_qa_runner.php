@@ -644,10 +644,48 @@ function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $compa
     return [];
 }
 
-/** Tables the runner must never wipe entirely during FK prep (shared / auth). */
+/** Tables the runner must never wipe during FK prep or delete-retry clears (auth + Protection Zone). */
 function mbqa_tables_never_clear(): array
 {
-    return ['companies', 'users'];
+    return [
+        'companies',
+        'users',
+        'equipment',
+        'idfs',
+        'idf_links',
+        'idf_positions',
+        'idf_ports',
+        'audit_logs',
+        'employees',
+        'settings',
+        'user_companies',
+        'employee_system_access',
+        'cable_colors',
+        'ui_configuration',
+    ];
+}
+
+/**
+ * Extracts the blocking child table from a MySQL 1451 FK error (not the schema name).
+ */
+function mbqa_mysql_fk_blocker_table(string $errMsg): string
+{
+    if (preg_match('/foreign key constraint fails\s*\(\s*`[^`]+`\.`([^`]+)`/i', $errMsg, $m)) {
+        $table = (string)($m[1] ?? '');
+        return itm_is_safe_identifier($table) ? $table : '';
+    }
+
+    if (preg_match('/REFERENCES\s+`[^`]+`\.`([^`]+)`/i', $errMsg, $m)) {
+        $table = (string)($m[1] ?? '');
+        return itm_is_safe_identifier($table) ? $table : '';
+    }
+
+    if (preg_match_all('/`([^`]+)`/', $errMsg, $matches) && count($matches[1]) >= 2) {
+        $table = (string)$matches[1][count($matches[1]) - 1];
+        return itm_is_safe_identifier($table) ? $table : '';
+    }
+
+    return '';
 }
 
 /**
@@ -787,13 +825,11 @@ function mbqa_clear_module_table_for_company(mysqli $conn, string $table, int $c
 
     if (!$ok && (int)$errCode === 1451) {
         for ($attempt = 0; $attempt < 12 && !$ok; $attempt++) {
-            if (preg_match('/`([^`]+)`/i', (string)$errMsg, $m) && itm_is_safe_identifier($m[1])) {
-                $blocker = $m[1];
-                if (!in_array($blocker, mbqa_tables_never_clear(), true)) {
-                    $subNote = '';
-                    mbqa_clear_module_table_for_company($conn, $blocker, $companyId, $subNote);
-                    $clearedFirst[$blocker] = $blocker;
-                }
+            $blocker = mbqa_mysql_fk_blocker_table((string)$errMsg);
+            if ($blocker !== '' && !in_array($blocker, mbqa_tables_never_clear(), true)) {
+                $subNote = '';
+                mbqa_clear_module_table_for_company($conn, $blocker, $companyId, $subNote);
+                $clearedFirst[$blocker] = $blocker;
             }
             $errCode = 0;
             $errMsg = '';
@@ -914,6 +950,11 @@ function mbqa_delete_record_with_fk_retry(
         }
 
         if (!$progress) {
+            $skipped = array_values(array_intersect($blockers, mbqa_tables_never_clear()));
+            if (!empty($skipped)) {
+                return ['ok' => false, 'note' => 'blocked by ' . implode(', ', $blockers) . ' (protection zone; no auto-clear)'];
+            }
+
             return ['ok' => false, 'note' => 'blocked by ' . implode(', ', $blockers)];
         }
     }
