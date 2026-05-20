@@ -3,57 +3,197 @@
  * HTTP session runner for full-module QA (mirrors browser checklist).
  *
  * Why: Exercising 101 modules × 5 companies via IDE browser alone is not practical;
- * this CLI tool uses the same login, company scope, CSRF, and module URLs as manual QA.
+ * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  *
- * Usage (repository root):
+ * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
  *   php scripts/module_browser_qa_runner.php --module=expenses --company=1
  *   php scripts/module_browser_qa_runner.php --pilot-only
+ *
+ * Browser (Laragon): open scripts/module_browser_qa_runner.php, set options, Run QA.
  */
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
+require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/script_browser_nav.php';
+
+/**
+ * @return array{run:bool, help:bool, pilot_only:bool, base_url:string, module:?string, company:?int}
+ */
+function mbqa_parse_run_options(): array
+{
+    $options = [
+        'run' => false,
+        'help' => false,
+        'pilot_only' => false,
+        'base_url' => 'http://localhost/it-management/',
+        'module' => null,
+        'company' => null,
+    ];
+
+    if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+        $options['run'] = true;
+        foreach (array_slice($GLOBALS['argv'] ?? [], 1) as $arg) {
+            if ($arg === '--help' || $arg === '-h') {
+                $options['help'] = true;
+                $options['run'] = false;
+                continue;
+            }
+            if ($arg === '--pilot-only') {
+                $options['pilot_only'] = true;
+                continue;
+            }
+            if (strpos($arg, '--base-url=') === 0) {
+                $options['base_url'] = (string)substr($arg, 11);
+                continue;
+            }
+            if (strpos($arg, '--module=') === 0) {
+                $options['module'] = substr($arg, 9);
+                continue;
+            }
+            if (strpos($arg, '--company=') === 0) {
+                $options['company'] = (int)substr($arg, 10);
+            }
+        }
+    } else {
+        $options['run'] = isset($_GET['run']) || isset($_POST['run']);
+        $options['help'] = isset($_GET['help']);
+        $options['pilot_only'] = isset($_GET['pilot_only']) || isset($_POST['pilot_only']);
+        if (isset($_REQUEST['base_url'])) {
+            $options['base_url'] = trim((string)$_REQUEST['base_url']);
+        }
+        if (isset($_REQUEST['module']) && trim((string)$_REQUEST['module']) !== '') {
+            $options['module'] = trim((string)$_REQUEST['module']);
+        }
+        if (isset($_REQUEST['company']) && trim((string)$_REQUEST['company']) !== '') {
+            $options['company'] = (int)$_REQUEST['company'];
+        }
+    }
+
+    if (substr($options['base_url'], -1) !== '/') {
+        $options['base_url'] .= '/';
+    }
+
+    return $options;
+}
+
+function mbqa_is_cli_sapi(): bool
+{
+    return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+}
+
+function mbqa_out(string $message): void
+{
+    echo $message;
+    if (!mbqa_is_cli_sapi()) {
+        @flush();
+        @ob_flush();
+    }
+}
+
+function mbqa_err(string $message): void
+{
+    if (mbqa_is_cli_sapi()) {
+        fwrite(STDERR, $message);
+    } else {
+        mbqa_out($message);
+    }
+}
+
+function mbqa_print_help(): void
+{
+    if (!mbqa_is_cli_sapi()) {
+        header('Content-Type: text/html; charset=utf-8');
+        itm_script_browser_nav_echo();
+        echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
+        echo '<h1>Module browser QA runner</h1>';
+    } else {
+        itm_script_output_begin('Module browser QA runner');
+    }
+
+    mbqa_out("Module browser QA runner\n\n");
+    mbqa_out("Options:\n");
+    mbqa_out("  --base-url=URL   App root (default http://localhost/it-management/)\n");
+    mbqa_out("  --module=SLUG    Single module folder under modules/\n");
+    mbqa_out("  --company=N      Company id 1–5 only\n");
+    mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
+    mbqa_out("  --help           Show this help\n\n");
+    mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD.json\n\n");
+
+    if (!mbqa_is_cli_sapi()) {
+        mbqa_out("Browser: open this script, submit the form with Run QA, or use query flags:\n");
+        mbqa_out("  ?run=1&module=expenses&company=4\n");
+        echo '<p><a href="module_browser_qa_runner.php">← Back to runner form</a></p></main>';
+    }
+}
+
+/**
+ * @param array{run:bool, help:bool, pilot_only:bool, base_url:string, module:?string, company:?int} $options
+ */
+function mbqa_render_browser_form(array $options): void
+{
     header('Content-Type: text/html; charset=utf-8');
-    echo '<p>CLI only. Run: <code>php scripts/module_browser_qa_runner.php</code></p>';
-    exit(1);
+    itm_script_browser_nav_echo();
+
+    $baseUrl = htmlspecialchars($options['base_url'], ENT_QUOTES, 'UTF-8');
+    $module = htmlspecialchars((string)($options['module'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $company = $options['company'] !== null ? (int)$options['company'] : '';
+    $pilotChecked = $options['pilot_only'] ? ' checked' : '';
+
+    echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
+    echo '<h1>Module browser QA runner</h1>';
+    echo '<p>Runs the full-module HTTP checklist (login, company switch, clear/seed/CRUD, export/import, delete). ';
+    echo 'Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>. Long runs may take several minutes.</p>';
+    echo '<form method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
+    echo '<input type="hidden" name="run" value="1">';
+    echo '<label>Base URL<br><input type="url" name="base_url" value="' . $baseUrl . '" style="width:100%;padding:8px;"></label>';
+    echo '<label>Module (optional)<br><input type="text" name="module" value="' . $module . '" placeholder="expenses" style="width:100%;padding:8px;"></label>';
+    echo '<label>Company id 1–5 (optional)<br><input type="number" name="company" min="1" max="5" value="' . htmlspecialchars((string)$company, ENT_QUOTES, 'UTF-8') . '" style="width:100%;padding:8px;"></label>';
+    echo '<label><input type="checkbox" name="pilot_only" value="1"' . $pilotChecked . '> Pilot only (expenses)</label>';
+    echo '<button type="submit" style="padding:10px 16px;font-weight:600;">Run QA</button>';
+    echo '</form>';
+    echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php?help=1">CLI options / help</a> · ';
+    echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
+    echo '</main>';
 }
 
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
-    fwrite(STDERR, "Unable to resolve project root.\n");
+    mbqa_err("Unable to resolve project root.\n");
     exit(2);
+}
+
+$mbqaOptions = mbqa_parse_run_options();
+
+if ($mbqaOptions['help']) {
+    mbqa_print_help();
+    exit(0);
+}
+
+if (!mbqa_is_cli_sapi() && !$mbqaOptions['run']) {
+    mbqa_render_browser_form($mbqaOptions);
+    exit(0);
+}
+
+if (!mbqa_is_cli_sapi()) {
+    @set_time_limit(0);
+    @ignore_user_abort(true);
+    itm_script_output_begin('Module browser QA runner');
+    mbqa_out("Running QA…\n\n");
 }
 
 define('ITM_CLI_SCRIPT', true);
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 if (!isset($conn) || !($conn instanceof mysqli)) {
-    fwrite(STDERR, "Database connection unavailable.\n");
+    mbqa_err("Database connection unavailable.\n");
     exit(2);
 }
 
-$argvCopy = $argv ?? [];
-$baseUrl = 'http://localhost/it-management/';
-foreach ($argvCopy as $arg) {
-    if (strpos($arg, '--base-url=') === 0) {
-        $baseUrl = (string)substr($arg, 11);
-        if (substr($baseUrl, -1) !== '/') {
-            $baseUrl .= '/';
-        }
-    }
-}
-
-$pilotOnly = in_array('--pilot-only', $argvCopy, true);
-$filterModule = null;
-$filterCompany = null;
-foreach ($argvCopy as $arg) {
-    if (strpos($arg, '--module=') === 0) {
-        $filterModule = substr($arg, 9);
-    }
-    if (strpos($arg, '--company=') === 0) {
-        $filterCompany = (int)substr($arg, 10);
-    }
-}
+$baseUrl = $mbqaOptions['base_url'];
+$pilotOnly = $mbqaOptions['pilot_only'];
+$filterModule = $mbqaOptions['module'];
+$filterCompany = $mbqaOptions['company'];
 
 $bespokeSmoke = [
     'budget_report', 'expiring', 'rack_planner', 'floor_plans', 'companies',
@@ -1127,7 +1267,7 @@ $loginPost = mbqa_http(
     $cookieFile
 );
 if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal($loginPost['body'])) {
-    fwrite(STDERR, "Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}?\n");
+    mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}?\n");
     exit(1);
 }
 
@@ -1445,6 +1585,20 @@ foreach ($results as $row) {
     }
 }
 
-echo "Wrote {$jsonPath}\n";
-echo "Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n";
-exit($summary['fail'] > 0 ? 1 : 0);
+$exitCode = $summary['fail'] > 0 ? 1 : 0;
+mbqa_out("Wrote {$jsonPath}\n");
+mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
+
+if (!mbqa_is_cli_sapi()) {
+    $jsonRel = '../qa-reports/module-browser-qa-' . $date . '.json';
+    $reportHref = 'module_browser_qa_build_report.php?run=1&amp;date=' . rawurlencode($date);
+    itm_script_output_end();
+    echo '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;margin:16px;max-width:720px;">';
+    echo '<p><strong>' . ($exitCode === 0 ? 'Completed' : 'Completed with failures') . '</strong> — ';
+    echo (int)$summary['pass'] . ' pass, ' . (int)$summary['fail'] . ' fail</p>';
+    echo '<p><a href="' . htmlspecialchars($jsonRel, ENT_QUOTES, 'UTF-8') . '">Download JSON</a> · ';
+    echo '<a href="' . htmlspecialchars($reportHref, ENT_QUOTES, 'UTF-8') . '">Build markdown report</a> · ';
+    echo '<a href="module_browser_qa_runner.php">Run again</a></p></div>';
+}
+
+exit($exitCode);

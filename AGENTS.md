@@ -112,8 +112,8 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **CLI-only:** HTTP session runner — login (`Admin`/`Admin`), dashboard company switch, FK-aware tenant clear, sample data (HTTP then `database.sql` DB seed), list/create/view/edit/list_all, **Export PDF → Export Excel (parse table) → Import Excel**, `single_delete` with FK retry, search, sort. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. |
-| `scripts/module_browser_qa_build_report.php` | **CLI-only:** Builds markdown summary from the JSON (preflight, Expenses pilot table, failure categories). |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), dashboard company switch, FK-aware tenant clear, sample data (HTTP then `database.sql` DB seed), list/create/view/edit/list_all, **Export PDF → Export Excel (parse table) → Import Excel**, `single_delete` with FK retry, search, sort. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
+| `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown summary from the JSON (preflight, failure categories, preview in browser). |
 
 **Commands (repository root, Laragon):**
 
@@ -124,6 +124,8 @@ php scripts/module_browser_qa_runner.php --pilot-only
 php scripts/module_browser_qa_runner.php --module=expenses --company=4
 php scripts/module_browser_qa_runner.php --module=departments --company=1
 ```
+
+**Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` (options form → **Run QA**); `http://localhost/it-management/scripts/module_browser_qa_build_report.php` (pick date → build `.md`). Catalog: `scripts/index.html`.
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 

@@ -447,21 +447,27 @@
                 </tr>
                 <tr>
                     <td><a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-browser">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
-                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5 (including Protection Zone modules): login, company switch, FK-aware tenant clear (auto-clears FK blockers; never wipes <code>companies</code>/<code>users</code>), sample data (HTTP then <code>database.sql</code> DB seed + FK parents on missing samples), list/create/view/edit, single delete with FK retry, search, sort, Export PDF → Export Excel (parse table) → Import Excel round-trip. Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>.
+                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5 (including Protection Zone modules): login, company switch, FK-aware tenant clear (auto-clears FK blockers; never wipes <code>companies</code>/<code>users</code>), sample data (HTTP then <code>database.sql</code> DB seed + FK parents on missing samples), list/create/view/edit, single delete with FK retry, search, sort, Export PDF → Export Excel (parse table) → Import Excel round-trip. Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>. Browser form runs the same checklist (long request).
                     </td>
                     <td>
+                        Browser: <a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a> (form; <code>?run=1</code> to execute)<br>
                         <code>php scripts/module_browser_qa_runner.php</code><br>
                         <code>php scripts/module_browser_qa_runner.php --pilot-only</code> (expenses only)<br>
-                        <code>php scripts/module_browser_qa_runner.php --module=expenses --company=4</code>
+                        <code>php scripts/module_browser_qa_runner.php --module=expenses --company=4</code><br>
+                        <code>php scripts/module_browser_qa_runner.php --help</code>
                     </td>
                 </tr>
                 <tr>
                     <td><a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Builds markdown summary from the JSON produced by <code>module_browser_qa_runner.php</code> (preflight, expenses pilot tables, failure list).</td>
-                    <td><code>php scripts/module_browser_qa_build_report.php</code> (run after the runner)</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-browser">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Builds markdown summary from the JSON produced by <code>module_browser_qa_runner.php</code> (preflight, expenses tables, failure categories). Browser shows an HTML preview and link to <code>qa-reports/module-browser-qa-YYYY-MM-DD.md</code>.</td>
+                    <td>
+                        Browser: <a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a> (form; <code>?run=1&amp;date=YYYY-MM-DD</code>)<br>
+                        <code>php scripts/module_browser_qa_build_report.php</code><br>
+                        <code>php scripts/module_browser_qa_build_report.php --date=2026-05-20</code>
+                    </td>
                 </tr>
                 <tr>
                     <td><a href="check_employees_clear_table_transaction.php">check_employees_clear_table_transaction.php</a></td>
