@@ -1805,6 +1805,39 @@ function mbqa_index_shows_bulk_actions(string $html): bool
 }
 
 /**
+ * Explains why bulk_delete/clear_table were skipped (row gate vs missing delete.php/CSRF/bulk UI).
+ */
+function mbqa_bulk_step_na_note(
+    int $rowCount,
+    int $perPage,
+    string $indexHtml,
+    string $deletePath,
+    string $csrf,
+    string $contextLabel = 'after add'
+): string {
+    if ($rowCount < $perPage) {
+        return 'N/A (' . $rowCount . ' rows < perPage ' . $perPage . ' ' . $contextLabel . ')';
+    }
+
+    $reasons = [];
+    if (!mbqa_index_shows_bulk_actions($indexHtml)) {
+        $reasons[] = 'bulk UI hidden (no ids[]/bulk_action on index)';
+    }
+    if (!is_file($deletePath)) {
+        $reasons[] = 'no delete.php';
+    }
+    if ($csrf === '') {
+        $reasons[] = 'no CSRF on index';
+    }
+
+    if (empty($reasons)) {
+        return 'N/A (bulk prerequisites unclear ' . $contextLabel . ')';
+    }
+
+    return 'N/A (' . $rowCount . ' rows >= perPage ' . $perPage . ' ' . $contextLabel . '; ' . implode('; ', $reasons) . ')';
+}
+
+/**
  * @param int[] $ids
  * @return array{ok:bool,note:string}
  */
@@ -2345,9 +2378,12 @@ foreach ($companiesToRun as $companyId) {
         $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
         $perPage = mbqa_records_per_page($conn);
         $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
-        $canBulkAfterAdd = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
+        $canRunBulkDelete = $rowCountAfterAdd >= $perPage
+            && mbqa_index_shows_bulk_actions($index['body'])
+            && is_file($deletePath)
+            && $csrfIndex !== '';
 
-        if ($canBulkAfterAdd && is_file($deletePath) && $csrfIndex !== '') {
+        if ($canRunBulkDelete) {
             $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
             if (!empty($bulkIds)) {
                 $bulkDelEarly = mbqa_run_bulk_delete($moduleUrl, $cookieFile, $csrfIndex, $bulkIds);
@@ -2361,7 +2397,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result(
                 'bulk_delete',
                 true,
-                'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
+                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
             );
         }
 
@@ -2514,17 +2550,19 @@ foreach ($companiesToRun as $companyId) {
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
-        $rowCount = mbqa_tenant_row_count($conn, $slug, $companyId);
-        $canClearTable = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
+        $canRunClearTable = $rowCountAfterAdd >= $perPage
+            && mbqa_index_shows_bulk_actions($index['body'])
+            && is_file($deletePath)
+            && $csrfIndex !== '';
 
-        if ($canClearTable && is_file($deletePath) && $csrfIndex !== '') {
+        if ($canRunClearTable) {
             $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex);
             $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
         } else {
             $steps[] = mbqa_step_result(
                 'clear_table',
                 true,
-                $canClearTable ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
+                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
             );
         }
 
