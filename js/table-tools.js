@@ -38,6 +38,21 @@
     function exportTableAsExcel(table) {
         const { filenameBase } = tableMeta(table);
         const clone = cloneTableWithoutActions(table);
+
+        // Why: Real .xlsx via SheetJS avoids Excel's "extension doesn't match" warning from HTML saved as .xls.
+        if (window.XLSX && window.XLSX.utils && typeof window.XLSX.writeFile === 'function') {
+            const headerRow = Array.from(clone.querySelectorAll('thead th')).map(getCellText);
+            const rows = [headerRow];
+            clone.querySelectorAll('tbody tr').forEach((row) => {
+                rows.push(Array.from(row.querySelectorAll('td')).map(getCellText));
+            });
+            const sheet = window.XLSX.utils.aoa_to_sheet(rows);
+            const workbook = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(workbook, sheet, 'Sheet1');
+            window.XLSX.writeFile(workbook, `${filenameBase}.xlsx`);
+            return;
+        }
+
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${clone.outerHTML}</body></html>`;
         const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
         const url = URL.createObjectURL(blob);
