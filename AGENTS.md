@@ -171,6 +171,62 @@ Every module (excluding the Protection Zone) must implement:
 * **Source:** Seed rows must match `INSERT INTO` entries in `database.sql` for that module table.
 * **Tenant Safety:** Always write seeded rows with active `company_id`; never expose/edit `company_id` in UI.
 
+### 7. Module Consistency Guardrail (Mandatory)
+When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
+* **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
+* **Incomplete implementation is not acceptable:** if a fix is made in one duplicated entry file, you must recheck and apply it to all matching duplicated files before finishing.
+* **Mandatory recheck checklist:** verify behavior consistency in `index.php`, `view.php`, `edit.php`, `create.php`, and `list_all.php` (plus `delete.php` when applicable) for the changed module before commit.
+* **Boolean detection consistency:** If checkbox detection logic is updated (example: `active` with `tinyint` variant handling), propagate the same update to every duplicated entry file that shares create/edit rendering or POST normalization paths.
+* **For display renderer updates** (for example badges/swatches/label mapping), propagate the same renderer/helper logic to both `index.php` and `view.php` before commit.
+* **Verify FK label rendering in both list and detail/edit flows** (no raw FK IDs when a related label exists), including company-scoped fallback behavior where seeded reference rows may be missing for a tenant.
+* **FK label guardrail (hard fail):** if a module list/view screen shows raw FK IDs such as `equipment_id=5` or `level_id=23` while a related label row exists, the task is **not complete**. You must fix label rendering and tenant-safe fallback lookup before commit.
+* **Switch Status FK + color fallback guardrail (mandatory for `modules/switch_status/`):**
+    * Preserve persisted FK selections when tenant-scoped option queries do not return the saved row (do not let edit forms fall back to `-- Select --` for existing values).
+    * For `color_id`, keep swatch rendering resilient by resolving `hex_color` with tenant-scoped lookup first (`id` + `company_id`) and then global-by-`id` fallback for legacy/shared rows.
+    * Keep duplicated entry files aligned (`index.php`, `edit.php`, `view.php`) so list/detail/edit flows all use the same FK fallback and color preview behavior.
+* **Ensure FK dropdowns preserve persisted selections:** if a saved FK value is not returned by the current company-scoped options query, append/load that saved value so edit forms do not fall back to `-- Select --`.
+* **Mandatory FK recheck before commit (all changed modules):**
+  * Open `index.php` and `view.php` and confirm FK columns render labels (not numeric IDs).
+  * Open `edit.php` and confirm persisted FK values remain selected even when company-scoped options are incomplete.
+  * Confirm fallback lookup is tenant-safe (company scoped first, then id-only fallback only for preserving legacy/shared references).
+* **Mandatory column + SQL relation audit (hard fail):**
+  * For mandatory review requests, audit **all columns and SQL relations** for each requested module folder before code changes are finalized.
+  * Validate visible-column rendering in `index.php`, `view.php`, and `list_all.php` against `database.sql`/`information_schema` relationships.
+  * Replace raw foreign keys with meaningful related display values whenever possible (for example hostname, status, color name, VLAN name, device/position labels).
+  * Include both declared FK constraints and relation-like `*_id` columns that may be stored without an explicit FK constraint.
+  * Keep tenant-safe lookup order: `company_id` scoped lookup first, then id-only fallback only for legacy/shared references when scoped rows are missing.
+  * If a related human-readable label exists but any visible screen still shows raw FK IDs, the task is not complete.
+* **Created-by UX guardrail (hard fail):**
+  * For fields such as `created_by`, `updated_by`, `approved_by`, and `*_by_user_id`, list/detail screens must never show raw numeric IDs when a user row exists.
+  * In `create.php`/`edit.php`, these fields must render as user dropdowns (human-readable labels), not free-text numeric inputs.
+  * User labels must prefer `first_name + last_name`; use `username` only as fallback when full name is empty.
+  * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
+* **Testing/reporting guardrail (mandatory):**
+  * Do not claim “No tests run” when checks were executed.
+  * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
+  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB runs per catalog in `scripts/index.html` (`SMOKE_RUN_DB_TESTS=1` or run the `*_test.php` scripts directly). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
+  * PR descriptions must list the exact commands that were run and their outcomes.
+* **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
+* **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
+  * All **Create, Edit, Update, Delete, Copy, and Move** operations must keep the following tables fully synchronized at all times: `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links`.
+  * **Hard-fail policy:** partial cross-table updates are not allowed. When a workflow touches multiple IDF-related tables, use transaction boundaries and rollback on any synchronization failure.
+  * **Delete/overwrite/move safety:** cleanup/update dependent `idf_links` and `idf_ports` rows before deleting or replacing `idf_positions`, and always keep `equipment.idf_id` and `switch_ports.idf_id` aligned with the active IDF link state.
+  * `link_create`, `port_update`, `link_delete`, `position_save`, `position_delete`, `position_copy`, and move/reorder actions must preserve status/color/label/notes parity across linked `idf_ports` and mirrored `switch_ports` rows.
+  * **Unknown reset rule:** unlink/delete flows must reset synchronized ports to tenant `Unknown` + Gray (`#808080`) defaults where applicable.
+  * **Wrapper consistency finding (switch_ports):** if `create.php`, `edit.php`, `view.php`, `delete.php`, or `list_all.php` are wrappers that route to `index.php`, `index.php` must not overwrite wrapper-provided `$crud_action` values.
+  * **High-Density Support:** Rack position validation supports up to **250** positions. Batch updates (move/reorder) use temporary offsets (1000) to avoid unique constraint collisions.
+  * **Mandatory human-flow testing for every affected workflow:** execute human-flow regression for each changed Create/Edit/Update/Delete/Copy/Move path before PR.
+    * Required regression command (from repository root):
+      * **Default (Linux, macOS, CI, PATH):** `php scripts/idfs_sync_human_test.php`
+      * **Windows Laragon fallback (when `php` is not on PATH):** `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
+    * If any workflow or command run reports `[FAIL]`, the task is not complete.
+* **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
+* **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
+* **API:**
+   * `scripts/api.php` needs to be updated if any changes on the project.
+* **Implement the missing JSON import endpoint:**
+   * For modules/*/index.php, so 📥Import Excel now handles table-tools.js save-to-database requests instead of falling through to normal page rendering (which caused the generic “Import failed while saving to database.” error).
+
 ---
 
 ## 🔒 Security Protocol
@@ -240,7 +296,14 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 * **If a change must be bulk-applied, state why in the PR description** and confirm the scope before continuing.
 
 ### PR review (mandatory)
-* **Reviews and fixes are done in-repo via **Cursor**, optional **Bugbot**, manual IDE review, and the scripts below — same intent as external P1/P2 bot comments.
+* **Reviews and fixes** are done in-repo via Cursor, optional Bugbot, manual IDE review, and the scripts below — same intent as external P1/P2 bot comments.
+* **NEW PR always (mandatory — non-negotiable):**
+  * **Every separate request, bugfix, or follow-up** ships on a **fresh branch** and opens a **brand-new pull request**. Do **not** add unrelated commits to an already-open PR “to save time”, and do **not** reuse **PR #N** for **new scope** after merge unless the user explicitly asked to extend that same PR while it is still open.
+  * Treat **“always a NEW PR”** literally: **`gh pr create`** (or equivalent) for each deliverable; the prior merged PR is history—**next change = next PR number**.
+  * Package every requested implementation in a **fresh branch** and open that **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
+  * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
+  * Do not reuse a previously opened **pull request** for a **new** request, even if the files overlap.
+  * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your **NEW PR always** rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
 * **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
   * `php -l` on every touched `.php` file.
   * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
@@ -255,7 +318,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 ### GitHub PR review comments (mandatory)
 * **Read all GitHub PR feedback** before considering a PR merge-ready: use `gh pr view`, `gh api repos/{owner}/{repo}/pulls/{number}/comments`, GraphQL review-thread endpoints, or the PR URL. Include human reviewers, **Bugbot**, **Codex**, and actionable CI/check annotations when present.
 * **One actionable comment → one fresh Cursor chat:** for each distinct review comment or coherent thread that requests a change, **start a new forked/isolated agent chat** scoped to that item only. Do not mix unrelated review threads in the same session unless they share one root cause.
-* **Implement on a fresh branch + new PR:** address the comment with code/docs changes per **NEW PR always** (commit, push, `gh pr create` when checks pass). Link the resolving PR in the GitHub reply when applicable.
+* **Implement on a fresh branch + new PR:** address the comment with code/docs changes per **NEW PR always** (see **PR review** above). Link the resolving PR in the GitHub reply when applicable.
 * **Auto-fix when asked to address review comments:** for each actionable thread, (1) verify whether `master` already contains the fix, (2) if not, patch on a **fresh branch + new PR**, (3) run the relevant checks (`php -l` on touched files, plus any script named in the comment or PR scope), (4) post the GitHub reply below. Do not assume silence means done.
 * **Always reply on GitHub with a status label:** every addressed review thread must receive an explicit reply that **starts with exactly** **`Fixed`** or **`Not Fixed`** (that spelling and capitalization). Do **not** use `Fix`, `fix`, `Won't fix`, or other variants—the label must be searchable and consistent.
   * **`Fixed`:** the concern is resolved in a merged commit or an open linked PR; state what changed (file, commit/PR number, or command run).
@@ -288,65 +351,3 @@ Use this when asked to “check last N comments and reply” (Codex/Bugbot/human
 * **`Fixed`** — merged PR #1708; `scripts/check_ui_configuration_coverage.php` now rejects inverted `perPage >= totalRows` gates.
 * **`Fixed`** — PR #1713 on `master`; `modules/system_access/index.php` tbody `ids[]` cells gated with `$showBulkActions`.
 * **`Not Fixed`** — intentional per AGENTS.md § Scripts directory (phpMyAdmin linked only from `scripts/index.html`, not derived per-request host).
-
-### Module Consistency Guardrail (Mandatory)
-When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
-* **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
-* **Incomplete implementation is not acceptable:** if a fix is made in one duplicated entry file, you must recheck and apply it to all matching duplicated files before finishing.
-* **Mandatory recheck checklist:** verify behavior consistency in `index.php`, `view.php`, `edit.php`, `create.php`, and `list_all.php` (plus `delete.php` when applicable) for the changed module before commit.
-* **Boolean detection consistency:** If checkbox detection logic is updated (example: `active` with `tinyint` variant handling), propagate the same update to every duplicated entry file that shares create/edit rendering or POST normalization paths.
-* **For display renderer updates** (for example badges/swatches/label mapping), propagate the same renderer/helper logic to both `index.php` and `view.php` before commit.
-* **Verify FK label rendering in both list and detail/edit flows** (no raw FK IDs when a related label exists), including company-scoped fallback behavior where seeded reference rows may be missing for a tenant.
-* **FK label guardrail (hard fail):** if a module list/view screen shows raw FK IDs such as `equipment_id=5` or `level_id=23` while a related label row exists, the task is **not complete**. You must fix label rendering and tenant-safe fallback lookup before commit.
-* **Switch Status FK + color fallback guardrail (mandatory for `modules/switch_status/`):**
-    * Preserve persisted FK selections when tenant-scoped option queries do not return the saved row (do not let edit forms fall back to `-- Select --` for existing values).
-    * For `color_id`, keep swatch rendering resilient by resolving `hex_color` with tenant-scoped lookup first (`id` + `company_id`) and then global-by-`id` fallback for legacy/shared rows.
-    * Keep duplicated entry files aligned (`index.php`, `edit.php`, `view.php`) so list/detail/edit flows all use the same FK fallback and color preview behavior.
-* **Ensure FK dropdowns preserve persisted selections:** if a saved FK value is not returned by the current company-scoped options query, append/load that saved value so edit forms do not fall back to `-- Select --`.
-* **Mandatory FK recheck before commit (all changed modules):**
-  * Open `index.php` and `view.php` and confirm FK columns render labels (not numeric IDs).
-  * Open `edit.php` and confirm persisted FK values remain selected even when company-scoped options are incomplete.
-  * Confirm fallback lookup is tenant-safe (company scoped first, then id-only fallback only for preserving legacy/shared references).
-* **Mandatory column + SQL relation audit (hard fail):**
-  * For mandatory review requests, audit **all columns and SQL relations** for each requested module folder before code changes are finalized.
-  * Validate visible-column rendering in `index.php`, `view.php`, and `list_all.php` against `database.sql`/`information_schema` relationships.
-  * Replace raw foreign keys with meaningful related display values whenever possible (for example hostname, status, color name, VLAN name, device/position labels).
-  * Include both declared FK constraints and relation-like `*_id` columns that may be stored without an explicit FK constraint.
-  * Keep tenant-safe lookup order: `company_id` scoped lookup first, then id-only fallback only for legacy/shared references when scoped rows are missing.
-  * If a related human-readable label exists but any visible screen still shows raw FK IDs, the task is not complete.
-* **Created-by UX guardrail (hard fail):**
-  * For fields such as `created_by`, `updated_by`, `approved_by`, and `*_by_user_id`, list/detail screens must never show raw numeric IDs when a user row exists.
-  * In `create.php`/`edit.php`, these fields must render as user dropdowns (human-readable labels), not free-text numeric inputs.
-  * User labels must prefer `first_name + last_name`; use `username` only as fallback when full name is empty.
-  * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
-* **Testing/reporting guardrail (mandatory):**
-  * Do not claim “No tests run” when checks were executed.
-  * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
-  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB runs per catalog in `scripts/index.html` (`SMOKE_RUN_DB_TESTS=1` or run the `*_test.php` scripts directly). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
-  * PR descriptions must list the exact commands that were run and their outcomes.
-* **New branch + NEW PR always (mandatory — non-negotiable):**
-  * **Every separate request, bugfix, or follow-up** ships on a **fresh branch** and opens a **brand-new pull request**. Do **not** add unrelated commits to an already-open PR “to save time”, and do **not** reuse **PR #N** for **new scope** after merge unless the user explicitly asked to extend that same PR while it is still open.
-  * Treat **“always a NEW PR”** literally: **`gh pr create`** (or equivalent) for each deliverable; the prior merged PR is history—**next change = next PR number**.
-  * Package every requested implementation in a **fresh branch** and open that **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
-  * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
-  * Do not reuse a previously opened **pull request** for a **new** request, even if the files overlap.
-  * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your **NEW PR always** rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
-* **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
-  * All **Create, Edit, Update, Delete, Copy, and Move** operations must keep the following tables fully synchronized at all times: `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links`.
-  * **Hard-fail policy:** partial cross-table updates are not allowed. When a workflow touches multiple IDF-related tables, use transaction boundaries and rollback on any synchronization failure.
-  * **Delete/overwrite/move safety:** cleanup/update dependent `idf_links` and `idf_ports` rows before deleting or replacing `idf_positions`, and always keep `equipment.idf_id` and `switch_ports.idf_id` aligned with the active IDF link state.
-  * `link_create`, `port_update`, `link_delete`, `position_save`, `position_delete`, `position_copy`, and move/reorder actions must preserve status/color/label/notes parity across linked `idf_ports` and mirrored `switch_ports` rows.
-  * **Unknown reset rule:** unlink/delete flows must reset synchronized ports to tenant `Unknown` + Gray (`#808080`) defaults where applicable.
-  * **Wrapper consistency finding (switch_ports):** if `create.php`, `edit.php`, `view.php`, `delete.php`, or `list_all.php` are wrappers that route to `index.php`, `index.php` must not overwrite wrapper-provided `$crud_action` values.
-  * **High-Density Support:** Rack position validation supports up to **250** positions. Batch updates (move/reorder) use temporary offsets (1000) to avoid unique constraint collisions.
-  * **Mandatory human-flow testing for every affected workflow:** execute human-flow regression for each changed Create/Edit/Update/Delete/Copy/Move path before PR.
-    * Required regression command (from repository root):
-      * **Default (Linux, macOS, CI, PATH):** `php scripts/idfs_sync_human_test.php`
-      * **Windows Laragon fallback (when `php` is not on PATH):** `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
-    * If any workflow or command run reports `[FAIL]`, the task is not complete.
-* **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
-* **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
-* **API:**
-   * `scripts/api.php` needs to be updated if any changes on the project.
-* ** Implement the missing JSON import endpoint:**
-   * For modules/*/index.php, so 📥Import Excel now handles table-tools.js save-to-database requests instead of falling through to normal page rendering (which caused the generic “Import failed while saving to database.” error).
