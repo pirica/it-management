@@ -182,6 +182,16 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: module_browser_qa_* scripts are CLI/browser QA tools; $_POST is option parsing only and
+    // $_SESSION['company_id'] simulates tenant context for HTTP checks — not application CRUD endpoints.
+    if (preg_match('#^scripts/module_browser_qa_.+\\.php$#', $relativePath) === 1) {
+        $skipped[] = [
+            $relativePath,
+            'QA runner/report script: maintenance tool, not a module POST handler; tenant session is set for automated HTTP QA only',
+        ];
+        continue;
+    }
+
     if (!$hasFileLevelGuard) {
         $missing[] = [$path, 'POST/mutation surface without CSRF guard reference'];
     }
