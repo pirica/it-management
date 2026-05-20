@@ -163,7 +163,7 @@ if ($bulkAction === 'bulk_delete') {
 }
 
 // Handle Single Record Delete
-$id = isset($_POST['id']) ? (int)$POST['id'] : 0;
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 if ($id > 0) {
     // SECURITY CHECK: Ensure record is not in use elsewhere before deleting
     $usageError = '';

@@ -765,7 +765,7 @@ if ($searchRaw !== '') {
     $searchPattern = ((strpos($searchRaw, '%') !== false) || (strpos($searchRaw, '_') !== false)) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($displayFieldColumns as $col) {
+    foreach ($uiColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') {
             continue;
