@@ -254,18 +254,29 @@ $date = $options['date'];
 $jsonPath = $root . '/qa-reports/module-browser-qa-' . $date . '.json';
 
 if (!is_file($jsonPath)) {
-    mbqar_err("Missing {$jsonPath}\n");
     if (!mbqar_is_cli_sapi()) {
         header('Content-Type: text/html; charset=utf-8');
         itm_script_browser_nav_echo();
-        echo '<p style="margin:16px;font-family:sans-serif;">JSON not found. ';
-        echo '<a href="module_browser_qa_runner.php?run=1">Run the QA runner</a> first.</p>';
+        echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
+        echo '<h1>Report not available</h1>';
+        echo '<p>JSON not found: <code>' . htmlspecialchars($jsonPath, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        echo '<p><a href="module_browser_qa_runner.php?run=1">Run the QA runner</a> first, then return here.</p>';
+        echo '</main>';
+        exit(1);
     }
+    mbqar_err("Missing {$jsonPath}\n");
     exit(1);
 }
 
 $data = json_decode((string)file_get_contents($jsonPath), true);
 if (!is_array($data)) {
+    if (!mbqar_is_cli_sapi()) {
+        header('Content-Type: text/html; charset=utf-8');
+        itm_script_browser_nav_echo();
+        echo '<main style="margin:16px;font-family:sans-serif;"><h1>Invalid JSON</h1>';
+        echo '<p>The runner output file could not be parsed. Re-run the QA runner.</p></main>';
+        exit(1);
+    }
     mbqar_err("Invalid JSON\n");
     exit(1);
 }

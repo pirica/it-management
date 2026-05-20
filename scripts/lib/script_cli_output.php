@@ -34,6 +34,16 @@ if (!function_exists('itm_script_cli_is_cli')) {
         register_shutdown_function('itm_script_output_end');
     }
 
+    /** Close the log <pre> so scripts can echo HTML footers before the document ends. */
+    function itm_script_output_close_pre(): void
+    {
+        if (itm_script_cli_is_cli()) {
+            return;
+        }
+        $GLOBALS['itm_script_pre_closed'] = true;
+        echo '</pre>';
+    }
+
     function itm_script_output_end()
     {
         static $closed = false;
@@ -41,6 +51,9 @@ if (!function_exists('itm_script_cli_is_cli')) {
             return;
         }
         $closed = true;
-        echo '</pre></body></html>';
+        if (empty($GLOBALS['itm_script_pre_closed'])) {
+            echo '</pre>';
+        }
+        echo '</body></html>';
     }
 }
