@@ -90,7 +90,7 @@ if (!function_exists('itm_fk_label_by_id')) {
 
 if (!function_exists('itm_first_tenant_row_id')) {
     /**
-     * First active tenant row for sample seed when database.sql anchor ids no longer exist in the DB.
+     * First tenant row for database.sql sample seed only (not edit-form FK resolution).
      */
     function itm_first_tenant_row_id(mysqli $conn, string $refTable, int $companyId): int
     {
@@ -148,9 +148,7 @@ if (!function_exists('itm_fk_resolve_company_equivalent_id')) {
         $storedRes = mysqli_query($conn, $storedSql);
         $storedRow = ($storedRes) ? mysqli_fetch_assoc($storedRes) : null;
         if (!is_array($storedRow)) {
-            $tenantFallback = itm_first_tenant_row_id($conn, $refTable, $companyId);
-
-            return $tenantFallback > 0 ? $tenantFallback : $storedId;
+            return $storedId;
         }
 
         if ((int)($storedRow['company_id'] ?? 0) === $companyId) {
@@ -158,9 +156,7 @@ if (!function_exists('itm_fk_resolve_company_equivalent_id')) {
         }
 
         if ($businessKeys === []) {
-            $tenantFallback = itm_first_tenant_row_id($conn, $refTable, $companyId);
-
-            return $tenantFallback > 0 ? $tenantFallback : $storedId;
+            return $storedId;
         }
 
         $whereParts = ['company_id = ' . (int)$companyId];
@@ -181,13 +177,8 @@ if (!function_exists('itm_fk_resolve_company_equivalent_id')) {
         $matchRes = mysqli_query($conn, $matchSql);
         $matchRow = ($matchRes) ? mysqli_fetch_assoc($matchRes) : null;
         $tenantEquivalentId = is_array($matchRow) ? (int)($matchRow['id'] ?? 0) : 0;
-        if ($tenantEquivalentId > 0) {
-            return $tenantEquivalentId;
-        }
 
-        $tenantFallback = itm_first_tenant_row_id($conn, $refTable, $companyId);
-
-        return $tenantFallback > 0 ? $tenantFallback : $storedId;
+        return $tenantEquivalentId > 0 ? $tenantEquivalentId : $storedId;
     }
 }
 

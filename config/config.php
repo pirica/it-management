@@ -946,6 +946,46 @@ if (!function_exists('itm_table_outbound_fk_map')) {
 }
 
 /**
+ * Resolves a database.sql FK id for sample seed when anchor rows are missing for the tenant.
+ * Why: itm_fk_resolve_company_equivalent_id() must keep stale ids for edit UI; seed may substitute.
+ */
+if (!function_exists('itm_seed_resolve_fk_from_database_sql')) {
+    function itm_seed_resolve_fk_from_database_sql(mysqli $conn, array $fkMeta, int $companyId, int $storedFkId): int
+    {
+        if ($storedFkId <= 0 || $companyId <= 0) {
+            return $storedFkId;
+        }
+
+        $resolvedFkId = itm_fk_resolve_company_equivalent_id($conn, $fkMeta, $companyId, $storedFkId);
+        $refTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
+        $refColumn = (string)($fkMeta['REFERENCED_COLUMN_NAME'] ?? 'id');
+        if ($refTable === '' || !itm_is_safe_identifier($refTable) || !itm_is_safe_identifier($refColumn)) {
+            return $resolvedFkId;
+        }
+
+        if (!function_exists('itm_fk_table_column_names')
+            || !in_array('company_id', itm_fk_table_column_names($conn, $refTable), true)) {
+            return $resolvedFkId;
+        }
+
+        $checkSql = 'SELECT `' . $refColumn . '` FROM `' . $refTable . '` WHERE `'
+            . $refColumn . '`=' . (int)$resolvedFkId . ' AND company_id=' . (int)$companyId . ' LIMIT 1';
+        $checkRes = mysqli_query($conn, $checkSql);
+        if ($checkRes && mysqli_num_rows($checkRes) > 0) {
+            return $resolvedFkId;
+        }
+
+        if (!function_exists('itm_first_tenant_row_id')) {
+            return $resolvedFkId;
+        }
+
+        $fallbackId = itm_first_tenant_row_id($conn, $refTable, $companyId);
+
+        return $fallbackId > 0 ? $fallbackId : $resolvedFkId;
+    }
+}
+
+/**
  * Inserts sample rows for a module table from database.sql when empty.
  */
 if (!function_exists('itm_seed_table_from_database_sql')) {
@@ -1064,16 +1104,13 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                 }
 
                 $valueToken = (string)$rawValues[$index];
-                if (
-                    isset($tableFkMap[$columnName])
-                    && function_exists('itm_fk_resolve_company_equivalent_id')
-                ) {
+                if (isset($tableFkMap[$columnName]) && function_exists('itm_seed_resolve_fk_from_database_sql')) {
                     $rawFkToken = trim($valueToken);
                     if ($rawFkToken !== '' && strtoupper($rawFkToken) !== 'NULL') {
                         $rawFkToken = trim($rawFkToken, "'\"");
                         $storedFkId = (int)$rawFkToken;
                         if ($storedFkId > 0) {
-                            $resolvedFkId = itm_fk_resolve_company_equivalent_id(
+                            $resolvedFkId = itm_seed_resolve_fk_from_database_sql(
                                 $conn,
                                 $tableFkMap[$columnName],
                                 $companyId,
