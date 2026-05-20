@@ -339,6 +339,11 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
+// Why: Search uses visible columns only; company_id stays in SQL scope but hidden from list/search UI.
+$displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return ($col['Field'] ?? '') !== 'company_id';
+}));
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
