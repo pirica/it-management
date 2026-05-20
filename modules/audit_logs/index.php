@@ -171,11 +171,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+/**
+ * Build query string for audit log list filters, sort, and pagination.
+ */
+function itm_audit_logs_build_query(array $params): string
+{
+    $normalized = [];
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === '') {
+            continue;
+        }
+        $normalized[$key] = $value;
+    }
+
+    return http_build_query($normalized);
+}
+
 // Extract filter parameters from the URL for persistent search/filtering
 $search = trim((string)($_GET['search'] ?? ''));
 $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
+$sortableColumns = [
+    'changed_at' => 'al.changed_at',
+    'table_name' => 'al.table_name',
+    'record_id' => 'al.record_id',
+    'action' => 'al.action',
+];
+$sort = (string)($_GET['sort'] ?? 'changed_at');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!isset($sortableColumns[$sort])) {
+    $sort = 'changed_at';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+$sortSql = $sortableColumns[$sort] . ' ' . $dir;
 
 $allowedActions = ['INSERT', 'UPDATE', 'DELETE'];
 if (!in_array($action, $allowedActions, true)) {
@@ -239,10 +270,20 @@ if ($countStmt) {
     mysqli_stmt_close($countStmt);
 }
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+$showBulkActions = ($totalRows >= $perPage);
 if ($page > $totalPages) {
     $page = $totalPages;
     $offset = ($page - 1) * $perPage;
 }
+
+$listQueryBase = [
+    'search' => $search,
+    'action_filter' => $action,
+    'date_from' => $dateFrom,
+    'date_to' => $dateTo,
+    'sort' => $sort,
+    'dir' => $dir,
+];
 
 // Final query construction. 
 // Uses JOINs to resolve user details and Prepared Statements for security.
@@ -250,7 +291,7 @@ $sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
      . 'LEFT JOIN users u ON u.id = al.user_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
-     . 'ORDER BY al.changed_at DESC LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
+     . 'ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
@@ -377,6 +418,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             <?php endforeach; ?>
             <?php echo itm_render_alert_errors($errors); ?>
 
+            <?php if ($showBulkActions): ?>
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="index.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -384,6 +426,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
+            <?php endif; ?>
 
             <!-- SEARCH AND FILTER FORM -->
             <div class="card audit-filters" style="margin-bottom:16px;">
@@ -426,12 +469,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:36px;">Select <input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
-                            <th>Date &amp; Time</th>
+                            <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
+                            <?php $nextDir = ($sort === 'changed_at' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'changed_at', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Date &amp; Time<?php if ($sort === 'changed_at'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                             <th>User</th>
-                            <th>Table Name</th>
-                            <th>Record ID</th>
-                            <th>Action</th>
+                            <?php $nextDir = ($sort === 'table_name' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'table_name', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Table Name<?php if ($sort === 'table_name'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <?php $nextDir = ($sort === 'record_id' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'record_id', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Record ID<?php if ($sort === 'record_id'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <?php $nextDir = ($sort === 'action' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'action', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Action<?php if ($sort === 'action'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                             <th>Change Summary</th>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
@@ -439,7 +486,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <tbody>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="8">No audit logs found for the selected filters.</td>
+                            <td colspan="<?php echo $showBulkActions ? 8 : 7; ?>">No audit logs found for the selected filters.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
@@ -475,7 +522,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             $previewText = 'Old: ' . itm_audit_preview($oldValuesDisplay, 80) . ' | New: ' . itm_audit_preview($newValuesDisplay, 80);
                             ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)($row['id'] ?? 0); ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)($row['id'] ?? 0); ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <td><?php echo sanitize((string)$row['changed_at']); ?></td>
                                 <td class="audit-user" title="<?php echo sanitize($userEmail !== '' ? ($userName . ' <' . $userEmail . '>') : $userName); ?>">
                                     <?php echo sanitize($userName); ?>
@@ -509,11 +556,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <?php if ($totalPages > 1): ?>
                     <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?<?php echo sanitize(http_build_query(['search' => $search, 'action_filter' => $action, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])); ?>">« Prev</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page - 1]))); ?>">« Prev</a>
                         <?php endif; ?>
                         <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?<?php echo sanitize(http_build_query(['search' => $search, 'action_filter' => $action, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])); ?>">Next »</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page + 1]))); ?>">Next »</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -527,27 +574,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const bulkDeleteForm = document.getElementById('bulk-delete-form');
     const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
     const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
-    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
-    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
     let selectionMode = false;
 
     if (!selectAllRows || !bulkDeleteForm || !toggleButton) {
         return;
-    }
-
-    /**
-     * Keep the delete-selection column hidden until explicitly enabled.
-     *
-     * Why: Audit logs are review-heavy, so hiding checkboxes by default keeps the
-     * table compact and mirrors the proven System Access interaction pattern.
-     */
-    function setSelectionVisibility(visible) {
-        if (selectAllHeaderCell) {
-            selectAllHeaderCell.style.display = visible ? '' : 'none';
-        }
-        deleteCells.forEach(function (cell) {
-            cell.style.display = visible ? '' : 'none';
-        });
     }
 
     selectAllRows.addEventListener('change', function () {
@@ -556,7 +586,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    setSelectionVisibility(false);
     bulkDeleteForm.addEventListener('submit', function (event) {
         if (event.submitter !== toggleButton) {
             return;
@@ -565,7 +594,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!selectionMode) {
             event.preventDefault();
             selectionMode = true;
-            setSelectionVisibility(true);
             toggleButton.textContent = 'Delete Selected';
             return;
         }
