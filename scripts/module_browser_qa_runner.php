@@ -4,7 +4,8 @@
  *
  * Why: Exercising 101 modules × 5 companies via IDE browser alone is not practical;
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
- * Tier A adds 30 random tenant rows (add step), then bulk_delete/clear_table when row count >= records_per_page.
+ * Tier A seeds FK parents, fills required NOT NULL columns, adds 30 random tenant rows (add step),
+ * then bulk_delete/clear_table when row count >= records_per_page.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -1071,6 +1072,174 @@ function mbqa_column_in_unique_set(string $column, array $uniqueSets): bool
     return false;
 }
 
+function mbqa_column_skipped_for_insert(string $name, array $meta): bool
+{
+    if ($name === 'id' || strpos((string)$meta['extra'], 'auto_increment') !== false) {
+        return true;
+    }
+
+    return $name === 'created_at' || $name === 'updated_at';
+}
+
+function mbqa_column_has_db_default(array $meta): bool
+{
+    $default = $meta['default'];
+    if ($default === null) {
+        return false;
+    }
+
+    $defaultStr = strtoupper(trim((string)$default));
+    if ($defaultStr === '' || $defaultStr === 'NULL') {
+        return false;
+    }
+
+    return true;
+}
+
+/** NOT NULL columns without a DB default must receive an explicit insert value. */
+function mbqa_column_is_required(array $meta): bool
+{
+    if (($meta['null'] ?? 'YES') === 'YES') {
+        return false;
+    }
+
+    return !mbqa_column_has_db_default($meta);
+}
+
+function mbqa_fk_reference_table(string $column, array $fkMap): string
+{
+    if (isset($fkMap[$column])) {
+        return (string)($fkMap[$column]['REFERENCED_TABLE_NAME'] ?? '');
+    }
+
+    if (preg_match('/_by$/', $column)) {
+        return 'users';
+    }
+
+    if (preg_match('/_id$/', $column) && $column !== 'company_id' && preg_match('/^(.+)_id$/', $column, $idMatch)) {
+        return (string)($idMatch[1] ?? '');
+    }
+
+    return '';
+}
+
+/**
+ * Seeds database.sql rows and ensures each outbound FK parent has enough tenant rows.
+ */
+function mbqa_ensure_parent_rows_for_inserts(mysqli $conn, string $table, int $companyId, int $minimumRows): void
+{
+    mbqa_seed_lookup_parents_for_table($conn, $table, $companyId);
+
+    if (!function_exists('itm_table_outbound_fk_map') || !itm_is_safe_identifier($table) || $companyId <= 0) {
+        return;
+    }
+
+    $minimumRows = max(1, $minimumRows);
+    foreach (itm_table_outbound_fk_map($conn, $table) as $fkMeta) {
+        $parentTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
+        if ($parentTable === '' || !itm_is_safe_identifier($parentTable) || in_array($parentTable, mbqa_tables_never_clear(), true)) {
+            continue;
+        }
+
+        if (itm_table_has_column($conn, $parentTable, 'company_id')) {
+            $parentCount = mbqa_tenant_row_count($conn, $parentTable, $companyId);
+            if ($parentCount < $minimumRows) {
+                mbqa_insert_random_rows($conn, $parentTable, $companyId, $minimumRows - $parentCount, 1);
+            }
+            continue;
+        }
+
+        if ($parentTable === 'users' && mbqa_query_first_id($conn, 'users', $companyId) <= 0 && function_exists('itm_seed_table_from_database_sql')) {
+            $seedErr = '';
+            itm_seed_table_from_database_sql($conn, 'users', $companyId, $seedErr);
+        }
+    }
+}
+
+/**
+ * @param array<int, array{name:string,type:string,null:string,default:?string,extra:string,key:string}> $columnMetas
+ * @return string[]
+ */
+function mbqa_required_column_names(array $columnMetas): array
+{
+    $required = [];
+    foreach ($columnMetas as $meta) {
+        $name = (string)($meta['name'] ?? '');
+        if ($name === '' || mbqa_column_skipped_for_insert($name, $meta)) {
+            continue;
+        }
+        if (mbqa_column_is_required($meta)) {
+            $required[] = $name;
+        }
+    }
+
+    return $required;
+}
+
+/**
+ * Fills a required or optional scalar (non-FK) column with QA-safe random data.
+ */
+function mbqa_fill_scalar_value(
+    string $name,
+    string $type,
+    int $sequence,
+    string $tag,
+    bool $inUnique,
+    bool $forceRequired = false
+): ?string {
+    if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type) || $name === 'active') {
+        return (string)($inUnique ? ($sequence + 1) : 1);
+    }
+
+    if (strpos($type, 'enum(') === 0) {
+        if (preg_match("/enum\\((.+)\\)/", $type, $enumMatch)) {
+            $opts = str_getcsv(str_replace("'", '', $enumMatch[1]));
+
+            return (string)($opts[0] ?? '1');
+        }
+
+        return '1';
+    }
+
+    if (strpos($type, 'datetime') !== false || strpos($type, 'timestamp') !== false) {
+        return date('Y-m-d H:i:s');
+    }
+
+    if (preg_match('/\bdate\b/', $type)) {
+        return date('Y-m-d');
+    }
+
+    if (strpos($type, 'time') !== false && strpos($type, 'datetime') === false) {
+        return '12:00:00';
+    }
+
+    if (strpos($type, 'year') !== false) {
+        return date('Y');
+    }
+
+    if (strpos($type, 'decimal') !== false || strpos($type, 'float') !== false || strpos($type, 'double') !== false) {
+        return number_format((float)($sequence % 999 + 1), 2, '.', '');
+    }
+
+    if (strpos($type, 'json') !== false) {
+        return '{}';
+    }
+
+    if (strpos($type, 'char') !== false || strpos($type, 'text') !== false) {
+        if ($inUnique || preg_match('/(name|title|code|label|hostname|email|username|slug|sku|number|invoice|description|subject|summary)/i', $name)) {
+            return $tag;
+        }
+
+        return 'QA ' . str_replace('_', ' ', $name) . ' ' . $sequence;
+    }
+
+    if ($forceRequired) {
+        return $tag . '-' . $name;
+    }
+
+    return null;
+}
+
 /**
  * Seeds database.sql parents for a module so random inserts can resolve NOT NULL FKs.
  */
@@ -1215,15 +1384,13 @@ function mbqa_build_random_insert_row(
     $tag = 'MBQA-' . $table . '-' . $companyId . '-' . $sequence . '-' . substr(md5($table . (string)$companyId . (string)$sequence), 0, 6);
 
     foreach ($columnMetas as $meta) {
-        $name = $meta['name'];
-        if ($name === 'id' || strpos($meta['extra'], 'auto_increment') !== false) {
-            continue;
-        }
-        if ($name === 'created_at' || $name === 'updated_at') {
+        $name = (string)$meta['name'];
+        if (mbqa_column_skipped_for_insert($name, $meta)) {
             continue;
         }
 
-        $type = $meta['type'];
+        $type = (string)$meta['type'];
+        $required = mbqa_column_is_required($meta);
         $nullable = ($meta['null'] === 'YES');
         $inUnique = mbqa_column_in_unique_set($name, $uniqueSets);
 
@@ -1236,69 +1403,51 @@ function mbqa_build_random_insert_row(
 
         $value = null;
         $bindType = 's';
+        $refTable = mbqa_fk_reference_table($name, $fkMap);
+        $isFkColumn = ($refTable !== '' || isset($fkMap[$name]));
 
         if ($table === 'expenses' && $name === 'cost_center_id') {
             $fkId = mbqa_pick_expense_cost_center_id($conn, $companyId, $sequence);
             if ($fkId > 0) {
                 $value = (string)$fkId;
                 $bindType = 'i';
-            } elseif (!$nullable) {
-                return null;
             }
-        } elseif (isset($fkMap[$name]) || preg_match('/_by$/', $name) || (preg_match('/_id$/', $name) && $name !== 'company_id')) {
-            $refTable = '';
-            if (isset($fkMap[$name])) {
-                $refTable = (string)($fkMap[$name]['REFERENCED_TABLE_NAME'] ?? '');
-            } elseif (preg_match('/_by$/', $name)) {
-                $refTable = 'users';
-            } elseif (preg_match('/^(.+)_id$/', $name, $idMatch)) {
-                $refTable = (string)($idMatch[1] ?? '');
+        } elseif ($isFkColumn) {
+            if ($refTable === '') {
+                $refTable = mbqa_fk_reference_table($name, $fkMap);
             }
             $fkId = $refTable !== '' ? mbqa_pick_fk_value($conn, $refTable, $companyId, true) : 0;
             if ($fkId > 0) {
                 $value = (string)$fkId;
                 $bindType = 'i';
-            } elseif (!$nullable) {
-                return null;
-            } elseif ($nullable) {
-                continue;
             }
-        } elseif (preg_match('/^(tinyint|smallint|mediumint|int|bigint)/', $type)) {
-            $value = (string)($inUnique ? ($sequence + 1) : 1);
-            $bindType = 'i';
-        } elseif (strpos($type, 'enum(') === 0) {
-            if (preg_match("/enum\\((.+)\\)/", $type, $enumMatch)) {
-                $opts = str_getcsv(str_replace("'", '', $enumMatch[1]));
-                $value = (string)($opts[0] ?? '1');
-            } else {
-                $value = '1';
+        } else {
+            $scalar = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, $required);
+            if ($scalar !== null) {
+                $value = $scalar;
+                if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type) || $name === 'active') {
+                    $bindType = 'i';
+                }
             }
-        } elseif (strpos($type, 'date') === 0 && strpos($type, 'datetime') !== 0 && strpos($type, 'timestamp') !== 0) {
-            $value = date('Y-m-d');
-        } elseif (strpos($type, 'datetime') === 0 || strpos($type, 'timestamp') === 0) {
-            $value = date('Y-m-d H:i:s');
-        } elseif (strpos($type, 'decimal') === 0 || strpos($type, 'float') === 0 || strpos($type, 'double') === 0) {
-            $value = '1.00';
-            $bindType = 's';
-        } elseif (strpos($type, 'char') !== false || strpos($type, 'text') !== false) {
-            if ($inUnique || preg_match('/(name|title|code|label|hostname|email|username|slug|sku|number|invoice)/i', $name)) {
-                $value = $tag;
-            } else {
-                $value = 'QA note ' . $sequence;
+        }
+
+        if ($value === null && mbqa_column_has_db_default($meta)) {
+            $value = (string)$meta['default'];
+        }
+
+        if ($value === null && !$isFkColumn) {
+            $value = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, true);
+            if ($value !== null && preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type)) {
+                $bindType = 'i';
             }
-        } elseif (preg_match('/^(tinyint|bool)/', $type) || $name === 'active') {
-            $value = '1';
-            $bindType = 'i';
         }
 
         if ($value === null) {
-            if ($meta['default'] !== null && $meta['default'] !== '') {
-                $value = (string)$meta['default'];
-            } elseif ($nullable) {
+            if ($nullable && !$required) {
                 continue;
-            } else {
-                return null;
             }
+
+            return null;
         }
 
         $columns[] = '`' . str_replace('`', '``', $name) . '`';
@@ -1308,6 +1457,17 @@ function mbqa_build_random_insert_row(
 
     if (empty($columns)) {
         return null;
+    }
+
+    $requiredNames = mbqa_required_column_names($columnMetas);
+    $present = [];
+    foreach ($columns as $colEsc) {
+        $present[trim($colEsc, '`')] = true;
+    }
+    foreach ($requiredNames as $requiredName) {
+        if (!isset($present[$requiredName])) {
+            return null;
+        }
     }
 
     return ['columns' => $columns, 'values' => $values, 'types' => $types];
@@ -1327,7 +1487,7 @@ function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, in
     }
 
     if ($parentDepth === 0) {
-        mbqa_seed_lookup_parents_for_table($conn, $table, $companyId);
+        mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, mbqa_bulk_row_target());
     }
 
     $columnMetas = mbqa_table_column_metas($conn, $table);
@@ -1346,7 +1506,11 @@ function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, in
         $sequence++;
         $row = mbqa_build_random_insert_row($conn, $table, $companyId, $sequence, $columnMetas, $fkMap, $uniqueSets);
         if ($row === null) {
+            $requiredCols = mbqa_required_column_names($columnMetas);
             $lastError = 'Could not build insert payload (missing FK parent or required column)';
+            if (!empty($requiredCols)) {
+                $lastError .= '; required: ' . implode(', ', array_slice($requiredCols, 0, 6));
+            }
             continue;
         }
 
@@ -1396,17 +1560,7 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
         return ['ok' => true, 'note' => 'N/A (no company_id)', 'na' => true, 'count' => 0];
     }
 
-    mbqa_seed_lookup_parents_for_table($conn, $table, $companyId);
-
-    if ($table === 'expenses') {
-        $targetParents = mbqa_bulk_row_target();
-        foreach (['budget_categories', 'cost_centers', 'gl_accounts'] as $parentTable) {
-            $parentCount = mbqa_tenant_row_count($conn, $parentTable, $companyId);
-            if ($parentCount < $targetParents) {
-                mbqa_insert_random_rows($conn, $parentTable, $companyId, $targetParents - $parentCount, 0);
-            }
-        }
-    }
+    mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, mbqa_bulk_row_target());
 
     $current = mbqa_tenant_row_count($conn, $table, $companyId);
     if ($current >= $target) {
