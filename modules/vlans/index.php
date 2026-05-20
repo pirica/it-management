@@ -756,6 +756,7 @@ if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
     $totalRows = (int)($countRow['total_rows'] ?? 0);
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) {
     $page = 1;
@@ -817,6 +818,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </div>
                     </form>
                 </div>
+                <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -824,6 +826,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
+                <?php endif; ?>
                 <div class="card" style="overflow:auto;">
                     <table>
                         <thead>
