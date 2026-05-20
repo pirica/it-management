@@ -271,6 +271,44 @@ function itm_check_pagination(string $listContent, string $sourceLabel): array
 }
 
 /**
+ * Bulk actions must only be visible when row count meets Settings records_per_page.
+ *
+ * @return bool
+ */
+function itm_has_bulk_actions_records_per_page_gate(string $listContent): bool
+{
+    if (preg_match(
+        '#\$showBulkActions\s*=.*\$totalRows\s*(>=|>)\s*\$perPage#is',
+        $listContent
+    ) === 1) {
+        return true;
+    }
+
+    if (preg_match(
+        '#\$showBulkActions\s*=.*\$perPage\s*(>=|<=|>|<)\s*\$totalRows#is',
+        $listContent
+    ) === 1) {
+        return true;
+    }
+
+    if (preg_match(
+        '#if\s*\(\s*\$showBulkActions[^)]*\)[\s\S]{0,2500}bulk[-_]delete#i',
+        $listContent
+    ) === 1) {
+        return true;
+    }
+
+    if (preg_match(
+        '#if\s*\(\s*\$totalRows\s*(>=|>)\s*\$perPage[^)]*\)[\s\S]{0,2500}bulk[-_]delete#i',
+        $listContent
+    ) === 1) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * @return array{status:string,details:string}
  */
 function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel, bool $hasDeleteFile): array
@@ -287,16 +325,13 @@ function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel,
     $hasClearTable = stripos($listContent, 'clear_table') !== false;
     $hasSelectControl = stripos($listContent, 'Select to Delete') !== false
         || stripos($listContent, 'bulk-delete-toggle') !== false;
-    $hasRecordsPerPageGate = stripos($listContent, 'showBulkActions') !== false
-        && preg_match('#\$totalRows\s*>=\s*\$perPage#', $listContent) === 1;
+    $hasRecordsPerPageGate = itm_has_bulk_actions_records_per_page_gate($listContent);
 
-    if ($hasBulkDelete && $hasClearTable && $hasSelectControl) {
-        $details = 'Select to Delete and Clear Table controls detected in ' . $sourceLabel;
-        if ($hasRecordsPerPageGate) {
-            $details .= ' (gated when count >= records_per_page)';
-        }
-
-        return ['status' => 'pass', 'details' => $details];
+    if ($hasBulkDelete && $hasClearTable && $hasSelectControl && $hasRecordsPerPageGate) {
+        return [
+            'status' => 'pass',
+            'details' => 'Select to Delete and Clear Table controls gated when count >= records_per_page in ' . $sourceLabel,
+        ];
     }
 
     $missing = [];
@@ -308,6 +343,9 @@ function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel,
     }
     if (!$hasSelectControl) {
         $missing[] = 'Select to Delete control';
+    }
+    if (!$hasRecordsPerPageGate) {
+        $missing[] = 'records_per_page visibility gate (showBulkActions = $totalRows >= $perPage or equivalent)';
     }
 
     return [
