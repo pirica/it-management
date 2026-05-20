@@ -143,6 +143,19 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_resolve_company_id_by_name($conn, $companyName) {
+    $companyName = trim((string)$companyName);
+    if ($companyName === '') {
+        return 0;
+    }
+
+    $sql = 'SELECT id FROM companies WHERE company=\'' . mysqli_real_escape_string($conn, $companyName) . '\' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+
+    return (int)($row['id'] ?? 0);
+}
+
 function cr_format_company_list($companies) {
     $count = count($companies);
     if ($count === 0) {
@@ -187,26 +200,6 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
         }
 
         if ($field === 'company_id') {
-            $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
-            if ($userId > 0) {
-                $sql = 'SELECT c.company
-                        FROM user_companies uc
-                        LEFT JOIN companies c ON c.id = uc.company_id
-                        WHERE uc.user_id=' . $userId . '
-                        ORDER BY c.company';
-                $res = mysqli_query($conn, $sql);
-                $companies = [];
-                while ($res && ($companyRow = mysqli_fetch_assoc($res))) {
-                    $companyName = trim((string)($companyRow['company'] ?? ''));
-                    if ($companyName !== '' && !in_array($companyName, $companies, true)) {
-                        $companies[] = $companyName;
-                    }
-                }
-                if (!empty($companies)) {
-                    return cr_format_company_list($companies);
-                }
-            }
-
             $sql = 'SELECT company FROM companies WHERE id=' . $id . ' LIMIT 1';
             $res = mysqli_query($conn, $sql);
             $companyRow = $res ? mysqli_fetch_assoc($res) : null;
@@ -417,7 +410,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     continue;
                 }
 
-                if ($fieldName === 'company_id' || $fieldName === 'id') {
+                if ($fieldName === 'id') {
+                    continue;
+                }
+
+                if ($fieldName === 'company_id') {
+                    if ($rawValue !== '') {
+                        $resolvedCompanyId = cr_resolve_company_id_by_name($conn, $rawValue);
+                        if ($resolvedCompanyId > 0) {
+                            $rowData['company_id'] = (string)$resolvedCompanyId;
+                        }
+                    }
                     continue;
                 }
 
@@ -434,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 if (isset($fkMap[$fieldName])) {
                     $fk = $fkMap[$fieldName];
-                    $options = cr_fk_options($conn, $fk, (int)$company_id);
+                    $options = cr_fk_options($conn, $fk, (int)$company_id, $fieldName);
                     $resolvedId = 0;
                     foreach ($options as $option) {
                         if (strcasecmp((string)$option['label'], $rawValue) === 0) {
@@ -460,7 +463,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
             }
 
-            if ($hasCompany) {
+            if ($hasCompany && ($rowData['company_id'] ?? 'NULL') === 'NULL') {
                 $rowData['company_id'] = (string)(int)$company_id;
             }
 
@@ -836,7 +839,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </form>
                 </div>
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>

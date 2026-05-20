@@ -20,6 +20,38 @@
         return { filenameBase, headers, actionsIndex };
     }
 
+    function isBulkSelectHeader(th) {
+        return Boolean(th && th.querySelector('input[type="checkbox"]') && getCellText(th) === '');
+    }
+
+    function bulkSelectColumnIndexes(table) {
+        const indexes = [];
+        const headerRow = table.querySelector('thead tr');
+        if (!headerRow) {
+            return indexes;
+        }
+        Array.from(headerRow.children).forEach((cell, index) => {
+            if (isBulkSelectHeader(cell)) {
+                indexes.push(index);
+            }
+        });
+        return indexes;
+    }
+
+    function removeColumnsFromTable(table, indexes) {
+        if (!indexes.length) {
+            return;
+        }
+        const sorted = indexes.slice().sort((a, b) => b - a);
+        table.querySelectorAll('tr').forEach((row) => {
+            sorted.forEach((index) => {
+                if (row.children[index]) {
+                    row.removeChild(row.children[index]);
+                }
+            });
+        });
+    }
+
     function cloneTableWithoutActions(table) {
         const { actionsIndex } = tableMeta(table);
         const clone = table.cloneNode(true);
@@ -31,6 +63,8 @@
                 }
             });
         }
+
+        removeColumnsFromTable(clone, bulkSelectColumnIndexes(clone));
 
         return clone;
     }
@@ -157,13 +191,54 @@
         return rows;
     }
 
+    function dataColumnMeta(table) {
+        const headerRow = table.querySelector('thead tr');
+        const headers = [];
+        const indexes = [];
+        if (!headerRow) {
+            return { headers, indexes };
+        }
+
+        Array.from(headerRow.children).forEach((th, index) => {
+            const label = getCellText(th);
+            if (isBulkSelectHeader(th)) {
+                return;
+            }
+            if (label.toLowerCase() === 'actions') {
+                return;
+            }
+            headers.push(label);
+            indexes.push(index);
+        });
+
+        return { headers, indexes };
+    }
+
     function importRowsIntoTable(table, rows) {
         if (!rows || rows.length < 2) {
             window.alert('The file is empty or has no data rows.');
             return;
         }
 
-        const { headers, actionsIndex } = tableMeta(table);
+        const headerRow = table.querySelector('thead tr');
+        const columnPlan = [];
+        let dataColumnIndex = 0;
+        if (headerRow) {
+            Array.from(headerRow.children).forEach((th) => {
+                const label = getCellText(th);
+                if (isBulkSelectHeader(th)) {
+                    columnPlan.push({ type: 'bulk' });
+                    return;
+                }
+                if (label.toLowerCase() === 'actions') {
+                    columnPlan.push({ type: 'actions' });
+                    return;
+                }
+                columnPlan.push({ type: 'data', sourceIndex: dataColumnIndex });
+                dataColumnIndex += 1;
+            });
+        }
+
         const dataRows = rows.slice(1);
         const tbody = table.querySelector('tbody');
         if (!tbody) return;
@@ -172,9 +247,15 @@
 
         dataRows.forEach((sourceRow) => {
             const tr = document.createElement('tr');
-            headers.forEach((_, colIndex) => {
+            columnPlan.forEach((plan) => {
                 const td = document.createElement('td');
-                td.textContent = colIndex === actionsIndex ? '' : (sourceRow[colIndex] ?? '');
+                if (plan.type === 'bulk') {
+                    td.innerHTML = '<input type="checkbox" name="ids[]" value="">';
+                } else if (plan.type === 'actions') {
+                    td.textContent = '';
+                } else {
+                    td.textContent = sourceRow[plan.sourceIndex] ?? '';
+                }
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
