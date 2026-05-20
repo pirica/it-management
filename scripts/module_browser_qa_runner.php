@@ -6,6 +6,7 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, adds 30 random tenant rows (add step),
  * then bulk_delete/clear_table when row count >= records_per_page.
+ * Each module starts by deleting error_log.txt; Tier A ends with HTTP sample_data (empty table) and error_log check.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -527,6 +528,116 @@ function mbqa_ensure_sample_data(
     }
 
     return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+}
+
+function mbqa_error_log_path(): string
+{
+    return (defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__) . DIRECTORY_SEPARATOR) . 'error_log.txt';
+}
+
+function mbqa_error_log_byte_offset(): int
+{
+    $path = mbqa_error_log_path();
+
+    return is_file($path) ? (int)filesize($path) : 0;
+}
+
+/**
+ * HTTP-only sample seed at end of module QA (after clear_table); does not use database.sql fallback.
+ *
+ * @return array{ok:bool,note:string,na:bool}
+ */
+function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
+{
+    $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+    $csrf = mbqa_extract_csrf($index['body']);
+    $hasSampleBtn = stripos($index['body'], 'name="add_sample_data"') !== false
+        || stripos($index['body'], 'Add sample data') !== false;
+
+    if (!$hasSampleBtn) {
+        return ['ok' => true, 'note' => 'N/A (no handler)', 'na' => true];
+    }
+
+    if (!mbqa_index_is_empty($index['body'])) {
+        return ['ok' => true, 'note' => 'N/A (rows exist)', 'na' => true];
+    }
+
+    if ($csrf === '') {
+        return ['ok' => false, 'note' => 'No CSRF for sample seed', 'na' => false];
+    }
+
+    mbqa_http(
+        $moduleUrl . 'index.php',
+        'POST',
+        http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrf]),
+        ['Content-Type: application/x-www-form-urlencoded'],
+        $cookieFile
+    );
+    $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+    $ok = !mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body']);
+
+    return [
+        'ok' => $ok,
+        'note' => $ok ? 'HTTP sample seed' : 'HTTP sample seed failed or empty',
+        'na' => false,
+    ];
+}
+
+/**
+ * @return array{ok:bool,note:string,count:int}
+ */
+function mbqa_read_error_log_since(int $byteOffset): array
+{
+    $path = mbqa_error_log_path();
+    if (!is_file($path)) {
+        return ['ok' => true, 'note' => '0 errors', 'count' => 0];
+    }
+
+    $size = (int)filesize($path);
+    if ($byteOffset >= $size) {
+        return ['ok' => true, 'note' => '0 errors', 'count' => 0];
+    }
+
+    $handle = @fopen($path, 'rb');
+    if ($handle === false) {
+        return ['ok' => false, 'note' => 'Unable to read error_log.txt', 'count' => 0];
+    }
+
+    fseek($handle, $byteOffset);
+    $chunk = (string)stream_get_contents($handle);
+    fclose($handle);
+
+    $lines = [];
+    foreach (preg_split('/\r\n|\r|\n/', $chunk) as $line) {
+        $line = trim($line);
+        if ($line !== '') {
+            $lines[] = $line;
+        }
+    }
+
+    $count = count($lines);
+    if ($count === 0) {
+        return ['ok' => true, 'note' => '0 errors', 'count' => 0];
+    }
+
+    $note = $count . ' error(s)';
+    if ($count <= 2) {
+        $note .= ': ' . implode(' | ', array_map(static function ($l) {
+            return substr($l, 0, 160);
+        }, $lines));
+    } else {
+        $note .= ' (first: ' . substr($lines[0], 0, 160) . '…)';
+    }
+
+    return ['ok' => false, 'note' => $note, 'count' => $count];
+}
+
+function mbqa_delete_error_log_file(): void
+{
+    $path = mbqa_error_log_path();
+    if (is_file($path)) {
+        @unlink($path);
+    }
 }
 
 /**
@@ -2081,6 +2192,9 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
     exit(1);
 }
 
+// Why: First action of the run — each module also deletes the log before its steps so errors are scoped per module.
+mbqa_delete_error_log_file();
+
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
     $orderedModules = ['expenses'];
@@ -2137,6 +2251,10 @@ foreach ($companiesToRun as $companyId) {
         $moduleUrl = $baseUrl . 'modules/' . rawurlencode($slug) . '/';
         $steps = [];
 
+        mbqa_delete_error_log_file();
+        $errorLogOffset = 0;
+        $steps[] = mbqa_step_result('error_log', true, 'deleted error_log.txt');
+
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
         $steps[] = mbqa_step_result('list', $listOk, $listOk ? '' : 'HTTP ' . $index['status']);
@@ -2157,6 +2275,9 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('single_delete', true, 'N/A smoke');
             $steps[] = mbqa_step_result('bulk_delete', true, 'N/A');
             $steps[] = mbqa_step_result('clear_table', true, 'N/A');
+            $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
+            $errorLog = mbqa_read_error_log_since($errorLogOffset);
+            $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
             $results[] = [
                 'module' => $slug,
                 'company_id' => $companyId,
@@ -2175,6 +2296,9 @@ foreach ($companiesToRun as $companyId) {
             foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'bulk_delete', 'clear_table'] as $s) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
+            $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
+            $errorLog = mbqa_read_error_log_since($errorLogOffset);
+            $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
             $results[] = [
                 'module' => $slug,
                 'company_id' => $companyId,
@@ -2403,6 +2527,16 @@ foreach ($companiesToRun as $companyId) {
                 $canClearTable ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
             );
         }
+
+        $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
+        if ($endSeed['na']) {
+            $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
+        } else {
+            $steps[] = mbqa_step_result('sample_data', $endSeed['ok'], $endSeed['note']);
+        }
+
+        $errorLog = mbqa_read_error_log_since($errorLogOffset);
+        $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
 
         $results[] = [
             'module' => $slug,
