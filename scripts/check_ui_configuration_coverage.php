@@ -958,22 +958,6 @@ foreach ($modules as $module) {
         'Back & Save (edit.php)' => itm_check_back_save_entry($modulePath, $editPath, $editContent, 'edit.php'),
     ];
 
-    // Why: audit_logs is a read-only history screen (Refresh + filters); it does not follow standard CRUD chrome.
-    if ($module === 'audit_logs') {
-        $checks['+ New Button'] = [
-            'status' => 'n/a',
-            'details' => 'Audit logs are system-generated; index uses Refresh instead of create/add.',
-        ];
-        $checks['Back & Save (create.php)'] = [
-            'status' => 'n/a',
-            'details' => 'Audit logs module does not expose a create form.',
-        ];
-        $checks['Back & Save (edit.php)'] = [
-            'status' => 'n/a',
-            'details' => 'Audit logs module does not expose an edit form.',
-        ];
-    }
-
     foreach ($checks as $checkName => $result) {
         $status = $result['status'];
         $totals[$status]++;

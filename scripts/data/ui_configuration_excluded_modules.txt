@@ -12,6 +12,7 @@ user_companies
 user_sidebar_preferences
 ui_configuration
 attempts
+audit_logs
 budget_report
 expiring
 
