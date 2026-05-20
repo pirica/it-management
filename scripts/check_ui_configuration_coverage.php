@@ -312,6 +312,34 @@ function itm_has_bulk_actions_records_per_page_gate(string $listContent): bool
 }
 
 /**
+ * When bulk UI is gated by records_per_page, tbody checkbox cells must use the same gate.
+ *
+ * Why: hiding only thead/bulk form but leaving ids[] cells breaks column alignment and orphans
+ * checkboxes that reference bulk-delete-form when it is not rendered.
+ *
+ * @return bool
+ */
+function itm_bulk_row_checkbox_cells_gated(string $listContent): bool
+{
+    if (!itm_has_bulk_actions_records_per_page_gate($listContent)) {
+        return true;
+    }
+
+    if (stripos($listContent, 'form="bulk-delete-form"') === false) {
+        return true;
+    }
+
+    if (preg_match(
+        '#(?<!\$showBulkActions\): \?>)<td>\s*<input[^>]+name="ids\[\]"[^>]+form="bulk-delete-form"#i',
+        $listContent
+    ) === 1) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * @return array{status:string,details:string}
  */
 function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel, bool $hasDeleteFile): array
@@ -329,8 +357,9 @@ function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel,
     $hasSelectControl = stripos($listContent, 'Select to Delete') !== false
         || stripos($listContent, 'bulk-delete-toggle') !== false;
     $hasRecordsPerPageGate = itm_has_bulk_actions_records_per_page_gate($listContent);
+    $hasGatedRowCheckboxes = itm_bulk_row_checkbox_cells_gated($listContent);
 
-    if ($hasBulkDelete && $hasClearTable && $hasSelectControl && $hasRecordsPerPageGate) {
+    if ($hasBulkDelete && $hasClearTable && $hasSelectControl && $hasRecordsPerPageGate && $hasGatedRowCheckboxes) {
         return [
             'status' => 'pass',
             'details' => 'Select to Delete and Clear Table controls gated when count >= records_per_page in ' . $sourceLabel,
@@ -349,6 +378,9 @@ function itm_check_bulk_delete_actions(string $listContent, string $sourceLabel,
     }
     if (!$hasRecordsPerPageGate) {
         $missing[] = 'records_per_page visibility gate (showBulkActions = $totalRows >= $perPage or equivalent)';
+    }
+    if (!$hasGatedRowCheckboxes) {
+        $missing[] = 'tbody ids[] checkbox cells gated with showBulkActions (column alignment)';
     }
 
     return [

@@ -107,17 +107,14 @@ function itm_bulk_gate_patch_index(string $path, bool $dryRun): array
         $content = str_replace($selectAllTh, $selectAllWrapped, $content);
     }
 
-    $rowCheckboxPatterns = [
-        '#<td><input type="checkbox" name="ids\[\]" value="<\?php echo \(int\)\$row\[\'id\'\]; \?>" form="bulk-delete-form"></td>#',
-        '#<td><input type="checkbox" name="ids\[\]" value="<\?php echo \(int\)\$i\[\'id\'\]; \?>" form="bulk-delete-form"></td>#',
-    ];
-    foreach ($rowCheckboxPatterns as $pattern) {
-        $content = preg_replace(
-            $pattern,
-            '<?php if ($showBulkActions): ?>' . '$0' . '<?php endif; ?>',
-            $content
-        );
-    }
+    // Why: gate tbody checkbox cells so columns stay aligned when bulk actions are hidden (< records_per_page).
+    $content = (string)preg_replace_callback(
+        '#(?<!\$showBulkActions\): \?>)<td><input type="checkbox" name="ids\[\]" value="<\?php echo \(int\)\$[a-zA-Z_][a-zA-Z0-9_]*\[\'id\'\]; \?>" form="bulk-delete-form"></td>#',
+        static function (array $matches): string {
+            return '<?php if ($showBulkActions): ?>' . $matches[0] . '<?php endif; ?>';
+        },
+        $content
+    );
 
     $content = preg_replace(
         '/count\(\$fieldColumns\)\s*\+\s*2/',
