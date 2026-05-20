@@ -540,11 +540,11 @@ function mbqa_error_log_byte_offset(): int
 }
 
 /**
- * Restores database.sql sample rows after clear_table (FK parents first, then HTTP with DB fallback).
+ * HTTP-only sample seed at end of module QA (after clear_table); does not use database.sql fallback.
  *
  * @return array{ok:bool,note:string,na:bool}
  */
-function mbqa_http_sample_seed_end(mysqli $conn, string $slug, int $companyId, string $moduleUrl, string $cookieFile): array
+function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
 {
     $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
     $csrf = mbqa_extract_csrf($index['body']);
@@ -559,49 +559,25 @@ function mbqa_http_sample_seed_end(mysqli $conn, string $slug, int $companyId, s
         return ['ok' => true, 'note' => 'N/A (rows exist)', 'na' => true];
     }
 
-    $_SESSION['company_id'] = $companyId;
-    mbqa_seed_lookup_parents_for_table($conn, $slug, $companyId);
-
-    if ($csrf !== '') {
-        mbqa_http(
-            $moduleUrl . 'index.php',
-            'POST',
-            http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrf]),
-            ['Content-Type: application/x-www-form-urlencoded'],
-            $cookieFile
-        );
-        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-        $csrf = mbqa_extract_csrf($index['body']);
-        if (!mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body'])) {
-            return ['ok' => true, 'note' => 'HTTP sample seed (end restore)', 'na' => false];
-        }
+    if ($csrf === '') {
+        return ['ok' => false, 'note' => 'No CSRF for sample seed', 'na' => false];
     }
 
-    if (!function_exists('itm_seed_table_from_database_sql') || !itm_is_safe_identifier($slug)) {
-        $flash = mbqa_index_sample_seed_flash_note($index['body']);
-
-        return [
-            'ok' => false,
-            'note' => $flash !== '' ? $flash : 'End sample seed failed (no seeder)',
-            'na' => false,
-        ];
-    }
-
-    $seedErr = '';
-    $inserted = itm_seed_table_from_database_sql($conn, $slug, $companyId, $seedErr);
+    mbqa_http(
+        $moduleUrl . 'index.php',
+        'POST',
+        http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrf]),
+        ['Content-Type: application/x-www-form-urlencoded'],
+        $cookieFile
+    );
     $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
     $ok = !mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body']);
 
-    if ($ok) {
-        $note = $inserted > 0
-            ? ('DB sample seed end restore (' . $inserted . ' row(s))')
-            : 'DB sample seed end restore (rows present)';
-    } else {
-        $flash = mbqa_index_sample_seed_flash_note($index['body']);
-        $note = $seedErr !== '' ? $seedErr : ($flash !== '' ? $flash : 'HTTP sample seed failed or empty');
-    }
-
-    return ['ok' => $ok, 'note' => $note, 'na' => false];
+    return [
+        'ok' => $ok,
+        'note' => $ok ? 'HTTP sample seed' : 'HTTP sample seed failed or empty',
+        'na' => false,
+    ];
 }
 
 /**
@@ -2405,12 +2381,9 @@ foreach ($companiesToRun as $companyId) {
         $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
         $perPage = mbqa_records_per_page($conn);
         $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
-        $canRunBulkDelete = $rowCountAfterAdd >= $perPage
-            && mbqa_index_shows_bulk_actions($index['body'])
-            && is_file($deletePath)
-            && $csrfIndex !== '';
+        $canBulkAfterAdd = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
 
-        if ($canRunBulkDelete) {
+        if ($canBulkAfterAdd && is_file($deletePath) && $csrfIndex !== '') {
             $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
             if (!empty($bulkIds)) {
                 $bulkDelEarly = mbqa_run_bulk_delete($moduleUrl, $cookieFile, $csrfIndex, $bulkIds);
@@ -2424,7 +2397,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result(
                 'bulk_delete',
                 true,
-                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
+                'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
             );
         }
 
@@ -2577,23 +2550,21 @@ foreach ($companiesToRun as $companyId) {
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
-        $canRunClearTable = $rowCountAfterAdd >= $perPage
-            && mbqa_index_shows_bulk_actions($index['body'])
-            && is_file($deletePath)
-            && $csrfIndex !== '';
+        $rowCount = mbqa_tenant_row_count($conn, $slug, $companyId);
+        $canClearTable = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
 
-        if ($canRunClearTable) {
+        if ($canClearTable && is_file($deletePath) && $csrfIndex !== '') {
             $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex);
             $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
         } else {
             $steps[] = mbqa_step_result(
                 'clear_table',
                 true,
-                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
+                $canClearTable ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
             );
         }
 
-        $endSeed = mbqa_http_sample_seed_end($conn, $slug, $companyId, $moduleUrl, $cookieFile);
+        $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
         if ($endSeed['na']) {
             $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
         } else {
