@@ -8,6 +8,10 @@
  * Optional env:
  *   ITM_SKIP_DB_TESTS=1   Skip integration cases (static checks still run)
  *   ITM_TEST_COMPANY_ID   Audit bootstrap company (default: 1)
+ *
+ * Note: equipment type names must stay exactly "Switch" / "Server" (no suffix). Unique names
+ * like "Switch itm_eqdct_*" trigger itm_ensure_equipment_type_module_scaffold() and create junk
+ * modules/is_switch_itm_eqdct_* directories. Canonical modules/is_switch, is_server, … are kept.
  */
 
 if (version_compare(PHP_VERSION, '7.1.0', '<')) {
@@ -20,6 +24,7 @@ define('ITM_CLI_SCRIPT', true);
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
 require $projectRoot . '/modules/equipment/delete_functions.php';
+require __DIR__ . '/lib/equipment_type_modules.php';
 
 function eqdct_is_cli(): bool
 {
@@ -225,6 +230,11 @@ function eqdct_insert_switch_port(
     return (bool)$ok;
 }
 
+function eqdct_cleanup_test_scaffold_modules(): int
+{
+    return itm_remove_equipment_regression_test_module_dirs(dirname(__DIR__) . '/modules');
+}
+
 function eqdct_run_static_checks(): void
 {
     $deletePath = dirname(__DIR__) . '/modules/equipment/delete.php';
@@ -257,9 +267,9 @@ function eqdct_run_db_integration(mysqli $conn): void
     try {
         eqdct_set_audit_context($conn, $companyId);
 
-        $switchTypeId = eqdct_insert_equipment_type($conn, $companyId, 'Switch ' . $suffix);
+        $switchTypeId = eqdct_insert_equipment_type($conn, $companyId, 'Switch');
         eqdct_assert($switchTypeId > 0, 'seeded switch equipment type');
-        $serverTypeId = eqdct_insert_equipment_type($conn, $companyId, 'Server ' . $suffix);
+        $serverTypeId = eqdct_insert_equipment_type($conn, $companyId, 'Server');
         eqdct_assert($serverTypeId > 0, 'seeded server equipment type');
         $statusId = eqdct_insert_equipment_status($conn, $companyId, 'Active ' . $suffix);
         eqdct_assert($statusId > 0, 'seeded equipment status');
@@ -296,6 +306,10 @@ function eqdct_run_db_integration(mysqli $conn): void
     } finally {
         eqdct_delete_company($conn, $companyId);
         eqdct_out('[PASS] removed temporary test company');
+        $scaffoldRemoved = eqdct_cleanup_test_scaffold_modules();
+        if ($scaffoldRemoved > 0) {
+            eqdct_out('[PASS] removed ' . $scaffoldRemoved . ' accidental equipment-type module folder(s)');
+        }
     }
 }
 
@@ -309,6 +323,11 @@ if (!eqdct_is_cli()) {
 $failures = 0;
 eqdct_out('Equipment clear_table regression');
 eqdct_out('PHP ' . PHP_VERSION);
+
+$preCleaned = eqdct_cleanup_test_scaffold_modules();
+if ($preCleaned > 0) {
+    eqdct_out('[PASS] pre-clean removed ' . $preCleaned . ' accidental equipment-type module folder(s)');
+}
 
 try {
     eqdct_run_static_checks();
