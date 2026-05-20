@@ -329,7 +329,9 @@ try {
 }
 
 $skipDb = getenv('ITM_SKIP_DB_TESTS') === '1' || getenv('ITM_SKIP_DB_TESTS') === 'true';
-if ($skipDb) {
+if (!edct_is_cli()) {
+    edct_out('[SKIP] Database integration (CLI only — browser runs static checks only)');
+} elseif ($skipDb) {
     edct_out('[SKIP] Database integration (ITM_SKIP_DB_TESTS=1)');
 } elseif (!isset($conn) || !($conn instanceof mysqli)) {
     edct_out('[SKIP] Database integration (no mysqli connection)');

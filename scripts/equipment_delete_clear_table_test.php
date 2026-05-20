@@ -324,9 +324,11 @@ $failures = 0;
 eqdct_out('Equipment clear_table regression');
 eqdct_out('PHP ' . PHP_VERSION);
 
-$preCleaned = eqdct_cleanup_test_scaffold_modules();
-if ($preCleaned > 0) {
-    eqdct_out('[PASS] pre-clean removed ' . $preCleaned . ' accidental equipment-type module folder(s)');
+if (eqdct_is_cli()) {
+    $preCleaned = eqdct_cleanup_test_scaffold_modules();
+    if ($preCleaned > 0) {
+        eqdct_out('[PASS] pre-clean removed ' . $preCleaned . ' accidental equipment-type module folder(s)');
+    }
 }
 
 try {
@@ -337,7 +339,9 @@ try {
 }
 
 $skipDb = getenv('ITM_SKIP_DB_TESTS') === '1' || getenv('ITM_SKIP_DB_TESTS') === 'true';
-if ($skipDb) {
+if (!eqdct_is_cli()) {
+    eqdct_out('[SKIP] Database integration (CLI only — browser runs static checks only)');
+} elseif ($skipDb) {
     eqdct_out('[SKIP] Database integration (ITM_SKIP_DB_TESTS=1)');
 } elseif (!isset($conn) || !($conn instanceof mysqli)) {
     eqdct_out('[SKIP] Database integration (no mysqli connection)');

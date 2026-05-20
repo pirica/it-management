@@ -326,7 +326,7 @@
                     <td><a href="ensure_equipment_type_modules.php">ensure_equipment_type_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verifies or recreates canonical equipment-type façade modules under <code>modules/is_*</code> (<code>is_switch</code>, <code>is_server</code>, <code>is_workstation</code>, …). Does not delete anything.</td>
-                    <td><code>php scripts/ensure_equipment_type_modules.php</code> — exit <code>1</code> if any canonical <code>index.php</code> is missing. Uses <code>scripts/lib/equipment_type_modules.php</code>.</td>
+                    <td><code>php scripts/ensure_equipment_type_modules.php</code> — CLI-only (browser shows <strong>← Scripts index</strong> + CLI command). Exit <code>1</code> if any canonical <code>index.php</code> is missing.</td>
                 </tr>
                 <tr>
                     <td><a href="cleanup_equipment_test_module_artifacts.php">cleanup_equipment_test_module_artifacts.php</a></td>
@@ -334,7 +334,7 @@
                     <td>
                         <strong>Destructive (local dev DB):</strong> removes regression-test <code>equipment_types</code> rows, ITM test companies, junk <code>modules/is_*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> folders, and matching sidebar prefs — then re-ensures canonical <code>is_*</code> modules. Never removes <code>is_switch</code>, <code>is_server</code>, etc.
                     </td>
-                    <td><code>php scripts/cleanup_equipment_test_module_artifacts.php</code> — CLI-only. Run after <code>equipment_delete_clear_table_test.php</code> when MySQL was used.</td>
+                    <td><code>php scripts/cleanup_equipment_test_module_artifacts.php</code> — CLI-only (browser shows <strong>← Scripts index</strong> + CLI command). Run after <code>equipment_delete_clear_table_test.php</code> when MySQL was used.</td>
                 </tr>
                 <tr>
                     <td><a href="equipment_delete_clear_table_test.php">equipment_delete_clear_table_test.php</a></td>
@@ -344,7 +344,7 @@
                     </td>
                     <td>
                         CLI: <code>php scripts/equipment_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> (static only) · <code>ITM_TEST_COMPANY_ID</code>.<br>
-                        Browser: HTML log with <strong>← Scripts index</strong>. Optional smoke: <code>SMOKE_RUN_DB_TESTS=1 bash scripts/smoke_test.sh</code>.
+                        Browser: static checks only (no DB or filesystem cleanup). MySQL regression requires CLI. Optional smoke: <code>SMOKE_RUN_DB_TESTS=1 bash scripts/smoke_test.sh</code>.
                     </td>
                 </tr>
                 <tr>
@@ -353,7 +353,7 @@
                     <td>MySQL regression for employees <code>clear_table</code> transactional delete (access rows roll back when employee delete is blocked by FK).</td>
                     <td>
                         CLI: <code>php scripts/employees_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code>.<br>
-                        Browser: HTML log with <strong>← Scripts index</strong>. Optional smoke: <code>SMOKE_RUN_DB_TESTS=1</code>.
+                        Browser: static checks only (no DB mutations). MySQL regression requires CLI. Optional smoke: <code>SMOKE_RUN_DB_TESTS=1</code>.
                     </td>
                 </tr>
             </tbody>
