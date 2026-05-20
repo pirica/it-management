@@ -207,7 +207,8 @@ $skipClear = ['companies', 'users'];
 
 /** Why: Some modules need lookup parents in database.sql before sample seed succeeds for a tenant. */
 $sampleSeedPrerequisites = [
-    'expenses' => ['budget_categories', 'cost_centers', 'gl_accounts'],
+    // Why: cost_centers rows in database.sql reference departments; seed that chain before HTTP sample_data.
+    'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
     'employee_positions' => ['departments'],
     'employee_onboarding_requests' => ['departments', 'employee_positions'],
     'inventory_items' => ['inventory_categories', 'suppliers'],
@@ -331,6 +332,19 @@ function mbqa_index_is_empty(string $html): bool
 function mbqa_index_has_sample_seed_error(string $html): bool
 {
     return stripos($html, 'No sample rows found in database.sql') !== false;
+}
+
+/** Pulls the flash error banner text after a failed sample-data POST. */
+function mbqa_index_sample_seed_flash_note(string $html): string
+{
+    if (preg_match('/class="[^"]*alert[^"]*"[^>]*>(.*?)<\/div>/is', $html, $m)) {
+        $text = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($text !== '') {
+            return $text;
+        }
+    }
+
+    return '';
 }
 
 /**
@@ -461,6 +475,9 @@ function mbqa_ensure_sample_data(
         return ['ok' => true, 'note' => 'N/A (rows exist)', 'html' => $index['body'], 'csrf' => $csrf, 'na' => true];
     }
 
+    $_SESSION['company_id'] = $companyId;
+    mbqa_seed_lookup_parents_for_table($conn, $slug, $companyId);
+
     if ($csrf !== '') {
         mbqa_http(
             $moduleUrl . 'index.php',
@@ -477,32 +494,11 @@ function mbqa_ensure_sample_data(
     }
 
     if (!function_exists('itm_seed_table_from_database_sql')) {
-        return ['ok' => false, 'note' => 'Still empty; itm_seed_table_from_database_sql missing', 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+        $flash = mbqa_index_sample_seed_flash_note($index['body']);
+        $note = $flash !== '' ? $flash : 'Still empty; itm_seed_table_from_database_sql missing';
+
+        return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
-
-    $_SESSION['company_id'] = $companyId;
-
-    $seedParents = static function (mysqli $conn, string $table, int $companyId) use ($sampleSeedPrerequisites): void {
-        $tables = $sampleSeedPrerequisites[$table] ?? [];
-        if (function_exists('itm_table_outbound_fk_map')) {
-            foreach (itm_table_outbound_fk_map($conn, $table) as $fkMeta) {
-                $parentTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
-                if ($parentTable !== '' && itm_is_safe_identifier($parentTable)) {
-                    $tables[] = $parentTable;
-                }
-            }
-        }
-        $tables = array_values(array_unique($tables));
-        foreach ($tables as $parentTable) {
-            if (!itm_is_safe_identifier($parentTable) || in_array($parentTable, mbqa_tables_never_clear(), true)) {
-                continue;
-            }
-            $parentErr = '';
-            itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $parentErr);
-        }
-    };
-
-    $seedParents($conn, $slug, $companyId);
 
     $seedErr = '';
     $inserted = itm_seed_table_from_database_sql($conn, $slug, $companyId, $seedErr);
@@ -522,7 +518,8 @@ function mbqa_ensure_sample_data(
         return ['ok' => true, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
 
-    $note = $seedErr !== '' ? $seedErr : 'Still empty or seed error';
+    $flash = mbqa_index_sample_seed_flash_note($index['body']);
+    $note = $seedErr !== '' ? $seedErr : ($flash !== '' ? $flash : 'Still empty or seed error');
     if (mbqa_index_has_sample_seed_error($index['body'])) {
         $note = 'No sample rows in database.sql (HTTP + DB seed)';
     }
@@ -1462,13 +1459,18 @@ function mbqa_fill_scalar_value(
 /**
  * Seeds database.sql parents for a module so random inserts can resolve NOT NULL FKs.
  */
-function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId): void
+function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void
 {
     global $sampleSeedPrerequisites;
 
     if (!function_exists('itm_seed_table_from_database_sql') || !itm_is_safe_identifier($table) || $companyId <= 0) {
         return;
     }
+
+    if (isset($visited[$table])) {
+        return;
+    }
+    $visited[$table] = true;
 
     $parents = $sampleSeedPrerequisites[$table] ?? [];
     if (function_exists('itm_table_outbound_fk_map')) {
@@ -1481,6 +1483,7 @@ function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $co
     }
 
     foreach (array_values(array_unique($parents)) as $parentTable) {
+        mbqa_seed_lookup_parents_for_table($conn, $parentTable, $companyId, $visited);
         $seedErr = '';
         itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $seedErr);
     }
@@ -1802,6 +1805,39 @@ function mbqa_index_shows_bulk_actions(string $html): bool
 {
     return stripos($html, 'name="ids[]"') !== false
         && (stripos($html, 'bulk_action') !== false || stripos($html, 'bulk-delete-form') !== false);
+}
+
+/**
+ * Explains why bulk_delete/clear_table were skipped (row gate vs missing delete.php/CSRF/bulk UI).
+ */
+function mbqa_bulk_step_na_note(
+    int $rowCount,
+    int $perPage,
+    string $indexHtml,
+    string $deletePath,
+    string $csrf,
+    string $contextLabel = 'after add'
+): string {
+    if ($rowCount < $perPage) {
+        return 'N/A (' . $rowCount . ' rows < perPage ' . $perPage . ' ' . $contextLabel . ')';
+    }
+
+    $reasons = [];
+    if (!mbqa_index_shows_bulk_actions($indexHtml)) {
+        $reasons[] = 'bulk UI hidden (no ids[]/bulk_action on index)';
+    }
+    if (!is_file($deletePath)) {
+        $reasons[] = 'no delete.php';
+    }
+    if ($csrf === '') {
+        $reasons[] = 'no CSRF on index';
+    }
+
+    if (empty($reasons)) {
+        return 'N/A (bulk prerequisites unclear ' . $contextLabel . ')';
+    }
+
+    return 'N/A (' . $rowCount . ' rows >= perPage ' . $perPage . ' ' . $contextLabel . '; ' . implode('; ', $reasons) . ')';
 }
 
 /**
