@@ -207,7 +207,8 @@ $skipClear = ['companies', 'users'];
 
 /** Why: Some modules need lookup parents in database.sql before sample seed succeeds for a tenant. */
 $sampleSeedPrerequisites = [
-    'expenses' => ['budget_categories', 'cost_centers', 'gl_accounts'],
+    // Why: cost_centers rows in database.sql reference departments; seed that chain before HTTP sample_data.
+    'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
     'employee_positions' => ['departments'],
     'employee_onboarding_requests' => ['departments', 'employee_positions'],
     'inventory_items' => ['inventory_categories', 'suppliers'],
@@ -331,6 +332,19 @@ function mbqa_index_is_empty(string $html): bool
 function mbqa_index_has_sample_seed_error(string $html): bool
 {
     return stripos($html, 'No sample rows found in database.sql') !== false;
+}
+
+/** Pulls the flash error banner text after a failed sample-data POST. */
+function mbqa_index_sample_seed_flash_note(string $html): string
+{
+    if (preg_match('/class="[^"]*alert[^"]*"[^>]*>(.*?)<\/div>/is', $html, $m)) {
+        $text = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($text !== '') {
+            return $text;
+        }
+    }
+
+    return '';
 }
 
 /**
@@ -461,6 +475,9 @@ function mbqa_ensure_sample_data(
         return ['ok' => true, 'note' => 'N/A (rows exist)', 'html' => $index['body'], 'csrf' => $csrf, 'na' => true];
     }
 
+    $_SESSION['company_id'] = $companyId;
+    mbqa_seed_lookup_parents_for_table($conn, $slug, $companyId);
+
     if ($csrf !== '') {
         mbqa_http(
             $moduleUrl . 'index.php',
@@ -477,32 +494,11 @@ function mbqa_ensure_sample_data(
     }
 
     if (!function_exists('itm_seed_table_from_database_sql')) {
-        return ['ok' => false, 'note' => 'Still empty; itm_seed_table_from_database_sql missing', 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+        $flash = mbqa_index_sample_seed_flash_note($index['body']);
+        $note = $flash !== '' ? $flash : 'Still empty; itm_seed_table_from_database_sql missing';
+
+        return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
-
-    $_SESSION['company_id'] = $companyId;
-
-    $seedParents = static function (mysqli $conn, string $table, int $companyId) use ($sampleSeedPrerequisites): void {
-        $tables = $sampleSeedPrerequisites[$table] ?? [];
-        if (function_exists('itm_table_outbound_fk_map')) {
-            foreach (itm_table_outbound_fk_map($conn, $table) as $fkMeta) {
-                $parentTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
-                if ($parentTable !== '' && itm_is_safe_identifier($parentTable)) {
-                    $tables[] = $parentTable;
-                }
-            }
-        }
-        $tables = array_values(array_unique($tables));
-        foreach ($tables as $parentTable) {
-            if (!itm_is_safe_identifier($parentTable) || in_array($parentTable, mbqa_tables_never_clear(), true)) {
-                continue;
-            }
-            $parentErr = '';
-            itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $parentErr);
-        }
-    };
-
-    $seedParents($conn, $slug, $companyId);
 
     $seedErr = '';
     $inserted = itm_seed_table_from_database_sql($conn, $slug, $companyId, $seedErr);
@@ -522,7 +518,8 @@ function mbqa_ensure_sample_data(
         return ['ok' => true, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
 
-    $note = $seedErr !== '' ? $seedErr : 'Still empty or seed error';
+    $flash = mbqa_index_sample_seed_flash_note($index['body']);
+    $note = $seedErr !== '' ? $seedErr : ($flash !== '' ? $flash : 'Still empty or seed error');
     if (mbqa_index_has_sample_seed_error($index['body'])) {
         $note = 'No sample rows in database.sql (HTTP + DB seed)';
     }
@@ -543,11 +540,11 @@ function mbqa_error_log_byte_offset(): int
 }
 
 /**
- * HTTP-only sample seed at end of module QA (after clear_table); does not use database.sql fallback.
+ * Restores database.sql sample rows after clear_table (FK parents first, then HTTP with DB fallback).
  *
  * @return array{ok:bool,note:string,na:bool}
  */
-function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
+function mbqa_http_sample_seed_end(mysqli $conn, string $slug, int $companyId, string $moduleUrl, string $cookieFile): array
 {
     $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
     $csrf = mbqa_extract_csrf($index['body']);
@@ -562,25 +559,49 @@ function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
         return ['ok' => true, 'note' => 'N/A (rows exist)', 'na' => true];
     }
 
-    if ($csrf === '') {
-        return ['ok' => false, 'note' => 'No CSRF for sample seed', 'na' => false];
+    $_SESSION['company_id'] = $companyId;
+    mbqa_seed_lookup_parents_for_table($conn, $slug, $companyId);
+
+    if ($csrf !== '') {
+        mbqa_http(
+            $moduleUrl . 'index.php',
+            'POST',
+            http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrf]),
+            ['Content-Type: application/x-www-form-urlencoded'],
+            $cookieFile
+        );
+        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        $csrf = mbqa_extract_csrf($index['body']);
+        if (!mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body'])) {
+            return ['ok' => true, 'note' => 'HTTP sample seed (end restore)', 'na' => false];
+        }
     }
 
-    mbqa_http(
-        $moduleUrl . 'index.php',
-        'POST',
-        http_build_query(['add_sample_data' => '1', 'csrf_token' => $csrf]),
-        ['Content-Type: application/x-www-form-urlencoded'],
-        $cookieFile
-    );
+    if (!function_exists('itm_seed_table_from_database_sql') || !itm_is_safe_identifier($slug)) {
+        $flash = mbqa_index_sample_seed_flash_note($index['body']);
+
+        return [
+            'ok' => false,
+            'note' => $flash !== '' ? $flash : 'End sample seed failed (no seeder)',
+            'na' => false,
+        ];
+    }
+
+    $seedErr = '';
+    $inserted = itm_seed_table_from_database_sql($conn, $slug, $companyId, $seedErr);
     $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
     $ok = !mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body']);
 
-    return [
-        'ok' => $ok,
-        'note' => $ok ? 'HTTP sample seed' : 'HTTP sample seed failed or empty',
-        'na' => false,
-    ];
+    if ($ok) {
+        $note = $inserted > 0
+            ? ('DB sample seed end restore (' . $inserted . ' row(s))')
+            : 'DB sample seed end restore (rows present)';
+    } else {
+        $flash = mbqa_index_sample_seed_flash_note($index['body']);
+        $note = $seedErr !== '' ? $seedErr : ($flash !== '' ? $flash : 'HTTP sample seed failed or empty');
+    }
+
+    return ['ok' => $ok, 'note' => $note, 'na' => false];
 }
 
 /**
@@ -1462,13 +1483,18 @@ function mbqa_fill_scalar_value(
 /**
  * Seeds database.sql parents for a module so random inserts can resolve NOT NULL FKs.
  */
-function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId): void
+function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void
 {
     global $sampleSeedPrerequisites;
 
     if (!function_exists('itm_seed_table_from_database_sql') || !itm_is_safe_identifier($table) || $companyId <= 0) {
         return;
     }
+
+    if (isset($visited[$table])) {
+        return;
+    }
+    $visited[$table] = true;
 
     $parents = $sampleSeedPrerequisites[$table] ?? [];
     if (function_exists('itm_table_outbound_fk_map')) {
@@ -1481,6 +1507,7 @@ function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $co
     }
 
     foreach (array_values(array_unique($parents)) as $parentTable) {
+        mbqa_seed_lookup_parents_for_table($conn, $parentTable, $companyId, $visited);
         $seedErr = '';
         itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $seedErr);
     }
@@ -2566,7 +2593,7 @@ foreach ($companiesToRun as $companyId) {
             );
         }
 
-        $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
+        $endSeed = mbqa_http_sample_seed_end($conn, $slug, $companyId, $moduleUrl, $cookieFile);
         if ($endSeed['na']) {
             $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
         } else {
