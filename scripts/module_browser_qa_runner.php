@@ -1035,6 +1035,49 @@ function mbqa_bulk_row_target_for_table(mysqli $conn, string $table, int $compan
     return max(1, min($ideal, $capacity));
 }
 
+/**
+ * Parent tables referenced in unique indexes (e.g. cost_centers for expenses) — grow these so capacity can reach the ideal row target.
+ *
+ * @return string[]
+ */
+function mbqa_unique_scope_limiting_parent_tables(mysqli $conn, string $table, int $companyId): array
+{
+    if (!itm_is_safe_identifier($table) || $companyId <= 0) {
+        return [];
+    }
+
+    $fkMap = function_exists('itm_table_outbound_fk_map') ? itm_table_outbound_fk_map($conn, $table) : [];
+    $parents = [];
+
+    foreach (mbqa_table_unique_column_sets($conn, $table) as $set) {
+        foreach ($set as $col) {
+            if ($col === 'id' || $col === 'company_id') {
+                continue;
+            }
+            $refTable = mbqa_fk_reference_table($col, $fkMap);
+            if ($refTable !== '' && itm_is_safe_identifier($refTable) && itm_table_has_column($conn, $refTable, 'company_id')) {
+                $parents[$refTable] = $refTable;
+            }
+        }
+    }
+
+    return array_values($parents);
+}
+
+function mbqa_grow_unique_scope_parents(mysqli $conn, string $table, int $companyId, int $goalCount): void
+{
+    $goalCount = max(1, $goalCount);
+    foreach (mbqa_unique_scope_limiting_parent_tables($conn, $table, $companyId) as $parentTable) {
+        if (in_array($parentTable, mbqa_tables_never_clear(), true)) {
+            continue;
+        }
+        $parentCount = mbqa_tenant_row_count($conn, $parentTable, $companyId);
+        if ($parentCount < $goalCount) {
+            mbqa_insert_random_rows($conn, $parentTable, $companyId, $goalCount - $parentCount, 0);
+        }
+    }
+}
+
 function mbqa_records_per_page(mysqli $conn): int
 {
     if (!function_exists('itm_get_ui_configuration') || !function_exists('itm_resolve_records_per_page')) {
@@ -1603,14 +1646,17 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
         return ['ok' => true, 'note' => 'N/A (no company_id)', 'na' => true, 'count' => 0];
     }
 
-    $target = mbqa_bulk_row_target_for_table($conn, $table, $companyId);
     $ideal = mbqa_bulk_row_target_ideal($conn);
+    // Why: e.g. expenses needs enough cost_centers before uq_expenses_company_scope allows 30 expense rows.
+    mbqa_grow_unique_scope_parents($conn, $table, $companyId, $ideal);
+
+    $target = mbqa_bulk_row_target_for_table($conn, $table, $companyId);
     $capacity = mbqa_unique_scope_capacity($conn, $table, $companyId);
     $targetNote = ($capacity < $ideal && $capacity < PHP_INT_MAX)
         ? (' target=' . $target . ' capped by unique scope')
         : (' target=' . $target);
 
-    mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, $target);
+    mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, $ideal);
 
     $current = mbqa_tenant_row_count($conn, $table, $companyId);
     if ($current >= $target) {
@@ -2172,6 +2218,29 @@ foreach ($companiesToRun as $companyId) {
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
 
+        $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
+        $perPage = mbqa_records_per_page($conn);
+        $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
+        $canBulkAfterAdd = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
+
+        if ($canBulkAfterAdd && is_file($deletePath) && $csrfIndex !== '') {
+            $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
+            if (!empty($bulkIds)) {
+                $bulkDelEarly = mbqa_run_bulk_delete($moduleUrl, $cookieFile, $csrfIndex, $bulkIds);
+                $steps[] = mbqa_step_result('bulk_delete', $bulkDelEarly['ok'], $bulkDelEarly['note']);
+                $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+                $csrfIndex = mbqa_extract_csrf($index['body']);
+            } else {
+                $steps[] = mbqa_step_result('bulk_delete', true, 'N/A (no ids[] on index after add)');
+            }
+        } else {
+            $steps[] = mbqa_step_result(
+                'bulk_delete',
+                true,
+                'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
+            );
+        }
+
         $search = mbqa_http($moduleUrl . 'index.php?search=sample&page=1', 'GET', null, [], $cookieFile);
         $steps[] = mbqa_step_result('search', $search['status'] === 200 && !mbqa_has_fatal($search['body']), 'HTTP ' . $search['status']);
 
@@ -2235,10 +2304,7 @@ foreach ($companiesToRun as $companyId) {
 
         $hasImportEndpoint = stripos($index['body'], 'data-itm-db-import-endpoint') !== false;
         if ($hasImportEndpoint && $csrfIndex !== '' && $hasTableExport) {
-            // Why: expenses enforces one row per company+cost_center; free the scope before Import Excel QA.
-            if ($slug === 'expenses' && itm_is_safe_identifier($slug)) {
-                itm_run_query($conn, 'DELETE FROM `expenses` WHERE company_id=' . (int)$companyId);
-            }
+            // Why: import rows pick a free cost_center via mbqa_unique_expense_import_row; do not wipe add-step rows here.
 
             $indexImport = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
             $csrfIndex = mbqa_extract_csrf($indexImport['body']);
@@ -2307,7 +2373,6 @@ foreach ($companiesToRun as $companyId) {
             );
         }
 
-        $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
         if ($viewId > 0 && is_file($deletePath) && $csrfIndex !== '') {
             $delResult = mbqa_delete_record_with_fk_retry(
                 $conn,
@@ -2325,35 +2390,17 @@ foreach ($companiesToRun as $companyId) {
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
-        $perPage = mbqa_records_per_page($conn);
         $rowCount = mbqa_tenant_row_count($conn, $slug, $companyId);
-        $canBulk = $rowCount >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
-        if ($canBulk && is_file($deletePath) && $csrfIndex !== '') {
-            $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
-            if (!empty($bulkIds)) {
-                $bulkDel = mbqa_run_bulk_delete($moduleUrl, $cookieFile, $csrfIndex, $bulkIds);
-                $steps[] = mbqa_step_result('bulk_delete', $bulkDel['ok'], $bulkDel['note']);
-                $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-                $csrfIndex = mbqa_extract_csrf($index['body']);
-            } else {
-                $steps[] = mbqa_step_result('bulk_delete', true, 'N/A (no ids[] on index)');
-            }
-        } else {
-            $steps[] = mbqa_step_result(
-                'bulk_delete',
-                true,
-                $canBulk ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCount . ' rows < perPage ' . $perPage . ')'
-            );
-        }
+        $canClearTable = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
 
-        if ($canBulk && is_file($deletePath) && $csrfIndex !== '') {
+        if ($canClearTable && is_file($deletePath) && $csrfIndex !== '') {
             $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex);
             $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
         } else {
             $steps[] = mbqa_step_result(
                 'clear_table',
                 true,
-                $canBulk ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCount . ' rows < perPage ' . $perPage . ')'
+                $canClearTable ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCountAfterAdd . ' rows < perPage ' . $perPage . ' after add)'
             );
         }
 
