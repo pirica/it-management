@@ -298,9 +298,24 @@ mysqli_query($conn, "SET @app_user_agent = '" . mysqli_real_escape_string($conn,
 
 // --- Global Access Control ---
 $current_file = basename($_SERVER['PHP_SELF']);
-// Why: Maintenance scripts under scripts/ define ITM_CLI_SCRIPT before requiring config so they can use $conn
-// without an app login session (CLI audits and browser QA tools that drive HTTP against the app separately).
-$itmSkipWebAuth = defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT;
+// Why: CLI maintenance scripts define ITM_CLI_SCRIPT before config so they can use $conn without a web session.
+$itmSkipWebAuth = PHP_SAPI === 'cli' && defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT;
+
+// Browser: never bypass auth for every ITM_CLI_SCRIPT file — only an explicit allowlist (HTTP QA runner).
+if (
+    !$itmSkipWebAuth
+    && PHP_SAPI !== 'cli'
+    && defined('ITM_CLI_SCRIPT')
+    && ITM_CLI_SCRIPT
+) {
+    $itmBrowserMaintenanceAuthAllowlist = [
+        'module_browser_qa_runner.php',
+    ];
+    $itmMaintenanceScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+    if (in_array($itmMaintenanceScript, $itmBrowserMaintenanceAuthAllowlist, true)) {
+        $itmSkipWebAuth = true;
+    }
+}
 
 // Redirect to login if session is missing, excluding auth pages
 if (
