@@ -298,8 +298,9 @@ mysqli_query($conn, "SET @app_user_agent = '" . mysqli_real_escape_string($conn,
 
 // --- Global Access Control ---
 $current_file = basename($_SERVER['PHP_SELF']);
-// Why: CLI maintenance scripts define ITM_CLI_SCRIPT before requiring config so they can use $conn without a web session.
-$itmSkipWebAuth = PHP_SAPI === 'cli' && defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT;
+// Why: Maintenance scripts under scripts/ define ITM_CLI_SCRIPT before requiring config so they can use $conn
+// without an app login session (CLI audits and browser QA tools that drive HTTP against the app separately).
+$itmSkipWebAuth = defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT;
 
 // Redirect to login if session is missing, excluding auth pages
 if (

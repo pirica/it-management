@@ -176,15 +176,16 @@ if (!mbqa_is_cli_sapi() && !$mbqaOptions['run']) {
     exit(0);
 }
 
+// Why: config.php starts the session and may set headers; browser HTML output must come after require.
+define('ITM_CLI_SCRIPT', true);
+require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
+
 if (!mbqa_is_cli_sapi()) {
     @set_time_limit(0);
     @ignore_user_abort(true);
     itm_script_output_begin('Module browser QA runner');
     mbqa_out("Running QA…\n\n");
 }
-
-define('ITM_CLI_SCRIPT', true);
-require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 if (!isset($conn) || !($conn instanceof mysqli)) {
     mbqa_err("Database connection unavailable.\n");
     exit(2);
