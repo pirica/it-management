@@ -325,14 +325,37 @@ function itm_bulk_row_checkbox_cells_gated(string $listContent): bool
         return true;
     }
 
-    if (stripos($listContent, 'form="bulk-delete-form"') === false) {
+    if (stripos($listContent, 'form="bulk-delete-form"') === false
+        || stripos($listContent, 'name="ids[]"') === false) {
         return true;
     }
 
-    if (preg_match(
-        '#(?<!\$showBulkActions\): \?>)<td>\s*<input[^>]+name="ids\[\]"[^>]+form="bulk-delete-form"#i',
-        $listContent
-    ) === 1) {
+    $lines = preg_split('/\R/', $listContent) ?: [];
+    $lineCount = count($lines);
+    for ($i = 0; $i < $lineCount; $i++) {
+        $line = $lines[$i];
+        $probe = $line;
+        if (stripos($probe, 'name="ids[]"') === false && $i > 0 && stripos($lines[$i - 1], '<td') !== false) {
+            $probe = $lines[$i - 1] . ' ' . $line;
+        }
+        if (stripos($probe, 'name="ids[]"') === false || stripos($probe, 'bulk-delete-form') === false) {
+            continue;
+        }
+        if (stripos($probe, '<td') === false) {
+            continue;
+        }
+        // Hidden checkbox columns (e.g. switch_ports) use a separate layout; not a visible misalignment case.
+        if (stripos($probe, 'display:none') !== false) {
+            continue;
+        }
+        if (stripos($probe, 'showBulkActions') !== false) {
+            continue;
+        }
+        for ($j = max(0, $i - 6); $j < $i; $j++) {
+            if (stripos($lines[$j], 'if ($showBulkActions)') !== false) {
+                continue 2;
+            }
+        }
         return false;
     }
 
