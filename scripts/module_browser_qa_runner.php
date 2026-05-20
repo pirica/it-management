@@ -4,6 +4,7 @@
  *
  * Why: Exercising 101 modules × 5 companies via IDE browser alone is not practical;
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
+ * Tier A adds 30 random tenant rows (add step), then bulk_delete/clear_table when row count >= records_per_page.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -962,6 +963,406 @@ function mbqa_tables_never_clear(): array
     return ['companies', 'users'];
 }
 
+/** Row count target so bulk_delete / clear_table UI gates (default records_per_page 25) are exercisable. */
+function mbqa_bulk_row_target(): int
+{
+    return 30;
+}
+
+function mbqa_records_per_page(mysqli $conn): int
+{
+    if (!function_exists('itm_get_ui_configuration') || !function_exists('itm_resolve_records_per_page')) {
+        return 25;
+    }
+
+    $companyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+    $uiConfig = itm_get_ui_configuration($conn, $companyId > 0 ? $companyId : null);
+
+    return itm_resolve_records_per_page($uiConfig);
+}
+
+function mbqa_tenant_row_count(mysqli $conn, string $table, int $companyId): int
+{
+    if (!itm_is_safe_identifier($table) || $companyId <= 0 || !itm_table_has_column($conn, $table, 'company_id')) {
+        return 0;
+    }
+
+    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+    $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId);
+    if (!$res || !($row = mysqli_fetch_assoc($res))) {
+        return 0;
+    }
+
+    return (int)($row['c'] ?? 0);
+}
+
+/**
+ * @return array<int, array{name:string,type:string,null:string,default:?string,extra:string,key:string}>
+ */
+function mbqa_table_column_metas(mysqli $conn, string $table): array
+{
+    if (!itm_is_safe_identifier($table)) {
+        return [];
+    }
+
+    $metas = [];
+    $res = mysqli_query($conn, 'DESCRIBE `' . str_replace('`', '``', $table) . '`');
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $name = (string)($row['Field'] ?? '');
+        if ($name === '' || !itm_is_safe_identifier($name)) {
+            continue;
+        }
+        $metas[] = [
+            'name' => $name,
+            'type' => strtolower((string)($row['Type'] ?? '')),
+            'null' => strtoupper((string)($row['Null'] ?? 'YES')),
+            'default' => $row['Default'] ?? null,
+            'extra' => strtolower((string)($row['Extra'] ?? '')),
+            'key' => strtoupper((string)($row['Key'] ?? '')),
+        ];
+    }
+
+    return $metas;
+}
+
+/**
+ * @return array<int, array<int, string>>
+ */
+function mbqa_table_unique_column_sets(mysqli $conn, string $table): array
+{
+    if (!itm_is_safe_identifier($table)) {
+        return [];
+    }
+
+    $sql = 'SELECT INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND NON_UNIQUE = 0 AND INDEX_NAME <> ?
+            ORDER BY INDEX_NAME, SEQ_IN_INDEX';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+
+    $primary = 'PRIMARY';
+    mysqli_stmt_bind_param($stmt, 'ss', $table, $primary);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $byIndex = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $indexName = (string)($row['INDEX_NAME'] ?? '');
+        $columnName = (string)($row['COLUMN_NAME'] ?? '');
+        if ($indexName === '' || $columnName === '' || !itm_is_safe_identifier($columnName)) {
+            continue;
+        }
+        $byIndex[$indexName][] = $columnName;
+    }
+    mysqli_stmt_close($stmt);
+
+    return array_values($byIndex);
+}
+
+function mbqa_column_in_unique_set(string $column, array $uniqueSets): bool
+{
+    foreach ($uniqueSets as $set) {
+        if (in_array($column, $set, true)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId): int
+{
+    if (!itm_is_safe_identifier($refTable)) {
+        return 0;
+    }
+
+    $tableEsc = '`' . str_replace('`', '``', $refTable) . '`';
+    if (itm_table_has_column($conn, $refTable, 'company_id')) {
+        $sql = 'SELECT id FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId . ' ORDER BY id ASC LIMIT 1';
+    } else {
+        $sql = 'SELECT id FROM ' . $tableEsc . ' ORDER BY id ASC LIMIT 1';
+    }
+
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        return (int)($row['id'] ?? 0);
+    }
+
+    return 0;
+}
+
+/**
+ * Builds one random insert payload (not from database.sql) for QA volume testing.
+ *
+ * @param array<int, array{name:string,type:string,null:string,default:?string,extra:string,key:string}> $columnMetas
+ * @param array<string, array{REFERENCED_TABLE_NAME:string,REFERENCED_COLUMN_NAME:string}> $fkMap
+ * @param array<int, array<int, string>> $uniqueSets
+ * @return array{columns:array<int,string>,values:array<int,string>,types:array<int,string>}|null
+ */
+function mbqa_build_random_insert_row(
+    mysqli $conn,
+    string $table,
+    int $companyId,
+    int $sequence,
+    array $columnMetas,
+    array $fkMap,
+    array $uniqueSets
+): ?array {
+    $columns = [];
+    $values = [];
+    $types = [];
+    $tag = 'MBQA-' . $table . '-' . $companyId . '-' . $sequence . '-' . substr(md5($table . (string)$companyId . (string)$sequence), 0, 6);
+
+    foreach ($columnMetas as $meta) {
+        $name = $meta['name'];
+        if ($name === 'id' || strpos($meta['extra'], 'auto_increment') !== false) {
+            continue;
+        }
+        if ($name === 'created_at' || $name === 'updated_at') {
+            continue;
+        }
+
+        $type = $meta['type'];
+        $nullable = ($meta['null'] === 'YES');
+        $inUnique = mbqa_column_in_unique_set($name, $uniqueSets);
+
+        if ($name === 'company_id') {
+            $columns[] = '`company_id`';
+            $values[] = (string)$companyId;
+            $types[] = 'i';
+            continue;
+        }
+
+        $value = null;
+        $bindType = 's';
+
+        if (isset($fkMap[$name])) {
+            $refTable = (string)($fkMap[$name]['REFERENCED_TABLE_NAME'] ?? '');
+            $fkId = mbqa_pick_fk_value($conn, $refTable, $companyId);
+            if ($fkId > 0) {
+                $value = (string)$fkId;
+                $bindType = 'i';
+            } elseif (!$nullable) {
+                return null;
+            }
+        } elseif (preg_match('/^(tinyint|smallint|mediumint|int|bigint)/', $type)) {
+            $value = (string)($inUnique ? ($sequence + 1) : 1);
+            $bindType = 'i';
+        } elseif (strpos($type, 'enum(') === 0) {
+            if (preg_match("/enum\\((.+)\\)/", $type, $enumMatch)) {
+                $opts = str_getcsv(str_replace("'", '', $enumMatch[1]));
+                $value = (string)($opts[0] ?? '1');
+            } else {
+                $value = '1';
+            }
+        } elseif (strpos($type, 'date') === 0 && strpos($type, 'datetime') !== 0 && strpos($type, 'timestamp') !== 0) {
+            $value = date('Y-m-d');
+        } elseif (strpos($type, 'datetime') === 0 || strpos($type, 'timestamp') === 0) {
+            $value = date('Y-m-d H:i:s');
+        } elseif (strpos($type, 'decimal') === 0 || strpos($type, 'float') === 0 || strpos($type, 'double') === 0) {
+            $value = '1.00';
+            $bindType = 's';
+        } elseif (strpos($type, 'char') !== false || strpos($type, 'text') !== false) {
+            if ($inUnique || preg_match('/(name|title|code|label|hostname|email|username|slug|sku|number)$/i', $name)) {
+                $value = $tag;
+            } else {
+                $value = 'QA note ' . $sequence;
+            }
+        } elseif (preg_match('/^(tinyint|bool)/', $type) || $name === 'active') {
+            $value = '1';
+            $bindType = 'i';
+        }
+
+        if ($value === null) {
+            if ($meta['default'] !== null && $meta['default'] !== '') {
+                $value = (string)$meta['default'];
+            } elseif ($nullable) {
+                continue;
+            } else {
+                return null;
+            }
+        }
+
+        $columns[] = '`' . str_replace('`', '``', $name) . '`';
+        $values[] = $value;
+        $types[] = $bindType;
+    }
+
+    if (empty($columns)) {
+        return null;
+    }
+
+    return ['columns' => $columns, 'values' => $values, 'types' => $types];
+}
+
+function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, int $needed): int
+{
+    if ($needed <= 0 || !itm_is_safe_identifier($table) || !itm_table_has_column($conn, $table, 'company_id')) {
+        return 0;
+    }
+
+    $columnMetas = mbqa_table_column_metas($conn, $table);
+    if (empty($columnMetas)) {
+        return 0;
+    }
+
+    $fkMap = function_exists('itm_table_outbound_fk_map') ? itm_table_outbound_fk_map($conn, $table) : [];
+    $uniqueSets = mbqa_table_unique_column_sets($conn, $table);
+    $inserted = 0;
+    $sequence = (int)(microtime(true) * 1000) % 100000;
+    $maxAttempts = max($needed * 4, $needed + 5);
+
+    for ($attempt = 0; $attempt < $maxAttempts && $inserted < $needed; $attempt++) {
+        $sequence++;
+        $row = mbqa_build_random_insert_row($conn, $table, $companyId, $sequence, $columnMetas, $fkMap, $uniqueSets);
+        if ($row === null) {
+            continue;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($row['columns']), '?'));
+        $sql = 'INSERT INTO `' . str_replace('`', '``', $table) . '` (' . implode(',', $row['columns']) . ') VALUES (' . $placeholders . ')';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            continue;
+        }
+
+        $bindTypes = implode('', $row['types']);
+        $bindValues = $row['values'];
+        $bindParams = [$stmt, $bindTypes];
+        for ($bi = 0, $bn = count($bindValues); $bi < $bn; $bi++) {
+            $bindParams[] = &$bindValues[$bi];
+        }
+        call_user_func_array('mysqli_stmt_bind_param', $bindParams);
+        if (mysqli_stmt_execute($stmt)) {
+            $inserted++;
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return $inserted;
+}
+
+/**
+ * @return array{ok:bool,note:string,na:bool,count:int}
+ */
+function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyId): array
+{
+    $target = mbqa_bulk_row_target();
+
+    if (!itm_is_safe_identifier($table) || $companyId <= 0) {
+        return ['ok' => false, 'note' => 'Invalid table or company', 'na' => false, 'count' => 0];
+    }
+
+    if (in_array($table, mbqa_tables_never_clear(), true)) {
+        return ['ok' => true, 'note' => 'N/A (shared auth table)', 'na' => true, 'count' => 0];
+    }
+
+    if (!itm_table_has_column($conn, $table, 'company_id')) {
+        return ['ok' => true, 'note' => 'N/A (no company_id)', 'na' => true, 'count' => 0];
+    }
+
+    $current = mbqa_tenant_row_count($conn, $table, $companyId);
+    if ($current >= $target) {
+        return ['ok' => true, 'note' => 'Already ' . $current . ' rows (>=' . $target . ')', 'na' => false, 'count' => $current];
+    }
+
+    $needed = $target - $current;
+    $added = mbqa_insert_random_rows($conn, $table, $companyId, $needed);
+    $final = mbqa_tenant_row_count($conn, $table, $companyId);
+    $ok = $final >= $target;
+
+    $note = $added > 0
+        ? ('inserted ' . $added . ' random row(s); total=' . $final . ' target=' . $target)
+        : ('Could not insert random rows; total=' . $final . ' target=' . $target);
+
+    return ['ok' => $ok, 'note' => $note, 'na' => false, 'count' => $final];
+}
+
+function mbqa_index_shows_bulk_actions(string $html): bool
+{
+    return stripos($html, 'name="ids[]"') !== false
+        && (stripos($html, 'bulk_action') !== false || stripos($html, 'bulk-delete-form') !== false);
+}
+
+/**
+ * @param int[] $ids
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_run_bulk_delete(string $moduleUrl, string $cookieFile, string $csrf, array $ids): array
+{
+    if ($csrf === '' || empty($ids)) {
+        return ['ok' => false, 'note' => 'N/A no csrf/ids'];
+    }
+
+    $parts = ['bulk_action=bulk_delete', 'csrf_token=' . rawurlencode($csrf)];
+    foreach ($ids as $id) {
+        $parts[] = 'ids[]=' . (int)$id;
+    }
+    $body = implode('&', $parts);
+
+    $resp = mbqa_http(
+        $moduleUrl . 'delete.php',
+        'POST',
+        $body,
+        ['Content-Type: application/x-www-form-urlencoded'],
+        $cookieFile
+    );
+    if ($resp['status'] < 200 || $resp['status'] >= 400) {
+        return ['ok' => false, 'note' => 'bulk_delete HTTP ' . $resp['status']];
+    }
+
+    $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+    if ($index['status'] !== 200 || mbqa_has_fatal($index['body'])) {
+        return ['ok' => false, 'note' => 'index after bulk_delete HTTP ' . $index['status']];
+    }
+
+    $remaining = 0;
+    foreach ($ids as $id) {
+        if (mbqa_index_still_has_row($index['body'], (int)$id)) {
+            $remaining++;
+        }
+    }
+
+    if ($remaining > 0) {
+        return ['ok' => false, 'note' => $remaining . ' selected id(s) still listed'];
+    }
+
+    return ['ok' => true, 'note' => 'deleted ids=' . implode(',', array_map('intval', $ids))];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_run_clear_table(string $moduleUrl, string $cookieFile, string $csrf): array
+{
+    if ($csrf === '') {
+        return ['ok' => false, 'note' => 'N/A no csrf'];
+    }
+
+    $resp = mbqa_http(
+        $moduleUrl . 'delete.php',
+        'POST',
+        http_build_query(['bulk_action' => 'clear_table', 'csrf_token' => $csrf]),
+        ['Content-Type: application/x-www-form-urlencoded'],
+        $cookieFile
+    );
+    if ($resp['status'] < 200 || $resp['status'] >= 400) {
+        return ['ok' => false, 'note' => 'clear_table HTTP ' . $resp['status']];
+    }
+
+    $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+    if ($index['status'] !== 200 || mbqa_has_fatal($index['body'])) {
+        return ['ok' => false, 'note' => 'index after clear_table HTTP ' . $index['status']];
+    }
+
+    if (!mbqa_index_is_empty($index['body'])) {
+        return ['ok' => false, 'note' => 'rows still present after clear_table'];
+    }
+
+    return ['ok' => true, 'note' => 'table empty for tenant'];
+}
+
 /**
  * Extracts the blocking child table from a MySQL 1451 FK error (not the schema name).
  */
@@ -1335,6 +1736,7 @@ foreach ($companiesToRun as $companyId) {
         if ($tier === 'D') {
             $steps[] = mbqa_step_result('clear', true, 'Skip (bespoke smoke)');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A smoke');
+            $steps[] = mbqa_step_result('add', true, 'N/A smoke');
             $steps[] = mbqa_step_result('create', true, 'N/A smoke');
             $steps[] = mbqa_step_result('view', true, 'N/A smoke');
             $steps[] = mbqa_step_result('edit', true, 'N/A smoke');
@@ -1361,6 +1763,7 @@ foreach ($companiesToRun as $companyId) {
             $routeOk = $listOk;
             $steps[] = mbqa_step_result('clear', true, 'N/A façade routing');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A façade');
+            $steps[] = mbqa_step_result('add', true, 'N/A façade');
             foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'bulk_delete', 'clear_table'] as $s) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
@@ -1395,6 +1798,17 @@ foreach ($companiesToRun as $companyId) {
         } else {
             $steps[] = mbqa_step_result('sample_data', $seedResult['ok'], $seedResult['note']);
         }
+
+        $_SESSION['company_id'] = $companyId;
+        $bulkResult = mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
+        if ($bulkResult['na']) {
+            $steps[] = mbqa_step_result('add', true, $bulkResult['note']);
+        } else {
+            $steps[] = mbqa_step_result('add', $bulkResult['ok'], $bulkResult['note']);
+        }
+
+        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        $csrfIndex = mbqa_extract_csrf($index['body']);
 
         $search = mbqa_http($moduleUrl . 'index.php?search=sample&page=1', 'GET', null, [], $cookieFile);
         $steps[] = mbqa_step_result('search', $search['status'] === 200 && !mbqa_has_fatal($search['body']), 'HTTP ' . $search['status']);
@@ -1547,8 +1961,39 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('single_delete', true, $viewId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
         }
 
-        $steps[] = mbqa_step_result('bulk_delete', true, 'N/A (requires 25+ rows per records_per_page)');
-        $steps[] = mbqa_step_result('clear_table', true, 'N/A (requires 25+ rows)');
+        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        $csrfIndex = mbqa_extract_csrf($index['body']);
+        $perPage = mbqa_records_per_page($conn);
+        $rowCount = mbqa_tenant_row_count($conn, $slug, $companyId);
+        $canBulk = $rowCount >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
+        if ($canBulk && is_file($deletePath) && $csrfIndex !== '') {
+            $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
+            if (!empty($bulkIds)) {
+                $bulkDel = mbqa_run_bulk_delete($moduleUrl, $cookieFile, $csrfIndex, $bulkIds);
+                $steps[] = mbqa_step_result('bulk_delete', $bulkDel['ok'], $bulkDel['note']);
+                $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+                $csrfIndex = mbqa_extract_csrf($index['body']);
+            } else {
+                $steps[] = mbqa_step_result('bulk_delete', true, 'N/A (no ids[] on index)');
+            }
+        } else {
+            $steps[] = mbqa_step_result(
+                'bulk_delete',
+                true,
+                $canBulk ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCount . ' rows < perPage ' . $perPage . ')'
+            );
+        }
+
+        if ($canBulk && is_file($deletePath) && $csrfIndex !== '') {
+            $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex);
+            $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
+        } else {
+            $steps[] = mbqa_step_result(
+                'clear_table',
+                true,
+                $canBulk ? 'N/A (no delete.php/csrf)' : 'N/A (' . $rowCount . ' rows < perPage ' . $perPage . ')'
+            );
+        }
 
         $results[] = [
             'module' => $slug,
