@@ -6,7 +6,7 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, adds 30 random tenant rows (add step),
  * then bulk_delete/clear_table when row count >= records_per_page.
- * Each Tier A module ends with HTTP sample_data (empty table), error_log check, and error_log.txt deletion.
+ * Each module starts by deleting error_log.txt; Tier A ends with HTTP sample_data (empty table) and error_log check.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -2192,6 +2192,9 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
     exit(1);
 }
 
+// Why: First action of the run — each module also deletes the log before its steps so errors are scoped per module.
+mbqa_delete_error_log_file();
+
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
     $orderedModules = ['expenses'];
@@ -2248,6 +2251,10 @@ foreach ($companiesToRun as $companyId) {
         $moduleUrl = $baseUrl . 'modules/' . rawurlencode($slug) . '/';
         $steps = [];
 
+        mbqa_delete_error_log_file();
+        $errorLogOffset = 0;
+        $steps[] = mbqa_step_result('error_log', true, 'deleted error_log.txt');
+
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
         $steps[] = mbqa_step_result('list', $listOk, $listOk ? '' : 'HTTP ' . $index['status']);
@@ -2269,7 +2276,8 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('bulk_delete', true, 'N/A');
             $steps[] = mbqa_step_result('clear_table', true, 'N/A');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
-            $steps[] = mbqa_step_result('error_log', true, 'N/A');
+            $errorLog = mbqa_read_error_log_since($errorLogOffset);
+            $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
             $results[] = [
                 'module' => $slug,
                 'company_id' => $companyId,
@@ -2289,7 +2297,8 @@ foreach ($companiesToRun as $companyId) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
             $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
-            $steps[] = mbqa_step_result('error_log', true, 'N/A');
+            $errorLog = mbqa_read_error_log_since($errorLogOffset);
+            $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
             $results[] = [
                 'module' => $slug,
                 'company_id' => $companyId,
@@ -2299,8 +2308,6 @@ foreach ($companiesToRun as $companyId) {
             ];
             continue;
         }
-
-        $errorLogOffset = mbqa_error_log_byte_offset();
 
         $csrfIndex = mbqa_extract_csrf($index['body']);
         $ids = mbqa_row_ids($index['body']);
@@ -2530,8 +2537,6 @@ foreach ($companiesToRun as $companyId) {
 
         $errorLog = mbqa_read_error_log_since($errorLogOffset);
         $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
-
-        mbqa_delete_error_log_file();
 
         $results[] = [
             'module' => $slug,
