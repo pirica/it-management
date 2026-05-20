@@ -177,6 +177,7 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
         'sort' => 'Default sort column may not be `id`',
         'clear' => 'FK constraints when parents cleared out of safe order',
         'sample_data' => 'Missing database.sql seed or FK parents',
+        'error_log' => 'PHP warnings/notices/fatals logged during module HTTP steps',
         'create' => 'Missing FK parents after clear',
         'view' => 'No rows after failed seed',
         'edit' => 'No rows after failed seed',
