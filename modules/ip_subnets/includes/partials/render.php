@@ -306,8 +306,8 @@
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
                     </p>
                 </div>
-                <?php require __DIR__ . '/subnet_view_stats.php'; ?>
-                <?php require __DIR__ . '/subnet_view_ips.php'; ?>
+                <?php require dirname(__DIR__, 2) . '/subnet_view_stats.php'; ?>
+                <?php require dirname(__DIR__, 2) . '/subnet_view_ips.php'; ?>
             <?php endif; ?>
         </div>
     </div>
