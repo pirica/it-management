@@ -6,6 +6,7 @@
  */
 
 require '../../config/config.php';
+require __DIR__ . '/delete_clear_table.php';
 
 /**
  * @return string|null Error message, or null when deleted successfully.
@@ -45,20 +46,9 @@ $companyId = (int)$company_id;
 $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 
 if ($bulkAction === 'clear_table') {
-    mysqli_begin_transaction($conn);
-    try {
-        if (!mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId)) {
-            throw new RuntimeException('Could not clear employee system access records: ' . mysqli_error($conn));
-        }
-
-        if (!mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
-            throw new RuntimeException('Could not delete all employees: ' . mysqli_error($conn));
-        }
-
-        mysqli_commit($conn);
-    } catch (Throwable $e) {
-        mysqli_rollback($conn);
-        $_SESSION['crud_error'] = $e->getMessage();
+    $clearTableError = employees_clear_table_for_company($conn, $companyId);
+    if ($clearTableError !== null) {
+        $_SESSION['crud_error'] = $clearTableError;
         header('Location: index.php');
         exit;
     }

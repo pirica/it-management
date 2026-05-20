@@ -7,6 +7,8 @@
 #   3. scripts/check_sql_injection_coverage.php
 #   4. scripts/check_index_table_compliance.php
 #   5. scripts/check_ui_configuration_coverage.php (optional; see SMOKE_SKIP_UI_CONFIG)
+#   6. scripts/check_employees_clear_table_transaction.php
+#   7. scripts/check_equipment_clear_table_delete.php
 #
 # Usage (from repository root):
 #   bash scripts/smoke_test.sh
@@ -27,7 +29,7 @@ echo "==> PHP binary: ${PHP_BIN}"
 "$PHP_BIN" -v
 echo
 
-echo "==> Step 1/5: PHP syntax lint (php -l)"
+echo "==> Step 1/7: PHP syntax lint (php -l)"
 lint_failed=0
 lint_count=0
 while IFS= read -r -d '' file; do
@@ -53,21 +55,36 @@ run_check() {
   echo
 }
 
-step_label="Step 2/5"
+step_label="Step 2/7"
 run_check "check_csrf_coverage.php"
 
-step_label="Step 3/5"
+step_label="Step 3/7"
 run_check "check_sql_injection_coverage.php"
 
-step_label="Step 4/5"
+step_label="Step 4/7"
 run_check "check_index_table_compliance.php"
 
-step_label="Step 5/5"
+step_label="Step 5/7"
 if [[ "${SMOKE_SKIP_UI_CONFIG:-0}" == "1" ]]; then
-  echo "==> Step 5/5: check_ui_configuration_coverage.php (skipped — SMOKE_SKIP_UI_CONFIG=1)"
+  echo "==> Step 5/7: check_ui_configuration_coverage.php (skipped — SMOKE_SKIP_UI_CONFIG=1)"
 else
   run_check "check_ui_configuration_coverage.php"
 fi
 # Excluded modules/prefixes: scripts/data/ui_configuration_excluded_modules.txt, ui_configuration_excluded_prefixes.txt
+
+step_label="Step 6/7"
+run_check "check_employees_clear_table_transaction.php"
+
+step_label="Step 7/7"
+run_check "check_equipment_clear_table_delete.php"
+
+if [[ "${SMOKE_RUN_DB_TESTS:-0}" == "1" ]]; then
+  echo "==> Optional DB regression: employees_delete_clear_table_test.php"
+  "$PHP_BIN" "$ROOT/scripts/employees_delete_clear_table_test.php"
+  echo
+  echo "==> Optional DB regression: equipment_delete_clear_table_test.php"
+  "$PHP_BIN" "$ROOT/scripts/equipment_delete_clear_table_test.php"
+  echo
+fi
 
 echo "==> All smoke tests passed."
