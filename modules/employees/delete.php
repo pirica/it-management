@@ -45,14 +45,20 @@ $companyId = (int)$company_id;
 $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 
 if ($bulkAction === 'clear_table') {
-    if (!mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId)) {
-        $_SESSION['crud_error'] = 'Could not clear employee system access records: ' . mysqli_error($conn);
-        header('Location: index.php');
-        exit;
-    }
+    mysqli_begin_transaction($conn);
+    try {
+        if (!mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $companyId)) {
+            throw new RuntimeException('Could not clear employee system access records: ' . mysqli_error($conn));
+        }
 
-    if (!mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
-        $_SESSION['crud_error'] = 'Could not delete all employees: ' . mysqli_error($conn);
+        if (!mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $companyId)) {
+            throw new RuntimeException('Could not delete all employees: ' . mysqli_error($conn));
+        }
+
+        mysqli_commit($conn);
+    } catch (Throwable $e) {
+        mysqli_rollback($conn);
+        $_SESSION['crud_error'] = $e->getMessage();
         header('Location: index.php');
         exit;
     }
