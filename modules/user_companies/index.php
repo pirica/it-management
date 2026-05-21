@@ -107,6 +107,13 @@ function cr_manageable_columns($columns) {
     }));
 }
 
+function cr_is_boolean_tinyint_column($col) {
+    $field = (string)($col['Field'] ?? '');
+    $type = (string)($col['Type'] ?? '');
+
+    return $field === 'active' || (bool)preg_match('/^tinyint(\(\d+\))?/i', $type);
+}
+
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -810,8 +817,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt) {
+        if (cr_is_boolean_tinyint_column($col)) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -1105,7 +1111,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = cr_is_boolean_tinyint_column($col);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');

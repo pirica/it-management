@@ -107,6 +107,13 @@ function cr_manageable_columns($columns) {
     }));
 }
 
+function cr_is_boolean_tinyint_column($col) {
+    $field = (string)($col['Field'] ?? '');
+    $type = (string)($col['Type'] ?? '');
+
+    return $field === 'active' || (bool)preg_match('/^tinyint(\(\d+\))?/i', $type);
+}
+
 function cr_humanize_field($field) {
     $label = trim((string)$field);
     if ($label === '') {
@@ -357,8 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
-        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        if ($isTinyInt || $name === 'active') {
+        if (cr_is_boolean_tinyint_column($col)) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -453,6 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         } else {
             $grantedByValue = $data['granted_by_user_id'] ?? 'NULL';
             $grantedBySql = ($grantedByValue === 'NULL' || $grantedByValue === '' || $grantedByValue === null) ? 'NULL' : (string)(int)$grantedByValue;
+            $activeSql = (int)($data['active'] ?? 1);
             $dbErrorCode = 0;
             $dbErrorMessage = '';
             mysqli_begin_transaction($conn);
@@ -460,7 +467,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $insertOk = true;
                 foreach ($postedCompanyIds as $companyId) {
-                    $insertSql = 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (' . $targetUserId . ',' . (int)$companyId . ',' . $grantedBySql . ')';
+                    $insertSql = 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id, active) VALUES ('
+                        . $targetUserId . ',' . (int)$companyId . ',' . $grantedBySql . ',' . $activeSql . ')';
                     if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
                         $insertOk = false;
                         break;
@@ -597,7 +605,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+                        $isTinyInt = cr_is_boolean_tinyint_column($col);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
@@ -623,7 +631,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                         <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
