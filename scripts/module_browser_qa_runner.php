@@ -1121,11 +1121,11 @@ function mbqa_runner_facade_routing_na_steps(): array
 }
 
 /**
- * Tier C equipment-type façades (modules/is_*) except is_switch (full matrix there).
+ * Tier C equipment-type façades (modules/is_*) — routing smoke only, not full CRUD matrix.
  */
 function mbqa_is_facade_routing_module(string $slug): bool
 {
-    return strpos($slug, 'is_') === 0 && $slug !== 'is_switch';
+    return strpos($slug, 'is_') === 0;
 }
 
 /**
@@ -1151,9 +1151,6 @@ function mbqa_runner_module_step_exceptions(): array
 
     $routingSteps = mbqa_runner_facade_routing_na_steps();
     foreach (itm_canonical_equipment_is_module_names() as $slug) {
-        if ($slug === 'is_switch') {
-            continue;
-        }
         $map[$slug] = array_merge($map[$slug] ?? [], $routingSteps);
     }
 

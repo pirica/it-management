@@ -300,7 +300,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 **Tiers (do not treat all failures alike):**
 
 * **Tier A** — standard flattened CRUD (`modules/<slug>/index.php`), **including Protection Zone** modules (full checklist; module *code* in Protection Zone is still edit-only per AGENTS unless requested).
-* **Tier C** — `is_*` façades: full matrix on `is_switch`; routing smoke on the rest.
+* **Tier C** — `is_*` façades (including `is_switch`): routing smoke on `list` / `search` / `sort`; other steps **N/A routing** in `mbqa_runner_module_step_exceptions()`.
 * **Tier D** — bespoke (`budget_report`, `floor_plans`, `rack_planner`, …): navigation smoke only.
 
 **Cursor browser:** Use IDE browser for the **Expenses pilot** (all five companies) and spot-checks; use the CLI runner for full ~101×5 coverage. Reports live under **`qa-reports/`** (commit dated `.md` + `.json` when publishing QA results).
