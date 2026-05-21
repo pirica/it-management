@@ -25,6 +25,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
+require_once __DIR__ . '/lib/mbqa_import_helpers.php';
 
 /**
  * @return array<int, string>
@@ -977,7 +978,10 @@ function mbqa_build_import_rows_from_export(array $exportRows): array
     }
 
     $template = $exportRows[1];
-    $newRow = $template;
+    $newRow = array_map(static function ($cell) {
+        $text = trim((string)$cell);
+        return strcasecmp($text, 'null') === 0 ? '' : $text;
+    }, $template);
     $suffix = date('YmdHis');
     foreach ($exportRows[0] as $i => $header) {
         $headerKey = strtolower(trim(preg_replace('/\s+/', ' ', (string)$header)));
@@ -1004,12 +1008,41 @@ function mbqa_build_import_rows_from_export(array $exportRows): array
 
 function mbqa_humanize_field_label(string $field): string
 {
+    if (function_exists('itm_humanize_field_name')) {
+        return itm_humanize_field_name($field);
+    }
+
     $label = preg_replace('/_id$/', '', trim($field));
     if ($label === 'id') {
         return 'ID';
     }
 
     return ucwords(str_replace('_', ' ', $label));
+}
+
+/**
+ * Aligns export-derived headers with flattened CRUD import fieldByLabel keys (itm_humanize_field_name / cr_humanize_field).
+ *
+ * @param array<int, array<int, string>> $importRows
+ * @return array<int, array<int, string>>
+ */
+function mbqa_align_import_headers_for_crud_import(mysqli $conn, string $table, array $importRows): array
+{
+    if (count($importRows) < 1 || !function_exists('itm_humanize_field_name') || !itm_is_safe_identifier($table)) {
+        return $importRows;
+    }
+
+    $columnNames = mbqa_table_column_names($conn, $table);
+    $headers = $importRows[0];
+    foreach ($headers as $i => $header) {
+        $col = mbqa_match_list_header_to_column((string)$header, $columnNames);
+        if ($col !== null) {
+            $headers[$i] = itm_humanize_field_name($col);
+        }
+    }
+    $importRows[0] = $headers;
+
+    return $importRows;
 }
 
 /**
@@ -1133,14 +1166,8 @@ function mbqa_database_sql_values_by_column(mysqli $conn, string $table, int $co
         }
 
         $valueToken = trim((string)($chosen['values'][$index] ?? ''), "'\"");
-        if (isset($fkMap[$columnName]) && function_exists('itm_fk_resolve_company_equivalent_id')) {
-            $storedFkId = (int)$valueToken;
-            if ($storedFkId > 0) {
-                $resolved = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$columnName], $companyId, $storedFkId);
-                if ($resolved > 0) {
-                    $valueToken = (string)$resolved;
-                }
-            }
+        if (isset($fkMap[$columnName])) {
+            $valueToken = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$columnName], $companyId, (int)$valueToken);
         }
 
         $key = strtolower(mbqa_humanize_field_label($columnName));
@@ -1221,7 +1248,16 @@ function mbqa_build_import_rows_from_db_template(mysqli $conn, string $table, in
         $rows = mbqa_unique_ip_subnets_import_row($conn, $companyId, $rows);
     }
 
-    return $rows;
+    return mbqa_align_import_headers_for_crud_import(
+        $conn,
+        $table,
+        mbqa_apply_unique_scope_to_import_rows(
+            $conn,
+            $table,
+            $companyId,
+            mbqa_ensure_import_row_tenant_fk_values($conn, $table, $companyId, $rows)
+        )
+    );
 }
 
 /**
@@ -1291,14 +1327,8 @@ function mbqa_build_import_rows_from_database_sql_seed(mysqli $conn, string $tab
         }
 
         $valueToken = trim((string)($chosen['values'][$index] ?? ''), "'\"");
-        if (isset($fkMap[$columnName]) && function_exists('itm_fk_resolve_company_equivalent_id')) {
-            $storedFkId = (int)$valueToken;
-            if ($storedFkId > 0) {
-                $resolved = itm_fk_resolve_company_equivalent_id($conn, $fkMap[$columnName], $companyId, $storedFkId);
-                if ($resolved > 0) {
-                    $valueToken = (string)$resolved;
-                }
-            }
+        if (isset($fkMap[$columnName])) {
+            $valueToken = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$columnName], $companyId, (int)$valueToken);
         }
 
         $key = strtolower(mbqa_humanize_field_label($columnName));
@@ -1324,7 +1354,16 @@ function mbqa_build_import_rows_from_database_sql_seed(mysqli $conn, string $tab
         $rows = mbqa_unique_ip_subnets_import_row($conn, $companyId, $rows);
     }
 
-    return $rows;
+    return mbqa_align_import_headers_for_crud_import(
+        $conn,
+        $table,
+        mbqa_apply_unique_scope_to_import_rows(
+            $conn,
+            $table,
+            $companyId,
+            mbqa_ensure_import_row_tenant_fk_values($conn, $table, $companyId, $rows)
+        )
+    );
 }
 
 /**
@@ -1485,7 +1524,10 @@ function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $compa
             $importRows = mbqa_unique_ip_subnets_import_row($conn, $companyId, $importRows);
         }
 
-        return $importRows;
+        $importRows = mbqa_align_import_headers_for_crud_import($conn, $table, $importRows);
+        $importRows = mbqa_ensure_import_row_tenant_fk_values($conn, $table, $companyId, $importRows);
+
+        return mbqa_apply_unique_scope_to_import_rows($conn, $table, $companyId, $importRows);
     }
 
     $sqlRows = mbqa_build_import_rows_from_database_sql_seed($conn, $table, $companyId);
@@ -1493,7 +1535,7 @@ function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $compa
         return $sqlRows;
     }
 
-    return [];
+    return mbqa_build_fallback_import_rows($conn, $table, $companyId);
 }
 
 /** Tables the runner must never wipe during FK prep or delete-retry clears (shared auth only). */

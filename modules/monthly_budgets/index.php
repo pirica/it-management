@@ -637,8 +637,10 @@ if ($isJsonImportRequest) {
                     continue;
                 }
 
-                $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$columnMeta['Type']);
-                if ($isTinyInt) {
+                // Why: month is tinyint unsigned (1–12), not a boolean; only active uses checkbox semantics on import.
+                $isBooleanTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$columnMeta['Type'])
+                    && ($fieldName === 'active' || preg_match('/^tinyint\(1\)/i', (string)$columnMeta['Type']));
+                if ($isBooleanTinyInt) {
                     $normalizedBool = strtolower($rawValue);
                     if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
                         $rowData[$fieldName] = '1';
