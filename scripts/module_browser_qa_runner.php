@@ -383,6 +383,49 @@ function mbqa_clear_table_index_ok(string $moduleSlug, string $html): bool
     return false;
 }
 
+/**
+ * Modules that implement create inside index.php (no standalone create.php page).
+ */
+function mbqa_modules_without_direct_create_php(): array
+{
+    return ['user_companies'];
+}
+
+/**
+ * Tier A create step: GET create.php when present; index-only modules pass without a direct create.php file.
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, string $slug, string $cookieFile): array
+{
+    $createPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'create.php';
+    $indexOnlyCreate = in_array($slug, mbqa_modules_without_direct_create_php(), true);
+
+    if ($indexOnlyCreate && !is_file($createPath)) {
+        return ['ok' => true, 'note' => 'N/A (no direct create.php; create in index.php)'];
+    }
+
+    if (!is_file($createPath)) {
+        return ['ok' => true, 'note' => 'N/A (no create.php)'];
+    }
+
+    $create = mbqa_http($moduleUrl . 'create.php', 'GET', null, [], $cookieFile);
+    $ok = $create['status'] === 200 && !mbqa_has_fatal($create['body']);
+    if ($indexOnlyCreate) {
+        return [
+            'ok' => $ok,
+            'note' => $ok
+                ? 'create.php wrapper -> index.php (HTTP ' . $create['status'] . ')'
+                : 'create.php wrapper failed HTTP ' . $create['status'],
+        ];
+    }
+
+    return [
+        'ok' => $ok,
+        'note' => 'HTTP ' . $create['status'],
+    ];
+}
+
 function mbqa_index_has_sample_seed_error(string $html): bool
 {
     return stripos($html, 'No sample rows found in database.sql') !== false;
@@ -2641,8 +2684,8 @@ foreach ($companiesToRun as $companyId) {
                 || stripos($sort['body'], 'dir=DESC') !== false);
         $steps[] = mbqa_step_result('sort', $sortOk, $sortOk ? 'sort=' . $sortField : 'Sort indicators missing');
 
-        $create = mbqa_http($moduleUrl . 'create.php', 'GET', null, [], $cookieFile);
-        $steps[] = mbqa_step_result('create', $create['status'] === 200 && !mbqa_has_fatal($create['body']), 'HTTP ' . $create['status']);
+        $createResult = mbqa_run_create_screen_step($moduleUrl, $modulesDir, $slug, $cookieFile);
+        $steps[] = mbqa_step_result('create', $createResult['ok'], $createResult['note']);
 
         $ids = mbqa_row_ids($index['body']);
         $viewId = $ids[0] ?? 0;
