@@ -284,6 +284,26 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
         }
 
         if ($field === 'company_id') {
+            $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+            if ($userId > 0) {
+                $sql = 'SELECT c.company
+                        FROM user_companies uc
+                        INNER JOIN companies c ON c.id = uc.company_id
+                        WHERE uc.user_id=' . $userId . '
+                        ORDER BY c.company ASC';
+                $res = mysqli_query($conn, $sql);
+                $companies = [];
+                while ($res && ($companyRow = mysqli_fetch_assoc($res))) {
+                    $companyName = trim((string)($companyRow['company'] ?? ''));
+                    if ($companyName !== '' && !in_array($companyName, $companies, true)) {
+                        $companies[] = $companyName;
+                    }
+                }
+                if (!empty($companies)) {
+                    return cr_format_company_list($companies);
+                }
+            }
+
             $sql = 'SELECT company FROM companies WHERE id=' . $id . ' LIMIT 1';
             $res = mysqli_query($conn, $sql);
             $companyRow = $res ? mysqli_fetch_assoc($res) : null;
