@@ -143,13 +143,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const intentRules = [
+        // Match visible label only — pagination hrefs include `search=` and must not become "Search".
+        { test: /^previous$/i, emoji: '◀️', label: 'Previous', source: 'visible' },
+        { test: /^next$/i, emoji: '▶️', label: 'Next', source: 'visible' },
         { test: /(delete|remove|trash)/i, emoji: '🗑️', label: 'Delete item' },
         { test: /(edit|update|modify)/i, emoji: '✏️', label: 'Edit item' },
         { test: /(view|details|open)/i, emoji: '👀', label: 'View details' },
         { test: /(create|add|new)/i, emoji: '➕', label: 'Add new item' },
         { test: /(save|submit|apply)/i, emoji: '💾', label: 'Save changes' },
         { test: /(logout|sign out)/i, emoji: '🚪', label: 'Log out' },
-        { test: /(search|find)/i, emoji: '🔎', label: 'Search' },
+        { test: /(search|find)/i, emoji: '🔎', label: 'Search', source: 'label' },
         { test: /(export|download)/i, emoji: '📤', label: 'Export data' },
         { test: /(import|upload)/i, emoji: '📥', label: 'Import data' },
         { test: /(back|return)/i, emoji: '↩️', label: 'Go back' },
@@ -171,8 +174,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const labelSignal = [visibleText, ariaText, valueText].join(' ').trim();
         const matched = intentRules.find(function (rule) {
-            return rule.test.test(signal);
+            const ruleSignal = rule.source === 'visible'
+                ? visibleText
+                : (rule.source === 'label' ? labelSignal : signal);
+            return ruleSignal !== '' && rule.test.test(ruleSignal);
         });
 
         if (matched) {

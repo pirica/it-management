@@ -311,11 +311,11 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                     <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1])); ?>">Previous</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1])); ?>" title="◀️ Previous">Previous</a>
                         <?php endif; ?>
                         <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1])); ?>">Next</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1])); ?>" title="▶️ Next">Next</a>
                         <?php endif; ?>
                     </div>
                 </div>
