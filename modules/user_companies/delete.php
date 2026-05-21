@@ -180,9 +180,29 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_is_qa_import_user_company_record($conn, $recordId) {
+    $recordId = (int)$recordId;
+    if ($recordId <= 0) {
+        return false;
+    }
+
+    $sql = 'SELECT u.username FROM user_companies uc '
+        . 'LEFT JOIN users u ON u.id = uc.user_id '
+        . 'WHERE uc.id=' . $recordId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    $username = strtolower(trim((string)($row['username'] ?? '')));
+
+    return $username !== '' && strncmp($username, 'qa-import-', 10) === 0;
+}
+
 function cr_is_admin_user_company_record($conn, $id) {
     $recordId = (int)$id;
     if ($recordId <= 0) {
+        return false;
+    }
+
+    if (cr_is_qa_import_user_company_record($conn, $recordId)) {
         return false;
     }
 
@@ -193,6 +213,20 @@ function cr_is_admin_user_company_record($conn, $id) {
     $res = mysqli_query($conn, $sql);
     $row = $res ? mysqli_fetch_assoc($res) : null;
     return isset($row['role_name']) && strcasecmp((string)$row['role_name'], 'Admin') === 0;
+}
+
+function cr_bulk_delete_selection_error($selectedCount, $deletableCount, $skippedAdminCount) {
+    if ($selectedCount === 0) {
+        return 'No records selected for deletion.';
+    }
+    if ($deletableCount > 0) {
+        return '';
+    }
+    if ($skippedAdminCount > 0) {
+        return 'The selected rows include Admin user assignments, which cannot be deleted from this screen. Deselect Admin rows and try again.';
+    }
+
+    return 'No deletable records were found for your selection.';
 }
 
 function cr_numeric_validation_error($field, $message) {
@@ -324,11 +358,19 @@ if ($crud_action === 'delete') {
             $ids = [];
         }
         $idList = [];
+        $selectedCount = 0;
+        $skippedAdminCount = 0;
         foreach ($ids as $rawId) {
             $id = (int)$rawId;
-            if ($id > 0 && !cr_is_admin_user_company_record($conn, $id)) {
-                $idList[$id] = $id;
+            if ($id <= 0) {
+                continue;
             }
+            $selectedCount++;
+            if (cr_is_admin_user_company_record($conn, $id)) {
+                $skippedAdminCount++;
+                continue;
+            }
+            $idList[$id] = $id;
         }
 
         if (!empty($idList)) {
@@ -339,9 +381,12 @@ if ($crud_action === 'delete') {
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            } elseif ($skippedAdminCount > 0) {
+                $_SESSION['crud_error'] = 'Deleted ' . count($idList) . ' record(s). '
+                    . $skippedAdminCount . ' Admin assignment(s) were skipped because they cannot be removed from this screen.';
             }
         } else {
-            $_SESSION['crud_error'] = 'No records selected for deletion.';
+            $_SESSION['crud_error'] = cr_bulk_delete_selection_error($selectedCount, 0, $skippedAdminCount);
         }
         header('Location: ' . $listUrl);
         exit;
