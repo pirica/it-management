@@ -189,9 +189,31 @@ function mbqa_print_help(): void
     if (!mbqa_is_cli_sapi()) {
         mbqa_out("Browser: open this script, submit the form with Run QA, or use query flags:\n");
         mbqa_out("  ?run=1&module=expenses&company=4\n");
-        mbqa_out("  ?run=1  (omit module/company or use empty values for ALL modules / ALL tenants)\n");
+        mbqa_out("  ?run=1  (omit module for ALL modules; company defaults to 1 in form, empty = ALL tenants)\n");
         echo '<p><a href="module_browser_qa_runner.php">← Back to runner form</a></p></main>';
     }
+}
+
+/**
+ * Selected company id for the browser form (&lt;select&gt;). Default **1** on first load; empty = ALL when user chose ALL.
+ */
+function mbqa_browser_form_company_selected(array $options): string
+{
+    if (array_key_exists('company', $_REQUEST)) {
+        $raw = trim((string)$_REQUEST['company']);
+        if ($raw === '' || strtolower($raw) === 'all') {
+            return '';
+        }
+        $id = (int)$raw;
+
+        return ($id >= 1 && $id <= 5) ? (string)$id : '1';
+    }
+
+    if ($options['company'] !== null && (int)$options['company'] > 0) {
+        return (string)(int)$options['company'];
+    }
+
+    return '1';
 }
 
 /**
@@ -207,9 +229,7 @@ function mbqa_render_browser_form(array $options): void
     $moduleSelected = ($options['module'] !== null && trim((string)$options['module']) !== '')
         ? trim((string)$options['module'])
         : '';
-    $companySelected = ($options['company'] !== null && (int)$options['company'] > 0)
-        ? (string)(int)$options['company']
-        : '';
+    $companySelected = mbqa_browser_form_company_selected($options);
     $pilotChecked = $options['pilot_only'] ? ' checked' : '';
     $moduleSlugs = $projectRoot !== '' ? mbqa_list_module_slugs($projectRoot) : [];
 

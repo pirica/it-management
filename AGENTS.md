@@ -132,10 +132,10 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 | Field | Control | Default |
 |--------|---------|---------|
 | **Module** | Select | **ALL (all modules)** — every `modules/<slug>/` with `index.php`; or one slug (e.g. `expenses`) |
-| **Company** | Select | **ALL (companies 1–5)** — TechCorp Global … Enterprise IT; or company id `1`–`5` |
+| **Company** | Select | **Default company `1` (TechCorp Global)**; **ALL (companies 1–5)** still available in the dropdown |
 | **Pilot only** | Checkbox | Off — when checked, runs **`expenses`** only (all selected companies) |
 
-CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for the same scope.
+CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for all modules / all tenants. Browser form defaults to company **1** unless the user selects **ALL**.
 
 **Markdown report (`module_browser_qa_build_report.php`):** after `php scripts/module_browser_qa_build_report.php`, the `.md` under `qa-reports/` includes:
 
