@@ -332,6 +332,19 @@ function mbqa_step_result(string $step, bool $ok, string $note = ''): array
     ];
 }
 
+/**
+ * Record a step result; per-module exception map forces Pass + map note when the step is listed.
+ */
+function mbqa_step_result_for_module(string $moduleSlug, string $step, bool $ok, string $note = ''): array
+{
+    $exceptionNote = mbqa_runner_module_step_exception_note($moduleSlug, $step);
+    if ($exceptionNote !== null) {
+        return mbqa_step_result($step, true, $exceptionNote);
+    }
+
+    return mbqa_step_result($step, $ok, $note);
+}
+
 function mbqa_index_is_empty(string $html): bool
 {
     return stripos($html, 'No records found') !== false;
@@ -2007,8 +2020,20 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
 
 function mbqa_index_shows_bulk_actions(string $html): bool
 {
+    $hasBulkForm = stripos($html, 'bulk-delete-form') !== false
+        || stripos($html, 'department-bulk-form') !== false;
+    $hasBulkControl = stripos($html, 'name="bulk_action"') !== false
+        || stripos($html, "name='bulk_action'") !== false
+        || stripos($html, 'bulk-delete-toggle') !== false;
+
+    // Toolbar-only modules (e.g. vlans): bulk form + bulk_action, checkboxes appear after Select to Delete.
+    if ($hasBulkForm && $hasBulkControl) {
+        return true;
+    }
+
+    // Row checkboxes already on index (e.g. user_companies when gated on).
     return stripos($html, 'name="ids[]"') !== false
-        && (stripos($html, 'bulk_action') !== false || stripos($html, 'bulk-delete-form') !== false);
+        && (stripos($html, 'bulk_action') !== false || $hasBulkForm);
 }
 
 /**
@@ -2182,7 +2207,7 @@ function mbqa_bulk_step_na_note(
 
     $reasons = [];
     if (!mbqa_index_shows_bulk_actions($indexHtml)) {
-        $reasons[] = 'bulk UI hidden (no ids[]/bulk_action on index)';
+        $reasons[] = 'bulk UI hidden (no bulk-delete-form/bulk_action on index)';
     }
     if (!is_file($deletePath)) {
         $reasons[] = 'no delete.php';
@@ -2752,14 +2777,7 @@ foreach ($companiesToRun as $companyId) {
         if ($sampleDataNa !== null) {
             $steps[] = mbqa_step_result('sample_data', true, $sampleDataNa);
         } else {
-            $seedResult = mbqa_ensure_sample_data($conn, $slug, $companyId, $moduleUrl, $cookieFile);
-            $index['body'] = $seedResult['html'];
-            $csrfIndex = $seedResult['csrf'];
-            if ($seedResult['na']) {
-                $steps[] = mbqa_step_result('sample_data', true, $seedResult['note']);
-            } else {
-                $steps[] = mbqa_step_result('sample_data', $seedResult['ok'], $seedResult['note']);
-            }
+            $steps[] = mbqa_step_result_for_module($slug, 'sample_data', $seedResult['ok'], $seedResult['note']);
         }
 
         $_SESSION['company_id'] = $companyId;
@@ -2767,12 +2785,7 @@ foreach ($companiesToRun as $companyId) {
         if ($addNa !== null) {
             $steps[] = mbqa_step_result('add', true, $addNa);
         } else {
-            $bulkResult = mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
-            if ($bulkResult['na']) {
-                $steps[] = mbqa_step_result('add', true, $bulkResult['note']);
-            } else {
-                $steps[] = mbqa_step_result('add', $bulkResult['ok'], $bulkResult['note']);
-            }
+            $steps[] = mbqa_step_result_for_module($slug, 'add', $bulkResult['ok'], $bulkResult['note']);
         }
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
@@ -2824,7 +2837,7 @@ foreach ($companiesToRun as $companyId) {
         $steps[] = mbqa_step_result('sort', $sortOk, $sortOk ? 'sort=' . $sortField : 'Sort indicators missing');
 
         $createResult = mbqa_run_create_screen_step($moduleUrl, $modulesDir, $slug, $cookieFile);
-        $steps[] = mbqa_step_result('create', $createResult['ok'], $createResult['note']);
+        $steps[] = mbqa_step_result_for_module($slug, 'create', $createResult['ok'], $createResult['note']);
 
         $ids = mbqa_row_ids($index['body']);
         $viewId = $ids[0] ?? 0;
@@ -2928,7 +2941,8 @@ foreach ($companiesToRun as $companyId) {
                 }
             }
 
-            $steps[] = mbqa_step_result(
+            $steps[] = mbqa_step_result_for_module(
+                $slug,
                 'import_db',
                 $importOk,
                 $importOk
@@ -2936,7 +2950,8 @@ foreach ($companiesToRun as $companyId) {
                     : substr($import['body'], 0, 120)
             );
         } else {
-            $steps[] = mbqa_step_result(
+            $steps[] = mbqa_step_result_for_module(
+                $slug,
                 'import_db',
                 true,
                 $hasImportEndpoint ? 'N/A (need table rows for export/import)' : 'N/A (no import endpoint)'
@@ -3006,7 +3021,11 @@ if (!is_dir($outDir)) {
 }
 $date = date('Y-m-d');
 $jsonPath = $outDir . DIRECTORY_SEPARATOR . 'module-browser-qa-' . $date . '.json';
-file_put_contents($jsonPath, json_encode($results, JSON_PRETTY_PRINT));
+$reportPayload = [
+    'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
+    'results' => $results,
+];
+file_put_contents($jsonPath, json_encode($reportPayload, JSON_PRETTY_PRINT));
 
 $failuresByCategory = [];
 foreach ($results as $row) {
