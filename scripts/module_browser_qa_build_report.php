@@ -93,6 +93,77 @@ function mbqar_print_help(): void
 /**
  * @param array{run:bool, help:bool, date:string} $options
  */
+/**
+ * Browser URL to re-run the QA runner with the same scope as the JSON report.
+ *
+ * @param array<string, mixed> $payload Decoded runner JSON (results + optional run_options).
+ */
+function mbqar_rerun_runner_href(array $payload): string
+{
+    $params = ['run' => '1'];
+    $opts = $payload['run_options'] ?? null;
+
+    if (!is_array($opts)) {
+        $modules = [];
+        $companies = [];
+        $rows = $payload['results'] ?? [];
+        if (!is_array($rows)) {
+            $rows = is_array($payload) && isset($payload[0]) ? $payload : [];
+        }
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $slug = (string)($row['module'] ?? '');
+            if ($slug === '' || $slug === '_preflight') {
+                continue;
+            }
+            $modules[$slug] = true;
+            $companyId = (int)($row['company_id'] ?? 0);
+            if ($companyId > 0) {
+                $companies[$companyId] = true;
+            }
+        }
+        $moduleList = array_keys($modules);
+        sort($moduleList, SORT_STRING);
+        $companyList = array_keys($companies);
+        sort($companyList, SORT_NUMERIC);
+        if (count($moduleList) === 1) {
+            $params['module'] = $moduleList[0];
+        }
+        if (count($companyList) === 1) {
+            $params['company'] = (string)$companyList[0];
+        }
+        if (count($moduleList) === 1
+            && $moduleList[0] === 'expenses'
+            && count($companyList) === 5) {
+            $params['pilot_only'] = '1';
+            unset($params['module']);
+        }
+
+        return 'module_browser_qa_runner.php?' . http_build_query($params);
+    }
+
+    $module = $opts['module'] ?? null;
+    if (is_string($module) && trim($module) !== '') {
+        $params['module'] = trim($module);
+    }
+    $company = $opts['company'] ?? null;
+    if ($company !== null && (int)$company > 0) {
+        $params['company'] = (string)(int)$company;
+    }
+    if (!empty($opts['pilot_only'])) {
+        $params['pilot_only'] = '1';
+        unset($params['module']);
+    }
+    $baseUrl = trim((string)($opts['base_url'] ?? ''));
+    if ($baseUrl !== '' && $baseUrl !== 'http://localhost/it-management/') {
+        $params['base_url'] = $baseUrl;
+    }
+
+    return 'module_browser_qa_runner.php?' . http_build_query($params);
+}
+
 function mbqar_render_browser_form(array $options): void
 {
     header('Content-Type: text/html; charset=utf-8');
@@ -351,11 +422,17 @@ if (!is_array($data)) {
 }
 
 $runnerRows = $data;
+$reportPayload = $data;
 if (isset($data['results']) && is_array($data['results'])) {
     $runnerRows = $data['results'];
+    $reportPayload = $data;
+} elseif (is_array($data) && isset($data[0])) {
+    $runnerRows = $data;
+    $reportPayload = ['results' => $data];
 }
 
 $built = mbqar_build_markdown($root, $date, $runnerRows, is_array($data['module_step_exceptions'] ?? null) ? $data['module_step_exceptions'] : []);
+$rerunHref = mbqar_rerun_runner_href($reportPayload);
 file_put_contents($built['out_path'], $built['md']);
 
 if (mbqar_is_cli_sapi()) {
@@ -373,6 +450,7 @@ echo '(from <code>' . htmlspecialchars(basename($built['json_path']), ENT_QUOTES
 $mdRel = '../qa-reports/module-browser-qa-' . $date . '.md';
 echo '<p><a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a> · ';
 echo '<a href="module_browser_qa_build_report.php">Build another date</a> · ';
+echo '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a> · ';
 echo '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';
 echo '<h2>Preview</h2>';
 echo '<pre style="background:#f6f8fa;border:1px solid #d0d7de;padding:12px;overflow:auto;max-height:70vh;font-size:12px;">';
