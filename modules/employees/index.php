@@ -729,7 +729,9 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
             };
             reader.readAsArrayBuffer(file);
         } else {
-            alert('Unsupported file type.'); fileInput.value = '';
+            alert('Unsupported file type.');
+            fileInput.value = '';
+            payloadInput.value = '';
         }
     });
 
