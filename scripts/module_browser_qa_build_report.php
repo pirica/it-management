@@ -122,6 +122,7 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
     $pass = 0;
     $fail = 0;
     $failRows = [];
+    $moduleRows = [];
     $pilotRows = [];
     $preflight = [];
 
@@ -130,6 +131,7 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
             $preflight[] = $row;
             continue;
         }
+        $moduleRows[] = $row;
         foreach ($row['steps'] as $step) {
             if (($step['status'] ?? '') === 'Pass') {
                 $pass++;
@@ -168,6 +170,7 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
     $md .= "- Auth: Admin / Admin\n";
     $md .= "- Companies: 5 (TechCorp Global … Enterprise IT)\n";
     $md .= "- Step outcomes: **{$pass} Pass**, **{$fail} Fail**\n";
+    $md .= '- Modules in this report: ' . count($moduleRows) . "\n";
     $md .= "- Runner: `php scripts/module_browser_qa_runner.php` or browser form at `scripts/module_browser_qa_runner.php`\n";
     $md .= "- Bulk delete / Clear table: N/A when row count &lt; `records_per_page` (25)\n\n";
 
@@ -194,6 +197,28 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
         $md .= '| ' . (int)$pf['company_id'] . ' | ' . ($pf['company_name'] ?? '') . ' | ' . $st . " |\n";
     }
 
+    $md .= "\n## Results by module (Pass and Fail)\n\n";
+    if (empty($moduleRows)) {
+        $md .= "_No module rows in JSON._\n";
+    } else {
+        foreach ($moduleRows as $moduleRow) {
+            $md .= '### ' . ($moduleRow['module'] ?? '') . ' — company ' . (int)($moduleRow['company_id'] ?? 0);
+            $companyName = trim((string)($moduleRow['company_name'] ?? ''));
+            if ($companyName !== '') {
+                $md .= ' (' . $companyName . ')';
+            }
+            $md .= "\n\n| Step | Status | Notes |\n|---|---|---|\n";
+            foreach ($moduleRow['steps'] as $step) {
+                $note = str_replace('|', '/', (string)($step['notes'] ?? ''));
+                if (strlen($note) > 160) {
+                    $note = substr($note, 0, 157) . '...';
+                }
+                $md .= '| ' . ($step['step'] ?? '') . ' | ' . ($step['status'] ?? '') . ' | ' . $note . " |\n";
+            }
+            $md .= "\n";
+        }
+    }
+
     if (!empty($pilotRows)) {
         $md .= "\n## Expenses pilot (5 companies)\n\n";
         foreach ($pilotRows as $pr) {
@@ -206,7 +231,7 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
         }
     }
 
-    $md .= "## Failures (all modules)\n\n";
+    $md .= "## Failures only (quick index)\n\n";
     if (empty($failRows)) {
         $md .= "_No failures recorded._\n";
     } else {
