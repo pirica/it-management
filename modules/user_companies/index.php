@@ -143,17 +143,95 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
-function cr_resolve_company_id_by_name($conn, $companyName) {
-    $companyName = trim((string)$companyName);
-    if ($companyName === '') {
-        return 0;
+/**
+ * uq_user_companies_company_scope allows one row per company + user; pick a user not yet linked when import would duplicate.
+ */
+function cr_pick_free_user_id_for_company_scope($conn, int $companyId, int $preferredUserId): int
+{
+    if ($companyId <= 0) {
+        return $preferredUserId > 0 ? $preferredUserId : 0;
     }
 
-    $sql = 'SELECT id FROM companies WHERE company=\'' . mysqli_real_escape_string($conn, $companyName) . '\' LIMIT 1';
+    if ($preferredUserId > 0) {
+        $checkSql = 'SELECT 1 FROM user_companies WHERE company_id=' . (int)$companyId
+            . ' AND user_id=' . (int)$preferredUserId . ' LIMIT 1';
+        $checkRes = mysqli_query($conn, $checkSql);
+        if ($checkRes && mysqli_num_rows($checkRes) === 0) {
+            return $preferredUserId;
+        }
+    }
+
+    $pickSql = 'SELECT u.id FROM users u
+        WHERE u.active = 1
+          AND NOT EXISTS (
+              SELECT 1 FROM user_companies uc
+              WHERE uc.company_id = ' . (int)$companyId . ' AND uc.user_id = u.id
+          )
+        ORDER BY u.id ASC
+        LIMIT 1';
+    $pickRes = mysqli_query($conn, $pickSql);
+    $pickRow = $pickRes ? mysqli_fetch_assoc($pickRes) : null;
+
+    return is_array($pickRow) ? (int)($pickRow['id'] ?? 0) : 0;
+}
+
+function cr_import_user_display_label($conn, int $userId): string
+{
+    if ($userId <= 0) {
+        return 'Unknown user';
+    }
+
+    $sql = 'SELECT username, first_name, last_name FROM users WHERE id=' . (int)$userId . ' LIMIT 1';
     $res = mysqli_query($conn, $sql);
     $row = $res ? mysqli_fetch_assoc($res) : null;
+    if (!is_array($row)) {
+        return 'User #' . $userId;
+    }
 
-    return (int)($row['id'] ?? 0);
+    $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+    if ($fullName !== '') {
+        return $fullName;
+    }
+
+    $username = trim((string)($row['username'] ?? ''));
+    return $username !== '' ? $username : ('User #' . $userId);
+}
+
+function cr_user_companies_scope_link_exists($conn, int $companyId, int $userId): bool
+{
+    if ($companyId <= 0 || $userId <= 0) {
+        return false;
+    }
+
+    $sql = 'SELECT 1 FROM user_companies WHERE company_id=' . (int)$companyId
+        . ' AND user_id=' . (int)$userId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+
+    return (bool)($res && mysqli_num_rows($res) > 0);
+}
+
+function cr_format_user_companies_import_row_error($conn, int $spreadsheetRow, int $userId, int $dbCode, string $dbMsg): string
+{
+    $prefix = 'Row ' . $spreadsheetRow . ': ';
+
+    if ($userId > 0 && (
+        (int)$dbCode === 1062
+        || stripos($dbMsg, 'uq_user_companies_company_scope') !== false
+        || stripos($dbMsg, 'Duplicate entry') !== false
+    )) {
+        return $prefix . '"' . cr_import_user_display_label($conn, $userId)
+            . '" is already linked to this company. Each user can only be assigned once per company.';
+    }
+
+    if ($userId <= 0) {
+        return $prefix . 'Could not resolve a user from the spreadsheet. Choose a valid User value or add another active user.';
+    }
+
+    $human = function_exists('itm_format_db_constraint_error')
+        ? itm_format_db_constraint_error($dbCode, $dbMsg)
+        : trim($dbMsg);
+
+    return $prefix . ($human !== '' ? $human : 'This row could not be saved.');
 }
 
 function cr_format_company_list($companies) {
@@ -388,6 +466,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         }
 
         $insertedRows = 0;
+        $failedRows = 0;
+        $importErrors = [];
+        $maxImportErrors = 8;
+
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -415,12 +497,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 }
 
                 if ($fieldName === 'company_id') {
-                    if ($rawValue !== '') {
-                        $resolvedCompanyId = cr_resolve_company_id_by_name($conn, $rawValue);
-                        if ($resolvedCompanyId > 0) {
-                            $rowData['company_id'] = (string)$resolvedCompanyId;
-                        }
-                    }
+                    // Why: imports must stay on the active tenant; spreadsheet Company values are ignored.
                     continue;
                 }
 
@@ -463,8 +540,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
             }
 
-            if ($hasCompany && ($rowData['company_id'] ?? 'NULL') === 'NULL') {
+            if ($hasCompany) {
                 $rowData['company_id'] = (string)(int)$company_id;
+            }
+
+            $spreadsheetRow = $rowIndex + 1;
+            $effectiveUserId = (int)($rowData['user_id'] ?? 0);
+
+            if (($GLOBALS['crud_table'] ?? '') === 'user_companies') {
+                $scopeCompanyId = $hasCompany ? (int)$company_id : 0;
+                $preferredUserId = $effectiveUserId;
+                $resolvedUserId = cr_pick_free_user_id_for_company_scope($conn, $scopeCompanyId, $preferredUserId);
+
+                if ($resolvedUserId <= 0) {
+                    $failedRows++;
+                    if (count($importErrors) < $maxImportErrors) {
+                        if ($preferredUserId > 0) {
+                            $importErrors[] = 'Row ' . $spreadsheetRow . ': "'
+                                . cr_import_user_display_label($conn, $preferredUserId)
+                                . '" is already linked to this company and no other active user is available to assign.';
+                        } else {
+                            $importErrors[] = 'Row ' . $spreadsheetRow
+                                . ': No unlinked active user is available for this company. Add a user or remove an existing company link first.';
+                        }
+                    }
+                    continue;
+                }
+
+                $rowData['user_id'] = (string)$resolvedUserId;
+                $effectiveUserId = $resolvedUserId;
+
+                if ($scopeCompanyId > 0 && cr_user_companies_scope_link_exists($conn, $scopeCompanyId, $effectiveUserId)) {
+                    $failedRows++;
+                    if (count($importErrors) < $maxImportErrors) {
+                        $importErrors[] = cr_format_user_companies_import_row_error(
+                            $conn,
+                            $spreadsheetRow,
+                            $effectiveUserId,
+                            1062,
+                            'uq_user_companies_company_scope'
+                        );
+                    }
+                    continue;
+                }
             }
 
             $fields = [];
@@ -476,13 +594,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             }
 
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
-            $dbErrorCode = 0; $dbErrorMessage = '';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+            } else {
+                $failedRows++;
+                if (count($importErrors) < $maxImportErrors) {
+                    if (($GLOBALS['crud_table'] ?? '') === 'user_companies') {
+                        $importErrors[] = cr_format_user_companies_import_row_error(
+                            $conn,
+                            $spreadsheetRow,
+                            $effectiveUserId,
+                            $dbErrorCode,
+                            $dbErrorMessage
+                        );
+                    } else {
+                        $importErrors[] = 'Row ' . $spreadsheetRow . ': '
+                            . (function_exists('itm_format_db_constraint_error')
+                                ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                                : 'This row could not be saved.');
+                    }
+                }
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        $warning = '';
+        $errorSummary = '';
+        if ($failedRows > 0 && count($importErrors) > 0) {
+            $errorSummary = (string)$importErrors[0];
+            if ($failedRows > 1) {
+                $errorSummary .= ' (' . $failedRows . ' row(s) could not be saved.)';
+            }
+        } elseif ($insertedRows === 0) {
+            $errorSummary = 'No rows could be saved. Check the User column and ensure each user is not already linked to this company.';
+        }
+
+        if ($insertedRows > 0 && $failedRows > 0) {
+            $warning = $failedRows . ' row(s) could not be saved.';
+            if (count($importErrors) > 0) {
+                $warning .= ' ' . $importErrors[0];
+            }
+        }
+
+        echo json_encode([
+            'ok' => true,
+            'inserted' => $insertedRows,
+            'failed' => $failedRows,
+            'errors' => $importErrors,
+            'error' => $insertedRows === 0 ? $errorSummary : '',
+            'warning' => $warning,
+        ]);
         exit;
     }
 }

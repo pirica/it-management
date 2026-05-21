@@ -313,9 +313,49 @@
 
         const inserted = Number(payload.inserted || 0);
         const failed = Number(payload.failed || 0);
-        const warning = payload.warning ? `\nNote: ${payload.warning}` : '';
-        const failedLabel = failed > 0 ? ` ${failed} row(s) failed.` : '';
-        window.alert(`Import completed. ${inserted} row(s) saved.${failedLabel}${warning}`);
+        const rowErrors = Array.isArray(payload.errors) ? payload.errors.filter(Boolean) : [];
+        const detailLines = rowErrors.length > 0
+            ? rowErrors.slice(0, 5).join('\n')
+            : String(payload.error || payload.warning || '').trim();
+        const notifyError = window.itmNotifyError || window.itmNotifyAjaxError;
+        const notifySuccess = window.itmNotifySuccess;
+
+        if (inserted === 0) {
+            const message = detailLines
+                || 'No rows could be saved. Review the file for duplicate values or missing required fields.';
+            if (notifyError) {
+                notifyError(message);
+            } else {
+                window.alert(message);
+            }
+            return true;
+        }
+
+        const successLead = `Import completed. ${inserted} row(s) saved.`;
+        if (failed > 0) {
+            const failureLead = `${failed} row(s) could not be saved.`;
+            const failureDetail = detailLines || String(payload.warning || '').trim();
+            if (notifySuccess) {
+                notifySuccess(successLead);
+            }
+            if (notifyError) {
+                notifyError(failureDetail ? `${failureLead}\n${failureDetail}` : failureLead);
+            } else {
+                window.alert(`${successLead}\n${failureLead}${failureDetail ? `\n${failureDetail}` : ''}`);
+            }
+        } else if (payload.warning) {
+            const message = `${successLead}\nNote: ${payload.warning}`;
+            if (notifySuccess) {
+                notifySuccess(message);
+            } else {
+                window.alert(message);
+            }
+        } else if (notifySuccess) {
+            notifySuccess(successLead);
+        } else {
+            window.alert(successLead);
+        }
+
         window.location.reload();
         return true;
     }
