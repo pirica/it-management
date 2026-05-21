@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
+require_once __DIR__ . '/lib/utf8_file.php';
 
 /**
  * @return array{run:bool, help:bool, date:string}
@@ -573,7 +574,8 @@ if (isset($data['results']) && is_array($data['results'])) {
 
 $built = mbqar_build_markdown($root, $date, $runnerRows, is_array($data['module_step_exceptions'] ?? null) ? $data['module_step_exceptions'] : []);
 $rerunHref = mbqar_rerun_runner_href($reportPayload);
-file_put_contents($built['out_path'], $built['md']);
+// BOM helps Windows Notepad/openers detect UTF-8; file content remains UTF-8 (see AGENTS.md).
+itm_write_utf8_text_file($built['out_path'], $built['md'], true);
 
 if (mbqar_is_cli_sapi()) {
     mbqar_out("Wrote {$built['out_path']}\n");

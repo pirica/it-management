@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
+require_once __DIR__ . '/lib/utf8_file.php';
 
 /**
  * @return array<int, string>
@@ -3633,7 +3634,8 @@ $reportPayload = [
     ],
     'results' => $results,
 ];
-file_put_contents($jsonPath, json_encode($reportPayload, JSON_PRETTY_PRINT));
+$jsonFlags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+itm_write_utf8_text_file($jsonPath, json_encode($reportPayload, $jsonFlags), true);
 
 $failuresByCategory = [];
 foreach ($results as $row) {
