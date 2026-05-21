@@ -152,15 +152,12 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 **Markdown report (`module_browser_qa_build_report.php`):** after `php scripts/module_browser_qa_build_report.php`, the `.md` under `qa-reports/` includes:
 
 1. **Summary** — pass/fail counts  
-2. **Results by module** — full step table per module × company  
-3. **Failures only (quick index)** — compact table for triage:
-
-| Module | Co | Step | Notes |
-|---|---|---|---|
-| idfs | 1 | pagination | page=1 missing Page 1 of N footer |
-| idfs | 1 | search | search input missing in HTML |
-
-4. **Pass only (quick index)** — same columns for every **Pass** step (truncated at 500 rows; failures index truncated at 200). Use this block to confirm HTML contract steps (pagination, bulk_cancel, import_db, etc.) without scrolling the full per-module sections.
+2. **Skipped steps** — table of `module_step_exceptions` (module, step slug, plain-language label, reason)  
+3. **Failure summary (by step)** — fail count, **Typical cause** (all Tier A steps), and **This run** (parsed from the first matching failure note, e.g. `position_no` out of range for `add`)  
+4. **Preflight (company switch)** — company id/name, **OK** / **Failed**, short notes  
+5. **Results by module** — per-step tables with slug, label, **OK**/**Failed**, notes  
+6. **Failures only (quick index)** — compact table for triage (`Module | Co | Step | Label | Notes`)  
+7. **Pass only (quick index)** — same columns for every **Pass** step (truncated at 500 rows; failures index truncated at 200)
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
