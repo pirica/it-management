@@ -69,6 +69,30 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 **Agents:** never replace `—` / `…` / emoji with ASCII substitutes just to avoid display glitches in one tool; preserve UTF-8 and document viewer settings.
 
+### PR descriptions: shell / quoting corruption (not repo encoding)
+
+GitHub PR titles and bodies are often pasted from the shell (`gh pr create`, `gh pr edit`). On **Windows PowerShell**, inline `--body "..."` strings can **mangle** backticks, `$variables`, and step names before GitHub ever sees them. That is **shell/quoting corruption**, not a UTF-8 or repository encoding defect — do not “fix” it by re-encoding `AGENTS.md` or source files.
+
+| What you see on GitHub | What it usually means |
+|---|---|
+| `\dd` or `^Gdd` instead of `add` | PowerShell ate or escaped backticks around `add` |
+| `\ulk_delete` instead of `bulk_delete` | Leading `b` dropped with broken `` ` `` escaping |
+| `\\ >= \\` instead of `$totalRows >= $perPage` | `$` expanded or stripped in the shell |
+| Doubled backslashes before step slugs (`\list\`) | Escaped markdown backticks in a quoted string |
+
+**Mandatory workflow (agents):**
+
+1. Write the PR body to a **UTF-8** file in the repo (e.g. `.pr-body-tmp.md` — do not commit; add to `.gitignore` if the file is kept locally).
+2. Create or update the PR with **`--body-file`**, not inline `--body`:
+   ```bash
+   gh pr create --title "Short title" --body-file .pr-body-tmp.md
+   gh pr edit <number> --body-file .pr-body-tmp.md
+   ```
+3. **Verify on GitHub** before marking the PR ready: `gh pr view <number> --json body` and open the PR in the browser — step slugs (`add`, `bulk_delete`, `bulk_cancel`, `list`) and PHP snippets must read literally.
+4. If the body is wrong, **`gh pr edit --body-file`** again; do not stack “fixes” as extra broken inline `--body` strings.
+
+On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `$`, or `>=`. Treat garbled PR text as a **process** bug until verified with step 3.
+
 ## 📂 Directory Map
 * `config/`: Core settings and `config.php`.
 * `includes/`: UI components (headers, sidebars) and utility functions.
@@ -531,6 +555,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * After merge of PR #N, **do not push more commits to that branch**; the next task uses a **new branch name** and **`gh pr create`** (new PR number).
   * If GitHub reports merge conflicts on an open PR, prefer **`git fetch origin master`**, rebase or recreate the branch from `master`, and force-push **only while that PR is still open** — or **close the conflicted PR** and open a **fresh PR** from a clean branch (user default: **fresh PR**).
   * Before `gh pr create`, confirm `git log origin/master..HEAD` contains only commits for the current deliverable.
+  * **PR body encoding check:** use `gh pr create --body-file` (see **PR descriptions: shell / quoting corruption** under Character encoding). After create/edit, run `gh pr view <number> --json body` or open the PR on GitHub — if step names or `$variables` look corrupted, fix with `gh pr edit --body-file`; that is shell quoting, not a repo UTF-8 issue.
 * **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
   * `php -l` on every touched `.php` file.
   * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
