@@ -349,11 +349,14 @@ function mbqa_browser_progress_emit(string $step): void
         $root = (string)($GLOBALS['mbqa_project_root'] ?? '');
         $runId = mbqa_browser_ajax_run_id();
         if ($root !== '' && $runId !== '') {
+            // Why: Do not overwrite ajax=cancel "cancelling" with "running" until the loop exits.
+            $progressStatus = mbqa_ajax_is_cancelled($root, $runId) ? 'cancelling' : 'running';
             mbqa_browser_ajax_write_progress($root, $runId, [
-                'status' => 'running',
+                'status' => $progressStatus,
                 'company_id' => $companyId,
                 'module' => $module,
                 'step' => $step,
+                'message' => $progressStatus === 'cancelling' ? 'Stop requested' : '',
             ]);
         }
     }
@@ -633,7 +636,7 @@ function mbqa_render_browser_form(array $options): void
   var activeRunId = '';
   var runActive = false;
   var cancellingSince = 0;
-  var CANCELLING_STALE_MS = 20000;
+  var CANCELLING_STALE_MS = 8000;
 
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -820,10 +823,7 @@ function mbqa_render_browser_form(array $options): void
       })
       .catch(function (err) {
         if (err.name === 'AbortError') {
-          statusEl.textContent = 'Stopping QA\u2026';
-          if (stopBtn) {
-            stopBtn.disabled = true;
-          }
+          applyProgress({ status: 'cancelling', message: 'Stop requested' });
           return;
         }
         statusEl.textContent = 'QA run failed: ' + err.message;
