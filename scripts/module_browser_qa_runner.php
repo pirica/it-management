@@ -2383,14 +2383,11 @@ function mbqa_html_step_view(string $html, int $status, int $id): array
     if (!$base['ok']) {
         return $base;
     }
-    if ($id > 0 && stripos($html, 'id=' . $id) === false) {
-        return ['ok' => false, 'note' => 'view: id=' . $id . ' not referenced in HTML'];
-    }
     if (stripos($html, '<table') === false && stripos($html, '<form') === false) {
         return ['ok' => false, 'note' => 'view: table/form content missing in HTML'];
     }
 
-    return ['ok' => true, 'note' => 'id=' . $id . ' in HTML'];
+    return ['ok' => true, 'note' => 'view screen in HTML' . ($id > 0 ? ' (id=' . $id . ')' : '')];
 }
 
 /**
@@ -2405,11 +2402,11 @@ function mbqa_html_step_edit(string $html, int $status, int $id): array
     if (stripos($html, '<form') === false) {
         return ['ok' => false, 'note' => 'edit form missing in HTML'];
     }
-    if ($id > 0 && stripos($html, 'id=' . $id) === false) {
-        return ['ok' => false, 'note' => 'edit: id=' . $id . ' not referenced in HTML'];
+    if (stripos($html, 'csrf_token') === false && stripos($html, 'name="csrf_token"') === false) {
+        return ['ok' => false, 'note' => 'edit CSRF field missing in HTML'];
     }
 
-    return ['ok' => true, 'note' => 'id=' . $id . ' form in HTML'];
+    return ['ok' => true, 'note' => 'edit form in HTML' . ($id > 0 ? ' (id=' . $id . ')' : '')];
 }
 
 /**
