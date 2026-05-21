@@ -631,6 +631,9 @@ function mbqa_render_browser_form(array $options): void
   var pollTimer = null;
   var runAbort = null;
   var activeRunId = '';
+  var runActive = false;
+  var cancellingSince = 0;
+  var CANCELLING_STALE_MS = 20000;
 
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -685,11 +688,47 @@ function mbqa_render_browser_form(array $options): void
   }
 
   function isTerminalProgressStatus(status) {
-    return status === 'done' || status === 'error' || status === 'cancelled' || status === 'cancelling';
+    return status === 'done' || status === 'error' || status === 'cancelled';
+  }
+
+  function releaseRunUi() {
+    runActive = false;
+    cancellingSince = 0;
+    activeRunId = '';
+    btn.disabled = false;
+    if (stopBtn) {
+      stopBtn.disabled = true;
+    }
   }
 
   function applyProgress(ev) {
     statusEl.style.display = 'block';
+    if (ev.status === 'cancelling') {
+      if (!cancellingSince) {
+        cancellingSince = Date.now();
+      }
+      statusEl.textContent = progressLabel(ev);
+      btn.disabled = true;
+      if (stopBtn) {
+        stopBtn.disabled = true;
+      }
+      if (Date.now() - cancellingSince >= CANCELLING_STALE_MS) {
+        stopPolling();
+        showFooter({
+          status: 'cancelled',
+          pass: ev.pass !== undefined ? ev.pass : 0,
+          fail: ev.fail !== undefined ? ev.fail : 0,
+          exit_code: ev.exit_code !== undefined ? ev.exit_code : 130,
+          json_href: ev.json_href,
+          report_href: ev.report_href,
+          rerun_href: ev.rerun_href
+        });
+        statusEl.textContent = 'Stopped';
+        releaseRunUi();
+      }
+      return;
+    }
+    cancellingSince = 0;
     statusEl.textContent = progressLabel(ev);
     if (!isTerminalProgressStatus(ev.status)) {
       return;
@@ -697,25 +736,10 @@ function mbqa_render_browser_form(array $options): void
     stopPolling();
     if (ev.status === 'done' || ev.status === 'cancelled') {
       showFooter(ev);
-    } else if (ev.status === 'cancelling') {
-      // Why: Stop before the run request is accepted leaves only status=cancelling; UI must recover.
-      showFooter({
-        status: 'cancelled',
-        pass: ev.pass !== undefined ? ev.pass : 0,
-        fail: ev.fail !== undefined ? ev.fail : 0,
-        exit_code: ev.exit_code !== undefined ? ev.exit_code : 130,
-        json_href: ev.json_href,
-        report_href: ev.report_href,
-        rerun_href: ev.rerun_href
-      });
-      statusEl.textContent = 'Stopped';
     } else if (ev.status === 'error') {
       statusEl.textContent = 'QA run failed: ' + (ev.message || 'unknown error');
     }
-    btn.disabled = false;
-    if (stopBtn) {
-      stopBtn.disabled = true;
-    }
+    releaseRunUi();
   }
 
   function pollProgress(runId) {
@@ -757,9 +781,14 @@ function mbqa_render_browser_form(array $options): void
   }
 
   function startRun(urlOverride) {
+    if (runActive) {
+      return;
+    }
     if (runAbort) {
       runAbort.abort();
     }
+    runActive = true;
+    cancellingSince = 0;
     activeRunId = newRunId();
     runAbort = new AbortController();
     stopPolling();
@@ -791,15 +820,15 @@ function mbqa_render_browser_form(array $options): void
       })
       .catch(function (err) {
         if (err.name === 'AbortError') {
-          applyProgress({ status: 'cancelling', message: 'Stop requested' });
+          statusEl.textContent = 'Stopping QA\u2026';
+          if (stopBtn) {
+            stopBtn.disabled = true;
+          }
           return;
         }
         statusEl.textContent = 'QA run failed: ' + err.message;
         stopPolling();
-        btn.disabled = false;
-        if (stopBtn) {
-          stopBtn.disabled = true;
-        }
+        releaseRunUi();
       });
   }
 
