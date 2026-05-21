@@ -201,7 +201,7 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/import/`single_delete`/`clear_table`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Skip** quick indexes, preview in browser. |
 
 **Commands (repository root, Laragon):**
@@ -261,10 +261,10 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 | 15 | **`list_all`** | List-all page. |
 | 16 | **`export_pdf`** | Export PDF control in list HTML. |
 | 17 | **`export_xls`** | Export Excel (parsed list table; row count ≠ import count). |
-| 18 | **`clear`** | Second FK-aware tenant wipe (after export; before import). |
-| 19 | **`import_db`** | One insertable row smoke test (`inserted=1` is pass). |
-| 20 | **`single_delete`** | Delete POST with FK retry. |
-| 21 | **`clear_table`** | Same row gate as `bulk_delete`. |
+| 18 | **`clear_table`** | POST **Clear Table** when rows ≥ `records_per_page` and bulk UI is visible (same gate as `bulk_delete`; runs while export rows are still present). |
+| 19 | **`clear`** | Second FK-aware tenant wipe (after export / optional `clear_table`; before import). |
+| 20 | **`import_db`** | One insertable row smoke test (`inserted=1` is pass). |
+| 21 | **`single_delete`** | Delete POST with FK retry. |
 | 22 | **`sample_data`** | End restore on empty table (HTTP). |
 | 23 | **`error_log`** | End check: 0 new errors since module scope. |
 
@@ -290,7 +290,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 * Sample seed prerequisites are seeded first when configured (e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; `employee_positions` → `departments`).
 * **`error_log` (PR #1742):** If `error_log.txt` cannot be renamed (e.g. Windows file lock), the runner records the current file size and only attributes **new** lines to the active module — avoids false failures from earlier modules. When rotation succeeds, archives are `error_log-1.txt`, `error_log-2.txt`, … under `ROOT_PATH`.
 * **Export Excel** is simulated by parsing the list `<table>` HTML (same columns as `table-tools.js`).
-* **Import Excel** POSTs **one** derived row to `data-itm-db-import-endpoint` (round-trip smoke, not re-import of every exported line). Uses export headers with insertable values from `database.sql` when UI labels are not IDs. The runner records a **second `clear`** step after **`export_xls`** (same SQL tenant wipe as the start-of-module clear) so import runs on an empty table; export row payloads are taken from HTML **before** that second clear. **`expenses`:** import picks a **free** `cost_center_id` for the tenant (`uq_expenses_company_scope`); do not expect `inserted` to match export row count.
+* **Import Excel** POSTs **one** derived row to `data-itm-db-import-endpoint` (round-trip smoke, not re-import of every exported line). Uses export headers with insertable values from `database.sql` when UI labels are not IDs. Export row payloads are captured from HTML **before** **`clear_table`** / the second **`clear`**. The runner runs **`clear_table`** (when the bulk gate passes) then **second `clear`** after **`export_xls`** so import runs on an empty table. **`expenses`:** import picks a **free** `cost_center_id` for the tenant (`uq_expenses_company_scope`); do not expect `inserted` to match export row count.
 
 **Tiers (do not treat all failures alike):**
 
