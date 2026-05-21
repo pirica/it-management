@@ -16,7 +16,7 @@ require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_report_paths.php';
 
 /**
- * @return array{run:bool, help:bool, date:string}
+ * @return array{run:bool, help:bool, date:string, date_explicit:bool}
  */
 function mbqar_parse_options(): array
 {
@@ -24,6 +24,7 @@ function mbqar_parse_options(): array
         'run' => false,
         'help' => false,
         'date' => date('Y-m-d'),
+        'date_explicit' => false,
     ];
 
     if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
@@ -36,6 +37,7 @@ function mbqar_parse_options(): array
             }
             if (strpos($arg, '--date=') === 0) {
                 $options['date'] = trim(substr($arg, 7));
+                $options['date_explicit'] = true;
             }
         }
     } else {
@@ -43,6 +45,7 @@ function mbqar_parse_options(): array
         $options['help'] = isset($_GET['help']);
         if (isset($_REQUEST['date']) && trim((string)$_REQUEST['date']) !== '') {
             $options['date'] = trim((string)$_REQUEST['date']);
+            $options['date_explicit'] = true;
         }
     }
 
@@ -85,7 +88,7 @@ function mbqar_print_help(): void
 
     mbqar_out("Build markdown from qa-reports/module-browser-qa.json\n\n");
     mbqar_out("Options:\n");
-    mbqar_out("  --date=YYYY-MM-DD   Legacy dated JSON only (default: fixed module-browser-qa.json)\n");
+    mbqar_out("  --date=YYYY-MM-DD   Use qa-reports/module-browser-qa-YYYY-MM-DD.json (not latest fixed JSON)\n");
     mbqar_out("  --help              Show this help\n\n");
     mbqar_out("Output: qa-reports/module-browser-qa.md (overwritten each build)\n\n");
 
@@ -302,6 +305,33 @@ function mbqar_step_note_is_skip_quick_index(string $note): bool
     $note = trim($note);
 
     return $note !== '' && preg_match('/^(?:Skip|N\/A)\b/i', $note) === 1;
+}
+
+/**
+ * @param array{run:bool, help:bool, date:string, date_explicit:bool} $options
+ * @return array{json_path:string, using_legacy:bool}
+ */
+function mbqar_resolve_report_json_path(string $root, array $options): array
+{
+    $date = $options['date'];
+    $fixedPath = mbqa_report_json_path($root);
+    $legacyPath = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)
+        ? mbqa_report_legacy_json_path($root, $date)
+        : '';
+
+    if ($options['date_explicit'] && $legacyPath !== '') {
+        return ['json_path' => $legacyPath, 'using_legacy' => true];
+    }
+
+    if (is_file($fixedPath)) {
+        return ['json_path' => $fixedPath, 'using_legacy' => false];
+    }
+
+    if ($legacyPath !== '' && is_file($legacyPath)) {
+        return ['json_path' => $legacyPath, 'using_legacy' => true];
+    }
+
+    return ['json_path' => $fixedPath, 'using_legacy' => false];
 }
 
 function mbqar_render_browser_form(array $options): void
@@ -553,15 +583,9 @@ if (!mbqar_is_cli_sapi() && !$options['run']) {
 }
 
 $date = $options['date'];
-$jsonPath = mbqa_report_json_path($root);
-$usingLegacyJson = false;
-if (!is_file($jsonPath) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-    $legacyPath = mbqa_report_legacy_json_path($root, $date);
-    if (is_file($legacyPath)) {
-        $jsonPath = $legacyPath;
-        $usingLegacyJson = true;
-    }
-}
+$resolved = mbqar_resolve_report_json_path($root, $options);
+$jsonPath = $resolved['json_path'];
+$usingLegacyJson = $resolved['using_legacy'];
 
 if (!is_file($jsonPath)) {
     if (!mbqar_is_cli_sapi()) {
@@ -570,11 +594,20 @@ if (!is_file($jsonPath)) {
         echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
         echo '<h1>Report not available</h1>';
         echo '<p>JSON not found: <code>' . htmlspecialchars($jsonPath, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        if ($options['date_explicit']) {
+            echo '<p>Requested date <code>' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8')
+                . '</code> — copy or keep <code>module-browser-qa-' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8')
+                . '.json</code>, or build without <code>date=</code> to use latest <code>module-browser-qa.json</code>.</p>';
+        }
         echo '<p><a href="module_browser_qa_runner.php?run=1">Run the QA runner</a> first, then return here.</p>';
         echo '</main>';
         exit(1);
     }
-    mbqar_err("Missing {$jsonPath}\n");
+    if ($options['date_explicit']) {
+        mbqar_err("Missing {$jsonPath} (explicit --date={$date}; will not fall back to module-browser-qa.json)\n");
+    } else {
+        mbqar_err("Missing {$jsonPath}\n");
+    }
     exit(1);
 }
 
