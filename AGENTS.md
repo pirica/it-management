@@ -18,6 +18,57 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 * **Frontend:** Vanilla JS, Custom CSS (`css/styles.css`), No Frameworks.
 * **Environment:** Apache 2.4+. **No Composer** dependency management.
 
+## 🧩 Character encoding, locales, and Unicode (mandatory)
+
+This project stores and displays **Unicode** text (including emoji such as 🧩) end-to-end. Do not “fix” mojibake by removing punctuation or emoji—fix the **encoding contract**.
+
+### Database (`database.sql`)
+
+* Database and tables use **`utf8mb4`** with **`utf8mb4_unicode_ci`** (see top of `database.sql`: `CREATE DATABASE … utf8mb4`, `SET NAMES utf8mb4`).
+* Application connection must match: `mysqli_set_charset($conn, 'utf8mb4')` in `config/config.php`.
+* Never downgrade to `utf8` (3-byte) for new tables—emoji and some symbols need 4-byte UTF-8.
+
+### Repository and source files
+
+* **All** tracked text (`.php`, `.md`, `.sql`, `.js`, `.css`, `.html`) is **UTF-8 without BOM**, except generated QA artifacts below.
+* **`.editorconfig`** and **`.gitattributes`** at repo root enforce UTF-8 and LF for agents and editors—do not re-save as Windows-1252 / “ANSI”.
+* **Change hygiene:** do not rewrite whole files to change encoding or line endings; see **Change Hygiene Rules**.
+
+### Locales and copy
+
+* **UK English (en-GB)** is the default for UI labels, docs, and agent-written prose (spelling: organisation, colour only when matching existing UI).
+* **Portuguese (Portugal) (pt-PT)** is used where the product already ships bilingual or regional copy—match existing tone; do not machine-translate unrelated modules in drive-by edits.
+* **Emoji** in UI, `AGENTS.md`, and seed data are allowed when intentional (e.g. 🧩 section markers, toolbar icons in copy).
+
+### HTTP and PHP output
+
+* HTML responses: `Content-Type: …; charset=utf-8` (see `config/config.php` JSON headers and script browser pages).
+* `htmlspecialchars(…, ENT_QUOTES, 'UTF-8')` for echoed user data.
+* JSON from scripts: `json_encode(…, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)` so Portuguese accents and symbols are not `\u` escaped unnecessarily.
+
+### Generated QA reports (`qa-reports/`)
+
+* `module_browser_qa_runner.php` and `module_browser_qa_build_report.php` write **UTF-8** via `scripts/lib/utf8_file.php` (`itm_write_utf8_text_file`).
+* **`.md` and `.json` under `qa-reports/`** are written **with a UTF-8 BOM** (`EF BB BF`) so **Windows Notepad** and other ANSI-default viewers open them correctly. Content is still UTF-8; punctuation such as `—` and `…` must display correctly after rebuild.
+
+### Mojibake troubleshooting (symptom → cause)
+
+| What you see | What it usually means |
+|---|---|
+| `â€”` instead of `—` | UTF-8 em dash bytes read as Windows-1252 / Latin-1 |
+| `â€¦` instead of `…` | UTF-8 ellipsis bytes read as Windows-1252 |
+| `Ã©` instead of `é` | UTF-8 accent read as Latin-1 (common in pt-PT strings) |
+| `ðŸ§©` instead of 🧩 | UTF-8 emoji read as Latin-1 |
+
+**The file on disk is often already correct UTF-8** (verify with a UTF-8-aware editor or hex: em dash = `E2 80 94`). Fix the **viewer**, not the database:
+
+1. **Cursor / VS Code:** `"files.encoding": "utf8"`; reopen file with encoding **UTF-8**.
+2. **PowerShell:** `Get-Content -Encoding utf8 path\to\file.md` (default encoding is not UTF-8 on Windows).
+3. **Re-build QA markdown:** `php scripts/module_browser_qa_build_report.php --date=YYYY-MM-DD` after pulling encoding fixes.
+4. **Do not** use Notepad “Save as” ANSI or Excel “CSV ANSI” on UTF-8 exports.
+
+**Agents:** never replace `—` / `…` / emoji with ASCII substitutes just to avoid display glitches in one tool; preserve UTF-8 and document viewer settings.
+
 ## 📂 Directory Map
 * `config/`: Core settings and `config.php`.
 * `includes/`: UI components (headers, sidebars) and utility functions.
@@ -85,6 +136,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 |------|-----|
 | `scripts/lib/script_browser_nav.php` | **← Scripts index**, relative module links, table→module links when folder exists (`target="_blank"`) |
 | `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
+| `scripts/lib/utf8_file.php` | UTF-8 writes for `qa-reports/*.md` and `.json` (optional BOM for Windows viewers) |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
 | `scripts/lib/equipment_type_modules.php` | Canonical `modules/is_*` allowlist (`is_switch`, `is_server`, …); safe removal of regression-test scaffold dirs only (`*_itm_eqdct_*`, `*_itm_edct_*`) |
 
@@ -455,7 +507,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 * **No line-ending normalization:** Preserve existing CRLF/LF style per file. Do not rewrite whole files just to change one line.
 * **No broad search/replace across modules unless explicitly requested:** Prefer targeted edits to only the files required by the task.
 * **Minimize touched lines:** Keep patches surgical and avoid formatting-only edits (spacing, wrapping, reindent) when logic is unchanged.
-* **Preserve file encoding and structure:** Do not change charset, BOM behavior, or module layout unless requested.
+* **Preserve file encoding and structure:** Do not change charset, BOM behavior, or module layout unless requested. See **Character encoding, locales, and Unicode** — source files stay UTF-8 without BOM; only `qa-reports/*` JSON/MD may get a UTF-8 BOM from `itm_write_utf8_text_file()`.
 * **If a change must be bulk-applied, state why in the PR description** and confirm the scope before continuing.
 
 ### PR review (mandatory)
