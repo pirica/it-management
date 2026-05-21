@@ -3774,10 +3774,23 @@ foreach ($companiesToRun as $companyId) {
 
         // Why: pre-import clear drops rows chosen for view/edit; import may insert new ids — delete from the current list.
         $indexForDelete = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-        $csrfForDelete = mbqa_extract_csrf($indexForDelete['body']);
-        $deleteId = mbqa_row_ids($indexForDelete['body'])[0] ?? 0;
+        $deleteRefreshOk = $indexForDelete['status'] === 200 && !mbqa_has_fatal($indexForDelete['body']);
+        $deleteRefreshNote = '';
+        if (!$deleteRefreshOk) {
+            if (($indexForDelete['error'] ?? '') !== '') {
+                $deleteRefreshNote = (string)$indexForDelete['error'];
+            } elseif ($indexForDelete['status'] !== 200) {
+                $deleteRefreshNote = 'HTTP ' . $indexForDelete['status'];
+            } else {
+                $deleteRefreshNote = 'fatal in body';
+            }
+        }
+        $csrfForDelete = $deleteRefreshOk ? mbqa_extract_csrf($indexForDelete['body']) : '';
+        $deleteId = $deleteRefreshOk ? (mbqa_row_ids($indexForDelete['body'])[0] ?? 0) : 0;
 
-        if ($deleteId > 0 && is_file($deletePath) && $csrfForDelete !== '') {
+        if (!$deleteRefreshOk) {
+            $steps[] = mbqa_step_result('single_delete', false, 'single_delete: index refresh failed (' . $deleteRefreshNote . ')');
+        } elseif ($deleteId > 0 && is_file($deletePath) && $csrfForDelete !== '') {
             $singleDelHtml = mbqa_html_step_single_delete_action($indexForDelete['body'], $deleteId);
             if (!$singleDelHtml['ok']) {
                 $steps[] = mbqa_step_result('single_delete', false, $singleDelHtml['note']);
