@@ -353,7 +353,13 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 if (($crud_table ?? '') === 'user_companies') {
-    $resCompanies = mysqli_query($conn, 'SELECT id, company FROM companies WHERE active=1 ORDER BY company');
+    // Why: Assigned inactive companies must stay in the multi-select or delete/reinsert drops them on save.
+    $companyScopeSql = 'SELECT id, company, active FROM companies WHERE active=1';
+    if (!empty($selectedCompanyIds)) {
+        $companyScopeSql .= ' OR id IN (' . implode(',', array_map('intval', $selectedCompanyIds)) . ')';
+    }
+    $companyScopeSql .= ' ORDER BY company';
+    $resCompanies = mysqli_query($conn, $companyScopeSql);
     while ($resCompanies && ($row = mysqli_fetch_assoc($resCompanies))) {
         $allCompanyOptions[] = $row;
     }
@@ -621,8 +627,14 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 <select name="company_ids[]" multiple size="6" required>
                                     <?php foreach ($allCompanyOptions as $companyOption): ?>
                                         <?php $cid = (int)$companyOption['id']; ?>
+                                        <?php
+                                            $companyLabel = (string)($companyOption['company'] ?? '');
+                                            if ((int)($companyOption['active'] ?? 1) !== 1) {
+                                                $companyLabel .= ' (Inactive)';
+                                            }
+                                        ?>
                                         <option value="<?php echo $cid; ?>" <?php echo in_array($cid, $selectedCompanyIds, true) ? 'selected' : ''; ?>>
-                                            <?php echo sanitize($companyOption['company']); ?>
+                                            <?php echo sanitize($companyLabel); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
