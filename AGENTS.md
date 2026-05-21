@@ -127,6 +127,29 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` (options form → **Run QA**); `http://localhost/it-management/scripts/module_browser_qa_build_report.php` (pick date → build `.md`). Catalog: `scripts/index.html`.
 
+**Runner browser form (defaults):**
+
+| Field | Control | Default |
+|--------|---------|---------|
+| **Module** | Select | **ALL (all modules)** — every `modules/<slug>/` with `index.php`; or one slug (e.g. `expenses`) |
+| **Company** | Select | **ALL (companies 1–5)** — TechCorp Global … Enterprise IT; or company id `1`–`5` |
+| **Pilot only** | Checkbox | Off — when checked, runs **`expenses`** only (all selected companies) |
+
+CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for the same scope.
+
+**Markdown report (`module_browser_qa_build_report.php`):** after `php scripts/module_browser_qa_build_report.php`, the `.md` under `qa-reports/` includes:
+
+1. **Summary** — pass/fail counts  
+2. **Results by module** — full step table per module × company  
+3. **Failures only (quick index)** — compact table for triage:
+
+| Module | Co | Step | Notes |
+|---|---|---|---|
+| idfs | 1 | pagination | page=1 missing Page 1 of N footer |
+| idfs | 1 | search | search input missing in HTML |
+
+4. **Pass only (quick index)** — same columns for every **Pass** step (truncated at 500 rows; failures index truncated at 200). Use this block to confirm HTML contract steps (pagination, bulk_cancel, import_db, etc.) without scrolling the full per-module sections.
+
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
 **Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in `scripts/module_browser_qa_runner.php` (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Example: `user_companies` skips `create`, `add`, `import_db` only — `sample_data` runs (has `add_sample_data`).
@@ -406,6 +429,18 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
   * Do not reuse a previously opened **pull request** for a **new** request, even if the files overlap.
   * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your **NEW PR always** rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
+* **Avoid GitHub “We couldn’t merge this pull request” errors:**
+  * **Always branch from current `origin/master`** before new work — never stack new commits on a branch whose PR already merged (GitHub may show merge errors or stale diffs).
+  * **Required sync (repository root):**
+    ```bash
+    git fetch origin master
+    git checkout master
+    git pull origin master
+    git checkout -b fix/short-descriptive-name
+    ```
+  * After merge of PR #N, **do not push more commits to that branch**; the next task uses a **new branch name** and **`gh pr create`** (new PR number).
+  * If GitHub reports merge conflicts on an open PR, prefer **`git fetch origin master`**, rebase or recreate the branch from `master`, and force-push **only while that PR is still open** — or **close the conflicted PR** and open a **fresh PR** from a clean branch (user default: **fresh PR**).
+  * Before `gh pr create`, confirm `git log origin/master..HEAD` contains only commits for the current deliverable.
 * **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
   * `php -l` on every touched `.php` file.
   * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
