@@ -6,9 +6,9 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
- *   bulk_delete — when rows >= perPage and delete.php + CSRF: POST delete.php with up to 3 ids[] (direct POST;
- *     does not click Select to Delete / Cancel; browser Cancel UX is js/bulk-delete-selection.js).
- * clear_table uses the same row-count gate as bulk_delete.
+ *   bulk_delete — when rows >= perPage and bulk UI visible on index; POST delete.php with up to 3 ids[].
+ *   clear_table — same row gate as bulk_delete.
+ *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
  * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
  * Usage (repository root, CLI):
@@ -1979,6 +1979,62 @@ function mbqa_index_shows_bulk_actions(string $html): bool
 }
 
 /**
+ * Pagination footer (Previous / Page N of M) — standard modules show when totalRows > perPage.
+ */
+function mbqa_index_shows_pagination_footer(string $html): bool
+{
+    return stripos($html, 'Page ') !== false && stripos($html, ' of ') !== false;
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_index_bulk_ui_matches_row_gate(int $rowCount, int $perPage, string $html): array
+{
+    $shouldShow = $rowCount >= $perPage;
+    $shows = mbqa_index_shows_bulk_actions($html);
+    if ($shouldShow === $shows) {
+        return [
+            'ok' => true,
+            'note' => $shouldShow
+                ? 'bulk UI visible (' . $rowCount . ' rows >= perPage ' . $perPage . ')'
+                : 'bulk UI hidden (' . $rowCount . ' rows < perPage ' . $perPage . ')',
+        ];
+    }
+
+    return [
+        'ok' => false,
+        'note' => $shouldShow
+            ? 'bulk UI expected visible (' . $rowCount . ' >= ' . $perPage . ') but hidden on index'
+            : 'bulk UI expected hidden (' . $rowCount . ' < ' . $perPage . ') but visible on index',
+    ];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_index_pagination_matches_row_gate(int $rowCount, int $perPage, string $html): array
+{
+    $shouldShow = $rowCount > $perPage;
+    $shows = mbqa_index_shows_pagination_footer($html);
+    if ($shouldShow === $shows) {
+        return [
+            'ok' => true,
+            'note' => $shouldShow
+                ? 'pagination visible (' . $rowCount . ' rows > perPage ' . $perPage . ')'
+                : 'pagination hidden (' . $rowCount . ' rows <= perPage ' . $perPage . ')',
+        ];
+    }
+
+    return [
+        'ok' => false,
+        'note' => $shouldShow
+            ? 'pagination expected visible (' . $rowCount . ' > ' . $perPage . ') but missing on index'
+            : 'pagination expected hidden (' . $rowCount . ' <= ' . $perPage . ') but present on index',
+    ];
+}
+
+/**
  * Shared Cancel UX shipped in js/bulk-delete-selection.js (loaded from includes/header.php).
  *
  * @return array{ok:bool,note:string}
@@ -2576,6 +2632,23 @@ foreach ($companiesToRun as $companyId) {
         $listNote = $listOk
             ? ('HTTP ' . $index['status'] . ', no fatal')
             : ('HTTP ' . $index['status'] . (mbqa_has_fatal($index['body']) ? ', fatal in body' : ''));
+        if ($listOk && $tier === 'A' && itm_is_safe_identifier($slug)) {
+            $perPageList = mbqa_records_per_page($conn);
+            $rowCountList = mbqa_tenant_row_count($conn, $slug, $companyId);
+            $bulkGate = mbqa_index_bulk_ui_matches_row_gate($rowCountList, $perPageList, $index['body']);
+            $pagGate = mbqa_index_pagination_matches_row_gate($rowCountList, $perPageList, $index['body']);
+            if (!$bulkGate['ok']) {
+                $listOk = false;
+                $listNote .= '; ' . $bulkGate['note'];
+            }
+            if (!$pagGate['ok']) {
+                $listOk = false;
+                $listNote .= '; ' . $pagGate['note'];
+            }
+            if ($bulkGate['ok'] && $pagGate['ok']) {
+                $listNote .= '; ' . $bulkGate['note'] . '; ' . $pagGate['note'];
+            }
+        }
         $steps[] = mbqa_step_result('list', $listOk, $listNote);
 
         if ($tier === 'D') {
