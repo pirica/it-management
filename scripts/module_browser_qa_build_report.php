@@ -115,9 +115,10 @@ function mbqar_render_browser_form(array $options): void
 
 /**
  * @param array<int, mixed> $data
+ * @param array<string, array<string, string>> $moduleStepExceptions
  * @return array{md:string, pass:int, fail:int, json_path:string, out_path:string}
  */
-function mbqar_build_markdown(string $root, string $date, array $data): array
+function mbqar_build_markdown(string $root, string $date, array $data, array $moduleStepExceptions = []): array
 {
     $pass = 0;
     $fail = 0;
@@ -173,6 +174,22 @@ function mbqar_build_markdown(string $root, string $date, array $data): array
     $md .= '- Modules in this report: ' . count($moduleRows) . "\n";
     $md .= "- Runner: `php scripts/module_browser_qa_runner.php` or browser form at `scripts/module_browser_qa_runner.php`\n";
     $md .= "- Bulk delete / Clear table: N/A when row count &lt; `records_per_page` (25)\n\n";
+
+    if (!empty($moduleStepExceptions)) {
+        $md .= "### Module step exceptions (reported Pass/N/A; runner still runs full Tier A)\n\n";
+        foreach ($moduleStepExceptions as $moduleSlug => $stepNotes) {
+            if (!is_array($stepNotes)) {
+                continue;
+            }
+            $md .= '- **' . $moduleSlug . '**: ';
+            $parts = [];
+            foreach ($stepNotes as $stepName => $note) {
+                $parts[] = '`' . $stepName . '` — ' . $note;
+            }
+            $md .= implode('; ', $parts) . "\n";
+        }
+        $md .= "\n";
+    }
 
     $md .= "### Failure categories (automated run)\n\n";
     $md .= "| Step | Fail count | Typical cause |\n|---|---|---|\n";
@@ -307,7 +324,12 @@ if (!is_array($data)) {
     exit(1);
 }
 
-$built = mbqar_build_markdown($root, $date, $data);
+$runnerRows = $data;
+if (isset($data['results']) && is_array($data['results'])) {
+    $runnerRows = $data['results'];
+}
+
+$built = mbqar_build_markdown($root, $date, $runnerRows, is_array($data['module_step_exceptions'] ?? null) ? $data['module_step_exceptions'] : []);
 file_put_contents($built['out_path'], $built['md']);
 
 if (mbqar_is_cli_sapi()) {
