@@ -34,6 +34,7 @@ $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_es
 $totalRows = 0;
 if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) { $totalRows = (int)($countRow['total_rows'] ?? 0); }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) { $page = 1; }
 if ($page > $totalPages) { $page = $totalPages; }
