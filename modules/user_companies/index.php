@@ -5,6 +5,7 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_mbqa_test_user.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -357,8 +358,7 @@ function cr_is_qa_import_user_company_row($conn, $row) {
         return false;
     }
 
-    // Why: module_browser_qa_runner seeds MBQA-* users; import tools use qa-import-* — neither is a protected Admin mapping.
-    return strncmp($username, 'qa-import-', 10) === 0 || strncmp($username, 'mbqa-', 5) === 0;
+    return itm_user_company_assignment_bypasses_admin_delete_guard($username);
 }
 
 function cr_is_admin_user_company_row($conn, $row) {
