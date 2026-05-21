@@ -344,7 +344,7 @@
                     </td>
                     <td>
                         CLI: <code>php scripts/equipment_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> (static only) · <code>ITM_TEST_COMPANY_ID</code>.<br>
-                        Browser: static checks only (no DB or filesystem cleanup). MySQL regression requires CLI. Optional smoke: <code>SMOKE_RUN_DB_TESTS=1 bash scripts/smoke_test.sh</code>.
+                        Browser: static checks only (no DB or filesystem cleanup). MySQL regression requires CLI: <code>php scripts/equipment_delete_clear_table_test.php</code>.
                     </td>
                 </tr>
                 <tr>
@@ -353,7 +353,7 @@
                     <td>MySQL regression for employees <code>clear_table</code> transactional delete (access rows roll back when employee delete is blocked by FK).</td>
                     <td>
                         CLI: <code>php scripts/employees_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code>.<br>
-                        Browser: static checks only (no DB mutations). MySQL regression requires CLI. Optional smoke: <code>SMOKE_RUN_DB_TESTS=1</code>.
+                        Browser: static checks only (no DB mutations). MySQL regression requires CLI: <code>php scripts/employees_delete_clear_table_test.php</code>.
                     </td>
                 </tr>
             </tbody>
@@ -418,20 +418,20 @@
                 <tr>
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF, (3) SQLi, (4) index-table compliance, (5) UI config (optional), (6) employees clear-table transaction guard, (7) equipment clear-table delete guard. Optional DB: <code>employees_delete_clear_table_test.php</code> + <code>equipment_delete_clear_table_test.php</code>.</td>
-                    <td><code>bash scripts/smoke_test.sh</code> — step 5: <code>SMOKE_SKIP_UI_CONFIG=1</code> to skip. Steps 6–7 always run. <code>SMOKE_RUN_DB_TESTS=1</code> for MySQL regression tests. Exemptions: <code>scripts/data/ui_configuration_excluded_modules.txt</code> and <code>ui_configuration_excluded_prefixes.txt</code>.</td>
+                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF coverage, (3) SQLi coverage. Other check scripts are run manually when needed — not part of smoke.</td>
+                    <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
                 </tr>
                 <tr>
                     <td><a href="check_csrf_coverage.php">check_csrf_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: POST handlers that mutate data without a known CSRF guard.</td>
-                    <td>Browser: plain-text report. CLI: <code>php scripts/check_csrf_coverage.php</code> — smoke step 2; AGENTS.md after CRUD changes.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_csrf_coverage.php</code> — smoke step 2 / AGENTS.md after CRUD changes.</td>
                 </tr>
                 <tr>
                     <td><a href="check_sql_injection_coverage.php">check_sql_injection_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>
-                    <td>Browser: plain-text report. CLI: <code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3 / AGENTS.md after PHP/SQL changes.</td>
                 </tr>
                 <tr>
                     <td><a href="check_index_table_compliance.php">check_index_table_compliance.php</a></td>
@@ -441,7 +441,7 @@
                         Baseline: <code>scripts/data/index_table_compliance_baseline.txt</code>. Skips protection-zone modules and <code>rack_planner</code>.
                     </td>
                     <td>
-                        Browser: HTML report in <code>&lt;pre&gt;</code>. CLI: <code>php scripts/check_index_table_compliance.php</code> — smoke step 4; exit <code>1</code> on new violations.<br>
+                        Browser: HTML report in <code>&lt;pre&gt;</code>. CLI: <code>php scripts/check_index_table_compliance.php</code> — run manually when index-table contract changes; exit <code>1</code> on new violations.<br>
                         <code>--strict</code> · <code>--write-baseline</code>
                     </td>
                 </tr>
@@ -479,19 +479,19 @@
                     <td><a href="check_employees_clear_table_transaction.php">check_employees_clear_table_transaction.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static guard: employees <code>clear_table</code> uses a MySQL transaction (access delete + employees delete with rollback).</td>
-                    <td><code>php scripts/check_employees_clear_table_transaction.php</code> — smoke step 6; AGENTS.md after employees <code>clear_table</code> changes.</td>
+                    <td><code>php scripts/check_employees_clear_table_transaction.php</code> — run manually after employees <code>clear_table</code> changes (AGENTS.md).</td>
                 </tr>
                 <tr>
                     <td><a href="check_equipment_clear_table_delete.php">check_equipment_clear_table_delete.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static guard: equipment <code>clear_table</code> / <code>equipment_delete_record()</code> helpers in <code>delete_functions.php</code>.</td>
-                    <td><code>php scripts/check_equipment_clear_table_delete.php</code> — smoke step 7; AGENTS.md after equipment delete/clear-table changes.</td>
+                    <td><code>php scripts/check_equipment_clear_table_delete.php</code> — run manually after equipment delete/clear-table changes (AGENTS.md).</td>
                 </tr>
                 <tr>
                     <td><a href="check_ui_configuration_coverage.php">check_ui_configuration_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>UI configuration hooks: table actions, new button, export toolbar, back/save on forms.</td>
-                    <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — smoke step 5; exits <code>2</code> on failure. Audits table actions, export card, search, Settings <code>records_per_page</code> pagination, bulk Select to Delete / Clear Table, and CRUD entry files. Skips modules in <code>scripts/data/ui_configuration_excluded_modules.txt</code> (e.g. <code>audit_logs</code>, <code>ip_subnets</code>, <code>rack_planner</code>) and prefixes in <code>ui_configuration_excluded_prefixes.txt</code> (e.g. <code>is_*</code>).</td>
+                    <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — run manually when module UI/layout changes; exits <code>2</code> on failure. Audits table actions, export card, search, Settings <code>records_per_page</code> pagination, bulk Select to Delete / Clear Table, and CRUD entry files. Skips modules in <code>scripts/data/ui_configuration_excluded_modules.txt</code> (e.g. <code>audit_logs</code>, <code>ip_subnets</code>, <code>rack_planner</code>) and prefixes in <code>ui_configuration_excluded_prefixes.txt</code> (e.g. <code>is_*</code>).</td>
                 </tr>
                 <tr>
                     <td><a href="check_audit_logs_coverage.php">check_audit_logs_coverage.php</a></td>

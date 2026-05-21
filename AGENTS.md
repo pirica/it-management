@@ -99,12 +99,24 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 | `scripts/cleanup_equipment_test_module_artifacts.php` | **CLI-only:** remove test `equipment_types` rows, ITM test companies, junk `is_*_itm_eqdct_*` folders, then re-ensure canonical façades |
 | `scripts/equipment_delete_clear_table_test.php` | DB regression for equipment `clear_table` + transactional single delete (use type names **`Switch`** / **`Server`**, not suffixed names) |
 | `scripts/employees_delete_clear_table_test.php` | DB regression for employees `clear_table` transaction rollback |
-| `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table helpers (smoke step 7) |
-| `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table transaction (smoke step 6) |
+| `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table helpers (run manually after equipment delete/clear-table changes) |
+| `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table transaction (run manually after employees `clear_table` changes) |
 
 **Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. After local DB regression runs, run `php scripts/cleanup_equipment_test_module_artifacts.php`.
 
-**Smoke / optional DB regression:** `bash scripts/smoke_test.sh` runs the static checkers (steps 6–7). Set `SMOKE_RUN_DB_TESTS=1` to also run `employees_delete_clear_table_test.php` and `equipment_delete_clear_table_test.php` (requires MySQL).
+#### Smoke tests (CI — `scripts/smoke_test.sh`)
+
+GitHub Actions (`.github/workflows/smoke.yml`) and local CI use **`bash scripts/smoke_test.sh`** — **only** these three checks:
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| 1 | `php -l` on every `*.php` | Syntax lint |
+| 2 | `php scripts/check_csrf_coverage.php` | POST handlers / forms have CSRF |
+| 3 | `php scripts/check_sql_injection_coverage.php` | SQLi coverage audit |
+
+Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/index.html`).
+
+Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
 #### Full-module browser QA (5 companies, Laragon)
 
@@ -319,7 +331,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
   * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** under `scripts/`).
-  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB runs per catalog in `scripts/index.html` (`SMOKE_RUN_DB_TESTS=1` or run the `*_test.php` scripts directly). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
+  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/index.html` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
@@ -449,8 +461,8 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
   * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or the Laragon 7.4 path from Setup) — hard-fail if any `[FAIL]`.
-  * Smoke/CI workflows in `.github/workflows/` when present; list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
-* **CI and repo scripts stay authoritative:** smoke workflows and maintenance scripts (for example `check_audit_logs_coverage.php`, `check_database_sql_company_name_uniques.php`) are owned by the repository and must keep passing.
+  * Smoke/CI: `bash scripts/smoke_test.sh` when `.github/workflows/smoke.yml` applies (php -l, CSRF, SQLi only); list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
+* **CI and repo scripts stay authoritative:** the smoke workflow must pass on PRs; run other maintenance scripts (for example `check_audit_logs_coverage.php`, `check_database_sql_company_name_uniques.php`, `check_index_table_compliance.php`) manually when the change scope requires them.
 
 ### GitHub PR review comments (mandatory)
 * **Read all GitHub PR feedback** before considering a PR merge-ready: use `gh pr view`, `gh api repos/{owner}/{repo}/pulls/{number}/comments`, GraphQL review-thread endpoints, or the PR URL. Include human reviewers, **Bugbot**, **Codex**, and actionable CI/check annotations when present.
