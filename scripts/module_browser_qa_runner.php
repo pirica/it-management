@@ -70,7 +70,7 @@ function mbqa_list_module_slugs(string $projectRoot): array
 }
 
 /**
- * @return array{run:bool, help:bool, pilot_only:bool, base_url:string, module:?string, company:?int}
+ * @return array{run:bool, help:bool, pilot_only:bool, stream:bool, base_url:string, module:?string, company:?int}
  */
 function mbqa_parse_run_options(): array
 {
@@ -78,6 +78,7 @@ function mbqa_parse_run_options(): array
         'run' => false,
         'help' => false,
         'pilot_only' => false,
+        'stream' => false,
         'base_url' => 'http://localhost/it-management/',
         'module' => null,
         'company' => null,
@@ -120,7 +121,10 @@ function mbqa_parse_run_options(): array
         if (isset($_REQUEST['base_url'])) {
             $options['base_url'] = trim((string)$_REQUEST['base_url']);
         }
-        if (isset($_REQUEST['module'])) {
+        $moduleManualRaw = trim((string)($_REQUEST['module_manual'] ?? ''));
+        if ($moduleManualRaw !== '') {
+            $options['module'] = $moduleManualRaw;
+        } elseif (isset($_REQUEST['module'])) {
             $moduleRaw = trim((string)$_REQUEST['module']);
             if ($moduleRaw !== '' && strtolower($moduleRaw) !== 'all') {
                 $options['module'] = $moduleRaw;
@@ -132,6 +136,7 @@ function mbqa_parse_run_options(): array
                 $options['company'] = (int)$companyRaw;
             }
         }
+        $options['stream'] = isset($_GET['stream']) && (string)$_GET['stream'] === '1';
     }
 
     if (substr($options['base_url'], -1) !== '/') {
@@ -146,6 +151,102 @@ function mbqa_is_cli_sapi(): bool
     return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 }
 
+function mbqa_browser_stream_active(): bool
+{
+    return !mbqa_is_cli_sapi() && !empty($GLOBALS['mbqa_browser_stream']);
+}
+
+/**
+ * @param array<string, mixed> $payload
+ */
+function mbqa_browser_stream_write_line(array $payload): void
+{
+    if (!mbqa_browser_stream_active()) {
+        return;
+    }
+    $line = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($line === false) {
+        return;
+    }
+    echo $line . "\n";
+    if (function_exists('ob_flush')) {
+        @ob_flush();
+    }
+    @flush();
+}
+
+/**
+ * Why: Browser Run QA uses fetch + NDJSON so the form page can show co / module / step without a blocking pre log.
+ */
+function mbqa_browser_stream_begin(): void
+{
+    // Why: An open session holds the response until the script ends; release it before long HTTP/DB work.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    @ini_set('output_buffering', '0');
+    @ini_set('zlib.output_compression', '0');
+    if (function_exists('apache_setenv')) {
+        @apache_setenv('no-gzip', '1');
+    }
+    if (!headers_sent()) {
+        header('Content-Type: application/x-ndjson; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('X-Accel-Buffering: no');
+    }
+    mbqa_browser_stream_write_line(['type' => 'ping', 'message' => 'connected']);
+}
+
+function mbqa_browser_progress_set_context(int $companyId, string $moduleSlug): void
+{
+    $GLOBALS['mbqa_progress_company_id'] = $companyId;
+    $GLOBALS['mbqa_progress_module'] = $moduleSlug;
+}
+
+function mbqa_browser_progress_emit(string $step): void
+{
+    if (!mbqa_browser_stream_active()) {
+        return;
+    }
+    $companyId = (int)($GLOBALS['mbqa_progress_company_id'] ?? 0);
+    $module = (string)($GLOBALS['mbqa_progress_module'] ?? '');
+    if ($module === '') {
+        return;
+    }
+    mbqa_browser_stream_write_line([
+        'type' => 'progress',
+        'company_id' => $companyId,
+        'module' => $module,
+        'step' => $step,
+    ]);
+}
+
+/**
+ * @param array{pass:int,fail:int,exit_code:int,json_href:string,report_href:string,rerun_href:string} $payload
+ */
+function mbqa_browser_stream_emit_done(array $payload): void
+{
+    if (!mbqa_browser_stream_active()) {
+        return;
+    }
+    $payload['type'] = 'done';
+    mbqa_browser_stream_write_line($payload);
+}
+
+function mbqa_render_browser_stream_required(): void
+{
+    header('Content-Type: text/html; charset=utf-8');
+    itm_script_browser_nav_echo();
+    echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
+    echo '<h1>Module browser QA runner</h1>';
+    echo '<p>Use <strong>Run QA</strong> on the <a href="module_browser_qa_runner.php">runner form</a> so progress streams live (co / module / step).</p>';
+    echo '</main>';
+}
+
 function mbqa_out(string $message): void
 {
     echo $message;
@@ -157,6 +258,13 @@ function mbqa_out(string $message): void
 
 function mbqa_err(string $message): void
 {
+    if (mbqa_browser_stream_active()) {
+        mbqa_browser_stream_write_line([
+            'type' => 'error',
+            'message' => trim(str_replace(["\r", "\n"], ' ', $message)),
+        ]);
+        return;
+    }
     if (mbqa_is_cli_sapi()) {
         fwrite(STDERR, $message);
     } else {
@@ -220,7 +328,7 @@ function mbqa_browser_form_company_selected(array $options): string
 }
 
 /**
- * @param array{run:bool, help:bool, pilot_only:bool, base_url:string, module:?string, company:?int} $options
+ * @param array{run:bool, help:bool, pilot_only:bool, stream:bool, base_url:string, module:?string, company:?int} $options
  */
 function mbqa_render_browser_form(array $options): void
 {
@@ -229,28 +337,42 @@ function mbqa_render_browser_form(array $options): void
 
     $projectRoot = realpath(__DIR__ . '/..') ?: '';
     $baseUrl = htmlspecialchars($options['base_url'], ENT_QUOTES, 'UTF-8');
-    $moduleSelected = ($options['module'] !== null && trim((string)$options['module']) !== '')
+    $moduleRequested = ($options['module'] !== null && trim((string)$options['module']) !== '')
         ? trim((string)$options['module'])
         : '';
     $companySelected = mbqa_browser_form_company_selected($options);
     $pilotChecked = $options['pilot_only'] ? ' checked' : '';
     $moduleSlugs = $projectRoot !== '' ? mbqa_list_module_slugs($projectRoot) : [];
+    $moduleSelectValue = '';
+    $moduleManualValue = '';
+    if ($moduleRequested !== '') {
+        if (in_array($moduleRequested, $moduleSlugs, true)) {
+            $moduleSelectValue = $moduleRequested;
+        } else {
+            $moduleManualValue = $moduleRequested;
+        }
+    }
 
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA runner</h1>';
     echo '<p>Runs the full-module HTTP checklist (login, company switch, clear/seed/CRUD, export/import, delete). ';
     echo 'Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>. Long runs may take several minutes.</p>';
-    echo '<form method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
+    echo '<div id="mbqa-live-status" aria-live="polite" style="margin:12px 0;padding:10px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;min-height:1.2em;font-size:0.95rem;display:none;"></div>';
+    echo '<div id="mbqa-run-footer" hidden style="margin:12px 0;padding:10px 0;font-size:0.95rem;"></div>';
+    echo '<form id="mbqa-run-form" method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
     echo '<input type="hidden" name="run" value="1">';
     echo '<label>Base URL<br><input type="url" name="base_url" value="' . $baseUrl . '" style="width:100%;padding:8px;"></label>';
-    echo '<label>Module<br><select name="module" style="width:100%;padding:8px;">';
-    echo '<option value=""' . ($moduleSelected === '' ? ' selected' : '') . '>ALL (all modules)</option>';
+    echo '<label>Module<br><select name="module" id="mbqa-module-select" style="width:100%;padding:8px;">';
+    echo '<option value=""' . ($moduleSelectValue === '' ? ' selected' : '') . '>ALL (all modules)</option>';
     foreach ($moduleSlugs as $slug) {
-        $selected = $moduleSelected === $slug ? ' selected' : '';
+        $selected = $moduleSelectValue === $slug ? ' selected' : '';
         echo '<option value="' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>'
             . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '</option>';
     }
     echo '</select></label>';
+    echo '<label>Or module slug (manual)<br><input type="text" name="module_manual" id="mbqa-module-manual" value="'
+        . htmlspecialchars($moduleManualValue, ENT_QUOTES, 'UTF-8')
+        . '" placeholder="e.g. expenses" style="width:100%;padding:8px;" autocomplete="off"></label>';
     echo '<label>Company<br><select name="company" style="width:100%;padding:8px;">';
     echo '<option value=""' . ($companySelected === '' ? ' selected' : '') . '>ALL (companies 1–5)</option>';
     foreach (mbqa_company_name_map() as $companyId => $companyLabel) {
@@ -260,10 +382,132 @@ function mbqa_render_browser_form(array $options): void
     }
     echo '</select></label>';
     echo '<label><input type="checkbox" name="pilot_only" value="1"' . $pilotChecked . '> Pilot only (expenses)</label>';
-    echo '<button type="submit" style="padding:10px 16px;font-weight:600;">Run QA</button>';
+    echo '<button type="submit" id="mbqa-run-btn" style="padding:10px 16px;font-weight:600;">Run QA</button>';
     echo '</form>';
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php?help=1">CLI options / help</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
+    echo '<script>';
+    echo <<<'MBQA_JS'
+(function () {
+  var form = document.getElementById('mbqa-run-form');
+  var btn = document.getElementById('mbqa-run-btn');
+  var statusEl = document.getElementById('mbqa-live-status');
+  var footerEl = document.getElementById('mbqa-run-footer');
+  if (!form || !btn || !statusEl) {
+    return;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function progressLabel(ev) {
+    return 'Running QA\u2026 co ' + ev.company_id + ' \u2014 ' + ev.module + ' - ' + ev.step;
+  }
+
+  function showFooter(done) {
+    var title = done.exit_code === 0 ? 'Completed' : 'Completed with failures';
+    footerEl.innerHTML =
+      '<p><strong>' + esc(title) + '</strong> \u2014 ' + esc(String(done.pass)) + ' pass, ' + esc(String(done.fail)) + ' fail</p>' +
+      '<p><a href="' + esc(done.json_href) + '">Download JSON</a> \u00b7 ' +
+      '<a href="' + esc(done.report_href) + '">Build markdown report</a> \u00b7 ' +
+      '<a href="#" id="mbqa-rerun-link">Re-Run Test</a> \u00b7 ' +
+      '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';
+    footerEl.hidden = false;
+    var rerun = document.getElementById('mbqa-rerun-link');
+    if (rerun && done.rerun_href) {
+      rerun.addEventListener('click', function (e) {
+        e.preventDefault();
+        runStream(done.rerun_href);
+      });
+    }
+  }
+
+  function runStream(url) {
+    btn.disabled = true;
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Running QA\u2026';
+    footerEl.hidden = true;
+    footerEl.innerHTML = '';
+
+    fetch(url, { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok || !res.body) {
+          throw new Error('HTTP ' + res.status);
+        }
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Running QA\u2026 (connected)';
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+
+        function pump() {
+          return reader.read().then(function (chunk) {
+            if (chunk.done) {
+              if (buffer.trim() !== '') {
+                try {
+                  var tail = JSON.parse(buffer.trim());
+                  if (tail.type === 'done') {
+                    showFooter(tail);
+                  }
+                } catch (e) { /* ignore partial */ }
+              }
+              return;
+            }
+            buffer += decoder.decode(chunk.value, { stream: true });
+            var lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (line === '') {
+                return;
+              }
+              var ev;
+              try {
+                ev = JSON.parse(line);
+              } catch (e) {
+                return;
+              }
+              if (ev.type === 'progress') {
+                statusEl.textContent = progressLabel(ev);
+              } else if (ev.type === 'ping') {
+                statusEl.textContent = 'Running QA\u2026 (connected)';
+              } else if (ev.type === 'error') {
+                statusEl.textContent = 'QA run failed: ' + (ev.message || 'unknown error');
+                throw new Error(ev.message || 'QA error');
+              } else if (ev.type === 'done') {
+                showFooter(ev);
+              }
+            });
+            return pump();
+          });
+        }
+        return pump();
+      })
+      .catch(function (err) {
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'QA run failed: ' + err.message;
+      })
+      .finally(function () {
+        btn.disabled = false;
+      });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var params = new URLSearchParams(new FormData(form));
+    var manualEl = form.querySelector('[name="module_manual"]');
+    var manualSlug = manualEl && manualEl.value ? manualEl.value.trim() : '';
+    if (manualSlug !== '') {
+      params.set('module', manualSlug);
+    }
+    params.delete('module_manual');
+    params.set('stream', '1');
+    runStream(form.getAttribute('action') + '?' + params.toString());
+  });
+})();
+MBQA_JS;
+    echo '</script>';
     echo '</main>';
 }
 
@@ -285,20 +529,32 @@ if (!mbqa_is_cli_sapi() && !$mbqaOptions['run']) {
     exit(0);
 }
 
+if (!mbqa_is_cli_sapi() && $mbqaOptions['run'] && !$mbqaOptions['stream']) {
+    mbqa_render_browser_stream_required();
+    exit(0);
+}
+
 // Why: config.php starts the session and may set headers; browser HTML output must come after require.
 define('ITM_CLI_SCRIPT', true);
+if (!mbqa_is_cli_sapi() && $mbqaOptions['stream']) {
+    $GLOBALS['mbqa_browser_stream'] = true;
+}
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_mbqa_test_user.php';
 
 if (!mbqa_is_cli_sapi()) {
     @set_time_limit(0);
     @ignore_user_abort(true);
-    itm_script_output_begin('Module browser QA runner');
-    mbqa_out("Running QA…\n\n");
+    if (empty($GLOBALS['mbqa_browser_stream'])) {
+        $GLOBALS['mbqa_browser_stream'] = $mbqaOptions['stream'];
+    }
+    if ($mbqaOptions['stream']) {
+        mbqa_browser_stream_begin();
+    }
 }
 if (!isset($conn) || !($conn instanceof mysqli)) {
     mbqa_err("Database connection unavailable.\n");
-    exit(2);
+    exit(mbqa_browser_stream_active() ? 1 : 2);
 }
 
 $baseUrl = $mbqaOptions['base_url'];
@@ -420,6 +676,8 @@ function mbqa_row_ids(string $html): array
 
 function mbqa_step_result(string $step, bool $ok, string $note = ''): array
 {
+    mbqa_browser_progress_emit($step);
+
     return [
         'step' => $step,
         'status' => $ok ? 'Pass' : 'Fail',
@@ -3356,6 +3614,9 @@ function mbqa_delete_record_with_fk_retry(
 $cookieFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_qa_cookies_' . getmypid() . '.txt';
 @unlink($cookieFile);
 
+mbqa_browser_progress_set_context(0, '_runner');
+mbqa_browser_progress_emit('login');
+
 // Login
 $loginGet = mbqa_http($baseUrl . 'login.php', 'GET', null, [], $cookieFile);
 $csrf = mbqa_extract_csrf($loginGet['body']);
@@ -3399,6 +3660,7 @@ foreach ($companiesToRun as $companyId) {
     );
     $companyOk = $switch['status'] >= 200 && $switch['status'] < 400
         && stripos($switch['body'], (string)$companyNames[$companyId]) !== false;
+    mbqa_browser_progress_set_context($companyId, '_preflight');
     $results[] = [
         'module' => '_preflight',
         'company_id' => $companyId,
@@ -3416,6 +3678,8 @@ foreach ($companiesToRun as $companyId) {
         if (!is_dir($modulesDir . DIRECTORY_SEPARATOR . $slug)) {
             continue;
         }
+
+        mbqa_browser_progress_set_context($companyId, $slug);
 
         $tier = 'A';
         if (in_array($slug, $bespokeSmoke, true)) {
@@ -3910,13 +4174,15 @@ foreach ($results as $row) {
 }
 
 $exitCode = $summary['fail'] > 0 ? 1 : 0;
-mbqa_out("Wrote {$jsonPath}\n");
-mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
+if (mbqa_is_cli_sapi()) {
+    mbqa_out("Wrote {$jsonPath}\n");
+    mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
+}
 
-if (!mbqa_is_cli_sapi()) {
+if (mbqa_browser_stream_active()) {
     $jsonRel = '../qa-reports/module-browser-qa-' . $date . '.json';
-    $reportHref = 'module_browser_qa_build_report.php?run=1&amp;date=' . rawurlencode($date);
-    $rerunParams = ['run' => '1'];
+    $reportHref = 'module_browser_qa_build_report.php?run=1&date=' . rawurlencode($date);
+    $rerunParams = ['run' => '1', 'stream' => '1'];
     if ($filterModule !== null && trim((string)$filterModule) !== '') {
         $rerunParams['module'] = trim((string)$filterModule);
     }
@@ -3931,15 +4197,14 @@ if (!mbqa_is_cli_sapi()) {
         $rerunParams['base_url'] = $baseUrl;
     }
     $rerunHref = 'module_browser_qa_runner.php?' . http_build_query($rerunParams);
-    itm_script_output_close_pre();
-    echo '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;margin:16px;max-width:720px;">';
-    echo '<p><strong>' . ($exitCode === 0 ? 'Completed' : 'Completed with failures') . '</strong> — ';
-    echo (int)$summary['pass'] . ' pass, ' . (int)$summary['fail'] . ' fail</p>';
-    echo '<p><a href="' . htmlspecialchars($jsonRel, ENT_QUOTES, 'UTF-8') . '">Download JSON</a> · ';
-    echo '<a href="' . htmlspecialchars($reportHref, ENT_QUOTES, 'UTF-8') . '">Build markdown report</a> · ';
-    echo '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a> · ';
-    echo '<a href="module_browser_qa_runner.php">Run QA runner</a></p></div>';
-    itm_script_output_end();
+    mbqa_browser_stream_emit_done([
+        'pass' => (int)$summary['pass'],
+        'fail' => (int)$summary['fail'],
+        'exit_code' => $exitCode,
+        'json_href' => $jsonRel,
+        'report_href' => $reportHref,
+        'rerun_href' => $rerunHref,
+    ]);
 }
 
 exit($exitCode);
