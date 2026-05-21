@@ -122,6 +122,7 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
 {
     $pass = 0;
     $fail = 0;
+    $passRows = [];
     $failRows = [];
     $moduleRows = [];
     $pilotRows = [];
@@ -136,6 +137,12 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
         foreach ($row['steps'] as $step) {
             if (($step['status'] ?? '') === 'Pass') {
                 $pass++;
+                $passRows[] = [
+                    'module' => $row['module'],
+                    'company_id' => $row['company_id'],
+                    'step' => $step['step'],
+                    'notes' => $step['notes'] ?? '',
+                ];
             } else {
                 $fail++;
                 $failRows[] = [
@@ -258,6 +265,25 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
             $md .= '| ' . $fr['module'] . ' | ' . $fr['company_id'] . ' | ' . $fr['step'] . ' | ' . str_replace('|', '/', $fr['notes']) . " |\n";
             if (++$shown >= 200) {
                 $md .= "\n_(truncated; see JSON for full list)_\n";
+                break;
+            }
+        }
+    }
+
+    $md .= "\n## Pass only (quick index)\n\n";
+    if (empty($passRows)) {
+        $md .= "_No passes recorded._\n";
+    } else {
+        $md .= "| Module | Co | Step | Notes |\n|---|---|---|---|\n";
+        $shown = 0;
+        foreach ($passRows as $pr) {
+            $note = str_replace('|', '/', (string)$pr['notes']);
+            if (strlen($note) > 160) {
+                $note = substr($note, 0, 157) . '...';
+            }
+            $md .= '| ' . $pr['module'] . ' | ' . $pr['company_id'] . ' | ' . $pr['step'] . ' | ' . $note . " |\n";
+            if (++$shown >= 500) {
+                $md .= "\n_(truncated at 500 rows; see JSON for full list)_\n";
                 break;
             }
         }
