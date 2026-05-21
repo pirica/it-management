@@ -12,6 +12,14 @@
         return (cell && cell.textContent ? cell.textContent : '').replace(/\s+/g, ' ').trim();
     }
 
+    // Why: Excel export should keep intentional spacing; list/search UI still uses getCellText() normalization.
+    function getExportCellText(cell) {
+        if (!cell || !cell.textContent) {
+            return '';
+        }
+        return cell.textContent.replace(/\r\n/g, '\n').replace(/\t/g, ' ').trim();
+    }
+
     function tableMeta(table) {
         const heading = table.closest('.content')?.querySelector('h1');
         const filenameBase = sanitizeFilename(heading ? heading.textContent : document.title);
@@ -95,10 +103,10 @@
     function exportTableAsExcel(table) {
         const { filenameBase } = tableMeta(table);
         const clone = cloneTableWithoutActions(table);
-        const headerRow = Array.from(clone.querySelectorAll('thead th')).map(getCellText);
+        const headerRow = Array.from(clone.querySelectorAll('thead th')).map(getExportCellText);
         const rows = [headerRow];
         clone.querySelectorAll('tbody tr').forEach((row) => {
-            rows.push(Array.from(row.querySelectorAll('td')).map(getCellText));
+            rows.push(Array.from(row.querySelectorAll('td')).map(getExportCellText));
         });
 
         // Why: Only real OOXML .xlsx — never HTML disguised as .xls (Excel shows a format/extension warning).

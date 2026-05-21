@@ -443,30 +443,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
     }
 
-    // Why: List edit must update the row by primary key; re-insert-by-user drops id from the URL and can look like a silent no-op.
-    if (empty($errors) && ($crud_table ?? '') === 'user_companies' && $crud_action === 'edit' && $editId > 0) {
-        $activeSql = (int)($data['active'] ?? 1);
-        $grantedByValue = $data['granted_by_user_id'] ?? 'NULL';
-        $grantedBySql = ($grantedByValue === 'NULL' || $grantedByValue === '' || $grantedByValue === null) ? 'NULL' : (string)(int)$grantedByValue;
-
-        $updateSql = 'UPDATE user_companies SET `active`=' . $activeSql
-            . ', `granted_by_user_id`=' . $grantedBySql
-            . ' WHERE id=' . $editId;
-        if ($hasCompany && $company_id > 0) {
-            $updateSql .= ' AND company_id=' . (int)$company_id;
-        }
-        $updateSql .= ' LIMIT 1';
-
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        // Why: mysqli_affected_rows() after itm_run_query() is always 0 — audit logging runs more queries on the same connection.
-        if (itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage)) {
-            header('Location: ' . $listUrl);
-            exit;
-        }
-        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-    }
-
     if (empty($errors) && ($crud_table ?? '') === 'user_companies' && $crud_action === 'edit') {
         $targetUserId = (int)($data['user_id'] ?? 0);
         $postedCompanyIds = $_POST['company_ids'] ?? [];
