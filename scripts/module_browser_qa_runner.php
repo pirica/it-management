@@ -1633,6 +1633,9 @@ function mbqa_unique_scope_capacity(mysqli $conn, string $table, int $companyId)
         }
 
         if ($setCapacity < PHP_INT_MAX) {
+            if (in_array('month', $nonId, true)) {
+                $setCapacity *= 12;
+            }
             $limiting[] = max(1, $setCapacity);
         }
     }
@@ -1943,6 +1946,11 @@ function mbqa_fill_scalar_value(
     bool $inUnique,
     bool $forceRequired = false
 ): ?string {
+    // Calendar month (monthly_budgets.month, forecast_revisions.month): CHECK 1..12, not sequence+1.
+    if ($name === 'month' && preg_match('/^tinyint/', $type)) {
+        return (string)((($sequence - 1) % 12) + 1);
+    }
+
     if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type) || $name === 'active') {
         return (string)($inUnique ? ($sequence + 1) : 1);
     }
