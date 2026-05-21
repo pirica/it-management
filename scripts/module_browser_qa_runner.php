@@ -2007,8 +2007,20 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
 
 function mbqa_index_shows_bulk_actions(string $html): bool
 {
+    $hasBulkForm = stripos($html, 'bulk-delete-form') !== false
+        || stripos($html, 'department-bulk-form') !== false;
+    $hasBulkControl = stripos($html, 'name="bulk_action"') !== false
+        || stripos($html, "name='bulk_action'") !== false
+        || stripos($html, 'bulk-delete-toggle') !== false;
+
+    // Toolbar-only modules (e.g. vlans): bulk form + bulk_action, checkboxes appear after Select to Delete.
+    if ($hasBulkForm && $hasBulkControl) {
+        return true;
+    }
+
+    // Row checkboxes already on index (e.g. user_companies when gated on).
     return stripos($html, 'name="ids[]"') !== false
-        && (stripos($html, 'bulk_action') !== false || stripos($html, 'bulk-delete-form') !== false);
+        && (stripos($html, 'bulk_action') !== false || $hasBulkForm);
 }
 
 /**
@@ -2182,7 +2194,7 @@ function mbqa_bulk_step_na_note(
 
     $reasons = [];
     if (!mbqa_index_shows_bulk_actions($indexHtml)) {
-        $reasons[] = 'bulk UI hidden (no ids[]/bulk_action on index)';
+        $reasons[] = 'bulk UI hidden (no bulk-delete-form/bulk_action on index)';
     }
     if (!is_file($deletePath)) {
         $reasons[] = 'no delete.php';
