@@ -316,6 +316,8 @@ $sampleSeedPrerequisites = [
     'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
     'employee_positions' => ['departments'],
     'employee_onboarding_requests' => ['departments', 'employee_positions'],
+    'approvers' => ['departments', 'employee_positions'],
+    'employee_assignment_history' => ['departments'],
     'inventory_items' => ['inventory_categories', 'suppliers'],
 ];
 
@@ -529,6 +531,10 @@ function mbqa_runner_module_step_exceptions(): array
         // Why: IDF positions need idf_id + device_type parents; HTTP sample seed from database.sql is unreliable in QA.
         'idf_positions' => [
             'sample_data' => 'N/A (HTTP sample seed failed or empty)',
+        ],
+        // Why: database.sql has no INSERT rows for patches_updates; sample_data start + end restore are N/A in QA.
+        'patches_updates' => [
+            'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
     ];
 }
@@ -3560,12 +3566,27 @@ foreach ($companiesToRun as $companyId) {
         $exportXlsHtml = mbqa_html_step_export($index['body'], 'excel', $hasTableExport);
         $steps[] = mbqa_step_result('export_xls', $exportXlsHtml['ok'], $exportXlsHtml['note']);
 
+        // Why: repeat tenant clear after export so import_db runs on an empty table (avoids unique collisions with add-step rows).
+        if (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
+            $clearBeforeImportNote = '';
+            $clearedBeforeImport = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearBeforeImportNote);
+            $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+            $csrfIndex = mbqa_extract_csrf($index['body']);
+            $steps[] = mbqa_step_result(
+                'clear',
+                $clearedBeforeImport,
+                $clearBeforeImportNote !== '' ? $clearBeforeImportNote : ($clearedBeforeImport ? 'SQL tenant clear' : 'Clear failed')
+            );
+        } else {
+            $steps[] = mbqa_step_result('clear', true, 'Skip destructive clear');
+        }
+
         $importHtml = mbqa_html_step_import_db($index['body'], $hasTableExport);
         $importDbNa = mbqa_runner_module_step_exception_note($slug, 'import_db');
         if ($importDbNa !== null) {
             $steps[] = mbqa_step_result('import_db', true, $importDbNa);
         } elseif ($importHtml['ok'] && $csrfIndex !== '' && $hasTableExport) {
-            // Why: import rows pick a free cost_center via mbqa_unique_expense_import_row; do not wipe add-step rows here.
+            // Why: import rows pick a free cost_center via mbqa_unique_expense_import_row; export rows were captured before the second clear.
 
             $indexImport = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
             $csrfIndex = mbqa_extract_csrf($indexImport['body']);
