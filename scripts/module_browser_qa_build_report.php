@@ -3,13 +3,17 @@
  * Build markdown QA report from JSON output of module_browser_qa_runner.php.
  *
  * CLI: php scripts/module_browser_qa_build_report.php [--date=YYYY-MM-DD]
- * Browser: scripts/module_browser_qa_build_report.php (form) or ?run=1&date=YYYY-MM-DD
+ * Browser: scripts/module_browser_qa_build_report.php (form) or ?run=1
+ *
+ * Reads qa-reports/module-browser-qa.json (runner overwrites each run).
+ * --date= only for legacy module-browser-qa-YYYY-MM-DD.json files.
  */
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
+require_once __DIR__ . '/lib/mbqa_report_paths.php';
 
 /**
  * @return array{run:bool, help:bool, date:string}
@@ -79,14 +83,14 @@ function mbqar_print_help(): void
         itm_script_output_begin('Module browser QA — build report');
     }
 
-    mbqar_out("Build markdown from qa-reports/module-browser-qa-YYYY-MM-DD.json\n\n");
+    mbqar_out("Build markdown from qa-reports/module-browser-qa.json\n\n");
     mbqar_out("Options:\n");
-    mbqar_out("  --date=YYYY-MM-DD   Report date (default today)\n");
+    mbqar_out("  --date=YYYY-MM-DD   Legacy dated JSON only (default: fixed module-browser-qa.json)\n");
     mbqar_out("  --help              Show this help\n\n");
-    mbqar_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD.md\n\n");
+    mbqar_out("Output: qa-reports/module-browser-qa.md (overwritten each build)\n\n");
 
     if (!mbqar_is_cli_sapi()) {
-        mbqar_out("Browser: submit the form or use ?run=1&date=2026-05-20\n");
+        mbqar_out("Browser: submit the form or use ?run=1\n");
         echo '<p><a href="module_browser_qa_build_report.php">← Back to form</a></p></main>';
     }
 }
@@ -305,16 +309,18 @@ function mbqar_render_browser_form(array $options): void
     header('Content-Type: text/html; charset=utf-8');
     itm_script_browser_nav_echo();
 
-    $date = htmlspecialchars($options['date'], ENT_QUOTES, 'UTF-8');
-
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA — build report</h1>';
-    echo '<p>Reads <code>qa-reports/module-browser-qa-&lt;date&gt;.json</code> from the runner and writes a markdown summary.</p>';
+    echo '<p>Reads <code>qa-reports/module-browser-qa.json</code> from the latest runner output and writes <code>module-browser-qa.md</code>.</p>';
     echo '<form method="get" action="module_browser_qa_build_report.php" style="display:grid;gap:12px;max-width:360px;">';
     echo '<input type="hidden" name="run" value="1">';
-    echo '<label>Report date<br><input type="date" name="date" value="' . $date . '" style="width:100%;padding:8px;"></label>';
     echo '<button type="submit" style="padding:10px 16px;font-weight:600;">Build report</button>';
     echo '</form>';
+    if ($options['date'] !== date('Y-m-d')) {
+        $legacyDate = htmlspecialchars($options['date'], ENT_QUOTES, 'UTF-8');
+        echo '<p style="font-size:0.9rem;">Legacy dated JSON: <a href="module_browser_qa_build_report.php?run=1&amp;date='
+            . rawurlencode($legacyDate) . '">build from ' . $legacyDate . '</a></p>';
+    }
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php">Run QA runner</a> · ';
     echo '<a href="module_browser_qa_build_report.php?help=1">Help</a></p>';
     echo '</main>';
@@ -516,8 +522,8 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
         }
     }
 
-    $jsonPath = $root . '/qa-reports/module-browser-qa-' . $date . '.json';
-    $outPath = $root . '/qa-reports/module-browser-qa-' . $date . '.md';
+    $jsonPath = mbqa_report_json_path($root);
+    $outPath = mbqa_report_markdown_path($root);
 
     return [
         'md' => $md,
@@ -547,7 +553,15 @@ if (!mbqar_is_cli_sapi() && !$options['run']) {
 }
 
 $date = $options['date'];
-$jsonPath = $root . '/qa-reports/module-browser-qa-' . $date . '.json';
+$jsonPath = mbqa_report_json_path($root);
+$usingLegacyJson = false;
+if (!is_file($jsonPath) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    $legacyPath = mbqa_report_legacy_json_path($root, $date);
+    if (is_file($legacyPath)) {
+        $jsonPath = $legacyPath;
+        $usingLegacyJson = true;
+    }
+}
 
 if (!is_file($jsonPath)) {
     if (!mbqar_is_cli_sapi()) {
@@ -588,7 +602,20 @@ if (isset($data['results']) && is_array($data['results'])) {
     $reportPayload = ['results' => $data];
 }
 
-$built = mbqar_build_markdown($root, $date, $runnerRows, is_array($data['module_step_exceptions'] ?? null) ? $data['module_step_exceptions'] : []);
+$reportTitleDate = $date;
+if (!$usingLegacyJson && isset($reportPayload['generated_at']) && trim((string)$reportPayload['generated_at']) !== '') {
+    $reportTitleDate = substr((string)$reportPayload['generated_at'], 0, 10);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $reportTitleDate)) {
+        $reportTitleDate = $date;
+    }
+}
+
+$built = mbqar_build_markdown(
+    $root,
+    $reportTitleDate,
+    $runnerRows,
+    is_array($data['module_step_exceptions'] ?? null) ? $data['module_step_exceptions'] : []
+);
 $rerunHref = mbqar_rerun_runner_href($reportPayload);
 // BOM helps Windows Notepad/openers detect UTF-8; file content remains UTF-8 (see AGENTS.md).
 itm_write_utf8_text_file($built['out_path'], $built['md'], true);
@@ -605,9 +632,9 @@ echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Hel
 echo '<h1>Report built</h1>';
 echo '<p><strong>' . (int)$built['pass'] . ' pass</strong>, <strong>' . (int)$built['fail'] . ' fail</strong> ';
 echo '(from <code>' . htmlspecialchars(basename($built['json_path']), ENT_QUOTES, 'UTF-8') . '</code>)</p>';
-$mdRel = '../qa-reports/module-browser-qa-' . $date . '.md';
+$mdRel = '../qa-reports/' . mbqa_report_markdown_basename();
 echo '<p><a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a> · ';
-echo '<a href="module_browser_qa_build_report.php">Build another date</a> · ';
+echo '<a href="module_browser_qa_build_report.php?run=1">Rebuild report</a> · ';
 echo '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a> · ';
 echo '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';
 echo '<h2>Preview</h2>';
