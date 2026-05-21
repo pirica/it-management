@@ -14,7 +14,7 @@ $crud_title = $crud_title ?? 'Cable Colors';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -830,7 +830,7 @@ if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($displayFieldColumns as $col) {
+    foreach ($visibleFieldColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') {
             continue;

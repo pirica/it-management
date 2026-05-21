@@ -10,6 +10,4 @@ $crud_title = 'Cable Colors';
 $crud_action = 'list_all';
 ?>
 <?php
-require '../../config/config.php';
-
 require 'index.php';

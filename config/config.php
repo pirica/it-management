@@ -7,6 +7,12 @@
  * and global security middleware (authentication & CSRF).
  */
 
+// Why: Many entry files use `require` (not `require_once`); skip re-execution when already loaded.
+if (defined('ITM_CONFIG_LOADED')) {
+    return;
+}
+define('ITM_CONFIG_LOADED', true);
+
 /**
  * Why: Local `.env` keeps API keys out of git while remaining optional for Laragon/dev installs.
  */
