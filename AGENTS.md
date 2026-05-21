@@ -113,7 +113,7 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 | Script | Role |
 |--------|------|
 | `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module `error_log` scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/import/`single_delete`/`clear_table`/end sample restore + `error_log` check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
-| `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown summary from the JSON (preflight, failure categories, preview in browser). |
+| `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, failures quick index, preview in browser. |
 
 **Commands (repository root, Laragon):**
 
