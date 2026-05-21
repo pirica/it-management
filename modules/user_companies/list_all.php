@@ -180,7 +180,29 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_is_qa_import_user_company_row($conn, $row) {
+    $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $sql = 'SELECT username FROM users WHERE id=' . $userId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $userRow = $res ? mysqli_fetch_assoc($res) : null;
+    $username = strtolower(trim((string)($userRow['username'] ?? '')));
+
+    if ($username === '') {
+        return false;
+    }
+
+    return strncmp($username, 'qa-import-', 10) === 0 || strncmp($username, 'mbqa-', 5) === 0;
+}
+
 function cr_is_admin_user_company_row($conn, $row) {
+    if (cr_is_qa_import_user_company_row($conn, $row)) {
+        return false;
+    }
+
     $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
     if ($userId <= 0) {
         return false;

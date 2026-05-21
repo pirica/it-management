@@ -356,7 +356,7 @@ function mbqa_is_admin_user_company_assignment_row(mysqli $conn, array $row): bo
     }
 
     $username = strtolower(trim((string)($userRow['username'] ?? '')));
-    if ($username !== '' && strncmp($username, 'qa-import-', 10) === 0) {
+    if ($username !== '' && (strncmp($username, 'qa-import-', 10) === 0 || strncmp($username, 'mbqa-', 5) === 0)) {
         return false;
     }
 
