@@ -8,7 +8,7 @@
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
  *   bulk_delete — when rows >= perPage and bulk UI visible on index; POST delete.php with up to 3 ids[].
- *   clear_table — same row gate as bulk_delete.
+ *   clear_table — after export_xls, before second clear (same row gate as bulk_delete).
  *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
  *   pagination (after add) — when rows > perPage: page=1 must render Next→page=2; page=2 must render Previous→page=1 in HTML (sort=id).
  * Each module scopes error_log.txt (rename to error_log-N.txt when present, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
@@ -809,7 +809,7 @@ function mbqa_error_log_byte_offset(): int
 }
 
 /**
- * HTTP-only sample seed at end of module QA (after clear_table); does not use database.sql fallback.
+ * HTTP-only sample seed at end of module QA (after single_delete); does not use database.sql fallback.
  *
  * @return array{ok:bool,note:string,na:bool}
  */
@@ -3670,7 +3670,29 @@ foreach ($companiesToRun as $companyId) {
         $exportXlsHtml = mbqa_html_step_export($index['body'], 'excel', $hasTableExport);
         $steps[] = mbqa_step_result('export_xls', $exportXlsHtml['ok'], $exportXlsHtml['note']);
 
-        // Why: repeat tenant clear after export so import_db runs on an empty table (avoids unique collisions with add-step rows).
+        $canRunClearTable = $rowCountAfterAdd >= $perPage
+            && mbqa_index_shows_bulk_actions($index['body'])
+            && is_file($deletePath)
+            && $csrfIndex !== '';
+
+        if ($canRunClearTable) {
+            $clearTableHtml = mbqa_html_step_clear_table_button($index['body']);
+            if (!$clearTableHtml['ok']) {
+                $steps[] = mbqa_step_result('clear_table', false, $clearTableHtml['note']);
+            } else {
+                $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug, $conn, $companyId);
+                $clearTableNote = $clearResult['note'] . '; ' . $clearTableHtml['note'];
+                $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearTableNote);
+            }
+        } else {
+            $steps[] = mbqa_step_result(
+                'clear_table',
+                true,
+                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'before import clear')
+            );
+        }
+
+        // Why: repeat tenant clear after export (and optional clear_table) so import_db runs on an empty table.
         if (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
             $clearBeforeImportNote = '';
             $clearedBeforeImport = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearBeforeImportNote);
@@ -3812,30 +3834,6 @@ foreach ($companiesToRun as $companyId) {
             }
         } else {
             $steps[] = mbqa_step_result('single_delete', true, $deleteId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
-        }
-
-        $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
-        $csrfIndex = mbqa_extract_csrf($index['body']);
-        $canRunClearTable = $rowCountAfterAdd >= $perPage
-            && mbqa_index_shows_bulk_actions($index['body'])
-            && is_file($deletePath)
-            && $csrfIndex !== '';
-
-        if ($canRunClearTable) {
-            $clearTableHtml = mbqa_html_step_clear_table_button($index['body']);
-            if (!$clearTableHtml['ok']) {
-                $steps[] = mbqa_step_result('clear_table', false, $clearTableHtml['note']);
-            } else {
-            $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug, $conn, $companyId);
-            $clearTableNote = $clearResult['note'] . '; ' . $clearTableHtml['note'];
-            $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearTableNote);
-            }
-        } else {
-            $steps[] = mbqa_step_result(
-                'clear_table',
-                true,
-                mbqa_bulk_step_na_note($rowCountAfterAdd, $perPage, $index['body'], $deletePath, $csrfIndex, 'after add')
-            );
         }
 
         $endSampleDataNaNote = mbqa_runner_module_step_exception_note($slug, 'sample_data');
