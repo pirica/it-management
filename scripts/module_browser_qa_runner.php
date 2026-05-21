@@ -337,46 +337,59 @@ function mbqa_index_is_empty(string $html): bool
 }
 
 /**
- * user_companies clear_table intentionally keeps Admin role assignments for the active tenant.
+ * Mirrors modules/user_companies cr_is_admin_user_company_row(): Admin role, not username label.
  */
-function mbqa_user_companies_only_admin_assignments_remain(string $html): bool
+function mbqa_is_admin_user_company_assignment_row(mysqli $conn, array $row): bool
 {
-    $rows = mbqa_extract_table_export_rows($html);
-    if (count($rows) < 2) {
+    $userId = (int)($row['user_id'] ?? 0);
+    if ($userId <= 0) {
         return false;
     }
 
-    $userColumnIndex = null;
-    foreach ($rows[0] as $index => $header) {
-        if (strtolower(trim((string)$header)) === 'user') {
-            $userColumnIndex = (int)$index;
-            break;
-        }
-    }
-    if ($userColumnIndex === null) {
+    $sql = 'SELECT u.username, ur.name AS role_name FROM users u'
+        . ' LEFT JOIN user_roles ur ON ur.id = u.role_id'
+        . ' WHERE u.id=' . $userId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $userRow = $res ? mysqli_fetch_assoc($res) : null;
+    if (!is_array($userRow)) {
         return false;
     }
 
-    for ($rowIndex = 1; $rowIndex < count($rows); $rowIndex++) {
-        $userLabel = strtolower(trim((string)($rows[$rowIndex][$userColumnIndex] ?? '')));
-        if ($userLabel === '' || strncmp($userLabel, 'qa-import-', 10) === 0) {
-            return false;
-        }
-        if ($userLabel !== 'admin') {
-            return false;
-        }
+    $username = strtolower(trim((string)($userRow['username'] ?? '')));
+    if ($username !== '' && strncmp($username, 'qa-import-', 10) === 0) {
+        return false;
     }
 
-    return true;
+    return isset($userRow['role_name']) && strcasecmp((string)$userRow['role_name'], 'Admin') === 0;
 }
 
-function mbqa_clear_table_index_ok(string $moduleSlug, string $html): bool
+/**
+ * Count tenant user_companies rows that clear_table should delete (non-Admin assignments).
+ */
+function mbqa_user_companies_non_admin_row_count(mysqli $conn, int $companyId): int
 {
-    if (mbqa_index_is_empty($html)) {
-        return true;
+    if ($companyId <= 0) {
+        return -1;
     }
 
-    if ($moduleSlug === 'user_companies' && mbqa_user_companies_only_admin_assignments_remain($html)) {
+    $count = 0;
+    $res = mysqli_query($conn, 'SELECT id, user_id FROM user_companies WHERE company_id=' . (int)$companyId);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        if (!mbqa_is_admin_user_company_assignment_row($conn, $row)) {
+            $count++;
+        }
+    }
+
+    return $count;
+}
+
+function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $conn = null, int $companyId = 0): bool
+{
+    if ($moduleSlug === 'user_companies' && $conn instanceof mysqli && $companyId > 0) {
+        return mbqa_user_companies_non_admin_row_count($conn, $companyId) === 0;
+    }
+
+    if (mbqa_index_is_empty($html)) {
         return true;
     }
 
@@ -406,7 +419,7 @@ function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, stri
     }
 
     if (!is_file($createPath)) {
-        return ['ok' => true, 'note' => 'N/A (no create.php)'];
+        return ['ok' => false, 'note' => 'missing create.php'];
     }
 
     $create = mbqa_http($moduleUrl . 'create.php', 'GET', null, [], $cookieFile);
@@ -2142,8 +2155,14 @@ function mbqa_run_bulk_delete(string $moduleUrl, string $cookieFile, string $csr
 /**
  * @return array{ok:bool,note:string}
  */
-function mbqa_run_clear_table(string $moduleUrl, string $cookieFile, string $csrf, string $moduleSlug = ''): array
-{
+function mbqa_run_clear_table(
+    string $moduleUrl,
+    string $cookieFile,
+    string $csrf,
+    string $moduleSlug = '',
+    ?mysqli $conn = null,
+    int $companyId = 0
+): array {
     if ($csrf === '') {
         return ['ok' => false, 'note' => 'N/A no csrf'];
     }
@@ -2164,11 +2183,12 @@ function mbqa_run_clear_table(string $moduleUrl, string $cookieFile, string $csr
         return ['ok' => false, 'note' => 'index after clear_table HTTP ' . $index['status']];
     }
 
-    if (!mbqa_clear_table_index_ok($moduleSlug, $index['body'])) {
+    if (!mbqa_clear_table_index_ok($moduleSlug, $index['body'], $conn, $companyId)) {
         return ['ok' => false, 'note' => 'rows still present after clear_table'];
     }
 
-    if ($moduleSlug === 'user_companies' && mbqa_user_companies_only_admin_assignments_remain($index['body'])) {
+    if ($moduleSlug === 'user_companies' && $conn instanceof mysqli && $companyId > 0
+        && mbqa_user_companies_non_admin_row_count($conn, $companyId) === 0) {
         return ['ok' => true, 'note' => 'cleared; Admin assignment(s) retained by policy'];
     }
 
@@ -2824,7 +2844,7 @@ foreach ($companiesToRun as $companyId) {
             && $csrfIndex !== '';
 
         if ($canRunClearTable) {
-            $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug);
+            $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug, $conn, $companyId);
             $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
         } else {
             $steps[] = mbqa_step_result(

@@ -730,7 +730,11 @@ if ($crud_action === 'delete') {
                 continue;
             }
             $selectedCount++;
-            $rowSql = 'SELECT user_id FROM user_companies WHERE id=' . $id . ' LIMIT 1';
+            $rowSql = 'SELECT user_id FROM user_companies WHERE id=' . $id;
+            if ($hasCompany && $company_id > 0) {
+                $rowSql .= ' AND company_id=' . (int)$company_id;
+            }
+            $rowSql .= ' LIMIT 1';
             $rowRes = mysqli_query($conn, $rowSql);
             $rowData = $rowRes ? mysqli_fetch_assoc($rowRes) : null;
             if (cr_is_admin_user_company_row($conn, is_array($rowData) ? $rowData : [])) {
@@ -767,7 +771,11 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
-        $rowSql = 'SELECT user_id FROM user_companies WHERE id=' . $id . ' LIMIT 1';
+        $rowSql = 'SELECT user_id FROM user_companies WHERE id=' . $id;
+        if ($hasCompany && $company_id > 0) {
+            $rowSql .= ' AND company_id=' . (int)$company_id;
+        }
+        $rowSql .= ' LIMIT 1';
         $rowRes = mysqli_query($conn, $rowSql);
         $rowData = $rowRes ? mysqli_fetch_assoc($rowRes) : null;
         if (cr_is_admin_user_company_row($conn, is_array($rowData) ? $rowData : [])) {
