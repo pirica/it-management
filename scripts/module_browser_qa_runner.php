@@ -1338,6 +1338,9 @@ function mbqa_unique_ip_subnets_import_row(mysqli $conn, int $companyId, array $
     $cidrIndex = false;
     $networkIndex = false;
     $prefixIndex = false;
+    $gatewayIndex = false;
+    $dns1Index = false;
+    $dns2Index = false;
     $vlanIndex = false;
     foreach ($headers as $i => $label) {
         $key = strtolower(trim(preg_replace('/\s+/', ' ', (string)$label)));
@@ -1347,6 +1350,12 @@ function mbqa_unique_ip_subnets_import_row(mysqli $conn, int $companyId, array $
             $networkIndex = $i;
         } elseif ($key === 'prefix length') {
             $prefixIndex = $i;
+        } elseif ($key === 'gateway ip') {
+            $gatewayIndex = $i;
+        } elseif ($key === 'dns 1') {
+            $dns1Index = $i;
+        } elseif ($key === 'dns 2') {
+            $dns2Index = $i;
         } elseif ($key === 'vlan' || $key === 'vlan id') {
             $vlanIndex = $i;
         }
@@ -1383,6 +1392,17 @@ function mbqa_unique_ip_subnets_import_row(mysqli $conn, int $companyId, array $
             }
             if ($prefixIndex !== false) {
                 $values[$prefixIndex] = '24';
+            }
+            // Keep gateway/DNS inside the rewritten /24 (JSON import skips create/edit range checks).
+            $gateway = '10.' . $octet . '.0.1';
+            if ($gatewayIndex !== false) {
+                $values[$gatewayIndex] = $gateway;
+            }
+            if ($dns1Index !== false) {
+                $values[$dns1Index] = '';
+            }
+            if ($dns2Index !== false) {
+                $values[$dns2Index] = '';
             }
 
             return [$headers, $values];
