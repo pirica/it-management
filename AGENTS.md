@@ -129,7 +129,14 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
-**Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (delete `error_log.txt` when writable; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (random rows, target ≥ `records_per_page` when schema allows; grow unique-scope parents first) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **import_db** (one insertable row smoke test from export headers + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
+**Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (delete `error_log.txt` when writable; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF: POST `delete.php` with up to 3 `ids[]`; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **import_db** (one insertable row smoke test from export headers + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
+
+**Tier A `add` / `bulk_delete` (runner vs browser):**
+
+| Step | Runner (`module_browser_qa_runner.php`) | Manual UI (`js/bulk-delete-selection.js` in `includes/header.php`) |
+|------|----------------------------------------|---------------------------------------------------------------------|
+| **`add`** | `mbqa_ensure_bulk_sample_rows()` — random inserts until tenant count ≥ `records_per_page` when schema/unique keys allow | N/A (DB-only in QA) |
+| **`bulk_delete`** | POST `modules/<slug>/delete.php` with `bulk_action=bulk_delete` and up to 3 `ids[]` (skips two-step “Select to Delete”) | **Select to Delete** shows row checkboxes → **Delete Selected** submits; **Cancel** (`cancelButton.textContent = 'Cancel'`) exits selection without POST |
 
 **FK-aware clear / delete (PR #1722):**
 
@@ -202,7 +209,7 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 ### 5. Standard Feature Set
 Every module (excluding the Protection Zone) must implement:
 * **Hide** `company_id` from all UI views.
-* **Bulk Actions:** "Select to Delete" and "Clear Table" (visible if count >= `records_per_page`).
+* **Bulk Actions:** "Select to Delete" and "Clear Table" (visible if count >= `records_per_page`). List screens use shared **`js/bulk-delete-selection.js`**: first click enables checkboxes; second click deletes selected rows; **Cancel** exits selection mode without deleting (do not duplicate inline `selectionMode` scripts in modules).
 * **Search:** Comprehensive search across all visible fields.
 * **Order:** Standardized sort fields ASC DESC - '▲' : '▼'.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).

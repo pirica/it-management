@@ -568,51 +568,5 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         </div>
     </div>
 </div>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const selectAllRows = document.getElementById('select-all-rows');
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
-    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
-    let selectionMode = false;
-
-    if (!selectAllRows || !bulkDeleteForm || !toggleButton) {
-        return;
-    }
-
-    selectAllRows.addEventListener('change', function () {
-        rowCheckboxes.forEach(function (checkbox) {
-            checkbox.checked = selectAllRows.checked;
-        });
-    });
-
-    bulkDeleteForm.addEventListener('submit', function (event) {
-        if (event.submitter !== toggleButton) {
-            return;
-        }
-
-        if (!selectionMode) {
-            event.preventDefault();
-            selectionMode = true;
-            toggleButton.textContent = 'Delete Selected';
-            return;
-        }
-
-        const anySelected = Array.from(rowCheckboxes).some(function (checkbox) {
-            return checkbox.checked;
-        });
-
-        if (!anySelected) {
-            event.preventDefault();
-            alert('Please select at least one record to delete.');
-            return;
-        }
-
-        if (!confirm('Delete selected records?')) {
-            event.preventDefault();
-        }
-    });
-});
-</script>
 </body>
 </html>
