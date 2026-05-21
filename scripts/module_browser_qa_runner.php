@@ -6,8 +6,8 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
- *   bulk_delete — when rows >= perPage and delete.php + CSRF: POST delete.php with up to 3 ids[] (direct POST;
- *     does not click Select to Delete / Cancel; browser Cancel UX is js/bulk-delete-selection.js).
+ *   bulk_cancel — browser only: cancelButton.textContent = 'Cancel' (js/bulk-delete-selection.js); runner N/A;
+ *   bulk_delete — when rows >= perPage and delete.php + CSRF: POST delete.php with up to 3 ids[].
  * clear_table uses the same row-count gate as bulk_delete.
  * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
@@ -126,6 +126,10 @@ function mbqa_print_help(): void
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
     mbqa_out("  --help           Show this help\n\n");
     mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD.json\n\n");
+    mbqa_out("Tier A bulk steps (after add):\n");
+    mbqa_out("  add         Insert ~30 random tenant rows if count < records_per_page + 1\n");
+    mbqa_out("  bulk_cancel Browser: cancelButton.textContent = 'Cancel' (js/bulk-delete-selection.js); runner N/A\n");
+    mbqa_out("  bulk_delete If rows >= perPage and UI + delete.php: POST delete.php with up to 3 ids[]\n\n");
 
     if (!mbqa_is_cli_sapi()) {
         mbqa_out("Browser: open this script, submit the form with Run QA, or use query flags:\n");
@@ -2336,6 +2340,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('export_xls', true, 'N/A smoke');
             $steps[] = mbqa_step_result('import_db', true, 'N/A smoke');
             $steps[] = mbqa_step_result('single_delete', true, 'N/A smoke');
+            $steps[] = mbqa_step_result('bulk_cancel', true, 'N/A smoke');
             $steps[] = mbqa_step_result('bulk_delete', true, 'N/A');
             $steps[] = mbqa_step_result('clear_table', true, 'N/A');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
@@ -2356,7 +2361,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('clear', true, 'N/A façade routing');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A façade');
             $steps[] = mbqa_step_result('add', true, 'N/A façade');
-            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'bulk_delete', 'clear_table'] as $s) {
+            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
             $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
@@ -2401,6 +2406,12 @@ foreach ($companiesToRun as $companyId) {
         } else {
             $steps[] = mbqa_step_result('add', $bulkResult['ok'], $bulkResult['note']);
         }
+
+        $steps[] = mbqa_step_result(
+            'bulk_cancel',
+            true,
+            'N/A (browser: cancelButton.textContent = Cancel via js/bulk-delete-selection.js)'
+        );
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
