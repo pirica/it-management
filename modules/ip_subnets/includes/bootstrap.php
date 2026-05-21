@@ -1,4 +1,7 @@
 <?php
+// Module root (ip_subnets/) for requires from includes/partials/render.php.
+$ipSubnetsModuleDir = dirname(__DIR__);
+
 // INITIALIZATION
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
