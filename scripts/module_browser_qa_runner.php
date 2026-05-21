@@ -1200,10 +1200,34 @@ function mbqa_unique_scope_limiting_parent_tables(mysqli $conn, string $table, i
     return array_values($parents);
 }
 
+/**
+ * users is never cleared during QA, but junction tables (user_companies) need enough distinct user_id values.
+ */
+function mbqa_ensure_tenant_users_for_bulk(mysqli $conn, int $companyId, int $goalCount): int
+{
+    if ($companyId <= 0 || !itm_is_safe_identifier('users') || !itm_table_has_column($conn, 'users', 'company_id')) {
+        return 0;
+    }
+
+    $goalCount = max(1, $goalCount);
+    $current = mbqa_tenant_row_count($conn, 'users', $companyId);
+    if ($current >= $goalCount) {
+        return $current;
+    }
+
+    mbqa_insert_random_rows($conn, 'users', $companyId, $goalCount - $current, 0);
+
+    return mbqa_tenant_row_count($conn, 'users', $companyId);
+}
+
 function mbqa_grow_unique_scope_parents(mysqli $conn, string $table, int $companyId, int $goalCount): void
 {
     $goalCount = max(1, $goalCount);
     foreach (mbqa_unique_scope_limiting_parent_tables($conn, $table, $companyId) as $parentTable) {
+        if ($parentTable === 'users') {
+            mbqa_ensure_tenant_users_for_bulk($conn, $companyId, $goalCount);
+            continue;
+        }
         if (in_array($parentTable, mbqa_tables_never_clear(), true)) {
             continue;
         }
@@ -1568,6 +1592,14 @@ function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool
     }
 
     if (in_array($refTable, mbqa_tables_never_clear(), true)) {
+        if ($refTable === 'users') {
+            mbqa_ensure_tenant_users_for_bulk($conn, $companyId, max($sequence, mbqa_bulk_row_target_ideal($conn)));
+            $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
+            if (!empty($ids)) {
+                return (int)$ids[($sequence - 1) % count($ids)];
+            }
+        }
+
         return 0;
     }
 
@@ -1794,9 +1826,14 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
 
     $target = mbqa_bulk_row_target_for_table($conn, $table, $companyId);
     $capacity = mbqa_unique_scope_capacity($conn, $table, $companyId);
-    $targetNote = ($capacity < $ideal && $capacity < PHP_INT_MAX)
-        ? (' target=' . $target . ' capped by unique scope')
-        : (' target=' . $target);
+    $scopeParents = mbqa_unique_scope_limiting_parent_tables($conn, $table, $companyId);
+    $targetNote = ' target=' . $target;
+    if ($capacity < $ideal && $capacity < PHP_INT_MAX) {
+        $targetNote .= ' capped by unique scope';
+        if (!empty($scopeParents)) {
+            $targetNote .= ' (' . implode(', ', $scopeParents) . ')';
+        }
+    }
 
     mbqa_ensure_parent_rows_for_inserts($conn, $table, $companyId, $ideal);
 
