@@ -549,7 +549,8 @@ if (!is_file($jsonPath)) {
     exit(1);
 }
 
-$data = json_decode((string)file_get_contents($jsonPath), true);
+$jsonRaw = itm_read_utf8_text_file($jsonPath);
+$data = json_decode($jsonRaw, true);
 if (!is_array($data)) {
     if (!mbqar_is_cli_sapi()) {
         header('Content-Type: text/html; charset=utf-8');
