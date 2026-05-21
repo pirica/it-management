@@ -229,6 +229,8 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 
 **Browser live progress (AJAX):** Click **Run QA** on the form (not bare `?run=1`). JavaScript polls `?ajax=progress&run_id=…` every 400ms while the run request executes with `?run=1&ajax=1&run_id=…`. Progress is written to `qa-reports/.mbqa-progress-{run_id}.json` on each step (`Running QA… co {id} — {module} - {step}`). **Stop** sets a cancel flag (`?ajax=cancel`) and aborts the fetch; the runner exits between companies/modules. CLI unchanged.
 
+**Bare `?run=1` (with or without `stream=1`, without `ajax=1`):** the runner shows an HTML resume page (not a run): `run=1` alone does not poll progress; `stream=1` is legacy NDJSON (often buffered on Laragon). Use the form so the URL includes `ajax=1` and `run_id`.
+
 **Markdown report (`module_browser_qa_build_report.php`):** after `php scripts/module_browser_qa_build_report.php`, the `.md` under `qa-reports/` includes:
 
 1. **Summary** — pass/fail counts  
