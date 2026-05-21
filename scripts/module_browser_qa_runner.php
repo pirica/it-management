@@ -336,6 +336,53 @@ function mbqa_index_is_empty(string $html): bool
     return stripos($html, 'No records found') !== false;
 }
 
+/**
+ * user_companies clear_table intentionally keeps Admin role assignments for the active tenant.
+ */
+function mbqa_user_companies_only_admin_assignments_remain(string $html): bool
+{
+    $rows = mbqa_extract_table_export_rows($html);
+    if (count($rows) < 2) {
+        return false;
+    }
+
+    $userColumnIndex = null;
+    foreach ($rows[0] as $index => $header) {
+        if (strtolower(trim((string)$header)) === 'user') {
+            $userColumnIndex = (int)$index;
+            break;
+        }
+    }
+    if ($userColumnIndex === null) {
+        return false;
+    }
+
+    for ($rowIndex = 1; $rowIndex < count($rows); $rowIndex++) {
+        $userLabel = strtolower(trim((string)($rows[$rowIndex][$userColumnIndex] ?? '')));
+        if ($userLabel === '' || strncmp($userLabel, 'qa-import-', 10) === 0) {
+            return false;
+        }
+        if ($userLabel !== 'admin') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function mbqa_clear_table_index_ok(string $moduleSlug, string $html): bool
+{
+    if (mbqa_index_is_empty($html)) {
+        return true;
+    }
+
+    if ($moduleSlug === 'user_companies' && mbqa_user_companies_only_admin_assignments_remain($html)) {
+        return true;
+    }
+
+    return false;
+}
+
 function mbqa_index_has_sample_seed_error(string $html): bool
 {
     return stripos($html, 'No sample rows found in database.sql') !== false;
@@ -2052,7 +2099,7 @@ function mbqa_run_bulk_delete(string $moduleUrl, string $cookieFile, string $csr
 /**
  * @return array{ok:bool,note:string}
  */
-function mbqa_run_clear_table(string $moduleUrl, string $cookieFile, string $csrf): array
+function mbqa_run_clear_table(string $moduleUrl, string $cookieFile, string $csrf, string $moduleSlug = ''): array
 {
     if ($csrf === '') {
         return ['ok' => false, 'note' => 'N/A no csrf'];
@@ -2074,8 +2121,12 @@ function mbqa_run_clear_table(string $moduleUrl, string $cookieFile, string $csr
         return ['ok' => false, 'note' => 'index after clear_table HTTP ' . $index['status']];
     }
 
-    if (!mbqa_index_is_empty($index['body'])) {
+    if (!mbqa_clear_table_index_ok($moduleSlug, $index['body'])) {
         return ['ok' => false, 'note' => 'rows still present after clear_table'];
+    }
+
+    if ($moduleSlug === 'user_companies' && mbqa_user_companies_only_admin_assignments_remain($index['body'])) {
+        return ['ok' => true, 'note' => 'cleared; Admin assignment(s) retained by policy'];
     }
 
     return ['ok' => true, 'note' => 'table empty for tenant'];
@@ -2730,7 +2781,7 @@ foreach ($companiesToRun as $companyId) {
             && $csrfIndex !== '';
 
         if ($canRunClearTable) {
-            $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex);
+            $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug);
             $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
         } else {
             $steps[] = mbqa_step_result(

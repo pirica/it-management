@@ -331,12 +331,18 @@ if ($crud_action === 'delete') {
         }
 
         $candidateIds = [];
+        $skippedAdminCount = 0;
         $candidateRes = mysqli_query($conn, 'SELECT id FROM ' . cr_escape_identifier($crud_table) . $scopeWhere);
         while ($candidateRes && ($candidateRow = mysqli_fetch_assoc($candidateRes))) {
             $candidateId = (int)($candidateRow['id'] ?? 0);
-            if ($candidateId > 0 && !cr_is_admin_user_company_record($conn, $candidateId)) {
-                $candidateIds[$candidateId] = $candidateId;
+            if ($candidateId <= 0) {
+                continue;
             }
+            if (cr_is_admin_user_company_record($conn, $candidateId)) {
+                $skippedAdminCount++;
+                continue;
+            }
+            $candidateIds[$candidateId] = $candidateId;
         }
 
         if (!empty($candidateIds)) {
@@ -346,6 +352,11 @@ if ($crud_action === 'delete') {
                 header('Location: ' . $listUrl);
                 exit;
             }
+        }
+
+        if ($skippedAdminCount > 0 && empty($_SESSION['crud_error'])) {
+            $_SESSION['crud_success'] = 'Cleared deletable assignments. '
+                . $skippedAdminCount . ' Admin assignment(s) were retained (required for system access).';
         }
 
         header('Location: ' . $listUrl);

@@ -678,14 +678,40 @@ if ($crud_action === 'delete') {
     $dbErrorMessage = '';
 
     if ($bulkAction === 'clear_table') {
-        $where = '';
+        $scopeWhere = '';
         if ($hasCompany && $company_id > 0) {
-            $where = ' WHERE company_id=' . (int)$company_id;
+            $scopeWhere = ' WHERE company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+
+        $candidateIds = [];
+        $skippedAdminCount = 0;
+        $candidateRes = mysqli_query($conn, 'SELECT id, user_id FROM ' . cr_escape_identifier($crud_table) . $scopeWhere);
+        while ($candidateRes && ($candidateRow = mysqli_fetch_assoc($candidateRes))) {
+            $candidateId = (int)($candidateRow['id'] ?? 0);
+            if ($candidateId <= 0) {
+                continue;
+            }
+            if (cr_is_admin_user_company_row($conn, $candidateRow)) {
+                $skippedAdminCount++;
+                continue;
+            }
+            $candidateIds[$candidateId] = $candidateId;
         }
+
+        if (!empty($candidateIds)) {
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . ' WHERE id IN (' . implode(',', array_values($candidateIds)) . ')';
+            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                header('Location: ' . $listUrl);
+                exit;
+            }
+        }
+
+        if ($skippedAdminCount > 0 && empty($_SESSION['crud_error'])) {
+            $_SESSION['crud_success'] = 'Cleared deletable assignments. '
+                . $skippedAdminCount . ' Admin assignment(s) were retained (required for system access).';
+        }
+
         header('Location: ' . $listUrl);
         exit;
     }
