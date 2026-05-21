@@ -129,6 +129,12 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 
+**Tier A step exceptions (`mbqa_module_tier_a_na_steps()` in `module_browser_qa_runner.php`):**
+
+| Table / module | Steps reported N/A (not failures) |
+|----------------|-----------------------------------|
+| `user_companies` | `create`, `sample_data`, `add`, `import_db` — assignments are edited per user (no create screen, no HTTP sample seed, no random bulk rows, no Excel import round-trip). |
+
 **Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (delete `error_log.txt` when writable; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF: POST `delete.php` with up to 3 `ids[]`; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **import_db** (one insertable row smoke test from export headers + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
 
 **Tier A `add` / `bulk_delete` (runner vs browser):**
