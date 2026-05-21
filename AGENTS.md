@@ -201,7 +201,7 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: open the form URL and click **Run QA** (JavaScript `fetch` with `stream=1` NDJSON — live line `Running QA… co {id} — {module} - {step}`). Do not use bare `?run=1` without `stream=1` (that URL shows a redirect hint only). |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Skip** quick indexes, preview in browser. |
 
 **Commands (repository root, Laragon):**
@@ -214,7 +214,7 @@ php scripts/module_browser_qa_runner.php --module=expenses --company=4
 php scripts/module_browser_qa_runner.php --module=departments --company=1
 ```
 
-**Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` (options form → **Run QA** with live `Running QA… co {id} — {module} - {step}` via `stream=1` JSONL); `http://localhost/it-management/scripts/module_browser_qa_build_report.php` (pick date → build `.md`). Catalog: `scripts/index.html`.
+**Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` (form → **Run QA** / **Stop**, live status via AJAX poll); `http://localhost/it-management/scripts/module_browser_qa_build_report.php` (pick date → build `.md`). Catalog: `scripts/index.html`.
 
 **Runner browser form (defaults):**
 
@@ -227,7 +227,7 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for all modules / all tenants. Browser form defaults to company **1** unless the user selects **ALL**.
 
-**Browser live progress:** The status box on the form page updates on each Tier A step via NDJSON (`type: progress`). The runner calls `session_write_close()` before the long loop so PHP can flush lines to the client (an open session otherwise buffers until the script ends). First line is `type: ping` (`connected`), then `co 0 — _runner - login`, then per-module steps. End line is `type: done` (pass/fail counts + links). Errors use `type: error`.
+**Browser live progress (AJAX):** Click **Run QA** on the form (not bare `?run=1`). JavaScript polls `?ajax=progress&run_id=…` every 400ms while the run request executes with `?run=1&ajax=1&run_id=…`. Progress is written to `qa-reports/.mbqa-progress-{run_id}.json` on each step (`Running QA… co {id} — {module} - {step}`). **Stop** sets a cancel flag (`?ajax=cancel`) and aborts the fetch; the runner exits between companies/modules. CLI unchanged.
 
 **Markdown report (`module_browser_qa_build_report.php`):** after `php scripts/module_browser_qa_build_report.php`, the `.md` under `qa-reports/` includes:
 
