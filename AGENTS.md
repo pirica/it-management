@@ -49,7 +49,8 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 ### Generated QA reports (`qa-reports/`)
 
 * `module_browser_qa_runner.php` and `module_browser_qa_build_report.php` write **UTF-8** via `scripts/lib/utf8_file.php` (`itm_write_utf8_text_file`).
-* **`.md` and `.json` under `qa-reports/`** are written **with a UTF-8 BOM** (`EF BB BF`) so **Windows Notepad** and other ANSI-default viewers open them correctly. Content is still UTF-8; punctuation such as `—` and `…` must display correctly after rebuild.
+* **`.md` under `qa-reports/`** may be written **with a UTF-8 BOM** (`EF BB BF`) so **Windows Notepad** opens them correctly.
+* **`.json` under `qa-reports/`** is UTF-8 **without BOM** — `json_decode()` rejects a leading BOM; the report builder strips BOM on read if an older file still has one.
 
 ### Mojibake troubleshooting (symptom → cause)
 

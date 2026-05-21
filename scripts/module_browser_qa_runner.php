@@ -3635,7 +3635,8 @@ $reportPayload = [
     'results' => $results,
 ];
 $jsonFlags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
-itm_write_utf8_text_file($jsonPath, json_encode($reportPayload, $jsonFlags), true);
+// JSON must not use BOM — json_decode() fails; UTF-8 bytes only.
+itm_write_utf8_text_file($jsonPath, json_encode($reportPayload, $jsonFlags), false);
 
 $failuresByCategory = [];
 foreach ($results as $row) {

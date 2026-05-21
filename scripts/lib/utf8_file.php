@@ -18,3 +18,20 @@ function itm_write_utf8_text_file(string $path, string $content, bool $withBom =
 
     return file_put_contents($path, $content) !== false;
 }
+
+/**
+ * Read a text file and strip a leading UTF-8 BOM if present (PHP json_decode rejects BOM).
+ */
+function itm_read_utf8_text_file(string $path): string
+{
+    if (!is_file($path)) {
+        return '';
+    }
+
+    $content = (string)file_get_contents($path);
+    if (strpos($content, "\xEF\xBB\xBF") === 0) {
+        $content = substr($content, 3);
+    }
+
+    return $content;
+}
