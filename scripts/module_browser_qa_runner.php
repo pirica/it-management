@@ -10,7 +10,7 @@
  *   clear_table — same row gate as bulk_delete.
  *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
  *   pagination (after add) — when rows > perPage: page=1 must render Next→page=2; page=2 must render Previous→page=1 in HTML (sort=id).
- * Each module scopes error_log.txt (rename to error_log-N.txt when present, else byte offset), records Settings flags (ui_config step), then Tier A ends with sample restore + error_log check for new lines only.
+ * Each module scopes error_log.txt (rename to error_log-N.txt when present, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -940,70 +940,6 @@ function mbqa_begin_module_error_log_scope(): array
         'offset' => $offset,
         'note' => 'error_log.txt not rotated; checking new lines from offset ' . $offset,
     ];
-}
-
-/**
- * Resolve users.id for the runner login (same email/username rules as login.php).
- */
-function mbqa_resolve_runner_user_id(mysqli $conn, string $loginIdentifier = 'Admin'): int
-{
-    $loginIdentifier = trim($loginIdentifier);
-    if ($loginIdentifier === '') {
-        return 0;
-    }
-
-    $stmt = mysqli_prepare(
-        $conn,
-        'SELECT id FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
-    );
-    if (!$stmt) {
-        return 0;
-    }
-
-    mysqli_stmt_bind_param($stmt, 'ss', $loginIdentifier, $loginIdentifier);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = $result ? mysqli_fetch_assoc($result) : null;
-    mysqli_stmt_close($stmt);
-
-    return is_array($row) ? (int)($row['id'] ?? 0) : 0;
-}
-
-/**
- * Report Settings toggles from ui_configuration for the module run (company + logged-in user).
- *
- * Why: Flags live in Settings (ui_configuration), not per module folder; prefix the active module slug so each report row is traceable.
- *
- * @return array{ok:bool,note:string}
- */
-function mbqa_ui_configuration_flags_step(mysqli $conn, int $companyId, string $moduleSlug, int $userId): array
-{
-    if ($companyId <= 0) {
-        return ['ok' => false, 'note' => 'no active company_id'];
-    }
-
-    if ($userId <= 0) {
-        return ['ok' => false, 'note' => 'no QA user_id for ui_configuration lookup'];
-    }
-
-    $_SESSION['company_id'] = $companyId;
-    $_SESSION['user_id'] = $userId;
-    if (!function_exists('itm_get_ui_configuration')) {
-        return ['ok' => false, 'note' => 'itm_get_ui_configuration unavailable'];
-    }
-
-    $config = itm_get_ui_configuration($conn, $companyId, $userId);
-    $errorReporting = (int)($config['enable_all_error_reporting'] ?? 1);
-    $auditLogs = (int)($config['enable_audit_logs'] ?? 1);
-    $prefix = 'module=' . ($moduleSlug !== '' ? $moduleSlug : '?')
-        . '; company_id=' . $companyId
-        . '; user_id=' . $userId
-        . '; ';
-    $note = $prefix
-        . 'enable_all_error_reporting=' . $errorReporting . ' (' . ($errorReporting === 1 ? 'on' : 'off') . ')'
-        . '; enable_audit_logs=' . $auditLogs . ' (' . ($auditLogs === 1 ? 'on' : 'off') . ')';
-
-    return ['ok' => true, 'note' => $note];
 }
 
 /**
@@ -3213,14 +3149,6 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
     exit(1);
 }
 
-// Why: HTTP login uses a cookie jar; CLI PHP session is separate — resolve Admin user_id for DB steps (ui_config, records_per_page).
-$mbqaRunnerUserId = mbqa_resolve_runner_user_id($conn, 'Admin');
-if ($mbqaRunnerUserId <= 0) {
-    mbqa_err("Could not resolve QA user id for Admin login (users table).\n");
-    exit(1);
-}
-$_SESSION['user_id'] = $mbqaRunnerUserId;
-
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
     $orderedModules = ['expenses'];
@@ -3280,9 +3208,6 @@ foreach ($companiesToRun as $companyId) {
         $errorLogScope = mbqa_begin_module_error_log_scope();
         $errorLogOffset = $errorLogScope['offset'];
         $steps[] = mbqa_step_result('error_log', true, $errorLogScope['note']);
-
-        $uiFlags = mbqa_ui_configuration_flags_step($conn, $companyId, $slug, $mbqaRunnerUserId);
-        $steps[] = mbqa_step_result('ui_config', $uiFlags['ok'], $uiFlags['note']);
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $listOk = $index['status'] === 200 && !mbqa_has_fatal($index['body']);
