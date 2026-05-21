@@ -397,26 +397,33 @@ function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $co
 }
 
 /**
- * Modules that implement create inside index.php (no standalone create.php page).
+ * Modules with no create screen (assignments edited per user, not via create.php / New row).
  */
-function mbqa_modules_without_direct_create_php(): array
+function mbqa_modules_without_create_screen(): array
 {
     return ['user_companies'];
 }
 
 /**
- * Tier A create step: GET create.php when present; index-only modules pass without a direct create.php file.
+ * @deprecated Use mbqa_modules_without_create_screen().
+ */
+function mbqa_modules_without_direct_create_php(): array
+{
+    return mbqa_modules_without_create_screen();
+}
+
+/**
+ * Tier A create step: GET create.php when the module supports create.
  *
  * @return array{ok:bool,note:string}
  */
 function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, string $slug, string $cookieFile): array
 {
-    $createPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'create.php';
-    $indexOnlyCreate = in_array($slug, mbqa_modules_without_direct_create_php(), true);
-
-    if ($indexOnlyCreate && !is_file($createPath)) {
-        return ['ok' => true, 'note' => 'N/A (no direct create.php; create in index.php)'];
+    if (in_array($slug, mbqa_modules_without_create_screen(), true)) {
+        return ['ok' => true, 'note' => 'N/A (module has no create screen)'];
     }
+
+    $createPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'create.php';
 
     if (!is_file($createPath)) {
         return ['ok' => false, 'note' => 'missing create.php'];
@@ -424,14 +431,6 @@ function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, stri
 
     $create = mbqa_http($moduleUrl . 'create.php', 'GET', null, [], $cookieFile);
     $ok = $create['status'] === 200 && !mbqa_has_fatal($create['body']);
-    if ($indexOnlyCreate) {
-        return [
-            'ok' => $ok,
-            'note' => $ok
-                ? 'create.php wrapper -> index.php (HTTP ' . $create['status'] . ')'
-                : 'create.php wrapper failed HTTP ' . $create['status'],
-        ];
-    }
 
     return [
         'ok' => $ok,
