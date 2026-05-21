@@ -463,6 +463,12 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Why: User Companies assignments are managed via edit (multi-company select), not a standalone create screen.
+if (($crud_table ?? '') === 'user_companies' && $crud_action === 'create') {
+    header('Location: ' . $listUrl);
+    exit;
+}
+
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
@@ -1078,18 +1084,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
-                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
-                    <?php else: ?>
-                        <span></span>
-                    <?php endif; ?>
-                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
-                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
-                    <?php else: ?>
-                        <span></span>
-                    <?php endif; ?>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <h1><?php echo sanitize($moduleListHeading); ?></h1>
                 </div>
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
