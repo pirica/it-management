@@ -1122,6 +1122,85 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         </div>
     </div>
 </div>
+<script>
+(function () {
+    // Why: live swatch + inferred color_name while editing hex on create/edit forms.
+    const cableColorPicker = document.getElementById('cable-hex-color-picker');
+    const cableColorPreview = document.getElementById('cable-hex-color-preview');
+    const cableColorNameInput = document.querySelector('input[name="color_name"]');
+    if (!cableColorPicker || !cableColorPreview) {
+        return;
+    }
+
+    const inferColorNameFromHex = function (hexValue) {
+        const safeHex = /^#([0-9a-f]{6})$/i.test(hexValue) ? hexValue.toUpperCase() : '';
+        if (!safeHex) {
+            return '';
+        }
+
+        const r = parseInt(safeHex.slice(1, 3), 16) / 255;
+        const g = parseInt(safeHex.slice(3, 5), 16) / 255;
+        const b = parseInt(safeHex.slice(5, 7), 16) / 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const delta = max - min;
+        const lightness = (max + min) / 2;
+        const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+
+        if (saturation < 0.12) {
+            if (lightness < 0.12) return 'Black';
+            if (lightness > 0.9) return 'White';
+            return 'Gray';
+        }
+
+        let hue = 0;
+        if (delta !== 0) {
+            if (max === r) {
+                hue = ((g - b) / delta) % 6;
+            } else if (max === g) {
+                hue = ((b - r) / delta) + 2;
+            } else {
+                hue = ((r - g) / delta) + 4;
+            }
+        }
+        hue *= 60;
+        if (hue < 0) {
+            hue += 360;
+        }
+
+        let baseColor = 'Pink';
+        if (hue < 15 || hue >= 345) baseColor = 'Red';
+        else if (hue < 45) baseColor = 'Orange';
+        else if (hue < 70) baseColor = 'Yellow';
+        else if (hue < 165) baseColor = 'Green';
+        else if (hue < 200) baseColor = 'Cyan';
+        else if (hue < 255) baseColor = 'Blue';
+        else if (hue < 290) baseColor = 'Purple';
+
+        if (lightness >= 0.72) return 'Light ' + baseColor;
+        if (lightness <= 0.32) return 'Dark ' + baseColor;
+        return baseColor;
+    };
+
+    const syncCableColorFields = function () {
+        const hex = cableColorPicker.value || '';
+        const safeHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : '';
+        cableColorPreview.innerHTML = safeHex
+            ? '<span title="' + safeHex + '" aria-label="Color swatch ' + safeHex + '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + safeHex + ';vertical-align:middle;border-radius:2px;"></span>'
+            : '<span style="color:#666;">—</span>';
+
+        if (cableColorNameInput && safeHex !== '') {
+            const inferredName = inferColorNameFromHex(safeHex);
+            if (inferredName) {
+                cableColorNameInput.value = inferredName;
+            }
+        }
+    };
+
+    cableColorPicker.addEventListener('input', syncCableColorFields);
+    syncCableColorFields();
+})();
+</script>
 <script src="../../js/theme.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
