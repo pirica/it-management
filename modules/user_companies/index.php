@@ -767,6 +767,22 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        $rowSql = 'SELECT user_id FROM user_companies WHERE id=' . $id . ' LIMIT 1';
+        $rowRes = mysqli_query($conn, $rowSql);
+        $rowData = $rowRes ? mysqli_fetch_assoc($rowRes) : null;
+        if (cr_is_admin_user_company_row($conn, is_array($rowData) ? $rowData : [])) {
+            $_SESSION['crud_error'] = 'Admin user/company assignments cannot be deleted from this screen.';
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
+        $usageError = '';
+        if (!itm_can_delete_record($conn, $crud_table, 'id', $id, $company_id, $usageError)) {
+            $_SESSION['crud_error'] = $usageError;
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
@@ -774,6 +790,8 @@ if ($crud_action === 'delete') {
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            header('Location: ' . $listUrl);
+            exit;
         }
     }
     header('Location: ' . $listUrl);
