@@ -681,5 +681,63 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
         </div>
     </div>
 </div>
+<script>
+/**
+ * Import Logic - Handles File Reading and CSV/Excel Parsing
+ */
+(function () {
+    const fileInput = document.getElementById('employeeImportFile');
+    const payloadInput = document.getElementById('employeeImportPayload');
+    const textInput = document.getElementById('employeeImportText');
+
+    function parseCsv(text) {
+        const rows = []; let row = []; let cell = ''; let inQuotes = false;
+        for (let i = 0; i < text.length; i += 1) {
+            const char = text[i]; const next = text[i + 1];
+            if (inQuotes) {
+                if (char === '"' && next === '"') { cell += '"'; i += 1; }
+                else if (char === '"') { inQuotes = false; }
+                else { cell += char; }
+            } else if (char === '"') { inQuotes = true; }
+            else if (char === ',') { row.push(cell.trim()); cell = ''; }
+            else if (char === '\n' || char === '\r') {
+                if (char === '\r' && next === '\n') i += 1;
+                row.push(cell.trim()); if (row.some((v) => v !== '')) rows.push(row);
+                row = []; cell = '';
+            } else { cell += char; }
+        }
+        if (cell.length || row.length) { row.push(cell.trim()); if (row.some((v) => v !== '')) rows.push(row); }
+        return rows;
+    }
+
+    if (!fileInput) return;
+
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) { payloadInput.value = ''; return; }
+        const extension = (file.name.split('.').pop() || '').toLowerCase();
+        const reader = new FileReader();
+
+        if (extension === 'csv') {
+            reader.onload = () => { payloadInput.value = JSON.stringify(parseCsv(reader.result)); textInput.value = ''; };
+            reader.readAsText(file);
+        } else if (window.XLSX && (extension === 'xlsx' || extension === 'xls')) {
+            reader.onload = () => {
+                const workbook = window.XLSX.read(new Uint8Array(reader.result), { type: 'array' });
+                payloadInput.value = JSON.stringify(window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '' }));
+                textInput.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            alert('Unsupported file type.'); fileInput.value = '';
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        const link = event.target.closest('a[data-outlook-link="1"]');
+        if (link) { window.location.href = link.getAttribute('data-outlook-href'); }
+    });
+})();
+</script>
 </body>
 </html>

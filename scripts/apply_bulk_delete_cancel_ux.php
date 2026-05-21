@@ -19,7 +19,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
 $root = dirname(__DIR__);
 $dryRun = in_array('--dry-run', $argv ?? [], true);
-$pattern = '/<script>\s*(?:\/\*\*[\s\S]*?\*\/\s*)?\(function\s*\(\)\s*\{[\s\S]*?let\s+selectionMode\s*=\s*false;[\s\S]*?\}\)\(\);\s*<\/script>\s*/i';
+// Why: do not match across </script> — some pages keep import/color helpers in an earlier script tag.
+$pattern = '/<script>\s*(?:\/\*\*[\s\S]*?\*\/\s*)?\(function\s*\(\)\s*\{(?:(?!<\/script>)[\s\S])*?let\s+selectionMode\s*=\s*false;(?:(?!<\/script>)[\s\S])*?\}\)\(\);\s*<\/script>\s*/i';
 
 $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($root . '/modules', RecursiveDirectoryIterator::SKIP_DOTS)
