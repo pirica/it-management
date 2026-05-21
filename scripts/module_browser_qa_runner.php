@@ -6,7 +6,7 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
- *   bulk_cancel — browser only: cancelButton.textContent = 'Cancel' (js/bulk-delete-selection.js); runner N/A;
+ *   bulk_cancel — HTTP contract: shared js/bulk-delete-selection.js + index bulk form (no inline selectionMode);
  *   bulk_delete — when rows >= perPage and delete.php + CSRF: POST delete.php with up to 3 ids[].
  * clear_table uses the same row-count gate as bulk_delete.
  * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
@@ -128,7 +128,7 @@ function mbqa_print_help(): void
     mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD.json\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
     mbqa_out("  add         Insert ~30 random tenant rows if count < records_per_page + 1\n");
-    mbqa_out("  bulk_cancel Browser: cancelButton.textContent = 'Cancel' (js/bulk-delete-selection.js); runner N/A\n");
+    mbqa_out("  bulk_cancel HTTP contract: bulk-delete-selection.js + bulk form on index (no inline selectionMode)\n");
     mbqa_out("  bulk_delete If rows >= perPage and UI + delete.php: POST delete.php with up to 3 ids[]\n\n");
 
     if (!mbqa_is_cli_sapi()) {
@@ -1836,6 +1836,104 @@ function mbqa_index_shows_bulk_actions(string $html): bool
 }
 
 /**
+ * Shared Cancel UX shipped in js/bulk-delete-selection.js (loaded from includes/header.php).
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_shared_bulk_cancel_js_contract(): array
+{
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    $repoRoot = dirname(__DIR__);
+    $path = $repoRoot . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'bulk-delete-selection.js';
+    if (!is_file($path)) {
+        $cached = ['ok' => false, 'note' => 'missing js/bulk-delete-selection.js'];
+        return $cached;
+    }
+
+    $js = (string)file_get_contents($path);
+    $hasCancelLabel = stripos($js, "textContent = 'Cancel'") !== false
+        || stripos($js, 'textContent = "Cancel"') !== false;
+    $hasExit = stripos($js, 'exitSelectionMode') !== false;
+    $hasCancelHook = stripos($js, 'data-itm-bulk-cancel') !== false;
+
+    if ($hasCancelLabel && $hasExit && $hasCancelHook) {
+        $cached = ['ok' => true, 'note' => 'shared JS: Cancel label + exitSelectionMode + data-itm-bulk-cancel'];
+        return $cached;
+    }
+
+    $missing = [];
+    if (!$hasCancelLabel) {
+        $missing[] = 'Cancel label';
+    }
+    if (!$hasExit) {
+        $missing[] = 'exitSelectionMode';
+    }
+    if (!$hasCancelHook) {
+        $missing[] = 'data-itm-bulk-cancel';
+    }
+    $cached = ['ok' => false, 'note' => 'js/bulk-delete-selection.js missing ' . implode(', ', $missing)];
+
+    return $cached;
+}
+
+/**
+ * CLI/HTTP substitute for clicking Cancel: verify index markup + global script, not selectionMode duplicates.
+ *
+ * @return array{ok:bool,note:string,na:bool}
+ */
+function mbqa_verify_bulk_cancel_contract(string $indexHtml): array
+{
+    $jsCheck = mbqa_shared_bulk_cancel_js_contract();
+    if (!$jsCheck['ok']) {
+        return ['ok' => false, 'note' => $jsCheck['note'], 'na' => false];
+    }
+
+    $hasBulkForm = stripos($indexHtml, 'bulk-delete-form') !== false
+        || stripos($indexHtml, 'department-bulk-form') !== false;
+    if (!$hasBulkForm) {
+        return ['ok' => true, 'note' => 'N/A (no bulk-delete form on index)', 'na' => true];
+    }
+
+    $issues = [];
+    if (stripos($indexHtml, 'bulk-delete-selection.js') === false) {
+        $issues[] = 'index HTML missing bulk-delete-selection.js (header should load shared script)';
+    }
+    if (stripos($indexHtml, 'name="bulk_action"') === false && stripos($indexHtml, "name='bulk_action'") === false) {
+        $issues[] = 'missing bulk_action control';
+    }
+    if (stripos($indexHtml, 'bulk_delete') === false) {
+        $issues[] = 'missing bulk_delete toggle (Select to Delete)';
+    }
+    if (preg_match('/let\s+selectionMode\s*=\s*false/i', $indexHtml)) {
+        $issues[] = 'inline selectionMode script still present (use shared js/bulk-delete-selection.js)';
+    }
+
+    $hasStaticCancel = stripos($indexHtml, 'data-itm-bulk-cancel') !== false;
+    if ($hasStaticCancel) {
+        if (!preg_match('/<button[^>]*data-itm-bulk-cancel\s*=\s*["\']1["\'][^>]*type\s*=\s*["\']button["\']/i', $indexHtml)
+            && !preg_match('/<button[^>]*type\s*=\s*["\']button["\'][^>]*data-itm-bulk-cancel\s*=\s*["\']1["\']/i', $indexHtml)) {
+            $issues[] = 'data-itm-bulk-cancel must be type="button" (Cancel must not POST delete)';
+        }
+    }
+
+    if (!empty($issues)) {
+        return ['ok' => false, 'note' => implode('; ', $issues), 'na' => false];
+    }
+
+    $cancelNote = $hasStaticCancel ? 'static Cancel button on form' : 'Cancel injected by shared JS on first Select to Delete';
+
+    return [
+        'ok' => true,
+        'note' => $jsCheck['note'] . '; ' . $cancelNote,
+        'na' => false,
+    ];
+}
+
+/**
  * Explains why bulk_delete/clear_table were skipped (row gate vs missing delete.php/CSRF/bulk UI).
  */
 function mbqa_bulk_step_na_note(
@@ -2407,14 +2505,15 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('add', $bulkResult['ok'], $bulkResult['note']);
         }
 
-        $steps[] = mbqa_step_result(
-            'bulk_cancel',
-            true,
-            'N/A (browser: cancelButton.textContent = Cancel via js/bulk-delete-selection.js)'
-        );
-
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
+
+        $bulkCancelCheck = mbqa_verify_bulk_cancel_contract($index['body']);
+        if ($bulkCancelCheck['na']) {
+            $steps[] = mbqa_step_result('bulk_cancel', true, $bulkCancelCheck['note']);
+        } else {
+            $steps[] = mbqa_step_result('bulk_cancel', $bulkCancelCheck['ok'], $bulkCancelCheck['note']);
+        }
 
         $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
         $perPage = mbqa_records_per_page($conn);
