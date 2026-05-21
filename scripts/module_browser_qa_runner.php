@@ -40,6 +40,33 @@ function mbqa_company_name_map(): array
 }
 
 /**
+ * Module folders with index.php (for browser form before config.php loads).
+ *
+ * @return array<int, string>
+ */
+function mbqa_list_module_slugs(string $projectRoot): array
+{
+    $modulesDir = $projectRoot . DIRECTORY_SEPARATOR . 'modules';
+    if (!is_dir($modulesDir)) {
+        return [];
+    }
+
+    $slugs = [];
+    foreach (scandir($modulesDir) ?: [] as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+        $path = $modulesDir . DIRECTORY_SEPARATOR . $item;
+        if (is_dir($path) && is_file($path . DIRECTORY_SEPARATOR . 'index.php')) {
+            $slugs[] = $item;
+        }
+    }
+    sort($slugs);
+
+    return $slugs;
+}
+
+/**
  * @return array{run:bool, help:bool, pilot_only:bool, base_url:string, module:?string, company:?int}
  */
 function mbqa_parse_run_options(): array
@@ -70,7 +97,10 @@ function mbqa_parse_run_options(): array
                 continue;
             }
             if (strpos($arg, '--module=') === 0) {
-                $options['module'] = substr($arg, 9);
+                $moduleRaw = substr($arg, 9);
+                if ($moduleRaw !== '' && strtolower($moduleRaw) !== 'all') {
+                    $options['module'] = $moduleRaw;
+                }
                 continue;
             }
             if (strpos($arg, '--company=') === 0) {
@@ -87,8 +117,11 @@ function mbqa_parse_run_options(): array
         if (isset($_REQUEST['base_url'])) {
             $options['base_url'] = trim((string)$_REQUEST['base_url']);
         }
-        if (isset($_REQUEST['module']) && trim((string)$_REQUEST['module']) !== '') {
-            $options['module'] = trim((string)$_REQUEST['module']);
+        if (isset($_REQUEST['module'])) {
+            $moduleRaw = trim((string)$_REQUEST['module']);
+            if ($moduleRaw !== '' && strtolower($moduleRaw) !== 'all') {
+                $options['module'] = $moduleRaw;
+            }
         }
         if (isset($_REQUEST['company'])) {
             $companyRaw = trim((string)$_REQUEST['company']);
@@ -142,7 +175,7 @@ function mbqa_print_help(): void
     mbqa_out("Module browser QA runner\n\n");
     mbqa_out("Options:\n");
     mbqa_out("  --base-url=URL   App root (default http://localhost/it-management/)\n");
-    mbqa_out("  --module=SLUG    Single module folder under modules/\n");
+    mbqa_out("  --module=SLUG    Single module folder; omit or --module=all for every module with index.php\n");
     mbqa_out("  --company=N      Company id 1–5 only; omit or --company=all for all five tenants\n");
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
     mbqa_out("  --help           Show this help\n\n");
@@ -156,7 +189,7 @@ function mbqa_print_help(): void
     if (!mbqa_is_cli_sapi()) {
         mbqa_out("Browser: open this script, submit the form with Run QA, or use query flags:\n");
         mbqa_out("  ?run=1&module=expenses&company=4\n");
-        mbqa_out("  ?run=1  (omit company or company= for ALL tenants 1–5)\n");
+        mbqa_out("  ?run=1  (omit module/company or use empty values for ALL modules / ALL tenants)\n");
         echo '<p><a href="module_browser_qa_runner.php">← Back to runner form</a></p></main>';
     }
 }
@@ -169,12 +202,16 @@ function mbqa_render_browser_form(array $options): void
     header('Content-Type: text/html; charset=utf-8');
     itm_script_browser_nav_echo();
 
+    $projectRoot = realpath(__DIR__ . '/..') ?: '';
     $baseUrl = htmlspecialchars($options['base_url'], ENT_QUOTES, 'UTF-8');
-    $module = htmlspecialchars((string)($options['module'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $moduleSelected = ($options['module'] !== null && trim((string)$options['module']) !== '')
+        ? trim((string)$options['module'])
+        : '';
     $companySelected = ($options['company'] !== null && (int)$options['company'] > 0)
         ? (string)(int)$options['company']
         : '';
     $pilotChecked = $options['pilot_only'] ? ' checked' : '';
+    $moduleSlugs = $projectRoot !== '' ? mbqa_list_module_slugs($projectRoot) : [];
 
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA runner</h1>';
@@ -183,7 +220,14 @@ function mbqa_render_browser_form(array $options): void
     echo '<form method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
     echo '<input type="hidden" name="run" value="1">';
     echo '<label>Base URL<br><input type="url" name="base_url" value="' . $baseUrl . '" style="width:100%;padding:8px;"></label>';
-    echo '<label>Module (optional)<br><input type="text" name="module" value="' . $module . '" placeholder="expenses" style="width:100%;padding:8px;"></label>';
+    echo '<label>Module<br><select name="module" style="width:100%;padding:8px;">';
+    echo '<option value=""' . ($moduleSelected === '' ? ' selected' : '') . '>ALL (all modules)</option>';
+    foreach ($moduleSlugs as $slug) {
+        $selected = $moduleSelected === $slug ? ' selected' : '';
+        echo '<option value="' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>'
+            . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+    echo '</select></label>';
     echo '<label>Company<br><select name="company" style="width:100%;padding:8px;">';
     echo '<option value=""' . ($companySelected === '' ? ' selected' : '') . '>ALL (companies 1–5)</option>';
     foreach (mbqa_company_name_map() as $companyId => $companyLabel) {
