@@ -378,13 +378,29 @@ function mbqa_browser_stream_emit_done(array $payload): void
     mbqa_browser_stream_write_line($payload);
 }
 
+function mbqa_echo_browser_url_actions_table(): void
+{
+    echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:0.95rem;">';
+    echo '<thead><tr><th>URL / action</th><th>What happens</th></tr></thead><tbody>';
+    echo '<tr><td>Form, no query</td><td>Form only</td></tr>';
+    echo '<tr><td><code>?help=1</code></td><td>HTML help (readable)</td></tr>';
+    echo '<tr><td><code>?run=1</code> only</td><td>Hint: use form + <strong>Run QA</strong> (this page)</td></tr>';
+    echo '<tr><td><code>?run=1&amp;stream=1</code></td><td>Same hint — legacy NDJSON stream is disabled (was often not live on Laragon)</td></tr>';
+    echo '<tr><td><strong>Run QA</strong> button</td><td><code>?run=1&amp;ajax=1&amp;run_id=…</code> + polling + <strong>Stop</strong></td></tr>';
+    echo '<tr><td>CLI <code>php scripts/module_browser_qa_runner.php</code></td><td>No <code>run</code> / <code>stream</code> / <code>ajax</code> — always CLI output</td></tr>';
+    echo '</tbody></table>';
+}
+
 function mbqa_render_browser_ajax_required(): void
 {
     header('Content-Type: text/html; charset=utf-8');
     itm_script_browser_nav_echo();
-    echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
-    echo '<h1>Module browser QA runner</h1>';
-    echo '<p>Use <strong>Run QA</strong> on the <a href="module_browser_qa_runner.php">runner form</a> (AJAX progress polling). Open that page and click the button — do not bookmark a bare <code>?run=1</code> URL.</p>';
+    echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;line-height:1.5;">';
+    echo '<h1>Use the form — not <code>?run=1</code> alone</h1>';
+    echo '<p>Open the runner form and click <strong>Run QA</strong>. Bare <code>?run=1</code> or <code>?run=1&amp;stream=1</code> does not start a run here.</p>';
+    mbqa_echo_browser_url_actions_table();
+    echo '<p style="margin-top:20px;"><a href="module_browser_qa_runner.php">← Runner form</a> · ';
+    echo '<a href="module_browser_qa_runner.php?help=1">Full help</a></p>';
     echo '</main>';
 }
 
@@ -428,17 +444,77 @@ function mbqa_err(string $message): void
     }
 }
 
+function mbqa_render_browser_help(): void
+{
+    header('Content-Type: text/html; charset=utf-8');
+    itm_script_browser_nav_echo();
+    echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;line-height:1.5;">';
+    echo '<h1>Module browser QA — help</h1>';
+    echo '<p>Runs the full-module HTTP checklist (login, company switch, CRUD, export/import, delete) for one or all modules and tenants. ';
+    echo 'Results are written to <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>.</p>';
+
+    echo '<h2>URL and actions</h2>';
+    mbqa_echo_browser_url_actions_table();
+    echo '<p style="font-size:0.95rem;margin-top:12px;">Live status on the form: ';
+    echo '<code>Running QA… co {id} — {module} - {step}</code> (poll every 400ms). ';
+    echo 'Do not bookmark <code>?run=1</code> or <code>?run=1&amp;stream=1</code>.</p>';
+
+    echo '<h2>Browser (recommended)</h2>';
+    echo '<ol>';
+    echo '<li>Open <a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a> (the form, not this help URL alone).</li>';
+    echo '<li>Choose <strong>Module</strong> (or type a slug under <strong>Or module slug (manual)</strong>).</li>';
+    echo '<li>Choose <strong>Company</strong> (default <code>1</code> = TechCorp Global; empty = all five companies).</li>';
+    echo '<li>Click <strong>Run QA</strong> (not a bare run URL).</li>';
+    echo '<li>Click <strong>Stop</strong> if the run is taking too long — the runner stops between companies/modules.</li>';
+    echo '<li>When finished, use <strong>Download JSON</strong> or <a href="module_browser_qa_build_report.php">Build markdown report</a>.</li>';
+    echo '</ol>';
+
+    echo '<h2>Form fields</h2>';
+    echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:0.95rem;">';
+    echo '<thead><tr><th>Field</th><th>What it does</th></tr></thead><tbody>';
+    echo '<tr><td>Base URL</td><td>App root (default <code>http://localhost/it-management/</code>)</td></tr>';
+    echo '<tr><td>Module</td><td><code>ALL</code> = every module with <code>index.php</code>; or pick one slug (e.g. <code>expenses</code>)</td></tr>';
+    echo '<tr><td>Or module slug (manual)</td><td>Overrides the dropdown when filled (any folder name under <code>modules/</code>)</td></tr>';
+    echo '<tr><td>Company</td><td><code>1</code>–<code>5</code> or <code>ALL</code> (all seeded tenants)</td></tr>';
+    echo '<tr><td>Pilot only</td><td>Runs <code>expenses</code> only (all selected companies)</td></tr>';
+    echo '</tbody></table>';
+
+    echo '<h2>CLI (repository root)</h2>';
+    echo '<pre style="background:#f6f8fa;border:1px solid #d0d7de;padding:12px;overflow:auto;font-size:0.9rem;">';
+    echo htmlspecialchars(
+        "php scripts/module_browser_qa_runner.php\n"
+        . "php scripts/module_browser_qa_runner.php --module=expenses --company=1\n"
+        . "php scripts/module_browser_qa_runner.php --pilot-only\n"
+        . "php scripts/module_browser_qa_runner.php --help\n",
+        ENT_QUOTES,
+        'UTF-8'
+    );
+    echo '</pre>';
+    echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:0.95rem;margin-top:12px;">';
+    echo '<thead><tr><th>Flag</th><th>Meaning</th></tr></thead><tbody>';
+    echo '<tr><td><code>--base-url=URL</code></td><td>App root</td></tr>';
+    echo '<tr><td><code>--module=SLUG</code></td><td>One module; omit for all</td></tr>';
+    echo '<tr><td><code>--company=N</code></td><td>Company 1–5; omit for all five</td></tr>';
+    echo '<tr><td><code>--pilot-only</code></td><td>Expenses only</td></tr>';
+    echo '</tbody></table>';
+
+    echo '<h2>Tier A step order (per module)</h2>';
+    echo '<p style="font-size:0.95rem;">mysql → error_log → list → clear → sample_data → add → pagination → bulk_cancel → bulk_delete → search → sort → create → view → edit → list_all → export_pdf → export_xls → clear_table → clear → import_db → single_delete → sample_data (restore) → error_log</p>';
+
+    echo '<p style="margin-top:24px;"><a href="module_browser_qa_runner.php">← Back to runner form</a> · ';
+    echo '<a href="module_browser_qa_build_report.php">Build markdown report</a> · ';
+    echo '<a href="index.html">Scripts index</a></p>';
+    echo '</main>';
+}
+
 function mbqa_print_help(): void
 {
     if (!mbqa_is_cli_sapi()) {
-        header('Content-Type: text/html; charset=utf-8');
-        itm_script_browser_nav_echo();
-        echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
-        echo '<h1>Module browser QA runner</h1>';
-    } else {
-        itm_script_output_begin('Module browser QA runner');
+        mbqa_render_browser_help();
+        return;
     }
 
+    itm_script_output_begin('Module browser QA runner');
     mbqa_out("Module browser QA runner\n\n");
     mbqa_out("Options:\n");
     mbqa_out("  --base-url=URL   App root (default http://localhost/it-management/)\n");
@@ -452,13 +528,6 @@ function mbqa_print_help(): void
     mbqa_out("  pagination  After add: page=1 Next (HTML page=2) then page=2 Previous (HTML page=1); sort=id\n");
     mbqa_out("  bulk_cancel    bulk form + Select to Delete in index HTML; bulk-delete-selection.js in HTML; shared JS contract\n");
     mbqa_out("  bulk_delete If rows >= perPage and UI + delete.php: POST delete.php with up to 3 ids[]\n\n");
-
-    if (!mbqa_is_cli_sapi()) {
-        mbqa_out("Browser: open this script, submit the form with Run QA, or use query flags:\n");
-        mbqa_out("  ?run=1&module=expenses&company=4\n");
-        mbqa_out("  ?run=1  (omit module for ALL modules; company defaults to 1 in form, empty = ALL tenants)\n");
-        echo '<p><a href="module_browser_qa_runner.php">← Back to runner form</a></p></main>';
-    }
 }
 
 /**
@@ -769,14 +838,17 @@ if (!mbqa_is_cli_sapi() && $mbqaOptions['ajax'] && $mbqaOptions['run_id'] === ''
     exit(0);
 }
 
+// Why: Legacy ?stream=1 NDJSON was buffered on Laragon; browser runs use ajax=1 only.
+if (!mbqa_is_cli_sapi() && $mbqaOptions['stream']) {
+    mbqa_render_browser_ajax_required();
+    exit(0);
+}
+
 // Why: config.php starts the session and may set headers; browser HTML output must come after require.
 define('ITM_CLI_SCRIPT', true);
 $GLOBALS['mbqa_project_root'] = $root;
 if (!mbqa_is_cli_sapi() && $mbqaOptions['ajax'] && $mbqaOptions['run_id'] !== '') {
     $GLOBALS['mbqa_ajax_run_id'] = $mbqaOptions['run_id'];
-}
-if (!mbqa_is_cli_sapi() && $mbqaOptions['stream'] && empty($GLOBALS['mbqa_ajax_run_id'])) {
-    $GLOBALS['mbqa_browser_stream'] = true;
 }
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_mbqa_test_user.php';
@@ -786,10 +858,6 @@ if (!mbqa_is_cli_sapi()) {
     @ignore_user_abort(true);
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
-    }
-    if ($mbqaOptions['stream'] && empty($GLOBALS['mbqa_ajax_run_id'])) {
-        $GLOBALS['mbqa_browser_stream'] = true;
-        mbqa_browser_stream_begin();
     }
     if (!empty($GLOBALS['mbqa_ajax_run_id'])) {
         mbqa_browser_ajax_write_progress($root, mbqa_browser_ajax_run_id(), [
