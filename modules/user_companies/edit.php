@@ -330,7 +330,7 @@ foreach ($fieldColumns as $col) {
     $data[$col['Field']] = '';
 }
 
-$editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$editId = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
 $selectedCompanyIds = [];
 $allCompanyOptions = [];
 
@@ -440,6 +440,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         } else {
             $data[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+        }
+    }
+
+    // Why: List edit must update the row by primary key; re-insert-by-user drops id from the URL and can look like a silent no-op.
+    if (empty($errors) && ($crud_table ?? '') === 'user_companies' && $crud_action === 'edit' && $editId > 0) {
+        $activeSql = (int)($data['active'] ?? 1);
+        $grantedByValue = $data['granted_by_user_id'] ?? 'NULL';
+        $grantedBySql = ($grantedByValue === 'NULL' || $grantedByValue === '' || $grantedByValue === null) ? 'NULL' : (string)(int)$grantedByValue;
+
+        $updateSql = 'UPDATE user_companies SET `active`=' . $activeSql
+            . ', `granted_by_user_id`=' . $grantedBySql
+            . ' WHERE id=' . $editId;
+        if ($hasCompany && $company_id > 0) {
+            $updateSql .= ' AND company_id=' . (int)$company_id;
+        }
+        $updateSql .= ' LIMIT 1';
+
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage)) {
+            if (mysqli_affected_rows($conn) < 1) {
+                $errors[] = 'No User Company row was updated. Re-open the record from the list and try again.';
+            } else {
+                header('Location: ' . $listUrl);
+                exit;
+            }
+        } else {
+            $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     }
 
@@ -604,6 +632,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($editId > 0): ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                    <?php endif; ?>
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = cr_is_boolean_tinyint_column($col);
                         $isDate = str_starts_with($col['Type'], 'date');
