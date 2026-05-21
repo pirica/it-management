@@ -202,7 +202,7 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 | Script | Role |
 |--------|------|
 | `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module `error_log` scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/import/`single_delete`/`clear_table`/end sample restore + `error_log` check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
-| `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Pass only** quick indexes, preview in browser. |
+| `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Skip** quick indexes, preview in browser. |
 
 **Commands (repository root, Laragon):**
 
@@ -234,7 +234,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 4. **Preflight (company switch)** — company id/name, **OK** / **Failed**, short notes  
 5. **Results by module** — per-step tables with slug, label, **OK**/**Failed**, notes  
 6. **Failures only (quick index)** — compact table for triage (`Module | Co | Step | Label | Notes`)  
-7. **Pass only (quick index)** — same columns for every **Pass** step (truncated at 500 rows; failures index truncated at 200)
+7. **Skip (quick index)** — same columns for **Pass** steps whose notes start with `Skip` or `N/A` (see `mbqa_step_note_is_skip_quick_index()` in the runner; truncated at 500 rows; failures index truncated at 200)
 
 **Environment:** `http://localhost/it-management/` with Apache + MySQL (`itmanagement`). The runner uses the same CSRF/login/company session as the browser.
 

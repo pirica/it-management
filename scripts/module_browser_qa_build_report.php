@@ -288,6 +288,16 @@ function mbqar_human_status(string $status): string
     return $status;
 }
 
+/**
+ * Keep aligned with mbqa_step_note_is_skip_quick_index() in module_browser_qa_runner.php.
+ */
+function mbqar_step_note_is_skip_quick_index(string $note): bool
+{
+    $note = trim($note);
+
+    return $note !== '' && preg_match('/^(?:Skip|N\/A)\b/i', $note) === 1;
+}
+
 function mbqar_render_browser_form(array $options): void
 {
     header('Content-Type: text/html; charset=utf-8');
@@ -317,7 +327,7 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
 {
     $pass = 0;
     $fail = 0;
-    $passRows = [];
+    $skipRows = [];
     $failRows = [];
     $moduleRows = [];
     $pilotRows = [];
@@ -332,12 +342,15 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
         foreach ($row['steps'] as $step) {
             if (($step['status'] ?? '') === 'Pass') {
                 $pass++;
-                $passRows[] = [
-                    'module' => $row['module'],
-                    'company_id' => $row['company_id'],
-                    'step' => $step['step'],
-                    'notes' => $step['notes'] ?? '',
-                ];
+                $note = (string)($step['notes'] ?? '');
+                if (mbqar_step_note_is_skip_quick_index($note)) {
+                    $skipRows[] = [
+                        'module' => $row['module'],
+                        'company_id' => $row['company_id'],
+                        'step' => $step['step'],
+                        'notes' => $note,
+                    ];
+                }
             } else {
                 $fail++;
                 $failRows[] = [
@@ -483,17 +496,17 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
         }
     }
 
-    $md .= "\n## Pass only (quick index)\n\n";
-    if (empty($passRows)) {
-        $md .= "_No passes recorded._\n";
+    $md .= "\n## Skip (quick index)\n\n";
+    if (empty($skipRows)) {
+        $md .= "_No skipped steps recorded (notes starting with Skip or N/A)._\n";
     } else {
         $md .= "| Module | Co | Step | Label | Notes |\n|---|---|---|---|---|\n";
         $shown = 0;
-        foreach ($passRows as $pr) {
-            $stepSlug = (string)$pr['step'];
-            $md .= '| ' . $pr['module'] . ' | ' . $pr['company_id'] . ' | `' . $stepSlug . '` | '
+        foreach ($skipRows as $sr) {
+            $stepSlug = (string)$sr['step'];
+            $md .= '| ' . $sr['module'] . ' | ' . $sr['company_id'] . ' | `' . $stepSlug . '` | '
                 . mbqar_human_step_label($stepSlug) . ' | '
-                . mbqar_shorten_note((string)$pr['notes'], 160) . " |\n";
+                . mbqar_shorten_note((string)$sr['notes'], 160) . " |\n";
             if (++$shown >= 500) {
                 $md .= "\n_(truncated at 500 rows; see JSON for full list)_\n";
                 break;

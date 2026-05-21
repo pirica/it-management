@@ -424,6 +424,17 @@ function mbqa_step_result(string $step, bool $ok, string $note = ''): array
 }
 
 /**
+ * Whether a Pass step note belongs in the markdown "Skip (quick index)" (build_report).
+ * Matches runner N/A and Skip prefixes (e.g. "N/A (12 rows <= perPage 25)", "Skip (bespoke smoke)").
+ */
+function mbqa_step_note_is_skip_quick_index(string $note): bool
+{
+    $note = trim($note);
+
+    return $note !== '' && preg_match('/^(?:Skip|N\/A)\b/i', $note) === 1;
+}
+
+/**
  * Record a step result; per-module exception map forces Pass + map note when the step is listed.
  */
 function mbqa_step_result_for_module(string $moduleSlug, string $step, bool $ok, string $note = ''): array
