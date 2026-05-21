@@ -411,9 +411,8 @@ function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $co
 }
 
 /**
- * Per-module Tier A steps reported as Pass/N/A (module slug => step => note).
- * The runner still executes the full pipeline (clear, HTTP, bulk, etc.); this map only
- * overrides the recorded step result for listed steps — it does not skip running them.
+ * Per-module Tier A step exceptions (module folder slug => step name => N/A note).
+ * Add new modules here; do not scatter step-specific N/A logic in the runner loop.
  *
  * @return array<string, array<string, string>>
  */
@@ -422,6 +421,7 @@ function mbqa_runner_module_step_exceptions(): array
     return [
         'user_companies' => [
             'create' => 'N/A (module has no create screen)',
+            'sample_data' => 'N/A (assignments via users/edit, not HTTP sample_data)',
             'add' => 'N/A (no random bulk rows for junction assignments)',
             'import_db' => 'N/A (no Excel import round-trip)',
         ],
@@ -465,6 +465,11 @@ function mbqa_modules_without_direct_create_php(): array
  */
 function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, string $slug, string $cookieFile): array
 {
+    $createNa = mbqa_runner_module_step_exception_note($slug, 'create');
+    if ($createNa !== null) {
+        return ['ok' => true, 'note' => $createNa];
+    }
+
     $createPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'create.php';
 
     if (!is_file($createPath)) {
@@ -2768,19 +2773,17 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('clear', true, 'Skip destructive clear');
         }
 
-        $seedResult = mbqa_ensure_sample_data($conn, $slug, $companyId, $moduleUrl, $cookieFile);
-        $index['body'] = $seedResult['html'];
-        $csrfIndex = $seedResult['csrf'];
-        if ($seedResult['na']) {
-            $steps[] = mbqa_step_result_for_module($slug, 'sample_data', true, $seedResult['note']);
+        $sampleDataNa = mbqa_runner_module_step_exception_note($slug, 'sample_data');
+        if ($sampleDataNa !== null) {
+            $steps[] = mbqa_step_result('sample_data', true, $sampleDataNa);
         } else {
             $steps[] = mbqa_step_result_for_module($slug, 'sample_data', $seedResult['ok'], $seedResult['note']);
         }
 
         $_SESSION['company_id'] = $companyId;
-        $bulkResult = mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
-        if ($bulkResult['na']) {
-            $steps[] = mbqa_step_result_for_module($slug, 'add', true, $bulkResult['note']);
+        $addNa = mbqa_runner_module_step_exception_note($slug, 'add');
+        if ($addNa !== null) {
+            $steps[] = mbqa_step_result('add', true, $addNa);
         } else {
             $steps[] = mbqa_step_result_for_module($slug, 'add', $bulkResult['ok'], $bulkResult['note']);
         }
@@ -2880,7 +2883,10 @@ foreach ($companiesToRun as $companyId) {
         );
 
         $hasImportEndpoint = stripos($index['body'], 'data-itm-db-import-endpoint') !== false;
-        if ($hasImportEndpoint && $csrfIndex !== '' && $hasTableExport) {
+        $importDbNa = mbqa_runner_module_step_exception_note($slug, 'import_db');
+        if ($importDbNa !== null) {
+            $steps[] = mbqa_step_result('import_db', true, $importDbNa);
+        } elseif ($hasImportEndpoint && $csrfIndex !== '' && $hasTableExport) {
             // Why: import rows pick a free cost_center via mbqa_unique_expense_import_row; do not wipe add-step rows here.
 
             $indexImport = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
@@ -2985,11 +2991,13 @@ foreach ($companiesToRun as $companyId) {
             );
         }
 
-        $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
-        if ($endSeed['na']) {
-            $steps[] = mbqa_step_result_for_module($slug, 'sample_data', true, $endSeed['note']);
-        } else {
-            $steps[] = mbqa_step_result_for_module($slug, 'sample_data', $endSeed['ok'], $endSeed['note']);
+        if ($sampleDataNa === null) {
+            $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
+            if ($endSeed['na']) {
+                $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
+            } else {
+                $steps[] = mbqa_step_result('sample_data', $endSeed['ok'], $endSeed['note']);
+            }
         }
 
         $errorLog = mbqa_read_error_log_since($errorLogOffset);
