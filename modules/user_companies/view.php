@@ -151,15 +151,10 @@ function cr_format_company_list($companies) {
     if ($count === 1) {
         return sanitize($companies[0]);
     }
-    if ($count === 2) {
-        return sanitize($companies[0]);
-    }
 
-    $lines = [
-        sanitize($companies[0]),
-    ];
-    for ($i = 1; $i < $count; $i++) {
-        $lines[] = '' . sanitize($companies[$i]);
+    $lines = [];
+    foreach ($companies as $companyName) {
+        $lines[] = sanitize((string)$companyName);
     }
 
     return implode('<br>', $lines);
