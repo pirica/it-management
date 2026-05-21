@@ -137,12 +137,31 @@ if ($isJsonImportRequest) {
                 $rowData['company_id'] = (string)(int)$company_id;
             }
 
+            if (($crud_table ?? '') === 'ip_subnets' && function_exists('itm_ipam_apply_derived_sql_to_data')) {
+                $importPost = [];
+                foreach ($importColumns as $idx => $columnMeta) {
+                    if (!is_array($columnMeta)) {
+                        continue;
+                    }
+                    $importPost[(string)$columnMeta['Field']] = trim((string)($sourceRow[$idx] ?? ''));
+                }
+                itm_ipam_apply_derived_sql_to_data($conn, $crud_table, $rowData, $importPost);
+            }
+
             $fields = [];
             $values = [];
             foreach ($fieldColumns as $col) {
                 $name = (string)$col['Field'];
                 $fields[] = cr_escape_identifier($name);
                 $values[] = $rowData[$name] ?? 'NULL';
+            }
+            if (($crud_table ?? '') === 'ip_subnets') {
+                foreach (['network_ip', 'prefix_length'] as $derivedField) {
+                    if (isset($rowData[$derivedField])) {
+                        $fields[] = cr_escape_identifier($derivedField);
+                        $values[] = $rowData[$derivedField];
+                    }
+                }
             }
 
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';

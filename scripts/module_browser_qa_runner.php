@@ -1199,7 +1199,12 @@ function mbqa_build_import_rows_from_db_template(mysqli $conn, string $table, in
         }
     }
 
-    return [$headers, $importValues];
+    $rows = [$headers, $importValues];
+    if ($table === 'ip_subnets') {
+        $rows = mbqa_unique_ip_subnets_import_row($conn, $companyId, $rows);
+    }
+
+    return $rows;
 }
 
 /**
@@ -1298,8 +1303,82 @@ function mbqa_build_import_rows_from_database_sql_seed(mysqli $conn, string $tab
     if ($table === 'expenses') {
         $rows = mbqa_unique_expense_import_row($conn, $companyId, $rows);
     }
+    if ($table === 'ip_subnets') {
+        $rows = mbqa_unique_ip_subnets_import_row($conn, $companyId, $rows);
+    }
 
     return $rows;
+}
+
+/**
+ * ip_subnets.uq_ip_subnets_company_scope is (company_id, vlan_id, cidr); pick a free CIDR for import QA.
+ *
+ * @param array<int, array<int, string>> $sqlRows
+ * @return array<int, array<int, string>>
+ */
+function mbqa_unique_ip_subnets_import_row(mysqli $conn, int $companyId, array $sqlRows): array
+{
+    if ($companyId <= 0 || count($sqlRows) < 2) {
+        return $sqlRows;
+    }
+
+    $headers = $sqlRows[0];
+    $values = $sqlRows[1];
+    $cidrIndex = false;
+    $networkIndex = false;
+    $prefixIndex = false;
+    $vlanIndex = false;
+    foreach ($headers as $i => $label) {
+        $key = strtolower(trim(preg_replace('/\s+/', ' ', (string)$label)));
+        if ($key === 'cidr') {
+            $cidrIndex = $i;
+        } elseif ($key === 'network ip') {
+            $networkIndex = $i;
+        } elseif ($key === 'prefix length') {
+            $prefixIndex = $i;
+        } elseif ($key === 'vlan' || $key === 'vlan id') {
+            $vlanIndex = $i;
+        }
+    }
+
+    if ($cidrIndex === false) {
+        return $sqlRows;
+    }
+
+    $vlanId = 0;
+    if ($vlanIndex !== false) {
+        $vlanRaw = trim((string)($values[$vlanIndex] ?? ''));
+        if ($vlanRaw !== '' && ctype_digit($vlanRaw)) {
+            $vlanId = (int)$vlanRaw;
+        }
+    }
+
+    $seed = (int)substr((string)time(), -3);
+    for ($offset = 0; $offset < 55; $offset++) {
+        $octet = 128 + (($seed + $offset) % 55);
+        $cidr = '10.' . $octet . '.0.0/24';
+        $network = '10.' . $octet . '.0.0';
+        $vlanClause = $vlanId > 0
+            ? 'vlan_id=' . (int)$vlanId
+            : 'vlan_id IS NULL';
+        $cidrEsc = mysqli_real_escape_string($conn, $cidr);
+        $checkSql = 'SELECT id FROM ip_subnets WHERE company_id=' . (int)$companyId
+            . ' AND ' . $vlanClause . " AND cidr='{$cidrEsc}' LIMIT 1";
+        $checkRes = mysqli_query($conn, $checkSql);
+        if ($checkRes && mysqli_num_rows($checkRes) === 0) {
+            $values[$cidrIndex] = $cidr;
+            if ($networkIndex !== false) {
+                $values[$networkIndex] = $network;
+            }
+            if ($prefixIndex !== false) {
+                $values[$prefixIndex] = '24';
+            }
+
+            return [$headers, $values];
+        }
+    }
+
+    return $sqlRows;
 }
 
 /**
@@ -1363,6 +1442,10 @@ function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $compa
                 }
             }
             $importRows[1] = $values;
+        }
+
+        if ($table === 'ip_subnets') {
+            $importRows = mbqa_unique_ip_subnets_import_row($conn, $companyId, $importRows);
         }
 
         return $importRows;
