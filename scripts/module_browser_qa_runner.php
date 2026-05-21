@@ -27,6 +27,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_import_helpers.php';
+require_once __DIR__ . '/lib/mbqa_report_paths.php';
 require_once __DIR__ . '/lib/equipment_type_modules.php';
 
 /**
@@ -452,7 +453,7 @@ function mbqa_render_browser_help(): void
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;line-height:1.5;">';
     echo '<h1>Module browser QA — help</h1>';
     echo '<p>Runs the full-module HTTP checklist (login, company switch, CRUD, export/import, delete) for one or all modules and tenants. ';
-    echo 'Results are written to <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>.</p>';
+    echo 'Results are written to <code>qa-reports/module-browser-qa.json</code> (replaced on each run).</p>';
 
     echo '<h2>URL and actions</h2>';
     mbqa_echo_browser_url_actions_table();
@@ -523,7 +524,7 @@ function mbqa_print_help(): void
     mbqa_out("  --company=N      Company id 1–5 only; omit or --company=all for all five tenants\n");
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
     mbqa_out("  --help           Show this help\n\n");
-    mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD.json\n\n");
+    mbqa_out("Output: qa-reports/module-browser-qa.json (overwritten each run)\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
     mbqa_out("  add         Insert ~30 random tenant rows if count < records_per_page + 1\n");
     mbqa_out("  pagination  After add: page=1 Next (HTML page=2) then page=2 Previous (HTML page=1); sort=id\n");
@@ -582,7 +583,7 @@ function mbqa_render_browser_form(array $options): void
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA runner</h1>';
     echo '<p>Runs the full-module HTTP checklist (login, company switch, clear/seed/CRUD, export/import, delete). ';
-    echo 'Writes <code>qa-reports/module-browser-qa-YYYY-MM-DD.json</code>. Long runs may take several minutes.</p>';
+    echo 'Writes <code>qa-reports/module-browser-qa.json</code> (overwritten each run). Long runs may take several minutes.</p>';
     echo '<div id="mbqa-live-status" aria-live="polite" style="margin:12px 0;padding:10px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;min-height:1.2em;font-size:0.95rem;display:none;"></div>';
     echo '<div id="mbqa-run-footer" hidden style="margin:12px 0;padding:10px 0;font-size:0.95rem;"></div>';
     echo '<form id="mbqa-run-form" method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
@@ -4514,9 +4515,9 @@ $outDir = $root . DIRECTORY_SEPARATOR . 'qa-reports';
 if (!is_dir($outDir)) {
     mkdir($outDir, 0775, true);
 }
-$date = date('Y-m-d');
-$jsonPath = $outDir . DIRECTORY_SEPARATOR . 'module-browser-qa-' . $date . '.json';
+$jsonPath = mbqa_report_json_path($root);
 $reportPayload = [
+    'generated_at' => date('Y-m-d H:i:s'),
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
         'module' => $filterModule,
@@ -4552,8 +4553,8 @@ if (mbqa_is_cli_sapi()) {
     mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
 }
 
-$jsonRel = '../qa-reports/module-browser-qa-' . $date . '.json';
-$reportHref = 'module_browser_qa_build_report.php?run=1&date=' . rawurlencode($date);
+$jsonRel = '../qa-reports/' . mbqa_report_json_basename();
+$reportHref = 'module_browser_qa_build_report.php?run=1';
 $rerunParams = ['run' => '1', 'ajax' => '1'];
 if ($filterModule !== null && trim((string)$filterModule) !== '') {
     $rerunParams['module'] = trim((string)$filterModule);
