@@ -164,6 +164,129 @@ function mbqar_rerun_runner_href(array $payload): string
     return 'module_browser_qa_runner.php?' . http_build_query($params);
 }
 
+/**
+ * Plain-language label for a runner step slug (markdown tables).
+ */
+function mbqar_human_step_label(string $step): string
+{
+    static $labels = [
+        'error_log' => 'Error log',
+        'list' => 'List page',
+        'clear' => 'Tenant clear',
+        'sample_data' => 'Sample data',
+        'add' => 'Bulk random rows',
+        'pagination' => 'Pagination',
+        'bulk_cancel' => 'Bulk Cancel UI',
+        'bulk_delete' => 'Bulk delete',
+        'search' => 'Search',
+        'sort' => 'Sort links',
+        'create' => 'Create form',
+        'view' => 'View record',
+        'edit' => 'Edit form',
+        'list_all' => 'List all',
+        'export_pdf' => 'Export PDF',
+        'export_xls' => 'Export Excel',
+        'import_db' => 'Import Excel',
+        'single_delete' => 'Single delete',
+        'clear_table' => 'Clear table',
+        'company_switch' => 'Company switch',
+    ];
+
+    return $labels[$step] ?? $step;
+}
+
+/**
+ * Default explanation when a step fails often (Tier A checklist).
+ */
+function mbqar_step_typical_cause(string $step): string
+{
+    static $causes = [
+        'error_log' => 'PHP warnings, notices, or fatals were written during this module run',
+        'list' => 'Index page did not return HTTP 200 or contained a fatal error',
+        'clear' => 'Could not delete tenant rows (FK children still reference parent rows)',
+        'sample_data' => 'Sample seed POST failed or left the table empty (missing seed rows or FK parents)',
+        'add' => 'Runner could not insert enough random rows (unique keys, missing FK parents, or column out of range)',
+        'pagination' => 'Page 1/2 missing Next or Previous link when row count exceeds records per page',
+        'bulk_cancel' => 'Bulk delete form or Cancel button missing from index HTML',
+        'bulk_delete' => 'Bulk delete POST to delete.php failed or returned an error',
+        'search' => 'Search input or results table missing on the index page',
+        'sort' => 'Default sort column link missing (visible default may not be id)',
+        'create' => 'Create form missing or blocked (often missing FK parent rows after clear)',
+        'view' => 'No row to open or view page returned an error',
+        'edit' => 'No row to edit or edit form returned an error',
+        'list_all' => 'List-all page missing table or returned an error',
+        'export_pdf' => 'Export PDF control missing from the list table HTML',
+        'export_xls' => 'Export Excel control missing from the list table HTML',
+        'import_db' => 'Import round-trip failed (endpoint, headers, values, or unique constraint)',
+        'single_delete' => 'Delete POST blocked by FK usage or returned an error',
+        'clear_table' => 'Clear-table POST failed or transaction rolled back',
+        'company_switch' => 'Session company scope did not switch to the requested tenant',
+    ];
+
+    return $causes[$step] ?? 'See module notes below or the Failures only index';
+}
+
+/**
+ * Shorten a runner note for summary tables (pipe-safe).
+ */
+function mbqar_shorten_note(string $note, int $maxLen = 120): string
+{
+    $note = trim(str_replace(["\r", "\n"], ' ', $note));
+    $note = str_replace('|', '/', $note);
+    if (strlen($note) <= $maxLen) {
+        return $note;
+    }
+
+    return substr($note, 0, $maxLen - 3) . '...';
+}
+
+/**
+ * Turn the first failure note for a step into a plain-language “this run” hint.
+ */
+function mbqar_this_run_hint(string $step, array $failRows): string
+{
+    foreach ($failRows as $fr) {
+        if (($fr['step'] ?? '') !== $step) {
+            continue;
+        }
+        $note = trim((string)($fr['notes'] ?? ''));
+        if ($note === '') {
+            continue;
+        }
+        if (preg_match("/Out of range value for column '([^']+)'/i", $note, $m)) {
+            return "This run: value out of range for column `{$m[1]}`";
+        }
+        if (stripos($note, 'Could not insert random rows') !== false) {
+            return 'This run: ' . mbqar_shorten_note($note, 100);
+        }
+        if (stripos($note, 'HTTP sample seed') !== false || stripos($note, 'sample seed') !== false) {
+            return 'This run: ' . mbqar_shorten_note($note, 100);
+        }
+        if (stripos($note, 'missing') !== false || stripos($note, 'not found') !== false) {
+            return 'This run: ' . mbqar_shorten_note($note, 100);
+        }
+
+        return 'This run: ' . mbqar_shorten_note($note, 100);
+    }
+
+    return '';
+}
+
+/**
+ * Pass/Fail → short result text for preflight and quick tables.
+ */
+function mbqar_human_status(string $status): string
+{
+    if ($status === 'Pass') {
+        return 'OK';
+    }
+    if ($status === 'Fail') {
+        return 'Failed';
+    }
+
+    return $status;
+}
+
 function mbqar_render_browser_form(array $options): void
 {
     header('Content-Type: text/html; charset=utf-8');
@@ -254,45 +377,58 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
     $md .= "- Bulk delete / Clear table: N/A when row count &lt; `records_per_page` (25)\n\n";
 
     if (!empty($moduleStepExceptions)) {
-        $md .= "### Module step exceptions (reported Pass/N/A; runner still runs full Tier A)\n\n";
+        $md .= "### Skipped steps (configured exceptions — counted as Pass/N/A)\n\n";
+        $md .= "| Module | Step | Label | Reason |\n|---|---|---|---|\n";
         foreach ($moduleStepExceptions as $moduleSlug => $stepNotes) {
             if (!is_array($stepNotes)) {
                 continue;
             }
-            $md .= '- **' . $moduleSlug . '**: ';
-            $parts = [];
             foreach ($stepNotes as $stepName => $note) {
-                $parts[] = '`' . $stepName . '` — ' . $note;
+                $stepSlug = (string)$stepName;
+                $md .= '| ' . $moduleSlug . ' | `' . $stepSlug . '` | '
+                    . mbqar_human_step_label($stepSlug) . ' | '
+                    . str_replace('|', '/', (string)$note) . " |\n";
             }
-            $md .= implode('; ', $parts) . "\n";
         }
         $md .= "\n";
     }
 
-    $md .= "### Failure categories (automated run)\n\n";
-    $md .= "| Step | Fail count | Typical cause |\n|---|---|---|\n";
-    $causeMap = [
-        'sort' => 'Default sort column may not be `id`',
-        'clear' => 'FK constraints when parents cleared out of safe order',
-        'sample_data' => 'Missing database.sql seed or FK parents',
-        'error_log' => 'PHP warnings/notices/fatals logged during module HTTP steps',
-        'create' => 'Missing FK parents after clear',
-        'view' => 'No rows after failed seed',
-        'edit' => 'No rows after failed seed',
-        'import_db' => 'Import headers/values mismatch or unique constraints',
-    ];
-    foreach ($failCats as $k => $v) {
-        $md .= '| ' . $k . ' | ' . $v . ' | ' . ($causeMap[$k] ?? '') . " |\n";
+    $md .= "### Failure summary (by step)\n\n";
+    $md .= "Counts are across all modules and companies in this JSON. ";
+    $md .= "**Typical cause** is the usual reason; **This run** is taken from the first matching failure note when available.\n\n";
+    if (empty($failCats)) {
+        $md .= "_No failing steps in this run._\n\n";
+    } else {
+        $md .= "| Step | Label | Failures | Typical cause | This run |\n|---|---|---:|---|---|\n";
+        foreach ($failCats as $k => $v) {
+            $typical = mbqar_step_typical_cause($k);
+            $thisRun = mbqar_this_run_hint($k, $failRows);
+            $md .= '| `' . $k . '` | ' . mbqar_human_step_label($k) . ' | ' . $v . ' | '
+                . $typical . ' | ' . $thisRun . " |\n";
+        }
+        $md .= "\n";
     }
 
-    $md .= "\n## Preflight (company switch)\n\n";
-    $md .= "| Company ID | Company | Switch |\n|---|---|---|\n";
-    foreach ($preflight as $pf) {
-        $st = $pf['steps'][0]['status'] ?? '?';
-        $md .= '| ' . (int)$pf['company_id'] . ' | ' . ($pf['company_name'] ?? '') . ' | ' . $st . " |\n";
+    $md .= "## Preflight (company switch)\n\n";
+    $md .= "Verifies the runner can switch session scope to each company before module tests.\n\n";
+    if (empty($preflight)) {
+        $md .= "_No preflight rows in JSON (single-company runs may omit this)._\n\n";
+    } else {
+        $md .= "| Company ID | Company name | Result | Notes |\n|---:|---|---|---|\n";
+        foreach ($preflight as $pf) {
+            $step = $pf['steps'][0] ?? [];
+            $st = (string)($step['status'] ?? '?');
+            $notes = mbqar_shorten_note((string)($step['notes'] ?? ''), 80);
+            if ($st === 'Pass' && $notes === '') {
+                $notes = 'Session switched to this company';
+            }
+            $md .= '| ' . (int)$pf['company_id'] . ' | ' . ($pf['company_name'] ?? '') . ' | '
+                . mbqar_human_status($st) . ' | ' . $notes . " |\n";
+        }
+        $md .= "\n";
     }
 
-    $md .= "\n## Results by module (Pass and Fail)\n\n";
+    $md .= "## Results by module (Pass and Fail)\n\n";
     if (empty($moduleRows)) {
         $md .= "_No module rows in JSON._\n";
     } else {
@@ -302,13 +438,12 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
             if ($companyName !== '') {
                 $md .= ' (' . $companyName . ')';
             }
-            $md .= "\n\n| Step | Status | Notes |\n|---|---|---|\n";
+            $md .= "\n\n| Step | Label | Result | Notes |\n|---|---|---|---|\n";
             foreach ($moduleRow['steps'] as $step) {
-                $note = str_replace('|', '/', (string)($step['notes'] ?? ''));
-                if (strlen($note) > 160) {
-                    $note = substr($note, 0, 157) . '...';
-                }
-                $md .= '| ' . ($step['step'] ?? '') . ' | ' . ($step['status'] ?? '') . ' | ' . $note . " |\n";
+                $stepSlug = (string)($step['step'] ?? '');
+                $note = mbqar_shorten_note((string)($step['notes'] ?? ''), 160);
+                $md .= '| `' . $stepSlug . '` | ' . mbqar_human_step_label($stepSlug) . ' | '
+                    . mbqar_human_status((string)($step['status'] ?? '')) . ' | ' . $note . " |\n";
             }
             $md .= "\n";
         }
@@ -318,9 +453,12 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
         $md .= "\n## Expenses pilot (5 companies)\n\n";
         foreach ($pilotRows as $pr) {
             $md .= "### Company " . (int)$pr['company_id'] . ' — ' . ($pr['company_name'] ?? '') . "\n\n";
-            $md .= "| Step | Status | Notes |\n|---|---|---|\n";
+            $md .= "| Step | Label | Result | Notes |\n|---|---|---|---|\n";
             foreach ($pr['steps'] as $step) {
-                $md .= '| ' . ($step['step'] ?? '') . ' | ' . ($step['status'] ?? '') . ' | ' . str_replace('|', '/', (string)($step['notes'] ?? '')) . " |\n";
+                $stepSlug = (string)($step['step'] ?? '');
+                $md .= '| `' . $stepSlug . '` | ' . mbqar_human_step_label($stepSlug) . ' | '
+                    . mbqar_human_status((string)($step['status'] ?? '')) . ' | '
+                    . mbqar_shorten_note((string)($step['notes'] ?? ''), 160) . " |\n";
             }
             $md .= "\n";
         }
@@ -330,10 +468,13 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
     if (empty($failRows)) {
         $md .= "_No failures recorded._\n";
     } else {
-        $md .= "| Module | Co | Step | Notes |\n|---|---|---|---|\n";
+        $md .= "| Module | Co | Step | Label | Notes |\n|---|---|---|---|---|\n";
         $shown = 0;
         foreach ($failRows as $fr) {
-            $md .= '| ' . $fr['module'] . ' | ' . $fr['company_id'] . ' | ' . $fr['step'] . ' | ' . str_replace('|', '/', $fr['notes']) . " |\n";
+            $stepSlug = (string)$fr['step'];
+            $md .= '| ' . $fr['module'] . ' | ' . $fr['company_id'] . ' | `' . $stepSlug . '` | '
+                . mbqar_human_step_label($stepSlug) . ' | '
+                . mbqar_shorten_note((string)$fr['notes'], 160) . " |\n";
             if (++$shown >= 200) {
                 $md .= "\n_(truncated; see JSON for full list)_\n";
                 break;
@@ -345,14 +486,13 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
     if (empty($passRows)) {
         $md .= "_No passes recorded._\n";
     } else {
-        $md .= "| Module | Co | Step | Notes |\n|---|---|---|---|\n";
+        $md .= "| Module | Co | Step | Label | Notes |\n|---|---|---|---|---|\n";
         $shown = 0;
         foreach ($passRows as $pr) {
-            $note = str_replace('|', '/', (string)$pr['notes']);
-            if (strlen($note) > 160) {
-                $note = substr($note, 0, 157) . '...';
-            }
-            $md .= '| ' . $pr['module'] . ' | ' . $pr['company_id'] . ' | ' . $pr['step'] . ' | ' . $note . " |\n";
+            $stepSlug = (string)$pr['step'];
+            $md .= '| ' . $pr['module'] . ' | ' . $pr['company_id'] . ' | `' . $stepSlug . '` | '
+                . mbqar_human_step_label($stepSlug) . ' | '
+                . mbqar_shorten_note((string)$pr['notes'], 160) . " |\n";
             if (++$shown >= 500) {
                 $md .= "\n_(truncated at 500 rows; see JSON for full list)_\n";
                 break;
