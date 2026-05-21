@@ -408,6 +408,9 @@ $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) 
     return !(($GLOBALS['crud_table'] ?? '') === 'cable_colors' && $col['Field'] === 'company_id');
 }));
 
+// Why: Search uses the same visible column set as the list table.
+$displayFieldColumns = $visibleFieldColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();

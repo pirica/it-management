@@ -306,6 +306,9 @@ $applyCompanyScope = $hasCompany && $company_id > 0 && !$currentUserIsAdmin;
 $hideAdminAccounts = !$currentUserIsAdmin;
 $hideAdminAccountsSql = "LOWER(COALESCE(`username`, '')) <> 'admin' AND COALESCE((SELECT LOWER(COALESCE(urv.name, '')) FROM `user_roles` urv WHERE urv.id = `users`.`role_id` LIMIT 1), '') <> 'admin'";
 
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();

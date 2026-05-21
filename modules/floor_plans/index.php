@@ -489,6 +489,9 @@ if ($crud_table === 'floor_plans' && $crud_action === 'list_all') {
     }));
 }
 
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $fpDeleteReturn = (string)($fp_delete_return ?? 'index');
