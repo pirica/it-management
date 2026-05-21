@@ -411,8 +411,8 @@ function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $co
 }
 
 /**
- * Per-module Tier A step exceptions (module folder slug => step name => N/A note).
- * Add new modules here; do not scatter step-specific N/A logic in the runner loop.
+ * Per-module Tier A steps that are not executed (slug => step => Pass/N/A note in report only).
+ * All other steps run normally (e.g. user_companies still runs sample_data).
  *
  * @return array<string, array<string, string>>
  */
@@ -421,7 +421,6 @@ function mbqa_runner_module_step_exceptions(): array
     return [
         'user_companies' => [
             'create' => 'N/A (module has no create screen)',
-            'sample_data' => 'N/A (assignments via users/edit, not HTTP sample_data)',
             'add' => 'N/A (no random bulk rows for junction assignments)',
             'import_db' => 'N/A (no Excel import round-trip)',
         ],
@@ -2773,19 +2772,26 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('clear', true, 'Skip destructive clear');
         }
 
-        $sampleDataNa = mbqa_runner_module_step_exception_note($slug, 'sample_data');
-        if ($sampleDataNa !== null) {
-            $steps[] = mbqa_step_result('sample_data', true, $sampleDataNa);
+        $seedResult = mbqa_ensure_sample_data($conn, $slug, $companyId, $moduleUrl, $cookieFile);
+        $index['body'] = $seedResult['html'];
+        $csrfIndex = $seedResult['csrf'];
+        if ($seedResult['na']) {
+            $steps[] = mbqa_step_result('sample_data', true, $seedResult['note']);
         } else {
-            $steps[] = mbqa_step_result_for_module($slug, 'sample_data', $seedResult['ok'], $seedResult['note']);
+            $steps[] = mbqa_step_result('sample_data', $seedResult['ok'], $seedResult['note']);
         }
 
         $_SESSION['company_id'] = $companyId;
-        $addNa = mbqa_runner_module_step_exception_note($slug, 'add');
-        if ($addNa !== null) {
-            $steps[] = mbqa_step_result('add', true, $addNa);
+        $addNaNote = mbqa_runner_module_step_exception_note($slug, 'add');
+        if ($addNaNote !== null) {
+            $steps[] = mbqa_step_result('add', true, $addNaNote);
         } else {
-            $steps[] = mbqa_step_result_for_module($slug, 'add', $bulkResult['ok'], $bulkResult['note']);
+            $bulkResult = mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
+            if ($bulkResult['na']) {
+                $steps[] = mbqa_step_result('add', true, $bulkResult['note']);
+            } else {
+                $steps[] = mbqa_step_result('add', $bulkResult['ok'], $bulkResult['note']);
+            }
         }
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
@@ -2836,8 +2842,13 @@ foreach ($companiesToRun as $companyId) {
                 || stripos($sort['body'], 'dir=DESC') !== false);
         $steps[] = mbqa_step_result('sort', $sortOk, $sortOk ? 'sort=' . $sortField : 'Sort indicators missing');
 
-        $createResult = mbqa_run_create_screen_step($moduleUrl, $modulesDir, $slug, $cookieFile);
-        $steps[] = mbqa_step_result_for_module($slug, 'create', $createResult['ok'], $createResult['note']);
+        $createNaNote = mbqa_runner_module_step_exception_note($slug, 'create');
+        if ($createNaNote !== null) {
+            $steps[] = mbqa_step_result('create', true, $createNaNote);
+        } else {
+            $createResult = mbqa_run_create_screen_step($moduleUrl, $modulesDir, $slug, $cookieFile);
+            $steps[] = mbqa_step_result('create', $createResult['ok'], $createResult['note']);
+        }
 
         $ids = mbqa_row_ids($index['body']);
         $viewId = $ids[0] ?? 0;
@@ -2941,8 +2952,7 @@ foreach ($companiesToRun as $companyId) {
                 }
             }
 
-            $steps[] = mbqa_step_result_for_module(
-                $slug,
+            $steps[] = mbqa_step_result(
                 'import_db',
                 $importOk,
                 $importOk
@@ -2950,8 +2960,7 @@ foreach ($companiesToRun as $companyId) {
                     : substr($import['body'], 0, 120)
             );
         } else {
-            $steps[] = mbqa_step_result_for_module(
-                $slug,
+            $steps[] = mbqa_step_result(
                 'import_db',
                 true,
                 $hasImportEndpoint ? 'N/A (need table rows for export/import)' : 'N/A (no import endpoint)'
@@ -2991,13 +3000,11 @@ foreach ($companiesToRun as $companyId) {
             );
         }
 
-        if ($sampleDataNa === null) {
-            $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
-            if ($endSeed['na']) {
-                $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
-            } else {
-                $steps[] = mbqa_step_result('sample_data', $endSeed['ok'], $endSeed['note']);
-            }
+        $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
+        if ($endSeed['na']) {
+            $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
+        } else {
+            $steps[] = mbqa_step_result('sample_data', $endSeed['ok'], $endSeed['note']);
         }
 
         $errorLog = mbqa_read_error_log_since($errorLogOffset);
