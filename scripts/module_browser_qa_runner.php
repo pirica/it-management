@@ -27,6 +27,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_import_helpers.php';
+require_once __DIR__ . '/lib/equipment_type_modules.php';
 
 /**
  * @return array<int, string>
@@ -1094,11 +1095,45 @@ function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $co
  * Per-module Tier A steps that are not executed (slug => step => Pass/N/A note in report only).
  * All other steps run normally (e.g. user_companies still runs sample_data).
  *
+ * @return array<string, string>
+ */
+function mbqa_runner_facade_routing_na_steps(): array
+{
+    return [
+        'clear' => 'N/A routing',
+        'sample_data' => 'N/A routing',
+        'add' => 'N/A routing',
+        'pagination' => 'N/A routing',
+        'bulk_cancel' => 'N/A routing',
+        'bulk_delete' => 'N/A routing',
+        'search' => 'N/A routing',
+        'sort' => 'N/A routing',
+        'create' => 'N/A routing',
+        'view' => 'N/A routing',
+        'edit' => 'N/A routing',
+        'list_all' => 'N/A routing',
+        'export_pdf' => 'N/A routing',
+        'export_xls' => 'N/A routing',
+        'import_db' => 'N/A routing',
+        'single_delete' => 'N/A routing',
+        'clear_table' => 'N/A routing',
+    ];
+}
+
+/**
+ * Tier C equipment-type façades (modules/is_*) except is_switch (full matrix there).
+ */
+function mbqa_is_facade_routing_module(string $slug): bool
+{
+    return strpos($slug, 'is_') === 0 && $slug !== 'is_switch';
+}
+
+/**
  * @return array<string, array<string, string>>
  */
 function mbqa_runner_module_step_exceptions(): array
 {
-    return [
+    $map = [
         'user_companies' => [
             'create' => 'N/A (module has no create screen)',
             'add' => 'N/A (no random bulk rows for junction assignments)',
@@ -1113,13 +1148,29 @@ function mbqa_runner_module_step_exceptions(): array
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
     ];
+
+    $routingSteps = mbqa_runner_facade_routing_na_steps();
+    foreach (itm_canonical_equipment_is_module_names() as $slug) {
+        if ($slug === 'is_switch') {
+            continue;
+        }
+        $map[$slug] = array_merge($map[$slug] ?? [], $routingSteps);
+    }
+
+    return $map;
 }
 
 function mbqa_runner_module_step_exception_note(string $slug, string $step): ?string
 {
     $map = mbqa_runner_module_step_exceptions();
+    if (isset($map[$slug][$step])) {
+        return (string)$map[$slug][$step];
+    }
+    if (mbqa_is_facade_routing_module($slug) && isset(mbqa_runner_facade_routing_na_steps()[$step])) {
+        return 'N/A routing';
+    }
 
-    return isset($map[$slug][$step]) ? (string)$map[$slug][$step] : null;
+    return null;
 }
 
 /**
@@ -4079,15 +4130,18 @@ foreach ($companiesToRun as $companyId) {
             continue;
         }
 
-        if ($tier === 'C' && $slug !== 'is_switch') {
+        if ($tier === 'C' && mbqa_is_facade_routing_module($slug)) {
             $routeOk = $listOk;
-            $steps[] = mbqa_step_result('clear', true, 'N/A façade routing');
-            $steps[] = mbqa_step_result('sample_data', true, 'N/A façade');
-            $steps[] = mbqa_step_result('add', true, 'N/A façade');
-            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'pagination', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
-                $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
+            foreach (['clear', 'sample_data', 'add'] as $s) {
+                $naNote = mbqa_runner_module_step_exception_note($slug, $s) ?? 'N/A routing';
+                $steps[] = mbqa_step_result($s, true, $naNote);
             }
-            $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
+            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'pagination', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
+                $naNote = mbqa_runner_module_step_exception_note($slug, $s) ?? 'N/A routing';
+                $steps[] = mbqa_step_result($s, $routeOk, $naNote);
+            }
+            $endSampleNote = mbqa_runner_module_step_exception_note($slug, 'sample_data') ?? 'N/A routing';
+            $steps[] = mbqa_step_result('sample_data', true, $endSampleNote);
             $errorLog = mbqa_read_error_log_since($errorLogOffset);
             $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
             $results[] = [
