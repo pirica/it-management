@@ -171,6 +171,7 @@ function mbqar_rerun_runner_href(array $payload): string
 function mbqar_human_step_label(string $step): string
 {
     static $labels = [
+        'mysql' => 'database.sql seed rows',
         'error_log' => 'Error log',
         'list' => 'List page',
         'clear' => 'Tenant clear',
@@ -202,6 +203,7 @@ function mbqar_human_step_label(string $step): string
 function mbqar_step_typical_cause(string $step): string
 {
     static $causes = [
+        'mysql' => 'database.sql could not be read or parsed for INSERT rows on this module table',
         'error_log' => 'PHP warnings, notices, or fatals were written during this module run',
         'list' => 'Index page did not return HTTP 200 or contained a fatal error',
         'clear' => 'Could not delete tenant rows (FK children still reference parent rows)',
