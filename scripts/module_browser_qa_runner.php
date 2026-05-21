@@ -10,7 +10,7 @@
  *   clear_table — same row gate as bulk_delete.
  *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
  *   pagination (after add) — when rows > perPage: page=1 must render Next→page=2; page=2 must render Previous→page=1 in HTML (sort=id).
- * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
+ * Each module scopes error_log.txt (rename to error_log-N.txt when present, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
  * Usage (repository root, CLI):
  *   php scripts/module_browser_qa_runner.php
@@ -885,32 +885,60 @@ function mbqa_read_error_log_since(int $byteOffset): array
     return ['ok' => false, 'note' => $note, 'count' => $count];
 }
 
-function mbqa_delete_error_log_file(): bool
+/**
+ * Next archive name under ROOT_PATH: error_log-1.txt, error_log-2.txt, …
+ */
+function mbqa_next_error_log_archive_path(): string
 {
-    $path = mbqa_error_log_path();
-    if (!is_file($path)) {
-        return true;
+    $dir = defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__) . DIRECTORY_SEPARATOR;
+    $n = 1;
+    while (is_file($dir . 'error_log-' . $n . '.txt')) {
+        $n++;
     }
 
-    return @unlink($path);
+    return $dir . 'error_log-' . $n . '.txt';
 }
 
 /**
- * Per-module error_log scope: delete when possible; otherwise read only bytes appended after this point.
+ * Move the live log aside so this module only sees new lines (keeps history on disk).
+ */
+function mbqa_rotate_error_log_file(): array
+{
+    $path = mbqa_error_log_path();
+    if (!is_file($path)) {
+        return ['ok' => true, 'archive' => '', 'note' => 'no error_log.txt'];
+    }
+
+    $archive = mbqa_next_error_log_archive_path();
+    if (@rename($path, $archive)) {
+        $base = basename($archive);
+
+        return ['ok' => true, 'archive' => $archive, 'note' => 'renamed error_log.txt → ' . $base];
+    }
+
+    return ['ok' => false, 'archive' => '', 'note' => ''];
+}
+
+/**
+ * Per-module error_log scope: rotate when possible; otherwise read only bytes appended after this point.
  *
  * @return array{offset:int,note:string}
  */
 function mbqa_begin_module_error_log_scope(): array
 {
-    if (mbqa_delete_error_log_file()) {
-        return ['offset' => 0, 'note' => 'deleted error_log.txt'];
+    $rotate = mbqa_rotate_error_log_file();
+    if ($rotate['ok']) {
+        return [
+            'offset' => 0,
+            'note' => $rotate['note'] !== '' ? $rotate['note'] : 'no error_log.txt',
+        ];
     }
 
     $offset = mbqa_error_log_byte_offset();
 
     return [
         'offset' => $offset,
-        'note' => 'error_log.txt not deleted; checking new lines from offset ' . $offset,
+        'note' => 'error_log.txt not rotated; checking new lines from offset ' . $offset,
     ];
 }
 
@@ -3120,9 +3148,6 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
     mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}?\n");
     exit(1);
 }
-
-// Why: First action of the run — each module also deletes the log before its steps so errors are scoped per module.
-mbqa_delete_error_log_file();
 
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
