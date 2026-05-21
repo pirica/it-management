@@ -353,7 +353,12 @@ function cr_is_qa_import_user_company_row($conn, $row) {
     $userRow = $res ? mysqli_fetch_assoc($res) : null;
     $username = strtolower(trim((string)($userRow['username'] ?? '')));
 
-    return $username !== '' && strncmp($username, 'qa-import-', 10) === 0;
+    if ($username === '') {
+        return false;
+    }
+
+    // Why: module_browser_qa_runner seeds MBQA-* users; import tools use qa-import-* — neither is a protected Admin mapping.
+    return strncmp($username, 'qa-import-', 10) === 0 || strncmp($username, 'mbqa-', 5) === 0;
 }
 
 function cr_is_admin_user_company_row($conn, $row) {
