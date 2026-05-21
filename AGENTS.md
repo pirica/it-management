@@ -201,7 +201,7 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module `error_log` scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/import/`single_delete`/`clear_table`/end sample restore + `error_log` check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/import/`single_delete`/`clear_table`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa-YYYY-MM-DD.json`. Browser: form at the script URL; submit **Run QA** (`?run=1`). |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Skip** quick indexes, preview in browser. |
 
 **Commands (repository root, Laragon):**
@@ -240,7 +240,35 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 
 **Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in `scripts/module_browser_qa_runner.php` (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `user_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps (start + end restore) with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`
 
-**Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (rename `error_log.txt` to next `error_log-N.txt` when present; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** (start-of-module tenant wipe) → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first) → **`pagination`** (page=1 **Next** / page=2 **Previous** in HTML when rows &gt; `records_per_page`) → **`bulk_cancel`** (bulk form + **Cancel** contract in index HTML + `js/bulk-delete-selection.js`) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF: POST `delete.php` with up to 3 `ids[]`; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **`clear`** again (same FK-aware tenant wipe; recorded as a second **`clear`** step after export so **`import_db`** does not collide with add-step unique keys) → **import_db** (one insertable row smoke test from export headers captured before the second clear + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
+**Checklist per standard module (Tier A, including Protection Zone folders)** — step order (runner slug = table name unless a step exception applies):
+
+| # | Step | What it checks |
+|---|------|----------------|
+| 1 | **`mysql`** | Whether `database.sql` defines sample `INSERT` rows for the module table. Parsed from `database.sql` via `itm_parse_database_sql_inserts()` (same tuples as UI sample seed). Manual equivalent: `SELECT * FROM \`{table}\`` in phpMyAdmin on a fresh import — **0 row(s) (empty)** e.g. `ip_addresses`, or **N row(s)** e.g. `departments`. Informational **Pass**; note records the count. Fails only if `database.sql` is missing/unreadable. Tier C/D report `N/A`. |
+| 2 | **`error_log`** | Start scope: rename `error_log.txt` to next `error_log-N.txt` when present; else record byte offset (only *new* lines count for this module). |
+| 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count. |
+| 4 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `users` skipped). |
+| 5 | **`sample_data`** | HTTP sample seed; FK parents first; DB fallback via `itm_seed_table_from_database_sql()` when anchor ids differ. |
+| 6 | **`add`** | Insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first. |
+| 7 | **`pagination`** | Page 1 **Next** / page 2 **Previous** when rows &gt; `records_per_page`. |
+| 8 | **`bulk_cancel`** | Bulk form + **Cancel** contract (`js/bulk-delete-selection.js`). |
+| 9 | **`bulk_delete`** | POST `delete.php` with up to 3 `ids[]` when rows ≥ `records_per_page` (N/A note when skipped). |
+| 10 | **`search`** | Search on index. |
+| 11 | **`sort`** | Sort links on index. |
+| 12 | **`create`** | Create form. |
+| 13 | **`view`** | View record. |
+| 14 | **`edit`** | Edit form. |
+| 15 | **`list_all`** | List-all page. |
+| 16 | **`export_pdf`** | Export PDF control in list HTML. |
+| 17 | **`export_xls`** | Export Excel (parsed list table; row count ≠ import count). |
+| 18 | **`clear`** | Second FK-aware tenant wipe (after export; before import). |
+| 19 | **`import_db`** | One insertable row smoke test (`inserted=1` is pass). |
+| 20 | **`single_delete`** | Delete POST with FK retry. |
+| 21 | **`clear_table`** | Same row gate as `bulk_delete`. |
+| 22 | **`sample_data`** | End restore on empty table (HTTP). |
+| 23 | **`error_log`** | End check: 0 new errors since module scope. |
+
+**`mysql` verification (file or SQL):** prefer reading `database.sql` (runner step 1). To spot-check in MySQL: `SELECT COUNT(*) FROM \`{table}\`` on a database loaded from `database.sql` — expect the same N as the runner note (global insert count, not per-tenant). Empty modules (`patches_updates`, `ip_addresses`, …) drive **`sample_data`** N/A notes such as `No sample rows found in database.sql for this module.`
 
 **Tier A `add` / bulk UI (runner vs browser):**
 

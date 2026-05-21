@@ -4,6 +4,7 @@
  *
  * Why: Exercising 101 modules × 5 companies via IDE browser alone is not practical;
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
+ * Tier A order: mysql (database.sql INSERT count) → error_log → list → clear → … → error_log.
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
  *   bulk_delete — when rows >= perPage and bulk UI visible on index; POST delete.php with up to 3 ids[].
@@ -1098,6 +1099,49 @@ function mbqa_match_list_header_to_column(string $header, array $columnNames): ?
     }
 
     return null;
+}
+
+/**
+ * Count INSERT sample rows for one table in database.sql (Tier A module slug = table name).
+ */
+function mbqa_database_sql_insert_row_count(string $table): int
+{
+    if (!itm_is_safe_identifier($table)) {
+        return 0;
+    }
+
+    $sqlPath = ROOT_PATH . 'database.sql';
+    if (!is_file($sqlPath)) {
+        return -1;
+    }
+
+    $sqlBody = @file_get_contents($sqlPath);
+    if ($sqlBody === false || !function_exists('itm_parse_database_sql_inserts')) {
+        return 0;
+    }
+
+    $parsed = itm_parse_database_sql_inserts($sqlBody, $table);
+
+    return count($parsed[$table] ?? []);
+}
+
+/**
+ * Tier A preflight: record how many INSERT rows database.sql defines for this module table.
+ * Why: sample_data / end restore and import_db expectations depend on seed rows (0 vs N).
+ *
+ * @return array{ok:bool, note:string}
+ */
+function mbqa_mysql_database_sql_seed_check(string $table): array
+{
+    $count = mbqa_database_sql_insert_row_count($table);
+    if ($count < 0) {
+        return ['ok' => false, 'note' => 'database.sql missing or unreadable'];
+    }
+    if ($count === 0) {
+        return ['ok' => true, 'note' => 'database.sql: 0 row(s) (empty)'];
+    }
+
+    return ['ok' => true, 'note' => 'database.sql: ' . $count . ' row(s)'];
 }
 
 /**
@@ -3371,6 +3415,13 @@ foreach ($companiesToRun as $companyId) {
 
         $moduleUrl = $baseUrl . 'modules/' . rawurlencode($slug) . '/';
         $steps = [];
+
+        if ($tier === 'A' && itm_is_safe_identifier($slug)) {
+            $mysqlCheck = mbqa_mysql_database_sql_seed_check($slug);
+            $steps[] = mbqa_step_result('mysql', $mysqlCheck['ok'], $mysqlCheck['note']);
+        } else {
+            $steps[] = mbqa_step_result('mysql', true, 'N/A (Tier ' . $tier . ')');
+        }
 
         $errorLogScope = mbqa_begin_module_error_log_scope();
         $errorLogOffset = $errorLogScope['offset'];
