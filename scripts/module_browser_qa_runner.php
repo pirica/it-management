@@ -1116,8 +1116,11 @@ function mbqa_database_sql_insert_row_count(string $table): int
     }
 
     $sqlBody = @file_get_contents($sqlPath);
-    if ($sqlBody === false || !function_exists('itm_parse_database_sql_inserts')) {
-        return 0;
+    if ($sqlBody === false) {
+        return -1;
+    }
+    if (!function_exists('itm_parse_database_sql_inserts')) {
+        return -1;
     }
 
     $parsed = itm_parse_database_sql_inserts($sqlBody, $table);
@@ -3769,8 +3772,13 @@ foreach ($companiesToRun as $companyId) {
             );
         }
 
-        if ($viewId > 0 && is_file($deletePath) && $csrfIndex !== '') {
-            $singleDelHtml = mbqa_html_step_single_delete_action($index['body'], $viewId);
+        // Why: pre-import clear drops rows chosen for view/edit; import may insert new ids — delete from the current list.
+        $indexForDelete = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+        $csrfForDelete = mbqa_extract_csrf($indexForDelete['body']);
+        $deleteId = mbqa_row_ids($indexForDelete['body'])[0] ?? 0;
+
+        if ($deleteId > 0 && is_file($deletePath) && $csrfForDelete !== '') {
+            $singleDelHtml = mbqa_html_step_single_delete_action($indexForDelete['body'], $deleteId);
             if (!$singleDelHtml['ok']) {
                 $steps[] = mbqa_step_result('single_delete', false, $singleDelHtml['note']);
             } else {
@@ -3778,9 +3786,9 @@ foreach ($companiesToRun as $companyId) {
                 $conn,
                 $moduleUrl,
                 $slug,
-                $viewId,
+                $deleteId,
                 $companyId,
-                $csrfIndex,
+                $csrfForDelete,
                 $cookieFile
             );
             $delNote = $delResult['note'];
@@ -3790,7 +3798,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('single_delete', $delResult['ok'], $delNote);
             }
         } else {
-            $steps[] = mbqa_step_result('single_delete', true, $viewId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
+            $steps[] = mbqa_step_result('single_delete', true, $deleteId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
         }
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
