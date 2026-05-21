@@ -962,6 +962,9 @@ foreach ($visibleFieldColumns as $visibleFieldColumn) {
     }
 }
 
+// Why: Search uses the same visible column set as the list table.
+$displayFieldColumns = $visibleFieldColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();

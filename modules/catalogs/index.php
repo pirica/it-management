@@ -1462,6 +1462,9 @@ $formColumns = array_values(array_filter($fieldColumns, function ($col) {
 $GLOBALS['cr_tinyint_fields'] = cr_tinyint_field_map($fieldColumns);
 $fkDisplayMaps = cr_fk_display_maps($conn, $fkMap, $uiColumns, (int)$company_id);
 
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();

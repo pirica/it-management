@@ -428,6 +428,18 @@
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_csrf_coverage.php</code> — smoke step 2 / AGENTS.md after CRUD changes.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_display_field_columns_search_alias.php">apply_display_field_columns_search_alias.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable.</td>
+                    <td><code>php scripts/apply_display_field_columns_search_alias.php</code> from repository root. Re-run only when new flattened CRUD modules omit the alias.</td>
+                </tr>
+                <tr>
+                    <td><a href="check_display_field_columns_search.php">check_display_field_columns_search.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
+                </tr>
+                <tr>
                     <td><a href="check_sql_injection_coverage.php">check_sql_injection_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>

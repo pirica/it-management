@@ -338,6 +338,9 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
 
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $ui_config = itm_get_ui_configuration($conn, (int)$company_id);
