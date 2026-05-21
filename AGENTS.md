@@ -114,7 +114,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) and local CI use **`bash scripts/
 | 2 | `php scripts/check_csrf_coverage.php` | POST handlers / forms have CSRF |
 | 3 | `php scripts/check_sql_injection_coverage.php` | SQLi coverage audit |
 
-Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/index.html`).
+Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/index.html`).
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
@@ -248,7 +248,7 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 Every module (excluding the Protection Zone) must implement:
 * **Hide** `company_id` from all UI views.
 * **Bulk Actions:** "Select to Delete" and "Clear Table" (visible when row count >= `records_per_page`). Use shared **`js/bulk-delete-selection.js`** (loaded from `includes/header.php`) — see **Bulk delete toolbar and Cancel button** below.
-* **Search:** Comprehensive search across all visible fields.
+* **Search:** Comprehensive search across all visible fields — see **List/search visible columns** below.
 * **Order:** Standardized sort fields ASC DESC - '▲' : '▼'.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
 * **Navigation:** Standardized server-side pagination based on `records_per_page`. List **Previous** / **Next** controls use link text `Previous` and `Next` (preserve `search`, `sort`, `dir`, and `page` query params). **Required `title` attributes:** `title="◀️ Previous"` and `title="▶️ Next"` on pagination anchors (not `🔎 Search`). Pagination URLs include `search=`; `includes/header.php` auto-tooltips must match **visible link text** for Next/Previous and must not treat `search=` in `href` as a Search action. **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **Next** (`btn-sm`, `page=2`, `title="▶️ Next"`), then page 2 includes **Previous** (`btn-sm`, `page=1`, `title="◀️ Previous"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
@@ -287,6 +287,34 @@ Standard index markup (inside the list card, above the search row). `department-
 4. **Bound once** — JS sets `data-itm-bulk-delete-bound="1"` on the form after attach (safe to reload DOMContentLoaded).
 
 **QA (`bulk_cancel` step, after `add`):** when bulk UI is visible, index HTML must include `bulk-delete-form`, `bulk-delete-selection.js`, `bulk_action`, and **Select to Delete** / `bulk_delete`; pass note lists what rendered in HTML plus shared JS contract. N/A when row count &lt; `records_per_page` (no bulk card).
+
+#### List/search visible columns (`$uiColumns` / `$displayFieldColumns`) (mandatory)
+
+Flattened CRUD `index.php` files build **`$uiColumns`** (visible list fields, often hiding `company_id` via `$hideCompanyIdTables`). List tables and sort use `$uiColumns`. **Search** must query the **same visible column set**. A common template mistake copied `foreach ($displayFieldColumns as $col)` in the search block without defining `$displayFieldColumns`, which logs `Undefined variable: displayFieldColumns` and `Invalid argument supplied for foreach()` when `?search=` is set (module browser QA **search** step exercises this on many modules).
+
+**Mandatory contract:**
+
+1. After **`$uiColumns`** is finalized (including any extra filters, e.g. `floor_plans` `list_all` column subset or `employee_onboarding_requests` list columns), assign **before** `$modulePath = dirname($_SERVER['PHP_SELF']);`:
+
+```php
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+```
+
+2. Modules that use **`$visibleFieldColumns`** for the list (e.g. `cable_colors`, `switch_ports`): `$displayFieldColumns = $visibleFieldColumns;` after that array is final.
+
+3. Any **`foreach ($displayFieldColumns as $col)`** in the search SQL block requires the assignment above in the same request. Do not reference `$displayFieldColumns` without defining it.
+
+4. List/view HTML may keep `foreach ($uiColumns as $col)` (or `$visibleFieldColumns`); search may use `$displayFieldColumns` or `$uiColumns` only **after** the alias line exists.
+
+**Audit / repair** (catalog: `scripts/index.html`):
+
+| Script | When |
+|--------|------|
+| `php scripts/check_display_field_columns_search.php` | After changing flattened `index.php` search or list column variables; exit `1` if any index uses `$displayFieldColumns` without assignment |
+| `php scripts/apply_display_field_columns_search_alias.php` | CLI-only maintenance to add the alias on modules missing it (idempotent; re-run when scaffolding new flattened modules) |
+
+Not part of smoke — run manually when CRUD template or search logic changes. Bulk fix: [PR #1796](https://github.com/pirica/it-management/pull/1796).
 
 ### 6. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.
@@ -330,6 +358,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Testing/reporting guardrail (mandatory):**
   * Do not claim “No tests run” when checks were executed.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
+  * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
   * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** under `scripts/`).
   * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/index.html` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
