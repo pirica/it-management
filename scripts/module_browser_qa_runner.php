@@ -6,8 +6,8 @@
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
- *   bulk_cancel — HTTP contract: shared js/bulk-delete-selection.js + index bulk form (no inline selectionMode);
- *   bulk_delete — when rows >= perPage and delete.php + CSRF: POST delete.php with up to 3 ids[].
+ *   bulk_delete — when rows >= perPage and delete.php + CSRF: POST delete.php with up to 3 ids[] (direct POST;
+ *     does not click Select to Delete / Cancel; browser Cancel UX is js/bulk-delete-selection.js).
  * clear_table uses the same row-count gate as bulk_delete.
  * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
