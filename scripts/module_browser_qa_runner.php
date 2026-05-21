@@ -422,7 +422,6 @@ function mbqa_runner_module_step_exceptions(): array
     return [
         'user_companies' => [
             'create' => 'N/A (module has no create screen)',
-            'sample_data' => 'N/A (assignments via users/edit, not HTTP sample_data)',
             'add' => 'N/A (no random bulk rows for junction assignments)',
             'import_db' => 'N/A (no Excel import round-trip)',
         ],
