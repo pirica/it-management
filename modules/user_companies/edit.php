@@ -459,16 +459,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $dbErrorCode = 0;
         $dbErrorMessage = '';
+        // Why: mysqli_affected_rows() after itm_run_query() is always 0 — audit logging runs more queries on the same connection.
         if (itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage)) {
-            if (mysqli_affected_rows($conn) < 1) {
-                $errors[] = 'No User Company row was updated. Re-open the record from the list and try again.';
-            } else {
-                header('Location: ' . $listUrl);
-                exit;
-            }
-        } else {
-            $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            header('Location: ' . $listUrl);
+            exit;
         }
+        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 
     if (empty($errors) && ($crud_table ?? '') === 'user_companies' && $crud_action === 'edit') {
