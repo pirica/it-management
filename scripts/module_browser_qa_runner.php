@@ -9,6 +9,7 @@
  *   bulk_delete — when rows >= perPage and bulk UI visible on index; POST delete.php with up to 3 ids[].
  *   clear_table — same row gate as bulk_delete.
  *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
+ *   pagination (after add) — when rows > perPage: page=1 must render Next→page=2; page=2 must render Previous→page=1 in HTML (sort=id).
  * Each module scopes error_log.txt (delete when possible, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
  *
  * Usage (repository root, CLI):
@@ -128,7 +129,8 @@ function mbqa_print_help(): void
     mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD.json\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
     mbqa_out("  add         Insert ~30 random tenant rows if count < records_per_page + 1\n");
-    mbqa_out("  bulk_cancel HTTP contract: bulk-delete-selection.js + bulk form on index (no inline selectionMode)\n");
+    mbqa_out("  pagination  After add: page=1 Next (HTML page=2) then page=2 Previous (HTML page=1); sort=id\n");
+    mbqa_out("  bulk_cancel    bulk form + Select to Delete in index HTML; bulk-delete-selection.js in HTML; shared JS contract\n");
     mbqa_out("  bulk_delete If rows >= perPage and UI + delete.php: POST delete.php with up to 3 ids[]\n\n");
 
     if (!mbqa_is_cli_sapi()) {
@@ -476,11 +478,11 @@ function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, stri
     }
 
     $create = mbqa_http($moduleUrl . 'create.php', 'GET', null, [], $cookieFile);
-    $ok = $create['status'] === 200 && !mbqa_has_fatal($create['body']);
+    $htmlCheck = mbqa_html_step_create($create['body'], $create['status']);
 
     return [
-        'ok' => $ok,
-        'note' => 'HTTP ' . $create['status'],
+        'ok' => $htmlCheck['ok'],
+        'note' => $htmlCheck['ok'] ? $htmlCheck['note'] : $htmlCheck['note'],
     ];
 }
 
@@ -728,10 +730,21 @@ function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
     $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
     $ok = !mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body']);
 
+    $htmlCheck = mbqa_html_step_sample_data($index['body'], $index['status'], true);
+    $note = $ok ? 'HTTP sample seed' : 'HTTP sample seed failed or empty';
+    if ($ok && $htmlCheck['note'] !== '') {
+        $note .= '; ' . $htmlCheck['note'];
+    }
+    if ($ok && !$htmlCheck['ok']) {
+        $ok = false;
+        $note = $htmlCheck['note'];
+    }
+
     return [
         'ok' => $ok,
-        'note' => $ok ? 'HTTP sample seed' : 'HTTP sample seed failed or empty',
+        'note' => $note,
         'na' => false,
+        'html' => $index['body'],
     ];
 }
 
@@ -2092,6 +2105,385 @@ function mbqa_index_pagination_matches_row_gate(int $rowCount, int $perPage, str
 }
 
 /**
+ * Pagination Previous/Next anchor rendered in server HTML (not JS-only).
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_index_pagination_button_in_html(string $html, string $label, int $targetPage): array
+{
+    $label = $label === 'Previous' ? 'Previous' : 'Next';
+    $expectedTitle = $label === 'Previous' ? '◀️ Previous' : '▶️ Next';
+    $pageToken = 'page=' . (int)$targetPage;
+
+    if (!preg_match_all('/<a\b([^>]*)>\s*' . preg_quote($label, '/') . '\s*<\/a>/i', $html, $matches, PREG_SET_ORDER)) {
+        return ['ok' => false, 'note' => $label . ' button missing in HTML'];
+    }
+
+    foreach ($matches as $match) {
+        $attrs = $match[1];
+        if (stripos($attrs, 'btn-sm') === false) {
+            continue;
+        }
+        if (stripos($attrs, $pageToken) === false) {
+            continue;
+        }
+        if (preg_match('/title="🔎\s*Search"/i', $attrs)) {
+            return ['ok' => false, 'note' => $label . ' title=Search in HTML (expected ' . $expectedTitle . ')'];
+        }
+        if (preg_match('/title="/i', $attrs) && stripos($attrs, 'title="' . $expectedTitle . '"') === false) {
+            return ['ok' => false, 'note' => $label . ' title not ' . $expectedTitle . ' in HTML'];
+        }
+
+        return ['ok' => true, 'note' => $label . ' rendered (page=' . $targetPage . ')'];
+    }
+
+    return ['ok' => false, 'note' => $label . ' btn-sm link to ' . $pageToken . ' missing in HTML'];
+}
+
+/**
+ * After add: exercise page 2 then page 1 when tenant rows exceed records_per_page.
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_run_pagination_nav_step(
+    string $moduleUrl,
+    string $cookieFile,
+    int $rowCount,
+    int $perPage
+): array {
+    if ($rowCount <= $perPage) {
+        return ['ok' => true, 'note' => 'N/A (' . $rowCount . ' rows <= perPage ' . $perPage . ')'];
+    }
+
+    // Default list sort (id DESC) — do not scrape column header sort= links from index HTML.
+    $sortField = 'id';
+    $queryBase = 'search=&sort=' . rawurlencode($sortField) . '&dir=DESC';
+
+    $page1Url = $moduleUrl . 'index.php?' . $queryBase . '&page=1';
+    $page1 = mbqa_http($page1Url, 'GET', null, [], $cookieFile);
+    if ($page1['status'] !== 200 || mbqa_has_fatal($page1['body'])) {
+        return ['ok' => false, 'note' => 'page=1 HTTP ' . $page1['status']];
+    }
+
+    if (!preg_match('/Page\s+1\s+of/i', $page1['body'])) {
+        return ['ok' => false, 'note' => 'page=1 missing Page 1 of N footer'];
+    }
+
+    $nextOnPage1 = mbqa_index_pagination_button_in_html($page1['body'], 'Next', 2);
+    if (!$nextOnPage1['ok']) {
+        return ['ok' => false, 'note' => 'page=1: ' . $nextOnPage1['note']];
+    }
+
+    $page2Url = $moduleUrl . 'index.php?' . $queryBase . '&page=2';
+    $page2 = mbqa_http($page2Url, 'GET', null, [], $cookieFile);
+    if ($page2['status'] !== 200 || mbqa_has_fatal($page2['body'])) {
+        return ['ok' => false, 'note' => 'page=2 HTTP ' . $page2['status']];
+    }
+
+    if (!preg_match('/Page\s+2\s+of/i', $page2['body'])) {
+        return ['ok' => false, 'note' => 'page=2 missing Page 2 of N footer'];
+    }
+
+    $prevOnPage2 = mbqa_index_pagination_button_in_html($page2['body'], 'Previous', 1);
+    if (!$prevOnPage2['ok']) {
+        return ['ok' => false, 'note' => 'page=2: ' . $prevOnPage2['note']];
+    }
+
+    return [
+        'ok' => true,
+        'note' => 'page=1 Next→2, page=2 Previous→1 in HTML (sort=' . $sortField . ', dir=DESC)',
+    ];
+}
+
+/**
+ * Count list rows rendered in index HTML (tbody tr or ids[] checkboxes).
+ */
+function mbqa_index_count_table_rows(string $html): int
+{
+    $ids = mbqa_row_ids($html);
+    if (!empty($ids)) {
+        return count($ids);
+    }
+
+    if (preg_match('/<tbody\b[^>]*>(.*)<\/tbody>/is', $html, $tbodyMatch)) {
+        if (preg_match_all('/<tr\b/i', $tbodyMatch[1], $trMatches)) {
+            return count($trMatches[0]);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_check_http_page(string $html, int $status, string $context): array
+{
+    if ($status !== 200) {
+        return ['ok' => false, 'note' => $context . ' HTTP ' . $status];
+    }
+    if (mbqa_has_fatal($html)) {
+        return ['ok' => false, 'note' => $context . ' fatal in HTML'];
+    }
+
+    return ['ok' => true, 'note' => ''];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_sample_data(string $html, int $status, bool $seedAttempted): array
+{
+    if (!$seedAttempted) {
+        return ['ok' => true, 'note' => ''];
+    }
+    $base = mbqa_html_check_http_page($html, $status, 'sample_data index');
+    if (!$base['ok']) {
+        return $base;
+    }
+    if (mbqa_index_has_sample_seed_error($html)) {
+        return ['ok' => false, 'note' => 'sample seed error banner in HTML'];
+    }
+    if (mbqa_index_is_empty($html) || mbqa_index_count_table_rows($html) < 1) {
+        return ['ok' => false, 'note' => 'sample_data: no table rows in HTML'];
+    }
+    if (stripos($html, '<table') === false) {
+        return ['ok' => false, 'note' => 'sample_data: list table missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'table rows in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_add_index(string $html, int $status, int $minRows): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'add index');
+    if (!$base['ok']) {
+        return $base;
+    }
+    $rowCount = mbqa_index_count_table_rows($html);
+    if ($rowCount < $minRows) {
+        return ['ok' => false, 'note' => 'add: expected >=' . $minRows . ' rows in HTML, saw ' . $rowCount];
+    }
+    if (stripos($html, '<table') === false) {
+        return ['ok' => false, 'note' => 'add: list table missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => $rowCount . ' row(s) in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_bulk_delete_ready(string $html): array
+{
+    if (!mbqa_index_shows_bulk_actions($html)) {
+        return ['ok' => false, 'note' => 'bulk_delete: bulk UI missing in HTML'];
+    }
+    if (stripos($html, 'bulk_delete') === false && stripos($html, 'Select to Delete') === false) {
+        return ['ok' => false, 'note' => 'bulk_delete: Select to Delete missing in HTML'];
+    }
+    if (mbqa_index_count_table_rows($html) < 1) {
+        return ['ok' => false, 'note' => 'bulk_delete: no rows in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'bulk UI + rows in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_search(string $html, int $status): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'search');
+    if (!$base['ok']) {
+        return $base;
+    }
+    if (stripos($html, 'name="search"') === false && stripos($html, 'id="moduleSearch"') === false) {
+        return ['ok' => false, 'note' => 'search input missing in HTML'];
+    }
+    if (stripos($html, '<table') === false) {
+        return ['ok' => false, 'note' => 'search: list table missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'HTTP 200; search input + table in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_sort(string $html, int $status, string $sortField): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'sort');
+    if (!$base['ok']) {
+        return $base;
+    }
+    $hasSortLink = preg_match('/sort=' . preg_quote($sortField, '/') . '/i', $html) === 1;
+    $hasDir = stripos($html, 'dir=DESC') !== false
+        || stripos($html, '▼') !== false
+        || stripos($html, '&#9660;') !== false;
+    if (!$hasSortLink || !$hasDir) {
+        return ['ok' => false, 'note' => 'sort=' . $sortField . ' link/dir missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'sort=' . $sortField . ' in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_create(string $html, int $status): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'create');
+    if (!$base['ok']) {
+        return $base;
+    }
+    if (stripos($html, '<form') === false) {
+        return ['ok' => false, 'note' => 'create form missing in HTML'];
+    }
+    if (stripos($html, 'csrf_token') === false && stripos($html, 'name="csrf_token"') === false) {
+        return ['ok' => false, 'note' => 'create CSRF field missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'create form in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_view(string $html, int $status, int $id): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'view');
+    if (!$base['ok']) {
+        return $base;
+    }
+    if ($id > 0 && stripos($html, 'id=' . $id) === false) {
+        return ['ok' => false, 'note' => 'view: id=' . $id . ' not referenced in HTML'];
+    }
+    if (stripos($html, '<table') === false && stripos($html, '<form') === false) {
+        return ['ok' => false, 'note' => 'view: table/form content missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'id=' . $id . ' in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_edit(string $html, int $status, int $id): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'edit');
+    if (!$base['ok']) {
+        return $base;
+    }
+    if (stripos($html, '<form') === false) {
+        return ['ok' => false, 'note' => 'edit form missing in HTML'];
+    }
+    if ($id > 0 && stripos($html, 'id=' . $id) === false) {
+        return ['ok' => false, 'note' => 'edit: id=' . $id . ' not referenced in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'id=' . $id . ' form in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_list_all(string $html, int $status): array
+{
+    $base = mbqa_html_check_http_page($html, $status, 'list_all');
+    if (!$base['ok']) {
+        return $base;
+    }
+    if (stripos($html, '<table') === false) {
+        return ['ok' => false, 'note' => 'list_all table missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'list table in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_export(string $html, string $kind, bool $hasTableExport): array
+{
+    $buttons = mbqa_index_has_export_buttons($html);
+    $hasButton = $kind === 'pdf' ? $buttons['pdf'] : $buttons['excel'];
+    if (!$hasButton) {
+        $label = $kind === 'pdf' ? 'Export PDF' : 'Export Excel';
+        return ['ok' => false, 'note' => $label . ' not present in HTML (table-tools.js or label)'];
+    }
+    if (!$hasTableExport) {
+        return ['ok' => false, 'note' => 'export: table rows missing in HTML'];
+    }
+
+    $rows = count(mbqa_extract_table_export_rows($html)) - 1;
+    $label = $kind === 'pdf' ? 'Export PDF' : 'Export Excel';
+
+    return ['ok' => true, 'note' => $label . ' in HTML, ' . $rows . ' row(s)'];
+}
+
+/**
+ * Import Excel UI contract in server HTML (endpoint attr + table-tools.js like export steps).
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_import_db(string $html, bool $hasTableExport): array
+{
+    if (stripos($html, 'data-itm-db-import-endpoint') === false) {
+        return ['ok' => false, 'note' => 'data-itm-db-import-endpoint missing on table HTML'];
+    }
+    if (stripos($html, '<table') === false) {
+        return ['ok' => false, 'note' => 'import_db: list table missing in HTML'];
+    }
+    $hasTableTools = stripos($html, 'table-tools.js') !== false;
+    $hasImportUi = stripos($html, 'Import Excel') !== false
+        || stripos($html, 'import_excel_rows') !== false;
+    if (!$hasTableTools && !$hasImportUi) {
+        return ['ok' => false, 'note' => 'Import Excel / table-tools.js missing in HTML'];
+    }
+    if (!$hasTableExport) {
+        return ['ok' => false, 'note' => 'import_db: table rows missing in HTML'];
+    }
+
+    return ['ok' => true, 'note' => 'data-itm-db-import-endpoint + table-tools in HTML'];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_single_delete_action(string $html, int $id): array
+{
+    if ($id <= 0) {
+        return ['ok' => true, 'note' => ''];
+    }
+    if (preg_match('/delete\.php\?[^"\']*id=' . $id . '\b/i', $html) === 1
+        || preg_match('/name="delete_record"[^>]*value="' . $id . '"/i', $html) === 1
+        || preg_match('/🗑️/u', $html) === 1) {
+        return ['ok' => true, 'note' => 'delete control in HTML'];
+    }
+
+    return ['ok' => false, 'note' => 'single_delete: delete action missing in HTML for id=' . $id];
+}
+
+/**
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_html_step_clear_table_button(string $html): array
+{
+    if (stripos($html, 'value="clear_table"') !== false || stripos($html, "value='clear_table'") !== false) {
+        return ['ok' => true, 'note' => 'Clear Table in HTML'];
+    }
+    if (stripos($html, 'Clear Table') !== false && stripos($html, 'bulk_action') !== false) {
+        return ['ok' => true, 'note' => 'Clear Table in HTML'];
+    }
+
+    return ['ok' => false, 'note' => 'clear_table button missing in HTML'];
+}
+
+/**
  * Shared Cancel UX shipped in js/bulk-delete-selection.js (loaded from includes/header.php).
  *
  * @return array{ok:bool,note:string}
@@ -2137,6 +2529,55 @@ function mbqa_shared_bulk_cancel_js_contract(): array
 }
 
 /**
+ * Bulk Cancel contract in index HTML (+ shared js/bulk-delete-selection.js on disk).
+ *
+ * @return array{ok:bool,note:string,na:bool}
+ */
+function mbqa_html_step_bulk_cancel(string $indexHtml): array
+{
+    $hasBulkForm = stripos($indexHtml, 'bulk-delete-form') !== false
+        || stripos($indexHtml, 'department-bulk-form') !== false;
+    if (!$hasBulkForm) {
+        return ['ok' => true, 'note' => 'N/A (no bulk-delete form in HTML)', 'na' => true];
+    }
+
+    $issues = [];
+    if (stripos($indexHtml, 'bulk-delete-selection.js') === false) {
+        $issues[] = 'bulk-delete-selection.js missing in HTML';
+    }
+    if (stripos($indexHtml, 'name="bulk_action"') === false && stripos($indexHtml, "name='bulk_action'") === false) {
+        $issues[] = 'bulk_action control missing in HTML';
+    }
+    if (stripos($indexHtml, 'bulk_delete') === false && stripos($indexHtml, 'Select to Delete') === false) {
+        $issues[] = 'Select to Delete / bulk_delete missing in HTML';
+    }
+    if (preg_match('/let\s+selectionMode\s*=\s*false/i', $indexHtml)) {
+        $issues[] = 'inline selectionMode script in HTML (use shared bulk-delete-selection.js)';
+    }
+
+    $hasStaticCancel = stripos($indexHtml, 'data-itm-bulk-cancel') !== false;
+    if ($hasStaticCancel) {
+        if (!preg_match('/<button[^>]*data-itm-bulk-cancel\s*=\s*["\']1["\'][^>]*type\s*=\s*["\']button["\']/i', $indexHtml)
+            && !preg_match('/<button[^>]*type\s*=\s*["\']button["\'][^>]*data-itm-bulk-cancel\s*=\s*["\']1["\']/i', $indexHtml)) {
+            $issues[] = 'data-itm-bulk-cancel button invalid in HTML (must be type="button")';
+        }
+    }
+
+    if (!empty($issues)) {
+        return ['ok' => false, 'note' => implode('; ', $issues), 'na' => false];
+    }
+
+    $htmlNote = 'bulk-delete-form in HTML; bulk-delete-selection.js in HTML; bulk_action + Select to Delete in HTML';
+    if ($hasStaticCancel) {
+        $htmlNote .= '; data-itm-bulk-cancel button in HTML';
+    } else {
+        $htmlNote .= '; Cancel injected by shared JS on first Select to Delete';
+    }
+
+    return ['ok' => true, 'note' => $htmlNote, 'na' => false];
+}
+
+/**
  * CLI/HTTP substitute for clicking Cancel: verify index markup + global script, not selectionMode duplicates.
  *
  * @return array{ok:bool,note:string,na:bool}
@@ -2148,43 +2589,17 @@ function mbqa_verify_bulk_cancel_contract(string $indexHtml): array
         return ['ok' => false, 'note' => $jsCheck['note'], 'na' => false];
     }
 
-    $hasBulkForm = stripos($indexHtml, 'bulk-delete-form') !== false
-        || stripos($indexHtml, 'department-bulk-form') !== false;
-    if (!$hasBulkForm) {
-        return ['ok' => true, 'note' => 'N/A (no bulk-delete form on index)', 'na' => true];
+    $htmlCheck = mbqa_html_step_bulk_cancel($indexHtml);
+    if ($htmlCheck['na']) {
+        return $htmlCheck;
     }
-
-    $issues = [];
-    if (stripos($indexHtml, 'bulk-delete-selection.js') === false) {
-        $issues[] = 'index HTML missing bulk-delete-selection.js (header should load shared script)';
+    if (!$htmlCheck['ok']) {
+        return ['ok' => false, 'note' => $htmlCheck['note'], 'na' => false];
     }
-    if (stripos($indexHtml, 'name="bulk_action"') === false && stripos($indexHtml, "name='bulk_action'") === false) {
-        $issues[] = 'missing bulk_action control';
-    }
-    if (stripos($indexHtml, 'bulk_delete') === false) {
-        $issues[] = 'missing bulk_delete toggle (Select to Delete)';
-    }
-    if (preg_match('/let\s+selectionMode\s*=\s*false/i', $indexHtml)) {
-        $issues[] = 'inline selectionMode script still present (use shared js/bulk-delete-selection.js)';
-    }
-
-    $hasStaticCancel = stripos($indexHtml, 'data-itm-bulk-cancel') !== false;
-    if ($hasStaticCancel) {
-        if (!preg_match('/<button[^>]*data-itm-bulk-cancel\s*=\s*["\']1["\'][^>]*type\s*=\s*["\']button["\']/i', $indexHtml)
-            && !preg_match('/<button[^>]*type\s*=\s*["\']button["\'][^>]*data-itm-bulk-cancel\s*=\s*["\']1["\']/i', $indexHtml)) {
-            $issues[] = 'data-itm-bulk-cancel must be type="button" (Cancel must not POST delete)';
-        }
-    }
-
-    if (!empty($issues)) {
-        return ['ok' => false, 'note' => implode('; ', $issues), 'na' => false];
-    }
-
-    $cancelNote = $hasStaticCancel ? 'static Cancel button on form' : 'Cancel injected by shared JS on first Select to Delete';
 
     return [
         'ok' => true,
-        'note' => $jsCheck['note'] . '; ' . $cancelNote,
+        'note' => $jsCheck['note'] . '; ' . $htmlCheck['note'],
         'na' => false,
     ];
 }
@@ -2712,6 +3127,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('clear', true, 'Skip (bespoke smoke)');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A smoke');
             $steps[] = mbqa_step_result('add', true, 'N/A smoke');
+            $steps[] = mbqa_step_result('pagination', true, 'N/A smoke');
             $steps[] = mbqa_step_result('create', true, 'N/A smoke');
             $steps[] = mbqa_step_result('view', true, 'N/A smoke');
             $steps[] = mbqa_step_result('edit', true, 'N/A smoke');
@@ -2743,7 +3159,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('clear', true, 'N/A façade routing');
             $steps[] = mbqa_step_result('sample_data', true, 'N/A façade');
             $steps[] = mbqa_step_result('add', true, 'N/A façade');
-            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
+            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'pagination', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
                 $steps[] = mbqa_step_result($s, $routeOk, 'routing smoke only');
             }
             $steps[] = mbqa_step_result('sample_data', true, 'N/A (end restore)');
@@ -2778,7 +3194,16 @@ foreach ($companiesToRun as $companyId) {
         if ($seedResult['na']) {
             $steps[] = mbqa_step_result('sample_data', true, $seedResult['note']);
         } else {
-            $steps[] = mbqa_step_result('sample_data', $seedResult['ok'], $seedResult['note']);
+            $seedHtml = mbqa_html_step_sample_data($seedResult['html'], 200, true);
+            $seedOk = $seedResult['ok'] && $seedHtml['ok'];
+            $seedNote = $seedResult['note'];
+            if ($seedResult['ok'] && $seedHtml['note'] !== '') {
+                $seedNote .= '; ' . $seedHtml['note'];
+            }
+            if ($seedResult['ok'] && !$seedHtml['ok']) {
+                $seedNote = $seedHtml['note'];
+            }
+            $steps[] = mbqa_step_result('sample_data', $seedOk, $seedNote);
         }
 
         $_SESSION['company_id'] = $companyId;
@@ -2790,12 +3215,28 @@ foreach ($companiesToRun as $companyId) {
             if ($bulkResult['na']) {
                 $steps[] = mbqa_step_result('add', true, $bulkResult['note']);
             } else {
-                $steps[] = mbqa_step_result('add', $bulkResult['ok'], $bulkResult['note']);
+                $indexAfterAdd = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+                $minHtmlRows = min((int)($bulkResult['count'] ?? 0), 1);
+                $addHtml = mbqa_html_step_add_index($indexAfterAdd['body'], $indexAfterAdd['status'], max(1, $minHtmlRows));
+                $addOk = $bulkResult['ok'] && $addHtml['ok'];
+                $addNote = $bulkResult['note'];
+                if ($bulkResult['ok'] && $addHtml['ok'] && $addHtml['note'] !== '') {
+                    $addNote .= '; ' . $addHtml['note'];
+                }
+                if ($bulkResult['ok'] && !$addHtml['ok']) {
+                    $addNote = $addHtml['note'];
+                }
+                $steps[] = mbqa_step_result('add', $addOk, $addNote);
             }
         }
 
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
+
+        $perPage = mbqa_records_per_page($conn);
+        $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
+        $paginationNav = mbqa_run_pagination_nav_step($moduleUrl, $cookieFile, $rowCountAfterAdd, $perPage);
+        $steps[] = mbqa_step_result('pagination', $paginationNav['ok'], $paginationNav['note']);
 
         $bulkCancelCheck = mbqa_verify_bulk_cancel_contract($index['body']);
         if ($bulkCancelCheck['na']) {
@@ -2805,15 +3246,17 @@ foreach ($companiesToRun as $companyId) {
         }
 
         $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
-        $perPage = mbqa_records_per_page($conn);
-        $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
         $canBulkAfterAdd = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
 
         if ($canBulkAfterAdd && is_file($deletePath) && $csrfIndex !== '') {
+            $bulkHtmlReady = mbqa_html_step_bulk_delete_ready($index['body']);
             $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
-            if (!empty($bulkIds)) {
+            if (!empty($bulkIds) && $bulkHtmlReady['ok']) {
                 $bulkDelEarly = mbqa_run_bulk_delete($moduleUrl, $cookieFile, $csrfIndex, $bulkIds);
-                $steps[] = mbqa_step_result('bulk_delete', $bulkDelEarly['ok'], $bulkDelEarly['note']);
+                $bulkNote = $bulkDelEarly['note'] . '; ' . $bulkHtmlReady['note'];
+                $steps[] = mbqa_step_result('bulk_delete', $bulkDelEarly['ok'], $bulkNote);
+            } elseif (!empty($bulkIds) && !$bulkHtmlReady['ok']) {
+                $steps[] = mbqa_step_result('bulk_delete', false, $bulkHtmlReady['note']);
                 $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
                 $csrfIndex = mbqa_extract_csrf($index['body']);
             } else {
@@ -2828,19 +3271,16 @@ foreach ($companiesToRun as $companyId) {
         }
 
         $search = mbqa_http($moduleUrl . 'index.php?search=sample&page=1', 'GET', null, [], $cookieFile);
-        $steps[] = mbqa_step_result('search', $search['status'] === 200 && !mbqa_has_fatal($search['body']), 'HTTP ' . $search['status']);
+        $searchHtml = mbqa_html_step_search($search['body'], $search['status']);
+        $steps[] = mbqa_step_result('search', $searchHtml['ok'], $searchHtml['note']);
 
         $sortField = 'id';
         if (preg_match('/\?[^"\']*sort=([a-zA-Z0-9_]+)/', $index['body'], $sortMatch)) {
             $sortField = $sortMatch[1];
         }
         $sort = mbqa_http($moduleUrl . 'index.php?sort=' . rawurlencode($sortField) . '&dir=DESC&page=1', 'GET', null, [], $cookieFile);
-        $sortOk = $sort['status'] === 200
-            && (preg_match('/sort=' . preg_quote($sortField, '/') . '[^"\']*dir=DESC/i', $sort['body'])
-                || stripos($sort['body'], '▼') !== false
-                || stripos($sort['body'], '&#9660;') !== false
-                || stripos($sort['body'], 'dir=DESC') !== false);
-        $steps[] = mbqa_step_result('sort', $sortOk, $sortOk ? 'sort=' . $sortField : 'Sort indicators missing');
+        $sortHtml = mbqa_html_step_sort($sort['body'], $sort['status'], $sortField);
+        $steps[] = mbqa_step_result('sort', $sortHtml['ok'], $sortHtml['note']);
 
         $createNaNote = mbqa_runner_module_step_exception_note($slug, 'create');
         if ($createNaNote !== null) {
@@ -2854,9 +3294,11 @@ foreach ($companiesToRun as $companyId) {
         $viewId = $ids[0] ?? 0;
         if ($viewId > 0) {
             $view = mbqa_http($moduleUrl . 'view.php?id=' . $viewId, 'GET', null, [], $cookieFile);
-            $steps[] = mbqa_step_result('view', $view['status'] === 200 && !mbqa_has_fatal($view['body']), 'id=' . $viewId);
+            $viewHtml = mbqa_html_step_view($view['body'], $view['status'], $viewId);
+            $steps[] = mbqa_step_result('view', $viewHtml['ok'], $viewHtml['note']);
             $edit = mbqa_http($moduleUrl . 'edit.php?id=' . $viewId, 'GET', null, [], $cookieFile);
-            $steps[] = mbqa_step_result('edit', $edit['status'] === 200 && !mbqa_has_fatal($edit['body']), 'id=' . $viewId);
+            $editHtml = mbqa_html_step_edit($edit['body'], $edit['status'], $viewId);
+            $steps[] = mbqa_step_result('edit', $editHtml['ok'], $editHtml['note']);
         } else {
             $steps[] = mbqa_step_result('view', true, 'N/A no rows');
             $steps[] = mbqa_step_result('edit', true, 'N/A no rows');
@@ -2865,7 +3307,8 @@ foreach ($companiesToRun as $companyId) {
         $listAllPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'list_all.php';
         if (is_file($listAllPath)) {
             $la = mbqa_http($moduleUrl . 'list_all.php', 'GET', null, [], $cookieFile);
-            $steps[] = mbqa_step_result('list_all', $la['status'] === 200 && !mbqa_has_fatal($la['body']), 'HTTP ' . $la['status']);
+            $laHtml = mbqa_html_step_list_all($la['body'], $la['status']);
+            $steps[] = mbqa_step_result('list_all', $laHtml['ok'], $laHtml['note']);
         } else {
             $steps[] = mbqa_step_result('list_all', true, 'N/A');
         }
@@ -2877,27 +3320,17 @@ foreach ($companiesToRun as $companyId) {
         $exportRows = mbqa_extract_table_export_rows($index['body']);
         $hasTableExport = count($exportRows) >= 2;
 
-        $steps[] = mbqa_step_result(
-            'export_pdf',
-            $exportButtons['pdf'] && $hasTableExport,
-            $hasTableExport
-                ? ('table export ready, ' . (count($exportRows) - 1) . ' row(s)')
-                : ($exportButtons['pdf'] ? 'Export PDF button; no table rows' : 'No Export PDF / table')
-        );
+        $exportPdfHtml = mbqa_html_step_export($index['body'], 'pdf', $hasTableExport);
+        $steps[] = mbqa_step_result('export_pdf', $exportPdfHtml['ok'], $exportPdfHtml['note']);
 
-        $steps[] = mbqa_step_result(
-            'export_xls',
-            $exportButtons['excel'] && $hasTableExport,
-            $hasTableExport
-                ? ('extracted ' . (count($exportRows) - 1) . ' row(s) like Export Excel')
-                : ($exportButtons['excel'] ? 'Export Excel button; no extractable rows' : 'No Export Excel / table')
-        );
+        $exportXlsHtml = mbqa_html_step_export($index['body'], 'excel', $hasTableExport);
+        $steps[] = mbqa_step_result('export_xls', $exportXlsHtml['ok'], $exportXlsHtml['note']);
 
-        $hasImportEndpoint = stripos($index['body'], 'data-itm-db-import-endpoint') !== false;
+        $importHtml = mbqa_html_step_import_db($index['body'], $hasTableExport);
         $importDbNa = mbqa_runner_module_step_exception_note($slug, 'import_db');
         if ($importDbNa !== null) {
             $steps[] = mbqa_step_result('import_db', true, $importDbNa);
-        } elseif ($hasImportEndpoint && $csrfIndex !== '' && $hasTableExport) {
+        } elseif ($importHtml['ok'] && $csrfIndex !== '' && $hasTableExport) {
             // Why: import rows pick a free cost_center via mbqa_unique_expense_import_row; do not wipe add-step rows here.
 
             $indexImport = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
@@ -2952,22 +3385,39 @@ foreach ($companiesToRun as $companyId) {
                 }
             }
 
-            $steps[] = mbqa_step_result(
-                'import_db',
-                $importOk,
-                $importOk
-                    ? ('imported ' . $importNote . '; inserted=' . $inserted)
-                    : substr($import['body'], 0, 120)
-            );
+            $indexAfterImport = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
+            $rowsAfterImport = mbqa_index_count_table_rows($indexAfterImport['body']);
+            $htmlAfterImport = $importOk
+                && $indexAfterImport['status'] === 200
+                && !mbqa_has_fatal($indexAfterImport['body'])
+                && $rowsAfterImport > 0;
+
+            if ($importOk) {
+                $importStepNote = $importHtml['note'] . '; imported ' . $importNote . '; inserted=' . $inserted;
+                if ($htmlAfterImport) {
+                    $importStepNote .= '; ' . $rowsAfterImport . ' row(s) in HTML after import';
+                } else {
+                    $importOk = false;
+                    $importStepNote = 'import POST ok but list rows missing in HTML after import';
+                }
+            } else {
+                $importStepNote = substr($import['body'], 0, 120);
+            }
+
+            $steps[] = mbqa_step_result('import_db', $importOk, $importStepNote);
         } else {
             $steps[] = mbqa_step_result(
                 'import_db',
                 true,
-                $hasImportEndpoint ? 'N/A (need table rows for export/import)' : 'N/A (no import endpoint)'
+                $importHtml['ok'] ? 'N/A (need table rows for export/import)' : $importHtml['note']
             );
         }
 
         if ($viewId > 0 && is_file($deletePath) && $csrfIndex !== '') {
+            $singleDelHtml = mbqa_html_step_single_delete_action($index['body'], $viewId);
+            if (!$singleDelHtml['ok']) {
+                $steps[] = mbqa_step_result('single_delete', false, $singleDelHtml['note']);
+            } else {
             $delResult = mbqa_delete_record_with_fk_retry(
                 $conn,
                 $moduleUrl,
@@ -2977,7 +3427,12 @@ foreach ($companiesToRun as $companyId) {
                 $csrfIndex,
                 $cookieFile
             );
-            $steps[] = mbqa_step_result('single_delete', $delResult['ok'], $delResult['note']);
+            $delNote = $delResult['note'];
+            if ($singleDelHtml['note'] !== '') {
+                $delNote .= '; ' . $singleDelHtml['note'];
+            }
+            $steps[] = mbqa_step_result('single_delete', $delResult['ok'], $delNote);
+            }
         } else {
             $steps[] = mbqa_step_result('single_delete', true, $viewId > 0 ? 'N/A (no delete.php/csrf)' : 'N/A no rows');
         }
@@ -2990,8 +3445,14 @@ foreach ($companiesToRun as $companyId) {
             && $csrfIndex !== '';
 
         if ($canRunClearTable) {
+            $clearTableHtml = mbqa_html_step_clear_table_button($index['body']);
+            if (!$clearTableHtml['ok']) {
+                $steps[] = mbqa_step_result('clear_table', false, $clearTableHtml['note']);
+            } else {
             $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug, $conn, $companyId);
-            $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearResult['note']);
+            $clearTableNote = $clearResult['note'] . '; ' . $clearTableHtml['note'];
+            $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearTableNote);
+            }
         } else {
             $steps[] = mbqa_step_result(
                 'clear_table',
@@ -3004,7 +3465,17 @@ foreach ($companiesToRun as $companyId) {
         if ($endSeed['na']) {
             $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
         } else {
-            $steps[] = mbqa_step_result('sample_data', $endSeed['ok'], $endSeed['note']);
+            $endHtml = mbqa_html_step_sample_data((string)($endSeed['html'] ?? ''), 200, true);
+            $endOk = $endSeed['ok'] && ($endSeed['na'] || $endHtml['ok']);
+            $endNote = $endSeed['note'];
+            if ($endSeed['ok'] && isset($endSeed['html']) && $endHtml['note'] !== '') {
+                $endNote .= '; ' . $endHtml['note'];
+            }
+            if ($endSeed['ok'] && isset($endSeed['html']) && !$endHtml['ok']) {
+                $endOk = false;
+                $endNote = $endHtml['note'];
+            }
+            $steps[] = mbqa_step_result('sample_data', $endOk, $endNote);
         }
 
         $errorLog = mbqa_read_error_log_since($errorLogOffset);

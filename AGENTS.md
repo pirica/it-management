@@ -131,14 +131,15 @@ php scripts/module_browser_qa_runner.php --module=departments --company=1
 
 **Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in `scripts/module_browser_qa_runner.php` (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Example: `user_companies` skips `create`, `add`, `import_db` only — `sample_data` runs (has `add_sample_data`).
 
-**Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (delete `error_log.txt` when writable; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF: POST `delete.php` with up to 3 `ids[]`; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **import_db** (one insertable row smoke test from export headers + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
+**Checklist per standard module (Tier A, including Protection Zone folders):** **`error_log`** (delete `error_log.txt` when writable; else record byte offset and only fail on *new* lines this module) → **`list`** (index HTTP 200, no fatal) → FK-aware **`clear`** → **`sample_data`** (HTTP; FK parents seeded first — e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; DB fallback via `itm_seed_table_from_database_sql()` / `itm_seed_resolve_fk_from_database_sql()` when anchor ids differ) → **`add`** (insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first) → **`pagination`** (page=1 **Next** / page=2 **Previous** in HTML when rows &gt; `records_per_page`) → **`bulk_cancel`** (bulk form + **Cancel** contract in index HTML + `js/bulk-delete-selection.js`) → **`bulk_delete`** (when row count after `add` ≥ `records_per_page` and bulk UI + `delete.php` + CSRF: POST `delete.php` with up to 3 `ids[]`; explicit N/A note when skipped) → search → sort → create → view → edit → list_all → **export_pdf** → **export_xls** (parse list table; row count is not import count) → **import_db** (one insertable row smoke test from export headers + `database.sql` FK values when needed; **`inserted=1` is pass**, not full export row count) → **single_delete** (FK retry) → **clear_table** (same row gate as `bulk_delete`) → **`sample_data`** (end restore on empty table) → **`error_log`** (0 new errors since module scope).
 
-**Tier A `add` / `bulk_delete` (runner vs browser):**
+**Tier A `add` / bulk UI (runner vs browser):**
 
 | Step | Runner (`module_browser_qa_runner.php`) | Manual UI (`js/bulk-delete-selection.js` in `includes/header.php`) |
 |------|----------------------------------------|---------------------------------------------------------------------|
 | **`add`** | `mbqa_ensure_bulk_sample_rows()` — random inserts until tenant count ≥ `records_per_page` when schema/unique keys allow | N/A (DB-only in QA) |
-| **`bulk_delete`** | POST `modules/<slug>/delete.php` with `bulk_action=bulk_delete` and up to 3 `ids[]` (skips two-step “Select to Delete”) | **Select to Delete** shows row checkboxes → **Delete Selected** submits; **Cancel** (`cancelButton.textContent = 'Cancel'`) exits selection without POST |
+| **`bulk_cancel`** | Verifies index HTML: `bulk-delete-form`, `bulk-delete-selection.js`, `bulk_action`, **Select to Delete**; static or JS-injected **`data-itm-bulk-cancel="1"`** `type="button"` | First **Select to Delete** → checkboxes + **Delete Selected** + visible **Cancel**; **Cancel** exits without POST |
+| **`bulk_delete`** | POST `modules/<slug>/delete.php` with `bulk_action=bulk_delete` and up to 3 `ids[]` (skips two-step UI) | Second click **Delete Selected** submits selected `ids[]` |
 
 **FK-aware clear / delete (PR #1722):**
 
@@ -211,14 +212,46 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 ### 5. Standard Feature Set
 Every module (excluding the Protection Zone) must implement:
 * **Hide** `company_id` from all UI views.
-* **Bulk Actions:** "Select to Delete" and "Clear Table" (visible if count >= `records_per_page`). List screens use shared **`js/bulk-delete-selection.js`**: first click enables checkboxes; second click deletes selected rows; **Cancel** exits selection mode without deleting (do not duplicate inline `selectionMode` scripts in modules).
+* **Bulk Actions:** "Select to Delete" and "Clear Table" (visible when row count >= `records_per_page`). Use shared **`js/bulk-delete-selection.js`** (loaded from `includes/header.php`) — see **Bulk delete toolbar and Cancel button** below.
 * **Search:** Comprehensive search across all visible fields.
 * **Order:** Standardized sort fields ASC DESC - '▲' : '▼'.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
-* **Navigation:** Standardized server-side pagination based on `records_per_page`.
+* **Navigation:** Standardized server-side pagination based on `records_per_page`. List **Previous** / **Next** controls use link text `Previous` and `Next` (preserve `search`, `sort`, `dir`, and `page` query params). **Required `title` attributes:** `title="◀️ Previous"` and `title="▶️ Next"` on pagination anchors (not `🔎 Search`). Pagination URLs include `search=`; `includes/header.php` auto-tooltips must match **visible link text** for Next/Previous and must not treat `search=` in `href` as a Search action. **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **Next** (`btn-sm`, `page=2`, `title="▶️ Next"`), then page 2 includes **Previous** (`btn-sm`, `page=1`, `title="◀️ Previous"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
 * **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center.
+
+#### Bulk delete toolbar and Cancel button (mandatory)
+
+Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.
+
+```html
+<div class="card" style="margin-bottom:16px;">
+    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+        <input type="hidden" name="csrf_token" value="...">
+        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger"
+            onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+    </form>
+</div>
+```
+
+| Control | Server HTML | Runtime (`js/bulk-delete-selection.js`) |
+|--------|---------------|------------------------------------------|
+| **Select to Delete** | `button[name="bulk_action"][value="bulk_delete"]` — initial label **Select to Delete** (or module-specific text; JS reads it on load) | First click: `preventDefault`, show row `ids[]` checkboxes + header select-all, relabel toggle to **Delete Selected**, show **Cancel** |
+| **Cancel** | Optional in PHP; if omitted, JS injects `button[type="button"][data-itm-bulk-cancel="1"]` immediately after the bulk_delete toggle | `type="button"` only — must **not** submit the form. Click runs `exitSelectionMode()`: hides checkboxes, restores **Select to Delete** label, hides Cancel, clears checks — **no POST** |
+| **Delete Selected** | Same submit button as Select to Delete (label changes in JS) | Second click on toggle: confirm + POST `delete.php` with selected `ids[]` |
+| **Clear Table** | Separate `bulk_action=clear_table` submit (with confirm) | Unaffected by selection mode |
+
+**Hard rules:**
+
+1. **Shared script only** — include `bulk-delete-selection.js` via `includes/header.php`. Do **not** copy inline `let selectionMode = false` handlers into module `index.php` files.
+2. **Cancel never submits** — `data-itm-bulk-cancel="1"` buttons must be `type="button"`, not `type="submit"`.
+3. **Row checkboxes** — `input[name="ids[]"]` with `form="bulk-delete-form"` (or matching form id); hidden until selection mode.
+4. **Bound once** — JS sets `data-itm-bulk-delete-bound="1"` on the form after attach (safe to reload DOMContentLoaded).
+
+**QA (`bulk_cancel` step, after `add`):** when bulk UI is visible, index HTML must include `bulk-delete-form`, `bulk-delete-selection.js`, `bulk_action`, and **Select to Delete** / `bulk_delete`; pass note lists what rendered in HTML plus shared JS contract. N/A when row count &lt; `records_per_page` (no bulk card).
 
 ### 6. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.
