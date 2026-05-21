@@ -344,6 +344,16 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 ---
 
+## 🎯 Root cause fixes (mandatory — no quick patches)
+When a bug or review comment points at a symptom (wrong delete guard, flaky QA step, misleading label), **fix the underlying contract**, not the nearest line that makes the symptom go away.
+
+* **Find the producer first:** identify what creates the bad state (for example `module_browser_qa_runner.php` random row tags, import Excel usernames, FK seed order). Read that code path before patching consumers.
+* **One canonical marker:** test-only or disposable rows must use a **shared, documented signature** in one helper (for example `includes/itm_mbqa_test_user.php` for `MBQA-{table}-{company}-{seq}-{hash}`). Runner and modules must call the **same** builder and detector — do not duplicate regex/prefix logic.
+* **Do not broaden security bypasses on untrusted data:** usernames, titles, emails, and free-text fields are normal application data. A short prefix match (`mbqa-`, `test-`, `qa-`) is **not** an acceptable root fix for delete guards or permission skips; use the strict runner/import signature or another trusted marker.
+* **If the real fix is larger, say so in the PR** (schema flag, dedicated test role, runner cleanup hook) and implement the smallest **correct** contract change — not a permanent loose bypass.
+
+---
+
 ## 🧹 Change Hygiene Rules (Diff Quality)
 To keep PRs reviewable and avoid noisy churn, follow these rules for every change:
 * **No line-ending normalization:** Preserve existing CRLF/LF style per file. Do not rewrite whole files just to change one line.

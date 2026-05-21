@@ -189,6 +189,7 @@ if (!mbqa_is_cli_sapi() && !$mbqaOptions['run']) {
 // Why: config.php starts the session and may set headers; browser HTML output must come after require.
 define('ITM_CLI_SCRIPT', true);
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
+require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_mbqa_test_user.php';
 
 if (!mbqa_is_cli_sapi()) {
     @set_time_limit(0);
@@ -355,8 +356,8 @@ function mbqa_is_admin_user_company_assignment_row(mysqli $conn, array $row): bo
         return false;
     }
 
-    $username = strtolower(trim((string)($userRow['username'] ?? '')));
-    if ($username !== '' && (strncmp($username, 'qa-import-', 10) === 0 || strncmp($username, 'mbqa-', 5) === 0)) {
+    $username = (string)($userRow['username'] ?? '');
+    if ($username !== '' && itm_user_company_assignment_bypasses_admin_delete_guard($username)) {
         return false;
     }
 
@@ -1751,7 +1752,10 @@ function mbqa_build_random_insert_row(
     $columns = [];
     $values = [];
     $types = [];
-    $tag = 'MBQA-' . $table . '-' . $companyId . '-' . $sequence . '-' . substr(md5($table . (string)$companyId . (string)$sequence), 0, 6);
+    $tag = itm_mbqa_runner_row_tag($table, $companyId, $sequence);
+    if ($tag === '') {
+        return null;
+    }
 
     foreach ($columnMetas as $meta) {
         $name = (string)$meta['name'];
