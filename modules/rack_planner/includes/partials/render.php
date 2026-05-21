@@ -703,18 +703,11 @@ const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_
 const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
 (function () {
-    const selectAllRows = document.getElementById('select-all-rows');
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const toggleButton = document.getElementById('bulk-delete-toggle');
-    const rowCheckboxes = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]');
-    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); });
-    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
     const rackExportScope = document.getElementById('rackExportScope');
     const rackSaveImageBtn = document.getElementById('rackSaveImageBtn');
     const rackExportPdfBtn = document.getElementById('rackExportPdfBtn');
     const rackExportExcelBtn = document.getElementById('rackExportExcelBtn');
     const rackPlanNameInput = document.querySelector('form.form-grid input[name="name"]');
-    let selectionMode = false;
     let rackExportBusy = false;
 
     function rackExtractPriceFromText(text) {
@@ -1017,52 +1010,6 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         });
         rackExportExcelBtn.addEventListener('click', function () {
             runRackExport(rackExportAsExcel);
-        });
-    }
-
-    function setSelectionVisibility(visible) {
-        if (selectAllHeaderCell) {
-            selectAllHeaderCell.style.display = visible ? '' : 'none';
-        }
-        deleteCells.forEach(function (cell) {
-            cell.style.display = visible ? '' : 'none';
-        });
-    }
-
-    if (selectAllRows) {
-        selectAllRows.addEventListener('change', function () {
-            rowCheckboxes.forEach(function (checkbox) {
-                checkbox.checked = selectAllRows.checked;
-            });
-        });
-    }
-
-    if (bulkDeleteForm && toggleButton) {
-        setSelectionVisibility(false);
-
-        bulkDeleteForm.addEventListener('submit', function (event) {
-            if (event.submitter !== toggleButton) {
-                return;
-            }
-
-            if (!selectionMode) {
-                event.preventDefault();
-                selectionMode = true;
-                setSelectionVisibility(true);
-                toggleButton.textContent = 'Delete Selected';
-                return;
-            }
-
-            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
-            if (!anySelected) {
-                event.preventDefault();
-                alert('Please select at least one record to delete.');
-                return;
-            }
-
-            if (!confirm('Delete selected records?')) {
-                event.preventDefault();
-            }
         });
     }
 

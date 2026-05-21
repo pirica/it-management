@@ -64,8 +64,11 @@ window.ITM_FAVICON_URL = <?php echo json_encode($favicon_url ?? itm_ui_config_fa
 <?php
 $itmTableToolsPath = ROOT_PATH . 'js/table-tools.js';
 $itmTableToolsVersion = is_file($itmTableToolsPath) ? (string)filemtime($itmTableToolsPath) : '1';
+$itmBulkDeletePath = ROOT_PATH . 'js/bulk-delete-selection.js';
+$itmBulkDeleteVersion = is_file($itmBulkDeletePath) ? (string)filemtime($itmBulkDeletePath) : '1';
 ?>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js?v=<?php echo sanitize($itmTableToolsVersion); ?>"></script>
+<script src="<?php echo BASE_URL; ?>js/bulk-delete-selection.js?v=<?php echo sanitize($itmBulkDeleteVersion); ?>"></script>
 
 <script>
 /**

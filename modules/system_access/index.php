@@ -358,51 +358,5 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
         </div>
     </div>
 </div>
-<script>
-/**
- * Bulk deletion selection management.
- */
-(function () {
-    const selectAllRows = document.getElementById('select-all-rows');
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
-    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]') : [];
-    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
-    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
-    let selectionMode = false;
-
-    function setSelectionVisibility(visible) {
-        if (selectAllHeaderCell) { selectAllHeaderCell.style.display = visible ? '' : 'none'; }
-        deleteCells.forEach(function (cell) { cell.style.display = visible ? '' : 'none'; });
-    }
-
-    if (selectAllRows) {
-        selectAllRows.addEventListener('change', function () {
-            rowCheckboxes.forEach(function (checkbox) { checkbox.checked = selectAllRows.checked; });
-        });
-    }
-
-    if (bulkDeleteForm && toggleButton) {
-        setSelectionVisibility(false);
-        bulkDeleteForm.addEventListener('submit', function (event) {
-            if (event.submitter !== toggleButton) { return; }
-            if (!selectionMode) {
-                event.preventDefault();
-                selectionMode = true;
-                setSelectionVisibility(true);
-                toggleButton.textContent = 'Delete Selected';
-                return;
-            }
-            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
-            if (!anySelected) {
-                event.preventDefault();
-                alert('Please select at least one record to delete.');
-                return;
-            }
-            if (!confirm('Delete selected records?')) { event.preventDefault(); }
-        });
-    }
-})();
-</script>
 </body>
 </html>

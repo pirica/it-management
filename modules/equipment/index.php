@@ -643,63 +643,6 @@ if (!empty($_SESSION['crud_success'])) {
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
 </script>
-<script>
-(function () {
-    const selectAllRows = document.getElementById('select-all-rows');
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const toggleButton = bulkDeleteForm ? bulkDeleteForm.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
-    const rowCheckboxes = bulkDeleteForm ? document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]') : [];
-    const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) { return checkbox.closest('td'); }).filter(Boolean);
-    const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
-    let selectionMode = false;
-
-    function setSelectionVisibility(visible) {
-        if (selectAllHeaderCell) {
-            selectAllHeaderCell.style.display = visible ? '' : 'none';
-        }
-        deleteCells.forEach(function (cell) {
-            cell.style.display = visible ? '' : 'none';
-        });
-    }
-
-    if (selectAllRows) {
-        selectAllRows.addEventListener('change', function () {
-            rowCheckboxes.forEach(function (checkbox) {
-                checkbox.checked = selectAllRows.checked;
-            });
-        });
-    }
-
-    if (bulkDeleteForm && toggleButton) {
-        setSelectionVisibility(false);
-
-        bulkDeleteForm.addEventListener('submit', function (event) {
-            if (event.submitter !== toggleButton) {
-                return;
-            }
-
-            if (!selectionMode) {
-                event.preventDefault();
-                selectionMode = true;
-                setSelectionVisibility(true);
-                toggleButton.textContent = 'Delete Selected';
-                return;
-            }
-
-            const anySelected = Array.from(rowCheckboxes).some(function (checkbox) { return checkbox.checked; });
-            if (!anySelected) {
-                event.preventDefault();
-                alert('Please select at least one record to delete.');
-                return;
-            }
-
-            if (!confirm('Delete selected equipment records? Switches will also remove related switch port data.')) {
-                event.preventDefault();
-            }
-        });
-    }
-})();
-</script>
 <?php if ($showSwitchPortManager): ?>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
