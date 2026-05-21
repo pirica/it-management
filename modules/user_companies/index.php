@@ -144,21 +144,20 @@ function cr_is_hidden_employee_field($field) {
 }
 
 /**
- * uq_user_companies_company_scope allows one row per company + user; pick a user not yet linked when import would duplicate.
+ * Resolves import user_id without substituting a different user when the spreadsheet user is already linked.
  */
-function cr_pick_free_user_id_for_company_scope($conn, int $companyId, int $preferredUserId): int
+function cr_resolve_user_companies_import_user_id($conn, int $companyId, int $preferredUserId): int
 {
     if ($companyId <= 0) {
         return $preferredUserId > 0 ? $preferredUserId : 0;
     }
 
     if ($preferredUserId > 0) {
-        $checkSql = 'SELECT 1 FROM user_companies WHERE company_id=' . (int)$companyId
-            . ' AND user_id=' . (int)$preferredUserId . ' LIMIT 1';
-        $checkRes = mysqli_query($conn, $checkSql);
-        if ($checkRes && mysqli_num_rows($checkRes) === 0) {
-            return $preferredUserId;
+        if (cr_user_companies_scope_link_exists($conn, $companyId, $preferredUserId)) {
+            return 0;
         }
+
+        return $preferredUserId;
     }
 
     $pickSql = 'SELECT u.id FROM users u
@@ -321,7 +320,25 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_is_qa_import_user_company_row($conn, $row) {
+    $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $sql = 'SELECT username FROM users WHERE id=' . $userId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    $userRow = $res ? mysqli_fetch_assoc($res) : null;
+    $username = strtolower(trim((string)($userRow['username'] ?? '')));
+
+    return $username !== '' && strncmp($username, 'qa-import-', 10) === 0;
+}
+
 function cr_is_admin_user_company_row($conn, $row) {
+    if (cr_is_qa_import_user_company_row($conn, $row)) {
+        return false;
+    }
+
     $userId = isset($row['user_id']) ? (int)$row['user_id'] : 0;
     if ($userId <= 0) {
         return false;
@@ -550,15 +567,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             if (($GLOBALS['crud_table'] ?? '') === 'user_companies') {
                 $scopeCompanyId = $hasCompany ? (int)$company_id : 0;
                 $preferredUserId = $effectiveUserId;
-                $resolvedUserId = cr_pick_free_user_id_for_company_scope($conn, $scopeCompanyId, $preferredUserId);
+                $resolvedUserId = cr_resolve_user_companies_import_user_id($conn, $scopeCompanyId, $preferredUserId);
 
                 if ($resolvedUserId <= 0) {
                     $failedRows++;
                     if (count($importErrors) < $maxImportErrors) {
                         if ($preferredUserId > 0) {
-                            $importErrors[] = 'Row ' . $spreadsheetRow . ': "'
-                                . cr_import_user_display_label($conn, $preferredUserId)
-                                . '" is already linked to this company and no other active user is available to assign.';
+                            $importErrors[] = cr_format_user_companies_import_row_error(
+                                $conn,
+                                $spreadsheetRow,
+                                $preferredUserId,
+                                1062,
+                                'uq_user_companies_company_scope'
+                            );
                         } else {
                             $importErrors[] = 'Row ' . $spreadsheetRow
                                 . ': No unlinked active user is available for this company. Add a user or remove an existing company link first.';
@@ -569,20 +590,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 $rowData['user_id'] = (string)$resolvedUserId;
                 $effectiveUserId = $resolvedUserId;
-
-                if ($scopeCompanyId > 0 && cr_user_companies_scope_link_exists($conn, $scopeCompanyId, $effectiveUserId)) {
-                    $failedRows++;
-                    if (count($importErrors) < $maxImportErrors) {
-                        $importErrors[] = cr_format_user_companies_import_row_error(
-                            $conn,
-                            $spreadsheetRow,
-                            $effectiveUserId,
-                            1062,
-                            'uq_user_companies_company_scope'
-                        );
-                    }
-                    continue;
-                }
             }
 
             $fields = [];
@@ -682,11 +689,22 @@ if ($crud_action === 'delete') {
             $ids = [];
         }
         $idList = [];
+        $selectedCount = 0;
+        $skippedAdminCount = 0;
         foreach ($ids as $rawId) {
             $id = (int)$rawId;
-            if ($id > 0) {
-                $idList[$id] = $id;
+            if ($id <= 0) {
+                continue;
             }
+            $selectedCount++;
+            $rowSql = 'SELECT user_id FROM user_companies WHERE id=' . $id . ' LIMIT 1';
+            $rowRes = mysqli_query($conn, $rowSql);
+            $rowData = $rowRes ? mysqli_fetch_assoc($rowRes) : null;
+            if (cr_is_admin_user_company_row($conn, is_array($rowData) ? $rowData : [])) {
+                $skippedAdminCount++;
+                continue;
+            }
+            $idList[$id] = $id;
         }
 
         if (!empty($idList)) {
@@ -697,9 +715,18 @@ if ($crud_action === 'delete') {
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            } elseif ($skippedAdminCount > 0) {
+                $_SESSION['crud_error'] = 'Deleted ' . count($idList) . ' record(s). '
+                    . $skippedAdminCount . ' Admin assignment(s) were skipped because they cannot be removed from this screen.';
             }
         } else {
-            $_SESSION['crud_error'] = 'No records selected for deletion.';
+            if ($selectedCount === 0) {
+                $_SESSION['crud_error'] = 'No records selected for deletion.';
+            } elseif ($skippedAdminCount > 0) {
+                $_SESSION['crud_error'] = 'The selected rows include Admin user assignments, which cannot be deleted from this screen. Deselect Admin rows and try again.';
+            } else {
+                $_SESSION['crud_error'] = 'No deletable records were found for your selection.';
+            }
         }
         header('Location: ' . $listUrl);
         exit;
