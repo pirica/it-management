@@ -1,0 +1,93 @@
+[
+    {
+        "module": "_preflight",
+        "company_id": 1,
+        "company_name": "TechCorp Global",
+        "tier": "preflight",
+        "steps": [
+            {
+                "step": "company_switch",
+                "status": "Pass",
+                "notes": ""
+            }
+        ]
+    },
+    {
+        "module": "location_types",
+        "company_id": 1,
+        "company_name": "TechCorp Global",
+        "tier": "A",
+        "steps": [
+            {
+                "step": "list",
+                "status": "Pass",
+                "notes": ""
+            },
+            {
+                "step": "clear",
+                "status": "Pass",
+                "notes": "SQL tenant clear"
+            },
+            {
+                "step": "sample_data",
+                "status": "Pass",
+                "notes": ""
+            },
+            {
+                "step": "search",
+                "status": "Pass",
+                "notes": "HTTP 200"
+            },
+            {
+                "step": "sort",
+                "status": "Pass",
+                "notes": "sort=name"
+            },
+            {
+                "step": "create",
+                "status": "Pass",
+                "notes": "HTTP 200"
+            },
+            {
+                "step": "view",
+                "status": "Pass",
+                "notes": "id=85"
+            },
+            {
+                "step": "edit",
+                "status": "Pass",
+                "notes": "id=85"
+            },
+            {
+                "step": "list_all",
+                "status": "Pass",
+                "notes": "HTTP 200"
+            },
+            {
+                "step": "export_xls",
+                "status": "Pass",
+                "notes": "table-tools hook"
+            },
+            {
+                "step": "import_db",
+                "status": "Pass",
+                "notes": "N\/A (no import endpoint)"
+            },
+            {
+                "step": "export_pdf",
+                "status": "Pass",
+                "notes": "N\/A (client-side print; not exercised in HTTP runner)"
+            },
+            {
+                "step": "bulk_delete",
+                "status": "Pass",
+                "notes": "N\/A (requires 25+ rows per records_per_page)"
+            },
+            {
+                "step": "clear_table",
+                "status": "Pass",
+                "notes": "N\/A (requires 25+ rows)"
+            }
+        ]
+    }
+]
