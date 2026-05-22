@@ -30,6 +30,7 @@ require_once __DIR__ . '/lib/mbqa_import_helpers.php';
 require_once __DIR__ . '/lib/mbqa_report_paths.php';
 require_once __DIR__ . '/lib/mbqa_report_xlsx.php';
 require_once __DIR__ . '/lib/mbqa_runner_tiers.php';
+require_once __DIR__ . '/lib/mbqa_step_display.php';
 require_once __DIR__ . '/lib/equipment_type_modules.php';
 
 /**
@@ -5292,7 +5293,9 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result(
                 'import_db',
                 true,
-                $importHtml['ok'] ? 'N/A (need table rows for export/import)' : $importHtml['note']
+                $importHtml['ok']
+                    ? 'N/A (need table rows for export/import)'
+                    : mbqa_step_na_note($importHtml['note'])
             );
         }
 
