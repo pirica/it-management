@@ -484,6 +484,21 @@
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="module_browser_qa_runnerV2.php">module_browser_qa_runnerV2.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        V2 QA runner based on <code>module_browser_qa_runner.php</code>. Adds early module/company validation, structured JSON parsing for import responses, stale AJAX progress/cancel cleanup, and an optional browser-only <strong>UI click smoke</strong> for one module + one company. Click-smoke appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, and <code>import_excel_click</code> evidence to <code>qa-reports/module-browser-qa.json</code>.
+                    </td>
+                    <td>
+                        Browser: <a href="module_browser_qa_runnerV2.php">module_browser_qa_runnerV2.php</a> — form: choose one module + one company to enable <strong>UI click smoke</strong>; otherwise use like the original runner.<br>
+                        <code>php scripts/module_browser_qa_runnerV2.php</code><br>
+                        <code>php scripts/module_browser_qa_runnerV2.php --pilot-only</code><br>
+                        <code>php scripts/module_browser_qa_runnerV2.php --module=expenses --company=1</code><br>
+                        <code>php scripts/module_browser_qa_runnerV2.php --ui-click-smoke --module=expenses --company=1</code> (browser-only guard; use the form for real clicks)<br>
+                        <code>php scripts/module_browser_qa_runnerV2.php --help</code>
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Builds markdown summary from the JSON produced by <code>module_browser_qa_runner.php</code> (preflight, expenses tables, failure categories). Browser shows an HTML preview and link to <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
