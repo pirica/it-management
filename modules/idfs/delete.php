@@ -23,12 +23,14 @@ $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 $listUrl = dirname($_SERVER['PHP_SELF']) . '/index.php';
 
 /**
+ * Deletes tenant-scoped IDF rows. Returns affected row count, or -1 on statement failure.
+ *
  * @param int[] $idList
  */
-function idfs_delete_ids_for_company(mysqli $conn, int $companyId, array $idList): bool
+function idfs_delete_ids_for_company(mysqli $conn, int $companyId, array $idList): int
 {
     if (empty($idList) || $companyId <= 0) {
-        return true;
+        return 0;
     }
 
     $placeholders = implode(',', array_fill(0, count($idList), '?'));
@@ -38,7 +40,8 @@ function idfs_delete_ids_for_company(mysqli $conn, int $companyId, array $idList
     $sql = 'DELETE FROM idfs WHERE id IN (' . $placeholders . ') AND company_id=?';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
-        return false;
+        $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+        return -1;
     }
 
     $bindRefs = [$bindTypes];
@@ -46,13 +49,16 @@ function idfs_delete_ids_for_company(mysqli $conn, int $companyId, array $idList
         $bindRefs[] = &$bindValues[$idx];
     }
     call_user_func_array([$stmt, 'bind_param'], $bindRefs);
-    $ok = mysqli_stmt_execute($stmt);
-    if (!$ok) {
+    if (!mysqli_stmt_execute($stmt)) {
         $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+        mysqli_stmt_close($stmt);
+        return -1;
     }
+
+    $affected = (int)mysqli_stmt_affected_rows($stmt);
     mysqli_stmt_close($stmt);
 
-    return $ok;
+    return $affected;
 }
 
 if ($bulkAction === 'clear_table') {
@@ -86,8 +92,11 @@ if ($bulkAction === 'bulk_delete') {
     }
 
     if (!empty($idList)) {
-        if (idfs_delete_ids_for_company($conn, $company_id, array_values($idList))) {
-            $_SESSION['crud_success'] = count($idList) . ' IDF(s) deleted.';
+        $deleted = idfs_delete_ids_for_company($conn, $company_id, array_values($idList));
+        if ($deleted > 0) {
+            $_SESSION['crud_success'] = $deleted . ' IDF(s) deleted.';
+        } elseif ($deleted === 0 && empty($_SESSION['crud_error'])) {
+            $_SESSION['crud_error'] = 'No matching IDFs were deleted.';
         }
     } else {
         $_SESSION['crud_error'] = 'No IDFs selected for deletion.';
@@ -103,8 +112,11 @@ if ($idf_id <= 0) {
     exit;
 }
 
-if (idfs_delete_ids_for_company($conn, $company_id, [$idf_id])) {
+$deleted = idfs_delete_ids_for_company($conn, $company_id, [$idf_id]);
+if ($deleted > 0) {
     $_SESSION['crud_success'] = 'IDF deleted successfully.';
+} elseif ($deleted === 0 && empty($_SESSION['crud_error'])) {
+    $_SESSION['crud_error'] = 'IDF not found.';
 }
 
 header('Location: ' . $listUrl);
