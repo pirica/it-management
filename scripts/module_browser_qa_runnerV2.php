@@ -286,10 +286,13 @@ function mbqa_browser_ajax_write_progress(string $root, string $runId, array $st
  * @param array<int, array<string, mixed>> $steps
  * @return array{ok:bool,message:string,pass:int,fail:int,xlsx_href:string}
  */
-function mbqa_append_ui_click_evidence(string $root, string $module, int $companyId, array $steps): array
+function mbqa_append_ui_click_evidence(string $root, string $module, int $companyId, array $steps, string $expectedRunId): array
 {
     if ($module === '' || $companyId <= 0 || empty($steps)) {
         return ['ok' => false, 'message' => 'Missing module, company, or click-smoke steps', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+    if ($expectedRunId === '') {
+        return ['ok' => false, 'message' => 'run_id required for click-smoke append', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
     }
 
     $jsonPath = mbqa_report_json_path($root);
@@ -300,6 +303,17 @@ function mbqa_append_ui_click_evidence(string $root, string $module, int $compan
     $payload = json_decode(itm_read_utf8_text_file($jsonPath), true);
     if (!is_array($payload) || !isset($payload['results']) || !is_array($payload['results'])) {
         return ['ok' => false, 'message' => 'QA JSON report is not readable', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+
+    $reportRunId = (string)($payload['run_id'] ?? '');
+    if ($reportRunId === '' || $reportRunId !== $expectedRunId) {
+        return [
+            'ok' => false,
+            'message' => 'QA JSON report run_id mismatch (stale or overlapping run)',
+            'pass' => 0,
+            'fail' => 0,
+            'xlsx_href' => '',
+        ];
     }
 
     $normalisedSteps = [];
@@ -433,7 +447,8 @@ function mbqa_ajax_handle_request(string $root): void
             $root,
             trim((string)($body['module'] ?? '')),
             (int)($body['company_id'] ?? 0),
-            is_array($body['steps'] ?? null) ? $body['steps'] : []
+            is_array($body['steps'] ?? null) ? $body['steps'] : [],
+            $runId
         );
         echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
@@ -1131,8 +1146,18 @@ function mbqa_render_browser_form(array $options): void
       credentials: 'same-origin',
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ module: moduleSlug, company_id: companyId, steps: steps })
-    }).then(function (res) { return res.json(); });
+      body: JSON.stringify({ module: moduleSlug, company_id: companyId, steps: steps, run_id: runId })
+    }).then(function (res) {
+      if (!res.ok) {
+        return Promise.reject(new Error('HTTP ' + res.status));
+      }
+      return res.json();
+    }).then(function (data) {
+      if (!data || typeof data !== 'object') {
+        return Promise.reject(new Error('Invalid JSON response'));
+      }
+      return data;
+    });
   }
 
   function runUiClickSmoke(done, runId) {
@@ -1202,6 +1227,12 @@ function mbqa_render_browser_form(array $options): void
     terminalHandled = true;
     runUiClickSmoke(ev, activeRunId).then(function (finalDone) {
       showFooter(finalDone);
+      releaseRunUi();
+    }).catch(function (err) {
+      if (err && err.message) {
+        ev.message = (ev.message ? ev.message + '; ' : '') + err.message;
+      }
+      showFooter(ev);
       releaseRunUi();
     });
   }
@@ -5193,6 +5224,7 @@ if (!mbqa_ensure_reports_dir_writable($root)) {
 $jsonPath = mbqa_report_json_path($root);
 $reportPayload = [
     'generated_at' => date('Y-m-d H:i:s'),
+    'run_id' => mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '',
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
         'module' => $filterModule,
