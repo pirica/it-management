@@ -11,6 +11,7 @@ require_once __DIR__ . '/script_browser_nav.php';
 require_once __DIR__ . '/utf8_file.php';
 require_once __DIR__ . '/mbqa_report_paths.php';
 require_once __DIR__ . '/mbqa_report_xlsx.php';
+require_once __DIR__ . '/mbqa_runner_tiers.php';
 
 /**
  * @return array{self_script:string,runner_script:string,runner_label:string,page_title:string,rerun_ui_click_smoke:bool,md_runner_cli:string,md_runner_browser:string}
@@ -117,9 +118,13 @@ function mbqar_print_help(): void
     mbqar_out("  --date=YYYY-MM-DD   Use qa-reports/module-browser-qa-YYYY-MM-DD.json (legacy day file)\n");
     mbqar_out("  --help              Show this help\n\n");
     mbqar_out("Output: qa-reports/module-browser-qa.md and a timestamped module-browser-qa-*.xlsx\n\n");
+    mbqar_out("QA runner tier reference:\n");
+    mbqar_out("  \$bespokeSmoke (Tier D): " . implode(', ', mbqa_runner_bespoke_smoke_modules()) . "\n");
+    mbqar_out("  \$skipClear: " . implode(', ', mbqa_runner_skip_clear_modules()) . "\n\n");
 
     if (!mbqar_is_cli_sapi()) {
         mbqar_out("Browser: submit the form or use ?run=1\n");
+        mbqar_echo_runner_tier_reference_html();
         echo '<p><a href="' . htmlspecialchars($cfg['self_script'], ENT_QUOTES, 'UTF-8') . '">← Back to form</a></p></main>';
     }
 }
@@ -390,6 +395,7 @@ function mbqar_render_browser_form(array $options): void
         . htmlspecialchars($cfg['runner_script'], ENT_QUOTES, 'UTF-8') . '">'
         . htmlspecialchars($cfg['runner_label'], ENT_QUOTES, 'UTF-8') . '</a> · ';
     echo '<a href="' . htmlspecialchars($cfg['self_script'], ENT_QUOTES, 'UTF-8') . '?help=1">Help</a></p>';
+    mbqar_echo_runner_tier_reference_html();
     echo '</main>';
 }
 
@@ -465,6 +471,7 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
     $md .= '- Modules in this report: ' . count($moduleRows) . "\n";
     $md .= '- Runner: `' . $cfg['md_runner_cli'] . '` or browser form at `' . $cfg['md_runner_browser'] . "`\n";
     $md .= "- Bulk delete / Clear table: N/A when row count &lt; `records_per_page` (25)\n\n";
+    $md .= mbqar_runner_tier_reference_markdown();
 
     if (!empty($moduleStepExceptions)) {
         $md .= "### Skipped steps (configured exceptions — counted as Pass/N/A)\n\n";
