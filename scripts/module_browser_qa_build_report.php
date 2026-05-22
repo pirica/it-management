@@ -14,6 +14,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_report_paths.php';
+require_once __DIR__ . '/lib/mbqa_report_xlsx.php';
 
 /**
  * @return array{run:bool, help:bool, date:string, date_explicit:bool}
@@ -90,7 +91,7 @@ function mbqar_print_help(): void
     mbqar_out("Options:\n");
     mbqar_out("  --date=YYYY-MM-DD   Use qa-reports/module-browser-qa-YYYY-MM-DD.json (not latest fixed JSON)\n");
     mbqar_out("  --help              Show this help\n\n");
-    mbqar_out("Output: qa-reports/module-browser-qa.md (overwritten each build)\n\n");
+    mbqar_out("Output: qa-reports/module-browser-qa.md and qa-reports/module-browser-qa.xlsx (overwritten each build)\n\n");
 
     if (!mbqar_is_cli_sapi()) {
         mbqar_out("Browser: submit the form or use ?run=1\n");
@@ -343,7 +344,7 @@ function mbqar_render_browser_form(array $options): void
 
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA — build report</h1>';
-    echo '<p>Reads <code>qa-reports/module-browser-qa.json</code> from the latest runner output and writes <code>module-browser-qa.md</code>.</p>';
+    echo '<p>Reads <code>qa-reports/module-browser-qa.json</code> from the latest runner output and writes <code>module-browser-qa.md</code> and <code>module-browser-qa.xlsx</code>.</p>';
     echo '<form method="get" action="module_browser_qa_build_report.php" style="display:grid;gap:12px;max-width:360px;">';
     echo '<input type="hidden" name="run" value="1">';
     echo '<button type="submit" style="padding:10px 16px;font-weight:600;">Build report</button>';
@@ -655,8 +656,16 @@ $rerunHref = mbqar_rerun_runner_href($reportPayload);
 // BOM helps Windows Notepad/openers detect UTF-8; file content remains UTF-8 (see AGENTS.md).
 itm_write_utf8_text_file($built['out_path'], $built['md'], true);
 
+$generatedAt = trim((string)($reportPayload['generated_at'] ?? ''));
+$xlsxBuilt = mbqar_build_runner_xlsx($root, $runnerRows, (int)$built['pass'], (int)$built['fail'], $generatedAt);
+
 if (mbqar_is_cli_sapi()) {
     mbqar_out("Wrote {$built['out_path']}\n");
+    if ($xlsxBuilt['ok']) {
+        mbqar_out("Wrote {$xlsxBuilt['path']}\n");
+    } else {
+        mbqar_err("XLSX: {$xlsxBuilt['error']}\n");
+    }
     mbqar_out("Steps pass: {$built['pass']}, fail: {$built['fail']}\n");
     exit($built['fail'] > 0 ? 1 : 0);
 }
@@ -668,8 +677,10 @@ echo '<h1>Report built</h1>';
 echo '<p><strong>' . (int)$built['pass'] . ' pass</strong>, <strong>' . (int)$built['fail'] . ' fail</strong> ';
 echo '(from <code>' . htmlspecialchars(basename($built['json_path']), ENT_QUOTES, 'UTF-8') . '</code>)</p>';
 $mdRel = '../qa-reports/' . mbqa_report_markdown_basename();
+$xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
 echo '<p><a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a> · ';
-echo '<a href="module_browser_qa_build_report.php?run=1">Rebuild report</a> · ';
+mbqar_render_xlsx_export_ui($xlsxRel, $xlsxBuilt['ok'], $xlsxBuilt['error'], $reportPayload);
+echo ' · <a href="module_browser_qa_build_report.php?run=1">Rebuild report</a> · ';
 echo '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a> · ';
 echo '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';
 echo '<h2>Preview</h2>';
