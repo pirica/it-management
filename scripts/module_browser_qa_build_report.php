@@ -109,7 +109,7 @@ function mbqar_print_help(): void
  */
 function mbqar_rerun_runner_href(array $payload): string
 {
-    $params = ['run' => '1'];
+    $params = ['autostart' => '1'];
     $opts = $payload['run_options'] ?? null;
 
     if (!is_array($opts)) {
@@ -676,6 +676,8 @@ echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Hel
 echo '<h1>Report built</h1>';
 echo '<p><strong>' . (int)$built['pass'] . ' pass</strong>, <strong>' . (int)$built['fail'] . ' fail</strong> ';
 echo '(from <code>' . htmlspecialchars(basename($built['json_path']), ENT_QUOTES, 'UTF-8') . '</code>)</p>';
+echo '<p style="font-size:0.9rem;color:#57606a;"><strong>Rebuild report</strong> regenerates markdown/XLSX from the existing JSON. ';
+echo '<strong>Re-Run Test</strong> starts a new QA run (same module/company scope) and overwrites the JSON.</p>';
 $mdRel = '../qa-reports/' . mbqa_report_markdown_basename();
 $xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
 echo '<p><a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a> · ';
