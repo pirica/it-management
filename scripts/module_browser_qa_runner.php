@@ -8,7 +8,7 @@
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
  *   bulk_delete — when rows >= perPage and bulk UI visible on index; POST delete.php with up to 3 ids[].
- *   clear_table — after export_xls, before second clear (same row gate as bulk_delete).
+ *   clear_table — after export_xlsx, before second clear (same row gate as bulk_delete).
  *   list (Tier A) — verifies bulk UI visibility matches rowCount >= perPage and pagination footer matches rowCount > perPage.
  *   pagination (after add) — when rows > perPage: page=1 must render Next→page=2; page=2 must render Previous→page=1 in HTML (sort=id).
  * Each module scopes error_log.txt (rename to error_log-N.txt when present, else byte offset); Tier A ends with sample restore + error_log check for new lines only.
@@ -504,7 +504,7 @@ function mbqa_render_browser_help(): void
     echo '</tbody></table>';
 
     echo '<h2>Tier A step order (per module)</h2>';
-    echo '<p style="font-size:0.95rem;">mysql → error_log → list → clear → sample_data → add → pagination → bulk_cancel → bulk_delete → search → sort → create → view → edit → list_all → export_pdf → export_xls → clear_table → clear → import_db → single_delete → sample_data (restore) → error_log</p>';
+    echo '<p style="font-size:0.95rem;">mysql → error_log → list → clear → sample_data → add → pagination → bulk_cancel → bulk_delete → search → sort → create → view → edit → list_all → export_pdf → export_xlsx → clear_table → clear → import_db → single_delete → sample_data (restore) → error_log</p>';
 
     echo '<p style="margin-top:24px;"><a href="module_browser_qa_runner.php">← Back to runner form</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a> · ';
@@ -1160,7 +1160,7 @@ function mbqa_runner_facade_routing_na_steps(): array
         'edit' => 'N/A routing',
         'list_all' => 'N/A routing',
         'export_pdf' => 'N/A routing',
-        'export_xls' => 'N/A routing',
+        'export_xlsx' => 'N/A routing',
         'import_db' => 'N/A routing',
         'single_delete' => 'N/A routing',
         'clear_table' => 'N/A routing',
@@ -1380,10 +1380,15 @@ function mbqa_index_has_export_buttons(string $html): array
         'pdf' => $hasTableTools
             || stripos($html, 'Export PDF') !== false
             || stripos($html, '📄 Export PDF') !== false,
-        'excel' => $hasTableTools
+        'xlsx' => $hasTableTools
             || stripos($html, 'Export Excel') !== false
             || stripos($html, '📗 Export Excel') !== false,
     ];
+}
+
+function mbqa_index_has_xlsx_library(string $html): bool
+{
+    return stripos($html, 'xlsx.full.min.js') !== false;
 }
 
 /**
@@ -3414,19 +3419,32 @@ function mbqa_html_step_list_all(string $html, int $status): array
 function mbqa_html_step_export(string $html, string $kind, bool $hasTableExport): array
 {
     $buttons = mbqa_index_has_export_buttons($html);
-    $hasButton = $kind === 'pdf' ? $buttons['pdf'] : $buttons['excel'];
-    if (!$hasButton) {
-        $label = $kind === 'pdf' ? 'Export PDF' : 'Export Excel';
-        return ['ok' => false, 'note' => $label . ' not present in HTML (table-tools.js or label)'];
+    if ($kind === 'pdf') {
+        if (!$buttons['pdf']) {
+            return ['ok' => false, 'note' => 'Export PDF not present in HTML (table-tools.js or label)'];
+        }
+        if (!$hasTableExport) {
+            return ['ok' => false, 'note' => 'export: table rows missing in HTML'];
+        }
+
+        $rows = count(mbqa_extract_table_export_rows($html)) - 1;
+
+        return ['ok' => true, 'note' => 'Export PDF in HTML, ' . $rows . ' row(s)'];
+    }
+
+    if (!$buttons['xlsx']) {
+        return ['ok' => false, 'note' => 'Export Excel (.xlsx) not present in HTML (table-tools.js or label)'];
+    }
+    if (!mbqa_index_has_xlsx_library($html)) {
+        return ['ok' => false, 'note' => 'xlsx.full.min.js missing (table-tools exports OOXML .xlsx via SheetJS)'];
     }
     if (!$hasTableExport) {
         return ['ok' => false, 'note' => 'export: table rows missing in HTML'];
     }
 
     $rows = count(mbqa_extract_table_export_rows($html)) - 1;
-    $label = $kind === 'pdf' ? 'Export PDF' : 'Export Excel';
 
-    return ['ok' => true, 'note' => $label . ' in HTML, ' . $rows . ' row(s)'];
+    return ['ok' => true, 'note' => 'Export Excel (.xlsx) in HTML, ' . $rows . ' row(s)'];
 }
 
 /**
@@ -4155,7 +4173,7 @@ foreach ($companiesToRun as $companyId) {
             $steps[] = mbqa_step_result('search', $listOk, 'index only');
             $steps[] = mbqa_step_result('sort', $listOk, 'index only');
             $steps[] = mbqa_step_result('export_pdf', true, 'N/A smoke');
-            $steps[] = mbqa_step_result('export_xls', true, 'N/A smoke');
+            $steps[] = mbqa_step_result('export_xlsx', true, 'N/A smoke');
             $steps[] = mbqa_step_result('import_db', true, 'N/A smoke');
             $steps[] = mbqa_step_result('single_delete', true, 'N/A smoke');
             $steps[] = mbqa_step_result('bulk_cancel', true, 'N/A smoke');
@@ -4180,7 +4198,7 @@ foreach ($companiesToRun as $companyId) {
                 $naNote = mbqa_runner_module_step_exception_note($slug, $s) ?? 'N/A routing';
                 $steps[] = mbqa_step_result($s, true, $naNote);
             }
-            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xls', 'import_db', 'pagination', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
+            foreach (['create', 'view', 'edit', 'list_all', 'single_delete', 'search', 'sort', 'export_pdf', 'export_xlsx', 'import_db', 'pagination', 'bulk_cancel', 'bulk_delete', 'clear_table'] as $s) {
                 $naNote = mbqa_runner_module_step_exception_note($slug, $s) ?? 'N/A routing';
                 $steps[] = mbqa_step_result($s, $routeOk, $naNote);
             }
@@ -4351,8 +4369,8 @@ foreach ($companiesToRun as $companyId) {
         $exportPdfHtml = mbqa_html_step_export($index['body'], 'pdf', $hasTableExport);
         $steps[] = mbqa_step_result('export_pdf', $exportPdfHtml['ok'], $exportPdfHtml['note']);
 
-        $exportXlsHtml = mbqa_html_step_export($index['body'], 'excel', $hasTableExport);
-        $steps[] = mbqa_step_result('export_xls', $exportXlsHtml['ok'], $exportXlsHtml['note']);
+        $exportXlsxHtml = mbqa_html_step_export($index['body'], 'xlsx', $hasTableExport);
+        $steps[] = mbqa_step_result('export_xlsx', $exportXlsxHtml['ok'], $exportXlsxHtml['note']);
 
         $canRunClearTable = $rowCountAfterAdd >= $perPage
             && mbqa_index_shows_bulk_actions($index['body'])
