@@ -4687,6 +4687,10 @@ foreach ($results as $row) {
     }
 }
 
+// Why: equipment_types QA inserts MBQA-equipment_types-… names; sidebar may scaffold modules/is_mbqa_* orphans.
+$mbqaEquipmentCleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
+$mbqaEquipmentCleanupNote = itm_equipment_cleanup_report_summary($mbqaEquipmentCleanup);
+
 $xlsxBuilt = mbqar_build_runner_xlsx(
     $root,
     $results,
@@ -4705,6 +4709,9 @@ if (mbqa_is_cli_sapi()) {
         mbqa_err("XLSX: {$xlsxBuilt['error']}\n");
     }
     mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
+    if ($mbqaEquipmentCleanupNote !== '') {
+        mbqa_out($mbqaEquipmentCleanupNote . "\n");
+    }
 }
 
 $jsonRel = '../qa-reports/' . $reportFilePaths['json_basename'];
@@ -4742,7 +4749,9 @@ if (mbqa_browser_ajax_active()) {
         'xlsx_href' => $xlsxBuilt['ok'] ? $xlsxRel : '',
         'report_href' => $reportHref,
         'rerun_href' => $rerunHref,
-        'message' => $runStopped ? 'Run stopped by user' : '',
+        'message' => $runStopped
+            ? 'Run stopped by user'
+            : ($mbqaEquipmentCleanupNote !== '' ? $mbqaEquipmentCleanupNote : ''),
     ];
     mbqa_browser_ajax_write_progress($root, mbqa_browser_ajax_run_id(), $ajaxDone);
     if (!headers_sent()) {

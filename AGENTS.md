@@ -188,13 +188,13 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 |--------|------|
 | `scripts/lib/equipment_type_modules.php` | Shared allowlist + `itm_remove_equipment_regression_test_module_dirs()` / `itm_ensure_canonical_equipment_type_modules()` |
 | `scripts/ensure_equipment_type_modules.php` | Verify or recreate missing canonical `modules/is_*/index.php` wrappers (CLI) |
-| `scripts/cleanup_equipment_test_module_artifacts.php` | **CLI-only:** remove test `equipment_types` rows, ITM test companies, junk `is_*_itm_eqdct_*` folders, then re-ensure canonical façades |
+| `scripts/cleanup_equipment_test_module_artifacts.php` | **CLI-only** (also runs automatically at end of both QA runners): remove test `equipment_types` rows (incl. `MBQA-equipment_types-…`), ITM test companies, junk `is_*_itm_eqdct_*` / `is_mbqa_equipment_types_*` folders, sidebar prefs, then re-ensure canonical façades |
 | `scripts/equipment_delete_clear_table_test.php` | DB regression for equipment `clear_table` + transactional single delete (use type names **`Switch`** / **`Server`**, not suffixed names) |
 | `scripts/employees_delete_clear_table_test.php` | DB regression for employees `clear_table` transaction rollback |
 | `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table helpers (run manually after equipment delete/clear-table changes) |
 | `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table transaction (run manually after employees `clear_table` changes) |
 
-**Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. After local DB regression runs, run `php scripts/cleanup_equipment_test_module_artifacts.php`.
+**Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` or QA tags `MBQA-equipment_types-…` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. **`module_browser_qa_runner.php` / `module_browser_qa_runnerV2.php`** call `itm_run_equipment_test_module_artifacts_cleanup()` after each run; for other equipment DB tests, run `php scripts/cleanup_equipment_test_module_artifacts.php` manually.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 

@@ -5423,6 +5423,10 @@ foreach ($results as $row) {
     }
 }
 
+// Why: equipment_types QA inserts MBQA-equipment_types-… names; sidebar may scaffold modules/is_mbqa_* orphans.
+$mbqaEquipmentCleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
+$mbqaEquipmentCleanupNote = itm_equipment_cleanup_report_summary($mbqaEquipmentCleanup);
+
 $xlsxBuilt = mbqar_build_runner_xlsx(
     $root,
     $results,
@@ -5441,6 +5445,9 @@ if (mbqa_is_cli_sapi()) {
         mbqa_err("XLSX: {$xlsxBuilt['error']}\n");
     }
     mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
+    if ($mbqaEquipmentCleanupNote !== '') {
+        mbqa_out($mbqaEquipmentCleanupNote . "\n");
+    }
 }
 
 $jsonRel = '../qa-reports/' . $reportFilePaths['json_basename'];
@@ -5468,6 +5475,11 @@ $rerunHref = 'module_browser_qa_runnerV2.php?' . http_build_query($rerunParams);
 $runStopped = mbqa_browser_ajax_active() && mbqa_ajax_should_stop($root);
 $finalStatus = $runStopped ? 'cancelled' : 'done';
 $finalMessage = $runStopped ? 'Run stopped by user' : ($exitCode === 0 ? '' : 'QA completed with failing steps');
+if (!$runStopped && $mbqaEquipmentCleanupNote !== '') {
+    $finalMessage = $finalMessage === ''
+        ? $mbqaEquipmentCleanupNote
+        : ($finalMessage . ' ' . $mbqaEquipmentCleanupNote);
+}
 mbqa_ajax_cleanup_stale_files($root, mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '');
 
 if (mbqa_browser_ajax_active()) {
