@@ -1217,6 +1217,10 @@ function mbqa_runner_module_step_exceptions(): array
         'patches_updates' => [
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
+        // Why: bulk random rows on equipment_types scaffold modules/is_mbqa_* folders; avoid module creations in QA.
+        'equipment_types' => [
+            'add' => 'N/A (Bulk random rows — avoid module creations)',
+        ],
     ];
 
     $routingSteps = mbqa_runner_facade_routing_na_steps();
