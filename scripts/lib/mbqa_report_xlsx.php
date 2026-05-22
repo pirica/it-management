@@ -270,34 +270,19 @@ function mbqar_build_runner_xlsx(string $projectRoot, array $results, int $pass,
     return ['ok' => true, 'path' => $path, 'error' => ''];
 }
 
-/**
- * Browser/CLI link row for the report-built page.
- */
-function mbqar_render_xlsx_export_ui(
-    string $xlsxRelPath,
-    bool $xlsxOk,
-    string $xlsxError,
-    array $reportPayload
-): void {
-    $xlsxEsc = htmlspecialchars($xlsxRelPath, ENT_QUOTES, 'UTF-8');
-    if ($xlsxOk) {
-        echo '<a href="' . $xlsxEsc . '">Download XLSX</a> · ';
-    }
-    echo '<button type="button" id="mbqar-export-xlsx-btn" style="padding:4px 10px;font-size:inherit;cursor:pointer;">Export results as XLSX</button>';
-    if (!$xlsxOk && $xlsxError !== '') {
-        echo ' <span style="color:#cf222e;font-size:0.85rem;">(' . htmlspecialchars($xlsxError, ENT_QUOTES, 'UTF-8') . ')</span>';
-    }
+function mbqar_echo_xlsx_vendor_script(): void
+{
     echo '<script src="../js/vendor/xlsx.full.min.js"></script>';
-    echo '<script id="mbqar-report-payload" type="application/json">';
-    echo json_encode($reportPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo '</script>';
+}
+
+/**
+ * Shared SheetJS export (runner footer fetches JSON; report page may embed payload).
+ */
+function mbqar_echo_xlsx_client_bootstrap(): void
+{
     echo <<<'JS'
 <script>
 (function () {
-  var btn = document.getElementById('mbqar-export-xlsx-btn');
-  var payloadEl = document.getElementById('mbqar-report-payload');
-  if (!btn || !payloadEl) { return; }
-
   function stepLabel(step) {
     var labels = {
       mysql: 'database.sql seed rows',
@@ -365,16 +350,9 @@ function mbqar_render_xlsx_export_ui(
     return { summary: summary, steps: steps, failures: failures };
   }
 
-  btn.addEventListener('click', function () {
+  function writeWorkbook(payload) {
     if (!window.XLSX || !window.XLSX.utils) {
       window.alert('XLSX library did not load. Refresh the page and try again.');
-      return;
-    }
-    var payload;
-    try {
-      payload = JSON.parse(payloadEl.textContent || '{}');
-    } catch (e) {
-      window.alert('Could not read report JSON.');
       return;
     }
     var data = flattenResults(payload);
@@ -383,8 +361,47 @@ function mbqar_render_xlsx_export_ui(
     window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(data.steps), 'All steps');
     window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(data.failures), 'Failures');
     window.XLSX.writeFile(wb, 'module-browser-qa.xlsx');
-  });
+  }
+
+  window.mbqaExportResultsFromPayload = writeWorkbook;
+
+  window.mbqaExportResultsFromJsonUrl = function (jsonUrl) {
+    fetch(jsonUrl, { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('HTTP ' + res.status); }
+        return res.json();
+      })
+      .then(writeWorkbook)
+      .catch(function () {
+        window.alert('Could not load QA JSON for export.');
+      });
+  };
 })();
 </script>
 JS;
+}
+
+/**
+ * Browser/CLI link row for the report-built page.
+ */
+function mbqar_render_xlsx_export_ui(
+    string $xlsxRelPath,
+    bool $xlsxOk,
+    string $xlsxError,
+    array $reportPayload
+): void {
+    $xlsxEsc = htmlspecialchars($xlsxRelPath, ENT_QUOTES, 'UTF-8');
+    if ($xlsxOk) {
+        echo '<a href="' . $xlsxEsc . '">Download XLSX</a> · ';
+    }
+    echo '<button type="button" id="mbqar-export-xlsx-btn" style="padding:4px 10px;font-size:inherit;cursor:pointer;">Export results as XLSX</button>';
+    if (!$xlsxOk && $xlsxError !== '') {
+        echo ' <span style="color:#cf222e;font-size:0.85rem;">(' . htmlspecialchars($xlsxError, ENT_QUOTES, 'UTF-8') . ')</span>';
+    }
+    mbqar_echo_xlsx_vendor_script();
+    mbqar_echo_xlsx_client_bootstrap();
+    echo '<script id="mbqar-report-payload" type="application/json">';
+    echo json_encode($reportPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo '</script>';
+    echo '<script>(function(){var btn=document.getElementById("mbqar-export-xlsx-btn");var el=document.getElementById("mbqar-report-payload");if(!btn||!el||!window.mbqaExportResultsFromPayload){return;}btn.addEventListener("click",function(){try{window.mbqaExportResultsFromPayload(JSON.parse(el.textContent||"{}"));}catch(e){window.alert("Could not read report JSON.");}});})();</script>';
 }
