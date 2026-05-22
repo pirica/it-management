@@ -663,3 +663,40 @@ Use this when asked to “check last N comments and reply” (Codex/Bugbot/human
 * **`Fixed`** — merged PR #1708; `scripts/check_ui_configuration_coverage.php` now rejects inverted `perPage >= totalRows` gates.
 * **`Fixed`** — PR #1713 on `master`; `modules/system_access/index.php` tbody `ids[]` cells gated with `$showBulkActions`.
 * **`Not Fixed`** — intentional per AGENTS.md § Scripts directory (phpMyAdmin linked only from `scripts/index.html`, not derived per-request host).
+
+## Cursor Cloud specific instructions
+
+Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-installed. The update script (run automatically on VM startup) installs them via `apt-get`; agents do **not** need to repeat those steps.
+
+### Services — how to start after VM boot
+
+| Service | Start command | Verify |
+|---------|---------------|--------|
+| **MySQL 8.0** | `sudo mkdir -p /var/run/mysqld && sudo chown mysql:mysql /var/run/mysqld && sudo chmod 755 /var/run/mysqld && sudo mysqld --user=mysql --datadir=/var/lib/mysql &` then `sleep 5` | `mysqladmin -u root -pitmanagement ping` → `mysqld is alive` |
+| **Apache 2.4** | `sudo apachectl start` | `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` |
+
+MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 88 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
+
+### Apache alias
+
+The update script creates `/etc/apache2/conf-available/it-management.conf` which aliases `/it-management` to `/workspace`. This matches the `.htaccess` `RewriteBase /it-management/`.
+
+### Smoke tests
+
+Standard commands from `AGENTS.md` § Smoke tests work as-is:
+
+```bash
+bash scripts/smoke_test.sh
+```
+
+All three checks (php -l lint, CSRF coverage, SQLi coverage) run with the `php` binary on PATH (PHP 7.4.33 via `ondrej/php` PPA).
+
+### App login
+
+Default credentials: username `Admin`, password `Admin`. After login, select a company (e.g. TechCorp Global) to access modules.
+
+### Gotchas
+
+* MySQL `dpkg --configure` may hang on first install because systemd service start is blocked in the container. The update script works around this by starting `mysqld` directly and setting the root password manually.
+* The `/var/run/mysqld/` directory permissions default to `drwx------` (mysql:mysql) which prevents non-root socket access. The startup sequence above includes `chmod 755` to fix this.
+* PHP 7.4 is not the system default on Ubuntu 24.04; `update-alternatives --set php /usr/bin/php7.4` is run by the update script so `php` resolves to 7.4.33.
