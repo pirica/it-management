@@ -270,6 +270,11 @@ function mbqar_build_runner_xlsx(string $projectRoot, array $results, int $pass,
     return ['ok' => true, 'path' => $path, 'error' => ''];
 }
 
+function mbqar_echo_xlsx_vendor_script(): void
+{
+    echo '<script src="../js/vendor/xlsx.full.min.js"></script>';
+}
+
 /**
  * Download link for qa-reports/module-browser-qa.xlsx on runner/report pages.
  */
@@ -283,4 +288,29 @@ function mbqar_render_xlsx_download_link(string $xlsxRelPath, bool $xlsxOk, stri
     if ($xlsxError !== '') {
         echo '<span style="color:#cf222e;font-size:0.85rem;">XLSX unavailable (' . htmlspecialchars($xlsxError, ENT_QUOTES, 'UTF-8') . ')</span> · ';
     }
+}
+
+/**
+ * Browser/CLI link row for the report-built page.
+ */
+function mbqar_render_xlsx_export_ui(
+    string $xlsxRelPath,
+    bool $xlsxOk,
+    string $xlsxError,
+    array $reportPayload
+): void {
+    $xlsxEsc = htmlspecialchars($xlsxRelPath, ENT_QUOTES, 'UTF-8');
+    if ($xlsxOk) {
+        echo '<a href="' . $xlsxEsc . '">Download XLSX</a> · ';
+    }
+    echo '<button type="button" id="mbqar-export-xlsx-btn" style="padding:4px 10px;font-size:inherit;cursor:pointer;">Export results as XLSX</button>';
+    if (!$xlsxOk && $xlsxError !== '') {
+        echo ' <span style="color:#cf222e;font-size:0.85rem;">(' . htmlspecialchars($xlsxError, ENT_QUOTES, 'UTF-8') . ')</span>';
+    }
+    mbqar_echo_xlsx_vendor_script();
+    mbqar_echo_xlsx_client_bootstrap();
+    echo '<script id="mbqar-report-payload" type="application/json">';
+    echo json_encode($reportPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo '</script>';
+    echo '<script>(function(){var btn=document.getElementById("mbqar-export-xlsx-btn");var el=document.getElementById("mbqar-report-payload");if(!btn||!el||!window.mbqaExportResultsFromPayload){return;}btn.addEventListener("click",function(){try{window.mbqaExportResultsFromPayload(JSON.parse(el.textContent||"{}"));}catch(e){window.alert("Could not read report JSON.");}});})();</script>';
 }

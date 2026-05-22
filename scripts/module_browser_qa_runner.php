@@ -620,6 +620,8 @@ function mbqa_render_browser_form(array $options): void
     echo '</form>';
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php?help=1">CLI options / help</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
+    mbqar_echo_xlsx_vendor_script();
+    mbqar_echo_xlsx_client_bootstrap();
     echo '<script>';
     echo <<<'MBQA_JS'
 (function () {
@@ -684,6 +686,12 @@ function mbqa_render_browser_form(array $options): void
       rerun.addEventListener('click', function (e) {
         e.preventDefault();
         startRun();
+      });
+    }
+    var xlsxBtn = document.getElementById('mbqa-export-xlsx-btn');
+    if (xlsxBtn && window.mbqaExportResultsFromJsonUrl && done.json_href) {
+      xlsxBtn.addEventListener('click', function () {
+        window.mbqaExportResultsFromJsonUrl(done.json_href);
       });
     }
   }
