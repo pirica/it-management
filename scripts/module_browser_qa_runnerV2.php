@@ -192,7 +192,20 @@ function mbqa_ensure_reports_dir_writable(string $root): bool
         @chmod($dir, 0777);
     }
 
-    return is_dir($dir) && is_writable($dir);
+    if (!is_dir($dir) || !is_writable($dir)) {
+        return false;
+    }
+
+    foreach ([mbqa_report_json_path($root), mbqa_report_xlsx_path($root)] as $path) {
+        if (is_file($path)) {
+            @chmod($path, 0666);
+            if (!is_writable($path)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 function mbqa_ajax_progress_path(string $root, string $runId): string
