@@ -181,7 +181,8 @@ function mbqar_write_xlsx_file(string $path, array $sheets): bool
 
     foreach ($sheets as $sheetName => $rows) {
         $safeName = preg_replace('/[\\\\\\/\\?\\*\\[\\]:]/', '_', (string)$sheetName) ?? 'Sheet';
-        $safeName = mb_substr($safeName, 0, 31);
+        // ASCII sheet titles only; avoid mbstring dependency on Laragon/PHP 7.4 installs.
+        $safeName = substr($safeName, 0, 31);
         if ($safeName === '') {
             $safeName = 'Sheet' . $sheetIndex;
         }
