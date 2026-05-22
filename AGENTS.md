@@ -14,10 +14,10 @@ Before making any change, replying, running commands, editing files, or proposin
 2. **Stop and ask clarification questions** if any part of `AGENTS.md` is unclear, ambiguous, missing, conflicting, or not fully understood — do not guess or proceed on assumptions.
 3. **Update `AGENTS.md` when needed** to include and preserve new process rules or mandatory instructions (ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR — see **Change Hygiene → PR review**).
 4. **Before every reply**, re-check `AGENTS.md` and confirm the response follows it (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
-5. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, **commit**, **push**, and **`gh pr create`** on a **new branch name** that has **no existing open PR** — **do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
-6. **Never push to an existing PR branch (hard fail):** do **not** `git push` to a branch that already backs **PR #N** when the user asked for a **fresh PR**, when shipping a **follow-up** or **review fix**, or when the user said **“don’t update the existing PR”**. Those changes use a **new branch** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to https://github.com/…/pull/1860”, “updated PR #1860”, “added commits to the open PR”.
-7. **Never local-only commits (hard fail):** `git commit` without an immediate **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” or “open a PR if you want a fresh PR” — **you** push the **new** branch and open a **new** PR in the same turn.
-8. **Pre-push full diff review (hard fail):** before **`git push`** and before **`gh pr create`**, run and **read** the full patch against `origin/master` (see **Change Hygiene → Pre-push diff review**). Do **not** push from a branch whose diff removes unrelated functions, reverts a just-merged fix, or shows large deletions you did not intend.
+5. **Ship only via FRESH PR (mandatory):** every deliverable is **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. There is **no** “push to update PR #N”. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
+6. **Never push to an existing PR branch (hard fail):** agents **do not** `git push` (including `git push`, `git push origin <branch>`, or force-push) to any branch that already has **open or merged PR #N** for this work. Follow-ups, review fixes, and corrections use a **new branch name** + **new push** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to https://github.com/…/pull/1860”, “updated PR #1860”, “added commits to the open PR”, “you can push after the diff check”.
+7. **Never local-only commits (hard fail):** `git commit` without the **first-publish** **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” — **you** complete the fresh-PR sequence in the same turn.
+8. **Pre-push full diff review (hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** on that deliverable, run and **read** the full patch against `origin/master` (see **Change Hygiene → Pre-push diff review**). Do **not** publish a branch whose diff removes unrelated functions, reverts a just-merged fix, or shows large deletions you did not intend.
 
 Only after `AGENTS.md` has been checked, understood, and updated when required may you continue with implementation.
 
@@ -658,9 +658,10 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
 
 ### PR review (mandatory)
 * **Reviews and fixes** are done in-repo via Cursor, optional Bugbot, manual IDE review, and the scripts below — same intent as external P1/P2 bot comments.
-* **NEW PR always (mandatory — non-negotiable):**
+* **FRESH PR only — never update an existing PR (mandatory — non-negotiable):**
   * **Every separate request, bugfix, follow-up, Codex/Bugbot fix, or AGENTS.md process update** ships on a **fresh branch** and opens a **brand-new pull request** with a **new PR number**. The user default is **never update an existing PR** for new work.
-  * **Do not push more commits to an open PR’s branch** unless the user **explicitly** asked to extend **that same PR while it is still open** for the **same deliverable**. If unsure, use a **fresh branch + new PR**.
+  * **`git push` is not a way to amend PR #N.** Allowed push pattern: **one** `git push -u origin <new-branch>` while publishing a branch that has **no PR yet**, then **`gh pr create`**. Any later change → **new branch** → **new push** → **new PR**.
+  * **Do not push more commits to an open PR’s branch** — even for review fixes, CI fixes, or “small follow-ups”. If unsure, use a **fresh branch + new PR**.
   * Treat **“always a NEW PR”** and **“DON’T push to PR #N”** literally: **`gh pr create`** for each deliverable; the prior PR is history — **next change = next PR number**.
   * **Branch naming:** each deliverable gets a **new** `fix/…` or `feat/…` branch from current `origin/master` — do **not** reuse `fix/inventory-items-ui-consolidate` (or any branch that already has PR #1860, #1858, etc.) for additional commits.
   * Package every requested implementation in that **fresh branch** and open that **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
@@ -680,12 +681,13 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
     git pull origin master
     git checkout -b fix/short-descriptive-name
     ```
-  * After merge of PR #N, **do not push more commits to that branch**; the next task uses a **new branch name** and **`gh pr create`** (new PR number).
-  * **Never `git push origin fix/same-branch`** to stack review fixes onto a branch that already has an open PR when the user wants a **fresh PR** — cherry-pick or re-apply the patch onto a **new branch from `master`** instead.
-  * If GitHub reports merge conflicts on an open PR, prefer **`git fetch origin master`**, rebase or recreate the branch from `master`, and force-push **only while that PR is still open** **and** the user still wants **that same PR** — otherwise **close** the conflicted PR and open a **fresh PR** from a clean branch (user default: **always fresh PR**).
+  * After merge of PR #N, **do not push** to that branch again; the next task uses a **new branch name**, **one new first-publish push**, and **`gh pr create`** (new PR number).
+  * **Never `git push` to a branch that already backs a PR** — cherry-pick or re-apply the patch onto a **new branch from `master`** instead.
+  * If GitHub reports merge conflicts on an open PR, **close** it (or leave it) and open a **fresh PR** from a clean branch off current `master` — do **not** force-push to “fix” the old PR unless the user **explicitly** asked to keep and update **that same PR number**.
   * Before `gh pr create`, confirm `git log origin/master..HEAD` contains only commits for the current deliverable.
   * **PR body encoding check:** use `gh pr create --body-file` (see **PR descriptions: shell / quoting corruption** under Character encoding). After create/edit, run `gh pr view <number> --json body` or open the PR on GitHub — if step names or `$variables` look corrupted, fix with `gh pr edit --body-file`; that is shell quoting, not a repo UTF-8 issue.
-* **Pre-push diff review (mandatory — before every `git push`):**
+* **Pre-push diff review (mandatory — before the one allowed `git push -u` on a new branch):**
+  * **Scope:** applies only to the **first publish** of a **new** branch that will become a **new** PR. It does **not** authorize a second push to an existing PR branch.
   * **Read the full diff, not the commit message alone.** A one-line commit can still delete dozens of lines (regression example: a “routing fix” branch that removed FK detach helpers while merging after a correct PR had already landed on `master`).
   * **Required commands (run and inspect output before push):**
     ```bash
@@ -694,13 +696,13 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
     git diff origin/master...HEAD
     git log --oneline origin/master..HEAD
     ```
-  * **Hard stop — do not push / do not open a PR** when any of these apply unless the user explicitly requested that scope:
+  * **Hard stop — do not run the first-publish push / do not open a PR** when any of these apply unless the user explicitly requested that scope:
     * **Unexpected large deletions** in touched files (e.g. whole `function …` blocks, delete handlers, or helpers removed while the task was “add one attribute” or “fix routing”).
     * **`git diff --stat` shows many more deletions than additions** for a small fix — re-check for a bad `git reset`, wrong merge resolution, or editing the wrong file revision.
     * **The branch would revert code already on `origin/master`** (diff re-introduces removed bugs or strips a just-merged PR).
     * **Two PRs for the same deliverable** — if the correct fix is already on a branch or merged, **abandon** the stale branch (do not merge a second PR). Cherry-pick or recreate from current `master` instead.
-  * **After a mistaken push:** create a **new branch from current `origin/master`**, re-apply only the intended patch, verify diff again, then **one new PR** — do not stack “fix the fix” commits on the bad branch unless the user explicitly asked to update that open PR.
-  * **Completion gate:** “ready to push” means you can summarize every deleted/changed hunk in plain language; if you cannot, read the diff again.
+  * **After a mistaken first-publish push:** create a **new branch from current `origin/master`**, re-apply only the intended patch, verify diff again, then **one new first-publish push** and **one new PR** — never add commits to the bad branch and push again.
+  * **Completion gate:** “ready for first-publish push” means you can summarize every deleted/changed hunk in plain language **and** the branch has **no existing PR**; if you cannot, read the diff again. Deliverable done = **new PR URL**, not “pushed to …/pull/N”.
 * **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
   * `php -l` on every touched `.php` file.
   * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
