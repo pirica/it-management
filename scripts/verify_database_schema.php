@@ -47,10 +47,21 @@ sort($expected, SORT_STRING);
 
 $schema = DB_NAME;
 $actual = [];
+$dbErrorCode = null;
+$dbErrorMessage = null;
 $res = itm_run_query(
     $conn,
-    "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . $conn->real_escape_string($schema) . "' ORDER BY TABLE_NAME"
+    "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . $conn->real_escape_string($schema) . "' ORDER BY TABLE_NAME",
+    $dbErrorCode,
+    $dbErrorMessage
 );
+if ($res === false) {
+    fwrite(STDERR, "Failed to read information_schema for database '{$schema}'.\n");
+    if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
+        fwrite(STDERR, "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
+    }
+    exit(2);
+}
 while ($row = $res->fetch_assoc()) {
     $actual[] = (string) $row['TABLE_NAME'];
 }
