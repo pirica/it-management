@@ -4652,6 +4652,7 @@ $reportPayload = [
     'generated_at' => date('Y-m-d H:i:s'),
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
+        'runner_script' => mbqa_runner_script_v1(),
         'module' => $filterModule,
         'company' => $filterCompany,
         'pilot_only' => $pilotOnly,

@@ -109,6 +109,7 @@ function mbqar_print_help(): void
  */
 function mbqar_rerun_runner_href(array $payload): string
 {
+    $runnerScript = mbqa_runner_script_from_payload($payload);
     $params = ['autostart' => '1'];
     $opts = $payload['run_options'] ?? null;
 
@@ -150,7 +151,7 @@ function mbqar_rerun_runner_href(array $payload): string
             unset($params['module']);
         }
 
-        return 'module_browser_qa_runner.php?' . http_build_query($params);
+        return $runnerScript . '?' . http_build_query($params);
     }
 
     $module = $opts['module'] ?? null;
@@ -165,12 +166,15 @@ function mbqar_rerun_runner_href(array $payload): string
         $params['pilot_only'] = '1';
         unset($params['module']);
     }
+    if (!empty($opts['ui_click_smoke'])) {
+        $params['ui_click_smoke'] = '1';
+    }
     $baseUrl = trim((string)($opts['base_url'] ?? ''));
     if ($baseUrl !== '' && $baseUrl !== 'http://localhost/it-management/') {
         $params['base_url'] = $baseUrl;
     }
 
-    return 'module_browser_qa_runner.php?' . http_build_query($params);
+    return $runnerScript . '?' . http_build_query($params);
 }
 
 /**
@@ -354,7 +358,8 @@ function mbqar_render_browser_form(array $options): void
         echo '<p style="font-size:0.9rem;">Legacy dated JSON: <a href="module_browser_qa_build_report.php?run=1&amp;date='
             . rawurlencode($legacyDate) . '">build from ' . $legacyDate . '</a></p>';
     }
-    echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php">Run QA runner</a> · ';
+    echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="' . mbqa_runner_script_v1() . '">Run QA runner</a> · ';
+    echo '<a href="' . mbqa_runner_script_v2() . '">Run QA runner V2</a> · ';
     echo '<a href="module_browser_qa_build_report.php?help=1">Help</a></p>';
     echo '</main>';
 }
@@ -653,6 +658,8 @@ $built = mbqar_build_markdown(
     is_array($data['module_step_exceptions'] ?? null) ? $data['module_step_exceptions'] : []
 );
 $rerunHref = mbqar_rerun_runner_href($reportPayload);
+$runnerScript = mbqa_runner_script_from_payload($reportPayload);
+$runnerLabel = mbqa_runner_form_label($runnerScript);
 // BOM helps Windows Notepad/openers detect UTF-8; file content remains UTF-8 (see AGENTS.md).
 itm_write_utf8_text_file($built['out_path'], $built['md'], true);
 
@@ -680,11 +687,20 @@ echo '<p style="font-size:0.9rem;color:#57606a;"><strong>Rebuild report</strong>
 echo '<strong>Re-Run Test</strong> starts a new QA run (same module/company scope) and overwrites the JSON.</p>';
 $mdRel = '../qa-reports/' . mbqa_report_markdown_basename();
 $xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
-echo '<p><a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a> · ';
-mbqar_render_xlsx_download_link($xlsxRel, $xlsxBuilt['ok'], $xlsxBuilt['error']);
-echo ' · <a href="module_browser_qa_build_report.php?run=1">Rebuild report</a> · ';
-echo '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a> · ';
-echo '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';
+$actionLinks = [
+    '<a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a>',
+];
+if ($xlsxBuilt['ok']) {
+    $actionLinks[] = '<a href="' . htmlspecialchars($xlsxRel, ENT_QUOTES, 'UTF-8') . '">Download XLSX</a>';
+} elseif ($xlsxBuilt['error'] !== '') {
+    $actionLinks[] = '<span style="color:#cf222e;font-size:0.85rem;">XLSX unavailable ('
+        . htmlspecialchars($xlsxBuilt['error'], ENT_QUOTES, 'UTF-8') . ')</span>';
+}
+$actionLinks[] = '<a href="module_browser_qa_build_report.php?run=1">Rebuild report</a>';
+$actionLinks[] = '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a>';
+$actionLinks[] = '<a href="' . htmlspecialchars($runnerScript, ENT_QUOTES, 'UTF-8') . '">'
+    . htmlspecialchars($runnerLabel, ENT_QUOTES, 'UTF-8') . '</a>';
+echo '<p>' . implode(' · ', $actionLinks) . '</p>';
 echo '<h2>Preview</h2>';
 echo '<pre style="background:#f6f8fa;border:1px solid #d0d7de;padding:12px;overflow:auto;max-height:70vh;font-size:12px;">';
 echo htmlspecialchars($built['md'], ENT_QUOTES, 'UTF-8');

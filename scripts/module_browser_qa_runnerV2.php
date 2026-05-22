@@ -5237,6 +5237,7 @@ $reportPayload = [
     'run_id' => mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '',
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
+        'runner_script' => mbqa_runner_script_v2(),
         'module' => $filterModule,
         'company' => $filterCompany,
         'pilot_only' => $pilotOnly,
