@@ -182,6 +182,19 @@ function mbqa_ajax_reports_dir(string $root): string
     return $root . DIRECTORY_SEPARATOR . 'qa-reports';
 }
 
+function mbqa_ensure_reports_dir_writable(string $root): bool
+{
+    $dir = mbqa_ajax_reports_dir($root);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+    if (is_dir($dir)) {
+        @chmod($dir, 0777);
+    }
+
+    return is_dir($dir) && is_writable($dir);
+}
+
 function mbqa_ajax_progress_path(string $root, string $runId): string
 {
     return mbqa_ajax_reports_dir($root) . DIRECTORY_SEPARATOR . '.mbqa-progress-' . $runId . '.json';
@@ -242,8 +255,8 @@ function mbqa_browser_ajax_write_progress(string $root, string $runId, array $st
         return;
     }
     $dir = mbqa_ajax_reports_dir($root);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0775, true);
+    if (!mbqa_ensure_reports_dir_writable($root)) {
+        return;
     }
     $state['updated_at'] = time();
     $json = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -1404,6 +1417,7 @@ mbqa_validate_requested_scope(
     mbqa_list_module_slugs($root),
     mbqa_company_name_map()
 );
+mbqa_validate_reports_writable_for_browser($root);
 
 // Why: config.php starts the session and may set headers; browser HTML output must come after require.
 define('ITM_CLI_SCRIPT', true);
@@ -1519,6 +1533,13 @@ function mbqa_validate_requested_scope(?string $module, ?int $company, bool $uiC
     }
     if ($uiClickSmoke && ($module === null || $company === null)) {
         mbqa_fail_preflight('UI click smoke requires one module and one company.');
+    }
+}
+
+function mbqa_validate_reports_writable_for_browser(string $root): void
+{
+    if (!mbqa_is_cli_sapi() && mbqa_browser_ajax_active() && !mbqa_ensure_reports_dir_writable($root)) {
+        mbqa_fail_preflight('qa-reports is not writable by the web server. Make the directory writable before running browser QA.');
     }
 }
 
@@ -5150,8 +5171,8 @@ foreach ($companiesToRun as $companyId) {
 @unlink($cookieFile);
 
 $outDir = $root . DIRECTORY_SEPARATOR . 'qa-reports';
-if (!is_dir($outDir)) {
-    mkdir($outDir, 0775, true);
+if (!mbqa_ensure_reports_dir_writable($root)) {
+    mbqa_fail_preflight('qa-reports is not writable; cannot write module browser QA output.');
 }
 $jsonPath = mbqa_report_json_path($root);
 $reportPayload = [
