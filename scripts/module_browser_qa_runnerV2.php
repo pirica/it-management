@@ -648,7 +648,7 @@ function mbqa_render_browser_help(): void
     echo '<li>Optional: enable <strong>UI click smoke</strong> only when one module and one company are selected.</li>';
     echo '<li>Click <strong>Run QA</strong> (not a bare run URL).</li>';
     echo '<li>Click <strong>Stop</strong> if the run is taking too long — the runner stops between companies/modules.</li>';
-    echo '<li>When finished, use <strong>Download JSON</strong>, <strong>Download XLSX</strong>, or <a href="module_browser_qa_build_report.php">Build markdown report</a>.</li>';
+    echo '<li>When finished, use <strong>Download JSON</strong>, <strong>Download XLSX</strong>, or <a href="module_browser_qa_build_reportV2.php">Build markdown report</a>.</li>';
     echo '</ol>';
 
     echo '<h2>Form fields</h2>';
@@ -687,7 +687,7 @@ function mbqa_render_browser_help(): void
     echo '<p style="font-size:0.95rem;">mysql → error_log → list → clear → sample_data → add → pagination → bulk_cancel → bulk_delete → search → sort → create → view → edit → list_all → export_pdf → export_xlsx → clear_table → clear → import_db → single_delete → sample_data (restore) → error_log</p>';
 
     echo '<p style="margin-top:24px;"><a href="module_browser_qa_runnerV2.php">← Back to runner form</a> · ';
-    echo '<a href="module_browser_qa_build_report.php">Build markdown report</a> · ';
+    echo '<a href="module_browser_qa_build_reportV2.php">Build markdown report</a> · ';
     echo '<a href="index.html">Scripts index</a></p>';
     echo '</main>';
 }
@@ -801,7 +801,7 @@ function mbqa_render_browser_form(array $options): void
     echo '</div>';
     echo '</form>';
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runnerV2.php?help=1">CLI options / help</a> · ';
-    echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
+    echo '<a href="module_browser_qa_build_reportV2.php">Build markdown report</a></p>';
     mbqar_echo_xlsx_vendor_script();
     if (function_exists('mbqar_echo_xlsx_client_bootstrap')) {
         mbqar_echo_xlsx_client_bootstrap();
@@ -5237,7 +5237,6 @@ $reportPayload = [
     'run_id' => mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '',
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
-        'runner_script' => mbqa_runner_script_v2(),
         'module' => $filterModule,
         'company' => $filterCompany,
         'pilot_only' => $pilotOnly,
@@ -5287,7 +5286,7 @@ if (mbqa_is_cli_sapi()) {
 
 $jsonRel = '../qa-reports/' . mbqa_report_json_basename();
 $xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
-$reportHref = 'module_browser_qa_build_report.php?run=1';
+$reportHref = 'module_browser_qa_build_reportV2.php?run=1';
 $rerunParams = ['autostart' => '1'];
 if ($filterModule !== null && trim((string)$filterModule) !== '') {
     $rerunParams['module'] = trim((string)$filterModule);

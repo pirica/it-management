@@ -501,11 +501,21 @@
                 <tr>
                     <td><a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Builds markdown summary from the JSON produced by <code>module_browser_qa_runner.php</code> (preflight, expenses tables, failure categories). Browser shows an HTML preview and link to <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
+                    <td>Builds markdown summary from the JSON produced by <code>module_browser_qa_runner.php</code> (V1 only). Browser shows an HTML preview and link to <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
                     <td>
                         Browser: <a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a> (form; <code>?run=1&amp;date=YYYY-MM-DD</code>)<br>
                         <code>php scripts/module_browser_qa_build_report.php</code><br>
                         <code>php scripts/module_browser_qa_build_report.php --date=2026-05-20</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="module_browser_qa_build_reportV2.php">module_browser_qa_build_reportV2.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Same as the V1 build report, but links only to <code>module_browser_qa_runnerV2.php</code> (Re-Run Test, runner form, UI click smoke rerun). Use after V2 runner output.</td>
+                    <td>
+                        Browser: <a href="module_browser_qa_build_reportV2.php">module_browser_qa_build_reportV2.php</a> (form; <code>?run=1</code>)<br>
+                        <code>php scripts/module_browser_qa_build_reportV2.php</code><br>
+                        <code>php scripts/module_browser_qa_build_reportV2.php --date=2026-05-20</code>
                     </td>
                 </tr>
                 <tr>
