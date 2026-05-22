@@ -721,6 +721,7 @@ if (mbqar_is_cli_sapi()) {
 
 header('Content-Type: text/html; charset=utf-8');
 itm_script_browser_nav_echo();
+$jsonBasename = basename($jsonPath);
 echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:900px;margin:16px;">';
 echo '<h1>Report built</h1>';
 echo '<p><strong>' . (int)$built['pass'] . ' pass</strong>, <strong>' . (int)$built['fail'] . ' fail</strong> ';
@@ -731,7 +732,6 @@ $mdRel = '../qa-reports/' . mbqa_report_markdown_basename();
 $xlsxRel = ($xlsxBuilt['ok'] && $reportFiles !== null)
     ? ('../qa-reports/' . $reportFiles['xlsx_basename'])
     : '';
-$jsonBasename = basename($jsonPath);
 $actionLinks = [
     '<a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a>',
 ];
