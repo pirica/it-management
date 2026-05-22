@@ -71,7 +71,7 @@ if ($searchRaw !== '') {
 }
 
 // HANDLE SORTING
-$sortableColumns = ['name', 'serial', 'storage_date', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'updated_at', 'active'];
+$sortableColumns = ['id', 'name', 'serial', 'storage_date', 'category_name', 'quantity_on_hand', 'quantity_minimum', 'price_eur', 'comments', 'updated_at', 'active'];
 $sort = (string)($_GET['sort'] ?? 'name');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -81,6 +81,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'ASC';
 }
 $orderByMap = [
+    'id' => 'i.id',
     'name' => 'i.name',
     'serial' => 'i.serial',
     'storage_date' => 'i.storage_date',
@@ -130,6 +131,22 @@ $items = mysqli_query(
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
+}
+
+function itm_inventory_items_list_url(array $overrides = []): string
+{
+    global $searchRaw, $sort, $dir, $page;
+    $query = [
+        'search' => $searchRaw,
+        'sort' => $sort,
+        'dir' => $dir,
+        'page' => $page,
+    ];
+    foreach ($overrides as $key => $value) {
+        $query[$key] = $value;
+    }
+
+    return 'index.php?' . http_build_query($query);
 }
 ?>
 <!DOCTYPE html>
@@ -190,11 +207,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             <!-- DATA TABLE -->
             <div class="card">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
                         <?php foreach ([
+                            'id' => 'ID',
                             'name' => 'Name',
                             'serial' => 'Serial',
                             'storage_date' => 'Storage Date',
@@ -220,6 +238,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php if ($items && mysqli_num_rows($items)): while ($i = mysqli_fetch_assoc($items)): ?>
                         <tr>
                             <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$i['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
+                            <td><?php echo (int)$i['id']; ?></td>
                             <td><?php echo sanitize((string)$i['name']); ?></td>
                             <td><?php echo sanitize((string)($i['serial'] ?? '-')); ?></td>
                             <td><?php echo sanitize((string)($i['storage_date'] ?? '-')); ?></td>
@@ -252,7 +271,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="12" style="text-align:center;">No inventory items found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 13 : 12; ?>" style="text-align:center;opacity:.8;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -264,15 +283,18 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </form>
                     </div>
                 <?php endif; ?>
-                <?php if ($totalPages > 1): ?>
-                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
-                        <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>">« Prev</a>
-                        <?php endif; ?>
-                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
-                        <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>">Next »</a>
-                        <?php endif; ?>
+                <?php if ($totalRows > $perPage): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo (int)$totalRows; ?></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            <?php if ($page > 1): ?>
+                                <a class="btn btn-sm" href="<?php echo sanitize(itm_inventory_items_list_url(['page' => $page - 1])); ?>" title="◀️ Previous">Previous</a>
+                            <?php endif; ?>
+                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a class="btn btn-sm" href="<?php echo sanitize(itm_inventory_items_list_url(['page' => $page + 1])); ?>" title="▶️ Next">Next</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 <?php endif; ?>
             </div>

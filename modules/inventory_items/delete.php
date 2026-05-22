@@ -25,8 +25,14 @@ if ($bulkAction === 'clear_table') {
     $stmtClear = mysqli_prepare($conn, 'DELETE FROM inventory_items WHERE company_id = ?');
     if ($stmtClear) {
         mysqli_stmt_bind_param($stmtClear, 'i', $company_id);
-        mysqli_stmt_execute($stmtClear);
+        if (!mysqli_stmt_execute($stmtClear)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmtClear), mysqli_stmt_error($stmtClear));
+        } else {
+            $_SESSION['crud_success'] = 'All inventory items cleared for this company.';
+        }
         mysqli_stmt_close($stmtClear);
+    } else {
+        $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
     }
     header('Location: index.php');
     exit;

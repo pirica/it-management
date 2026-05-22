@@ -1323,6 +1323,8 @@ if (!function_exists('itm_handle_json_table_import')) {
             $columns[$fieldName] = [
                 'field' => $fieldName,
                 'type' => strtolower((string)($column['Type'] ?? '')),
+                'null' => strtoupper((string)($column['Null'] ?? '')) === 'YES',
+                'default' => $column['Default'] ?? null,
             ];
         }
 
@@ -1419,6 +1421,38 @@ if (!function_exists('itm_handle_json_table_import')) {
 
             if ($hasCompanyColumn) {
                 $rowValues['company_id'] = (string)$companyId;
+            }
+
+            foreach ($targetFields as $fieldName) {
+                if (($rowValues[$fieldName] ?? 'NULL') !== 'NULL') {
+                    continue;
+                }
+                $meta = $columns[$fieldName] ?? null;
+                if (!$meta || !empty($meta['null'])) {
+                    continue;
+                }
+
+                $default = $meta['default'] ?? null;
+                $columnType = (string)($meta['type'] ?? '');
+                if ($default !== null && $default !== '') {
+                    if (preg_match('/\b(int|decimal|float|double)\b/i', $columnType)) {
+                        $rowValues[$fieldName] = is_numeric((string)$default) ? (string)$default : '0';
+                    } elseif (preg_match('/^tinyint(\(\d+\))?/i', $columnType)) {
+                        $rowValues[$fieldName] = in_array(strtolower((string)$default), ['1', 'true'], true) ? '1' : '0';
+                    } else {
+                        $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, (string)$default) . "'";
+                    }
+                    continue;
+                }
+
+                if (preg_match('/\b(int|tinyint|smallint|mediumint|bigint|decimal|float|double)\b/i', $columnType)) {
+                    $rowValues[$fieldName] = '0';
+                    continue;
+                }
+
+                if ($fieldName === 'name' || substr($fieldName, -5) === '_name') {
+                    $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, 'Import ' . $rowIndex . '-' . date('YmdHis')) . "'";
+                }
             }
 
             $insertFields = [];
