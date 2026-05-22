@@ -29,6 +29,7 @@ require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_import_helpers.php';
 require_once __DIR__ . '/lib/mbqa_report_paths.php';
 require_once __DIR__ . '/lib/mbqa_report_xlsx.php';
+require_once __DIR__ . '/lib/mbqa_runner_tiers.php';
 require_once __DIR__ . '/lib/equipment_type_modules.php';
 
 /**
@@ -950,11 +951,8 @@ $pilotOnly = $mbqaOptions['pilot_only'];
 $filterModule = $mbqaOptions['module'];
 $filterCompany = $mbqaOptions['company'];
 
-$bespokeSmoke = [
-    'budget_report', 'expiring', 'rack_planner', 'floor_plans', 'companies',
-];
-
-$skipClear = ['companies', 'users'];
+$bespokeSmoke = mbqa_runner_bespoke_smoke_modules();
+$skipClear = mbqa_runner_skip_clear_modules();
 
 /** Why: Some modules need lookup parents in database.sql before sample seed succeeds for a tenant. */
 $sampleSeedPrerequisites = [
