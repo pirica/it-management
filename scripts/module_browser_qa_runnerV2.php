@@ -157,6 +157,7 @@ function mbqa_parse_run_options(): array
     if (substr($options['base_url'], -1) !== '/') {
         $options['base_url'] .= '/';
     }
+    $options['base_url'] = mbqa_normalize_base_url($options['base_url']);
 
     return $options;
 }
@@ -170,23 +171,75 @@ function mbqa_is_cli_sapi(): bool
  * Why: UI click smoke runs in the browser and must fetch the app on the same origin as the runner page;
  * defaulting to localhost breaks when the user opens 127.0.0.1 or a remote host.
  */
+function mbqa_is_local_loopback_host(string $host): bool
+{
+    $host = strtolower(trim($host));
+    if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+        return true;
+    }
+
+    return strpos($host, '127.') === 0;
+}
+
+/**
+ * Why: Laragon serves ITM on plain HTTP; HTTPS localhost often has no TLS listener (curl HTTP 0 on login).
+ */
+function mbqa_normalize_base_url(string $url): string
+{
+    $url = trim($url);
+    if ($url === '') {
+        return 'http://localhost/it-management/';
+    }
+
+    $parts = parse_url($url);
+    if ($parts === false || empty($parts['host'])) {
+        return rtrim($url, '/') . '/';
+    }
+
+    $scheme = isset($parts['scheme']) ? strtolower((string)$parts['scheme']) : 'http';
+    $host = (string)$parts['host'];
+    if (mbqa_is_local_loopback_host($host) && $scheme === 'https') {
+        $scheme = 'http';
+    }
+
+    $port = isset($parts['port']) ? (int)$parts['port'] : 0;
+    $authority = $host;
+    if ($port > 0 && !(($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443))) {
+        $authority .= ':' . $port;
+    }
+
+    $path = isset($parts['path']) ? (string)$parts['path'] : '/';
+    if ($path === '') {
+        $path = '/';
+    }
+
+    return rtrim($scheme . '://' . $authority . rtrim($path, '/'), '/') . '/';
+}
+
 function mbqa_detect_browser_base_url(): string
 {
     if (mbqa_is_cli_sapi()) {
         return 'http://localhost/it-management/';
     }
 
-    $https = !empty($_SERVER['HTTPS']) && (string)$_SERVER['HTTPS'] !== 'off';
-    $scheme = $https ? 'https' : 'http';
     $host = trim((string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
     if ($host === '') {
         $host = 'localhost';
+    }
+    if (strpos($host, ':') !== false) {
+        $host = (string)(parse_url('http://' . $host, PHP_URL_HOST) ?? $host);
+    }
+
+    $https = !empty($_SERVER['HTTPS']) && (string)$_SERVER['HTTPS'] !== 'off';
+    $scheme = $https ? 'https' : 'http';
+    if (mbqa_is_local_loopback_host($host)) {
+        $scheme = 'http';
     }
 
     $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
     $scriptsPos = strrpos($scriptName, '/scripts/');
     if ($scriptsPos === false) {
-        return rtrim($scheme . '://' . $host, '/') . '/';
+        return mbqa_normalize_base_url(rtrim($scheme . '://' . $host, '/') . '/');
     }
 
     $appPath = substr($scriptName, 0, $scriptsPos);
@@ -194,7 +247,7 @@ function mbqa_detect_browser_base_url(): string
         $appPath = '/';
     }
 
-    return rtrim($scheme . '://' . $host . rtrim($appPath, '/'), '/') . '/';
+    return mbqa_normalize_base_url(rtrim($scheme . '://' . $host . rtrim($appPath, '/'), '/') . '/');
 }
 
 function mbqa_sanitize_run_id(string $raw): string
@@ -683,7 +736,7 @@ function mbqa_render_browser_help(): void
     echo '<h2>Form fields</h2>';
     echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:0.95rem;">';
     echo '<thead><tr><th>Field</th><th>What it does</th></tr></thead><tbody>';
-    echo '<tr><td>Base URL</td><td>App root (auto-detected from this runner page when left at default). UI click smoke requires the same origin as the page you opened (e.g. do not mix <code>localhost</code> and <code>127.0.0.1</code>).</td></tr>';
+    echo '<tr><td>Base URL</td><td>App root (auto-detected from this runner page when left at default). On Laragon use <code>http://localhost/it-management/</code> — loopback hosts are normalised to HTTP because TLS is usually not configured (avoids login HTTP 0).</td></tr>';
     echo '<tr><td>Module</td><td><code>ALL</code> = every module with <code>index.php</code>; or pick one slug (e.g. <code>expenses</code>)</td></tr>';
     echo '<tr><td>Or module slug (manual)</td><td>Overrides the dropdown when filled (any folder name under <code>modules/</code>)</td></tr>';
     echo '<tr><td>Company</td><td><code>1</code>–<code>5</code> or <code>ALL</code> (all seeded tenants)</td></tr>';
@@ -932,7 +985,30 @@ function mbqa_render_browser_form(array $options): void
 
   function baseUrlValue() {
     var input = form.querySelector('[name="base_url"]');
-    return input && input.value ? input.value : window.location.origin + '/';
+    if (input && input.value) {
+      return normalizeLoopbackBaseUrl(input.value);
+    }
+    return normalizeLoopbackBaseUrl(runnerAppRootFromLocation().toString());
+  }
+
+  function isLoopbackHost(hostname) {
+    hostname = (hostname || '').toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.indexOf('127.') === 0;
+  }
+
+  function normalizeLoopbackBaseUrl(url) {
+    try {
+      var parsed = new URL(url, window.location.href);
+      if (parsed.protocol === 'https:' && isLoopbackHost(parsed.hostname)) {
+        parsed.protocol = 'http:';
+        if (parsed.port === '443') {
+          parsed.port = '';
+        }
+      }
+      return parsed.toString();
+    } catch (err) {
+      return url;
+    }
   }
 
   function runnerAppRootFromLocation() {
@@ -947,16 +1023,21 @@ function mbqa_render_browser_form(array $options): void
 
   function syncBaseUrlToRunnerOrigin() {
     var input = form.querySelector('[name="base_url"]');
-    if (!input || !input.value) {
+    if (!input) {
       return;
     }
     try {
-      var configured = new URL(input.value, window.location.href);
-      if (configured.origin === window.location.origin) {
+      var derived = runnerAppRootFromLocation();
+      if (!input.value) {
+        input.value = normalizeLoopbackBaseUrl(derived.toString());
         return;
       }
-      var derived = runnerAppRootFromLocation();
-      input.value = derived.toString();
+      var configured = new URL(input.value, window.location.href);
+      if (configured.origin !== window.location.origin) {
+        input.value = normalizeLoopbackBaseUrl(derived.toString());
+        return;
+      }
+      input.value = normalizeLoopbackBaseUrl(input.value);
     } catch (err) {
       /* keep user value */
     }
@@ -4784,7 +4865,7 @@ $loginPost = mbqa_http(
     $cookieFile
 );
 if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal($loginPost['body'])) {
-    mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}?\n");
+    mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}? Use http:// (not https://) for localhost unless TLS is configured.\n");
     exit(1);
 }
 
