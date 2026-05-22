@@ -1391,12 +1391,20 @@ if (!mbqa_is_cli_sapi() && $mbqaOptions['stream']) {
     exit(0);
 }
 
-// Why: config.php starts the session and may set headers; browser HTML output must come after require.
-define('ITM_CLI_SCRIPT', true);
 $GLOBALS['mbqa_project_root'] = $root;
 if (!mbqa_is_cli_sapi() && $mbqaOptions['ajax'] && $mbqaOptions['run_id'] !== '') {
     $GLOBALS['mbqa_ajax_run_id'] = $mbqaOptions['run_id'];
 }
+mbqa_validate_requested_scope(
+    $mbqaOptions['module'],
+    $mbqaOptions['company'],
+    (bool)$mbqaOptions['ui_click_smoke'],
+    mbqa_list_module_slugs($root),
+    mbqa_company_name_map()
+);
+
+// Why: config.php starts the session and may set headers; browser HTML output must come after require.
+define('ITM_CLI_SCRIPT', true);
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_mbqa_test_user.php';
 
