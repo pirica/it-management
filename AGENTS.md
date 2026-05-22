@@ -151,7 +151,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 #### 3. CLI scripts
 
 * Run from repository root: `php scripts/<script>.php [options]`.
-* **Windows Laragon** when `php` is not on PATH: `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\<script>.php`.
+* **Windows Laragon** when `php` is not on PATH: `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` (see **Setup & Debugging → local paths**).
 * **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
@@ -482,7 +482,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * **Mandatory human-flow testing for every affected workflow:** execute human-flow regression for each changed Create/Edit/Update/Delete/Copy/Move path before PR.
     * Required regression command (from repository root):
       * **Default (Linux, macOS, CI, PATH):** `php scripts/idfs_sync_human_test.php`
-      * **Windows Laragon fallback (when `php` is not on PATH):** `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php`
+      * **Windows Laragon fallback (when `php` is not on PATH):** `cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management` then `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\idfs_sync_human_test.php`
     * If any workflow or command run reports `[FAIL]`, the task is not complete.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
@@ -538,7 +538,31 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 ---
 
 ## 🛠 Setup & Debugging
-* **Dev Credentials:** `localhost` | `root` | `itmanagement`.
+* **Dev Credentials:** Host `localhost` | user `root` | **password `itmanagement`** | database `itmanagement` — same value in `config/config.php` (`DB_PASS`) and on the MySQL CLI (`-u root -pitmanagement`; the `-p` flag has **no space** before the password).
+* **Windows Laragon portable — local paths (Nelson, verified):** When `php` / `mysql` are not on PATH, use these full absolute paths:
+
+| What | Local path |
+|------|------------|
+| Laragon root | `C:\Users\NelsonSalvador\Downloads\laragon-portable` |
+| ITM repository | `C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management` |
+| App URL (Apache) | `http://localhost/it-management/` |
+| phpMyAdmin (local) | `http://localhost/phpmyadmin/` |
+| **PHP 7.4.33 (ITM — use this)** | `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` |
+| MySQL 8.4 CLI | `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe` |
+
+  * **CLI example (repo root):**
+    ```cmd
+    cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
+    "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\module_browser_qa_runner.php
+    ```
+    On Windows, run the three `scripts/smoke_test.sh` checks individually with that PHP binary, or use Git Bash: `bash scripts/smoke_test.sh`.
+  * **Import `database.sql` (full file — do not strip the first lines):**
+    ```cmd
+    cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
+    "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
+    ```
+    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **88**. A partial import often stops at table **73** (`user_companies`); capture stderr (e.g. `2> mysql-import.err`) — MySQL can exit 0 while statements failed unless you check the log.
+  * **PowerShell piping:** `database.sql` in git is **LF**; `-split "`r`n"` can yield a single “line” and skip the strip branch — still import the **complete** file. Prefer `cmd /c "\"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe\" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql"` from the repo directory over stdin `Process` piping when imports truncate.
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
   * `http://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
@@ -547,7 +571,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging. For full-module CRUD/button regression across five companies, see **Scripts directory → Full-module browser QA** (`module_browser_qa_runner.php`, [PR #1718](https://github.com/pirica/it-management/pull/1718)).
 * **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled.
   * **Linux, macOS, CI, and any host where `php` is on PATH:** `php scripts/<script>.php`
-  * **Windows (Laragon) when `php` is not on PATH:** use the Laragon 7.4 binary, e.g. `<laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\<script>.php` (replace `<laragon-root>` with your install path; do not use a system PHP 8.x build that lacks MySQLi).
+  * **Windows (Laragon) when `php` is not on PATH:** use `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` from **Windows Laragon portable — local paths** above.
 
 ---
 
@@ -598,7 +622,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * `php scripts/check_database_sql_company_name_uniques.php` when `database.sql` or tenant unique keys changed.
   * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
-  * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or the Laragon 7.4 path from Setup) — hard-fail if any `[FAIL]`.
+  * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
   * Smoke/CI: `bash scripts/smoke_test.sh` when `.github/workflows/smoke.yml` applies (php -l, CSRF, SQLi only); list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
 * **CI and repo scripts stay authoritative:** the smoke workflow must pass on PRs; run other maintenance scripts (for example `check_audit_logs_coverage.php`, `check_database_sql_company_name_uniques.php`, `check_index_table_compliance.php`) manually when the change scope requires them.
 
