@@ -4700,7 +4700,7 @@ $xlsxBuilt = mbqar_build_runner_xlsx(
     $reportFilePaths['xlsx_path']
 );
 
-$exitCode = $summary['fail'] > 0 ? 1 : 0;
+$exitCode = ($summary['fail'] > 0 || !$mbqaEquipmentCleanup['ok']) ? 1 : 0;
 if (mbqa_is_cli_sapi()) {
     mbqa_out("Wrote {$jsonPath}\n");
     if ($xlsxBuilt['ok']) {

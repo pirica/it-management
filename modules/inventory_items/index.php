@@ -272,6 +272,7 @@ function itm_inventory_items_list_url(array $overrides = []): string
                         </tr>
                     <?php endwhile; else: ?>
                         <tr><td colspan="<?php echo $showBulkActions ? 13 : 12; ?>" style="text-align:center;opacity:.8;">No records found.</td></tr>
+                        <tr><td colspan="12" style="text-align:center;">No inventory items found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -295,6 +296,15 @@ function itm_inventory_items_list_url(array $overrides = []): string
                                 <a class="btn btn-sm" href="<?php echo sanitize(itm_inventory_items_list_url(['page' => $page + 1])); ?>" title="▶️ Next">Next</a>
                             <?php endif; ?>
                         </div>
+                <?php if ($totalPages > 1): ?>
+                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                        <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>">« Prev</a>
+                        <?php endif; ?>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>">Next »</a>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </div>
