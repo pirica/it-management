@@ -88,6 +88,14 @@ function itm_equipment_type_name_is_mbqa_runner_seeded(string $typeName): bool
 }
 
 /**
+ * SQL predicate for runner-seeded equipment_types.name (same shape as itm_mbqa_runner_row_tag()).
+ */
+function itm_mbqa_equipment_type_name_pattern_sql(): string
+{
+    return "name REGEXP '^mbqa-equipment_types-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
+}
+
+/**
  * Sidebar entry_id for MBQA equipment-type scaffolds (matches itm_equipment_type_sidebar_item_id() output).
  */
 function itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql(): string
@@ -199,7 +207,7 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
     $typesRes = mysqli_query(
         $conn,
         "DELETE FROM equipment_types WHERE name LIKE '%itm_eqdct%' OR name LIKE '%itm_edct%'
-            OR name LIKE 'MBQA-equipment_types-%' OR name LIKE 'mbqa-equipment_types-%'"
+            OR " . itm_mbqa_equipment_type_name_pattern_sql()
     );
     if ($typesRes) {
         $result['types_deleted'] = (int)mysqli_affected_rows($conn);
