@@ -5436,7 +5436,7 @@ $xlsxBuilt = mbqar_build_runner_xlsx(
     $reportFilePaths['xlsx_path']
 );
 
-$exitCode = $summary['fail'] > 0 ? 1 : 0;
+$exitCode = ($summary['fail'] > 0 || !$mbqaEquipmentCleanup['ok']) ? 1 : 0;
 if (mbqa_is_cli_sapi()) {
     mbqa_out("Wrote {$jsonPath}\n");
     if ($xlsxBuilt['ok']) {
@@ -5475,6 +5475,9 @@ $rerunHref = 'module_browser_qa_runnerV2.php?' . http_build_query($rerunParams);
 $runStopped = mbqa_browser_ajax_active() && mbqa_ajax_should_stop($root);
 $finalStatus = $runStopped ? 'cancelled' : 'done';
 $finalMessage = $runStopped ? 'Run stopped by user' : ($exitCode === 0 ? '' : 'QA completed with failing steps');
+if (!$runStopped && !$mbqaEquipmentCleanup['ok'] && $finalMessage === '') {
+    $finalMessage = 'QA completed with failing steps';
+}
 if (!$runStopped && $mbqaEquipmentCleanupNote !== '') {
     $finalMessage = $finalMessage === ''
         ? $mbqaEquipmentCleanupNote
