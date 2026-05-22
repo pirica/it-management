@@ -252,9 +252,20 @@ function mbqar_write_xlsx_file(string $path, array $sheets): bool
  * @param array<int, mixed> $results
  * @return array{ok:bool, path:string, error:string}
  */
-function mbqar_build_runner_xlsx(string $projectRoot, array $results, int $pass, int $fail, string $generatedAt = ''): array
-{
-    $path = mbqa_report_xlsx_path($projectRoot);
+function mbqar_build_runner_xlsx(
+    string $projectRoot,
+    array $results,
+    int $pass,
+    int $fail,
+    string $generatedAt = '',
+    ?string $outputPath = null
+): array {
+    if ($outputPath !== null && $outputPath !== '') {
+        $path = $outputPath;
+    } else {
+        $paths = mbqa_report_paths_for_run($projectRoot, $generatedAt !== '' ? $generatedAt : null);
+        $path = $paths['xlsx_path'];
+    }
     $workbook = mbqar_xlsx_workbook_rows($results, $pass, $fail, $generatedAt);
     $ok = mbqar_write_xlsx_file($path, [
         'Summary' => $workbook['summary'],

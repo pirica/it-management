@@ -112,11 +112,11 @@ function mbqar_print_help(): void
         itm_script_output_begin($cfg['page_title']);
     }
 
-    mbqar_out("Build markdown from qa-reports/module-browser-qa.json\n\n");
+    mbqar_out("Build markdown from the latest qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json\n\n");
     mbqar_out("Options:\n");
-    mbqar_out("  --date=YYYY-MM-DD   Use qa-reports/module-browser-qa-YYYY-MM-DD.json (not latest fixed JSON)\n");
+    mbqar_out("  --date=YYYY-MM-DD   Use qa-reports/module-browser-qa-YYYY-MM-DD.json (legacy day file)\n");
     mbqar_out("  --help              Show this help\n\n");
-    mbqar_out("Output: qa-reports/module-browser-qa.md and qa-reports/module-browser-qa.xlsx (overwritten each build)\n\n");
+    mbqar_out("Output: qa-reports/module-browser-qa.md and a timestamped module-browser-qa-*.xlsx\n\n");
 
     if (!mbqar_is_cli_sapi()) {
         mbqar_out("Browser: submit the form or use ?run=1\n");
@@ -347,7 +347,6 @@ function mbqar_step_note_is_skip_quick_index(string $note): bool
 function mbqar_resolve_report_json_path(string $root, array $options): array
 {
     $date = $options['date'];
-    $fixedPath = mbqa_report_json_path($root);
     $legacyPath = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)
         ? mbqa_report_legacy_json_path($root, $date)
         : '';
@@ -356,15 +355,16 @@ function mbqar_resolve_report_json_path(string $root, array $options): array
         return ['json_path' => $legacyPath, 'using_legacy' => true];
     }
 
-    if (is_file($fixedPath)) {
-        return ['json_path' => $fixedPath, 'using_legacy' => false];
+    $latestPath = mbqa_report_find_latest_json_path($root);
+    if ($latestPath !== '') {
+        return ['json_path' => $latestPath, 'using_legacy' => false];
     }
 
     if ($legacyPath !== '' && is_file($legacyPath)) {
         return ['json_path' => $legacyPath, 'using_legacy' => true];
     }
 
-    return ['json_path' => $fixedPath, 'using_legacy' => false];
+    return ['json_path' => mbqa_report_dir($root) . DIRECTORY_SEPARATOR . 'module-browser-qa.json', 'using_legacy' => false];
 }
 
 function mbqar_render_browser_form(array $options): void
@@ -375,7 +375,7 @@ function mbqar_render_browser_form(array $options): void
 
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>' . htmlspecialchars($cfg['page_title'], ENT_QUOTES, 'UTF-8') . '</h1>';
-    echo '<p>Reads <code>qa-reports/module-browser-qa.json</code> from the latest runner output and writes <code>module-browser-qa.md</code> and <code>module-browser-qa.xlsx</code>.</p>';
+    echo '<p>Reads the latest <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> from the runner and writes <code>module-browser-qa.md</code> plus a matching timestamped XLSX.</p>';
     echo '<form method="get" action="' . htmlspecialchars($cfg['self_script'], ENT_QUOTES, 'UTF-8') . '" style="display:grid;gap:12px;max-width:360px;">';
     echo '<input type="hidden" name="run" value="1">';
     echo '<button type="submit" style="padding:10px 16px;font-weight:600;">Build report</button>';
@@ -590,7 +590,10 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
         }
     }
 
-    $jsonPath = mbqa_report_json_path($root);
+    $jsonPath = mbqa_report_find_latest_json_path($root);
+    if ($jsonPath === '') {
+        $jsonPath = mbqa_report_dir($root) . DIRECTORY_SEPARATOR . 'module-browser-qa.json';
+    }
     $outPath = mbqa_report_markdown_path($root);
 
     return [
@@ -636,7 +639,7 @@ if (!is_file($jsonPath)) {
         if ($options['date_explicit']) {
             echo '<p>Requested date <code>' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8')
                 . '</code> — copy or keep <code>module-browser-qa-' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8')
-                . '.json</code>, or build without <code>date=</code> to use latest <code>module-browser-qa.json</code>.</p>';
+                . '.json</code>, or build without <code>date=</code> to use the latest timestamped JSON in <code>qa-reports/</code>.</p>';
         }
         echo '<p><a href="' . htmlspecialchars($cfg['runner_script'], ENT_QUOTES, 'UTF-8') . '">'
             . htmlspecialchars($cfg['runner_label'], ENT_QUOTES, 'UTF-8') . '</a> first, then return here.</p>';
@@ -644,7 +647,7 @@ if (!is_file($jsonPath)) {
         exit(1);
     }
     if ($options['date_explicit']) {
-        mbqar_err("Missing {$jsonPath} (explicit --date={$date}; will not fall back to module-browser-qa.json)\n");
+        mbqar_err("Missing {$jsonPath} (explicit --date={$date}; will not fall back to latest timestamped JSON)\n");
     } else {
         mbqar_err("Missing {$jsonPath}\n");
     }
@@ -695,7 +698,15 @@ $cfg = mbqar_app_config();
 itm_write_utf8_text_file($built['out_path'], $built['md'], true);
 
 $generatedAt = trim((string)($reportPayload['generated_at'] ?? ''));
-$xlsxBuilt = mbqar_build_runner_xlsx($root, $runnerRows, (int)$built['pass'], (int)$built['fail'], $generatedAt);
+$reportFiles = mbqa_report_files_from_json_path($jsonPath);
+$xlsxBuilt = mbqar_build_runner_xlsx(
+    $root,
+    $runnerRows,
+    (int)$built['pass'],
+    (int)$built['fail'],
+    $generatedAt,
+    $reportFiles['xlsx_path'] ?? null
+);
 
 if (mbqar_is_cli_sapi()) {
     mbqar_out("Wrote {$built['out_path']}\n");
@@ -713,15 +724,18 @@ itm_script_browser_nav_echo();
 echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:900px;margin:16px;">';
 echo '<h1>Report built</h1>';
 echo '<p><strong>' . (int)$built['pass'] . ' pass</strong>, <strong>' . (int)$built['fail'] . ' fail</strong> ';
-echo '(from <code>' . htmlspecialchars(basename($built['json_path']), ENT_QUOTES, 'UTF-8') . '</code>)</p>';
+echo '(from <code>' . htmlspecialchars($jsonBasename, ENT_QUOTES, 'UTF-8') . '</code>)</p>';
 echo '<p style="font-size:0.9rem;color:#57606a;"><strong>Rebuild report</strong> regenerates markdown/XLSX from the existing JSON. ';
 echo '<strong>Re-Run Test</strong> starts a new QA run (same module/company scope) and overwrites the JSON.</p>';
 $mdRel = '../qa-reports/' . mbqa_report_markdown_basename();
-$xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
+$xlsxRel = ($xlsxBuilt['ok'] && $reportFiles !== null)
+    ? ('../qa-reports/' . $reportFiles['xlsx_basename'])
+    : '';
+$jsonBasename = basename($jsonPath);
 $actionLinks = [
     '<a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a>',
 ];
-if ($xlsxBuilt['ok']) {
+if ($xlsxBuilt['ok'] && $xlsxRel !== '') {
     $actionLinks[] = '<a href="' . htmlspecialchars($xlsxRel, ENT_QUOTES, 'UTF-8') . '">Download XLSX</a>';
 } elseif ($xlsxBuilt['error'] !== '') {
     $actionLinks[] = '<span style="color:#cf222e;font-size:0.85rem;">XLSX unavailable ('
