@@ -8,15 +8,6 @@
  */
 
 require '../../config/config.php';
-// Handle Excel/CSV database import requests from table-tools.js.
-if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    $itmImportRawBody = file_get_contents('php://input');
-    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
-    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
-        itm_handle_json_table_import($conn, 'audit_logs', (int)($company_id ?? 0));
-    }
-}
-
 
 /**
  * Audit Logs - Search and List
@@ -56,119 +47,6 @@ if (!empty($_SESSION['audit_logs_flash_error']) && is_array($_SESSION['audit_log
 $alertMessage = trim((string)($_GET['alert'] ?? ''));
 if ($alertMessage !== '') {
     $messages[] = $alertMessage;
-}
-
-/**
- * Why: Deletion operations remove row data from the source table, so we must
- * capture pre-delete state first if we want meaningful DELETE audit payloads.
- */
-function itm_audit_logs_collect_rows_by_ids($conn, $companyId, array $ids) {
-    $rows = [];
-    foreach ($ids as $id) {
-        $rowId = (int)$id;
-        if ($rowId <= 0) {
-            continue;
-        }
-        $rows[$rowId] = itm_fetch_audit_record($conn, 'audit_logs', $rowId, $companyId);
-    }
-
-    return $rows;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
-
-    $bulkAction = (string)($_POST['bulk_action'] ?? '');
-    if ($bulkAction === 'clear_table') {
-        $existingCount = 0;
-        $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_rows FROM audit_logs WHERE company_id = ?');
-        if ($countStmt) {
-            mysqli_stmt_bind_param($countStmt, 'i', $companyId);
-            mysqli_stmt_execute($countStmt);
-            $countResult = mysqli_stmt_get_result($countStmt);
-            if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-                $existingCount = (int)($countRow['total_rows'] ?? 0);
-            }
-            mysqli_stmt_close($countStmt);
-        }
-
-        $clearStmt = mysqli_prepare($conn, 'DELETE FROM audit_logs WHERE company_id = ?');
-        if ($clearStmt) {
-            mysqli_stmt_bind_param($clearStmt, 'i', $companyId);
-            if (mysqli_stmt_execute($clearStmt)) {
-                if ($existingCount > 0) {
-                    itm_log_audit(
-                        $conn,
-                        'audit_logs',
-                        0,
-                        'DELETE',
-                        [
-                            'operation' => 'clear_table',
-                            'deleted_count' => $existingCount,
-                            'company_id' => $companyId,
-                        ],
-                        null
-                    );
-                }
-                $messages[] = 'All audit logs for this company were cleared.';
-            } else {
-                $errors[] = 'Unable to clear audit logs.';
-            }
-            mysqli_stmt_close($clearStmt);
-        } else {
-            $errors[] = 'Unable to prepare clear-table operation.';
-        }
-    } elseif ($bulkAction === 'bulk_delete') {
-        $selectedIds = $_POST['ids'] ?? [];
-        if (!is_array($selectedIds) || $selectedIds === []) {
-            $errors[] = 'Select at least one row to delete.';
-        } else {
-            $selectedIds = array_values(array_filter(array_map('intval', $selectedIds), static fn($id) => $id > 0));
-            if ($selectedIds === []) {
-                $errors[] = 'Invalid row selection.';
-            } else {
-                $oldRowsById = itm_audit_logs_collect_rows_by_ids($conn, $companyId, $selectedIds);
-                $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
-                $deleteSql = 'DELETE FROM audit_logs WHERE company_id = ? AND id IN (' . $placeholders . ')';
-                $deleteStmt = mysqli_prepare($conn, $deleteSql);
-                if ($deleteStmt) {
-                    $bindTypes = 'i' . str_repeat('i', count($selectedIds));
-                    $bindValues = array_merge([$companyId], $selectedIds);
-                    mysqli_stmt_bind_param($deleteStmt, $bindTypes, ...$bindValues);
-                    if (mysqli_stmt_execute($deleteStmt)) {
-                        $deletedCount = mysqli_stmt_affected_rows($deleteStmt);
-                        if ($deletedCount > 0) {
-                            foreach ($selectedIds as $selectedId) {
-                                $selectedId = (int)$selectedId;
-                                if ($selectedId <= 0) {
-                                    continue;
-                                }
-                                if (!array_key_exists($selectedId, $oldRowsById) || !is_array($oldRowsById[$selectedId])) {
-                                    continue;
-                                }
-                                itm_log_audit($conn, 'audit_logs', $selectedId, 'DELETE', $oldRowsById[$selectedId], null);
-                            }
-                        }
-                        $messages[] = $deletedCount > 0
-                            ? ('Deleted ' . (int)$deletedCount . ' selected audit log row(s).')
-                            : 'No matching rows were deleted.';
-                    } else {
-                        $errors[] = 'Unable to delete selected rows.';
-                    }
-                    mysqli_stmt_close($deleteStmt);
-                } else {
-                    $errors[] = 'Unable to prepare bulk delete operation.';
-                }
-            }
-        }
-    }
-
-    // Why: POST-Redirect-GET keeps alert banners visible after bulk actions and
-    // avoids duplicate submissions when operators refresh the page.
-    $_SESSION['audit_logs_flash_success'] = $messages;
-    $_SESSION['audit_logs_flash_error'] = $errors;
-    header('Location: index.php');
-    exit;
 }
 
 /**
@@ -420,9 +298,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             <?php if ($showBulkActions): ?>
             <div class="card" style="margin-bottom:16px;">
-                <form id="bulk-delete-form" method="POST" action="index.php" style="display:flex;gap:8px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
@@ -465,7 +344,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             </div>
 
             <!-- LOG DATA TABLE -->
-            <div class="card audit-table-wrap">
+            <div class="card audit-table-wrap" data-itm-no-import-excel="1">
                 <table>
                     <thead>
                         <tr>
@@ -546,6 +425,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm btn-primary" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View audit log">🔎</a>
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this audit log row?');">
+                                            <input type="hidden" name="id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                                            <input type="hidden" name="bulk_action" value="single_delete">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete audit log">🗑️</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -553,18 +438,21 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <?php endif; ?>
                     </tbody>
                 </table>
-                <?php if ($totalPages > 1): ?>
-                    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
+            </div>
+            <?php if ($totalRows > $perPage): ?>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                    <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo (int)$totalRows; ?></div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page - 1]))); ?>">« Prev</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page - 1]))); ?>" title="◀️ Previous">Previous</a>
                         <?php endif; ?>
-                        <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                        <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page + 1]))); ?>">Next »</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
                         <?php endif; ?>
                     </div>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

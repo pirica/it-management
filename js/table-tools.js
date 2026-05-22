@@ -403,11 +403,15 @@
         window.alert('Unsupported file type. Please import CSV, XLS, or XLSX files.');
     }
 
-    function toolsForPage() {
+    function toolsForPage(table) {
+        const card = table ? table.closest('.card') : null;
+        const noImport = (table && table.dataset.itmNoImportExcel === '1')
+            || (card && card.dataset.itmNoImportExcel === '1');
+
         return {
             excel: true,
             pdf: true,
-            importExcel: true,
+            importExcel: !noImport,
         };
     }
 
