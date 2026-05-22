@@ -277,6 +277,112 @@ function mbqar_echo_xlsx_vendor_script(): void
 }
 
 /**
+ * Shared SheetJS export (runner footer fetches JSON; report page may embed payload).
+ */
+function mbqar_echo_xlsx_client_bootstrap(): void
+{
+    echo <<<'JS'
+<script>
+(function () {
+  function stepLabel(step) {
+    var labels = {
+      mysql: 'database.sql seed rows',
+      error_log: 'Error log',
+      list: 'List page',
+      clear: 'Tenant clear',
+      sample_data: 'Sample data',
+      add: 'Bulk random rows',
+      pagination: 'Pagination',
+      bulk_cancel: 'Bulk Cancel UI',
+      bulk_delete: 'Bulk delete',
+      search: 'Search',
+      sort: 'Sort links',
+      create: 'Create form',
+      view: 'View record',
+      edit: 'Edit form',
+      list_all: 'List all',
+      export_pdf: 'Export PDF',
+      export_xls: 'Export Excel (.xlsx)',
+      export_xlsx: 'Export Excel (.xlsx)',
+      import_db: 'Import Excel',
+      single_delete: 'Single delete',
+      clear_table: 'Clear table',
+      company_switch: 'Company switch'
+    };
+    return labels[step] || step;
+  }
+
+  function flattenResults(payload) {
+    var results = payload.results || payload;
+    if (!Array.isArray(results)) { results = []; }
+    var header = ['Module', 'Company ID', 'Company Name', 'Tier', 'Step', 'Step Label', 'Status', 'Notes'];
+    var steps = [header.slice()];
+    var failures = [header.slice()];
+    var pass = 0;
+    var fail = 0;
+    results.forEach(function (row) {
+      if (!row || !row.steps) { return; }
+      row.steps.forEach(function (st) {
+        var line = [
+          row.module || '',
+          row.company_id || 0,
+          row.company_name || '',
+          row.tier || '',
+          st.step || '',
+          stepLabel(st.step || ''),
+          st.status || '',
+          st.notes || ''
+        ];
+        steps.push(line);
+        if (st.status === 'Pass') { pass++; }
+        else if (st.status === 'Fail') { fail++; failures.push(line); }
+      });
+    });
+    if (failures.length === 1) {
+      failures.push(['', '', '', '', '', '', '', 'No failures recorded.']);
+    }
+    var summary = [
+      ['Metric', 'Value'],
+      ['Generated at', payload.generated_at || ''],
+      ['Steps pass', pass],
+      ['Steps fail', fail],
+      ['Module result rows', results.length]
+    ];
+    return { summary: summary, steps: steps, failures: failures };
+  }
+
+  function writeWorkbook(payload) {
+    if (!window.XLSX || !window.XLSX.utils) {
+      window.alert('XLSX library did not load. Refresh the page and try again.');
+      return;
+    }
+    var data = flattenResults(payload);
+    var wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(data.summary), 'Summary');
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(data.steps), 'All steps');
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(data.failures), 'Failures');
+    window.XLSX.writeFile(wb, 'module-browser-qa.xlsx');
+  }
+
+  window.mbqaExportResultsFromPayload = writeWorkbook;
+
+  window.mbqaExportResultsFromJsonUrl = function (jsonUrl) {
+    fetch(jsonUrl, { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('HTTP ' + res.status); }
+        return res.json();
+      })
+      .then(writeWorkbook)
+      .catch(function () {
+        window.alert('Could not load QA JSON for export.');
+      });
+  };
+})();
+</script>
+JS;
+}
+
+/**
  * Download link for qa-reports/module-browser-qa.xlsx on runner/report pages.
  */
 function mbqar_render_xlsx_download_link(string $xlsxRelPath, bool $xlsxOk, string $xlsxError = ''): void
