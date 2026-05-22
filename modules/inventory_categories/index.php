@@ -442,8 +442,6 @@ if ($crud_action === 'delete') {
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
 
     if ($bulkAction === 'clear_table') {
         $where = '';
