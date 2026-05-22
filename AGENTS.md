@@ -163,6 +163,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
 | `scripts/lib/utf8_file.php` | UTF-8 writes for `qa-reports/*.md` and `.json` (optional BOM for Windows viewers) |
 | `scripts/lib/mbqa_report_paths.php` | Fixed `qa-reports/module-browser-qa.json` / `module-browser-qa.md` paths (runner overwrites JSON each run) |
+| `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON; browser **Export results as XLSX** uses SheetJS |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
 | `scripts/lib/equipment_type_modules.php` | Canonical `modules/is_*` allowlist (`is_switch`, `is_server`, …); safe removal of regression-test scaffold dirs only (`*_itm_eqdct_*`, `*_itm_edct_*`) |
 
@@ -232,7 +233,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 
 **Bare `?run=1` (with or without `stream=1`, without `ajax=1`):** the runner shows an HTML resume page (not a run): `run=1` alone does not poll progress; `stream=1` is legacy NDJSON (often buffered on Laragon). Use the form so the URL includes `ajax=1` and `run_id`.
 
-**Markdown report (`module_browser_qa_build_report.php`):** reads `qa-reports/module-browser-qa.json` and writes `qa-reports/module-browser-qa.md` (both overwritten on each build). After `php scripts/module_browser_qa_build_report.php`, the `.md` includes:
+**Markdown report (`module_browser_qa_build_report.php`):** reads `qa-reports/module-browser-qa.json` and writes `qa-reports/module-browser-qa.md` and **`module-browser-qa.xlsx`** (overwritten on each build). Browser **Report built** page links **Download XLSX** and **Export results as XLSX** (client-side SheetJS). After `php scripts/module_browser_qa_build_report.php`, the `.md` includes:
 
 1. **Summary** — pass/fail counts  
 2. **Skipped steps** — table of `module_step_exceptions` (module, step slug, plain-language label, reason)  
@@ -304,7 +305,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 * **Tier C** — `is_*` façades (including `is_switch`): routing smoke on `list` / `search` / `sort`; other steps **N/A routing** in `mbqa_runner_module_step_exceptions()`.
 * **Tier D** — bespoke (`budget_report`, `floor_plans`, `rack_planner`, …): navigation smoke only.
 
-**Cursor browser:** Use IDE browser for the **Expenses pilot** (all five companies) and spot-checks; use the CLI runner for full ~101×5 coverage. Latest results: **`qa-reports/module-browser-qa.json`** and **`module-browser-qa.md`** (commit when publishing QA results).
+**Cursor browser:** Use IDE browser for the **Expenses pilot** (all five companies) and spot-checks; use the CLI runner for full ~101×5 coverage. Latest results: **`qa-reports/module-browser-qa.json`**, **`module-browser-qa.md`**, and **`module-browser-qa.xlsx`** (commit when publishing QA results).
 
 **Caveats:** Run lookup parents before children (see `$lookupWave` in the runner). Sort-step failures often mean the visible default column is not `id`; confirm via column header links. Modules without `data-itm-db-import-endpoint` report `import_db` as N/A.
 
