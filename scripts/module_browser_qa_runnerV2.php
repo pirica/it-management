@@ -86,7 +86,7 @@ function mbqa_parse_run_options(): array
         'ajax' => false,
         'autostart' => false,
         'run_id' => '',
-        'base_url' => 'http://localhost/it-management/',
+        'base_url' => mbqa_is_cli_sapi() ? 'http://localhost/it-management/' : mbqa_detect_browser_base_url(),
         'module' => null,
         'company' => null,
     ];
@@ -164,6 +164,37 @@ function mbqa_parse_run_options(): array
 function mbqa_is_cli_sapi(): bool
 {
     return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+}
+
+/**
+ * Why: UI click smoke runs in the browser and must fetch the app on the same origin as the runner page;
+ * defaulting to localhost breaks when the user opens 127.0.0.1 or a remote host.
+ */
+function mbqa_detect_browser_base_url(): string
+{
+    if (mbqa_is_cli_sapi()) {
+        return 'http://localhost/it-management/';
+    }
+
+    $https = !empty($_SERVER['HTTPS']) && (string)$_SERVER['HTTPS'] !== 'off';
+    $scheme = $https ? 'https' : 'http';
+    $host = trim((string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    if ($host === '') {
+        $host = 'localhost';
+    }
+
+    $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    $scriptsPos = strrpos($scriptName, '/scripts/');
+    if ($scriptsPos === false) {
+        return rtrim($scheme . '://' . $host, '/') . '/';
+    }
+
+    $appPath = substr($scriptName, 0, $scriptsPos);
+    if ($appPath === '') {
+        $appPath = '/';
+    }
+
+    return rtrim($scheme . '://' . $host . rtrim($appPath, '/'), '/') . '/';
 }
 
 function mbqa_sanitize_run_id(string $raw): string
@@ -652,7 +683,7 @@ function mbqa_render_browser_help(): void
     echo '<h2>Form fields</h2>';
     echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:0.95rem;">';
     echo '<thead><tr><th>Field</th><th>What it does</th></tr></thead><tbody>';
-    echo '<tr><td>Base URL</td><td>App root (default <code>http://localhost/it-management/</code>)</td></tr>';
+    echo '<tr><td>Base URL</td><td>App root (auto-detected from this runner page when left at default). UI click smoke requires the same origin as the page you opened (e.g. do not mix <code>localhost</code> and <code>127.0.0.1</code>).</td></tr>';
     echo '<tr><td>Module</td><td><code>ALL</code> = every module with <code>index.php</code>; or pick one slug (e.g. <code>expenses</code>)</td></tr>';
     echo '<tr><td>Or module slug (manual)</td><td>Overrides the dropdown when filled (any folder name under <code>modules/</code>)</td></tr>';
     echo '<tr><td>Company</td><td><code>1</code>–<code>5</code> or <code>ALL</code> (all seeded tenants)</td></tr>';
@@ -901,8 +932,37 @@ function mbqa_render_browser_form(array $options): void
 
   function baseUrlValue() {
     var input = form.querySelector('[name="base_url"]');
-    return input && input.value ? input.value : 'http://localhost/it-management/';
+    return input && input.value ? input.value : window.location.origin + '/';
   }
+
+  function runnerAppRootFromLocation() {
+    var loc = window.location;
+    var path = loc.pathname.replace(/\\/g, '/');
+    var scriptsIdx = path.lastIndexOf('/scripts/');
+    if (scriptsIdx === -1) {
+      return new URL('./../', loc.href);
+    }
+    return new URL(path.slice(0, scriptsIdx + 1), loc.origin);
+  }
+
+  function syncBaseUrlToRunnerOrigin() {
+    var input = form.querySelector('[name="base_url"]');
+    if (!input || !input.value) {
+      return;
+    }
+    try {
+      var configured = new URL(input.value, window.location.href);
+      if (configured.origin === window.location.origin) {
+        return;
+      }
+      var derived = runnerAppRootFromLocation();
+      input.value = derived.toString();
+    } catch (err) {
+      /* keep user value */
+    }
+  }
+
+  syncBaseUrlToRunnerOrigin();
 
   function makeClickStep(step, ok, notes, evidence) {
     return {
@@ -942,11 +1002,22 @@ function mbqa_render_browser_form(array $options): void
   }
 
   function ensureSameOriginAppRoot() {
-    var appRoot = new URL(baseUrlValue(), window.location.href);
-    if (appRoot.origin !== window.location.origin) {
-      throw new Error('UI click smoke requires Base URL on the same origin as this runner page.');
+    var configured = new URL(baseUrlValue(), window.location.href);
+    if (configured.origin === window.location.origin) {
+      return configured;
     }
-    return appRoot;
+    var derived = runnerAppRootFromLocation();
+    if (derived.origin === window.location.origin) {
+      var input = form.querySelector('[name="base_url"]');
+      if (input) {
+        input.value = derived.toString();
+      }
+      return derived;
+    }
+    throw new Error(
+      'UI click smoke requires Base URL on the same origin as this runner page '
+      + '(open the runner and set Base URL to ' + derived.origin + ', not ' + configured.origin + ').'
+    );
   }
 
   function loginAndSwitchCompany(appRoot, companyId) {
