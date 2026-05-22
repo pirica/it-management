@@ -757,7 +757,9 @@ function mbqa_render_browser_form(array $options): void
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runnerV2.php?help=1">CLI options / help</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
     mbqar_echo_xlsx_vendor_script();
-    mbqar_echo_xlsx_client_bootstrap();
+    if (function_exists('mbqar_echo_xlsx_client_bootstrap')) {
+        mbqar_echo_xlsx_client_bootstrap();
+    }
     echo '<script>';
     echo <<<'MBQA_JS'
 (function () {
