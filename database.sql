@@ -2205,7 +2205,7 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'approvals_stage' AS entry_id, 'budgeting' AS section_id, 8 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'expenses' AS entry_id, 'budgeting' AS section_id, 9 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'budget_report' AS entry_id, 'budgeting' AS section_id, 10 AS display_order
-      UNION ALL SELECT 'item' AS entry_type, 'inventory' AS entry_id, 'admin' AS section_id, 0 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'inventory_items' AS entry_id, 'admin' AS section_id, 0 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'users' AS entry_id, 'admin' AS section_id, 1 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'companies' AS entry_id, 'admin' AS section_id, 2 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'it_locations' AS entry_id, 'reference_data' AS section_id, 0 AS display_order
@@ -2246,8 +2246,7 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'idf_ports' AS entry_id, 'reference_data' AS section_id, 35 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'idf_positions' AS entry_id, 'reference_data' AS section_id, 36 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'inventory_categories' AS entry_id, 'reference_data' AS section_id, 37 AS display_order
-      UNION ALL SELECT 'item' AS entry_type, 'inventory_items' AS entry_id, 'reference_data' AS section_id, 38 AS display_order
-      UNION ALL SELECT 'item' AS entry_type, 'patches_updates' AS entry_id, 'reference_data' AS section_id, 39 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'patches_updates' AS entry_id, 'reference_data' AS section_id, 38 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'patches_updates_level' AS entry_id, 'reference_data' AS section_id, 40 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'patches_updates_status' AS entry_id, 'reference_data' AS section_id, 41 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'printer_device_types' AS entry_id, 'reference_data' AS section_id, 42 AS display_order
