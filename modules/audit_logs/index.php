@@ -127,6 +127,66 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
     $types .= 's';
 }
 
+$listQueryBase = [
+    'search' => $search,
+    'action_filter' => $action,
+    'date_from' => $dateFrom,
+    'date_to' => $dateTo,
+    'sort' => $sort,
+    'dir' => $dir,
+];
+
+$recordsPerPageOptions = [
+    '25' => '25',
+    '50' => '50',
+    '100' => '100',
+    'all' => 'ALL',
+];
+$currentRecordsPerPage = strtolower((string)($ui_config['records_per_page'] ?? '25'));
+if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
+    $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_save_records_per_page'] ?? '') === '1') {
+    itm_require_post_csrf();
+
+    $postedSearch = trim((string)($_POST['search'] ?? ''));
+    $postedAction = strtoupper(trim((string)($_POST['action_filter'] ?? '')));
+    $postedDateFrom = trim((string)($_POST['date_from'] ?? ''));
+    $postedDateTo = trim((string)($_POST['date_to'] ?? ''));
+    $postedSort = (string)($_POST['sort'] ?? 'changed_at');
+    $postedDir = strtoupper((string)($_POST['dir'] ?? 'DESC'));
+    if (!isset($sortableColumns[$postedSort])) {
+        $postedSort = 'changed_at';
+    }
+    if (!in_array($postedDir, ['ASC', 'DESC'], true)) {
+        $postedDir = 'DESC';
+    }
+    if (!in_array($postedAction, $allowedActions, true)) {
+        $postedAction = '';
+    }
+
+    $configToSave = is_array($ui_config) ? $ui_config : itm_get_ui_configuration($conn, $companyId);
+    $configToSave['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
+    $settingsUserId = (int)($_SESSION['user_id'] ?? 0);
+
+    if ($settingsUserId <= 0 || !itm_save_ui_configuration($conn, $companyId, $configToSave, $settingsUserId)) {
+        $_SESSION['audit_logs_flash_error'] = ['Unable to save rows on screen setting.'];
+    }
+
+    $redirectQuery = itm_audit_logs_build_query([
+        'search' => $postedSearch,
+        'action_filter' => $postedAction,
+        'date_from' => $postedDateFrom,
+        'date_to' => $postedDateTo,
+        'sort' => $postedSort,
+        'dir' => $postedDir,
+        'page' => 1,
+    ]);
+    header('Location: index.php' . ($redirectQuery !== '' ? '?' . $redirectQuery : ''));
+    exit;
+}
+
 // Resolve pagination limit
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -153,15 +213,6 @@ if ($page > $totalPages) {
     $page = $totalPages;
     $offset = ($page - 1) * $perPage;
 }
-
-$listQueryBase = [
-    'search' => $search,
-    'action_filter' => $action,
-    'date_from' => $dateFrom,
-    'date_to' => $dateTo,
-    'sort' => $sort,
-    'dir' => $dir,
-];
 
 // Final query construction. 
 // Uses JOINs to resolve user details and Prepared Statements for security.
@@ -259,6 +310,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         .audit-kpi { border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--input-bg); }
         .audit-kpi .label { font-size:12px; opacity:.8; margin-bottom:4px; }
         .audit-kpi .value { font-size:18px; font-weight:700; }
+        .audit-kpi select { width:100%; margin-top:4px; }
         .audit-table-wrap { overflow-x:auto; }
         .audit-row-chip { display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; }
         .audit-row-chip.insert { background:#e8f8ee; border-color:#9cd8b1; color:#18794e; }
@@ -337,7 +389,28 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             </div>
 
             <div class="audit-kpis">
-                <div class="audit-kpi"><div class="label">Rows on Screen</div><div class="value"><?php echo (int)count($rows); ?></div></div>
+                <div class="audit-kpi">
+                    <form id="audit-logs-records-per-page-form" method="POST" action="index.php" style="margin:0;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="audit_logs_save_records_per_page" value="1">
+                        <input type="hidden" name="search" value="<?php echo sanitize($search); ?>">
+                        <input type="hidden" name="action_filter" value="<?php echo sanitize($action); ?>">
+                        <input type="hidden" name="date_from" value="<?php echo sanitize($dateFrom); ?>">
+                        <input type="hidden" name="date_to" value="<?php echo sanitize($dateTo); ?>">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <label class="label" for="records_per_page">Rows on Screen</label>
+                        <select id="records_per_page" name="records_per_page">
+                            <?php foreach ($recordsPerPageOptions as $value => $label): ?>
+                                <?php $optionValue = strtolower((string)$value); ?>
+                                <option value="<?php echo sanitize($optionValue); ?>" <?php echo $currentRecordsPerPage === $optionValue ? 'selected' : ''; ?>>
+                                    <?php echo sanitize($label); ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="__add_new__">➕</option>
+                        </select>
+                    </form>
+                </div>
                 <div class="audit-kpi"><div class="label">Insert Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'INSERT'))); ?></div></div>
                 <div class="audit-kpi"><div class="label">Update Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'UPDATE'))); ?></div></div>
                 <div class="audit-kpi"><div class="label">Delete Events</div><div class="value"><?php echo (int)count(array_filter($rows, static fn($r) => (($r['action'] ?? '') === 'DELETE'))); ?></div></div>
@@ -456,5 +529,89 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         </div>
     </div>
 </div>
+<script>
+(function () {
+    const form = document.getElementById('audit-logs-records-per-page-form');
+    const recordsPerPageSelect = document.getElementById('records_per_page');
+    if (!form || !recordsPerPageSelect) {
+        return;
+    }
+
+    const addOptionValue = '__add_new__';
+
+    function isValidRecordsPerPageInput(raw) {
+        const normalized = String(raw || '').trim().toLowerCase();
+        if (normalized === 'all') {
+            return 'all';
+        }
+        if (!/^\d+$/.test(normalized)) {
+            return '';
+        }
+
+        const numeric = parseInt(normalized, 10);
+        if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 1000000) {
+            return '';
+        }
+
+        return String(numeric);
+    }
+
+    function ensureRecordsPerPageOption(value) {
+        if (!value || value === addOptionValue) {
+            return;
+        }
+
+        const exists = Array.from(recordsPerPageSelect.options).find((option) => option.value === value);
+        if (exists) {
+            return;
+        }
+
+        const customOption = document.createElement('option');
+        customOption.value = value;
+        customOption.textContent = value === 'all' ? 'ALL' : value;
+
+        const addOption = Array.from(recordsPerPageSelect.options).find((option) => option.value === addOptionValue);
+        if (addOption) {
+            recordsPerPageSelect.insertBefore(customOption, addOption);
+        } else {
+            recordsPerPageSelect.appendChild(customOption);
+        }
+    }
+
+    recordsPerPageSelect.dataset.previousValue = recordsPerPageSelect.value;
+
+    recordsPerPageSelect.addEventListener('focus', () => {
+        if (recordsPerPageSelect.value !== addOptionValue) {
+            recordsPerPageSelect.dataset.previousValue = recordsPerPageSelect.value;
+        }
+    });
+
+    recordsPerPageSelect.addEventListener('change', () => {
+        if (recordsPerPageSelect.value === addOptionValue) {
+            const input = window.prompt('Enter records per page (positive number) or "all":', recordsPerPageSelect.dataset.previousValue || '25');
+            if (input === null) {
+                recordsPerPageSelect.value = recordsPerPageSelect.dataset.previousValue || '25';
+                return;
+            }
+
+            const normalized = isValidRecordsPerPageInput(input);
+            if (!normalized) {
+                window.alert('Please enter a positive number (e.g., 25) or "all".');
+                recordsPerPageSelect.value = recordsPerPageSelect.dataset.previousValue || '25';
+                return;
+            }
+
+            ensureRecordsPerPageOption(normalized);
+            recordsPerPageSelect.value = normalized;
+            recordsPerPageSelect.dataset.previousValue = normalized;
+            form.submit();
+            return;
+        }
+
+        recordsPerPageSelect.dataset.previousValue = recordsPerPageSelect.value;
+        form.submit();
+    });
+})();
+</script>
 </body>
 </html>
