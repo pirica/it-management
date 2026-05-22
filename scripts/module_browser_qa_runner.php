@@ -677,7 +677,6 @@ function mbqa_render_browser_form(array $options): void
       '<p><strong>' + esc(title) + '</strong> \u2014 ' + esc(String(pass)) + ' pass, ' + esc(String(fail)) + ' fail</p>' +
       '<p><a href="' + esc(done.json_href || '#') + '">Download JSON</a> \u00b7 ' +
       xlsxLink +
-      '<button type="button" id="mbqa-export-xlsx-btn" style="padding:4px 10px;font-size:inherit;cursor:pointer;">Export results as XLSX</button> \u00b7 ' +
       '<a href="' + esc(done.report_href || '#') + '">Build markdown report</a> \u00b7 ' +
       '<a href="#" id="mbqa-rerun-link">Re-Run Test</a> \u00b7 ' +
       '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';

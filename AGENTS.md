@@ -163,7 +163,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
 | `scripts/lib/utf8_file.php` | UTF-8 writes for `qa-reports/*.md` and `.json` (optional BOM for Windows viewers) |
 | `scripts/lib/mbqa_report_paths.php` | Fixed `qa-reports/module-browser-qa.json` / `module-browser-qa.md` paths (runner overwrites JSON each run) |
-| `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON; browser **Export results as XLSX** uses SheetJS |
+| `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
 | `scripts/lib/equipment_type_modules.php` | Canonical `modules/is_*` allowlist (`is_switch`, `is_server`, …); safe removal of regression-test scaffold dirs only (`*_itm_eqdct_*`, `*_itm_edct_*`) |
 
@@ -203,7 +203,7 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa.json` and **`module-browser-qa.xlsx`** (overwritten each run). Browser footer: **Download JSON**, **Download XLSX**, **Export results as XLSX**. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa.json` and **`module-browser-qa.xlsx`** (overwritten each run). Browser footer: **Download JSON**, **Download XLSX**. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Skip** quick indexes, preview in browser. |
 
 **Commands (repository root, Laragon):**
@@ -233,7 +233,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 
 **Bare `?run=1` (with or without `stream=1`, without `ajax=1`):** the runner shows an HTML resume page (not a run): `run=1` alone does not poll progress; `stream=1` is legacy NDJSON (often buffered on Laragon). Use the form so the URL includes `ajax=1` and `run_id`.
 
-**Markdown report (`module_browser_qa_build_report.php`):** reads `qa-reports/module-browser-qa.json` and writes `qa-reports/module-browser-qa.md` and **`module-browser-qa.xlsx`** (overwritten on each build). Browser **Report built** page links **Download XLSX** and **Export results as XLSX** (client-side SheetJS). After `php scripts/module_browser_qa_build_report.php`, the `.md` includes:
+**Markdown report (`module_browser_qa_build_report.php`):** reads `qa-reports/module-browser-qa.json` and writes `qa-reports/module-browser-qa.md` and **`module-browser-qa.xlsx`** (overwritten on each build). Browser **Report built** page links **Download XLSX**. After `php scripts/module_browser_qa_build_report.php`, the `.md` includes:
 
 1. **Summary** — pass/fail counts  
 2. **Skipped steps** — table of `module_step_exceptions` (module, step slug, plain-language label, reason)  
