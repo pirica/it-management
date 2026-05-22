@@ -163,7 +163,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 #### 3. CLI scripts
 
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** — see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**.
-* **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; list the full-path command in PR test plans.
+* **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **Setup & Debugging → PHP CLI tests**).
 * **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
@@ -218,17 +218,19 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 | `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes `qa-reports/module-browser-qa.json` and **`module-browser-qa.xlsx`** (overwritten each run). Browser footer: **Download JSON**, **Download XLSX**. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from the JSON: summary, **Results by module** (every step Pass/Fail), failure categories, **Failures only** and **Skip** quick indexes, preview in browser. |
 
-**Commands (repository root, Laragon):**
+**Commands (repository root, Laragon — PowerShell):**
 
-```cmd
-cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_build_report.php
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --pilot-only
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=expenses --company=4
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=departments --company=1
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1
+```powershell
+cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_build_report.php
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --pilot-only
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=expenses --company=4
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=departments --company=1
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1
 ```
+
+**cmd.exe** (no `&`): use backslashes — `"C:\...\php.exe" scripts\module_browser_qa_runner.php [options]`.
 
 Linux/macOS/CI (when `php` is on PATH): `php scripts/module_browser_qa_runner.php [options]`.
 
@@ -482,7 +484,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
 * **Testing/reporting guardrail (mandatory):**
   * Do not claim “No tests run” when checks were executed.
-  * **Windows Laragon:** run and document PHP tests with the **full PHP binary path** (see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**); PR test plans must show the exact command, not bare `php scripts/...`.
+  * **Windows Laragon:** run and document PHP tests with the **full PHP binary path** and correct shell syntax — **PowerShell:** `& "C:\...\php.exe" scripts/...`; **cmd:** `"C:\...\php.exe" scripts\...` (see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**).
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php` (use full PHP path on Windows Laragon).
   * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
   * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** under `scripts/`).
@@ -574,13 +576,22 @@ On **Windows Laragon** (Nelson's environment), **always** use the **full absolut
 
 | Rule | Detail |
 |------|--------|
-| **Run commands** | From repo root: `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/<script>.php [options]` |
-| **PR test plans / agent replies** | List the **exact full-path command** executed (not shortened `php scripts/...`) |
-| **Verification example** | `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1` |
+| **Shell** | Nelson's default terminal is **PowerShell** — a quoted path alone is a string, not a command. Prefix with the call operator **`&`**. Use **cmd** syntax only inside `cmd /c` or a `.cmd` session. |
+| **Run commands (PowerShell)** | From repo root: `& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/<script>.php [options]` |
+| **Run commands (cmd.exe)** | `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\<script>.php [options]` |
+| **PR test plans / agent replies** | List the **exact full-path command** executed for the shell used (PowerShell with `&`, or cmd) — not shortened `php scripts/...` |
+| **Verification example (PowerShell)** | `& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1` |
+
+**PowerShell error:** `Unexpected token 'scripts/module_browser_qa_runner.php'` means the line is missing **`&`** before the quoted `php.exe` path.
 
 On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/...` remains acceptable.
 
-  * **CLI example (repo root):**
+  * **CLI example (repo root — PowerShell):**
+    ```powershell
+    cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
+    & "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1
+    ```
+  * **CLI example (repo root — cmd.exe):**
     ```cmd
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
     "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\module_browser_qa_runner.php
