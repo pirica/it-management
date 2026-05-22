@@ -28,6 +28,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_import_helpers.php';
 require_once __DIR__ . '/lib/mbqa_report_paths.php';
+require_once __DIR__ . '/lib/mbqa_report_xlsx.php';
 require_once __DIR__ . '/lib/equipment_type_modules.php';
 
 /**
@@ -471,7 +472,7 @@ function mbqa_render_browser_help(): void
     echo '<li>Choose <strong>Company</strong> (default <code>1</code> = TechCorp Global; empty = all five companies).</li>';
     echo '<li>Click <strong>Run QA</strong> (not a bare run URL).</li>';
     echo '<li>Click <strong>Stop</strong> if the run is taking too long — the runner stops between companies/modules.</li>';
-    echo '<li>When finished, use <strong>Download JSON</strong> or <a href="module_browser_qa_build_report.php">Build markdown report</a>.</li>';
+    echo '<li>When finished, use <strong>Download JSON</strong>, <strong>Download XLSX</strong>, or <a href="module_browser_qa_build_report.php">Build markdown report</a>.</li>';
     echo '</ol>';
 
     echo '<h2>Form fields</h2>';
@@ -527,7 +528,7 @@ function mbqa_print_help(): void
     mbqa_out("  --company=N      Company id 1–5 only; omit or --company=all for all five tenants\n");
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
     mbqa_out("  --help           Show this help\n\n");
-    mbqa_out("Output: qa-reports/module-browser-qa.json (overwritten each run)\n\n");
+    mbqa_out("Output: qa-reports/module-browser-qa.json and module-browser-qa.xlsx (overwritten each run)\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
     mbqa_out("  add         Insert ~30 random tenant rows if count < records_per_page + 1\n");
     mbqa_out("  pagination  After add: page=1 Next (HTML page=2) then page=2 Previous (HTML page=1); sort=id\n");
@@ -586,7 +587,7 @@ function mbqa_render_browser_form(array $options): void
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA runner</h1>';
     echo '<p>Runs the full-module HTTP checklist (login, company switch, clear/seed/CRUD, export/import, delete). ';
-    echo 'Writes <code>qa-reports/module-browser-qa.json</code> (overwritten each run). Long runs may take several minutes.</p>';
+    echo 'Writes <code>qa-reports/module-browser-qa.json</code> and <code>module-browser-qa.xlsx</code> (overwritten each run). Long runs may take several minutes.</p>';
     echo '<div id="mbqa-live-status" aria-live="polite" style="margin:12px 0;padding:10px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;min-height:1.2em;font-size:0.95rem;display:none;"></div>';
     echo '<div id="mbqa-run-footer" hidden style="margin:12px 0;padding:10px 0;font-size:0.95rem;"></div>';
     echo '<form id="mbqa-run-form" method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
@@ -619,6 +620,8 @@ function mbqa_render_browser_form(array $options): void
     echo '</form>';
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php?help=1">CLI options / help</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
+    mbqar_echo_xlsx_vendor_script();
+    mbqar_echo_xlsx_client_bootstrap();
     echo '<script>';
     echo <<<'MBQA_JS'
 (function () {
@@ -667,9 +670,14 @@ function mbqa_render_browser_form(array $options): void
     }
     var pass = done.pass !== undefined ? done.pass : 0;
     var fail = done.fail !== undefined ? done.fail : 0;
+    var xlsxLink = done.xlsx_href
+      ? ('<a href="' + esc(done.xlsx_href) + '">Download XLSX</a> \u00b7 ')
+      : '';
     footerEl.innerHTML =
       '<p><strong>' + esc(title) + '</strong> \u2014 ' + esc(String(pass)) + ' pass, ' + esc(String(fail)) + ' fail</p>' +
       '<p><a href="' + esc(done.json_href || '#') + '">Download JSON</a> \u00b7 ' +
+      xlsxLink +
+      '<button type="button" id="mbqa-export-xlsx-btn" style="padding:4px 10px;font-size:inherit;cursor:pointer;">Export results as XLSX</button> \u00b7 ' +
       '<a href="' + esc(done.report_href || '#') + '">Build markdown report</a> \u00b7 ' +
       '<a href="#" id="mbqa-rerun-link">Re-Run Test</a> \u00b7 ' +
       '<a href="module_browser_qa_runner.php">Run QA runner</a></p>';
@@ -679,6 +687,12 @@ function mbqa_render_browser_form(array $options): void
       rerun.addEventListener('click', function (e) {
         e.preventDefault();
         startRun();
+      });
+    }
+    var xlsxBtn = document.getElementById('mbqa-export-xlsx-btn');
+    if (xlsxBtn && window.mbqaExportResultsFromJsonUrl && done.json_href) {
+      xlsxBtn.addEventListener('click', function () {
+        window.mbqaExportResultsFromJsonUrl(done.json_href);
       });
     }
   }
@@ -723,6 +737,7 @@ function mbqa_render_browser_form(array $options): void
           fail: ev.fail !== undefined ? ev.fail : 0,
           exit_code: ev.exit_code !== undefined ? ev.exit_code : 130,
           json_href: ev.json_href,
+          xlsx_href: ev.xlsx_href,
           report_href: ev.report_href,
           rerun_href: ev.rerun_href
         });
@@ -4611,13 +4626,27 @@ foreach ($results as $row) {
     }
 }
 
+$xlsxBuilt = mbqar_build_runner_xlsx(
+    $root,
+    $results,
+    (int)$summary['pass'],
+    (int)$summary['fail'],
+    (string)$reportPayload['generated_at']
+);
+
 $exitCode = $summary['fail'] > 0 ? 1 : 0;
 if (mbqa_is_cli_sapi()) {
     mbqa_out("Wrote {$jsonPath}\n");
+    if ($xlsxBuilt['ok']) {
+        mbqa_out("Wrote {$xlsxBuilt['path']}\n");
+    } else {
+        mbqa_err("XLSX: {$xlsxBuilt['error']}\n");
+    }
     mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
 }
 
 $jsonRel = '../qa-reports/' . mbqa_report_json_basename();
+$xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
 $reportHref = 'module_browser_qa_build_report.php?run=1';
 $rerunParams = ['run' => '1', 'ajax' => '1'];
 if ($filterModule !== null && trim((string)$filterModule) !== '') {
@@ -4648,6 +4677,7 @@ if (mbqa_browser_ajax_active()) {
         'fail' => (int)$summary['fail'],
         'exit_code' => $runStopped ? 130 : $exitCode,
         'json_href' => $jsonRel,
+        'xlsx_href' => $xlsxBuilt['ok'] ? $xlsxRel : '',
         'report_href' => $reportHref,
         'rerun_href' => $rerunHref,
         'message' => $runStopped ? 'Run stopped by user' : '',
@@ -4666,6 +4696,7 @@ if (mbqa_browser_stream_active()) {
         'fail' => (int)$summary['fail'],
         'exit_code' => $exitCode,
         'json_href' => $jsonRel,
+        'xlsx_href' => $xlsxBuilt['ok'] ? $xlsxRel : '',
         'report_href' => $reportHref,
         'rerun_href' => $rerunHref,
     ]);
