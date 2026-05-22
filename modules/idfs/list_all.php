@@ -36,8 +36,8 @@ if ($company_id > 0) {
         $conn,
         "SELECT i.id, i.name, i.idf_code, i.active, l.name AS location_name, r.name AS rack_name
          FROM idfs i
-         LEFT JOIN it_locations l ON l.id = i.location_id
-         LEFT JOIN racks r ON r.id = i.rack_id
+         LEFT JOIN it_locations l ON l.id = i.location_id AND l.company_id = i.company_id
+         LEFT JOIN racks r ON r.id = i.rack_id AND r.company_id = i.company_id
          WHERE i.company_id = ?
          ORDER BY {$orderSql}
          LIMIT 200"

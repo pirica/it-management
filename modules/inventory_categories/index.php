@@ -533,10 +533,14 @@ if ($crud_action === 'delete') {
     }
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id > 0 && $hasCompany && $company_id > 0) {
-        $deleteResult = cr_delete_inventory_categories_scoped($conn, $crud_table, (int)$company_id, [$id], false);
-        if (!$deleteResult['ok']) {
-            $_SESSION['crud_error'] = $deleteResult['error'];
+    if ($id > 0) {
+        if ($hasCompany && $company_id > 0) {
+            $deleteResult = cr_delete_inventory_categories_scoped($conn, $crud_table, (int)$company_id, [$id], false);
+            if (!$deleteResult['ok']) {
+                $_SESSION['crud_error'] = $deleteResult['error'];
+            }
+        } else {
+            $_SESSION['crud_error'] = 'Delete requires an active company.';
         }
     }
     header('Location: ' . $listUrl);
