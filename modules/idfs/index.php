@@ -158,48 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_idf'])) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_idf'])) {
-    itm_require_post_csrf();
-
-    $idf_id = (int)($_POST['idf_id'] ?? 0);
-    if ($idf_id <= 0 || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Invalid IDF selected for deletion.';
-        header('Location: index.php');
-        exit;
-    }
-
-    $checkStmt = mysqli_prepare($conn, "SELECT id FROM idfs WHERE id=? AND company_id=? LIMIT 1");
-    if ($checkStmt) {
-        mysqli_stmt_bind_param($checkStmt, 'ii', $idf_id, $company_id);
-        mysqli_stmt_execute($checkStmt);
-        $checkRes = mysqli_stmt_get_result($checkStmt);
-        $found = $checkRes && mysqli_fetch_assoc($checkRes);
-        mysqli_stmt_close($checkStmt);
-
-        if (!$found) {
-            $_SESSION['crud_error'] = 'IDF not found.';
-            header('Location: index.php');
-            exit;
-        }
-    }
-
-    $deleteStmt = mysqli_prepare($conn, "DELETE FROM idfs WHERE id=? AND company_id=? LIMIT 1");
-    if ($deleteStmt) {
-        mysqli_stmt_bind_param($deleteStmt, 'ii', $idf_id, $company_id);
-        if (!mysqli_stmt_execute($deleteStmt)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($deleteStmt), mysqli_stmt_error($deleteStmt));
-            mysqli_stmt_close($deleteStmt);
-            header('Location: index.php');
-            exit;
-        }
-        mysqli_stmt_close($deleteStmt);
-    }
-
-    $_SESSION['crud_success'] = 'IDF deleted successfully.';
-    header('Location: index.php');
-    exit;
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     itm_require_post_csrf();
 
@@ -362,26 +320,38 @@ if ($company_id > 0) {
     }
 }
 
+$ui_config = itm_get_ui_configuration($conn, $company_id);
+
 $idfSortMap = [
     'id' => 'i.id',
     'name' => 'i.name',
+    'idf_code' => 'i.idf_code',
     'code' => 'i.idf_code',
     'location' => 'l.name',
     'rack' => 'r.name',
     'active' => 'i.active',
 ];
-$idf_sort_by = (string)($_GET['sort_by'] ?? 'id');
-$idf_sort_dir = strtolower((string)($_GET['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
-if (!isset($idfSortMap[$idf_sort_by])) {
-    $idf_sort_by = 'id';
+$legacySortBy = (string)($_GET['sort_by'] ?? '');
+$idf_sort = (string)($_GET['sort'] ?? '');
+if ($idf_sort === '' && $legacySortBy !== '') {
+    $idf_sort = $legacySortBy;
 }
-$idfOrderSql = $idfSortMap[$idf_sort_by] . ' ' . strtoupper($idf_sort_dir) . ', i.id DESC';
-$idf_search = trim((string)($_GET['q'] ?? ''));
+if (!isset($idfSortMap[$idf_sort])) {
+    $idf_sort = 'id';
+}
+$idf_sort_dir = strtolower((string)($_GET['dir'] ?? ''));
+if ($idf_sort_dir !== 'asc' && $idf_sort_dir !== 'desc') {
+    $legacyDir = strtolower((string)($_GET['sort_dir'] ?? 'desc'));
+    $idf_sort_dir = $legacyDir === 'asc' ? 'asc' : 'desc';
+}
+$idfOrderSql = $idfSortMap[$idf_sort] . ' ' . strtoupper($idf_sort_dir) . ', i.id DESC';
+$idf_search = trim((string)($_GET['search'] ?? $_GET['q'] ?? ''));
 $idf_search_like = '%' . $idf_search . '%';
 
-$idfs = [];
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalRows = 0;
+$idfWhereSearchSql = '';
 if ($company_id > 0) {
-    $idfWhereSearchSql = '';
     if ($idf_search !== '') {
         $idfWhereSearchSql = " AND (
             CAST(i.id AS CHAR) LIKE ?
@@ -393,19 +363,16 @@ if ($company_id > 0) {
         )";
     }
 
-    $stmtIdfs = mysqli_prepare(
-        $conn,
-        "SELECT i.*, l.name AS location_name, r.name AS rack_name
+    $countSql = "SELECT COUNT(*) AS total_rows
          FROM idfs i
          LEFT JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN racks r ON r.id=i.rack_id
-         WHERE i.company_id=? {$idfWhereSearchSql}
-         ORDER BY {$idfOrderSql}"
-    );
-    if ($stmtIdfs) {
+         WHERE i.company_id=? {$idfWhereSearchSql}";
+    $stmtCount = mysqli_prepare($conn, $countSql);
+    if ($stmtCount) {
         if ($idf_search !== '') {
             mysqli_stmt_bind_param(
-                $stmtIdfs,
+                $stmtCount,
                 'issssss',
                 $company_id,
                 $idf_search_like,
@@ -416,7 +383,56 @@ if ($company_id > 0) {
                 $idf_search_like
             );
         } else {
-            mysqli_stmt_bind_param($stmtIdfs, 'i', $company_id);
+            mysqli_stmt_bind_param($stmtCount, 'i', $company_id);
+        }
+        mysqli_stmt_execute($stmtCount);
+        $countRes = mysqli_stmt_get_result($stmtCount);
+        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+        $totalRows = (int)($countRow['total_rows'] ?? 0);
+        mysqli_stmt_close($stmtCount);
+    }
+}
+
+$totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+$showBulkActions = ($totalRows >= $perPage);
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+
+$idfs = [];
+if ($company_id > 0) {
+    $stmtIdfs = mysqli_prepare(
+        $conn,
+        "SELECT i.*, l.name AS location_name, r.name AS rack_name
+         FROM idfs i
+         LEFT JOIN it_locations l ON l.id=i.location_id
+         LEFT JOIN racks r ON r.id=i.rack_id
+         WHERE i.company_id=? {$idfWhereSearchSql}
+         ORDER BY {$idfOrderSql}
+         LIMIT ?, ?"
+    );
+    if ($stmtIdfs) {
+        if ($idf_search !== '') {
+            mysqli_stmt_bind_param(
+                $stmtIdfs,
+                'issssssii',
+                $company_id,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $idf_search_like,
+                $offset,
+                $perPage
+            );
+        } else {
+            mysqli_stmt_bind_param($stmtIdfs, 'iii', $company_id, $offset, $perPage);
         }
         mysqli_stmt_execute($stmtIdfs);
         $res = mysqli_stmt_get_result($stmtIdfs);
@@ -426,8 +442,6 @@ if ($company_id > 0) {
         mysqli_stmt_close($stmtIdfs);
     }
 }
-
-$ui_config = itm_get_ui_configuration($conn, $company_id);
 $locationTypeOptions = array_map(static function ($type) {
     return [
         'value' => (string)((int)($type['id'] ?? 0)),
@@ -498,22 +512,35 @@ $rackExtraFieldsJson = htmlspecialchars(
     'UTF-8'
 );
 
-function itm_idf_sort_url($column, $currentSortBy, $currentSortDir, $searchTerm = '')
+function itm_idf_list_url(array $overrides = [])
 {
-    $nextDir = ($currentSortBy === $column && $currentSortDir === 'asc') ? 'desc' : 'asc';
+    global $idf_search, $idf_sort, $idf_sort_dir, $page;
     $query = [
-        'sort_by' => $column,
-        'sort_dir' => $nextDir,
+        'search' => $idf_search,
+        'sort' => $idf_sort,
+        'dir' => $idf_sort_dir,
+        'page' => $page,
     ];
-    if ($searchTerm !== '') {
-        $query['q'] = $searchTerm;
+    foreach ($overrides as $key => $value) {
+        $query[$key] = $value;
     }
     return 'index.php?' . http_build_query($query);
 }
 
-function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
+function itm_idf_sort_url($column, $currentSort, $currentSortDir, $searchTerm = '')
 {
-    if ($currentSortBy !== $column) {
+    $nextDir = ($currentSort === $column && $currentSortDir === 'asc') ? 'desc' : 'asc';
+    return itm_idf_list_url([
+        'sort' => $column,
+        'dir' => $nextDir,
+        'search' => $searchTerm,
+        'page' => 1,
+    ]);
+}
+
+function itm_idf_sort_indicator($column, $currentSort, $currentSortDir)
+{
+    if ($currentSort !== $column && !($column === 'code' && $currentSort === 'idf_code')) {
         return '';
     }
     return $currentSortDir === 'asc' ? ' ▲' : ' ▼';
@@ -581,7 +608,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                     <div class="idf-stat-grid">
                         <div class="idf-stat">
                             <small>Total IDFs</small>
-                            <strong><?php echo count($idfs); ?></strong>
+                            <strong><?php echo (int)$totalRows; ?></strong>
                         </div>
                         <div class="idf-stat">
                             <small>Known Locations</small>
@@ -594,11 +621,12 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                     <h3>🔎 Search IDFs <span class="idf-badge">Filter current company records</span></h3>
                     <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
                         <div style="min-width:280px; flex:1;">
-                            <label class="label">Search</label>
-                            <input class="input" type="text" name="q" value="<?php echo sanitize($idf_search); ?>" placeholder="Search ID, name, code, location, rack, active...">
+                            <label class="label" for="moduleSearch">Search</label>
+                            <input class="input" type="text" id="moduleSearch" name="search" value="<?php echo sanitize($idf_search); ?>" placeholder="Search ID, name, code, location, rack, active...">
                         </div>
-                        <input type="hidden" name="sort_by" value="<?php echo sanitize($idf_sort_by); ?>">
-                        <input type="hidden" name="sort_dir" value="<?php echo sanitize($idf_sort_dir); ?>">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($idf_sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($idf_sort_dir); ?>">
+                        <input type="hidden" name="page" value="1">
                         <div style="display:flex; gap:8px;">
                             <button class="btn btn-primary" type="submit">Search</button>
                             <a class="btn" href="index.php">Clear</a>
@@ -741,23 +769,35 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
 
                     <section class="idf-panel">
                         <h3>📋 Existing IDFs <span class="idf-badge">Tap an IDF to open</span></h3>
-                        <table class="table idf-list-table" data-table-tools-attached="1">
+                        <?php if ($showBulkActions): ?>
+                        <div class="card" style="margin-bottom:12px;">
+                            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
+                                <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                                <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                            </form>
+                        </div>
+                        <?php endif; ?>
+                        <div class="card" style="overflow:auto;">
+                        <table class="table idf-list-table" data-itm-db-import-endpoint="index.php">
                     <thead>
                         <tr>
+                            <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                             <th data-itm-actions-origin="1" class="itm-actions-cell itm-actions-left">Actions</th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('id', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">ID<?php echo sanitize(itm_idf_sort_indicator('id', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('name', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Name<?php echo sanitize(itm_idf_sort_indicator('name', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('code', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Code<?php echo sanitize(itm_idf_sort_indicator('code', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('location', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Location<?php echo sanitize(itm_idf_sort_indicator('location', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('rack', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Rack<?php echo sanitize(itm_idf_sort_indicator('rack', $idf_sort_by, $idf_sort_dir)); ?></a></th>
-                            <th><a href="<?php echo sanitize(itm_idf_sort_url('active', $idf_sort_by, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Active<?php echo sanitize(itm_idf_sort_indicator('active', $idf_sort_by, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('id', $idf_sort, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">ID<?php echo sanitize(itm_idf_sort_indicator('id', $idf_sort, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('name', $idf_sort, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Name<?php echo sanitize(itm_idf_sort_indicator('name', $idf_sort, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('code', $idf_sort, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Code<?php echo sanitize(itm_idf_sort_indicator('code', $idf_sort, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('location', $idf_sort, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Location<?php echo sanitize(itm_idf_sort_indicator('location', $idf_sort, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('rack', $idf_sort, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Rack<?php echo sanitize(itm_idf_sort_indicator('rack', $idf_sort, $idf_sort_dir)); ?></a></th>
+                            <th><a href="<?php echo sanitize(itm_idf_sort_url('active', $idf_sort, $idf_sort_dir, $idf_search)); ?>" style="text-decoration:none;color:inherit;">Active<?php echo sanitize(itm_idf_sort_indicator('active', $idf_sort, $idf_sort_dir)); ?></a></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (!$idfs): ?>
-                            <tr><td colspan="7" style="opacity:.8;">No IDFs yet.</td></tr>
+                            <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="opacity:.8;">No records found.</td></tr>
+                            <?php if ($totalRows === 0): ?>
                             <tr>
-                                <td colspan="7" style="text-align:center; padding:12px;">
+                                <td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center; padding:12px;">
                                     <form method="post" style="margin:0;">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                                         <input type="hidden" name="add_sample_data" value="1">
@@ -765,17 +805,19 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                                     </form>
                                 </td>
                             </tr>
+                            <?php endif; ?>
                         <?php endif; ?>
                         <?php foreach ($idfs as $idf): ?>
                             <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$idf['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <td class="itm-actions-cell itm-actions-left">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>" title="View IDF">🔎</a>
                                         <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>" title="Edit IDF">✏️</a>
-                                        <form method="post" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
+                                        <form method="post" action="delete.php" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
-                                            <input type="hidden" name="delete_idf" value="1">
-                                            <input type="hidden" name="idf_id" value="<?php echo (int)$idf['id']; ?>">
+                                            <input type="hidden" name="bulk_action" value="single_delete">
+                                            <input type="hidden" name="id" value="<?php echo (int)$idf['id']; ?>">
                                             <button class="btn btn-sm btn-danger" type="submit" title="Delete IDF">🗑️</button>
                                         </form>
                                     </div>
@@ -783,7 +825,7 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                                 <td><?php echo (int)$idf['id']; ?></td>
                                 <td><?php echo sanitize($idf['name']); ?></td>
                                 <td><?php echo sanitize((string)($idf['idf_code'] ?? '')); ?></td>
-                                <td><?php echo sanitize($idf['location_name']); ?></td>
+                                <td><?php echo sanitize((string)($idf['location_name'] ?? '')); ?></td>
                                 <td><?php echo sanitize((string)($idf['rack_name'] ?? '')); ?></td>
                                 <td>
                                     <input type="checkbox" <?php echo ((int)($idf['active'] ?? 1) === 1) ? 'checked' : ''; ?> disabled>
@@ -792,6 +834,21 @@ function itm_idf_sort_indicator($column, $currentSortBy, $currentSortDir)
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                        <?php if ($totalRows > $perPage): ?>
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                            <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo (int)$totalRows; ?></div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                <?php if ($page > 1): ?>
+                                    <a class="btn btn-sm" href="<?php echo sanitize(itm_idf_list_url(['page' => $page - 1])); ?>" title="◀️ Previous">Previous</a>
+                                <?php endif; ?>
+                                <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
+                                <?php if ($page < $totalPages): ?>
+                                    <a class="btn btn-sm" href="<?php echo sanitize(itm_idf_list_url(['page' => $page + 1])); ?>" title="▶️ Next">Next</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        </div>
                     </section>
                 </div>
             </div>
