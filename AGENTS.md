@@ -6,6 +6,18 @@
 
 This document provides essential instructions, architectural constraints, and coding standards for AI agents working on the **IT Management System**.
 
+## ✅ Agent compliance workflow (mandatory)
+
+Before making any change, replying, running commands, editing files, or proposing solutions:
+
+1. **Read `AGENTS.md` completely** at session start (and when resuming after a long gap or context switch).
+2. **Stop and ask clarification questions** if any part of `AGENTS.md` is unclear, ambiguous, missing, conflicting, or not fully understood — do not guess or proceed on assumptions.
+3. **Update `AGENTS.md` when needed** to include and preserve new process rules or mandatory instructions (ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR — see **Change Hygiene → PR review**).
+4. **Before every reply**, re-check `AGENTS.md` and confirm the response follows it (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
+5. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, **commit**, **push**, and **`gh pr create`** on a fresh branch — **do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
+
+Only after `AGENTS.md` has been checked, understood, and updated when required may you continue with implementation.
+
 ## 🚀 Project Overview
 A multi-company IT Asset Management System built with PHP and MySQL.
 * **Design Philosophy:** GitHub Copilot theme (Light/Dark mode).
@@ -601,6 +613,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * Treat **“always a NEW PR”** literally: **`gh pr create`** (or equivalent) for each deliverable; the prior merged PR is history—**next change = next PR number**.
   * Package every requested implementation in a **fresh branch** and open that **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
   * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
+  * **Do not ask for PR confirmation:** never end a deliverable with prompts like “say so and I will open a PR” or “would you like me to commit?” — **auto-open the fresh PR** when work is ready (same exceptions as **Agent compliance workflow** step 5).
   * Do not reuse a previously opened **pull request** for a **new** request, even if the files overlap.
   * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your **NEW PR always** rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
 * **Avoid GitHub “We couldn’t merge this pull request” errors:**
