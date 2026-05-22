@@ -162,8 +162,8 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 
 #### 3. CLI scripts
 
-* Run from repository root: `php scripts/<script>.php [options]`.
-* **Windows Laragon** when `php` is not on PATH: `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` (see **Setup & Debugging → local paths**).
+* Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** — see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**.
+* **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; list the full-path command in PR test plans.
 * **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
@@ -220,13 +220,17 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 **Commands (repository root, Laragon):**
 
-```bash
-php scripts/module_browser_qa_runner.php
-php scripts/module_browser_qa_build_report.php
-php scripts/module_browser_qa_runner.php --pilot-only
-php scripts/module_browser_qa_runner.php --module=expenses --company=4
-php scripts/module_browser_qa_runner.php --module=departments --company=1
+```cmd
+cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_build_report.php
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --pilot-only
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=expenses --company=4
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=departments --company=1
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1
 ```
+
+Linux/macOS/CI (when `php` is on PATH): `php scripts/module_browser_qa_runner.php [options]`.
 
 **Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` (form → **Run QA** / **Stop**, live status via AJAX poll); `http://localhost/it-management/scripts/module_browser_qa_build_report.php` (pick date → build `.md`). Catalog: `scripts/index.html`.
 
@@ -478,7 +482,8 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
 * **Testing/reporting guardrail (mandatory):**
   * Do not claim “No tests run” when checks were executed.
-  * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php`.
+  * **Windows Laragon:** run and document PHP tests with the **full PHP binary path** (see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**); PR test plans must show the exact command, not bare `php scripts/...`.
+  * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php` (use full PHP path on Windows Laragon).
   * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
   * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** under `scripts/`).
   * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/index.html` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
@@ -562,6 +567,18 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 | phpMyAdmin (local) | `http://localhost/phpmyadmin/` |
 | **PHP 7.4.33 (ITM — use this)** | `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` |
 | MySQL 8.4 CLI | `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe` |
+
+### PHP CLI tests — full binary path (mandatory — Windows Laragon)
+
+On **Windows Laragon** (Nelson's environment), **always** use the **full absolute path** to the PHP 7.4.33 binary when running PHP tests, audits, and `scripts/*.php` — do **not** rely on bare `php` on PATH.
+
+| Rule | Detail |
+|------|--------|
+| **Run commands** | From repo root: `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/<script>.php [options]` |
+| **PR test plans / agent replies** | List the **exact full-path command** executed (not shortened `php scripts/...`) |
+| **Verification example** | `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1` |
+
+On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/...` remains acceptable.
 
   * **CLI example (repo root):**
     ```cmd
