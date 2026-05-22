@@ -83,6 +83,7 @@ function mbqa_parse_run_options(): array
         'pilot_only' => false,
         'stream' => false,
         'ajax' => false,
+        'autostart' => false,
         'run_id' => '',
         'base_url' => 'http://localhost/it-management/',
         'module' => null,
@@ -143,6 +144,7 @@ function mbqa_parse_run_options(): array
         }
         $options['stream'] = isset($_GET['stream']) && (string)$_GET['stream'] === '1';
         $options['ajax'] = isset($_GET['ajax']) && (string)$_GET['ajax'] === '1';
+        $options['autostart'] = isset($_GET['autostart']) && (string)$_GET['autostart'] === '1';
         $options['run_id'] = mbqa_sanitize_run_id((string)($_GET['run_id'] ?? ''));
     }
 
@@ -864,6 +866,11 @@ function mbqa_render_browser_form(array $options): void
     e.preventDefault();
     startRun();
   });
+
+  var qs = new URLSearchParams(window.location.search);
+  if (qs.get('autostart') === '1' || (qs.get('run') === '1' && qs.get('ajax') !== '1')) {
+    startRun();
+  }
 })();
 MBQA_JS;
     echo '</script>';
@@ -891,7 +898,10 @@ if (!mbqa_is_cli_sapi() && !$mbqaOptions['run']) {
 }
 
 if (!mbqa_is_cli_sapi() && $mbqaOptions['run'] && !$mbqaOptions['ajax']) {
-    mbqa_render_browser_ajax_required();
+    // Why: Re-Run Test / legacy ?run=1 links must open the form and start via AJAX, not a dead-end page.
+    $mbqaOptions['run'] = false;
+    $mbqaOptions['autostart'] = true;
+    mbqa_render_browser_form($mbqaOptions);
     exit(0);
 }
 
@@ -4691,7 +4701,7 @@ if (mbqa_is_cli_sapi()) {
 $jsonRel = '../qa-reports/' . mbqa_report_json_basename();
 $xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
 $reportHref = 'module_browser_qa_build_report.php?run=1';
-$rerunParams = ['run' => '1', 'ajax' => '1'];
+$rerunParams = ['autostart' => '1'];
 if ($filterModule !== null && trim((string)$filterModule) !== '') {
     $rerunParams['module'] = trim((string)$filterModule);
 }
