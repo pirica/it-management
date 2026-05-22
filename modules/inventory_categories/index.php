@@ -197,6 +197,35 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+/**
+ * inventory_items.category_id references inventory_categories without ON DELETE CASCADE.
+ * Detach tenant items before category DELETE so bulk/single/clear_table are not blocked by FK 1451.
+ */
+function cr_detach_inventory_items_from_categories($conn, int $companyId, array $categoryIds = []): void {
+    if ($companyId <= 0) {
+        return;
+    }
+
+    $sql = 'UPDATE inventory_items SET category_id = NULL WHERE company_id = ' . (int)$companyId;
+    if ($categoryIds !== []) {
+        $ids = [];
+        foreach ($categoryIds as $rawId) {
+            $id = (int)$rawId;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        if ($ids === []) {
+            return;
+        }
+        $sql .= ' AND category_id IN (' . implode(',', array_values($ids)) . ')';
+    }
+
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+    itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage);
+}
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
@@ -446,6 +475,9 @@ if ($crud_action === 'delete') {
     $dbErrorMessage = '';
 
     if ($bulkAction === 'clear_table') {
+        if ($hasCompany && $company_id > 0) {
+            cr_detach_inventory_items_from_categories($conn, (int)$company_id);
+        }
         $where = '';
         if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
@@ -466,6 +498,9 @@ if ($crud_action === 'delete') {
         }
 
         if (!empty($idList)) {
+            if ($hasCompany && $company_id > 0) {
+                cr_detach_inventory_items_from_categories($conn, (int)$company_id, array_values($idList));
+            }
             $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
             if ($hasCompany && $company_id > 0) { $where .= ' AND company_id=' . (int)$company_id; }
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
@@ -481,6 +516,9 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        if ($hasCompany && $company_id > 0) {
+            cr_detach_inventory_items_from_categories($conn, (int)$company_id, [$id]);
+        }
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) { $where .= ' AND company_id=' . (int)$company_id; }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';

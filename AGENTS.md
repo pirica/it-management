@@ -417,6 +417,25 @@ Standard index markup (inside the list card, above the search row). `department-
 
 **QA (`bulk_cancel` step, after `add`):** when bulk UI is visible, index HTML must include `bulk-delete-form`, `bulk-delete-selection.js`, `bulk_action`, and **Select to Delete** / `bulk_delete`; pass note lists what rendered in HTML plus shared JS contract. N/A when row count &lt; `records_per_page` (no bulk card).
 
+#### Bulk UI row gate (`$perPage`) (mandatory)
+
+After the tenant row count for the index list, resolve page size from UI config and gate bulk toolbar visibility:
+
+```php
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$showBulkActions = ($totalRows >= $perPage);
+```
+
+| Check | Rule |
+|--------|------|
+| **Bulk toolbar** (`Select to Delete`, `Clear Table`, row `ids[]` checkboxes) | `$totalRows >= $perPage` |
+| **Pagination footer** (`Previous` / `Next`) | `$totalRows > $perPage` |
+| **Rejected (inverted)** | `$perPage >= $totalRows` or `if ($perPage >= $totalRows)` before bulk markup — hides bulk UI when QA expects `bulk_delete` / `clear_table` |
+
+`scripts/check_ui_configuration_coverage.php` fails inverted gates. Module browser QA skips bulk steps with `N/A (N rows < perPage 25 …)` when the gate is correct but the tenant has fewer rows than `records_per_page`.
+
+**Reference parents with inbound FKs:** when `inventory_items` (or other children) reference the module table without `ON DELETE CASCADE`, detach or clear child FK columns for the active `company_id` **before** `DELETE` on the parent (`inventory_categories`: `UPDATE inventory_items SET category_id = NULL …` then delete categories). Otherwise `bulk_delete`, `clear_table`, and `single_delete` can return HTTP 200 while rows remain and QA reports “still listed”.
+
 #### List/search visible columns (`$uiColumns` / `$displayFieldColumns`) (mandatory)
 
 Flattened CRUD `index.php` files build **`$uiColumns`** (visible list fields, often hiding `company_id` via `$hideCompanyIdTables`). List tables and sort use `$uiColumns`. **Search** must query the **same visible column set**. A common template mistake copied `foreach ($displayFieldColumns as $col)` in the search block without defining `$displayFieldColumns`, which logs `Undefined variable: displayFieldColumns` and `Invalid argument supplied for foreach()` when `?search=` is set (module browser QA **search** step exercises this on many modules).
