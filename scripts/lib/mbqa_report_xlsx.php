@@ -4,6 +4,7 @@
  */
 
 require_once __DIR__ . '/mbqa_report_paths.php';
+require_once __DIR__ . '/mbqa_step_display.php';
 
 function mbqa_report_xlsx_basename(): string
 {
@@ -80,6 +81,7 @@ function mbqar_xlsx_workbook_rows(array $results, int $pass, int $fail, string $
             }
             $slug = (string)($step['step'] ?? '');
             $status = (string)($step['status'] ?? '');
+            $note = (string)($step['notes'] ?? '');
             $line = [
                 $module,
                 $companyId,
@@ -87,8 +89,8 @@ function mbqar_xlsx_workbook_rows(array $results, int $pass, int $fail, string $
                 $tier,
                 $slug,
                 mbqar_xlsx_step_label($slug),
-                $status,
-                (string)($step['notes'] ?? ''),
+                mbqa_step_human_result($status, $note),
+                $note,
             ];
             $steps[] = $line;
             if ($status === 'Fail') {

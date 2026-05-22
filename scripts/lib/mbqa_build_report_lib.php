@@ -12,6 +12,7 @@ require_once __DIR__ . '/utf8_file.php';
 require_once __DIR__ . '/mbqa_report_paths.php';
 require_once __DIR__ . '/mbqa_report_xlsx.php';
 require_once __DIR__ . '/mbqa_runner_tiers.php';
+require_once __DIR__ . '/mbqa_step_display.php';
 
 /**
  * @return array{self_script:string,runner_script:string,runner_label:string,page_title:string,rerun_ui_click_smoke:bool,md_runner_cli:string,md_runner_browser:string}
@@ -323,16 +324,9 @@ function mbqar_this_run_hint(string $step, array $failRows): string
 /**
  * Pass/Fail → short result text for preflight and quick tables.
  */
-function mbqar_human_status(string $status): string
+function mbqar_human_status(string $status, string $note = ''): string
 {
-    if ($status === 'Pass') {
-        return 'OK';
-    }
-    if ($status === 'Fail') {
-        return 'Failed';
-    }
-
-    return $status;
+    return mbqa_step_human_result($status, $note);
 }
 
 /**
@@ -340,9 +334,7 @@ function mbqar_human_status(string $status): string
  */
 function mbqar_step_note_is_skip_quick_index(string $note): bool
 {
-    $note = trim($note);
-
-    return $note !== '' && preg_match('/^(?:Skip|N\/A)\b/i', $note) === 1;
+    return mbqa_step_note_is_na_or_skip($note);
 }
 
 /**
@@ -520,7 +512,7 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
                 $notes = 'Session switched to this company';
             }
             $md .= '| ' . (int)$pf['company_id'] . ' | ' . ($pf['company_name'] ?? '') . ' | '
-                . mbqar_human_status($st) . ' | ' . $notes . " |\n";
+                . mbqar_human_status($st, $notes) . ' | ' . $notes . " |\n";
         }
         $md .= "\n";
     }
@@ -540,7 +532,7 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
                 $stepSlug = (string)($step['step'] ?? '');
                 $note = mbqar_shorten_note((string)($step['notes'] ?? ''), 160);
                 $md .= '| `' . $stepSlug . '` | ' . mbqar_human_step_label($stepSlug) . ' | '
-                    . mbqar_human_status((string)($step['status'] ?? '')) . ' | ' . $note . " |\n";
+                    . mbqar_human_status((string)($step['status'] ?? ''), $note) . ' | ' . $note . " |\n";
             }
             $md .= "\n";
         }
@@ -553,9 +545,10 @@ function mbqar_build_markdown(string $root, string $date, array $data, array $mo
             $md .= "| Step | Label | Result | Notes |\n|---|---|---|---|\n";
             foreach ($pr['steps'] as $step) {
                 $stepSlug = (string)($step['step'] ?? '');
+                $pilotNote = mbqar_shorten_note((string)($step['notes'] ?? ''), 160);
                 $md .= '| `' . $stepSlug . '` | ' . mbqar_human_step_label($stepSlug) . ' | '
-                    . mbqar_human_status((string)($step['status'] ?? '')) . ' | '
-                    . mbqar_shorten_note((string)($step['notes'] ?? ''), 160) . " |\n";
+                    . mbqar_human_status((string)($step['status'] ?? ''), $pilotNote) . ' | '
+                    . $pilotNote . " |\n";
             }
             $md .= "\n";
         }
