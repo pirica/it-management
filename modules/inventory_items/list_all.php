@@ -1,12 +1,8 @@
 <?php
 /**
- * Inventory Items Module - List All
+ * Inventory Items Module - List All Wrapper
  * 
- * Wrapper for the master CRUD implementation.
- * Delegates to index.php.
+ * Satisfies standard module routing by delegating the list view to index.php.
  */
 
-$crud_table = 'inventory_items';
-$crud_title = 'Inventory Items';
-$crud_action = 'list_all';
 require 'index.php';

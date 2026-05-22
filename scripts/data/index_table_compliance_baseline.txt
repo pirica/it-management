@@ -22,7 +22,7 @@ equipment_statuses
 equipment_types
 expiring
 idf_device_type
-inventory
+inventory_items
 inventory_categories
 it_locations
 location_types

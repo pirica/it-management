@@ -41,7 +41,7 @@ Replace `<table_name>` with the module’s MySQL table (must pass `itm_is_safe_i
 ### Reference implementations
 
 - `modules/equipment/index.php`
-- `modules/inventory/index.php`
+- `modules/inventory_items/index.php`
 - `modules/idfs/index.php`
 
 ## Request and response contract
