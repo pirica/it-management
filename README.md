@@ -13,6 +13,24 @@
 - ✅ Responsive design
 - ✅ API
 
+<h2 align="center">Demo</h2>
+
+<p align="center"><strong>Login</strong> — sign in with username and password; CSRF-protected form with light/dark toggle.</p>
+
+<p align="center"><img src="docs/readme/demo_login.png" alt="Login page" /></p>
+
+<p align="center"><strong>Dashboard</strong> — company-scoped overview with quick stats (equipment, tickets, employees).</p>
+
+<p align="center"><img src="docs/readme/demo_dashboard.png" alt="Dashboard with TechCorp Global" /></p>
+
+<p align="center"><strong>Departments</strong> — full CRUD list with search, sort, pagination, bulk actions, and export tools.</p>
+
+<p align="center"><img src="docs/readme/demo_departments.png" alt="Departments module list" /></p>
+
+<p align="center"><strong>Equipment</strong> — asset tracking with type, manufacturer, location, and status columns.</p>
+
+<p align="center"><img src="docs/readme/demo_equipment.png" alt="Equipment module list" /></p>
+
 <h2 align="center">Screenshots</h2>
 
 <p align="center">Captured from a local Laragon-style install at <code>http://localhost/it-management/</code> (default light theme after sign-in).</p>
