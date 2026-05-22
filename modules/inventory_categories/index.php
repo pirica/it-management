@@ -12,7 +12,7 @@ function cr_form_display_value($value) {
 
 $crud_table = 'inventory_categories';
 $crud_title = 'Inventory Categories';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
@@ -198,32 +198,66 @@ function cr_require_valid_csrf_token() {
 }
 
 /**
- * inventory_items.category_id references inventory_categories without ON DELETE CASCADE.
- * Detach tenant items before category DELETE so bulk/single/clear_table are not blocked by FK 1451.
+ * Detach inventory_items.category_id then delete categories in one transaction.
+ *
+ * @param array<int,int> $categoryIds Empty with $deleteAllTenantCategories=true for clear_table.
+ * @return array{ok:bool,error:string}
  */
-function cr_detach_inventory_items_from_categories($conn, int $companyId, array $categoryIds = []): void {
+function cr_delete_inventory_categories_scoped(
+    $conn,
+    string $table,
+    int $companyId,
+    array $categoryIds,
+    bool $deleteAllTenantCategories
+): array {
     if ($companyId <= 0) {
-        return;
+        return ['ok' => false, 'error' => 'Invalid company scope for delete.'];
+    }
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+        return ['ok' => false, 'error' => 'Invalid table configuration.'];
     }
 
-    $sql = 'UPDATE inventory_items SET category_id = NULL WHERE company_id = ' . (int)$companyId;
-    if ($categoryIds !== []) {
-        $ids = [];
-        foreach ($categoryIds as $rawId) {
-            $id = (int)$rawId;
-            if ($id > 0) {
-                $ids[$id] = $id;
-            }
+    $idList = [];
+    foreach ($categoryIds as $rawId) {
+        $id = (int)$rawId;
+        if ($id > 0) {
+            $idList[$id] = $id;
         }
-        if ($ids === []) {
-            return;
-        }
-        $sql .= ' AND category_id IN (' . implode(',', array_values($ids)) . ')';
+    }
+    if (!$deleteAllTenantCategories && $idList === []) {
+        return ['ok' => false, 'error' => 'No records selected for deletion.'];
     }
 
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
-    itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage);
+    $detachSql = 'UPDATE inventory_items SET category_id = NULL WHERE company_id = ' . (int)$companyId;
+    if (!$deleteAllTenantCategories) {
+        $detachSql .= ' AND category_id IN (' . implode(',', array_values($idList)) . ')';
+    }
+
+    $deleteSql = 'DELETE FROM ' . cr_escape_identifier($table);
+    if ($deleteAllTenantCategories) {
+        $deleteSql .= ' WHERE company_id=' . (int)$companyId;
+    } else {
+        $deleteSql .= ' WHERE id IN (' . implode(',', array_values($idList)) . ') AND company_id=' . (int)$companyId;
+    }
+
+    mysqli_begin_transaction($conn);
+    try {
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (!itm_run_query($conn, $detachSql, $dbErrorCode, $dbErrorMessage)) {
+            throw new RuntimeException(itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage));
+        }
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            throw new RuntimeException(itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage));
+        }
+        mysqli_commit($conn);
+        return ['ok' => true, 'error' => ''];
+    } catch (Throwable $e) {
+        mysqli_rollback($conn);
+        return ['ok' => false, 'error' => $e->getMessage()];
+    }
 }
 
 function cr_numeric_validation_error($field, $message) {
@@ -471,18 +505,13 @@ if ($crud_action === 'delete') {
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
 
     if ($bulkAction === 'clear_table') {
         if ($hasCompany && $company_id > 0) {
-            cr_detach_inventory_items_from_categories($conn, (int)$company_id);
-        }
-        $where = '';
-        if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            $deleteResult = cr_delete_inventory_categories_scoped($conn, $crud_table, (int)$company_id, [], true);
+            if (!$deleteResult['ok']) {
+                $_SESSION['crud_error'] = $deleteResult['error'];
+            }
         }
         header('Location: ' . $listUrl);
         exit;
@@ -491,21 +520,10 @@ if ($crud_action === 'delete') {
     if ($bulkAction === 'bulk_delete') {
         $ids = $_POST['ids'] ?? [];
         if (!is_array($ids)) { $ids = []; }
-        $idList = [];
-        foreach ($ids as $rawId) {
-            $id = (int)$rawId;
-            if ($id > 0) { $idList[$id] = $id; }
-        }
-
-        if (!empty($idList)) {
-            if ($hasCompany && $company_id > 0) {
-                cr_detach_inventory_items_from_categories($conn, (int)$company_id, array_values($idList));
-            }
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) { $where .= ' AND company_id=' . (int)$company_id; }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        if ($hasCompany && $company_id > 0) {
+            $deleteResult = cr_delete_inventory_categories_scoped($conn, $crud_table, (int)$company_id, $ids, false);
+            if (!$deleteResult['ok']) {
+                $_SESSION['crud_error'] = $deleteResult['error'];
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -515,15 +533,10 @@ if ($crud_action === 'delete') {
     }
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id > 0) {
-        if ($hasCompany && $company_id > 0) {
-            cr_detach_inventory_items_from_categories($conn, (int)$company_id, [$id]);
-        }
-        $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) { $where .= ' AND company_id=' . (int)$company_id; }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+    if ($id > 0 && $hasCompany && $company_id > 0) {
+        $deleteResult = cr_delete_inventory_categories_scoped($conn, $crud_table, (int)$company_id, [$id], false);
+        if (!$deleteResult['ok']) {
+            $_SESSION['crud_error'] = $deleteResult['error'];
         }
     }
     header('Location: ' . $listUrl);
