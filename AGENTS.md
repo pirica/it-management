@@ -15,6 +15,7 @@ Before making any change, replying, running commands, editing files, or proposin
 3. **Update `AGENTS.md` when needed** to include and preserve new process rules or mandatory instructions (ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR — see **Change Hygiene → PR review**).
 4. **Before every reply**, re-check `AGENTS.md` and confirm the response follows it (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
 5. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, **commit**, **push**, and **`gh pr create`** on a fresh branch — **do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
+6. **Never local-only commits (hard fail):** `git commit` without an immediate **`git push -u origin <branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” or “open a PR if you want a fresh PR” — **you** push and open the PR in the same turn.
 
 Only after `AGENTS.md` has been checked, understood, and updated when required may you continue with implementation.
 
@@ -641,7 +642,9 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * Treat **“always a NEW PR”** literally: **`gh pr create`** (or equivalent) for each deliverable; the prior merged PR is history—**next change = next PR number**.
   * Package every requested implementation in a **fresh branch** and open that **new PR** when the work is ready—do **not** wait for an explicit “please commit” (unless the user asked to hold commits or the session is exploratory/read-only).
   * When required checks pass, **commit**, **push**, and **open the PR** (`gh pr create` when available). A task is not complete with only unstaged or unpushed local changes.
+  * **NEVER commit only locally:** if `git status` shows `ahead 1` (or any “ahead of origin”), the deliverable is **incomplete** until `git push` succeeds and a **new PR URL** is returned. Forbidden closing lines: “only committed locally”, “branch is ahead of origin by 1”, “push when ready”, “or open a new branch/PR if you want”.
   * **Do not ask for PR confirmation:** never end a deliverable with prompts like “say so and I will open a PR” or “would you like me to commit?” — **auto-open the fresh PR** when work is ready (same exceptions as **Agent compliance workflow** step 5).
+  * **Completion checklist (same turn, before replying done):** `git push -u origin HEAD` → `gh pr create` (or `gh pr view` if PR already exists for this branch) → reply with the **PR link**, not optional next steps.
   * Do not reuse a previously opened **pull request** for a **new** request, even if the files overlap.
   * Preferred status wording example: “I’m now packaging this as a fresh branch/PR (per your **NEW PR always** rule) with the root sync fixes, the human-flow regression test, and the AGENTS guardrail update.”
 * **Avoid GitHub “We couldn’t merge this pull request” errors:**
