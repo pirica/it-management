@@ -65,8 +65,34 @@ function itm_is_equipment_regression_test_module_dir(string $moduleDirName): boo
         return false;
     }
 
-    return strpos($moduleDirName, '_itm_eqdct_') !== false
-        || strpos($moduleDirName, '_itm_edct_') !== false;
+    if (strpos($moduleDirName, '_itm_eqdct_') !== false
+        || strpos($moduleDirName, '_itm_edct_') !== false) {
+        return true;
+    }
+
+    // Orphan wrappers from module_browser_qa_runner inserts on equipment_types (DB row may already be cleared).
+    return strpos($moduleDirName, 'is_mbqa_equipment_types_') === 0;
+}
+
+/**
+ * True when an equipment_types.name value was seeded by module_browser_qa_runner (MBQA-{table}-… tag).
+ */
+function itm_equipment_type_name_is_mbqa_runner_seeded(string $typeName): bool
+{
+    $typeName = trim($typeName);
+    if ($typeName === '') {
+        return false;
+    }
+
+    return (bool)preg_match('/^mbqa-equipment_types-\d+-\d+-[a-f0-9]{6}$/i', $typeName);
+}
+
+/**
+ * Sidebar entry_id for MBQA equipment-type scaffolds (matches itm_equipment_type_sidebar_item_id() output).
+ */
+function itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql(): string
+{
+    return "entry_id LIKE 'is_mbqa_equipment_types\\_%'";
 }
 
 /**
@@ -114,4 +140,117 @@ function itm_remove_equipment_regression_test_module_dirs(string $modulesRoot): 
     }
 
     return $removed;
+}
+
+/**
+ * Removes equipment regression / MBQA-runner scaffold pollution (DB + modules/is_* orphans).
+ *
+ * @return array{
+ *   ok: bool,
+ *   dirs_removed: int,
+ *   companies_deleted: int,
+ *   types_deleted: int,
+ *   sidebar_deleted: int,
+ *   canonical_ensured: int,
+ *   errors: string[]
+ * }
+ */
+function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $modulesRoot): array
+{
+    $result = [
+        'ok' => true,
+        'dirs_removed' => 0,
+        'companies_deleted' => 0,
+        'types_deleted' => 0,
+        'sidebar_deleted' => 0,
+        'canonical_ensured' => 0,
+        'errors' => [],
+    ];
+
+    if (!$conn instanceof mysqli) {
+        $result['ok'] = false;
+        $result['errors'][] = 'Database connection is not available.';
+
+        return $result;
+    }
+
+    mysqli_query($conn, 'SET @app_user_id = 1');
+    mysqli_query($conn, 'SET @app_company_id = 1');
+    mysqli_query($conn, "SET @app_username = 'cli-cleanup'");
+    mysqli_query($conn, "SET @app_email = 'cli-cleanup@example.com'");
+    mysqli_query($conn, "SET @app_ip_address = '127.0.0.1'");
+    mysqli_query($conn, "SET @app_user_agent = 'equipment_test_module_artifacts_cleanup'");
+
+    $result['dirs_removed'] = itm_remove_equipment_regression_test_module_dirs($modulesRoot);
+
+    $companiesRes = mysqli_query(
+        $conn,
+        "DELETE FROM companies WHERE company LIKE 'ITM ClearTable Test %'
+            OR company LIKE 'ITM Equipment ClearTable %'
+            OR company LIKE 'ITM Debug %'"
+    );
+    if ($companiesRes) {
+        $result['companies_deleted'] = (int)mysqli_affected_rows($conn);
+    } else {
+        $result['ok'] = false;
+        $result['errors'][] = 'companies cleanup: ' . mysqli_error($conn);
+    }
+
+    $typesRes = mysqli_query(
+        $conn,
+        "DELETE FROM equipment_types WHERE name LIKE '%itm_eqdct%' OR name LIKE '%itm_edct%'
+            OR name LIKE 'MBQA-equipment_types-%' OR name LIKE 'mbqa-equipment_types-%'"
+    );
+    if ($typesRes) {
+        $result['types_deleted'] = (int)mysqli_affected_rows($conn);
+    } else {
+        $result['ok'] = false;
+        $result['errors'][] = 'equipment_types cleanup: ' . mysqli_error($conn);
+    }
+
+    $sidebarRes = mysqli_query(
+        $conn,
+        'DELETE FROM user_sidebar_preferences WHERE entry_id LIKE \'%itm_eqdct%\' OR entry_id LIKE \'%itm_edct%\'
+            OR ' . itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql()
+    );
+    if ($sidebarRes) {
+        $result['sidebar_deleted'] = (int)mysqli_affected_rows($conn);
+    } else {
+        $result['ok'] = false;
+        $result['errors'][] = 'user_sidebar_preferences cleanup: ' . mysqli_error($conn);
+    }
+
+    $result['canonical_ensured'] = itm_ensure_canonical_equipment_type_modules($conn);
+
+    return $result;
+}
+
+/**
+ * One-line summary for QA runner completion output (empty when nothing was removed).
+ */
+function itm_equipment_cleanup_report_summary(array $cleanup): string
+{
+    if (!$cleanup['ok'] && !empty($cleanup['errors'])) {
+        return 'Post-QA equipment cleanup failed: ' . implode('; ', $cleanup['errors']);
+    }
+
+    $parts = [];
+    if ((int)($cleanup['dirs_removed'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['dirs_removed'] . ' scaffold folder(s)';
+    }
+    if ((int)($cleanup['types_deleted'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['types_deleted'] . ' equipment_types row(s)';
+    }
+    if ((int)($cleanup['sidebar_deleted'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['sidebar_deleted'] . ' sidebar pref row(s)';
+    }
+    if ((int)($cleanup['companies_deleted'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['companies_deleted'] . ' test compan' . ((int)$cleanup['companies_deleted'] === 1 ? 'y' : 'ies');
+    }
+
+    if ($parts === []) {
+        return '';
+    }
+
+    return 'Post-QA equipment cleanup: removed ' . implode(', ', $parts) . '.';
 }
