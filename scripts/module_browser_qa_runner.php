@@ -459,7 +459,7 @@ function mbqa_render_browser_help(): void
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;line-height:1.5;">';
     echo '<h1>Module browser QA — help</h1>';
     echo '<p>Runs the full-module HTTP checklist (login, company switch, CRUD, export/import, delete) for one or all modules and tenants. ';
-    echo 'Results are written to <code>qa-reports/module-browser-qa.json</code> (replaced on each run).</p>';
+    echo 'Results are written to <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and a matching <code>.xlsx</code> (new file each run).</p>';
 
     echo '<h2>URL and actions</h2>';
     mbqa_echo_browser_url_actions_table();
@@ -530,7 +530,7 @@ function mbqa_print_help(): void
     mbqa_out("  --company=N      Company id 1–5 only; omit or --company=all for all five tenants\n");
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
     mbqa_out("  --help           Show this help\n\n");
-    mbqa_out("Output: qa-reports/module-browser-qa.json and module-browser-qa.xlsx (overwritten each run)\n\n");
+    mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json and matching .xlsx (new file each run)\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
     mbqa_out("  add         Insert ~30 random tenant rows if count < records_per_page + 1\n");
     mbqa_out("  pagination  After add: page=1 Next (HTML page=2) then page=2 Previous (HTML page=1); sort=id\n");
@@ -589,7 +589,7 @@ function mbqa_render_browser_form(array $options): void
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>Module browser QA runner</h1>';
     echo '<p>Runs the full-module HTTP checklist (login, company switch, clear/seed/CRUD, export/import, delete). ';
-    echo 'Writes <code>qa-reports/module-browser-qa.json</code> and <code>module-browser-qa.xlsx</code> (overwritten each run). Long runs may take several minutes.</p>';
+    echo 'Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run. Long runs may take several minutes.</p>';
     echo '<div id="mbqa-live-status" aria-live="polite" style="margin:12px 0;padding:10px 12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;min-height:1.2em;font-size:0.95rem;display:none;"></div>';
     echo '<div id="mbqa-run-footer" hidden style="margin:12px 0;padding:10px 0;font-size:0.95rem;"></div>';
     echo '<form id="mbqa-run-form" method="get" action="module_browser_qa_runner.php" style="display:grid;gap:12px;max-width:520px;">';
@@ -4643,13 +4643,20 @@ foreach ($companiesToRun as $companyId) {
 
 @unlink($cookieFile);
 
-$outDir = $root . DIRECTORY_SEPARATOR . 'qa-reports';
+$outDir = mbqa_report_dir($root);
 if (!is_dir($outDir)) {
     mkdir($outDir, 0775, true);
 }
-$jsonPath = mbqa_report_json_path($root);
+$generatedAt = date('Y-m-d H:i:s');
+$reportFilePaths = mbqa_report_paths_for_run($root, $generatedAt);
+$jsonPath = $reportFilePaths['json_path'];
 $reportPayload = [
-    'generated_at' => date('Y-m-d H:i:s'),
+    'generated_at' => $generatedAt,
+    'report_files' => [
+        'slug' => $reportFilePaths['slug'],
+        'json' => $reportFilePaths['json_basename'],
+        'xlsx' => $reportFilePaths['xlsx_basename'],
+    ],
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
         'module' => $filterModule,
@@ -4684,7 +4691,8 @@ $xlsxBuilt = mbqar_build_runner_xlsx(
     $results,
     (int)$summary['pass'],
     (int)$summary['fail'],
-    (string)$reportPayload['generated_at']
+    (string)$reportPayload['generated_at'],
+    $reportFilePaths['xlsx_path']
 );
 
 $exitCode = $summary['fail'] > 0 ? 1 : 0;
@@ -4698,8 +4706,8 @@ if (mbqa_is_cli_sapi()) {
     mbqa_out("Steps pass: {$summary['pass']}, fail: {$summary['fail']}\n");
 }
 
-$jsonRel = '../qa-reports/' . mbqa_report_json_basename();
-$xlsxRel = '../qa-reports/' . mbqa_report_xlsx_basename();
+$jsonRel = '../qa-reports/' . $reportFilePaths['json_basename'];
+$xlsxRel = $xlsxBuilt['ok'] ? ('../qa-reports/' . $reportFilePaths['xlsx_basename']) : '';
 $reportHref = 'module_browser_qa_build_report.php?run=1';
 $rerunParams = ['autostart' => '1'];
 if ($filterModule !== null && trim((string)$filterModule) !== '') {

@@ -192,6 +192,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: scripts/lib/mbqa_*.php are shared QA report/runner libraries (browser form $_POST only).
+    if (preg_match('#^scripts/lib/mbqa_.+\\.php$#', $relativePath) === 1) {
+        $skipped[] = [
+            $relativePath,
+            'QA shared library: browser form option parsing only; no module CRUD POST handlers',
+        ];
+        continue;
+    }
+
     if (!$hasFileLevelGuard) {
         $missing[] = [$path, 'POST/mutation surface without CSRF guard reference'];
     }
