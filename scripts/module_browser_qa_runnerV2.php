@@ -200,7 +200,10 @@ function mbqa_ensure_reports_dir_writable(string $root): bool
         if (is_file($path)) {
             @chmod($path, 0666);
             if (!is_writable($path)) {
-                return false;
+                @unlink($path);
+                if (is_file($path)) {
+                    return false;
+                }
             }
         }
     }
