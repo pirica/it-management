@@ -621,7 +621,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <?php $nextDir = ($sort === $col && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(emp_build_query(['sort' => $col, 'dir' => $nextDir, 'show' => $showDuplicatesOnly ? 'duplicates' : null, 'search' => $searchRaw])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize(emp_label($col)); ?><?php if ($sort === $col): ?><?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
-                        <th>Actions</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -648,7 +648,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                     <?php endif; ?>
                                 </td>
                             <?php endforeach; ?>
-                            <td>
+                            <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>

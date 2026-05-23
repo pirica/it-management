@@ -810,7 +810,7 @@ function itm_idf_sort_indicator($column, $currentSort, $currentSortDir)
                         <?php foreach ($idfs as $idf): ?>
                             <tr data-open-url="view.php?id=<?php echo (int)$idf['id']; ?>">
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$idf['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
-                                <td class="itm-actions-cell itm-actions-left">
+                                <td class="itm-actions-cell itm-actions-left" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>" title="View IDF">🔎</a>
                                         <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>" title="Edit IDF">✏️</a>

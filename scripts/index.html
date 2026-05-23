@@ -451,6 +451,12 @@
                     <td><code>php scripts/apply_display_field_columns_search_alias.php</code> from repository root. Re-run only when new flattened CRUD modules omit the alias.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_itm_actions_cell_markers.php">apply_itm_actions_cell_markers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>One-time/maintenance: add <code>class="itm-actions-cell"</code> and <code>data-itm-actions-origin="1"</code> on Actions column header and body cells in module list tables (module browser QA <code>ui_check</code>).</td>
+                    <td><code>php scripts/apply_itm_actions_cell_markers.php</code> from repository root (Windows Laragon: full PHP 7.4 path). Updates <code>modules/*/index.php</code> and <code>modules/*/includes/partials/render.php</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="check_display_field_columns_search.php">check_display_field_columns_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>

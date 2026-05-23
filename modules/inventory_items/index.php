@@ -231,7 +231,7 @@ function itm_inventory_items_list_url(array $overrides = []): string
                                 </a>
                             </th>
                         <?php endforeach; ?>
-                        <th>Actions</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -257,7 +257,7 @@ function itm_inventory_items_list_url(array $overrides = []): string
                                     <?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?>
                                 </span>
                             </td>
-                            <td class="itm-actions-cell">
+                            <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$i['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$i['id']; ?>">✏️</a>

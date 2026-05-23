@@ -395,7 +395,7 @@
                                         Active<?php if ($sort === 'active'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>
-                                <th>Actions</th>
+                                <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
