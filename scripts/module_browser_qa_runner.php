@@ -768,7 +768,7 @@ function mbqa_render_browser_help(): void
     echo '</tbody></table>';
 
     echo '<h2>Tier A step order (per module)</h2>';
-    echo '<p style="font-size:0.95rem;">mysql → error_log → list → clear → sample_data → add → pagination → bulk_cancel → bulk_delete → search → sort → create → view → edit → list_all → export_pdf → export_xlsx → clear_table → clear → import_db → single_delete → sample_data (restore) → error_log</p>';
+    echo '<p style="font-size:0.95rem;">mysql → error_log → list → ui_check → clear → sample_data → add → pagination → bulk_cancel → bulk_delete → search → sort → create → view → edit → list_all → export_pdf → export_xlsx → clear_table → clear → import_db → single_delete → sample_data (restore) → error_log</p>';
 
     echo '<p style="margin-top:24px;"><a href="module_browser_qa_runner.php">← Back to runner form</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a> · ';
@@ -5252,7 +5252,6 @@ foreach ($companiesToRun as $companyId) {
                 $bulkGate = mbqa_index_bulk_ui_matches_row_gate($rowCountList, $perPageList, $index['body']);
             }
             $pagGate = mbqa_index_pagination_matches_row_gate($rowCountList, $perPageList, $index['body']);
-            $actionsGate = mbqa_index_table_actions_matches_ui_contract($index['body']);
             if (!$bulkGate['ok']) {
                 $listOk = false;
                 $listNote .= '; ' . $bulkGate['note'];
@@ -5261,15 +5260,33 @@ foreach ($companiesToRun as $companyId) {
                 $listOk = false;
                 $listNote .= '; ' . $pagGate['note'];
             }
-            if (!$actionsGate['ok']) {
-                $listOk = false;
-                $listNote .= '; ' . $actionsGate['note'];
-            }
-            if ($bulkGate['ok'] && $pagGate['ok'] && $actionsGate['ok']) {
-                $listNote .= '; ' . $bulkGate['note'] . '; ' . $pagGate['note'] . '; ' . $actionsGate['note'];
+            if ($bulkGate['ok'] && $pagGate['ok']) {
+                $listNote .= '; ' . $bulkGate['note'] . '; ' . $pagGate['note'];
             }
         }
         $steps[] = mbqa_step_result('list', $listOk, $listNote);
+
+        $uiCheckOk = true;
+        $uiCheckNote = 'N/A (Tier ' . $tier . ')';
+        if ($tier === 'A' && itm_is_safe_identifier($slug)) {
+            $uiCheckNa = mbqa_runner_module_step_exception_note($slug, 'ui_check');
+            if ($uiCheckNa !== null) {
+                $uiCheckOk = true;
+                $uiCheckNote = $uiCheckNa;
+            } elseif ($index['status'] !== 200 || mbqa_has_fatal($index['body'])) {
+                $uiCheckOk = false;
+                $uiCheckNote = 'Index not available for UI check (list failed)';
+            } else {
+                $actionsGate = mbqa_index_table_actions_matches_ui_contract($index['body']);
+                $uiCheckOk = $actionsGate['ok'];
+                $uiCheckNote = $actionsGate['note'];
+            }
+        } elseif ($tier === 'D') {
+            $uiCheckNote = 'N/A smoke';
+        } elseif ($tier === 'C') {
+            $uiCheckNote = mbqa_runner_module_step_exception_note($slug, 'ui_check') ?? 'N/A routing';
+        }
+        $steps[] = mbqa_step_result('ui_check', $uiCheckOk, $uiCheckNote);
 
         if ($tier === 'D') {
             $steps[] = mbqa_step_result('clear', true, 'Skip (bespoke smoke)');
