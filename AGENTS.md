@@ -286,27 +286,28 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 |---|------|----------------|
 | 1 | **`mysql`** | Whether `database.sql` defines sample `INSERT` rows for the module table. Parsed from `database.sql` via `itm_parse_database_sql_inserts()` (same tuples as UI sample seed). Manual equivalent: `SELECT * FROM \`{table}\`` in phpMyAdmin on a fresh import — **0 row(s) (empty)** e.g. `ip_addresses`, or **N row(s)** e.g. `departments`. Informational **Pass**; note records the count. Fails only if `database.sql` is missing/unreadable. Tier C/D report `N/A`. |
 | 2 | **`error_log`** | Start scope: rename `error_log.txt` to next `error_log-N.txt` when present; else record byte offset (only *new* lines count for this module). |
-| 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count and, when an Actions column is present, **`class="itm-actions-cell"`** + **`data-itm-actions-origin="1"`** on the Actions header and at least one body cell when rows render. |
-| 4 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `users` skipped). |
-| 5 | **`sample_data`** | HTTP sample seed; FK parents first; DB fallback via `itm_seed_table_from_database_sql()` when anchor ids differ. |
-| 6 | **`add`** | Insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first. |
-| 7 | **`pagination`** | Page 1 **Next** / page 2 **Previous** when rows &gt; `records_per_page`. |
-| 8 | **`bulk_cancel`** | Bulk form + **Cancel** contract (`js/bulk-delete-selection.js`). |
-| 9 | **`bulk_delete`** | POST `delete.php` with up to 3 `ids[]` when rows ≥ `records_per_page` (N/A note when skipped). |
-| 10 | **`search`** | Search on index. |
-| 11 | **`sort`** | Sort links on index. |
-| 12 | **`create`** | Create form. |
-| 13 | **`view`** | View record. |
-| 14 | **`edit`** | Edit form. |
-| 15 | **`list_all`** | List-all page. |
-| 16 | **`export_pdf`** | Export PDF control in list HTML. |
-| 17 | **`export_xlsx`** | Export Excel as OOXML `.xlsx` via `table-tools.js` + `xlsx.full.min.js` (parsed list table; row count ≠ import count). |
-| 18 | **`clear_table`** | POST **Clear Table** when rows ≥ `records_per_page` and bulk UI is visible (same gate as `bulk_delete`; runs while export rows are still present). |
-| 19 | **`clear`** | Second FK-aware tenant wipe (after export / optional `clear_table`; before import). |
-| 20 | **`import_db`** | One insertable row smoke test (`inserted=1` is pass). |
-| 21 | **`single_delete`** | Delete POST with FK retry. |
-| 22 | **`sample_data`** | End restore on empty table (HTTP). |
-| 23 | **`error_log`** | End check: 0 new errors since module scope. |
+| 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count. |
+| 4 | **`ui_check`** | When an Actions column is present on the index HTML, verifies **`class="itm-actions-cell"`** + **`data-itm-actions-origin="1"`** on the Actions header and at least one body cell when rows render (`js/ui-layout.js` / `table_actions_position`). |
+| 5 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `users` skipped). |
+| 6 | **`sample_data`** | HTTP sample seed; FK parents first; DB fallback via `itm_seed_table_from_database_sql()` when anchor ids differ. |
+| 7 | **`add`** | Insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first. |
+| 8 | **`pagination`** | Page 1 **Next** / page 2 **Previous** when rows &gt; `records_per_page`. |
+| 9 | **`bulk_cancel`** | Bulk form + **Cancel** contract (`js/bulk-delete-selection.js`). |
+| 10 | **`bulk_delete`** | POST `delete.php` with up to 3 `ids[]` when rows ≥ `records_per_page` (N/A note when skipped). |
+| 11 | **`search`** | Search on index. |
+| 12 | **`sort`** | Sort links on index. |
+| 13 | **`create`** | Create form. |
+| 14 | **`view`** | View record. |
+| 15 | **`edit`** | Edit form. |
+| 16 | **`list_all`** | List-all page. |
+| 17 | **`export_pdf`** | Export PDF control in list HTML. |
+| 18 | **`export_xlsx`** | Export Excel as OOXML `.xlsx` via `table-tools.js` + `xlsx.full.min.js` (parsed list table; row count ≠ import count). |
+| 19 | **`clear_table`** | POST **Clear Table** when rows ≥ `records_per_page` and bulk UI is visible (same gate as `bulk_delete`; runs while export rows are still present). |
+| 20 | **`clear`** | Second FK-aware tenant wipe (after export / optional `clear_table`; before import). |
+| 21 | **`import_db`** | One insertable row smoke test (`inserted=1` is pass). |
+| 22 | **`single_delete`** | Delete POST with FK retry. |
+| 23 | **`sample_data`** | End restore on empty table (HTTP). |
+| 24 | **`error_log`** | End check: 0 new errors since module scope. |
 
 **`mysql` verification (file or SQL):** prefer reading `database.sql` (runner step 1). To spot-check in MySQL: `SELECT COUNT(*) FROM \`{table}\`` on a database loaded from `database.sql` — expect the same N as the runner note (global insert count, not per-tenant). Empty modules (`patches_updates`, `ip_addresses`, …) drive **`sample_data`** N/A notes such as `No sample rows found in database.sql for this module.`
 
@@ -384,7 +385,7 @@ Do **not** modify logic or structure unless explicitly requested:
 ### 4. Dynamic UI Configuration (Settings)
 Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Button Positions:** Render refresh/add controls based on `new_button_position`.
-* **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`list`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
+* **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`ui_check`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
 * **DB Import Endpoint (Index Tables):** Add `data-itm-db-import-endpoint="index.php"` to every module index table so `📥Import Excel` can use the save-to-database flow.
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
 

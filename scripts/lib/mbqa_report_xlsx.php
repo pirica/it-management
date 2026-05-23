@@ -22,6 +22,7 @@ function mbqar_xlsx_step_label(string $step): string
         'mysql' => 'database.sql seed rows',
         'error_log' => 'Error log',
         'list' => 'List page',
+        'ui_check' => 'Table Actions UI',
         'clear' => 'Tenant clear',
         'sample_data' => 'Sample data',
         'add' => 'Bulk random rows',
