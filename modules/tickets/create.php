@@ -329,35 +329,6 @@ function tickets_resolve_created_by_user_id(mysqli $conn, int $companyId): int
     return !empty($options) ? (int)$options[0]['id'] : 0;
 }
 
-function tickets_resolve_asset_label(mysqli $conn, int $companyId, int $assetId): string
-{
-    if ($companyId <= 0 || $assetId <= 0) {
-        return '';
-    }
-
-    $stmt = mysqli_prepare($conn, 'SELECT name FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
-    if (!$stmt) {
-        return '';
-    }
-
-    mysqli_stmt_bind_param($stmt, 'ii', $assetId, $companyId);
-    mysqli_stmt_execute($stmt);
-    $lookup = mysqli_stmt_get_result($stmt);
-    $row = ($lookup) ? mysqli_fetch_assoc($lookup) : null;
-    mysqli_stmt_close($stmt);
-
-    return is_array($row) ? trim((string)($row['name'] ?? '')) : '';
-}
-
-function tickets_photo_delete_blocked_message(mysqli $conn, int $companyId, int $assetId): string
-{
-    $assetLabel = tickets_resolve_asset_label($conn, $companyId, $assetId);
-    $labelText = $assetLabel !== '' ? $assetLabel : ('#' . $assetId);
-
-    return 'Ticket photos cannot be deleted because related asset ' . $labelText
-        . ' is in use on this ticket. Clear or change Related Asset first.';
-}
-
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
@@ -426,13 +397,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, explode(',', $deletePhotoIndexesRaw)), static function ($value) {
             return $value !== null;
         })));
-    }
-    $linkedAssetIdForPhotoGuard = (int)($_POST['asset_id'] ?? $data['asset_id'] ?? 0);
-    $requestedPhotoDeletion = $deleteCurrentPhoto || $deletePhotoIndexes !== [];
-
-    // Why: photos on asset-linked tickets document the related equipment issue; block silent removal.
-    if (!$error && $is_edit && $linkedAssetIdForPhotoGuard > 0 && $requestedPhotoDeletion) {
-        $error = tickets_photo_delete_blocked_message($conn, (int)$company_id, $linkedAssetIdForPhotoGuard);
     }
 
     // Handle photo removal if requested
@@ -518,12 +482,6 @@ $existingTicketPhotoUrls = [];
 foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
     $existingTicketPhotoUrls[] = ticket_photo_public_path((string)$existingTicketPhotoFilename);
 }
-$linkedAssetId = (int)($data['asset_id'] ?? 0);
-$linkedAssetLabel = tickets_resolve_asset_label($conn, (int)$company_id, $linkedAssetId);
-$photoDeleteBlockedByAsset = $linkedAssetId > 0;
-$photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
-    ? tickets_photo_delete_blocked_message($conn, (int)$company_id, $linkedAssetId)
-    : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -666,11 +624,6 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
                                 <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>
-                            <?php if ($photoDeleteBlockedByAsset): ?>
-                                <div class="form-hint" id="relatedAssetInUseHint"><?php echo sanitize($photoDeleteBlockedMessage); ?></div>
-                            <?php else: ?>
-                                <div class="form-hint" id="relatedAssetInUseHint" style="display:none;"></div>
-                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <label>Created At</label>
@@ -690,10 +643,9 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
                             <?php if ($is_edit && !empty($existingTicketPhotos)): ?>
                                 <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
                                 <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
-                                <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;" <?php echo $photoDeleteBlockedByAsset ? 'disabled' : ''; ?>>Delete All</button>
+                                <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
                             <?php endif; ?>
                         </div>
-                        <p class="form-hint" id="photoDeleteBlockedHint" style="<?php echo $photoDeleteBlockedByAsset ? '' : 'display:none;'; ?>"><?php echo sanitize($photoDeleteBlockedMessage); ?></p>
                     </div>
 
                     <div class="form-group">
@@ -720,7 +672,7 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
                         <img src="<?php echo sanitize($photoUrl); ?>" alt="Current ticket photo <?php echo (int)$photoIndex + 1; ?>">
                     </a>
                     <?php if ($is_edit): ?>
-                        <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>" <?php echo $photoDeleteBlockedByAsset ? 'disabled' : ''; ?>>♻️ Delete</button>
+                        <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>">♻️ Delete</button>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
@@ -737,7 +689,6 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
     var ticketForm = document.getElementById('ticketForm');
     var uploadTarget = document.getElementById('ticketPhotoUploadTarget');
     var photoInput = document.getElementById('ticketPhotoInput');
-    var assetSelect = document.getElementById('ticketAssetSelect');
     var openPhotoPreview = document.getElementById('openPhotoPreview');
     var photoPreviewModal = document.getElementById('photoPreviewModal');
     var closePhotoPreview = document.getElementById('closePhotoPreview');
@@ -748,65 +699,10 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
     var existingPhotoPreviewGallery = document.getElementById('existingPhotoPreviewGallery');
     var pendingPhotoPreviewGallery = document.getElementById('pendingPhotoPreviewGallery');
     var photoPreviewEmptyHint = document.getElementById('photoPreviewEmptyHint');
-    var relatedAssetInUseHint = document.getElementById('relatedAssetInUseHint');
-    var photoDeleteBlockedHint = document.getElementById('photoDeleteBlockedHint');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var totalCurrentPhotos = deletePhotoItemButtons.length || (existingPhotoPreviewGallery ? existingPhotoPreviewGallery.querySelectorAll('.photo-preview-item').length : 0);
     var selectedPhotoPreviewUrls = [];
     var pendingDeletedPhotoIndexes = new Set();
-    var photoDeleteBlockedMessage = <?php echo json_encode($photoDeleteBlockedMessage, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-    var assetOptionLabels = {};
-    if (assetSelect) {
-        Array.prototype.forEach.call(assetSelect.options, function (option) {
-            if (option.value && option.value !== '') {
-                assetOptionLabels[option.value] = option.textContent || option.label || option.value;
-            }
-        });
-    }
-
-    function linkedAssetId() {
-        if (!assetSelect) {
-            return 0;
-        }
-        var value = parseInt(assetSelect.value || '0', 10);
-        return Number.isInteger(value) && value > 0 ? value : 0;
-    }
-
-    function buildPhotoDeleteBlockedMessage(assetId) {
-        if (!assetId) {
-            return '';
-        }
-        var label = assetOptionLabels[String(assetId)] || ('#' + assetId);
-        return 'Ticket photos cannot be deleted because related asset ' + label + ' is in use on this ticket. Clear or change Related Asset first.';
-    }
-
-    function syncPhotoDeleteGuardUi() {
-        var assetId = linkedAssetId();
-        var blocked = assetId > 0;
-        var message = blocked ? (photoDeleteBlockedMessage || buildPhotoDeleteBlockedMessage(assetId)) : '';
-
-        if (deletePhotoButton) {
-            deletePhotoButton.disabled = blocked;
-        }
-        deletePhotoItemButtons.forEach(function (button) {
-            button.disabled = blocked;
-        });
-        if (relatedAssetInUseHint) {
-            relatedAssetInUseHint.textContent = message;
-            relatedAssetInUseHint.style.display = blocked ? '' : 'none';
-        }
-        if (photoDeleteBlockedHint) {
-            photoDeleteBlockedHint.textContent = message;
-            photoDeleteBlockedHint.style.display = blocked ? '' : 'none';
-        }
-    }
-
-    function alertPhotoDeleteBlocked() {
-        var message = photoDeleteBlockedMessage || buildPhotoDeleteBlockedMessage(linkedAssetId());
-        if (message) {
-            window.alert(message);
-        }
-    }
 
     function isExternalFileDrag(event) {
         return !!(event.dataTransfer && event.dataTransfer.types && event.dataTransfer.types.indexOf('Files') !== -1);
@@ -900,9 +796,6 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
         }
         if (deletePhotoIndexesInput) {
             deletePhotoIndexesInput.value = '';
-        }
-        if (deletePhotoButton) {
-            deletePhotoButton.disabled = linkedAssetId() > 0;
         }
     }
 
@@ -1006,23 +899,14 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
     }
 
     resetPendingPhotoDeletionState();
-    syncPhotoDeleteGuardUi();
     updateCurrentPhotoHint();
     updatePhotoPreviewActionState();
     window.addEventListener('pageshow', function () {
         resetPendingPhotoDeletionState();
         clearPendingPhotoPreview();
-        syncPhotoDeleteGuardUi();
         updateCurrentPhotoHint();
         updatePhotoPreviewActionState();
     });
-
-    if (assetSelect) {
-        assetSelect.addEventListener('change', function () {
-            photoDeleteBlockedMessage = buildPhotoDeleteBlockedMessage(linkedAssetId());
-            syncPhotoDeleteGuardUi();
-        });
-    }
 
     if (photoInput) {
         photoInput.addEventListener('change', renderPendingPhotoPreview);
@@ -1030,10 +914,6 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
 
     if (deletePhotoButton && deletePhotoInput) {
         deletePhotoButton.addEventListener('click', function () {
-            if (linkedAssetId() > 0) {
-                alertPhotoDeleteBlocked();
-                return;
-            }
             deletePhotoInput.value = '1';
             pendingDeletedPhotoIndexes.clear();
             syncDeletePhotoIndexes();
@@ -1049,10 +929,6 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
     if (deletePhotoItemButtons.length > 0 && deletePhotoInput) {
         deletePhotoItemButtons.forEach(function (button) {
             button.addEventListener('click', function () {
-                if (linkedAssetId() > 0) {
-                    alertPhotoDeleteBlocked();
-                    return;
-                }
                 if (deletePhotoInput.value === '1') {
                     return;
                 }
