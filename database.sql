@@ -2949,7 +2949,12 @@ CREATE TABLE `tickets` (
 -- Manual migration (existing databases only — skip if import uses CREATE TABLE above):
 -- ALTER TABLE `tickets` DROP INDEX `ticket_external_code`;
 -- ALTER TABLE `tickets` ADD UNIQUE KEY `uq_tickets_id_company` (`id`, `company_id`);
+-- Drop ui_color (order matters — pre-upgrade trg_tickets_audit_* triggers reference OLD/NEW.ui_color):
+-- DROP TRIGGER IF EXISTS `trg_tickets_audit_insert`;
+-- DROP TRIGGER IF EXISTS `trg_tickets_audit_update`;
+-- DROP TRIGGER IF EXISTS `trg_tickets_audit_delete`;
 -- ALTER TABLE `tickets` DROP COLUMN `ui_color`;
+-- Recreate audit triggers (copy from trg_tickets_audit_* block near end of this file, or run lines after DROP TRIGGER there).
 -- Data for `tickets`
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-01-01 00:00:01');
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', NULL, '2026-01-01 00:00:01');
