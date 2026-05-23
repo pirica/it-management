@@ -785,7 +785,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </div>
             <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                         <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
