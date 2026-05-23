@@ -256,7 +256,6 @@ if ($companyCountStmt) {
     mysqli_stmt_close($companyCountStmt);
 }
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
-$showBulkActions = ($totalRows >= $perPage);
 if ($page > $totalPages) {
     $page = $totalPages;
     $offset = ($page - 1) * $perPage;
@@ -396,17 +395,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
             <?php endforeach; ?>
             <?php echo itm_render_alert_errors($errors); ?>
 
-            <?php if ($showBulkActions): ?>
-            <div class="card" style="margin-bottom:16px;">
-                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
-                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                </form>
-            </div>
-            <?php endif; ?>
-
             <!-- SEARCH AND FILTER FORM -->
             <div class="card audit-filters" style="margin-bottom:16px;">
                 <form method="GET">
@@ -469,7 +457,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <table>
                     <thead>
                         <tr>
-                            <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                             <?php $nextDir = ($sort === 'changed_at' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'changed_at', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Date &amp; Time<?php if ($sort === 'changed_at'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                             <th>User</th>
@@ -486,7 +473,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     <tbody>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No records found.</td>
+                            <td colspan="7" style="text-align:center;">No records found.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
@@ -522,7 +509,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             $previewText = 'Old: ' . itm_audit_preview($oldValuesDisplay, 80) . ' | New: ' . itm_audit_preview($newValuesDisplay, 80);
                             ?>
                             <tr>
-                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)($row['id'] ?? 0); ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <td><?php echo sanitize((string)$row['changed_at']); ?></td>
                                 <td class="audit-user" title="<?php echo sanitize($userEmail !== '' ? ($userName . ' <' . $userEmail . '>') : $userName); ?>">
                                     <?php echo sanitize($userName); ?>
@@ -546,12 +532,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm btn-primary" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View audit log">🔎</a>
-                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this audit log row?');">
-                                            <input type="hidden" name="id" value="<?php echo (int)($row['id'] ?? 0); ?>">
-                                            <input type="hidden" name="bulk_action" value="single_delete">
-                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete audit log">🗑️</button>
-                                        </form>
                                     </div>
                                 </td>
                             </tr>
