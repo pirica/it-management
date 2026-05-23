@@ -2026,6 +2026,7 @@ function mbqa_runner_module_step_exceptions(): array
             'edit' => 'N/A (settings module is configuration/backup UI)',
             'list_all' => 'N/A (settings module is configuration/backup UI)',
             'clear_table' => 'N/A (settings module is configuration/backup UI)',
+            'import_db' => 'N/A (settings module is configuration/backup UI)',
             'single_delete' => 'N/A (settings module is configuration/backup UI)',
         ],
         // Why: audit_logs is a read-only evidence centre; QA documents N/A steps and seeds rows only via add DB fallback.
