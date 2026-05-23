@@ -1076,6 +1076,11 @@ if (!function_exists('itm_seed_match_tenant_fk_by_business_keys')) {
             return 0;
         }
 
+        $detectFkLib = ROOT_PATH . 'includes/detect_fk_dropdown_ui_risk_lib.php';
+        if (is_file($detectFkLib)) {
+            require_once $detectFkLib;
+        }
+
         if (!function_exists('itm_fk_table_column_names') || !function_exists('itm_detect_fk_business_key_columns')) {
             return 0;
         }
