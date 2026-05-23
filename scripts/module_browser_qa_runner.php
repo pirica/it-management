@@ -3320,6 +3320,49 @@ function mbqa_qa_admin_user_id(mysqli $conn): int
     return (int)$cachedId;
 }
 
+/**
+ * Restore MySQL audit trigger session vars after cleanup helpers overwrite @app_* values.
+ */
+function mbqa_sync_mysql_audit_session(mysqli $conn, ?int $companyId = null, ?int $userId = null): void
+{
+    if ($companyId === null) {
+        $companyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+    }
+    if ($userId === null) {
+        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    }
+
+    $auditCompanyId = $companyId > 0 ? (int)$companyId : null;
+    $auditUserId = $userId > 0 ? (int)$userId : null;
+
+    $username = mbqa_qa_login_identifier();
+    $email = '';
+    if ($auditUserId !== null) {
+        $stmt = mysqli_prepare($conn, 'SELECT username, email FROM users WHERE id = ? LIMIT 1');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $auditUserId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $row = $result ? mysqli_fetch_assoc($result) : null;
+            mysqli_stmt_close($stmt);
+            if ($row) {
+                $username = trim((string)($row['username'] ?? $username));
+                $email = trim((string)($row['email'] ?? ''));
+            }
+        }
+    }
+
+    $ip = function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+    $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? 'module_browser_qa_runner'), 0, 255);
+
+    mysqli_query($conn, 'SET @app_user_id = ' . ($auditUserId === null ? 'NULL' : (string)$auditUserId));
+    mysqli_query($conn, 'SET @app_company_id = ' . ($auditCompanyId === null ? 'NULL' : (string)$auditCompanyId));
+    mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $username) . "'");
+    mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $email) . "'");
+    mysqli_query($conn, "SET @app_ip_address = '" . mysqli_real_escape_string($conn, $ip) . "'");
+    mysqli_query($conn, "SET @app_user_agent = '" . mysqli_real_escape_string($conn, $userAgent) . "'");
+}
+
 function mbqa_records_per_page(mysqli $conn, ?int $companyId = null): int
 {
     if (!function_exists('itm_get_ui_configuration') || !function_exists('itm_resolve_records_per_page')) {
@@ -5049,6 +5092,7 @@ $mbqaEquipmentPrecleanupNote = itm_equipment_cleanup_report_summary($mbqaEquipme
 if (!$mbqaEquipmentPrecleanup['ok'] && !empty($mbqaEquipmentPrecleanup['errors'])) {
     mbqa_err(itm_equipment_cleanup_report_summary($mbqaEquipmentPrecleanup) . "\n");
 }
+mbqa_sync_mysql_audit_session($conn, null, $mbqaAdminUserId);
 
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
@@ -5098,6 +5142,7 @@ foreach ($companiesToRun as $companyId) {
     // Why: list/pagination gates resolve records_per_page from ui_configuration for the active QA tenant, not a stale CLI session company.
     $_SESSION['company_id'] = $companyId;
     $_SESSION['user_id'] = $mbqaAdminUserId;
+    mbqa_sync_mysql_audit_session($conn, $companyId, $mbqaAdminUserId);
 
     foreach ($orderedModules as $slug) {
         if (mbqa_ajax_should_stop($root)) {
