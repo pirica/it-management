@@ -3254,9 +3254,40 @@ function mbqa_grow_unique_scope_parents(mysqli $conn, string $table, int $compan
     }
 }
 
-function mbqa_qa_admin_user_id(): int
+function mbqa_qa_login_identifier(): string
 {
-    return 1;
+    return 'Admin';
+}
+
+/**
+ * Resolve the users.id row the HTTP QA login uses (email or username, case-insensitive).
+ */
+function mbqa_qa_admin_user_id(mysqli $conn): int
+{
+    static $cachedId = null;
+    if ($cachedId !== null) {
+        return (int)$cachedId;
+    }
+
+    $loginId = mbqa_qa_login_identifier();
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
+    );
+    if (!$stmt) {
+        $cachedId = 0;
+        return 0;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ss', $loginId, $loginId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    $cachedId = $row ? (int)($row['id'] ?? 0) : 0;
+
+    return (int)$cachedId;
 }
 
 function mbqa_records_per_page(mysqli $conn, ?int $companyId = null): int
@@ -3271,7 +3302,7 @@ function mbqa_records_per_page(mysqli $conn, ?int $companyId = null): int
 
     $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
     if ($userId <= 0) {
-        $userId = mbqa_qa_admin_user_id();
+        $userId = mbqa_qa_admin_user_id($conn);
     }
 
     if ($companyId <= 0) {
@@ -4947,7 +4978,7 @@ $csrf = mbqa_extract_csrf($loginGet['body']);
 $loginPost = mbqa_http(
     $baseUrl . 'login.php',
     'POST',
-    http_build_query(['email' => 'Admin', 'password' => 'Admin', 'csrf_token' => $csrf]),
+    http_build_query(['email' => mbqa_qa_login_identifier(), 'password' => 'Admin', 'csrf_token' => $csrf]),
     ['Content-Type: application/x-www-form-urlencoded'],
     $cookieFile
 );
@@ -4955,6 +4986,13 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
     mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}? Use http:// (not https://) for localhost unless TLS is configured.\n");
     exit(1);
 }
+
+$mbqaAdminUserId = mbqa_qa_admin_user_id($conn);
+if ($mbqaAdminUserId <= 0) {
+    mbqa_err('QA login identifier ' . mbqa_qa_login_identifier() . ' not found in users table (active row required).' . "\n");
+    exit(1);
+}
+$_SESSION['user_id'] = $mbqaAdminUserId;
 
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
@@ -5003,7 +5041,7 @@ foreach ($companiesToRun as $companyId) {
 
     // Why: list/pagination gates resolve records_per_page from ui_configuration for the active QA tenant, not a stale CLI session company.
     $_SESSION['company_id'] = $companyId;
-    $_SESSION['user_id'] = mbqa_qa_admin_user_id();
+    $_SESSION['user_id'] = $mbqaAdminUserId;
 
     foreach ($orderedModules as $slug) {
         if (mbqa_ajax_should_stop($root)) {
