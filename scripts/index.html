@@ -473,7 +473,7 @@
                     <td><a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
-                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, then per module <strong>mysql</strong> (<code>database.sql</code> INSERT row count), <strong>rotate error_log.txt</strong> (<code>error_log-1.txt</code>, …) when present, list/<strong>clear</strong>/sample_data, <strong>add</strong> (~30 random rows when below perPage), <strong>bulk_delete</strong> (POST <code>delete.php</code> with up to 3 <code>ids[]</code> when rows ≥ perPage), CRUD/export, <strong>clear_table</strong> (before second <strong>clear</strong>), second <strong>clear</strong>, import/<strong>single_delete</strong>, end with HTTP <strong>sample_data</strong> (Tier A) and <strong>error_log</strong>. Manual bulk UI also has <strong>Cancel</strong> via <code>js/bulk-delete-selection.js</code> (runner does not click it). Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run.
+                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, then per module <strong>mysql</strong> (<code>database.sql</code> INSERT row count), <strong>rotate error_log.txt</strong> (<code>error_log-1.txt</code>, …) when present, list/<strong>clear</strong>/sample_data, <strong>add</strong> (~30 random rows when below perPage), <strong>bulk_delete</strong> (POST <code>delete.php</code> with up to 3 <code>ids[]</code> when rows ≥ perPage), CRUD/export, <strong>clear_table</strong> (before second <strong>clear</strong>), second <strong>clear</strong>, import/<strong>single_delete</strong>, end with HTTP <strong>sample_data</strong> (Tier A) and <strong>error_log</strong>. Manual bulk UI also has <strong>Cancel</strong> via <code>js/bulk-delete-selection.js</code> (runner checks HTML only — does not click). Tier lists: <code>$bespokeSmoke</code> / <code>$skipClear</code> in <code>scripts/lib/mbqa_runner_tiers.php</code>. Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run. <strong>Default runner</strong> for full regression and CI spot-checks.
                     </td>
                     <td>
                         Browser: <a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a> — form: <strong>Run QA</strong> + <strong>Stop</strong> (AJAX poll every 400ms, not bare <code>?run=1</code>). Live line: <code>Running QA… co {id} — {module} - {step}</code>; optional manual module slug.<br>
@@ -487,21 +487,21 @@
                     <td><a href="module_browser_qa_runnerV2.php">module_browser_qa_runnerV2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
-                        V2 QA runner based on <code>module_browser_qa_runner.php</code>. Adds early module/company validation, structured JSON parsing for import responses, stale AJAX progress/cancel cleanup, and an optional browser-only <strong>UI click smoke</strong> for one module + one company. Click-smoke appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, and <code>import_excel_click</code> evidence to <code>qa-reports/module-browser-qa.json</code>.
+                        <strong>V2</strong> — same Tier A/C/D HTTP checklist as V1 (<code>$bespokeSmoke</code> / <code>$skipClear</code> from <code>scripts/lib/mbqa_runner_tiers.php</code>; configured step exceptions must match V1 in both runner files). Adds: early module/company preflight; auto-detected Base URL (HTTPS localhost → HTTP on Laragon); structured JSON parsing for <strong>import_db</strong>; stale AJAX progress/cancel cleanup; optional browser-only <strong>UI click smoke</strong> (one module + one company) that appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, and <code>import_excel_click</code> to the same timestamped run JSON via <code>ajax=ui_click_evidence</code>. Use for spot-checks with real button clicks; use V1 for default full regression.
                     </td>
                     <td>
-                        Browser: <a href="module_browser_qa_runnerV2.php">module_browser_qa_runnerV2.php</a> — form: choose one module + one company to enable <strong>UI click smoke</strong>; otherwise use like the original runner.<br>
+                        Browser: <a href="module_browser_qa_runnerV2.php">module_browser_qa_runnerV2.php</a> — form: <strong>Run QA</strong> + <strong>Stop</strong>; optional <strong>UI click smoke</strong> (requires one module + one company). Base URL auto-filled on Laragon.<br>
                         <code>php scripts/module_browser_qa_runnerV2.php</code><br>
                         <code>php scripts/module_browser_qa_runnerV2.php --pilot-only</code><br>
                         <code>php scripts/module_browser_qa_runnerV2.php --module=expenses --company=1</code><br>
-                        <code>php scripts/module_browser_qa_runnerV2.php --ui-click-smoke --module=expenses --company=1</code> (browser-only guard; use the form for real clicks)<br>
+                        <code>php scripts/module_browser_qa_runnerV2.php --ui-click-smoke --module=expenses --company=1</code> (CLI guard only — real clicks need the browser form)<br>
                         <code>php scripts/module_browser_qa_runnerV2.php --help</code>
                     </td>
                 </tr>
                 <tr>
                     <td><a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Builds markdown summary from the JSON produced by <code>module_browser_qa_runner.php</code> (V1 only). Browser shows an HTML preview and link to <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
+                    <td>Builds markdown summary from a timestamped JSON produced by <code>module_browser_qa_runner.php</code> (V1). Includes tier reference (<code>$bespokeSmoke</code>, <code>$skipClear</code>), configured step exceptions, and per-module results. Writes <code>qa-reports/module-browser-qa.md</code> (overwritten each build). Do not cross-link to V2 runner.</td>
                     <td>
                         Browser: <a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a> (form; <code>?run=1&amp;date=YYYY-MM-DD</code>)<br>
                         <code>php scripts/module_browser_qa_build_report.php</code><br>
@@ -511,7 +511,7 @@
                 <tr>
                     <td><a href="module_browser_qa_build_reportV2.php">module_browser_qa_build_reportV2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Same as the V1 build report, but links only to <code>module_browser_qa_runnerV2.php</code> (Re-Run Test, runner form, UI click smoke rerun). Use after V2 runner output.</td>
+                    <td>Same markdown sections as V1 build report, but Re-Run / form links target <code>module_browser_qa_runnerV2.php</code> only (including UI click smoke re-run). Use after a V2 runner JSON. Writes <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
                     <td>
                         Browser: <a href="module_browser_qa_build_reportV2.php">module_browser_qa_build_reportV2.php</a> (form; <code>?run=1</code>)<br>
                         <code>php scripts/module_browser_qa_build_reportV2.php</code><br>
