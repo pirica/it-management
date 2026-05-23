@@ -3248,11 +3248,26 @@ function mbqa_records_per_page(mysqli $conn): int
 
 function mbqa_tenant_row_count(mysqli $conn, string $table, int $companyId): int
 {
-    if (!itm_is_safe_identifier($table) || $companyId <= 0 || !itm_table_has_column($conn, $table, 'company_id')) {
+    if (!itm_is_safe_identifier($table)) {
         return 0;
     }
 
     $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+
+    // Why: Global tables (e.g. attempts) have no company_id; list/pagination gates use full row count.
+    if (!itm_table_has_column($conn, $table, 'company_id')) {
+        $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM ' . $tableEsc);
+        if (!$res || !($row = mysqli_fetch_assoc($res))) {
+            return 0;
+        }
+
+        return (int)($row['c'] ?? 0);
+    }
+
+    if ($companyId <= 0) {
+        return 0;
+    }
+
     $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId);
     if (!$res || !($row = mysqli_fetch_assoc($res))) {
         return 0;

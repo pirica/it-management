@@ -702,6 +702,7 @@ if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
     $totalRows = (int)($countRow['total_rows'] ?? 0);
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) {
     $page = 1;
@@ -748,13 +749,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <span></span>
                     <?php endif; ?>
                 </div>
-            <div class="card" style="margin-bottom:16px;">
-                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                </form>
-            </div>
+            <?php if ($showBulkActions): ?>
+                <div class="card" style="margin-bottom:16px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
+            <?php endif; ?>
 
                 <div class="card" style="margin-bottom:16px;">
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -771,11 +775,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </div>
                     </form>
                 </div>
-                <div class="card" style="overflow:auto;">
+                <div class="card" style="overflow:auto;" data-itm-no-import-excel="1">
                     <table>
                         <thead>
                         <tr>
-                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php if ($showBulkActions): ?>
+                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                            <?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -794,7 +800,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkActions): ?>
+                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
@@ -811,21 +819,21 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($uiColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
                 <?php if ($totalRows > $perPage): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
-                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                        <div>Showing <?php echo (int)$offset + 1; ?>-<?php echo (int)min($offset + $perPage, $totalRows); ?> of <?php echo (int)$totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="◀️ Previous">Previous</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>" title="◀️ Previous">Previous</a>
                             <?php endif; ?>
-                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="▶️ Next">Next</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>" title="▶️ Next">Next</a>
                             <?php endif; ?>
                         </div>
                     </div>
