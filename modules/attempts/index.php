@@ -945,7 +945,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </div>
                     </form>
                 </div>
-                <div class="card" style="overflow:auto;">
+                <div class="card" style="overflow:auto;" data-itm-no-import-excel="1">
                     <table>
                         <thead>
                         <tr>
