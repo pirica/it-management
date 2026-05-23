@@ -165,6 +165,86 @@ function tickets_equipment_select_options(mysqli $conn, int $companyId, $selecte
 }
 
 /**
+ * Builds equipment quick-add modal fields (type, status, conditional switch RJ45) for Related Asset select.
+ */
+function tickets_build_equipment_add_extra_fields_json(mysqli $conn, int $companyId): string
+{
+    if ($companyId <= 0) {
+        return '[]';
+    }
+
+    $equipmentTypeOptions = [];
+    $switchEquipmentTypeId = 0;
+    $typeRes = mysqli_query(
+        $conn,
+        'SELECT id, name FROM equipment_types WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
+    );
+    while ($typeRes && ($row = mysqli_fetch_assoc($typeRes))) {
+        $typeId = (int)($row['id'] ?? 0);
+        $typeName = (string)($row['name'] ?? '');
+        $equipmentTypeOptions[] = [
+            'value' => $typeId,
+            'label' => $typeName,
+        ];
+        if ($switchEquipmentTypeId === 0 && strcasecmp(trim($typeName), 'switch') === 0) {
+            $switchEquipmentTypeId = $typeId;
+        }
+    }
+
+    $equipmentStatusFieldOptions = [];
+    $statusRes = mysqli_query(
+        $conn,
+        'SELECT id, name FROM equipment_statuses WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
+    );
+    while ($statusRes && ($row = mysqli_fetch_assoc($statusRes))) {
+        $equipmentStatusFieldOptions[] = [
+            'value' => (int)($row['id'] ?? 0),
+            'label' => (string)($row['name'] ?? ''),
+        ];
+    }
+
+    $switchRj45FieldOptions = [];
+    $rj45Res = mysqli_query(
+        $conn,
+        'SELECT id, name FROM equipment_rj45 WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
+    );
+    while ($rj45Res && ($row = mysqli_fetch_assoc($rj45Res))) {
+        $switchRj45FieldOptions[] = [
+            'value' => (int)($row['id'] ?? 0),
+            'label' => (string)($row['name'] ?? ''),
+        ];
+    }
+
+    $fields = [
+        [
+            'name' => 'equipment_type_id',
+            'label' => 'Equipment Type',
+            'type' => 'select',
+            'options' => $equipmentTypeOptions,
+        ],
+        [
+            'name' => 'switch_rj45_id',
+            'label' => 'RJ45 Ports (required for Switch)',
+            'type' => 'select',
+            'options' => $switchRj45FieldOptions,
+            'required' => false,
+            'required_when' => [
+                'field' => 'equipment_type_id',
+                'equals' => (string)$switchEquipmentTypeId,
+            ],
+        ],
+        [
+            'name' => 'status_id',
+            'label' => 'Status',
+            'type' => 'select',
+            'options' => $equipmentStatusFieldOptions,
+        ],
+    ];
+
+    return json_encode($fields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]';
+}
+
+/**
  * @return array<int, array{id:int,label:string}>
  */
 function tickets_user_select_options(mysqli $conn, int $companyId, $selectedId): array
@@ -377,6 +457,7 @@ $priorityOptions = tickets_lookup_select_options($conn, 'ticket_priorities', (in
 $createdByOptions = tickets_user_select_options($conn, (int)$company_id, $data['created_by_user_id'] ?? 0);
 $assignedToOptions = tickets_user_select_options($conn, (int)$company_id, $data['assigned_to_user_id'] ?? 0);
 $assetOptions = tickets_equipment_select_options($conn, (int)$company_id, $data['asset_id'] ?? 0);
+$ticketEquipmentAddExtraFieldsJson = tickets_build_equipment_add_extra_fields_json($conn, (int)$company_id);
 $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
 $existingTicketPhotoUrls = [];
 foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
@@ -521,7 +602,7 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
                     <div class="form-row">
                         <div class="form-group">
                             <label>Related Asset</label>
-                            <select name="asset_id" id="ticketAssetSelect" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment">
+                            <select name="asset_id" id="ticketAssetSelect" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment" data-add-extra-fields="<?php echo sanitize($ticketEquipmentAddExtraFieldsJson); ?>">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($assetOptions as $assetOption): ?>
                                     <option value="<?php echo (int)$assetOption['id']; ?>" <?php echo (string)$data['asset_id'] === (string)$assetOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($assetOption['label']); ?></option>
