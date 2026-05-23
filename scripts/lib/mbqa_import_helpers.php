@@ -7,6 +7,35 @@
 
 declare(strict_types=1);
 
+function mbqa_parse_char_max_length(string $type): ?int
+{
+    if (preg_match('/^(?:var)?char\((\d+)\)/', $type, $match)) {
+        return (int)$match[1];
+    }
+
+    return null;
+}
+
+/**
+ * Why: QA import tags can exceed narrow varchar columns (e.g. cable_colors.color_name varchar(20)).
+ */
+function mbqa_fit_string_to_column_length(string $value, int $sequence, ?int $maxLen): string
+{
+    if ($maxLen === null || $maxLen <= 0 || strlen($value) <= $maxLen) {
+        return $value;
+    }
+
+    $prefix = 'MBQA-' . $sequence . '-';
+    $hashLen = $maxLen - strlen($prefix);
+    if ($hashLen < 1) {
+        return substr((string)$sequence, 0, $maxLen);
+    }
+
+    $short = $prefix . substr(md5($value), 0, $hashLen);
+
+    return substr($short, 0, $maxLen);
+}
+
 /**
  * @return string[]
  */
@@ -341,7 +370,13 @@ function mbqa_pick_free_values_for_unique_scope(mysqli $conn, string $table, int
 
         $type = strtolower((string)($columnsMeta[$col]['Type'] ?? ''));
         if (strpos($type, 'char') !== false || strpos($type, 'text') !== false) {
-            $picked[$col] = 'QA-IMPORT-' . str_replace('_', '-', $col) . '-' . $suffix;
+            $raw = 'QA-IMPORT-' . str_replace('_', '-', $col) . '-' . $suffix;
+            $maxLen = mbqa_parse_char_max_length($type);
+            $seq = (int)preg_replace('/\D/', '', $suffix);
+            if ($seq <= 0) {
+                $seq = 1;
+            }
+            $picked[$col] = mbqa_fit_string_to_column_length($raw, $seq, $maxLen);
             continue;
         }
 
