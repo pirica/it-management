@@ -102,6 +102,41 @@ function itm_audit_logs_build_query(array $params): string
     return http_build_query($normalized);
 }
 
+/**
+ * Why: Audit log volume can be huge; ALL in this module shows up to 1000 rows, not the global 1M cap.
+ */
+function itm_audit_logs_resolve_records_per_page($uiConfig)
+{
+    $raw = strtolower((string)($uiConfig['records_per_page'] ?? '25'));
+    if ($raw === 'all') {
+        return 1000;
+    }
+
+    return itm_resolve_records_per_page($uiConfig);
+}
+
+/**
+ * @return string Normalized records_per_page token, or empty string when invalid for audit_logs.
+ */
+function itm_audit_logs_normalize_records_per_page_choice($raw)
+{
+    $normalized = strtolower(trim((string)$raw));
+    if ($normalized === 'all') {
+        return 'all';
+    }
+
+    if (!ctype_digit($normalized)) {
+        return '';
+    }
+
+    $numeric = (int)$normalized;
+    if ($numeric <= 0 || $numeric > 1000) {
+        return '';
+    }
+
+    return (string)$numeric;
+}
+
 // Extract filter parameters from the URL for persistent search/filtering
 $search = trim((string)($_GET['search'] ?? ''));
 $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
@@ -180,7 +215,10 @@ $recordsPerPageOptions = [
     'all' => 'ALL',
 ];
 $currentRecordsPerPage = strtolower((string)($ui_config['records_per_page'] ?? '25'));
-if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
+if (
+    !array_key_exists($currentRecordsPerPage, $recordsPerPageOptions)
+    && itm_audit_logs_normalize_records_per_page_choice($currentRecordsPerPage) !== ''
+) {
     $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
 }
 
@@ -204,7 +242,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_save_re
     }
 
     $configToSave = is_array($ui_config) ? $ui_config : itm_get_ui_configuration($conn, $companyId);
-    $configToSave['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
+    $postedRecordsPerPage = itm_audit_logs_normalize_records_per_page_choice($_POST['records_per_page'] ?? '25');
+    if ($postedRecordsPerPage === '') {
+        $_SESSION['audit_logs_flash_error'] = ['Rows on screen must be a positive number up to 1000, or ALL.'];
+        $redirectQuery = itm_audit_logs_build_query([
+            'search' => $postedSearch,
+            'action_filter' => $postedAction,
+            'date_from' => $postedDateFrom,
+            'date_to' => $postedDateTo,
+            'sort' => $postedSort,
+            'dir' => $postedDir,
+            'page' => 1,
+        ]);
+        header('Location: index.php' . ($redirectQuery !== '' ? '?' . $redirectQuery : ''));
+        exit;
+    }
+    $configToSave['records_per_page'] = $postedRecordsPerPage;
     $settingsUserId = (int)($_SESSION['user_id'] ?? 0);
 
     if ($settingsUserId <= 0 || !itm_save_ui_configuration($conn, $companyId, $configToSave, $settingsUserId)) {
@@ -224,8 +277,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_save_re
     exit;
 }
 
-// Resolve pagination limit
-$perPage = itm_resolve_records_per_page($ui_config ?? null);
+// Resolve pagination limit (ALL capped at 1000 rows in this module only).
+$perPage = itm_audit_logs_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
@@ -585,7 +638,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         }
 
         const numeric = parseInt(normalized, 10);
-        if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 1000000) {
+        if (!Number.isFinite(numeric) || numeric <= 0 || numeric > 1000) {
             return '';
         }
 
@@ -624,7 +677,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
     recordsPerPageSelect.addEventListener('change', () => {
         if (recordsPerPageSelect.value === addOptionValue) {
-            const input = window.prompt('Enter records per page (positive number) or "all":', recordsPerPageSelect.dataset.previousValue || '25');
+            const input = window.prompt('Enter records per page (1–1000) or "all" (shows up to 1000 rows):', recordsPerPageSelect.dataset.previousValue || '25');
             if (input === null) {
                 recordsPerPageSelect.value = recordsPerPageSelect.dataset.previousValue || '25';
                 return;
@@ -632,7 +685,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 
             const normalized = isValidRecordsPerPageInput(input);
             if (!normalized) {
-                window.alert('Please enter a positive number (e.g., 25) or "all".');
+                window.alert('Please enter a number from 1 to 1000, or "all".');
                 recordsPerPageSelect.value = recordsPerPageSelect.dataset.previousValue || '25';
                 return;
             }
