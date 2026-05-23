@@ -103,16 +103,17 @@ function itm_audit_logs_build_query(array $params): string
 }
 
 /**
- * Why: Audit log volume can be huge; ALL in this module shows up to 1000 rows, not the global 1M cap.
+ * Why: Audit log volume can be huge; this module caps page size at 1000 even when shared UI config holds ALL or a larger numeric value from another module.
  */
 function itm_audit_logs_resolve_records_per_page($uiConfig)
 {
+    $maxPerPage = 1000;
     $raw = strtolower((string)($uiConfig['records_per_page'] ?? '25'));
     if ($raw === 'all') {
-        return 1000;
+        return $maxPerPage;
     }
 
-    return itm_resolve_records_per_page($uiConfig);
+    return min(itm_resolve_records_per_page($uiConfig), $maxPerPage);
 }
 
 /**
