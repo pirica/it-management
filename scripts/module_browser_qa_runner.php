@@ -2014,6 +2014,10 @@ function mbqa_runner_module_step_exceptions(): array
         'patches_updates' => [
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
+        // Why: IP address rows are generated from live subnets, not stored as static database.sql samples.
+        'ip_addresses' => [
+            'sample_data' => 'N/A (IP addresses are generated from subnets, not database.sql samples)',
+        ],
         // Why: bulk random rows on equipment_types scaffold modules/is_mbqa_* folders; avoid module creations in QA.
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
@@ -3138,6 +3142,13 @@ function mbqa_unique_expense_import_row(mysqli $conn, int $companyId, array $sql
  */
 function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $companyId, array $exportRows): array
 {
+    if ($table === 'ip_addresses' && function_exists('mbqa_ip_addresses_import_rows')) {
+        $ipAddressRows = mbqa_ip_addresses_import_rows($conn, $companyId);
+        if (!empty($ipAddressRows)) {
+            return $ipAddressRows;
+        }
+    }
+
     if (count($exportRows) >= 2) {
         $importRows = mbqa_build_import_rows_from_export($exportRows);
         $byColumn = mbqa_database_sql_values_by_column($conn, $table, $companyId);
@@ -5294,7 +5305,7 @@ function mbqa_parse_in_use_tables(string $html): array
 function mbqa_index_still_has_row(string $html, int $id): bool
 {
     return preg_match('/name="ids\[\]"\s+value="' . preg_quote((string)$id, '/') . '"/', $html) === 1
-        || preg_match('/view\.php\?id=' . preg_quote((string)$id, '/') . '\b/', $html) === 1;
+        || preg_match('/href=["\']view\.php\?id=' . preg_quote((string)$id, '/') . '\b/', $html) === 1;
 }
 
 /**

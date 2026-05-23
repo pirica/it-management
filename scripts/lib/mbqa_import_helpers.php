@@ -573,3 +573,24 @@ function mbqa_build_fallback_import_rows(mysqli $conn, string $table, int $compa
         )
     );
 }
+
+/**
+ * @return array<int, array<int, string>>
+ */
+function mbqa_ip_addresses_import_rows(mysqli $conn, int $companyId): array
+{
+    $picked = mbqa_pick_free_values_for_unique_scope(
+        $conn,
+        'ip_addresses',
+        $companyId,
+        ['company_id', 'subnet_id', 'ip_text']
+    );
+    if (empty($picked['subnet_id']) || empty($picked['ip_text'])) {
+        return [];
+    }
+
+    return [
+        ['Subnet', 'IP Address', 'Status', 'Active'],
+        [(string)$picked['subnet_id'], (string)$picked['ip_text'], 'free', '1'],
+    ];
+}

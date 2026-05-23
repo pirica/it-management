@@ -33,6 +33,7 @@
                 </div>
 
                 <!-- BULK ACTIONS -->
+                <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -40,6 +41,7 @@
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
+                <?php endif; ?>
 
                 <!-- SEARCH BAR -->
                 <div class="card" style="margin-bottom:16px;">
@@ -97,7 +99,7 @@
                         <tr>
                             <?php if ($itmIpAddressFocusedList): ?>
                                 <th data-itm-actions-origin="1" class="itm-actions-cell">Actions</th>
-                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                                <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                                 <?php
                                     $itmIpListHeaders = [
                                         'ip_text' => 'IP',
@@ -118,7 +120,7 @@
                                     </th>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                                <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): ?>
                                     <?php $field = (string)$col['Field']; ?>
                                     <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -161,7 +163,7 @@
                                             </form>
                                         </div>
                                     </td>
-                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                    <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                     <td><?php echo sanitize((string)($row['ip_text'] ?? '')); ?></td>
                                     <td><?php echo cr_render_cell_value($crud_table, 'status', $itmStatusDisplay); ?></td>
                                     <td>
@@ -196,7 +198,7 @@
                             <?php endforeach; ?>
                         <?php elseif (!$itmIpAddressFocusedList && $rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'notes' && trim((string)($row[$f] ?? '')) !== ''): ?>
@@ -220,7 +222,7 @@
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo $itmIpAddressFocusedList ? 8 : count($fieldColumns) + 2; ?>" style="text-align:center;">No records found.<?php if ($itmIpAddressFocusedList && $itmSubnetFilterId > 0): ?> Generate host IPs from the <a href="../ip_subnets/view.php?id=<?php echo (int)$itmSubnetFilterId; ?>">subnet view</a>.<?php endif; ?></td></tr>
+                            <tr><td colspan="<?php echo $itmIpAddressFocusedList ? (7 + ($showBulkActions ? 1 : 0)) : count($fieldColumns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No records found.<?php if ($itmIpAddressFocusedList && $itmSubnetFilterId > 0): ?> Generate host IPs from the <a href="../ip_subnets/view.php?id=<?php echo (int)$itmSubnetFilterId; ?>">subnet view</a>.<?php endif; ?></td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>

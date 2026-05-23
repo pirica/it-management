@@ -74,6 +74,7 @@ if ($itmIpAddressFocusedList && $hasCompany && $company_id > 0 && function_exist
     $offset = ($page - 1) * $perPage;
     $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 }
+$showBulkActions = ($totalRows >= $perPage);
 
 $itmIpAddressListQuerySuffix = 'search=' . urlencode($searchRaw)
     . '&sort=' . urlencode($sort)
@@ -83,4 +84,3 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
 ?>
-
