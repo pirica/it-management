@@ -4131,6 +4131,65 @@ function mbqa_index_pagination_matches_row_gate(int $rowCount, int $perPage, str
     ];
 }
 
+function mbqa_index_has_actions_column(string $html): bool
+{
+    if (preg_match('/<th\b[^>]*>\s*Actions\s*<\/th>/i', $html) === 1) {
+        return true;
+    }
+
+    return stripos($html, 'data-itm-actions-origin') !== false;
+}
+
+/**
+ * Table Actions column must expose layout-engine markers on header and body cells.
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_index_table_actions_matches_ui_contract(string $html): array
+{
+    if (stripos($html, '<table') === false) {
+        return ['ok' => true, 'note' => 'N/A (no list table in HTML)'];
+    }
+    if (!mbqa_index_has_actions_column($html)) {
+        return ['ok' => true, 'note' => 'N/A (no Actions column in HTML)'];
+    }
+
+    $headerOk = preg_match(
+        '/<th\b(?=[^>]*\bitm-actions-cell\b)(?=[^>]*data-itm-actions-origin=["\']1["\'])[^>]*>/i',
+        $html
+    ) === 1;
+    if (!$headerOk) {
+        return [
+            'ok' => false,
+            'note' => 'Actions header missing class itm-actions-cell and data-itm-actions-origin="1"',
+        ];
+    }
+
+    $rowCount = mbqa_index_count_table_rows($html);
+    if ($rowCount < 1) {
+        return [
+            'ok' => true,
+            'note' => 'Actions header mapped (itm-actions-cell + data-itm-actions-origin); no data rows',
+        ];
+    }
+
+    $bodyOk = preg_match(
+        '/<td\b(?=[^>]*\bitm-actions-cell\b)(?=[^>]*data-itm-actions-origin=["\']1["\'])[^>]*>/i',
+        $html
+    ) === 1;
+    if (!$bodyOk) {
+        return [
+            'ok' => false,
+            'note' => 'Actions body cell missing class itm-actions-cell and data-itm-actions-origin="1"',
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'note' => 'Actions mapped (itm-actions-cell + data-itm-actions-origin on header and body)',
+    ];
+}
+
 /**
  * Pagination Previous/Next anchor rendered in server HTML (not JS-only).
  *
@@ -5193,6 +5252,7 @@ foreach ($companiesToRun as $companyId) {
                 $bulkGate = mbqa_index_bulk_ui_matches_row_gate($rowCountList, $perPageList, $index['body']);
             }
             $pagGate = mbqa_index_pagination_matches_row_gate($rowCountList, $perPageList, $index['body']);
+            $actionsGate = mbqa_index_table_actions_matches_ui_contract($index['body']);
             if (!$bulkGate['ok']) {
                 $listOk = false;
                 $listNote .= '; ' . $bulkGate['note'];
@@ -5201,8 +5261,12 @@ foreach ($companiesToRun as $companyId) {
                 $listOk = false;
                 $listNote .= '; ' . $pagGate['note'];
             }
-            if ($bulkGate['ok'] && $pagGate['ok']) {
-                $listNote .= '; ' . $bulkGate['note'] . '; ' . $pagGate['note'];
+            if (!$actionsGate['ok']) {
+                $listOk = false;
+                $listNote .= '; ' . $actionsGate['note'];
+            }
+            if ($bulkGate['ok'] && $pagGate['ok'] && $actionsGate['ok']) {
+                $listNote .= '; ' . $bulkGate['note'] . '; ' . $pagGate['note'] . '; ' . $actionsGate['note'];
             }
         }
         $steps[] = mbqa_step_result('list', $listOk, $listNote);
