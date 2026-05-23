@@ -245,6 +245,60 @@ function tickets_build_equipment_add_extra_fields_json(mysqli $conn, int $compan
 }
 
 /**
+ * Builds user quick-add modal fields for Created By / Assigned To selects.
+ */
+function tickets_build_user_add_extra_fields_json(mysqli $conn, int $companyId): string
+{
+    if ($companyId <= 0) {
+        return '[]';
+    }
+
+    $roleOptions = [];
+    $roleRes = mysqli_query(
+        $conn,
+        'SELECT id, name FROM user_roles WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
+    );
+    while ($roleRes && ($row = mysqli_fetch_assoc($roleRes))) {
+        $roleOptions[] = [
+            'value' => (int)($row['id'] ?? 0),
+            'label' => (string)($row['name'] ?? ''),
+        ];
+    }
+
+    $accessLevelOptions = [];
+    $accessRes = mysqli_query(
+        $conn,
+        'SELECT id, name FROM access_levels WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
+    );
+    while ($accessRes && ($row = mysqli_fetch_assoc($accessRes))) {
+        $accessLevelOptions[] = [
+            'value' => (int)($row['id'] ?? 0),
+            'label' => (string)($row['name'] ?? ''),
+        ];
+    }
+
+    $fields = [
+        ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'required' => true],
+        ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'required' => true],
+        ['name' => 'email', 'label' => 'Email', 'type' => 'text', 'required' => false],
+        [
+            'name' => 'role_id',
+            'label' => 'Role',
+            'type' => 'select',
+            'options' => $roleOptions,
+        ],
+        [
+            'name' => 'access_level_id',
+            'label' => 'Access Level',
+            'type' => 'select',
+            'options' => $accessLevelOptions,
+        ],
+    ];
+
+    return json_encode($fields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '[]';
+}
+
+/**
  * @return array<int, array{id:int,label:string}>
  */
 function tickets_user_select_options(mysqli $conn, int $companyId, $selectedId): array
@@ -458,6 +512,7 @@ $createdByOptions = tickets_user_select_options($conn, (int)$company_id, $data['
 $assignedToOptions = tickets_user_select_options($conn, (int)$company_id, $data['assigned_to_user_id'] ?? 0);
 $assetOptions = tickets_equipment_select_options($conn, (int)$company_id, $data['asset_id'] ?? 0);
 $ticketEquipmentAddExtraFieldsJson = tickets_build_equipment_add_extra_fields_json($conn, (int)$company_id);
+$ticketUserAddExtraFieldsJson = tickets_build_user_add_extra_fields_json($conn, (int)$company_id);
 $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
 $existingTicketPhotoUrls = [];
 foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
@@ -581,20 +636,22 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
                     <div class="form-row">
                         <div class="form-group">
                             <label>Created By</label>
-                            <select name="created_by_user_id" required>
+                            <select name="created_by_user_id" required data-addable-select="1" data-add-table="users" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="user" data-add-value-label="Username" data-add-extra-fields="<?php echo sanitize($ticketUserAddExtraFieldsJson); ?>">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($createdByOptions as $userOption): ?>
                                     <option value="<?php echo (int)$userOption['id']; ?>" <?php echo (string)$data['created_by_user_id'] === (string)$userOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($userOption['label']); ?></option>
                                 <?php endforeach; ?>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Assigned To</label>
-                            <select name="assigned_to_user_id">
+                            <select name="assigned_to_user_id" data-addable-select="1" data-add-table="users" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="user" data-add-value-label="Username" data-add-extra-fields="<?php echo sanitize($ticketUserAddExtraFieldsJson); ?>">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($assignedToOptions as $userOption): ?>
                                     <option value="<?php echo (int)$userOption['id']; ?>" <?php echo (string)$data['assigned_to_user_id'] === (string)$userOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($userOption['label']); ?></option>
                                 <?php endforeach; ?>
+                                <option value="__add_new__">➕</option>
                             </select>
                         </div>
                     </div>
