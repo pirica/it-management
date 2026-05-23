@@ -749,7 +749,7 @@ $actionLinks[] = '<a href="' . htmlspecialchars($cfg['runner_script'], ENT_QUOTE
     . htmlspecialchars($cfg['runner_label'], ENT_QUOTES, 'UTF-8') . '</a>';
 echo '<p>' . implode(' · ', $actionLinks) . '</p>';
 echo '<h2>Preview</h2>';
-echo '<pre style="background:#f6f8fa;border:1px solid #d0d7de;padding:12px;overflow:auto;max-height:70vh;font-size:12px;">';
+echo '<pre style="background:#f6f8fa;border:1px solid #d0d7de;padding:12px;overflow:auto;max-height:70vh;font-size:12px;width:auto;">';
 echo htmlspecialchars($built['md'], ENT_QUOTES, 'UTF-8');
 echo '</pre></main>';
 exit($built['fail'] > 0 ? 1 : 0);
