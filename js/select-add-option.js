@@ -283,7 +283,8 @@
             const form = document.createElement('form');
             card.appendChild(form);
 
-            const allFields = [{ name: 'new_value', label: 'Name', type: 'text', required: true, required_when: null }]
+            const valueLabel = selectEl.getAttribute('data-add-value-label') || 'Name';
+            const allFields = [{ name: 'new_value', label: valueLabel, type: 'text', required: true, required_when: null }]
                 .concat(fields.map(normalizeFieldConfig).filter((f) => f.name));
 
             const renderedFields = [];
