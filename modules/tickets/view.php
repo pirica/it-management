@@ -98,7 +98,7 @@ if ($id > 0) {
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_user_id' => 'Created By',
                             'assigned_to_user_id' => 'Assigned To', 'asset_id' => 'Related Asset',
-                            'ui_color' => 'Quick Color Tag', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
+                            'ui_color' => 'Color', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
                         ];
 
                         $fieldDisplayValues = [
