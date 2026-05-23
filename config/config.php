@@ -703,7 +703,75 @@ WHERE kcu.TABLE_SCHEMA = DATABASE()
         }
         mysqli_stmt_close($stmt);
 
+        $supplementalRelations = itm_find_record_usage_supplemental_relations($table, $pkColumn);
+        foreach ($supplementalRelations as $relation) {
+            $sourceTable = (string)($relation['table'] ?? '');
+            $sourceColumn = (string)($relation['column'] ?? '');
+            if (!itm_is_safe_identifier($sourceTable) || !itm_is_safe_identifier($sourceColumn)) {
+                continue;
+            }
+
+            $dedupeKey = $sourceTable . '.' . $sourceColumn;
+            $alreadyListed = false;
+            foreach ($usage as $usageRow) {
+                if (($usageRow['table'] ?? '') === $sourceTable && ($usageRow['column'] ?? '') === $sourceColumn) {
+                    $alreadyListed = true;
+                    break;
+                }
+            }
+            if ($alreadyListed) {
+                continue;
+            }
+
+            $where = '`' . str_replace('`', '``', $sourceColumn) . '`=' . (int)$pkValue;
+            if ((int)$companyId > 0 && itm_table_has_column($conn, $sourceTable, 'company_id')) {
+                $where .= ' AND `company_id`=' . (int)$companyId;
+            }
+
+            $countSql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $sourceTable) . '` WHERE ' . $where;
+            $countRes = mysqli_query($conn, $countSql);
+            $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+            $count = (int)($countRow['c'] ?? 0);
+            if ($count > 0) {
+                $usage[] = [
+                    'table' => $sourceTable,
+                    'column' => $sourceColumn,
+                    'count' => $count,
+                ];
+            }
+        }
+
         return $usage;
+    }
+}
+
+/**
+ * Relation-like inbound references when FK metadata is missing from information_schema.
+ *
+ * @return array<int, array{table:string,column:string}>
+ */
+if (!function_exists('itm_find_record_usage_supplemental_relations')) {
+    function itm_find_record_usage_supplemental_relations($table, $pkColumn) {
+        if ($table === 'equipment' && $pkColumn === 'id') {
+            return [
+                ['table' => 'tickets', 'column' => 'asset_id'],
+            ];
+        }
+
+        return [];
+    }
+}
+
+/**
+ * Human-readable label for a blocking inbound reference row.
+ */
+if (!function_exists('itm_format_record_usage_source_label')) {
+    function itm_format_record_usage_source_label($sourceTable, $sourceColumn) {
+        if ($sourceTable === 'tickets' && $sourceColumn === 'asset_id') {
+            return 'ticket Related Asset link(s)';
+        }
+
+        return ucwords(str_replace('_', ' ', (string)$sourceTable));
     }
 }
 
@@ -719,7 +787,10 @@ if (!function_exists('itm_format_record_usage_error')) {
 
         $parts = [];
         foreach ($usage as $row) {
-            $parts[] = ($row['table'] ?? 'unknown') . ' (' . (int)($row['count'] ?? 0) . ')';
+            $parts[] = itm_format_record_usage_source_label(
+                (string)($row['table'] ?? 'unknown'),
+                (string)($row['column'] ?? '')
+            ) . ' (' . (int)($row['count'] ?? 0) . ')';
         }
 
         return $tableLabel . ' cannot be deleted because it is currently in use by: ' . implode(', ', $parts) . '.';
