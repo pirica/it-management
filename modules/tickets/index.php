@@ -10,6 +10,7 @@
  */
 
 require '../../config/config.php';
+require __DIR__ . '/sample_seed_helpers.php';
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');
@@ -205,33 +206,6 @@ function ticket_render_color_swatch(string $value): string
     return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
 }
 
-/**
- * Seed ticket lookup parents from database.sql when the tenant table is empty.
- */
-function tickets_seed_lookup_parents(mysqli $conn, int $companyId): void
-{
-    if ($companyId <= 0) {
-        return;
-    }
-
-    foreach (['ticket_categories', 'ticket_statuses', 'ticket_priorities'] as $parentTable) {
-        if (!itm_is_safe_identifier($parentTable)) {
-            continue;
-        }
-
-        $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS total FROM `' . $parentTable . '` WHERE company_id = ' . (int)$companyId);
-        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-        if ((int)($countRow['total'] ?? 0) > 0) {
-            continue;
-        }
-
-        $parentErr = '';
-        if (function_exists('itm_seed_table_from_database_sql')) {
-            itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $parentErr);
-        }
-    }
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     itm_require_post_csrf();
 
@@ -255,6 +229,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
 
     $seedError = '';
     $insertedRows = itm_seed_table_from_database_sql($conn, 'tickets', (int)$company_id, $seedError);
+    if ($insertedRows > 0) {
+        tickets_repair_sample_asset_links($conn, (int)$company_id);
+    }
     if ($insertedRows <= 0) {
         $_SESSION['crud_error'] = $seedError !== ''
             ? $seedError
