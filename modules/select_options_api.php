@@ -329,28 +329,10 @@ if ($table === 'equipment_poe') {
     $options = itm_equipment_poe_options_rows($conn, (int)$company_id);
     itm_equipment_poe_append_persisted_row($conn, $options, (int)$selectedId, (int)$company_id);
 } elseif ($table === 'users') {
-    if ($companyScoped && $company_id > 0) {
-        $listSql = 'SELECT DISTINCT u.id, u.username, u.first_name, u.last_name
-            FROM users u
-            LEFT JOIN user_companies uc
-              ON uc.user_id = u.id
-             AND uc.company_id = ' . (int)$company_id . '
-             AND COALESCE(uc.active, 1) = 1
-            WHERE COALESCE(u.active, 1) = 1
-              AND (u.company_id = ' . (int)$company_id . ' OR uc.user_id IS NOT NULL)
-            ORDER BY u.first_name ASC, u.last_name ASC, u.username ASC';
-    } else {
-        $listSql = 'SELECT id, username, first_name, last_name FROM users WHERE COALESCE(active, 1) = 1 ORDER BY first_name ASC, last_name ASC, username ASC';
-    }
-    $listRes = mysqli_query($conn, $listSql);
-    while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
-        $options[] = [
-            'id' => (int)($row['id'] ?? 0),
-            'label' => function_exists('itm_user_build_display_label')
-                ? itm_user_build_display_label($row)
-                : (string)($row['username'] ?? ''),
-        ];
-    }
+    // Why: duplicate quick-add can return an inactive or out-of-scope user id; append keeps selected_id in options.
+    $userCompanyId = ($companyScoped && $company_id > 0) ? (int)$company_id : 0;
+    $options = itm_user_options_for_company($conn, $userCompanyId);
+    $options = itm_user_append_selected_option($conn, $userCompanyId, $options, (int)$selectedId);
 } else {
     $listSelect = so_escape_identifier($idCol) . ' AS id, ' . so_escape_identifier($labelCol) . ' AS label';
     if ($table === 'cable_colors' && isset($columns['hex_color'])) {
