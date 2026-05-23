@@ -5,7 +5,7 @@
  * Provides a central list of support tickets.
  * Features:
  * - Filterable and sortable ticket grid
- * - Priority and Status color coding
+ * - Priority and Status color coding via lookup tables
  * - Direct links to ticket details and editing
  */
 
@@ -186,27 +186,6 @@ function tickets_prepare_import_excel_rows(mysqli $conn, int $companyId, array $
 }
 
 /**
- * Validates if a string is a valid Hex Color code
- */
-function ticket_is_valid_hex_color(string $value): bool
-{
-    return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1;
-}
-
-/**
- * Renders the Quick Color Tag swatch (same pattern as cable_colors hex preview).
- */
-function ticket_render_color_swatch(string $value): string
-{
-    $color = trim($value);
-    if (!ticket_is_valid_hex_color($color)) {
-        return '<span style="color:#666;">—</span>';
-    }
-
-    return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
-}
-
-/**
  * Renders a lookup label badge tinted by ticket_statuses/ticket_priorities hex color.
  */
 function ticket_render_lookup_badge(string $label, string $color, string $fallbackLabel = '-'): string
@@ -274,13 +253,12 @@ if ($searchRaw !== '') {
         OR t.title LIKE '{$searchEsc}'
         OR ts.name LIKE '{$searchEsc}'
         OR tp.name LIKE '{$searchEsc}'
-        OR t.ui_color LIKE '{$searchEsc}'
         OR CAST(t.created_at AS CHAR) LIKE '{$searchEsc}'
     )";
 }
 
 // Sorting logic
-$sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'ui_color', 'created_at'];
+$sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'created_at'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
@@ -289,7 +267,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $orderByMap = [
     'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
     'title' => 't.title', 'status_name' => 'ts.name',
-    'priority_name' => 'tp.name', 'ui_color' => 't.ui_color', 'created_at' => 't.created_at',
+    'priority_name' => 'tp.name', 'created_at' => 't.created_at',
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -388,8 +366,6 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
-                        <?php $quickColorSortDir = ($sort === 'ui_color' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                        <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=ui_color&dir=<?php echo $quickColorSortDir; ?>" style="text-decoration:none;color:inherit;">Color<?php if ($sort === 'ui_color'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
@@ -403,7 +379,6 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
                             <td><?php echo sanitize($t['created_at']); ?></td>
-                            <td><?php echo ticket_render_color_swatch((string)($t['ui_color'] ?? '')); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
@@ -418,7 +393,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="<?php echo $showBulkActions ? 9 : 8; ?>" style="text-align:center;">No records found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
