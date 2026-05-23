@@ -68,6 +68,7 @@ if ($isJsonImportRequest) {
         }
 
         $insertedRows = 0;
+        $importErrors = [];
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -86,7 +87,7 @@ if ($isJsonImportRequest) {
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
+                if ($rawValue === '' || strcasecmp($rawValue, 'null') === 0 || in_array($rawValue, ['-', '–', '—', 'â€”'], true)) {
                     continue;
                 }
 
@@ -137,15 +138,27 @@ if ($isJsonImportRequest) {
                 $rowData['company_id'] = (string)(int)$company_id;
             }
 
-            if (($crud_table ?? '') === 'ip_subnets' && function_exists('itm_ipam_apply_derived_sql_to_data')) {
-                $importPost = [];
+            $importPost = [];
+            if (($crud_table ?? '') === 'ip_subnets') {
                 foreach ($importColumns as $idx => $columnMeta) {
                     if (!is_array($columnMeta)) {
                         continue;
                     }
                     $importPost[(string)$columnMeta['Field']] = trim((string)($sourceRow[$idx] ?? ''));
                 }
-                itm_ipam_apply_derived_sql_to_data($conn, $crud_table, $rowData, $importPost);
+                if (function_exists('itm_ipam_apply_derived_sql_to_data')) {
+                    itm_ipam_apply_derived_sql_to_data($conn, $crud_table, $rowData, $importPost);
+                }
+                $rowErrors = [];
+                if (function_exists('itm_ipam_assert_subnet_save_ready')) {
+                    itm_ipam_assert_subnet_save_ready($rowData, $importPost, $rowErrors);
+                }
+                if (!empty($rowErrors)) {
+                    if (count($importErrors) < 5) {
+                        $importErrors[] = 'Row ' . ($rowIndex + 1) . ': ' . implode(' ', array_map('strval', $rowErrors));
+                    }
+                    continue;
+                }
             }
 
             $fields = [];
@@ -168,10 +181,12 @@ if ($isJsonImportRequest) {
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+            } elseif (count($importErrors) < 5) {
+                $importErrors[] = 'Row ' . ($rowIndex + 1) . ': ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        echo json_encode(['ok' => true, 'inserted' => $insertedRows, 'failed' => count($importErrors), 'errors' => $importErrors]);
         exit;
     }
 
@@ -492,4 +507,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
-
