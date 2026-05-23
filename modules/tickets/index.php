@@ -206,6 +206,24 @@ function ticket_render_color_swatch(string $value): string
     return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
 }
 
+/**
+ * Renders a lookup label badge tinted by ticket_statuses/ticket_priorities hex color.
+ */
+function ticket_render_lookup_badge(string $label, string $color, string $fallbackLabel = '-'): string
+{
+    $name = trim($label);
+    if ($name === '') {
+        $name = $fallbackLabel;
+    }
+
+    $hex = trim($color);
+    if ($hex === '' || !preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $hex)) {
+        $hex = '#9aa4b2';
+    }
+
+    return '<span class="badge" style="background-color:' . sanitize($hex) . '33;color:' . sanitize($hex) . ';">' . sanitize($name) . '</span>';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     itm_require_post_csrf();
 
@@ -300,7 +318,7 @@ if ($page > $totalPages) {
 // Primary data fetch with joins for status and priority labels
 $items = mysqli_query(
     $conn,
-    "SELECT t.*, ts.name AS status_name, ts.color AS status_color, tp.name AS priority_name
+    "SELECT t.*, ts.name AS status_name, ts.color AS status_color, tp.name AS priority_name, tp.color AS priority_color
      FROM tickets t
      LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
      LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
@@ -382,8 +400,8 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <td><?php echo (int)$t['id']; ?></td>
                             <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>
-                            <td><span class="badge" style="background-color:<?php echo sanitize($t['status_color'] ?: '#9aa4b2'); ?>33;color:<?php echo sanitize($t['status_color'] ?: '#9aa4b2'); ?>;"><?php echo sanitize($t['status_name'] ?: 'Open'); ?></span></td>
-                            <td><?php echo sanitize($t['priority_name'] ?: '-'); ?></td>
+                            <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
+                            <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
                             <td><?php echo sanitize($t['created_at']); ?></td>
                             <td><?php echo ticket_render_color_swatch((string)($t['ui_color'] ?? '')); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
