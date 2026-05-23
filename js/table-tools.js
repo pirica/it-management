@@ -12,8 +12,29 @@
         return (cell && cell.textContent ? cell.textContent : '').replace(/\s+/g, ' ').trim();
     }
 
+    function getExplicitExportValue(cell) {
+        if (!cell) {
+            return null;
+        }
+
+        if (cell.dataset && Object.prototype.hasOwnProperty.call(cell.dataset, 'itmExportValue')) {
+            return cell.dataset.itmExportValue;
+        }
+
+        const exportNode = cell.querySelector('[data-itm-export-value]');
+        if (exportNode) {
+            return exportNode.getAttribute('data-itm-export-value') || '';
+        }
+
+        return null;
+    }
+
     // Why: Excel export should keep intentional spacing; list/search UI still uses getCellText() normalization.
     function getExportCellText(cell) {
+        const explicitValue = getExplicitExportValue(cell);
+        if (explicitValue !== null) {
+            return explicitValue.replace(/\r\n/g, '\n').replace(/\t/g, ' ').trim();
+        }
         if (!cell || !cell.textContent) {
             return '';
         }
@@ -63,6 +84,10 @@
     function cloneTableWithoutActions(table) {
         const { actionsIndex } = tableMeta(table);
         const clone = table.cloneNode(true);
+
+        clone.querySelectorAll('[data-itm-export-value]').forEach((node) => {
+            node.textContent = node.getAttribute('data-itm-export-value') || '';
+        });
 
         if (actionsIndex >= 0) {
             clone.querySelectorAll('tr').forEach((row) => {

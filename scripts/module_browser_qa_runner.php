@@ -1807,7 +1807,16 @@ function mbqa_parse_import_response(array $response): array
         return ['ok' => true, 'inserted' => $inserted, 'note' => 'inserted=' . $inserted];
     }
 
-    $message = (string)($decoded['message'] ?? $decoded['error'] ?? 'Import did not insert any rows');
+    $errors = array_filter((array)($decoded['errors'] ?? []), static function ($value): bool {
+        return trim((string)$value) !== '';
+    });
+    $message = (string)($decoded['message'] ?? $decoded['error'] ?? '');
+    if ($message === '' && !empty($errors)) {
+        $message = implode('; ', array_slice(array_map('strval', $errors), 0, 3));
+    }
+    if ($message === '') {
+        $message = 'Import did not insert any rows';
+    }
 
     return ['ok' => false, 'inserted' => $inserted, 'note' => $message . '; inserted=' . $inserted];
 }
@@ -2238,7 +2247,9 @@ function mbqa_extract_table_export_rows(string $html): array
         $row = [];
         foreach ($columnIndices as $colIndex) {
             $td = $cells->item($colIndex);
-            $row[] = mbqa_normalize_cell_text($td ? ($td->textContent ?? '') : '');
+            $row[] = $td instanceof DOMElement
+                ? mbqa_export_cell_text($td, $xpath)
+                : '';
         }
         if (count($row) === count($headers) && implode('', $row) !== '') {
             $rows[] = $row;
@@ -2246,6 +2257,23 @@ function mbqa_extract_table_export_rows(string $html): array
     }
 
     return count($rows) >= 2 ? $rows : [];
+}
+
+function mbqa_export_cell_text(DOMElement $cell, DOMXPath $xpath): string
+{
+    if ($cell->hasAttribute('data-itm-export-value')) {
+        return mbqa_normalize_cell_text($cell->getAttribute('data-itm-export-value'));
+    }
+
+    $exportNodes = $xpath->query('.//*[@data-itm-export-value]', $cell);
+    if ($exportNodes !== false && $exportNodes->length > 0) {
+        $node = $exportNodes->item(0);
+        if ($node instanceof DOMElement) {
+            return mbqa_normalize_cell_text($node->getAttribute('data-itm-export-value'));
+        }
+    }
+
+    return mbqa_normalize_cell_text($cell->textContent ?? '');
 }
 
 function mbqa_normalize_cell_text(string $text): string

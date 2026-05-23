@@ -514,6 +514,7 @@ if ($isJsonImportRequest) {
         }
 
         $insertedRows = 0;
+        $importErrors = [];
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -532,7 +533,7 @@ if ($isJsonImportRequest) {
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
+                if ($rawValue === '' || strcasecmp($rawValue, 'null') === 0 || in_array($rawValue, ['-', '–', '—', 'â€”'], true)) {
                     continue;
                 }
 
@@ -595,10 +596,12 @@ if ($isJsonImportRequest) {
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+            } elseif (count($importErrors) < 5) {
+                $importErrors[] = 'Row ' . ($rowIndex + 1) . ': ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        echo json_encode(['ok' => true, 'inserted' => $insertedRows, 'failed' => count($importErrors), 'errors' => $importErrors]);
         exit;
     }
 
@@ -984,11 +987,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
-                                    <td>
+                                    <?php
+                                    $cellValue = $row[$f] ?? '';
+                                    $exportAttr = ($f === 'comments')
+                                        ? ' data-itm-export-value="' . sanitize((string)$cellValue) . '"'
+                                        : '';
+                                    ?>
+                                    <td<?php echo $exportAttr; ?>>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
                                         <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
+                                            <?php echo cr_render_cell_value($crud_table, $f, $cellValue); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
