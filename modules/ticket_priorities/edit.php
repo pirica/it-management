@@ -402,6 +402,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         }
 
+        if ($name === 'color' && $crud_table === 'ticket_priorities') {
+            $rawColor = trim((string)($_POST[$name] ?? ''));
+            if ($rawColor === '') {
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
+            } elseif (!cr_is_safe_color_value($rawColor)) {
+                $errors[] = cr_humanize_field($name) . ' must be a valid hex color or left empty.';
+                $data[$name] = $rawColor;
+                $sqlValues[$name] = 'NULL';
+            } else {
+                $normalizedColor = strtolower($rawColor);
+                $data[$name] = $normalizedColor;
+                $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $normalizedColor) . "'";
+            }
+            continue;
+        }
+
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
             $data[$name] = '';
@@ -584,11 +601,15 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                 </select>
                             <?php elseif ($name === 'color' && $crud_table === 'ticket_priorities'): ?>
                                 <?php
-                                    $colorVal = cr_is_safe_color_value($displayVal) ? $displayVal : '#0000ff';
+                                    $hasStoredColor = cr_is_safe_color_value($displayVal);
+                                    $storedColor = $hasStoredColor ? strtolower((string)$displayVal) : '';
+                                    $pickerColor = $hasStoredColor ? $storedColor : '#000000';
                                 ?>
                                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                                    <input type="color" name="<?php echo sanitize($name); ?>" id="ticketPriorityColorPicker" value="<?php echo sanitize(strtolower($colorVal)); ?>">
-                                    <span id="ticketPriorityColorPreview" aria-label="Color preview"><?php echo cr_render_color_swatch($colorVal); ?></span>
+                                    <input type="hidden" name="<?php echo sanitize($name); ?>" id="ticketPriorityColorValue" value="<?php echo sanitize($storedColor); ?>">
+                                    <input type="color" id="ticketPriorityColorPicker" value="<?php echo sanitize($pickerColor); ?>" aria-label="Pick color">
+                                    <button type="button" class="btn btn-sm" id="ticketPriorityColorClear">Clear</button>
+                                    <span id="ticketPriorityColorPreview" aria-label="Color preview"><?php echo cr_render_color_swatch($storedColor); ?></span>
                                 </div>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
@@ -651,19 +672,35 @@ document.addEventListener('change', function (event) {
 });
 
 (function () {
+    var hidden = document.getElementById('ticketPriorityColorValue');
     var picker = document.getElementById('ticketPriorityColorPicker');
     var preview = document.getElementById('ticketPriorityColorPreview');
-    if (!picker || !preview) return;
-    function syncTicketPriorityColorPreview() {
-        var hex = (picker.value || '').toLowerCase();
-        if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(hex)) {
+    var clearBtn = document.getElementById('ticketPriorityColorClear');
+    if (!hidden || !picker || !preview) return;
+
+    function renderPreview(hex) {
+        if (!hex || !/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(hex)) {
             preview.innerHTML = '<span style="color:#666;">—</span>';
             return;
         }
         preview.innerHTML = '<span title="' + hex + '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + hex + ';vertical-align:middle;border-radius:2px;"></span>';
     }
-    picker.addEventListener('input', syncTicketPriorityColorPreview);
-    picker.addEventListener('change', syncTicketPriorityColorPreview);
+
+    function syncFromPicker() {
+        var hex = (picker.value || '').toLowerCase();
+        hidden.value = hex;
+        renderPreview(hex);
+    }
+
+    picker.addEventListener('input', syncFromPicker);
+    picker.addEventListener('change', syncFromPicker);
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            hidden.value = '';
+            renderPreview('');
+        });
+    }
 })();
 </script>
 
