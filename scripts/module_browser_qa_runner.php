@@ -3094,9 +3094,9 @@ function mbqa_tables_never_clear(): array
 }
 
 /** Ideal row count so bulk_delete / clear_table UI gates (default records_per_page 25) are exercisable when schema allows. */
-function mbqa_bulk_row_target_ideal(mysqli $conn): int
+function mbqa_bulk_row_target_ideal(mysqli $conn, ?int $companyId = null): int
 {
-    return max(30, mbqa_records_per_page($conn) + 1);
+    return max(30, mbqa_records_per_page($conn, $companyId) + 1);
 }
 
 /**
@@ -3157,7 +3157,7 @@ function mbqa_unique_scope_capacity(mysqli $conn, string $table, int $companyId)
  */
 function mbqa_bulk_row_target_for_table(mysqli $conn, string $table, int $companyId): int
 {
-    $ideal = mbqa_bulk_row_target_ideal($conn);
+    $ideal = mbqa_bulk_row_target_ideal($conn, $companyId);
     $capacity = mbqa_unique_scope_capacity($conn, $table, $companyId);
 
     if ($capacity === PHP_INT_MAX) {
@@ -3234,14 +3234,31 @@ function mbqa_grow_unique_scope_parents(mysqli $conn, string $table, int $compan
     }
 }
 
-function mbqa_records_per_page(mysqli $conn): int
+function mbqa_qa_admin_user_id(): int
+{
+    return 1;
+}
+
+function mbqa_records_per_page(mysqli $conn, ?int $companyId = null): int
 {
     if (!function_exists('itm_get_ui_configuration') || !function_exists('itm_resolve_records_per_page')) {
         return 25;
     }
 
-    $companyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
-    $uiConfig = itm_get_ui_configuration($conn, $companyId > 0 ? $companyId : null);
+    if ($companyId === null || $companyId <= 0) {
+        $companyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+    }
+
+    $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($userId <= 0) {
+        $userId = mbqa_qa_admin_user_id();
+    }
+
+    if ($companyId <= 0) {
+        return itm_resolve_records_per_page(itm_ui_config_defaults());
+    }
+
+    $uiConfig = itm_get_ui_configuration($conn, $companyId, $userId);
 
     return itm_resolve_records_per_page($uiConfig);
 }
@@ -3620,7 +3637,7 @@ function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool
 
     if (in_array($refTable, mbqa_tables_never_clear(), true)) {
         if ($refTable === 'users') {
-            mbqa_ensure_tenant_users_for_bulk($conn, $companyId, max($sequence, mbqa_bulk_row_target_ideal($conn)));
+            mbqa_ensure_tenant_users_for_bulk($conn, $companyId, max($sequence, mbqa_bulk_row_target_ideal($conn, $companyId)));
             $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
             if (!empty($ids)) {
                 return (int)$ids[($sequence - 1) % count($ids)];
@@ -3851,7 +3868,7 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
         return ['ok' => true, 'note' => 'N/A (no company_id)', 'na' => true, 'count' => 0];
     }
 
-    $ideal = mbqa_bulk_row_target_ideal($conn);
+    $ideal = mbqa_bulk_row_target_ideal($conn, $companyId);
     // Why: e.g. expenses needs enough cost_centers before uq_expenses_company_scope allows 30 expense rows.
     mbqa_grow_unique_scope_parents($conn, $table, $companyId, $ideal);
 
@@ -4964,6 +4981,10 @@ foreach ($companiesToRun as $companyId) {
         continue;
     }
 
+    // Why: list/pagination gates resolve records_per_page from ui_configuration for the active QA tenant, not a stale CLI session company.
+    $_SESSION['company_id'] = $companyId;
+    $_SESSION['user_id'] = mbqa_qa_admin_user_id();
+
     foreach ($orderedModules as $slug) {
         if (mbqa_ajax_should_stop($root)) {
             break 2;
@@ -5001,7 +5022,7 @@ foreach ($companiesToRun as $companyId) {
             ? ('HTTP ' . $index['status'] . ', no fatal')
             : ('HTTP ' . $index['status'] . (mbqa_has_fatal($index['body']) ? ', fatal in body' : ''));
         if ($listOk && $tier === 'A' && itm_is_safe_identifier($slug)) {
-            $perPageList = mbqa_records_per_page($conn);
+            $perPageList = mbqa_records_per_page($conn, $companyId);
             $rowCountList = mbqa_tenant_row_count($conn, $slug, $companyId);
             $listNaNote = mbqa_runner_module_step_exception_note($slug, 'list');
             $bulkDeleteNa = mbqa_runner_module_step_exception_note($slug, 'bulk_delete');
@@ -5149,7 +5170,7 @@ foreach ($companiesToRun as $companyId) {
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrfIndex = mbqa_extract_csrf($index['body']);
 
-        $perPage = mbqa_records_per_page($conn);
+        $perPage = mbqa_records_per_page($conn, $companyId);
         $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
         $paginationNav = mbqa_run_pagination_nav_step($moduleUrl, $cookieFile, $rowCountAfterAdd, $perPage);
         $steps[] = mbqa_step_result('pagination', $paginationNav['ok'], $paginationNav['note']);
