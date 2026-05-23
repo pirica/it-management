@@ -1221,6 +1221,11 @@ function mbqa_runner_module_step_exceptions(): array
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
         ],
+        // Why: audit_logs is an immutable evidence trail; delete controls stay disabled in the UI.
+        'audit_logs' => [
+            'bulk_delete' => 'N/A (read-only audit centre; delete disabled)',
+            'single_delete' => 'N/A (read-only audit centre; delete disabled)',
+        ],
     ];
 
     $routingSteps = mbqa_runner_facade_routing_na_steps();
@@ -4216,7 +4221,12 @@ foreach ($companiesToRun as $companyId) {
         if ($listOk && $tier === 'A' && itm_is_safe_identifier($slug)) {
             $perPageList = mbqa_records_per_page($conn);
             $rowCountList = mbqa_tenant_row_count($conn, $slug, $companyId);
-            $bulkGate = mbqa_index_bulk_ui_matches_row_gate($rowCountList, $perPageList, $index['body']);
+            $bulkDeleteNa = mbqa_runner_module_step_exception_note($slug, 'bulk_delete');
+            if ($bulkDeleteNa !== null) {
+                $bulkGate = ['ok' => true, 'note' => 'bulk UI intentionally hidden; ' . $bulkDeleteNa];
+            } else {
+                $bulkGate = mbqa_index_bulk_ui_matches_row_gate($rowCountList, $perPageList, $index['body']);
+            }
             $pagGate = mbqa_index_pagination_matches_row_gate($rowCountList, $perPageList, $index['body']);
             if (!$bulkGate['ok']) {
                 $listOk = false;
@@ -4585,7 +4595,10 @@ foreach ($companiesToRun as $companyId) {
         $csrfForDelete = $deleteRefreshOk ? mbqa_extract_csrf($indexForDelete['body']) : '';
         $deleteId = $deleteRefreshOk ? (mbqa_row_ids($indexForDelete['body'])[0] ?? 0) : 0;
 
-        if (!$deleteRefreshOk) {
+        $singleDeleteNaNote = mbqa_runner_module_step_exception_note($slug, 'single_delete');
+        if ($singleDeleteNaNote !== null) {
+            $steps[] = mbqa_step_result('single_delete', true, $singleDeleteNaNote);
+        } elseif (!$deleteRefreshOk) {
             $steps[] = mbqa_step_result('single_delete', false, 'single_delete: index refresh failed (' . $deleteRefreshNote . ')');
         } elseif ($deleteId > 0 && is_file($deletePath) && $csrfForDelete !== '') {
             $singleDelHtml = mbqa_html_step_single_delete_action($indexForDelete['body'], $deleteId);
