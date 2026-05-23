@@ -4141,6 +4141,44 @@ function mbqa_index_has_actions_column(string $html): bool
 }
 
 /**
+ * True when tbody renders at least one real data row (not a single-cell colspan empty state).
+ */
+function mbqa_index_tbody_has_data_rows(string $html): bool
+{
+    if (!empty(mbqa_row_ids($html))) {
+        return true;
+    }
+
+    if (!preg_match('/<tbody\b[^>]*>(.*)<\/tbody>/is', $html, $tbodyMatch)) {
+        return false;
+    }
+
+    if (!preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/is', $tbodyMatch[1], $rowMatches)) {
+        return false;
+    }
+
+    foreach ($rowMatches[1] as $rowHtml) {
+        if (mbqa_html_tr_is_list_empty_state_row($rowHtml)) {
+            continue;
+        }
+        if (preg_match('/<td\b/i', $rowHtml)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function mbqa_html_tr_is_list_empty_state_row(string $rowHtml): bool
+{
+    if (preg_match_all('/<td\b/i', $rowHtml) !== 1) {
+        return false;
+    }
+
+    return preg_match('/<td\b[^>]*\bcolspan=/i', $rowHtml) === 1;
+}
+
+/**
  * Table Actions column must expose layout-engine markers on header and body cells.
  *
  * @return array{ok:bool,note:string}
@@ -4165,8 +4203,7 @@ function mbqa_index_table_actions_matches_ui_contract(string $html): array
         ];
     }
 
-    $rowCount = mbqa_index_count_table_rows($html);
-    if ($rowCount < 1) {
+    if (!mbqa_index_tbody_has_data_rows($html)) {
         return [
             'ok' => true,
             'note' => 'Actions header mapped (itm-actions-cell + data-itm-actions-origin); no data rows',
