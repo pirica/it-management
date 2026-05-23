@@ -3440,6 +3440,35 @@ function mbqa_required_column_names(array $columnMetas): array
     return $required;
 }
 
+function mbqa_parse_char_max_length(string $type): ?int
+{
+    if (preg_match('/^(?:var)?char\((\d+)\)/', $type, $match)) {
+        return (int)$match[1];
+    }
+
+    return null;
+}
+
+/**
+ * Why: MBQA tags include the table slug and can exceed narrow varchar columns (e.g. cable_colors.color_name varchar(20)).
+ */
+function mbqa_fit_string_to_column_length(string $value, int $sequence, ?int $maxLen): string
+{
+    if ($maxLen === null || $maxLen <= 0 || strlen($value) <= $maxLen) {
+        return $value;
+    }
+
+    $prefix = 'MBQA-' . $sequence . '-';
+    $hashLen = $maxLen - strlen($prefix);
+    if ($hashLen < 1) {
+        return substr((string)$sequence, 0, $maxLen);
+    }
+
+    $short = $prefix . substr(md5($value), 0, $hashLen);
+
+    return substr($short, 0, $maxLen);
+}
+
 /**
  * Fills a required or optional scalar (non-FK) column with QA-safe random data.
  */
@@ -3449,7 +3478,8 @@ function mbqa_fill_scalar_value(
     int $sequence,
     string $tag,
     bool $inUnique,
-    bool $forceRequired = false
+    bool $forceRequired = false,
+    ?int $maxLen = null
 ): ?string {
     // Calendar month (monthly_budgets.month, forecast_revisions.month): CHECK 1..12, not sequence+1.
     if ($name === 'month' && preg_match('/^tinyint/', $type)) {
@@ -3495,15 +3525,25 @@ function mbqa_fill_scalar_value(
     }
 
     if (strpos($type, 'char') !== false || strpos($type, 'text') !== false) {
-        if ($inUnique || preg_match('/(name|title|code|label|hostname|email|username|slug|sku|number|invoice|description|subject|summary)/i', $name)) {
-            return $tag;
+        if ($maxLen === null) {
+            $maxLen = mbqa_parse_char_max_length($type);
         }
 
-        return 'QA ' . str_replace('_', ' ', $name) . ' ' . $sequence;
+        if ($inUnique || preg_match('/(name|title|code|label|hostname|email|username|slug|sku|number|invoice|description|subject|summary)/i', $name)) {
+            return mbqa_fit_string_to_column_length($tag, $sequence, $maxLen);
+        }
+
+        $plain = 'QA ' . str_replace('_', ' ', $name) . ' ' . $sequence;
+
+        return mbqa_fit_string_to_column_length($plain, $sequence, $maxLen);
     }
 
     if ($forceRequired) {
-        return $tag . '-' . $name;
+        if ($maxLen === null) {
+            $maxLen = mbqa_parse_char_max_length($type);
+        }
+
+        return mbqa_fit_string_to_column_length($tag . '-' . $name, $sequence, $maxLen);
     }
 
     return null;
@@ -3662,6 +3702,7 @@ function mbqa_build_random_insert_row(
         }
 
         $type = (string)$meta['type'];
+        $maxLen = mbqa_parse_char_max_length($type);
         $required = mbqa_column_is_required($meta);
         $nullable = ($meta['null'] === 'YES');
         $inUnique = mbqa_column_in_unique_set($name, $uniqueSets);
@@ -3688,7 +3729,7 @@ function mbqa_build_random_insert_row(
                 $bindType = 'i';
             }
         } else {
-            $scalar = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, $required);
+            $scalar = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, $required, $maxLen);
             if ($scalar !== null) {
                 $value = $scalar;
                 if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type) || $name === 'active') {
@@ -3702,7 +3743,7 @@ function mbqa_build_random_insert_row(
         }
 
         if ($value === null && !$isFkColumn) {
-            $value = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, true);
+            $value = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, true, $maxLen);
             if ($value !== null && preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type)) {
                 $bindType = 'i';
             }
