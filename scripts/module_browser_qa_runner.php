@@ -2043,6 +2043,22 @@ function mbqa_runner_module_step_exceptions(): array
             'import_db' => 'N/A (global audit table)',
             'single_delete' => 'N/A (global audit table)',
         ],
+        // Why: sidebar layout rows are seeded from default ui_config layout, not standard CRUD/sample/add/import QA.
+        'user_sidebar_preferences' => [
+            'sample_data' => 'N/A (seeds default sidebar layout)',
+            'add' => 'N/A (seeds default sidebar layout)',
+            'pagination' => 'N/A (seeds default sidebar layout)',
+            'bulk_cancel' => 'N/A (seeds default sidebar layout)',
+            'bulk_delete' => 'N/A (seeds default sidebar layout)',
+            'create' => 'N/A (seeds default sidebar layout)',
+            'view' => 'N/A (seeds default sidebar layout)',
+            'edit' => 'N/A (seeds default sidebar layout)',
+            'export_pdf' => 'N/A (seeds default sidebar layout)',
+            'export_xlsx' => 'N/A (seeds default sidebar layout)',
+            'clear_table' => 'N/A (seeds default sidebar layout)',
+            'import_db' => 'N/A (seeds default sidebar layout)',
+            'single_delete' => 'N/A (seeds default sidebar layout)',
+        ],
     ];
 
     $routingSteps = mbqa_runner_facade_routing_na_steps();
