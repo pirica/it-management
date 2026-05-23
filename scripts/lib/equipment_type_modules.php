@@ -128,22 +128,33 @@ function itm_ensure_canonical_equipment_type_modules(mysqli $conn): int
 function itm_remove_equipment_regression_test_module_dirs(string $modulesRoot): int
 {
     $removed = 0;
-    $matches = glob(rtrim($modulesRoot, '/\\') . '/is_*', GLOB_ONLYDIR) ?: [];
+    $modulesRoot = rtrim($modulesRoot, '/\\');
 
-    foreach ($matches as $moduleDir) {
-        $base = basename($moduleDir);
-        if (!itm_is_equipment_regression_test_module_dir($base)) {
-            continue;
-        }
+    // Why: Windows glob batches can leave orphans when many is_mbqa_* folders exist; repeat until none remain.
+    for ($pass = 0; $pass < 20; $pass++) {
+        $passRemoved = 0;
+        $matches = glob($modulesRoot . '/is_*', GLOB_ONLYDIR) ?: [];
 
-        $files = glob($moduleDir . '/*') ?: [];
-        foreach ($files as $filePath) {
-            if (is_file($filePath)) {
-                @unlink($filePath);
+        foreach ($matches as $moduleDir) {
+            $base = basename($moduleDir);
+            if (!itm_is_equipment_regression_test_module_dir($base)) {
+                continue;
+            }
+
+            $files = glob($moduleDir . '/*') ?: [];
+            foreach ($files as $filePath) {
+                if (is_file($filePath)) {
+                    @unlink($filePath);
+                }
+            }
+            if (@rmdir($moduleDir)) {
+                $passRemoved++;
             }
         }
-        if (@rmdir($moduleDir)) {
-            $removed++;
+
+        $removed += $passRemoved;
+        if ($passRemoved === 0) {
+            break;
         }
     }
 

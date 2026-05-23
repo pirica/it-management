@@ -3113,6 +3113,29 @@ function mbqa_tables_never_clear(): array
     return ['companies', 'users'];
 }
 
+/**
+ * Tables that must not receive mbqa_insert_random_rows (creates is_mbqa_equipment_types_* scaffolds).
+ *
+ * @return string[]
+ */
+function mbqa_tables_skip_random_qa_inserts(): array
+{
+    return ['equipment_types'];
+}
+
+/**
+ * Seed equipment_types from database.sql only — never MBQA-random names (sidebar scaffold pollution).
+ */
+function mbqa_seed_equipment_types_from_database_sql(mysqli $conn, int $companyId): void
+{
+    if ($companyId <= 0 || !function_exists('itm_seed_table_from_database_sql')) {
+        return;
+    }
+
+    $seedErr = '';
+    itm_seed_table_from_database_sql($conn, 'equipment_types', $companyId, $seedErr);
+}
+
 /** Ideal row count so bulk_delete / clear_table UI gates (default records_per_page 25) are exercisable when schema allows. */
 function mbqa_bulk_row_target_ideal(mysqli $conn, ?int $companyId = null): int
 {
@@ -3245,6 +3268,13 @@ function mbqa_grow_unique_scope_parents(mysqli $conn, string $table, int $compan
             continue;
         }
         if (in_array($parentTable, mbqa_tables_never_clear(), true)) {
+            continue;
+        }
+        if ($parentTable === 'equipment_types') {
+            mbqa_seed_equipment_types_from_database_sql($conn, $companyId);
+            continue;
+        }
+        if (in_array($parentTable, mbqa_tables_skip_random_qa_inserts(), true)) {
             continue;
         }
         $parentCount = mbqa_tenant_row_count($conn, $parentTable, $companyId);
@@ -3490,6 +3520,15 @@ function mbqa_ensure_parent_rows_for_inserts(mysqli $conn, string $table, int $c
 
         if (itm_table_has_column($conn, $parentTable, 'company_id')) {
             $parentCount = mbqa_tenant_row_count($conn, $parentTable, $companyId);
+            if ($parentTable === 'equipment_types') {
+                if ($parentCount < $minimumRows) {
+                    mbqa_seed_equipment_types_from_database_sql($conn, $companyId);
+                }
+                continue;
+            }
+            if (in_array($parentTable, mbqa_tables_skip_random_qa_inserts(), true)) {
+                continue;
+            }
             if ($parentCount < $minimumRows) {
                 mbqa_insert_random_rows($conn, $parentTable, $companyId, $minimumRows - $parentCount, 1);
             }
@@ -3704,13 +3743,19 @@ function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool
     }
     $ensuring[$refTable] = true;
 
-    if (function_exists('itm_seed_table_from_database_sql')) {
+    if ($refTable === 'equipment_types') {
+        mbqa_seed_equipment_types_from_database_sql($conn, $companyId);
+    } elseif (function_exists('itm_seed_table_from_database_sql')) {
         $seedErr = '';
         itm_seed_table_from_database_sql($conn, $refTable, $companyId, $seedErr);
     }
 
     $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
     if (empty($ids)) {
+        if ($refTable === 'equipment_types' || in_array($refTable, mbqa_tables_skip_random_qa_inserts(), true)) {
+            unset($ensuring[$refTable]);
+            return 0;
+        }
         mbqa_insert_random_rows($conn, $refTable, $companyId, 1, 1);
         $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
     }
@@ -3841,6 +3886,10 @@ function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, in
 {
     if ($needed <= 0 || !itm_is_safe_identifier($table) || !itm_table_has_column($conn, $table, 'company_id')) {
         return ['inserted' => 0, 'last_error' => ''];
+    }
+
+    if (in_array($table, mbqa_tables_skip_random_qa_inserts(), true)) {
+        return ['inserted' => 0, 'last_error' => 'Skipped random QA inserts for ' . $table];
     }
 
     if ($parentDepth > 4) {
@@ -4993,6 +5042,13 @@ if ($mbqaAdminUserId <= 0) {
     exit(1);
 }
 $_SESSION['user_id'] = $mbqaAdminUserId;
+
+// Why: Clear leftover MBQA equipment_type scaffolds/rows from prior runs before module steps mutate the DB again.
+$mbqaEquipmentPrecleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
+$mbqaEquipmentPrecleanupNote = itm_equipment_cleanup_report_summary($mbqaEquipmentPrecleanup);
+if (!$mbqaEquipmentPrecleanup['ok'] && !empty($mbqaEquipmentPrecleanup['errors'])) {
+    mbqa_err(itm_equipment_cleanup_report_summary($mbqaEquipmentPrecleanup) . "\n");
+}
 
 $orderedModules = array_unique(array_merge($lookupWave, $budgetWave, $allModules));
 if ($pilotOnly) {
