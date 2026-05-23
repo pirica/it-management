@@ -952,6 +952,95 @@ if (!function_exists('itm_table_outbound_fk_map')) {
 }
 
 /**
+ * Lookup one database.sql INSERT row by primary key id (sample FK remap when live anchor is gone).
+ *
+ * @return array<string, string>|null
+ */
+if (!function_exists('itm_seed_fk_anchor_row_from_database_sql')) {
+    function itm_seed_fk_anchor_row_from_database_sql(string $refTable, int $storedFkId): ?array
+    {
+        static $parsedByTable = null;
+        if ($storedFkId <= 0 || !itm_is_safe_identifier($refTable)) {
+            return null;
+        }
+
+        if ($parsedByTable === null) {
+            $parsedByTable = [];
+            $sqlPath = ROOT_PATH . 'database.sql';
+            if (is_file($sqlPath)) {
+                $sqlBody = @file_get_contents($sqlPath);
+                if ($sqlBody !== false && function_exists('itm_parse_database_sql_inserts')) {
+                    $parsedByTable = itm_parse_database_sql_inserts($sqlBody);
+                }
+            }
+        }
+
+        foreach ($parsedByTable[$refTable] ?? [] as $rowEntry) {
+            $rawColumns = $rowEntry['columns'] ?? [];
+            $rawValues = $rowEntry['values'] ?? [];
+            $assoc = [];
+            foreach ($rawColumns as $index => $columnToken) {
+                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                if ($columnName === '') {
+                    continue;
+                }
+                $assoc[$columnName] = trim((string)($rawValues[$index] ?? ''), "'\"");
+            }
+            if ((int)($assoc['id'] ?? 0) === $storedFkId) {
+                return $assoc;
+            }
+        }
+
+        return null;
+    }
+}
+
+/**
+ * Match a tenant FK row using database.sql business keys (name/code/level, etc.).
+ */
+if (!function_exists('itm_seed_match_tenant_fk_by_business_keys')) {
+    function itm_seed_match_tenant_fk_by_business_keys(mysqli $conn, string $refTable, int $companyId, array $anchorRow): int
+    {
+        if ($companyId <= 0 || !itm_is_safe_identifier($refTable) || $anchorRow === []) {
+            return 0;
+        }
+
+        if (!function_exists('itm_fk_table_column_names') || !function_exists('itm_detect_fk_business_key_columns')) {
+            return 0;
+        }
+
+        $refColumns = itm_fk_table_column_names($conn, $refTable);
+        if (!in_array('company_id', $refColumns, true)) {
+            return 0;
+        }
+
+        $businessKeys = itm_detect_fk_business_key_columns($refTable, $refColumns);
+        if ($businessKeys === []) {
+            return 0;
+        }
+
+        $whereParts = ['company_id = ' . (int)$companyId];
+        foreach ($businessKeys as $keyColumn) {
+            if (!itm_is_safe_identifier($keyColumn)) {
+                continue;
+            }
+            $keyValue = isset($anchorRow[$keyColumn]) ? (string)$anchorRow[$keyColumn] : '';
+            if ($keyValue === '') {
+                $whereParts[] = '(`' . $keyColumn . "` = '' OR `" . $keyColumn . '` IS NULL)';
+            } else {
+                $whereParts[] = '`' . $keyColumn . "` = '" . mysqli_real_escape_string($conn, $keyValue) . "'";
+            }
+        }
+
+        $matchSql = 'SELECT id FROM `' . $refTable . '` WHERE ' . implode(' AND ', $whereParts) . ' ORDER BY id ASC LIMIT 1';
+        $matchRes = mysqli_query($conn, $matchSql);
+        $matchRow = ($matchRes) ? mysqli_fetch_assoc($matchRes) : null;
+
+        return is_array($matchRow) ? (int)($matchRow['id'] ?? 0) : 0;
+    }
+}
+
+/**
  * Resolves a database.sql FK id for sample seed when anchor rows are missing for the tenant.
  * Why: itm_fk_resolve_company_equivalent_id() must keep stale ids for edit UI; seed may substitute.
  */
@@ -981,13 +1070,27 @@ if (!function_exists('itm_seed_resolve_fk_from_database_sql')) {
             return $resolvedFkId;
         }
 
+        if (function_exists('itm_seed_fk_anchor_row_from_database_sql')
+            && function_exists('itm_seed_match_tenant_fk_by_business_keys')) {
+            $anchorRow = itm_seed_fk_anchor_row_from_database_sql($refTable, $storedFkId);
+            if (is_array($anchorRow)) {
+                $matchedId = itm_seed_match_tenant_fk_by_business_keys($conn, $refTable, $companyId, $anchorRow);
+                if ($matchedId > 0) {
+                    return $matchedId;
+                }
+            }
+        }
+
         if (!function_exists('itm_first_tenant_row_id')) {
-            return $resolvedFkId;
+            return 0;
         }
 
         $fallbackId = itm_first_tenant_row_id($conn, $refTable, $companyId);
+        if ($fallbackId > 0) {
+            return $fallbackId;
+        }
 
-        return $fallbackId > 0 ? $fallbackId : $resolvedFkId;
+        return 0;
     }
 }
 
@@ -1124,6 +1227,9 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                             );
                             if ($resolvedFkId > 0) {
                                 $valueToken = (string)(int)$resolvedFkId;
+                            } elseif (function_exists('itm_table_column_is_nullable')
+                                && itm_table_column_is_nullable($conn, $tableName, $columnName)) {
+                                $valueToken = 'NULL';
                             }
                         }
                     }
