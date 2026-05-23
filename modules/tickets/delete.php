@@ -22,9 +22,16 @@ $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 $id = (int)($_POST['id'] ?? 0);
 
 if ($bulkAction === 'clear_table') {
+    $tenantCompanyId = (int)$company_id;
+    if ($tenantCompanyId <= 0) {
+        $_SESSION['crud_error'] = 'Clear table requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
     $stmtClear = mysqli_prepare($conn, 'DELETE FROM tickets WHERE company_id = ?');
     if ($stmtClear) {
-        mysqli_stmt_bind_param($stmtClear, 'i', $company_id);
+        mysqli_stmt_bind_param($stmtClear, 'i', $tenantCompanyId);
         mysqli_stmt_execute($stmtClear);
         mysqli_stmt_close($stmtClear);
     }
