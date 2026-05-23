@@ -405,6 +405,10 @@ function mbqa_apply_unique_scope_to_import_rows(mysqli $conn, string $table, int
     if (count($importRows) < 2 || $companyId <= 0 || !itm_is_safe_identifier($table)) {
         return $importRows;
     }
+    if ($table === 'ip_subnets') {
+        // The IPAM helper must keep cidr/network/gateway values valid together.
+        return $importRows;
+    }
 
     $scopeCols = mbqa_primary_unique_scope_columns($conn, $table);
     if (empty($scopeCols)) {
