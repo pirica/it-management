@@ -128,10 +128,28 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_safe_color_value($value) {
+    $color = trim((string)$value);
+    return (bool)preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
+}
+
+function cr_render_color_swatch($value) {
+    $safeColor = trim((string)$value);
+    if (!cr_is_safe_color_value($safeColor)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($safeColor) . '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($safeColor) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if ($table === 'ticket_statuses' && $field === 'color') {
+        return cr_render_color_swatch($value);
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -605,6 +623,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         }
 
+        if ($name === 'color' && $crud_table === 'ticket_statuses') {
+            $rawColor = trim((string)($_POST[$name] ?? ''));
+            if ($rawColor === '') {
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
+            } elseif (!cr_is_safe_color_value($rawColor)) {
+                $errors[] = cr_humanize_field($name) . ' must be a valid hex color or left empty.';
+                $data[$name] = $rawColor;
+                $sqlValues[$name] = 'NULL';
+            } else {
+                $normalizedColor = strtolower($rawColor);
+                $data[$name] = $normalizedColor;
+                $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $normalizedColor) . "'";
+            }
+            continue;
+        }
+
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
             $data[$name] = '';
@@ -891,6 +926,18 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                            <?php elseif ($name === 'color' && $crud_table === 'ticket_statuses'): ?>
+                                <?php
+                                    $hasStoredColor = cr_is_safe_color_value($displayVal);
+                                    $storedColor = $hasStoredColor ? strtolower((string)$displayVal) : '';
+                                    $pickerColor = $hasStoredColor ? $storedColor : '#000000';
+                                ?>
+                                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                    <input type="hidden" name="<?php echo sanitize($name); ?>" id="ticketStatusColorValue" value="<?php echo sanitize($storedColor); ?>">
+                                    <input type="color" id="ticketStatusColorPicker" value="<?php echo sanitize($pickerColor); ?>" aria-label="Pick color">
+                                    <button type="button" class="btn btn-sm" id="ticketStatusColorClear">Clear</button>
+                                    <span id="ticketStatusColorPreview" aria-label="Color preview"><?php echo cr_render_color_swatch($storedColor); ?></span>
+                                </div>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -950,6 +997,38 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+(function () {
+    var hidden = document.getElementById('ticketStatusColorValue');
+    var picker = document.getElementById('ticketStatusColorPicker');
+    var preview = document.getElementById('ticketStatusColorPreview');
+    var clearBtn = document.getElementById('ticketStatusColorClear');
+    if (!hidden || !picker || !preview) return;
+
+    function renderPreview(hex) {
+        if (!hex || !/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(hex)) {
+            preview.innerHTML = '<span style="color:#666;">—</span>';
+            return;
+        }
+        preview.innerHTML = '<span title="' + hex + '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + hex + ';vertical-align:middle;border-radius:2px;"></span>';
+    }
+
+    function syncFromPicker() {
+        var hex = (picker.value || '').toLowerCase();
+        hidden.value = hex;
+        renderPreview(hex);
+    }
+
+    picker.addEventListener('input', syncFromPicker);
+    picker.addEventListener('change', syncFromPicker);
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            hidden.value = '';
+            renderPreview('');
+        });
+    }
+})();
 </script>
 
 </body>
