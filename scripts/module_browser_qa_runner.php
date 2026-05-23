@@ -3440,35 +3440,6 @@ function mbqa_required_column_names(array $columnMetas): array
     return $required;
 }
 
-function mbqa_parse_char_max_length(string $type): ?int
-{
-    if (preg_match('/^(?:var)?char\((\d+)\)/', $type, $match)) {
-        return (int)$match[1];
-    }
-
-    return null;
-}
-
-/**
- * Why: MBQA tags include the table slug and can exceed narrow varchar columns (e.g. cable_colors.color_name varchar(20)).
- */
-function mbqa_fit_string_to_column_length(string $value, int $sequence, ?int $maxLen): string
-{
-    if ($maxLen === null || $maxLen <= 0 || strlen($value) <= $maxLen) {
-        return $value;
-    }
-
-    $prefix = 'MBQA-' . $sequence . '-';
-    $hashLen = $maxLen - strlen($prefix);
-    if ($hashLen < 1) {
-        return substr((string)$sequence, 0, $maxLen);
-    }
-
-    $short = $prefix . substr(md5($value), 0, $hashLen);
-
-    return substr($short, 0, $maxLen);
-}
-
 /**
  * Fills a required or optional scalar (non-FK) column with QA-safe random data.
  */
