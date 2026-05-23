@@ -269,7 +269,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                                 </a>
                             </th>
                         <?php endforeach; ?>
-                        <th>Actions</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -284,7 +284,7 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
                             <?php foreach (array_keys($accessLabelsById) as $accessId): ?>
                                 <td><?php echo isset($row['grants'][$accessId]) ? '✅' : '❌'; ?></td>
                             <?php endforeach; ?>
-                            <td>
+                            <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['employee_id']; ?>">🔎</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['employee_id']; ?>">✏️</a>
                             </td>

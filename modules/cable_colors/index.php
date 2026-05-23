@@ -960,7 +960,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <th>Color</th>
                                 <?php endif; ?>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -973,7 +973,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <td><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($row)); ?></td>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
-                                <td>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">

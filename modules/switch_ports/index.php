@@ -1610,7 +1610,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <th style="display:none;">
                                     <input type="checkbox" id="select-all-rows" aria-label="Select all rows">
                                 </th>
-                            <th>Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1634,7 +1634,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     >
                                 </td>
 
-                                <td>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">

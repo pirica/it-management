@@ -96,7 +96,7 @@
                         <thead>
                         <tr>
                             <?php if ($itmIpAddressFocusedList): ?>
-                                <th data-itm-actions-origin="1">Actions</th>
+                                <th data-itm-actions-origin="1" class="itm-actions-cell">Actions</th>
                                 <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                                 <?php
                                     $itmIpListHeaders = [
@@ -129,7 +129,7 @@
                                         </a>
                                     </th>
                                 <?php endforeach; ?>
-                                <th data-itm-actions-origin="1">Actions</th>
+                                <th data-itm-actions-origin="1" class="itm-actions-cell">Actions</th>
                             <?php endif; ?>
                         </tr>
                         </thead>

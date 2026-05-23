@@ -920,7 +920,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th data-itm-actions-origin="1">Actions</th>
+                            <th data-itm-actions-origin="1" class="itm-actions-cell">Actions</th>
                         </tr>
                         </thead>
                         <tbody>

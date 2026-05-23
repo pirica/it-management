@@ -300,7 +300,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(sa_build_query(['search' => $searchRaw, 'sort' => $field, 'dir' => $nextDir, 'page' => $page])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
-                        <th>Actions</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -314,7 +314,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                     <?php echo (int)$item['active'] ? 'Active' : 'Inactive'; ?>
                                 </span>
                             </td>
-                            <td>
+                            <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$item['id']; ?>">🔎</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$item['id']; ?>">✏️</a>
                                 <form method="POST" action="delete.php" style="display:inline;">
