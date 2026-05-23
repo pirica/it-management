@@ -1058,6 +1058,12 @@ function mbqa_row_ids(string $html): array
             $ids[(int)$id] = (int)$id;
         }
     }
+    // Why: read-only modules (e.g. audit_logs) expose view/edit links without bulk ids[] or delete forms.
+    if (preg_match_all('/(?:view|edit)\.php\?id=(\d+)/i', $html, $m3)) {
+        foreach ($m3[1] as $id) {
+            $ids[(int)$id] = (int)$id;
+        }
+    }
     return array_values($ids);
 }
 
