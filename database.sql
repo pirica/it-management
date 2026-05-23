@@ -3108,6 +3108,16 @@ CREATE TABLE `attempts` (
   KEY `idx_attempts_source_type_email_time` (`attempt_source`,`attempt_type`,`email`,`created_at`),
   KEY `idx_attempts_source_type_user_time` (`attempt_source`,`attempt_type`,`user_id`,`created_at`),
   CONSTRAINT `fk_attempts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'login', 'success', '192.168.1.10', '2026-01-01 08:00:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES (NULL, 'unknown@example.com', '0', 'login', 'failure', '10.0.0.55', '2026-01-01 08:05:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '0', 'login', 'failure', '192.168.1.10', '2026-01-01 08:06:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES (NULL, 'admin@techcorp.example', '1', 'password_reset', 'request', '192.168.1.20', '2026-01-02 09:00:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'password_reset', 'reset', '192.168.1.20', '2026-01-02 09:15:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'password_reset', 'success', '192.168.1.20', '2026-01-02 09:16:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES (NULL, 'wrong@example.com', '0', 'password_reset', 'failure', '203.0.113.8', '2026-01-03 10:00:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'login', 'success', '127.0.0.1', '2026-01-03 11:00:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES (NULL, 'guest@example.com', '0', 'login', 'failure', '172.16.0.4', '2026-01-04 14:30:01');
+INSERT INTO `attempts` (`user_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'login', 'success', '192.168.1.50', '2026-01-05 07:45:01');
 -- Table structure for `user_companies`
 DROP TABLE IF EXISTS `user_companies`;
 CREATE TABLE `user_companies` (

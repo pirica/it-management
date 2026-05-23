@@ -650,18 +650,18 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 
-// Handle sample data seeding for empty companies in list view
+// Handle sample data seeding for empty table in list view
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
     cr_require_valid_csrf_token();
 
-    if (!$hasCompany || $company_id <= 0) {
+    if ($company_id <= 0) {
         $_SESSION['crud_error'] = 'Sample data requires an active company.';
         header('Location: ' . $listUrl);
         exit;
     }
 
-    $where = ' WHERE company_id=' . (int)$company_id;
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
+    // Why: attempts is global (no company_id column); seed only when the whole table is empty.
+    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table);
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
     if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
@@ -999,7 +999,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </table>
                 </div>
 
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
