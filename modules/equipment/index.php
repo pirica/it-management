@@ -257,7 +257,6 @@ $equipmentCsrfToken = itm_get_csrf_token();
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
 <?php
 if (!empty($_SESSION['crud_error'])) {
     echo '<div class="crud_error">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';
@@ -269,6 +268,7 @@ if (!empty($_SESSION['crud_success'])) {
     unset($_SESSION['crud_success']);
 }
 ?>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <a href="create.php" class="btn btn-primary">➕</a>
                 <?php else: ?>

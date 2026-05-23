@@ -120,6 +120,43 @@ function tradt_run_db_integration(mysqli $conn): void
         'sample ticket TCK-0001 asset_id links to Primary File Server (id ' . $equipmentId . ')'
     );
 
+    // Why: FK remap fallback can point sample tickets at the wrong equipment row; repair must fix that too.
+    $wrongRes = mysqli_query(
+        $conn,
+        "SELECT id FROM equipment WHERE company_id = " . (int)$companyId
+        . " AND id <> " . (int)$equipmentId . " ORDER BY id ASC LIMIT 1"
+    );
+    $wrongRow = ($wrongRes) ? mysqli_fetch_assoc($wrongRes) : null;
+    $wrongEquipmentId = is_array($wrongRow) ? (int)($wrongRow['id'] ?? 0) : 0;
+    if ($wrongEquipmentId > 0) {
+        $wrongStmt = mysqli_prepare(
+            $conn,
+            "UPDATE tickets SET asset_id = ? WHERE company_id = ? AND ticket_external_code = 'TCK-0001' LIMIT 1"
+        );
+        if ($wrongStmt) {
+            mysqli_stmt_bind_param($wrongStmt, 'ii', $wrongEquipmentId, $companyId);
+            mysqli_stmt_execute($wrongStmt);
+            mysqli_stmt_close($wrongStmt);
+        }
+
+        $repairedWrong = tickets_repair_sample_asset_links($conn, $companyId);
+        tradt_assert($repairedWrong > 0, 'repair re-links sample ticket after stale wrong asset_id');
+
+        $linkRes = mysqli_query(
+            $conn,
+            "SELECT asset_id FROM tickets WHERE company_id = " . (int)$companyId
+            . " AND ticket_external_code = 'TCK-0001' LIMIT 1"
+        );
+        $linkRow = ($linkRes) ? mysqli_fetch_assoc($linkRes) : null;
+        $linkedAssetId = is_array($linkRow) ? (int)($linkRow['asset_id'] ?? 0) : 0;
+        tradt_assert(
+            $linkedAssetId === $equipmentId,
+            'repair restored Primary File Server link on TCK-0001'
+        );
+    } else {
+        tradt_out('[INFO] skipped stale asset_id repair case (no alternate equipment row)');
+    }
+
     $deleteError = equipment_delete_record($conn, $companyId, $equipmentId);
     tradt_assert($deleteError !== null && $deleteError !== '', 'equipment delete returns an error when linked from a ticket');
     tradt_assert(
