@@ -1204,6 +1204,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         $parsedInserts = itm_parse_database_sql_inserts($sqlBody, $tableName);
         $tableRows = $parsedInserts[$tableName] ?? [];
         if (empty($tableRows)) {
+            if ($tableName === 'user_sidebar_preferences'
+                && function_exists('itm_seed_default_user_sidebar_preferences_for_company')) {
+                return itm_seed_default_user_sidebar_preferences_for_company($conn, $companyId, 1, $error);
+            }
             $error = 'No sample rows found in database.sql for this module.';
             return 0;
         }

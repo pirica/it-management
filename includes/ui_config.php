@@ -1646,6 +1646,47 @@ function itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id) {
 }
 
 /**
+ * Seeds default sidebar layout rows for QA sample data and empty tenants.
+ * Why: database.sql uses INSERT…SELECT for this table; itm_parse_database_sql_inserts only reads INSERT…VALUES.
+ *
+ * @return int Rows for the company after seed (0 on failure)
+ */
+function itm_seed_default_user_sidebar_preferences_for_company($conn, $company_id, $user_id = 1, &$error = '') {
+    $error = '';
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0) {
+        $error = 'Invalid company or user for sidebar seed.';
+        return 0;
+    }
+
+    if (!function_exists('itm_ui_config_defaults') || !function_exists('itm_save_user_sidebar_preferences')) {
+        $error = 'Sidebar seed helpers unavailable.';
+        return 0;
+    }
+
+    $defaults = itm_ui_config_defaults();
+    $layoutConfig = [
+        'sidebar_visibility' => $defaults['sidebar_visibility'],
+        'sidebar_main_order' => $defaults['sidebar_main_order'],
+        'sidebar_submenu_order' => $defaults['sidebar_submenu_order'],
+    ];
+
+    if (!itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $layoutConfig)) {
+        $error = 'Could not save default sidebar preferences.';
+        return 0;
+    }
+
+    $countSql = 'SELECT COUNT(*) AS total_rows FROM user_sidebar_preferences WHERE company_id=' . $company_id;
+    $countRes = mysqli_query($conn, $countSql);
+    if ($countRes && ($countRow = mysqli_fetch_assoc($countRes))) {
+        return (int)($countRow['total_rows'] ?? 0);
+    }
+
+    return 0;
+}
+
+/**
  * Synchronizes per-user relational sidebar preferences.
  */
 function itm_save_user_sidebar_preferences($conn, $company_id, $user_id, $config) {
