@@ -202,7 +202,7 @@ function ticket_render_color_swatch(string $value): string
         return '<span style="color:#666;">—</span>';
     }
 
-    return '<span title="' . sanitize($color) . '" aria-label="Quick Color Tag ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
+    return '<span title="' . sanitize($color) . '" aria-label="Color swatch ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
@@ -362,7 +362,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
                         <?php $quickColorSortDir = ($sort === 'ui_color' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                        <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=ui_color&dir=<?php echo $quickColorSortDir; ?>" style="text-decoration:none;color:inherit;">Quick Color Tag<?php if ($sort === 'ui_color'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                        <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=ui_color&dir=<?php echo $quickColorSortDir; ?>" style="text-decoration:none;color:inherit;">Color<?php if ($sort === 'ui_color'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
