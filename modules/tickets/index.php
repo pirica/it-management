@@ -179,6 +179,19 @@ function ticket_is_valid_hex_color(string $value): bool
     return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1;
 }
 
+/**
+ * Renders the Quick Color Tag swatch (same pattern as cable_colors hex preview).
+ */
+function ticket_render_color_swatch(string $value): string
+{
+    $color = trim($value);
+    if (!ticket_is_valid_hex_color($color)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($color) . '" aria-label="Quick Color Tag ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     itm_require_post_csrf();
 
@@ -227,7 +240,7 @@ if ($searchRaw !== '') {
 }
 
 // Sorting logic
-$sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'created_at'];
+$sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'ui_color', 'created_at'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
@@ -236,7 +249,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $orderByMap = [
     'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
     'title' => 't.title', 'status_name' => 'ts.name',
-    'priority_name' => 'tp.name', 'created_at' => 't.created_at',
+    'priority_name' => 'tp.name', 'ui_color' => 't.ui_color', 'created_at' => 't.created_at',
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -335,16 +348,14 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
+                        <?php $quickColorSortDir = ($sort === 'ui_color' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                        <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=ui_color&dir=<?php echo $quickColorSortDir; ?>" style="text-decoration:none;color:inherit;">Quick Color Tag<?php if ($sort === 'ui_color'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php if ($items && mysqli_num_rows($items)): while ($t = mysqli_fetch_assoc($items)): ?>
-                        <?php 
-                        // Allow for custom row colorization based on UI configuration
-                        $rowColor = (isset($t['ui_color']) && ticket_is_valid_hex_color((string)$t['ui_color'])) ? (string)$t['ui_color'] : ''; 
-                        ?>
-                        <tr<?php echo $rowColor !== '' ? ' style="border-left:4px solid ' . sanitize($rowColor) . ';"' : ''; ?>>
+                        <tr>
                             <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$t['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo (int)$t['id']; ?></td>
                             <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
@@ -352,6 +363,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <td><span class="badge" style="background-color:<?php echo sanitize($t['status_color'] ?: '#9aa4b2'); ?>33;color:<?php echo sanitize($t['status_color'] ?: '#9aa4b2'); ?>;"><?php echo sanitize($t['status_name'] ?: 'Open'); ?></span></td>
                             <td><?php echo sanitize($t['priority_name'] ?: '-'); ?></td>
                             <td><?php echo sanitize($t['created_at']); ?></td>
+                            <td><?php echo ticket_render_color_swatch((string)($t['ui_color'] ?? '')); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
@@ -366,7 +378,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No records found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 9 : 8; ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
