@@ -764,7 +764,7 @@ function mbqa_render_browser_help(): void
     echo '<tr><td><code>--module=SLUG</code></td><td>One module; omit for all</td></tr>';
     echo '<tr><td><code>--company=N</code></td><td>Company 1–5; omit for all five</td></tr>';
     echo '<tr><td><code>--pilot-only</code></td><td>Expenses only</td></tr>';
-    echo '<tr><td><code>--ui-click-smoke</code></td><td>Accepted for parity, but click smoke is browser-only and requires the V2 form.</td></tr>';
+    echo '<tr><td><code>--ui-click-smoke</code></td><td>Accepted for parity, but click smoke is browser-only and requires the runner form.</td></tr>';
     echo '</tbody></table>';
 
     echo '<h2>Tier A step order (per module)</h2>';
@@ -790,7 +790,7 @@ function mbqa_print_help(): void
     mbqa_out("  --module=SLUG    Single module folder; omit or --module=all for every module with index.php\n");
     mbqa_out("  --company=N      Company id 1–5 only; omit or --company=all for all five tenants\n");
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
-    mbqa_out("  --ui-click-smoke Browser-only click smoke; use the V2 form with one module + one company\n");
+    mbqa_out("  --ui-click-smoke Browser-only click smoke; use the runner form with one module + one company\n");
     mbqa_out("  --help           Show this help\n\n");
     mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json and matching .xlsx (new file each run)\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
