@@ -317,6 +317,10 @@ $createdByOptions = tickets_user_select_options($conn, (int)$company_id, $data['
 $assignedToOptions = tickets_user_select_options($conn, (int)$company_id, $data['assigned_to_user_id'] ?? 0);
 $assetOptions = tickets_equipment_select_options($conn, (int)$company_id, $data['asset_id'] ?? 0);
 $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
+$existingTicketPhotoUrls = [];
+foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
+    $existingTicketPhotoUrls[] = ticket_photo_public_path((string)$existingTicketPhotoFilename);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -325,6 +329,53 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $is_edit ? 'Edit' : 'New'; ?> Ticket</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+    .photo-preview-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 1200;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .photo-preview-content {
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--border, #ddd);
+        border-radius: 10px;
+        max-width: min(90vw, 900px);
+        max-height: 90vh;
+        overflow: auto;
+        padding: 12px;
+        text-align: center;
+    }
+    .photo-preview-content img {
+        max-width: 100%;
+        max-height: calc(90vh - 120px);
+        border-radius: 8px;
+    }
+    .photo-preview-actions {
+        margin-bottom: 10px;
+        text-align: right;
+    }
+    .photo-preview-gallery {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .photo-preview-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .photo-preview-gallery img {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border, #ddd);
+        border-radius: 8px;
+    }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -418,9 +469,12 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
 
                     <div class="form-group">
                         <label>Photo Upload</label>
-                        <input type="file" name="photo[]" accept="image/*" multiple="">
+                        <div id="ticketPhotoUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload ticket photos">
+                            <p class="itm-dropzone-hint">Drag and drop images here, or click to browse. You can select multiple photos.</p>
+                            <input type="file" name="photo[]" id="ticketPhotoInput" accept="image/*" multiple>
+                        </div>
                         <div class="form-hint" id="currentPhotoHint">
-                            <span id="currentPhotoHintText"><?php echo count($existingTicketPhotos); ?> photos current.</span>
+                            <span id="currentPhotoHintText"><?php echo count($existingTicketPhotos) > 0 ? 'Current photos: ' . count($existingTicketPhotos) : 'Selected photos: 0'; ?></span>
                             <button type="button" class="btn btn-sm" id="openPhotoPreview">🔎</button>
                         </div>
                     </div>
@@ -437,11 +491,232 @@ $existingTicketPhotos = ticket_parse_photo_filenames((string)($data['tickets_pho
     </div>
 </div>
 
-<!-- PHOTO PREVIEW MODAL [OMITTED FOR BREVITY] -->
+<div class="photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
+    <div class="photo-preview-content" role="dialog" aria-modal="true" aria-label="Ticket photos" onclick="event.stopPropagation()">
+        <div class="photo-preview-actions">
+            <button type="button" class="btn btn-sm" id="closePhotoPreview">Close</button>
+        </div>
+        <div class="photo-preview-gallery" id="existingPhotoPreviewGallery">
+            <?php foreach ($existingTicketPhotoUrls as $photoIndex => $photoUrl): ?>
+                <div class="photo-preview-item">
+                    <a href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
+                        <img src="<?php echo sanitize($photoUrl); ?>" alt="Current ticket photo <?php echo (int)$photoIndex + 1; ?>">
+                    </a>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <h4 style="margin:14px 0 8px;">Selected (not saved yet)</h4>
+        <div class="photo-preview-gallery" id="pendingPhotoPreviewGallery"></div>
+        <p id="photoPreviewEmptyHint" style="margin-top:12px;color:var(--text-muted,#666);display:none;">No photos to preview yet.</p>
+    </div>
+</div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/select-add-option.js"></script>
 <script>
-    // ... [JS Logic for Modals and Photo Management OMITTED] ...
+(function () {
+    var ticketForm = document.getElementById('ticketForm');
+    var uploadTarget = document.getElementById('ticketPhotoUploadTarget');
+    var photoInput = document.getElementById('ticketPhotoInput');
+    var openPhotoPreview = document.getElementById('openPhotoPreview');
+    var photoPreviewModal = document.getElementById('photoPreviewModal');
+    var closePhotoPreview = document.getElementById('closePhotoPreview');
+    var currentPhotoHintText = document.getElementById('currentPhotoHintText');
+    var existingPhotoPreviewGallery = document.getElementById('existingPhotoPreviewGallery');
+    var pendingPhotoPreviewGallery = document.getElementById('pendingPhotoPreviewGallery');
+    var photoPreviewEmptyHint = document.getElementById('photoPreviewEmptyHint');
+    var totalCurrentPhotos = existingPhotoPreviewGallery ? existingPhotoPreviewGallery.children.length : 0;
+    var selectedPhotoPreviewUrls = [];
+
+    function isExternalFileDrag(event) {
+        return !!(event.dataTransfer && event.dataTransfer.types && event.dataTransfer.types.indexOf('Files') !== -1);
+    }
+
+    function isImageFile(file) {
+        return !!(file && typeof file.type === 'string' && file.type.indexOf('image/') === 0);
+    }
+
+    function assignImageFilesToInput(input, incomingFiles, mergeExisting) {
+        if (!input || !incomingFiles) {
+            return;
+        }
+        var transfer = new DataTransfer();
+        if (mergeExisting && input.files) {
+            Array.prototype.forEach.call(input.files, function (file) {
+                if (isImageFile(file)) {
+                    transfer.items.add(file);
+                }
+            });
+        }
+        Array.prototype.forEach.call(incomingFiles, function (file) {
+            if (isImageFile(file)) {
+                transfer.items.add(file);
+            }
+        });
+        input.files = transfer.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (uploadTarget && photoInput) {
+        uploadTarget.addEventListener('dragover', function (event) {
+            if (!isExternalFileDrag(event)) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.add('is-dragover');
+        });
+        uploadTarget.addEventListener('dragleave', function (event) {
+            var related = event.relatedTarget;
+            if (related && uploadTarget.contains(related)) {
+                return;
+            }
+            uploadTarget.classList.remove('is-dragover');
+        });
+        uploadTarget.addEventListener('drop', function (event) {
+            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.remove('is-dragover');
+            assignImageFilesToInput(photoInput, event.dataTransfer.files, true);
+        });
+        uploadTarget.addEventListener('click', function (event) {
+            if (event.target === photoInput) {
+                return;
+            }
+            photoInput.click();
+        });
+        uploadTarget.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                photoInput.click();
+            }
+        });
+    }
+
+    if (ticketForm) {
+        ticketForm.addEventListener('dragover', function (event) {
+            if (isExternalFileDrag(event)) {
+                event.preventDefault();
+            }
+        });
+        ticketForm.addEventListener('drop', function (event) {
+            if (!uploadTarget || uploadTarget.contains(event.target)) {
+                return;
+            }
+            if (isExternalFileDrag(event)) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    }
+
+    function clearPendingPhotoPreview() {
+        selectedPhotoPreviewUrls.forEach(function (url) {
+            URL.revokeObjectURL(url);
+        });
+        selectedPhotoPreviewUrls = [];
+        if (pendingPhotoPreviewGallery) {
+            pendingPhotoPreviewGallery.innerHTML = '';
+        }
+    }
+
+    function updateCurrentPhotoHint() {
+        if (!currentPhotoHintText) {
+            return;
+        }
+        var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
+        if (totalCurrentPhotos > 0) {
+            currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos + '. Selected (not saved): ' + selectedPhotoCount + '.';
+            return;
+        }
+        currentPhotoHintText.textContent = selectedPhotoCount > 0
+            ? 'Selected photos: ' + selectedPhotoCount + ' (not saved yet).'
+            : 'Selected photos: 0';
+    }
+
+    function updatePhotoPreviewActionState() {
+        var visibleExistingPhotos = existingPhotoPreviewGallery ? existingPhotoPreviewGallery.children.length : 0;
+        var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
+        var hasAnyPhotos = visibleExistingPhotos > 0 || selectedPhotoCount > 0;
+        if (openPhotoPreview) {
+            openPhotoPreview.disabled = !hasAnyPhotos;
+        }
+        if (photoPreviewEmptyHint) {
+            photoPreviewEmptyHint.style.display = hasAnyPhotos ? 'none' : 'block';
+        }
+    }
+
+    function renderPendingPhotoPreview() {
+        clearPendingPhotoPreview();
+        if (!pendingPhotoPreviewGallery || !photoInput || !photoInput.files) {
+            updatePhotoPreviewActionState();
+            updateCurrentPhotoHint();
+            return;
+        }
+
+        Array.prototype.forEach.call(photoInput.files, function (file, index) {
+            if (!isImageFile(file)) {
+                return;
+            }
+            var previewUrl = URL.createObjectURL(file);
+            selectedPhotoPreviewUrls.push(previewUrl);
+
+            var item = document.createElement('div');
+            item.className = 'photo-preview-item';
+            var image = document.createElement('img');
+            image.src = previewUrl;
+            image.alt = 'Selected ticket photo ' + (index + 1);
+            item.appendChild(image);
+
+            var label = document.createElement('small');
+            label.textContent = file.name;
+            item.appendChild(label);
+            pendingPhotoPreviewGallery.appendChild(item);
+        });
+
+        updatePhotoPreviewActionState();
+        updateCurrentPhotoHint();
+    }
+
+    function hidePhotoModal() {
+        if (!photoPreviewModal) {
+            return;
+        }
+        photoPreviewModal.style.display = 'none';
+        photoPreviewModal.setAttribute('aria-hidden', 'true');
+    }
+
+    updateCurrentPhotoHint();
+    updatePhotoPreviewActionState();
+    window.addEventListener('pageshow', function () {
+        clearPendingPhotoPreview();
+        updateCurrentPhotoHint();
+        updatePhotoPreviewActionState();
+    });
+
+    if (photoInput) {
+        photoInput.addEventListener('change', renderPendingPhotoPreview);
+    }
+
+    if (openPhotoPreview && photoPreviewModal) {
+        openPhotoPreview.addEventListener('click', function (event) {
+            event.preventDefault();
+            photoPreviewModal.style.display = 'flex';
+            photoPreviewModal.setAttribute('aria-hidden', 'false');
+        });
+        photoPreviewModal.addEventListener('click', hidePhotoModal);
+        if (closePhotoPreview) {
+            closePhotoPreview.addEventListener('click', hidePhotoModal);
+        }
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hidePhotoModal();
+            }
+        });
+    }
+})();
 </script>
 </body>
 </html>
