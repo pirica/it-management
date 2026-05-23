@@ -2022,6 +2022,26 @@ function mbqa_runner_module_step_exceptions(): array
             'single_delete' => 'N/A (read-only audit centre; delete disabled)',
             'sample_data' => 'N/A (read-only audit centre)',
         ],
+        // Why: attempts is a global security audit table (no company_id); list smoke only — no tenant clear/CRUD QA matrix.
+        'attempts' => [
+            'clear' => 'N/A (global audit table)',
+            'sample_data' => 'N/A (global audit table)',
+            'add' => 'N/A (global audit table)',
+            'pagination' => 'N/A (global audit table)',
+            'bulk_cancel' => 'N/A (global audit table)',
+            'bulk_delete' => 'N/A (global audit table)',
+            'search' => 'N/A (global audit table)',
+            'sort' => 'N/A (global audit table)',
+            'create' => 'N/A (global audit table)',
+            'view' => 'N/A (global audit table)',
+            'edit' => 'N/A (global audit table)',
+            'list_all' => 'N/A (global audit table)',
+            'export_pdf' => 'N/A (global audit table)',
+            'export_xlsx' => 'N/A (global audit table)',
+            'clear_table' => 'N/A (global audit table)',
+            'import_db' => 'N/A (global audit table)',
+            'single_delete' => 'N/A (global audit table)',
+        ],
     ];
 
     $routingSteps = mbqa_runner_facade_routing_na_steps();
@@ -5106,7 +5126,10 @@ foreach ($companiesToRun as $companyId) {
         $csrfIndex = mbqa_extract_csrf($index['body']);
         $ids = mbqa_row_ids($index['body']);
 
-        if (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
+        $clearNaNote = mbqa_runner_module_step_exception_note($slug, 'clear');
+        if ($clearNaNote !== null) {
+            $steps[] = mbqa_step_result('clear', true, $clearNaNote);
+        } elseif (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
             $clearNote = '';
             $cleared = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearNote);
             $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
@@ -5172,8 +5195,13 @@ foreach ($companiesToRun as $companyId) {
 
         $perPage = mbqa_records_per_page($conn, $companyId);
         $rowCountAfterAdd = mbqa_tenant_row_count($conn, $slug, $companyId);
-        $paginationNav = mbqa_run_pagination_nav_step($moduleUrl, $cookieFile, $rowCountAfterAdd, $perPage);
-        $steps[] = mbqa_step_result('pagination', $paginationNav['ok'], $paginationNav['note']);
+        $paginationNaNote = mbqa_runner_module_step_exception_note($slug, 'pagination');
+        if ($paginationNaNote !== null) {
+            $steps[] = mbqa_step_result('pagination', true, $paginationNaNote);
+        } else {
+            $paginationNav = mbqa_run_pagination_nav_step($moduleUrl, $cookieFile, $rowCountAfterAdd, $perPage);
+            $steps[] = mbqa_step_result('pagination', $paginationNav['ok'], $paginationNav['note']);
+        }
 
         $bulkCancelNaNote = mbqa_runner_module_step_exception_note($slug, 'bulk_cancel');
         if ($bulkCancelNaNote !== null) {
@@ -5215,17 +5243,27 @@ foreach ($companiesToRun as $companyId) {
             );
         }
 
-        $search = mbqa_http($moduleUrl . 'index.php?search=sample&page=1', 'GET', null, [], $cookieFile);
-        $searchHtml = mbqa_html_step_search($search['body'], $search['status']);
-        $steps[] = mbqa_step_result('search', $searchHtml['ok'], $searchHtml['note']);
-
-        $sortField = 'id';
-        if (preg_match('/\?[^"\']*sort=([a-zA-Z0-9_]+)/', $index['body'], $sortMatch)) {
-            $sortField = $sortMatch[1];
+        $searchNaNote = mbqa_runner_module_step_exception_note($slug, 'search');
+        if ($searchNaNote !== null) {
+            $steps[] = mbqa_step_result('search', true, $searchNaNote);
+        } else {
+            $search = mbqa_http($moduleUrl . 'index.php?search=sample&page=1', 'GET', null, [], $cookieFile);
+            $searchHtml = mbqa_html_step_search($search['body'], $search['status']);
+            $steps[] = mbqa_step_result('search', $searchHtml['ok'], $searchHtml['note']);
         }
-        $sort = mbqa_http($moduleUrl . 'index.php?sort=' . rawurlencode($sortField) . '&dir=DESC&page=1', 'GET', null, [], $cookieFile);
-        $sortHtml = mbqa_html_step_sort($sort['body'], $sort['status'], $sortField);
-        $steps[] = mbqa_step_result('sort', $sortHtml['ok'], $sortHtml['note']);
+
+        $sortNaNote = mbqa_runner_module_step_exception_note($slug, 'sort');
+        if ($sortNaNote !== null) {
+            $steps[] = mbqa_step_result('sort', true, $sortNaNote);
+        } else {
+            $sortField = 'id';
+            if (preg_match('/\?[^"\']*sort=([a-zA-Z0-9_]+)/', $index['body'], $sortMatch)) {
+                $sortField = $sortMatch[1];
+            }
+            $sort = mbqa_http($moduleUrl . 'index.php?sort=' . rawurlencode($sortField) . '&dir=DESC&page=1', 'GET', null, [], $cookieFile);
+            $sortHtml = mbqa_html_step_sort($sort['body'], $sort['status'], $sortField);
+            $steps[] = mbqa_step_result('sort', $sortHtml['ok'], $sortHtml['note']);
+        }
 
         $createNaNote = mbqa_runner_module_step_exception_note($slug, 'create');
         if ($createNaNote !== null) {
@@ -5237,21 +5275,25 @@ foreach ($companiesToRun as $companyId) {
 
         $ids = mbqa_row_ids($index['body']);
         $viewId = $ids[0] ?? 0;
+        $viewNaNote = mbqa_runner_module_step_exception_note($slug, 'view');
         $editNaNote = mbqa_runner_module_step_exception_note($slug, 'edit');
-        if ($viewId > 0) {
+        if ($viewNaNote !== null) {
+            $steps[] = mbqa_step_result('view', true, $viewNaNote);
+        } elseif ($viewId > 0) {
             $view = mbqa_http($moduleUrl . 'view.php?id=' . $viewId, 'GET', null, [], $cookieFile);
             $viewHtml = mbqa_html_step_view($view['body'], $view['status'], $viewId);
             $steps[] = mbqa_step_result('view', $viewHtml['ok'], $viewHtml['note']);
-            if ($editNaNote !== null) {
-                $steps[] = mbqa_step_result('edit', true, $editNaNote);
-            } else {
-                $edit = mbqa_http($moduleUrl . 'edit.php?id=' . $viewId, 'GET', null, [], $cookieFile);
-                $editHtml = mbqa_html_step_edit($edit['body'], $edit['status'], $viewId);
-                $steps[] = mbqa_step_result('edit', $editHtml['ok'], $editHtml['note']);
-            }
         } else {
             $steps[] = mbqa_step_result('view', true, 'N/A no rows');
-            $steps[] = mbqa_step_result('edit', true, $editNaNote ?? 'N/A no rows');
+        }
+        if ($editNaNote !== null) {
+            $steps[] = mbqa_step_result('edit', true, $editNaNote);
+        } elseif ($viewNaNote === null && $viewId > 0) {
+            $edit = mbqa_http($moduleUrl . 'edit.php?id=' . $viewId, 'GET', null, [], $cookieFile);
+            $editHtml = mbqa_html_step_edit($edit['body'], $edit['status'], $viewId);
+            $steps[] = mbqa_step_result('edit', $editHtml['ok'], $editHtml['note']);
+        } else {
+            $steps[] = mbqa_step_result('edit', true, 'N/A no rows');
         }
 
         $listAllPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'list_all.php';
@@ -5273,11 +5315,21 @@ foreach ($companiesToRun as $companyId) {
         $exportRows = mbqa_extract_table_export_rows($index['body']);
         $hasTableExport = count($exportRows) >= 2;
 
-        $exportPdfHtml = mbqa_html_step_export($index['body'], 'pdf', $hasTableExport);
-        $steps[] = mbqa_step_result('export_pdf', $exportPdfHtml['ok'], $exportPdfHtml['note']);
+        $exportPdfNaNote = mbqa_runner_module_step_exception_note($slug, 'export_pdf');
+        if ($exportPdfNaNote !== null) {
+            $steps[] = mbqa_step_result('export_pdf', true, $exportPdfNaNote);
+        } else {
+            $exportPdfHtml = mbqa_html_step_export($index['body'], 'pdf', $hasTableExport);
+            $steps[] = mbqa_step_result('export_pdf', $exportPdfHtml['ok'], $exportPdfHtml['note']);
+        }
 
-        $exportXlsxHtml = mbqa_html_step_export($index['body'], 'xlsx', $hasTableExport);
-        $steps[] = mbqa_step_result('export_xlsx', $exportXlsxHtml['ok'], $exportXlsxHtml['note']);
+        $exportXlsxNaNote = mbqa_runner_module_step_exception_note($slug, 'export_xlsx');
+        if ($exportXlsxNaNote !== null) {
+            $steps[] = mbqa_step_result('export_xlsx', true, $exportXlsxNaNote);
+        } else {
+            $exportXlsxHtml = mbqa_html_step_export($index['body'], 'xlsx', $hasTableExport);
+            $steps[] = mbqa_step_result('export_xlsx', $exportXlsxHtml['ok'], $exportXlsxHtml['note']);
+        }
 
         $canRunClearTable = $rowCountAfterAdd >= $perPage
             && mbqa_index_shows_bulk_actions($index['body'])
@@ -5305,7 +5357,9 @@ foreach ($companiesToRun as $companyId) {
         }
 
         // Why: repeat tenant clear after export (and optional clear_table) so import_db runs on an empty table.
-        if (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
+        if ($clearNaNote !== null) {
+            $steps[] = mbqa_step_result('clear', true, $clearNaNote);
+        } elseif (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
             $clearBeforeImportNote = '';
             $clearedBeforeImport = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearBeforeImportNote);
             $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
