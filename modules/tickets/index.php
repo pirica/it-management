@@ -15,10 +15,161 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');
     $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
     if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
-        itm_handle_json_table_import($conn, 'tickets', (int)($company_id ?? 0));
+        $itmImportJsonBody['import_excel_rows'] = tickets_prepare_import_excel_rows(
+            $conn,
+            (int)($company_id ?? 0),
+            $itmImportJsonBody['import_excel_rows']
+        );
+        itm_handle_json_table_import($conn, 'tickets', (int)($company_id ?? 0), $itmImportJsonBody);
     }
 }
 
+
+/**
+ * Resolve a tenant-scoped lookup row id from a human-readable label (Excel import).
+ */
+function tickets_resolve_fk_id_by_name(mysqli $conn, string $table, int $companyId, string $name): string
+{
+    if (!itm_is_safe_identifier($table) || $companyId <= 0 || trim($name) === '') {
+        return '';
+    }
+
+    $tableEsc = '`' . str_replace('`', '``', $table) . '`';
+    $stmt = mysqli_prepare($conn, 'SELECT id FROM ' . $tableEsc . ' WHERE company_id = ? AND name = ? LIMIT 1');
+    if (!$stmt) {
+        return '';
+    }
+
+    $lookupName = trim($name);
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $lookupName);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ? (string)(int)($row['id'] ?? 0) : '';
+}
+
+/**
+ * Default created_by_user_id for imports when Excel omits audit user columns.
+ */
+function tickets_import_default_user_id(mysqli $conn, int $companyId): int
+{
+    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($sessionUserId > 0) {
+        return $sessionUserId;
+    }
+
+    if ($companyId > 0) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT u.id FROM users u
+             INNER JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+             WHERE u.active = 1
+             ORDER BY u.id ASC
+             LIMIT 1'
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $row = $result ? mysqli_fetch_assoc($result) : null;
+            mysqli_stmt_close($stmt);
+            if ($row) {
+                return (int)($row['id'] ?? 0);
+            }
+        }
+    }
+
+    $fallback = mysqli_query($conn, 'SELECT id FROM users WHERE active = 1 ORDER BY id ASC LIMIT 1');
+    $fallbackRow = $fallback ? mysqli_fetch_assoc($fallback) : null;
+
+    return $fallbackRow ? (int)($fallbackRow['id'] ?? 0) : 0;
+}
+
+/**
+ * Map list export labels (Status/Priority names) to FK ids and inject required ticket columns.
+ *
+ * @param array<int, array<int, string>> $importRows
+ * @return array<int, array<int, string>>
+ */
+function tickets_prepare_import_excel_rows(mysqli $conn, int $companyId, array $importRows): array
+{
+    if (count($importRows) < 2 || $companyId <= 0) {
+        return $importRows;
+    }
+
+    $headers = $importRows[0];
+    $values = $importRows[1];
+    $importHeader = static function (string $field): string {
+        return ucwords(str_replace('_', ' ', $field));
+    };
+
+    foreach ($headers as $i => $header) {
+        $norm = strtolower(trim(preg_replace('/\s+/', ' ', (string)$header)));
+        $raw = trim((string)($values[$i] ?? ''));
+        if ($raw === '' || strcasecmp($raw, 'null') === 0) {
+            continue;
+        }
+
+        if ($norm === 'status' || $norm === 'status id' || $norm === 'status name') {
+            if (!ctype_digit($raw)) {
+                $resolved = tickets_resolve_fk_id_by_name($conn, 'ticket_statuses', $companyId, $raw);
+                if ($resolved !== '') {
+                    $values[$i] = $resolved;
+                }
+            }
+            $headers[$i] = $importHeader('status_id');
+            continue;
+        }
+
+        if ($norm === 'priority' || $norm === 'priority id' || $norm === 'priority name') {
+            if (!ctype_digit($raw)) {
+                $resolved = tickets_resolve_fk_id_by_name($conn, 'ticket_priorities', $companyId, $raw);
+                if ($resolved !== '') {
+                    $values[$i] = $resolved;
+                }
+            }
+            $headers[$i] = $importHeader('priority_id');
+            continue;
+        }
+
+        if ($norm === 'external code' || $norm === 'ticket external code') {
+            $headers[$i] = $importHeader('ticket_external_code');
+        }
+    }
+
+    $present = [];
+    foreach ($headers as $header) {
+        $norm = strtolower(trim(preg_replace('/\s+/', ' ', (string)$header)));
+        $present[$norm] = true;
+    }
+
+    if (empty($present['created by user id']) && empty($present['created by'])) {
+        $userId = tickets_import_default_user_id($conn, $companyId);
+        if ($userId > 0) {
+            $headers[] = $importHeader('created_by_user_id');
+            $values[] = (string)$userId;
+        }
+    }
+
+    if (empty($present['category id']) && empty($present['category'])) {
+        $categoryStmt = mysqli_prepare($conn, 'SELECT id FROM ticket_categories WHERE company_id = ? ORDER BY id ASC LIMIT 1');
+        if ($categoryStmt) {
+            mysqli_stmt_bind_param($categoryStmt, 'i', $companyId);
+            mysqli_stmt_execute($categoryStmt);
+            $categoryResult = mysqli_stmt_get_result($categoryStmt);
+            $categoryRow = $categoryResult ? mysqli_fetch_assoc($categoryResult) : null;
+            mysqli_stmt_close($categoryStmt);
+            if ($categoryRow) {
+                $headers[] = $importHeader('category_id');
+                $values[] = (string)(int)($categoryRow['id'] ?? 0);
+            }
+        }
+    }
+
+    return [$headers, $values];
+}
 
 /**
  * Validates if a string is a valid Hex Color code
@@ -176,7 +327,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
 
             <!-- DATA TABLE -->
             <div class="card">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>

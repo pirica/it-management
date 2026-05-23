@@ -1267,7 +1267,7 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
  * Handles JSON import requests from table-tools.js and writes rows directly to a table.
  */
 if (!function_exists('itm_handle_json_table_import')) {
-    function itm_handle_json_table_import($conn, $tableName, $companyId = 0) {
+    function itm_handle_json_table_import($conn, $tableName, $companyId = 0, ?array $jsonBodyOverride = null) {
         if ((string)($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             return false;
         }
@@ -1278,10 +1278,14 @@ if (!function_exists('itm_handle_json_table_import')) {
             return false;
         }
         $bodyMentionsImportRows = strpos($rawBody, '"import_excel_rows"') !== false;
-        if (strpos($contentType, 'application/json') === false && !$bodyMentionsImportRows) {
+        if ($jsonBodyOverride === null && strpos($contentType, 'application/json') === false && !$bodyMentionsImportRows) {
             return false;
         }
-        $jsonBody = json_decode((string)$rawBody, true);
+        if ($jsonBodyOverride !== null && is_array($jsonBodyOverride)) {
+            $jsonBody = $jsonBodyOverride;
+        } else {
+            $jsonBody = json_decode((string)$rawBody, true);
+        }
         if (!is_array($jsonBody)) {
             if ($bodyMentionsImportRows) {
                 header('Content-Type: application/json');
