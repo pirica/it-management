@@ -1098,7 +1098,16 @@ function mbqa_step_result_for_module(string $moduleSlug, string $step, bool $ok,
 
 function mbqa_index_is_empty(string $html): bool
 {
-    return stripos($html, 'No records found') !== false;
+    if (stripos($html, 'No records found') !== false) {
+        return true;
+    }
+
+    // Why: audit_logs uses module-specific empty copy instead of the generic CRUD phrase.
+    if (stripos($html, 'No audit logs found') !== false) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -1220,6 +1229,13 @@ function mbqa_runner_module_step_exceptions(): array
         // Why: bulk random rows on equipment_types scaffold modules/is_mbqa_* folders; avoid module creations in QA.
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
+        ],
+        // Why: audit_logs is a read-only system trail; rows come from triggers/app activity, not CRUD seed/import.
+        'audit_logs' => [
+            'create' => 'N/A (read-only audit centre; create redirects to list)',
+            'edit' => 'N/A (read-only audit centre; edit redirects to list)',
+            'import_db' => 'N/A (Import Excel disabled by design)',
+            'sample_data' => 'N/A (no database.sql seed rows; audit entries are system-generated)',
         ],
     ];
 
@@ -2983,6 +2999,79 @@ function mbqa_build_random_insert_row(
 }
 
 /**
+ * Insert deterministic audit_log rows for QA bulk/pagination/delete steps.
+ *
+ * Why: audit_logs has required enum/action columns and no database.sql seed tuples,
+ * so generic random row builders cannot satisfy the schema contract.
+ *
+ * @return array{inserted:int,last_error:string}
+ */
+function mbqa_insert_audit_log_sample_rows(mysqli $conn, int $companyId, int $needed): array
+{
+    if ($needed <= 0 || $companyId <= 0) {
+        return ['inserted' => 0, 'last_error' => ''];
+    }
+
+    $userId = 0;
+    $userStmt = mysqli_prepare($conn, 'SELECT id FROM users WHERE active = 1 ORDER BY id ASC LIMIT 1');
+    if ($userStmt) {
+        mysqli_stmt_execute($userStmt);
+        $userRes = mysqli_stmt_get_result($userStmt);
+        if ($userRes && ($userRow = mysqli_fetch_assoc($userRes))) {
+            $userId = (int)($userRow['id'] ?? 0);
+        }
+        mysqli_stmt_close($userStmt);
+    }
+
+    $sql = 'INSERT INTO audit_logs (company_id, user_id, actor_username, table_name, module_name, record_id, action, old_values, new_values) '
+         . 'VALUES (?, NULLIF(?, 0), ?, ?, ?, ?, ?, ?, ?)';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['inserted' => 0, 'last_error' => mysqli_error($conn)];
+    }
+
+    $inserted = 0;
+    $lastError = '';
+    $actions = ['INSERT', 'UPDATE', 'DELETE'];
+    $referenceTable = 'departments';
+    $moduleName = 'MBQA-audit_logs';
+
+    for ($i = 0; $i < $needed; $i++) {
+        $recordId = 900000 + $i + 1;
+        $action = $actions[$i % 3];
+        $username = 'MBQA-audit-' . $companyId . '-' . ($i + 1);
+        $oldValues = $action === 'INSERT' ? null : '{"name":"MBQA old"}';
+        $newValues = $action === 'DELETE' ? null : '{"name":"MBQA new"}';
+
+        mysqli_stmt_bind_param(
+            $stmt,
+            'iisssisss',
+            $companyId,
+            $userId,
+            $username,
+            $referenceTable,
+            $moduleName,
+            $recordId,
+            $action,
+            $oldValues,
+            $newValues
+        );
+
+        if (mysqli_stmt_execute($stmt)) {
+            $inserted++;
+            $lastError = '';
+            continue;
+        }
+
+        $lastError = mysqli_stmt_error($stmt);
+    }
+
+    mysqli_stmt_close($stmt);
+
+    return ['inserted' => $inserted, 'last_error' => $lastError];
+}
+
+/**
  * @return array{inserted:int,last_error:string}
  */
 function mbqa_insert_random_rows(mysqli $conn, string $table, int $companyId, int $needed, int $parentDepth = 0): array
@@ -3096,7 +3185,11 @@ function mbqa_ensure_bulk_sample_rows(mysqli $conn, string $table, int $companyI
     }
 
     $needed = $target - $current;
-    $insertResult = mbqa_insert_random_rows($conn, $table, $companyId, $needed);
+    if ($table === 'audit_logs') {
+        $insertResult = mbqa_insert_audit_log_sample_rows($conn, $companyId, $needed);
+    } else {
+        $insertResult = mbqa_insert_random_rows($conn, $table, $companyId, $needed);
+    }
     $added = (int)$insertResult['inserted'];
     $final = mbqa_tenant_row_count($conn, $table, $companyId);
     $ok = $final >= $target;
@@ -4413,11 +4506,18 @@ foreach ($companiesToRun as $companyId) {
             $view = mbqa_http($moduleUrl . 'view.php?id=' . $viewId, 'GET', null, [], $cookieFile);
             $viewHtml = mbqa_html_step_view($view['body'], $view['status'], $viewId);
             $steps[] = mbqa_step_result('view', $viewHtml['ok'], $viewHtml['note']);
+        } else {
+            $steps[] = mbqa_step_result('view', true, 'N/A no rows');
+        }
+
+        $editNaNote = mbqa_runner_module_step_exception_note($slug, 'edit');
+        if ($editNaNote !== null) {
+            $steps[] = mbqa_step_result('edit', true, $editNaNote);
+        } elseif ($viewId > 0) {
             $edit = mbqa_http($moduleUrl . 'edit.php?id=' . $viewId, 'GET', null, [], $cookieFile);
             $editHtml = mbqa_html_step_edit($edit['body'], $edit['status'], $viewId);
             $steps[] = mbqa_step_result('edit', $editHtml['ok'], $editHtml['note']);
         } else {
-            $steps[] = mbqa_step_result('view', true, 'N/A no rows');
             $steps[] = mbqa_step_result('edit', true, 'N/A no rows');
         }
 
