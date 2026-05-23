@@ -286,7 +286,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 |---|------|----------------|
 | 1 | **`mysql`** | Whether `database.sql` defines sample `INSERT` rows for the module table. Parsed from `database.sql` via `itm_parse_database_sql_inserts()` (same tuples as UI sample seed). Manual equivalent: `SELECT * FROM \`{table}\`` in phpMyAdmin on a fresh import — **0 row(s) (empty)** e.g. `ip_addresses`, or **N row(s)** e.g. `departments`. Informational **Pass**; note records the count. Fails only if `database.sql` is missing/unreadable. Tier C/D report `N/A`. |
 | 2 | **`error_log`** | Start scope: rename `error_log.txt` to next `error_log-N.txt` when present; else record byte offset (only *new* lines count for this module). |
-| 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count. |
+| 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count and, when an Actions column is present, **`class="itm-actions-cell"`** + **`data-itm-actions-origin="1"`** on the Actions header and at least one body cell when rows render. |
 | 4 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `users` skipped). |
 | 5 | **`sample_data`** | HTTP sample seed; FK parents first; DB fallback via `itm_seed_table_from_database_sql()` when anchor ids differ. |
 | 6 | **`add`** | Insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first. |
@@ -384,7 +384,7 @@ Do **not** modify logic or structure unless explicitly requested:
 ### 4. Dynamic UI Configuration (Settings)
 Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Button Positions:** Render refresh/add controls based on `new_button_position`.
-* **Table Actions:** Add `data-itm-actions-origin="1"` to "Actions" headers/cells to allow the global layout engine to map `table_actions_position`.
+* **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`list`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
 * **DB Import Endpoint (Index Tables):** Add `data-itm-db-import-endpoint="index.php"` to every module index table so `📥Import Excel` can use the save-to-database flow.
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
 
