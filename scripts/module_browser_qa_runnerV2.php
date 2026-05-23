@@ -2008,9 +2008,13 @@ function mbqa_runner_module_step_exceptions(): array
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
         ],
-        // Why: audit_logs is an immutable evidence trail; delete/import/sample HTTP seed stay disabled in QA.
+        // Why: audit_logs is a read-only evidence centre; QA documents N/A steps and seeds rows only via add DB fallback.
         'audit_logs' => [
             'list' => 'N/A (read-only audit centre)',
+            'add' => 'N/A (read-only audit centre)',
+            'create' => 'N/A (read-only audit centre)',
+            'edit' => 'N/A (read-only audit centre)',
+            'list_all' => 'N/A (read-only audit centre)',
             'bulk_cancel' => 'N/A (no bulk-delete form in HTML)',
             'bulk_delete' => 'N/A (read-only audit centre; delete disabled)',
             'clear_table' => 'N/A (read-only audit centre; delete disabled)',
@@ -5090,6 +5094,10 @@ foreach ($companiesToRun as $companyId) {
         $_SESSION['company_id'] = $companyId;
         $addNaNote = mbqa_runner_module_step_exception_note($slug, 'add');
         if ($addNaNote !== null) {
+            // Why: audit_logs is read-only in the UI but QA still needs database.sql rows for list/pagination/view steps.
+            if ($slug === 'audit_logs') {
+                mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
+            }
             $steps[] = mbqa_step_result('add', true, $addNaNote);
         } else {
             $bulkResult = mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
@@ -5181,20 +5189,28 @@ foreach ($companiesToRun as $companyId) {
 
         $ids = mbqa_row_ids($index['body']);
         $viewId = $ids[0] ?? 0;
+        $editNaNote = mbqa_runner_module_step_exception_note($slug, 'edit');
         if ($viewId > 0) {
             $view = mbqa_http($moduleUrl . 'view.php?id=' . $viewId, 'GET', null, [], $cookieFile);
             $viewHtml = mbqa_html_step_view($view['body'], $view['status'], $viewId);
             $steps[] = mbqa_step_result('view', $viewHtml['ok'], $viewHtml['note']);
-            $edit = mbqa_http($moduleUrl . 'edit.php?id=' . $viewId, 'GET', null, [], $cookieFile);
-            $editHtml = mbqa_html_step_edit($edit['body'], $edit['status'], $viewId);
-            $steps[] = mbqa_step_result('edit', $editHtml['ok'], $editHtml['note']);
+            if ($editNaNote !== null) {
+                $steps[] = mbqa_step_result('edit', true, $editNaNote);
+            } else {
+                $edit = mbqa_http($moduleUrl . 'edit.php?id=' . $viewId, 'GET', null, [], $cookieFile);
+                $editHtml = mbqa_html_step_edit($edit['body'], $edit['status'], $viewId);
+                $steps[] = mbqa_step_result('edit', $editHtml['ok'], $editHtml['note']);
+            }
         } else {
             $steps[] = mbqa_step_result('view', true, 'N/A no rows');
-            $steps[] = mbqa_step_result('edit', true, 'N/A no rows');
+            $steps[] = mbqa_step_result('edit', true, $editNaNote ?? 'N/A no rows');
         }
 
         $listAllPath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'list_all.php';
-        if (is_file($listAllPath)) {
+        $listAllNaNote = mbqa_runner_module_step_exception_note($slug, 'list_all');
+        if ($listAllNaNote !== null) {
+            $steps[] = mbqa_step_result('list_all', true, $listAllNaNote);
+        } elseif (is_file($listAllPath)) {
             $la = mbqa_http($moduleUrl . 'list_all.php', 'GET', null, [], $cookieFile);
             $laHtml = mbqa_html_step_list_all($la['body'], $la['status']);
             $steps[] = mbqa_step_result('list_all', $laHtml['ok'], $laHtml['note']);

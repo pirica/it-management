@@ -1,10 +1,9 @@
 <?php
 /**
  * Audit Logs Module - Index
- * 
- * Provides a searchable, filterable history of all changes made within the system.
- * Shows who made a change, when, in which table, and exactly what values changed.
- * Logs are scoped to the current company context.
+ *
+ * Read-only audit centre: lists system-generated change history for the active company.
+ * Records are created by database triggers; there is no create, edit, delete, or import UI.
  */
 
 require '../../config/config.php';
@@ -47,43 +46,6 @@ if (!empty($_SESSION['audit_logs_flash_error']) && is_array($_SESSION['audit_log
 $alertMessage = trim((string)($_GET['alert'] ?? ''));
 if ($alertMessage !== '') {
     $messages[] = $alertMessage;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
-    itm_require_post_csrf();
-
-    if ($companyId <= 0) {
-        $errors[] = 'Sample data requires an active company.';
-    } else {
-        $existingRows = 0;
-        $emptyCountStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_rows FROM audit_logs WHERE company_id = ?');
-        if ($emptyCountStmt) {
-            mysqli_stmt_bind_param($emptyCountStmt, 'i', $companyId);
-            mysqli_stmt_execute($emptyCountStmt);
-            $emptyCountResult = mysqli_stmt_get_result($emptyCountStmt);
-            if ($emptyCountResult && ($emptyCountRow = mysqli_fetch_assoc($emptyCountResult))) {
-                $existingRows = (int)($emptyCountRow['total_rows'] ?? 0);
-            }
-            mysqli_stmt_close($emptyCountStmt);
-        }
-
-        if ($existingRows > 0) {
-            $errors[] = 'Sample data can only be added when no records exist.';
-        } else {
-            $seedError = '';
-            $insertedRows = itm_seed_table_from_database_sql($conn, 'audit_logs', $companyId, $seedError);
-            if ($insertedRows <= 0 && $seedError !== '') {
-                $errors[] = $seedError;
-            } elseif ($insertedRows > 0) {
-                $messages[] = 'Sample audit log data added.';
-            }
-        }
-    }
-
-    $_SESSION['audit_logs_flash_success'] = $messages;
-    $_SESSION['audit_logs_flash_error'] = $errors;
-    header('Location: index.php');
-    exit;
 }
 
 /**
@@ -297,17 +259,6 @@ if ($countStmt) {
         $totalRows = (int)($countRow['total'] ?? 0);
     }
     mysqli_stmt_close($countStmt);
-}
-$companyAuditLogCount = 0;
-$companyCountStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total FROM audit_logs WHERE company_id = ?');
-if ($companyCountStmt) {
-    mysqli_stmt_bind_param($companyCountStmt, 'i', $companyId);
-    mysqli_stmt_execute($companyCountStmt);
-    $companyCountResult = mysqli_stmt_get_result($companyCountStmt);
-    if ($companyCountResult && ($companyCountRow = mysqli_fetch_assoc($companyCountResult))) {
-        $companyAuditLogCount = (int)($companyCountRow['total'] ?? 0);
-    }
-    mysqli_stmt_close($companyCountStmt);
 }
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
 if ($page > $totalPages) {
@@ -606,14 +557,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <a class="btn btn-sm" href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
                         <?php endif; ?>
                     </div>
-                </div>
-            <?php endif; ?>
-            <?php if ($companyAuditLogCount === 0): ?>
-                <div class="card" style="margin-top:12px;">
-                    <form method="POST" style="display:flex;justify-content:center;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
-                    </form>
                 </div>
             <?php endif; ?>
         </div>
