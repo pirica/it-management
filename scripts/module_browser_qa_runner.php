@@ -75,7 +75,7 @@ function mbqa_list_module_slugs(string $projectRoot): array
 }
 
 /**
- * @return array{run:bool, help:bool, pilot_only:bool, stream:bool, ajax:bool, run_id:string, base_url:string, module:?string, company:?int}
+ * @return array{run:bool, help:bool, pilot_only:bool, ui_click_smoke:bool, stream:bool, ajax:bool, run_id:string, base_url:string, module:?string, company:?int}
  */
 function mbqa_parse_run_options(): array
 {
@@ -83,11 +83,12 @@ function mbqa_parse_run_options(): array
         'run' => false,
         'help' => false,
         'pilot_only' => false,
+        'ui_click_smoke' => false,
         'stream' => false,
         'ajax' => false,
         'autostart' => false,
         'run_id' => '',
-        'base_url' => 'http://localhost/it-management/',
+        'base_url' => mbqa_is_cli_sapi() ? 'http://localhost/it-management/' : mbqa_detect_browser_base_url(),
         'module' => null,
         'company' => null,
     ];
@@ -102,6 +103,10 @@ function mbqa_parse_run_options(): array
             }
             if ($arg === '--pilot-only') {
                 $options['pilot_only'] = true;
+                continue;
+            }
+            if ($arg === '--ui-click-smoke') {
+                $options['ui_click_smoke'] = true;
                 continue;
             }
             if (strpos($arg, '--base-url=') === 0) {
@@ -126,6 +131,7 @@ function mbqa_parse_run_options(): array
         $options['run'] = isset($_GET['run']) || isset($_POST['run']);
         $options['help'] = isset($_GET['help']);
         $options['pilot_only'] = isset($_GET['pilot_only']) || isset($_POST['pilot_only']);
+        $options['ui_click_smoke'] = isset($_GET['ui_click_smoke']) || isset($_POST['ui_click_smoke']);
         if (isset($_REQUEST['base_url'])) {
             $options['base_url'] = trim((string)$_REQUEST['base_url']);
         }
@@ -153,6 +159,7 @@ function mbqa_parse_run_options(): array
     if (substr($options['base_url'], -1) !== '/') {
         $options['base_url'] .= '/';
     }
+    $options['base_url'] = mbqa_normalize_base_url($options['base_url']);
 
     return $options;
 }
@@ -160,6 +167,89 @@ function mbqa_parse_run_options(): array
 function mbqa_is_cli_sapi(): bool
 {
     return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+}
+
+/**
+ * Why: UI click smoke runs in the browser and must fetch the app on the same origin as the runner page;
+ * defaulting to localhost breaks when the user opens 127.0.0.1 or a remote host.
+ */
+function mbqa_is_local_loopback_host(string $host): bool
+{
+    $host = strtolower(trim($host));
+    if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+        return true;
+    }
+
+    return strpos($host, '127.') === 0;
+}
+
+/**
+ * Why: Laragon serves ITM on plain HTTP; HTTPS localhost often has no TLS listener (curl HTTP 0 on login).
+ */
+function mbqa_normalize_base_url(string $url): string
+{
+    $url = trim($url);
+    if ($url === '') {
+        return 'http://localhost/it-management/';
+    }
+
+    $parts = parse_url($url);
+    if ($parts === false || empty($parts['host'])) {
+        return rtrim($url, '/') . '/';
+    }
+
+    $scheme = isset($parts['scheme']) ? strtolower((string)$parts['scheme']) : 'http';
+    $host = (string)$parts['host'];
+    if (mbqa_is_local_loopback_host($host) && $scheme === 'https') {
+        $scheme = 'http';
+    }
+
+    $port = isset($parts['port']) ? (int)$parts['port'] : 0;
+    $authority = $host;
+    if ($port > 0 && !(($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443))) {
+        $authority .= ':' . $port;
+    }
+
+    $path = isset($parts['path']) ? (string)$parts['path'] : '/';
+    if ($path === '') {
+        $path = '/';
+    }
+
+    return rtrim($scheme . '://' . $authority . rtrim($path, '/'), '/') . '/';
+}
+
+function mbqa_detect_browser_base_url(): string
+{
+    if (mbqa_is_cli_sapi()) {
+        return 'http://localhost/it-management/';
+    }
+
+    $host = trim((string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    if ($host === '') {
+        $host = 'localhost';
+    }
+    if (strpos($host, ':') !== false) {
+        $host = (string)(parse_url('http://' . $host, PHP_URL_HOST) ?? $host);
+    }
+
+    $https = !empty($_SERVER['HTTPS']) && (string)$_SERVER['HTTPS'] !== 'off';
+    $scheme = $https ? 'https' : 'http';
+    if (mbqa_is_local_loopback_host($host)) {
+        $scheme = 'http';
+    }
+
+    $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    $scriptsPos = strrpos($scriptName, '/scripts/');
+    if ($scriptsPos === false) {
+        return mbqa_normalize_base_url(rtrim($scheme . '://' . $host, '/') . '/');
+    }
+
+    $appPath = substr($scriptName, 0, $scriptsPos);
+    if ($appPath === '') {
+        $appPath = '/';
+    }
+
+    return mbqa_normalize_base_url(rtrim($scheme . '://' . $host . rtrim($appPath, '/'), '/') . '/');
 }
 
 function mbqa_sanitize_run_id(string $raw): string
@@ -180,6 +270,23 @@ function mbqa_ajax_reports_dir(string $root): string
     return $root . DIRECTORY_SEPARATOR . 'qa-reports';
 }
 
+function mbqa_ensure_reports_dir_writable(string $root): bool
+{
+    $dir = mbqa_ajax_reports_dir($root);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+    if (is_dir($dir)) {
+        @chmod($dir, 0777);
+    }
+
+    if (!is_dir($dir) || !is_writable($dir)) {
+        return false;
+    }
+
+    return true;
+}
+
 function mbqa_ajax_progress_path(string $root, string $runId): string
 {
     return mbqa_ajax_reports_dir($root) . DIRECTORY_SEPARATOR . '.mbqa-progress-' . $runId . '.json';
@@ -188,6 +295,28 @@ function mbqa_ajax_progress_path(string $root, string $runId): string
 function mbqa_ajax_cancel_path(string $root, string $runId): string
 {
     return mbqa_ajax_reports_dir($root) . DIRECTORY_SEPARATOR . '.mbqa-cancel-' . $runId;
+}
+
+function mbqa_ajax_cleanup_stale_files(string $root, string $keepRunId = '', int $ttlSeconds = 86400): void
+{
+    $dir = mbqa_ajax_reports_dir($root);
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    $now = time();
+    foreach (scandir($dir) ?: [] as $item) {
+        if (strpos($item, '.mbqa-progress-') !== 0 && strpos($item, '.mbqa-cancel-') !== 0) {
+            continue;
+        }
+        if ($keepRunId !== '' && strpos($item, $keepRunId) !== false) {
+            continue;
+        }
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
+        if (is_file($path) && ($now - (int)filemtime($path)) > $ttlSeconds) {
+            @unlink($path);
+        }
+    }
 }
 
 function mbqa_browser_ajax_active(): bool
@@ -218,8 +347,8 @@ function mbqa_browser_ajax_write_progress(string $root, string $runId, array $st
         return;
     }
     $dir = mbqa_ajax_reports_dir($root);
-    if (!is_dir($dir)) {
-        mkdir($dir, 0775, true);
+    if (!mbqa_ensure_reports_dir_writable($root)) {
+        return;
     }
     $state['updated_at'] = time();
     $json = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -227,6 +356,113 @@ function mbqa_browser_ajax_write_progress(string $root, string $runId, array $st
         return;
     }
     itm_write_utf8_text_file(mbqa_ajax_progress_path($root, $runId), $json, false);
+}
+
+/**
+ * @param array<int, array<string, mixed>> $steps
+ * @return array{ok:bool,message:string,pass:int,fail:int,xlsx_href:string}
+ */
+function mbqa_append_ui_click_evidence(string $root, string $module, int $companyId, array $steps, string $expectedRunId): array
+{
+    if ($module === '' || $companyId <= 0 || empty($steps)) {
+        return ['ok' => false, 'message' => 'Missing module, company, or click-smoke steps', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+    if ($expectedRunId === '') {
+        return ['ok' => false, 'message' => 'run_id required for click-smoke append', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+
+    $jsonPath = mbqa_report_find_json_path_by_run_id($root, $expectedRunId);
+    if ($jsonPath === '' || !is_file($jsonPath)) {
+        return ['ok' => false, 'message' => 'QA JSON report not found', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+
+    $payload = json_decode(itm_read_utf8_text_file($jsonPath), true);
+    if (!is_array($payload) || !isset($payload['results']) || !is_array($payload['results'])) {
+        return ['ok' => false, 'message' => 'QA JSON report is not readable', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+
+    $reportRunId = (string)($payload['run_id'] ?? '');
+    if ($reportRunId === '' || $reportRunId !== $expectedRunId) {
+        return [
+            'ok' => false,
+            'message' => 'QA JSON report run_id mismatch (stale or overlapping run)',
+            'pass' => 0,
+            'fail' => 0,
+            'xlsx_href' => '',
+        ];
+    }
+
+    $normalisedSteps = [];
+    foreach ($steps as $step) {
+        $stepName = preg_replace('/[^a-z0-9_]/i', '', (string)($step['step'] ?? ''));
+        if ($stepName === '') {
+            continue;
+        }
+        $status = (string)($step['status'] ?? '');
+        $normalisedSteps[] = [
+            'step' => $stepName,
+            'status' => strcasecmp($status, 'Pass') === 0 ? 'Pass' : 'Fail',
+            'notes' => substr((string)($step['notes'] ?? ''), 0, 500),
+            'evidence' => is_array($step['evidence'] ?? null) ? $step['evidence'] : [],
+        ];
+    }
+    if (empty($normalisedSteps)) {
+        return ['ok' => false, 'message' => 'No valid click-smoke steps supplied', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+
+    $updated = false;
+    foreach ($payload['results'] as &$result) {
+        if (($result['module'] ?? '') === $module && (int)($result['company_id'] ?? 0) === $companyId) {
+            if (!isset($result['steps']) || !is_array($result['steps'])) {
+                $result['steps'] = [];
+            }
+            foreach ($normalisedSteps as $step) {
+                $result['steps'][] = $step;
+            }
+            $updated = true;
+            break;
+        }
+    }
+    unset($result);
+
+    if (!$updated) {
+        return ['ok' => false, 'message' => 'Matching module/company result not found', 'pass' => 0, 'fail' => 0, 'xlsx_href' => ''];
+    }
+
+    $jsonFlags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+    itm_write_utf8_text_file($jsonPath, json_encode($payload, $jsonFlags), false);
+
+    $pass = 0;
+    $fail = 0;
+    foreach ($payload['results'] as $row) {
+        foreach (($row['steps'] ?? []) as $step) {
+            if (($step['status'] ?? '') === 'Pass') {
+                $pass++;
+            } else {
+                $fail++;
+            }
+        }
+    }
+
+    $reportFiles = mbqa_report_files_from_json_path($jsonPath);
+    $xlsxBuilt = mbqar_build_runner_xlsx(
+        $root,
+        $payload['results'],
+        $pass,
+        $fail,
+        (string)($payload['generated_at'] ?? date('Y-m-d H:i:s')),
+        $reportFiles['xlsx_path'] ?? null
+    );
+
+    return [
+        'ok' => true,
+        'message' => 'Click-smoke evidence appended',
+        'pass' => $pass,
+        'fail' => $fail,
+        'xlsx_href' => $xlsxBuilt['ok'] && $reportFiles !== null
+            ? ('../qa-reports/' . $reportFiles['xlsx_basename'])
+            : '',
+    ];
 }
 
 function mbqa_ajax_should_stop(string $root): bool
@@ -251,6 +487,7 @@ function mbqa_ajax_handle_request(string $root): void
     }
     $action = trim((string)($_GET['ajax'] ?? ''));
     $runId = mbqa_sanitize_run_id((string)($_GET['run_id'] ?? ''));
+    mbqa_ajax_cleanup_stale_files($root, $runId);
     if ($runId === '') {
         return;
     }
@@ -282,6 +519,24 @@ function mbqa_ajax_handle_request(string $root): void
             'message' => 'Stop requested',
         ]);
         echo json_encode(['ok' => true, 'run_id' => $runId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    if ($action === 'ui_click_evidence') {
+        header('Content-Type: application/json; charset=utf-8');
+        $body = json_decode((string)file_get_contents('php://input'), true);
+        if (!is_array($body)) {
+            echo json_encode(['ok' => false, 'message' => 'Invalid JSON body'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        $result = mbqa_append_ui_click_evidence(
+            $root,
+            trim((string)($body['module'] ?? '')),
+            (int)($body['company_id'] ?? 0),
+            is_array($body['steps'] ?? null) ? $body['steps'] : [],
+            $runId
+        );
+        echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 }
@@ -474,6 +729,7 @@ function mbqa_render_browser_help(): void
     echo '<li>Open <a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a> (the form, not this help URL alone).</li>';
     echo '<li>Choose <strong>Module</strong> (or type a slug under <strong>Or module slug (manual)</strong>).</li>';
     echo '<li>Choose <strong>Company</strong> (default <code>1</code> = TechCorp Global; empty = all five companies).</li>';
+    echo '<li>Optional: enable <strong>UI click smoke</strong> only when one module and one company are selected.</li>';
     echo '<li>Click <strong>Run QA</strong> (not a bare run URL).</li>';
     echo '<li>Click <strong>Stop</strong> if the run is taking too long — the runner stops between companies/modules.</li>';
     echo '<li>When finished, use <strong>Download JSON</strong>, <strong>Download XLSX</strong>, or <a href="module_browser_qa_build_report.php">Build markdown report</a>.</li>';
@@ -482,11 +738,12 @@ function mbqa_render_browser_help(): void
     echo '<h2>Form fields</h2>';
     echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:0.95rem;">';
     echo '<thead><tr><th>Field</th><th>What it does</th></tr></thead><tbody>';
-    echo '<tr><td>Base URL</td><td>App root (default <code>http://localhost/it-management/</code>)</td></tr>';
+    echo '<tr><td>Base URL</td><td>App root (auto-detected from this runner page when left at default). On Laragon use <code>http://localhost/it-management/</code> — loopback hosts are normalised to HTTP because TLS is usually not configured (avoids login HTTP 0).</td></tr>';
     echo '<tr><td>Module</td><td><code>ALL</code> = every module with <code>index.php</code>; or pick one slug (e.g. <code>expenses</code>)</td></tr>';
     echo '<tr><td>Or module slug (manual)</td><td>Overrides the dropdown when filled (any folder name under <code>modules/</code>)</td></tr>';
     echo '<tr><td>Company</td><td><code>1</code>–<code>5</code> or <code>ALL</code> (all seeded tenants)</td></tr>';
     echo '<tr><td>Pilot only</td><td>Runs <code>expenses</code> only (all selected companies)</td></tr>';
+    echo '<tr><td>UI click smoke</td><td>Browser-only click checks for one module + one company; appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, and <code>import_excel_click</code> evidence to JSON.</td></tr>';
     echo '</tbody></table>';
 
     echo '<h2>CLI (repository root)</h2>';
@@ -495,6 +752,7 @@ function mbqa_render_browser_help(): void
         "php scripts/module_browser_qa_runner.php\n"
         . "php scripts/module_browser_qa_runner.php --module=expenses --company=1\n"
         . "php scripts/module_browser_qa_runner.php --pilot-only\n"
+        . "php scripts/module_browser_qa_runner.php --ui-click-smoke --module=expenses --company=1 # browser-only guard\n"
         . "php scripts/module_browser_qa_runner.php --help\n",
         ENT_QUOTES,
         'UTF-8'
@@ -506,6 +764,7 @@ function mbqa_render_browser_help(): void
     echo '<tr><td><code>--module=SLUG</code></td><td>One module; omit for all</td></tr>';
     echo '<tr><td><code>--company=N</code></td><td>Company 1–5; omit for all five</td></tr>';
     echo '<tr><td><code>--pilot-only</code></td><td>Expenses only</td></tr>';
+    echo '<tr><td><code>--ui-click-smoke</code></td><td>Accepted for parity, but click smoke is browser-only and requires the V2 form.</td></tr>';
     echo '</tbody></table>';
 
     echo '<h2>Tier A step order (per module)</h2>';
@@ -531,6 +790,7 @@ function mbqa_print_help(): void
     mbqa_out("  --module=SLUG    Single module folder; omit or --module=all for every module with index.php\n");
     mbqa_out("  --company=N      Company id 1–5 only; omit or --company=all for all five tenants\n");
     mbqa_out("  --pilot-only     Expenses module only (all companies)\n");
+    mbqa_out("  --ui-click-smoke Browser-only click smoke; use the V2 form with one module + one company\n");
     mbqa_out("  --help           Show this help\n\n");
     mbqa_out("Output: qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json and matching .xlsx (new file each run)\n\n");
     mbqa_out("Tier A bulk steps (after add):\n");
@@ -563,7 +823,7 @@ function mbqa_browser_form_company_selected(array $options): string
 }
 
 /**
- * @param array{run:bool, help:bool, pilot_only:bool, stream:bool, base_url:string, module:?string, company:?int} $options
+ * @param array{run:bool, help:bool, pilot_only:bool, ui_click_smoke:bool, stream:bool, base_url:string, module:?string, company:?int} $options
  */
 function mbqa_render_browser_form(array $options): void
 {
@@ -577,6 +837,7 @@ function mbqa_render_browser_form(array $options): void
         : '';
     $companySelected = mbqa_browser_form_company_selected($options);
     $pilotChecked = $options['pilot_only'] ? ' checked' : '';
+    $uiClickSmokeChecked = $options['ui_click_smoke'] ? ' checked' : '';
     $moduleSlugs = $projectRoot !== '' ? mbqa_list_module_slugs($projectRoot) : [];
     $moduleSelectValue = '';
     $moduleManualValue = '';
@@ -617,6 +878,7 @@ function mbqa_render_browser_form(array $options): void
     }
     echo '</select></label>';
     echo '<label><input type="checkbox" name="pilot_only" value="1"' . $pilotChecked . '> Pilot only (expenses)</label>';
+    echo '<label><input type="checkbox" name="ui_click_smoke" value="1"' . $uiClickSmokeChecked . '> UI click smoke (browser-only; one module + one company)</label>';
     echo '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">';
     echo '<button type="submit" id="mbqa-run-btn" style="padding:10px 16px;font-weight:600;">Run QA</button>';
     echo '<button type="button" id="mbqa-stop-btn" disabled style="padding:10px 16px;">Stop</button>';
@@ -625,7 +887,9 @@ function mbqa_render_browser_form(array $options): void
     echo '<p style="margin-top:20px;font-size:0.9rem;"><a href="module_browser_qa_runner.php?help=1">CLI options / help</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a></p>';
     mbqar_echo_xlsx_vendor_script();
-    mbqar_echo_xlsx_client_bootstrap();
+    if (function_exists('mbqar_echo_xlsx_client_bootstrap')) {
+        mbqar_echo_xlsx_client_bootstrap();
+    }
     echo '<script>';
     echo <<<'MBQA_JS'
 (function () {
@@ -642,6 +906,7 @@ function mbqa_render_browser_form(array $options): void
   var runAbort = null;
   var activeRunId = '';
   var runActive = false;
+  var terminalHandled = false;
   var cancellingSince = 0;
   var CANCELLING_STALE_MS = 8000;
 
@@ -700,6 +965,432 @@ function mbqa_render_browser_form(array $options): void
     }
   }
 
+  function uiClickSmokeEnabled() {
+    var el = form.querySelector('[name="ui_click_smoke"]');
+    return Boolean(el && el.checked);
+  }
+
+  function selectedModule() {
+    var manualEl = form.querySelector('[name="module_manual"]');
+    var manualSlug = manualEl && manualEl.value ? manualEl.value.trim() : '';
+    if (manualSlug !== '') {
+      return manualSlug;
+    }
+    var select = form.querySelector('[name="module"]');
+    return select && select.value ? select.value.trim() : '';
+  }
+
+  function selectedCompany() {
+    var select = form.querySelector('[name="company"]');
+    return select && select.value ? parseInt(select.value, 10) : 0;
+  }
+
+  function baseUrlValue() {
+    var input = form.querySelector('[name="base_url"]');
+    if (input && input.value) {
+      return normalizeLoopbackBaseUrl(input.value);
+    }
+    return normalizeLoopbackBaseUrl(runnerAppRootFromLocation().toString());
+  }
+
+  function isLoopbackHost(hostname) {
+    hostname = (hostname || '').toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.indexOf('127.') === 0;
+  }
+
+  function normalizeLoopbackBaseUrl(url) {
+    try {
+      var parsed = new URL(url, window.location.href);
+      if (parsed.protocol === 'https:' && isLoopbackHost(parsed.hostname)) {
+        parsed.protocol = 'http:';
+        if (parsed.port === '443') {
+          parsed.port = '';
+        }
+      }
+      return parsed.toString();
+    } catch (err) {
+      return url;
+    }
+  }
+
+  function runnerAppRootFromLocation() {
+    var loc = window.location;
+    var path = loc.pathname.replace(/\\/g, '/');
+    var scriptsIdx = path.lastIndexOf('/scripts/');
+    if (scriptsIdx === -1) {
+      return new URL('./../', loc.href);
+    }
+    return new URL(path.slice(0, scriptsIdx + 1), loc.origin);
+  }
+
+  function syncBaseUrlToRunnerOrigin() {
+    var input = form.querySelector('[name="base_url"]');
+    if (!input) {
+      return;
+    }
+    try {
+      var derived = runnerAppRootFromLocation();
+      if (!input.value) {
+        input.value = normalizeLoopbackBaseUrl(derived.toString());
+        return;
+      }
+      var configured = new URL(input.value, window.location.href);
+      if (configured.origin !== window.location.origin) {
+        input.value = normalizeLoopbackBaseUrl(derived.toString());
+        return;
+      }
+      input.value = normalizeLoopbackBaseUrl(input.value);
+    } catch (err) {
+      /* keep user value */
+    }
+  }
+
+  syncBaseUrlToRunnerOrigin();
+
+  function makeClickStep(step, ok, notes, evidence) {
+    return {
+      step: step,
+      status: ok ? 'Pass' : 'Fail',
+      notes: notes || '',
+      evidence: evidence || {}
+    };
+  }
+
+  function queryByText(doc, selector, text) {
+    var needle = text.toLowerCase();
+    return Array.from(doc.querySelectorAll(selector)).find(function (el) {
+      return (el.textContent || '').toLowerCase().indexOf(needle) !== -1;
+    }) || null;
+  }
+
+  function isDisplayed(win, el) {
+    if (!el) {
+      return false;
+    }
+    var style = win.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  }
+
+  function extractCsrf(htmlText) {
+    var doc = new DOMParser().parseFromString(htmlText, 'text/html');
+    var input = doc.querySelector('input[name="csrf_token"]');
+    return input ? input.value : '';
+  }
+
+  function appFetch(appRoot, path, options) {
+    return fetch(new URL(path, appRoot).toString(), Object.assign({
+      credentials: 'same-origin',
+      cache: 'no-store'
+    }, options || {}));
+  }
+
+  function ensureSameOriginAppRoot() {
+    var configured = new URL(baseUrlValue(), window.location.href);
+    if (configured.origin === window.location.origin) {
+      return configured;
+    }
+    var derived = runnerAppRootFromLocation();
+    if (derived.origin === window.location.origin) {
+      var input = form.querySelector('[name="base_url"]');
+      if (input) {
+        input.value = derived.toString();
+      }
+      return derived;
+    }
+    throw new Error(
+      'UI click smoke requires Base URL on the same origin as this runner page '
+      + '(open the runner and set Base URL to ' + derived.origin + ', not ' + configured.origin + ').'
+    );
+  }
+
+  function loginAndSwitchCompany(appRoot, companyId) {
+    return appFetch(appRoot, 'login.php')
+      .then(function (res) { return res.text(); })
+      .then(function (html) {
+        var csrf = extractCsrf(html);
+        var body = new URLSearchParams();
+        body.set('email', 'Admin');
+        body.set('password', 'Admin');
+        body.set('csrf_token', csrf);
+        return appFetch(appRoot, 'login.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+      })
+      .then(function () { return appFetch(appRoot, 'dashboard.php'); })
+      .then(function (res) { return res.text(); })
+      .then(function (html) {
+        var csrf = extractCsrf(html);
+        var body = new URLSearchParams();
+        body.set('csrf_token', csrf);
+        body.set('company_id', String(companyId));
+        return appFetch(appRoot, 'dashboard.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+      });
+  }
+
+  function loadSmokeFrame(appRoot, moduleSlug) {
+    return new Promise(function (resolve, reject) {
+      var frame = document.getElementById('mbqa-ui-click-frame');
+      if (!frame) {
+        frame = document.createElement('iframe');
+        frame.id = 'mbqa-ui-click-frame';
+        frame.title = 'Module UI click smoke';
+        frame.style.cssText = 'width:100%;height:420px;border:1px solid #d0d7de;border-radius:6px;margin-top:12px;';
+        form.insertAdjacentElement('afterend', frame);
+      }
+      var done = false;
+      frame.onload = function () {
+        if (done) {
+          return;
+        }
+        done = true;
+        resolve(frame);
+      };
+      frame.onerror = function () {
+        if (done) {
+          return;
+        }
+        done = true;
+        reject(new Error('Unable to load module frame'));
+      };
+      frame.src = new URL('modules/' + encodeURIComponent(moduleSlug) + '/index.php?search=&sort=id&dir=DESC&page=1', appRoot).toString();
+      setTimeout(function () {
+        if (!done) {
+          done = true;
+          resolve(frame);
+        }
+      }, 5000);
+    });
+  }
+
+  function waitForFrameLoad(frame, trigger) {
+    return new Promise(function (resolve) {
+      var done = false;
+      frame.onload = function () {
+        if (!done) {
+          done = true;
+          resolve();
+        }
+      };
+      trigger();
+      setTimeout(function () {
+        if (!done) {
+          done = true;
+          resolve();
+        }
+      }, 4000);
+    });
+  }
+
+  function smokeBulkCancel(frame) {
+    try {
+      var doc = frame.contentDocument;
+      var win = frame.contentWindow;
+      var formEl = doc.querySelector('form#bulk-delete-form, form#department-bulk-form');
+      var toggle = formEl ? formEl.querySelector('button[name="bulk_action"][value="bulk_delete"]') : null;
+      if (!formEl || !toggle) {
+        return makeClickStep('bulk_cancel_click', true, 'N/A (bulk form not visible)', { url: frame.src });
+      }
+      var beforeUrl = frame.contentWindow.location.href;
+      toggle.click();
+      var boxes = Array.from(doc.querySelectorAll('input[name="ids[]"]'));
+      var firstCell = boxes[0] ? boxes[0].closest('td') : null;
+      var visibleAfterSelect = firstCell ? isDisplayed(win, firstCell) : boxes.length > 0;
+      var deleteLabel = (toggle.textContent || '').trim();
+      var cancel = formEl.querySelector('[data-itm-bulk-cancel="1"]');
+      if (boxes[0]) {
+        boxes[0].checked = true;
+      }
+      if (cancel) {
+        cancel.click();
+      }
+      var hiddenAfterCancel = firstCell ? !isDisplayed(win, firstCell) : true;
+      var unchecked = boxes.every(function (box) { return !box.checked; });
+      var restored = (toggle.textContent || '').trim() !== 'Delete Selected';
+      var noPost = frame.contentWindow.location.href === beforeUrl;
+      return makeClickStep(
+        'bulk_cancel_click',
+        visibleAfterSelect && deleteLabel === 'Delete Selected' && hiddenAfterCancel && unchecked && restored && noPost,
+        'Select to Delete toggles rows; Cancel exits without POST',
+        { checkboxes: boxes.length, visible_after_select: visibleAfterSelect, hidden_after_cancel: hiddenAfterCancel, no_post: noPost }
+      );
+    } catch (err) {
+      return makeClickStep('bulk_cancel_click', false, err.message, { url: frame.src });
+    }
+  }
+
+  function smokePagination(frame) {
+    var doc = frame.contentDocument;
+    var next = queryByText(doc, 'a', 'Next');
+    if (!next) {
+      return Promise.resolve(makeClickStep('pagination_click', true, 'N/A (Next link not visible)', { url: frame.src }));
+    }
+    return waitForFrameLoad(frame, function () { next.click(); })
+      .then(function () {
+        var page2 = frame.contentWindow.location.href.indexOf('page=2') !== -1;
+        var prev = queryByText(frame.contentDocument, 'a', 'Previous');
+        if (!prev) {
+          return makeClickStep('pagination_click', false, 'Next clicked but Previous link missing', { page2: page2, url: frame.contentWindow.location.href });
+        }
+        return waitForFrameLoad(frame, function () { prev.click(); })
+          .then(function () {
+            var page1 = frame.contentWindow.location.href.indexOf('page=1') !== -1;
+            return makeClickStep('pagination_click', page2 && page1, 'Next and Previous links clicked', { page2: page2, page1: page1 });
+          });
+      })
+      .catch(function (err) {
+        return makeClickStep('pagination_click', false, err.message, { url: frame.src });
+      });
+  }
+
+  function smokeExportXlsx(frame) {
+    try {
+      var doc = frame.contentDocument;
+      var win = frame.contentWindow;
+      var btn = queryByText(doc, 'button', 'Export Excel');
+      if (!btn) {
+        return makeClickStep('export_xlsx_click', false, 'Export Excel button missing', { url: frame.src });
+      }
+      var clicked = false;
+      var oldClick = win.HTMLAnchorElement.prototype.click;
+      win.HTMLAnchorElement.prototype.click = function () { clicked = true; };
+      btn.click();
+      win.HTMLAnchorElement.prototype.click = oldClick;
+      return makeClickStep('export_xlsx_click', clicked, clicked ? 'Export Excel generated a download link' : 'Export Excel click did not trigger download', { button_text: btn.textContent || '' });
+    } catch (err) {
+      return makeClickStep('export_xlsx_click', false, err.message, { url: frame.src });
+    }
+  }
+
+  function smokeImportExcel(frame) {
+    try {
+      var doc = frame.contentDocument;
+      var table = doc.querySelector('table[data-itm-db-import-endpoint]');
+      var btn = queryByText(doc, 'button', 'Import Excel');
+      var input = doc.querySelector('input[type="file"].table-tools-file');
+      if (!table || !btn || !input) {
+        return makeClickStep('import_excel_click', false, 'Import Excel control or data-itm-db-import-endpoint missing', {
+          has_table_endpoint: Boolean(table),
+          has_button: Boolean(btn),
+          has_input: Boolean(input)
+        });
+      }
+      var clicked = false;
+      var oldClick = input.click;
+      input.click = function () { clicked = true; };
+      btn.click();
+      input.click = oldClick;
+      return makeClickStep('import_excel_click', clicked, 'Import Excel button opens the file chooser control', {
+        endpoint: table.getAttribute('data-itm-db-import-endpoint'),
+        file_input_clicked: clicked
+      });
+    } catch (err) {
+      return makeClickStep('import_excel_click', false, err.message, { url: frame.src });
+    }
+  }
+
+  function postUiClickEvidence(runId, moduleSlug, companyId, steps) {
+    return fetch('module_browser_qa_runner.php?ajax=ui_click_evidence&run_id=' + encodeURIComponent(runId), {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ module: moduleSlug, company_id: companyId, steps: steps, run_id: runId })
+    }).then(function (res) {
+      if (!res.ok) {
+        return Promise.reject(new Error('HTTP ' + res.status));
+      }
+      return res.json();
+    }).then(function (data) {
+      if (!data || typeof data !== 'object') {
+        return Promise.reject(new Error('Invalid JSON response'));
+      }
+      return data;
+    });
+  }
+
+  function runUiClickSmoke(done, runId) {
+    var moduleSlug = selectedModule();
+    var companyId = selectedCompany();
+    if (!uiClickSmokeEnabled() || done.status === 'cancelled') {
+      return Promise.resolve(done);
+    }
+    if (!moduleSlug || !companyId) {
+      window.alert('UI click smoke requires one module and one company.');
+      return Promise.resolve(done);
+    }
+    statusEl.textContent = 'Running UI click smoke\u2026';
+    var appRoot;
+    try {
+      appRoot = ensureSameOriginAppRoot();
+    } catch (err) {
+      return postUiClickEvidence(runId, moduleSlug, companyId, [
+        makeClickStep('bulk_cancel_click', false, err.message, {}),
+        makeClickStep('pagination_click', false, err.message, {}),
+        makeClickStep('export_xlsx_click', false, err.message, {}),
+        makeClickStep('import_excel_click', false, err.message, {})
+      ]).then(function (append) {
+        done.pass = append.pass || done.pass;
+        done.fail = append.fail || done.fail;
+        done.xlsx_href = append.xlsx_href || done.xlsx_href;
+        return done;
+      });
+    }
+    return loginAndSwitchCompany(appRoot, companyId)
+      .then(function () { return loadSmokeFrame(appRoot, moduleSlug); })
+      .then(function (frame) {
+        var steps = [smokeBulkCancel(frame)];
+        return smokePagination(frame).then(function (paginationStep) {
+          steps.push(paginationStep);
+          steps.push(smokeExportXlsx(frame));
+          steps.push(smokeImportExcel(frame));
+          return postUiClickEvidence(runId, moduleSlug, companyId, steps);
+        });
+      })
+      .then(function (append) {
+        statusEl.textContent = append.ok ? 'UI click smoke saved' : ('UI click smoke failed: ' + append.message);
+        done.pass = append.pass || done.pass;
+        done.fail = append.fail || done.fail;
+        done.xlsx_href = append.xlsx_href || done.xlsx_href;
+        return done;
+      })
+      .catch(function (err) {
+        return postUiClickEvidence(runId, moduleSlug, companyId, [
+          makeClickStep('bulk_cancel_click', false, err.message, {}),
+          makeClickStep('pagination_click', false, err.message, {}),
+          makeClickStep('export_xlsx_click', false, err.message, {}),
+          makeClickStep('import_excel_click', false, err.message, {})
+        ]).then(function (append) {
+          done.pass = append.pass || done.pass;
+          done.fail = append.fail || done.fail;
+          done.xlsx_href = append.xlsx_href || done.xlsx_href;
+          return done;
+        });
+      });
+  }
+
+  function finishRun(ev) {
+    if (terminalHandled) {
+      return;
+    }
+    terminalHandled = true;
+    runUiClickSmoke(ev, activeRunId).then(function (finalDone) {
+      showFooter(finalDone);
+      releaseRunUi();
+    }).catch(function (err) {
+      if (err && err.message) {
+        ev.message = (ev.message ? ev.message + '; ' : '') + err.message;
+      }
+      showFooter(ev);
+      releaseRunUi();
+    });
+  }
+
   function stopPolling() {
     if (pollTimer !== null) {
       clearInterval(pollTimer);
@@ -756,7 +1447,8 @@ function mbqa_render_browser_form(array $options): void
     }
     stopPolling();
     if (ev.status === 'done' || ev.status === 'cancelled') {
-      showFooter(ev);
+      finishRun(ev);
+      return;
     } else if (ev.status === 'error') {
       statusEl.textContent = 'QA run failed: ' + (ev.message || 'unknown error');
     }
@@ -808,7 +1500,12 @@ function mbqa_render_browser_form(array $options): void
     if (runAbort) {
       runAbort.abort();
     }
+    if (uiClickSmokeEnabled() && (!selectedModule() || !selectedCompany())) {
+      window.alert('UI click smoke requires one module and one company.');
+      return;
+    }
     runActive = true;
+    terminalHandled = false;
     cancellingSince = 0;
     activeRunId = newRunId();
     runAbort = new AbortController();
@@ -918,12 +1615,21 @@ if (!mbqa_is_cli_sapi() && $mbqaOptions['stream']) {
     exit(0);
 }
 
-// Why: config.php starts the session and may set headers; browser HTML output must come after require.
-define('ITM_CLI_SCRIPT', true);
 $GLOBALS['mbqa_project_root'] = $root;
 if (!mbqa_is_cli_sapi() && $mbqaOptions['ajax'] && $mbqaOptions['run_id'] !== '') {
     $GLOBALS['mbqa_ajax_run_id'] = $mbqaOptions['run_id'];
 }
+mbqa_validate_requested_scope(
+    $mbqaOptions['module'],
+    $mbqaOptions['company'],
+    (bool)$mbqaOptions['ui_click_smoke'],
+    mbqa_list_module_slugs($root),
+    mbqa_company_name_map()
+);
+mbqa_validate_reports_writable_for_browser($root);
+
+// Why: config.php starts the session and may set headers; browser HTML output must come after require.
+define('ITM_CLI_SCRIPT', true);
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_mbqa_test_user.php';
 
@@ -994,6 +1700,55 @@ foreach (scandir($modulesDir) ?: [] as $item) {
 }
 sort($allModules);
 
+function mbqa_fail_preflight(string $message, int $exitCode = 2): void
+{
+    if (mbqa_browser_ajax_active()) {
+        $root = (string)($GLOBALS['mbqa_project_root'] ?? dirname(__DIR__));
+        mbqa_browser_ajax_write_progress($root, mbqa_browser_ajax_run_id(), [
+            'status' => 'error',
+            'company_id' => 0,
+            'module' => '_runner',
+            'step' => 'preflight',
+            'message' => $message,
+            'exit_code' => $exitCode,
+        ]);
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode([
+            'status' => 'error',
+            'message' => $message,
+            'exit_code' => $exitCode,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    } else {
+        mbqa_err($message . "\n");
+    }
+    exit($exitCode);
+}
+
+function mbqa_validate_requested_scope(?string $module, ?int $company, bool $uiClickSmoke, array $allModules, array $companyNames): void
+{
+    if ($module !== null && !in_array($module, $allModules, true)) {
+        mbqa_fail_preflight('Unknown module slug: ' . $module);
+    }
+    if ($company !== null && !array_key_exists((int)$company, $companyNames)) {
+        mbqa_fail_preflight('Unknown company id: ' . (int)$company . ' (expected 1-5)');
+    }
+    if ($uiClickSmoke && mbqa_is_cli_sapi()) {
+        mbqa_fail_preflight('--ui-click-smoke is browser-only; open scripts/module_browser_qa_runner.php and select one module + one company.');
+    }
+    if ($uiClickSmoke && ($module === null || $company === null)) {
+        mbqa_fail_preflight('UI click smoke requires one module and one company.');
+    }
+}
+
+function mbqa_validate_reports_writable_for_browser(string $root): void
+{
+    if (!mbqa_is_cli_sapi() && mbqa_browser_ajax_active() && !mbqa_ensure_reports_dir_writable($root)) {
+        mbqa_fail_preflight('qa-reports is not writable by the web server. Make the directory writable before running browser QA.');
+    }
+}
+
 function mbqa_http(string $url, string $method = 'GET', ?string $body = null, array $headers = [], string $cookieFile = ''): array
 {
     $ch = curl_init($url);
@@ -1028,6 +1783,32 @@ function mbqa_http(string $url, string $method = 'GET', ?string $body = null, ar
     $respHeaders = $headerSize !== false ? substr($raw, 0, $headerSize) : '';
     $respBody = $headerSize !== false ? substr($raw, $headerSize + 4) : $raw;
     return ['status' => $status, 'body' => $respBody, 'headers' => $respHeaders, 'error' => $errno ? 'curl errno ' . $errno : ''];
+}
+
+/**
+ * @param array{status:int,body:string,headers:string,error:string} $response
+ * @return array{ok:bool,inserted:int,note:string}
+ */
+function mbqa_parse_import_response(array $response): array
+{
+    if ((int)$response['status'] !== 200) {
+        return ['ok' => false, 'inserted' => 0, 'note' => 'Import HTTP ' . (int)$response['status']];
+    }
+
+    $decoded = json_decode((string)$response['body'], true);
+    if (!is_array($decoded)) {
+        return ['ok' => false, 'inserted' => 0, 'note' => 'Import response is not JSON: ' . substr((string)$response['body'], 0, 160)];
+    }
+
+    $inserted = (int)($decoded['inserted'] ?? 0);
+    $ok = !empty($decoded['ok']) && $inserted > 0;
+    if ($ok) {
+        return ['ok' => true, 'inserted' => $inserted, 'note' => 'inserted=' . $inserted];
+    }
+
+    $message = (string)($decoded['message'] ?? $decoded['error'] ?? 'Import did not insert any rows');
+
+    return ['ok' => false, 'inserted' => $inserted, 'note' => $message . '; inserted=' . $inserted];
 }
 
 function mbqa_extract_csrf(string $html): string
@@ -2660,38 +3441,6 @@ function mbqa_required_column_names(array $columnMetas): array
 }
 
 /**
- * Parses CHARACTER_MAXIMUM_LENGTH from DESCRIBE type strings (varchar/char only).
- */
-function mbqa_parse_char_max_length(string $type): ?int
-{
-    if (preg_match('/^(?:var)?char\((\d+)\)/', $type, $match)) {
-        return (int)$match[1];
-    }
-
-    return null;
-}
-
-/**
- * Why: MBQA tags include the table slug and can exceed narrow varchar columns (e.g. cable_colors.color_name varchar(20)).
- */
-function mbqa_fit_string_to_column_length(string $value, int $sequence, ?int $maxLen): string
-{
-    if ($maxLen === null || $maxLen <= 0 || strlen($value) <= $maxLen) {
-        return $value;
-    }
-
-    $prefix = 'MBQA-' . $sequence . '-';
-    $hashLen = $maxLen - strlen($prefix);
-    if ($hashLen < 1) {
-        return substr((string)$sequence, 0, $maxLen);
-    }
-
-    $short = $prefix . substr(md5($value), 0, $hashLen);
-
-    return substr($short, 0, $maxLen);
-}
-
-/**
  * Fills a required or optional scalar (non-FK) column with QA-safe random data.
  */
 function mbqa_fill_scalar_value(
@@ -2700,8 +3449,7 @@ function mbqa_fill_scalar_value(
     int $sequence,
     string $tag,
     bool $inUnique,
-    bool $forceRequired = false,
-    ?int $maxLen = null
+    bool $forceRequired = false
 ): ?string {
     // Calendar month (monthly_budgets.month, forecast_revisions.month): CHECK 1..12, not sequence+1.
     if ($name === 'month' && preg_match('/^tinyint/', $type)) {
@@ -2747,25 +3495,15 @@ function mbqa_fill_scalar_value(
     }
 
     if (strpos($type, 'char') !== false || strpos($type, 'text') !== false) {
-        if ($maxLen === null) {
-            $maxLen = mbqa_parse_char_max_length($type);
-        }
-
         if ($inUnique || preg_match('/(name|title|code|label|hostname|email|username|slug|sku|number|invoice|description|subject|summary)/i', $name)) {
-            return mbqa_fit_string_to_column_length($tag, $sequence, $maxLen);
+            return $tag;
         }
 
-        $plain = 'QA ' . str_replace('_', ' ', $name) . ' ' . $sequence;
-
-        return mbqa_fit_string_to_column_length($plain, $sequence, $maxLen);
+        return 'QA ' . str_replace('_', ' ', $name) . ' ' . $sequence;
     }
 
     if ($forceRequired) {
-        if ($maxLen === null) {
-            $maxLen = mbqa_parse_char_max_length($type);
-        }
-
-        return mbqa_fit_string_to_column_length($tag . '-' . $name, $sequence, $maxLen);
+        return $tag . '-' . $name;
     }
 
     return null;
@@ -2924,7 +3662,6 @@ function mbqa_build_random_insert_row(
         }
 
         $type = (string)$meta['type'];
-        $maxLen = mbqa_parse_char_max_length($type);
         $required = mbqa_column_is_required($meta);
         $nullable = ($meta['null'] === 'YES');
         $inUnique = mbqa_column_in_unique_set($name, $uniqueSets);
@@ -2951,7 +3688,7 @@ function mbqa_build_random_insert_row(
                 $bindType = 'i';
             }
         } else {
-            $scalar = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, $required, $maxLen);
+            $scalar = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, $required);
             if ($scalar !== null) {
                 $value = $scalar;
                 if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type) || $name === 'active') {
@@ -2965,7 +3702,7 @@ function mbqa_build_random_insert_row(
         }
 
         if ($value === null && !$isFkColumn) {
-            $value = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, true, $maxLen);
+            $value = mbqa_fill_scalar_value($name, $type, $sequence, $tag, $inUnique, true);
             if ($value !== null && preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type)) {
                 $bindType = 'i';
             }
@@ -4131,6 +4868,9 @@ function mbqa_delete_record_with_fk_retry(
     return ['ok' => false, 'note' => 'delete retries exhausted'];
 }
 
+mbqa_validate_requested_scope($filterModule, $filterCompany, (bool)$mbqaOptions['ui_click_smoke'], $allModules, $companyNames);
+mbqa_ajax_cleanup_stale_files($root, mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '');
+
 $cookieFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'itm_qa_cookies_' . getmypid() . '.txt';
 @unlink($cookieFile);
 
@@ -4148,7 +4888,7 @@ $loginPost = mbqa_http(
     $cookieFile
 );
 if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal($loginPost['body'])) {
-    mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}?\n");
+    mbqa_err("Login failed (HTTP {$loginPost['status']}). Is Laragon running at {$baseUrl}? Use http:// (not https://) for localhost unless TLS is configured.\n");
     exit(1);
 }
 
@@ -4549,7 +5289,7 @@ foreach ($companiesToRun as $companyId) {
             $importPayload = json_encode([
                 'csrf_token' => $csrfIndex,
                 'import_excel_rows' => $importRows,
-            ]);
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $import = mbqa_http(
                 $moduleUrl . 'index.php',
                 'POST',
@@ -4557,13 +5297,10 @@ foreach ($companiesToRun as $companyId) {
                 ['Content-Type: application/json'],
                 $cookieFile
             );
-            $inserted = 0;
-            if (preg_match('/"inserted"\s*:\s*(\d+)/', $import['body'], $insMatch)) {
-                $inserted = (int)$insMatch[1];
-            }
-            $importOk = $import['status'] === 200
-                && stripos($import['body'], '"ok":true') !== false
-                && $inserted > 0;
+            $importParsed = mbqa_parse_import_response($import);
+            $inserted = $importParsed['inserted'];
+            $importOk = $importParsed['ok'];
+            $importFailureNote = $importParsed['note'];
 
             if (!$importOk) {
                 $dbImportRows = mbqa_build_import_rows_from_db_template($conn, $slug, $companyId);
@@ -4571,7 +5308,7 @@ foreach ($companiesToRun as $companyId) {
                     $importPayload = json_encode([
                         'csrf_token' => $csrfIndex,
                         'import_excel_rows' => $dbImportRows,
-                    ]);
+                    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     $import = mbqa_http(
                         $moduleUrl . 'index.php',
                         'POST',
@@ -4579,13 +5316,10 @@ foreach ($companiesToRun as $companyId) {
                         ['Content-Type: application/json'],
                         $cookieFile
                     );
-                    $inserted = 0;
-                    if (preg_match('/"inserted"\s*:\s*(\d+)/', $import['body'], $insMatch)) {
-                        $inserted = (int)$insMatch[1];
-                    }
-                    $importOk = $import['status'] === 200
-                        && stripos($import['body'], '"ok":true') !== false
-                        && $inserted > 0;
+                    $importParsed = mbqa_parse_import_response($import);
+                    $inserted = $importParsed['inserted'];
+                    $importOk = $importParsed['ok'];
+                    $importFailureNote = $importParsed['note'];
                     $importNote = 'from live DB row after round-trip import';
                 }
             }
@@ -4606,7 +5340,7 @@ foreach ($companiesToRun as $companyId) {
                     $importStepNote = 'import POST ok but list rows missing in HTML after import';
                 }
             } else {
-                $importStepNote = substr($import['body'], 0, 120);
+                $importStepNote = $importFailureNote;
             }
 
             $steps[] = mbqa_step_result('import_db', $importOk, $importStepNote);
@@ -4703,8 +5437,8 @@ foreach ($companiesToRun as $companyId) {
 @unlink($cookieFile);
 
 $outDir = mbqa_report_dir($root);
-if (!is_dir($outDir)) {
-    mkdir($outDir, 0775, true);
+if (!mbqa_ensure_reports_dir_writable($root)) {
+    mbqa_fail_preflight('qa-reports is not writable; cannot write module browser QA output.');
 }
 $generatedAt = date('Y-m-d H:i:s');
 $reportFilePaths = mbqa_report_paths_for_run($root, $generatedAt);
@@ -4716,11 +5450,13 @@ $reportPayload = [
         'json' => $reportFilePaths['json_basename'],
         'xlsx' => $reportFilePaths['xlsx_basename'],
     ],
+    'run_id' => mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '',
     'module_step_exceptions' => mbqa_runner_module_step_exceptions(),
     'run_options' => [
         'module' => $filterModule,
         'company' => $filterCompany,
         'pilot_only' => $pilotOnly,
+        'ui_click_smoke' => (bool)$mbqaOptions['ui_click_smoke'],
         'base_url' => $baseUrl,
     ],
     'results' => $results,
@@ -4786,13 +5522,26 @@ if ($pilotOnly) {
     $rerunParams['pilot_only'] = '1';
     unset($rerunParams['module']);
 }
+if (!empty($mbqaOptions['ui_click_smoke'])) {
+    $rerunParams['ui_click_smoke'] = '1';
+}
 if ($baseUrl !== 'http://localhost/it-management/') {
     $rerunParams['base_url'] = $baseUrl;
 }
 $rerunHref = 'module_browser_qa_runner.php?' . http_build_query($rerunParams);
 
 $runStopped = mbqa_browser_ajax_active() && mbqa_ajax_should_stop($root);
-$finalStatus = $runStopped ? 'cancelled' : ($exitCode === 0 ? 'done' : 'done');
+$finalStatus = $runStopped ? 'cancelled' : 'done';
+$finalMessage = $runStopped ? 'Run stopped by user' : ($exitCode === 0 ? '' : 'QA completed with failing steps');
+if (!$runStopped && !$mbqaEquipmentCleanup['ok'] && $finalMessage === '') {
+    $finalMessage = 'QA completed with failing steps';
+}
+if (!$runStopped && $mbqaEquipmentCleanupNote !== '') {
+    $finalMessage = $finalMessage === ''
+        ? $mbqaEquipmentCleanupNote
+        : ($finalMessage . ' ' . $mbqaEquipmentCleanupNote);
+}
+mbqa_ajax_cleanup_stale_files($root, mbqa_browser_ajax_active() ? mbqa_browser_ajax_run_id() : '');
 
 if (mbqa_browser_ajax_active()) {
     $ajaxDone = [
@@ -4807,11 +5556,10 @@ if (mbqa_browser_ajax_active()) {
         'xlsx_href' => $xlsxBuilt['ok'] ? $xlsxRel : '',
         'report_href' => $reportHref,
         'rerun_href' => $rerunHref,
-        'message' => $runStopped
-            ? 'Run stopped by user'
-            : ($mbqaEquipmentCleanupNote !== '' ? $mbqaEquipmentCleanupNote : ''),
+        'message' => $finalMessage,
     ];
     mbqa_browser_ajax_write_progress($root, mbqa_browser_ajax_run_id(), $ajaxDone);
+    @unlink(mbqa_ajax_cancel_path($root, mbqa_browser_ajax_run_id()));
     if (!headers_sent()) {
         header('Content-Type: application/json; charset=utf-8');
     }

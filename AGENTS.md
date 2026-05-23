@@ -63,7 +63,7 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 ### Generated QA reports (`qa-reports/`)
 
-* `module_browser_qa_runner.php`, `module_browser_qa_runnerV2.php`, and build-report scripts write **UTF-8** via `scripts/lib/utf8_file.php` (`itm_write_utf8_text_file`).
+* `module_browser_qa_runner.php` and `module_browser_qa_build_report.php` write **UTF-8** via `scripts/lib/utf8_file.php` (`itm_write_utf8_text_file`).
 * **`.md` under `qa-reports/`** may be written **with a UTF-8 BOM** (`EF BB BF`) so **Windows Notepad** opens them correctly.
 * **`.json` under `qa-reports/`** is UTF-8 **without BOM** — `json_decode()` rejects a leading BOM; the report builder strips BOM on read if an older file still has one.
 
@@ -197,7 +197,7 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 | `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table helpers (run manually after equipment delete/clear-table changes) |
 | `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table transaction (run manually after employees `clear_table` changes) |
 
-**Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` or QA tags `MBQA-equipment_types-…` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. **`module_browser_qa_runner.php` / `module_browser_qa_runnerV2.php`** call `itm_run_equipment_test_module_artifacts_cleanup()` after each run; for other equipment DB tests, run `php scripts/cleanup_equipment_test_module_artifacts.php` manually.
+**Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` or QA tags `MBQA-equipment_types-…` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. **`module_browser_qa_runner.php`** calls `itm_run_equipment_test_module_artifacts_cleanup()` after each run; for other equipment DB tests, run `php scripts/cleanup_equipment_test_module_artifacts.php` manually.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 
@@ -219,10 +219,8 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI (V1 — default):** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Writes timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` and matching **`.xlsx`** each run. Browser footer: **Download JSON**, **Download XLSX**. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
-| `scripts/module_browser_qa_runnerV2.php` | **Browser + CLI (V2):** Same Tier A/C/D HTTP checklist as V1, plus early module/company preflight, auto-detected Base URL on Laragon (HTTPS→HTTP on localhost), structured **`import_db`** JSON parsing, stale AJAX progress cleanup, and optional browser-only **UI click smoke** (one module + one company) that appends `bulk_cancel_click`, `pagination_click`, `export_xlsx_click`, and `import_excel_click` to the run JSON. Same timestamped report filenames as V1. |
-| `scripts/module_browser_qa_build_report.php` | **Browser + CLI (V1):** Builds markdown from a runner JSON (pick by date): summary, tier reference, configured step exceptions, **Results by module**, failure categories, **Failures only** and **Skip** quick indexes, preview in browser. Writes `qa-reports/module-browser-qa.md` (overwritten each build). |
-| `scripts/module_browser_qa_build_reportV2.php` | **Browser + CLI (V2):** Same markdown sections as V1; Re-Run / form links target **`module_browser_qa_runnerV2.php`** and preserve **UI click smoke** when rebuilding. Use after a V2 runner JSON. |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Early module/company preflight; auto-detected Base URL on Laragon (HTTPS→HTTP on localhost); structured **`import_db`** JSON parsing; stale AJAX progress cleanup; optional browser-only **UI click smoke** (one module + one company) appending `bulk_cancel_click`, `pagination_click`, `export_xlsx_click`, and `import_excel_click`. Writes timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` and matching **`.xlsx`** each run. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
+| `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from a runner JSON (pick by date): summary, tier reference, configured step exceptions, **Results by module**, failure categories, **Failures only** and **Skip** quick indexes, preview in browser. Re-Run links preserve **UI click smoke** when set. Writes `qa-reports/module-browser-qa.md` (overwritten each build). |
 
 **Commands (repository root, Laragon — PowerShell):**
 
@@ -234,29 +232,14 @@ cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 & "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=expenses --company=4
 & "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=departments --company=1
 & "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1
-& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runnerV2.php --module=expenses --company=1
-& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_build_reportV2.php
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=expenses --company=1 --ui-click-smoke
 ```
 
-**cmd.exe** (no `&`): use backslashes — `"C:\...\php.exe" scripts\module_browser_qa_runner.php [options]` (or `module_browser_qa_runnerV2.php`).
+**cmd.exe** (no `&`): use backslashes — `"C:\...\php.exe" scripts\module_browser_qa_runner.php [options]`.
 
-Linux/macOS/CI (when `php` is on PATH): `php scripts/module_browser_qa_runner.php [options]` (or `module_browser_qa_runnerV2.php`).
+Linux/macOS/CI (when `php` is on PATH): `php scripts/module_browser_qa_runner.php [options]`.
 
-**Browser (Laragon):** V1 — `http://localhost/it-management/scripts/module_browser_qa_runner.php` + `module_browser_qa_build_report.php`. V2 — `http://localhost/it-management/scripts/module_browser_qa_runnerV2.php` + `module_browser_qa_build_reportV2.php`. Both use form → **Run QA** / **Stop** (AJAX poll). Catalog: `scripts/index.html`.
-
-**V1 vs V2 (same tier matrix; pick runner by workflow):**
-
-| Feature | V1 | V2 |
-|--------|----|----|
-| Tier A/C/D steps + `$bespokeSmoke` / `$skipClear` | ✓ | ✓ (same lists in `scripts/lib/mbqa_runner_tiers.php`) |
-| Configured step exceptions (`audit_logs`, …) | ✓ | ✓ (edit **both** runners — maps are duplicated today) |
-| Full regression (~101 modules × 5 companies) | **Default** | ✓ |
-| Base URL (browser form) | Manual default `http://localhost/it-management/` | Auto-detected; normalises HTTPS localhost → HTTP |
-| Preflight (unknown module/company, writable `qa-reports/`) | Minimal | ✓ |
-| `import_db` response parsing | Regex on body | `mbqa_parse_import_response()` (JSON) |
-| UI click smoke (real button clicks) | No | Browser-only; 1 module + 1 company |
-| Extra click steps | — | `bulk_cancel_click`, `pagination_click`, `export_xlsx_click`, `import_excel_click` |
-| Build report script | `module_browser_qa_build_report.php` | `module_browser_qa_build_reportV2.php` |
+**Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` + `module_browser_qa_build_report.php` — form → **Run QA** / **Stop** (AJAX poll). Catalog: `scripts/index.html`.
 
 **Runner browser form (defaults):**
 
@@ -266,15 +249,15 @@ Linux/macOS/CI (when `php` is on PATH): `php scripts/module_browser_qa_runner.ph
 | **Or module slug (manual)** | Text | Empty — when filled, overrides the Module select for this run (`module_manual` → `module` query param) |
 | **Company** | Select | **Default company `1` (TechCorp Global)**; **ALL (companies 1–5)** still available in the dropdown |
 | **Pilot only** | Checkbox | Off — when checked, runs **`expenses`** only (all selected companies) |
-| **UI click smoke** (V2 form only) | Checkbox | Off — when checked with **one module + one company**, appends real click steps after the HTTP run |
+| **UI click smoke** | Checkbox | Off — when checked with **one module + one company**, appends real click steps after the HTTP run |
 
-CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for all modules / all tenants. Browser form defaults to company **1** unless the user selects **ALL**. V2 CLI `--ui-click-smoke` exits with instructions — use the V2 browser form for real clicks.
+CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for all modules / all tenants. Browser form defaults to company **1** unless the user selects **ALL**. CLI `--ui-click-smoke` exits with instructions — use the browser form for real clicks.
 
 **Browser live progress (AJAX):** Click **Run QA** on the form (not bare `?run=1`). JavaScript polls `?ajax=progress&run_id=…` every 400ms while the run request executes with `?run=1&ajax=1&run_id=…`. Progress is written to `qa-reports/.mbqa-progress-{run_id}.json` on each step (`Running QA… co {id} — {module} - {step}`). **Stop** sets a cancel flag (`?ajax=cancel`) and aborts the fetch; the runner exits between companies/modules. CLI unchanged.
 
 **Bare `?run=1` (with or without `stream=1`, without `ajax=1`):** the runner shows an HTML resume page (not a run): `run=1` alone does not poll progress; `stream=1` is legacy NDJSON (often buffered on Laragon). Use the form so the URL includes `ajax=1` and `run_id`.
 
-**Markdown report (`module_browser_qa_build_report.php` / `module_browser_qa_build_reportV2.php`):** reads a timestamped runner JSON under `qa-reports/` (browser form: pick date; CLI: `--date=YYYY-MM-DD` or latest) and writes **`qa-reports/module-browser-qa.md`** (overwritten each build). The runner JSON already includes a matching **`.xlsx`**; the build step does not replace it. After `php scripts/module_browser_qa_build_report.php` (or `…V2.php`), the `.md` includes:
+**Markdown report (`module_browser_qa_build_report.php`):** reads a timestamped runner JSON under `qa-reports/` (browser form: pick date; CLI: `--date=YYYY-MM-DD` or latest) and writes **`qa-reports/module-browser-qa.md`** (overwritten each build). The runner JSON already includes a matching **`.xlsx`**; the build step does not replace it. After `php scripts/module_browser_qa_build_report.php`, the `.md` includes:
 
 1. **Summary** — pass/fail counts  
 2. **Skipped steps** — table of `module_step_exceptions` (module, step slug, plain-language label, reason)  
@@ -295,7 +278,7 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 
 Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other steps are Pass with notes `N/A smoke`, `Skip (bespoke smoke)`, or `N/A`. **`$skipClear`:** tenant FK-aware clear is never run on these tables (shared auth). Tier D also skips start-of-module clear with note `Skip (bespoke smoke)`.
 
-**Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php` and `scripts/module_browser_qa_runnerV2.php`** (keep both maps identical — module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `user_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
+**Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php`** (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `user_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
 
 **Checklist per standard module (Tier A, including Protection Zone folders)** — step order (runner slug = table name unless a step exception applies):
 
@@ -355,7 +338,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 * **Tier C** — `is_*` façades (including `is_switch`): routing smoke on `list` / `search` / `sort`; other steps **N/A routing** in `mbqa_runner_module_step_exceptions()`.
 * **Tier D** — `$bespokeSmoke` modules (`budget_report`, `expiring`, `rack_planner`, `floor_plans`, `companies`): navigation smoke only.
 
-**V2 UI click smoke:** browser form only — enable **UI click smoke**, select **one module** and **one company**, then **Run QA**. After the HTTP run finishes, JavaScript loads the module index in a hidden iframe and appends click-evidence steps via `ajax=ui_click_evidence`. CLI `--ui-click-smoke` is a guard that exits with instructions to use the form.
+**UI click smoke:** browser form only — enable **UI click smoke**, select **one module** and **one company**, then **Run QA**. After the HTTP run finishes, JavaScript loads the module index in a hidden iframe and appends click-evidence steps via `ajax=ui_click_evidence`. CLI `--ui-click-smoke` is a guard that exits with instructions to use the form.
 
 **Cursor browser:** Use IDE browser for the **Expenses pilot** (all five companies) and spot-checks; use the CLI runner for full ~101×5 coverage. Latest results: **`qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json`**, matching **`.xlsx`**, and **`module-browser-qa.md`** (commit when publishing QA results).
 

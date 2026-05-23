@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared build-report logic for module_browser_qa_build_report.php (V1) and module_browser_qa_build_reportV2.php.
+ * Shared build-report logic for module_browser_qa_build_report.php.
  *
  * Entry scripts set $GLOBALS['mbqa_build_report_config'] before requiring this file.
  */
