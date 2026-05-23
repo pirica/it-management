@@ -1670,7 +1670,7 @@ $sampleSeedPrerequisites = [
     'approvers' => ['departments', 'employee_positions'],
     'employee_assignment_history' => ['departments'],
     'inventory_items' => ['inventory_categories', 'suppliers'],
-    'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities'],
+    'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities', 'equipment'],
 ];
 
 $companyNames = mbqa_company_name_map();

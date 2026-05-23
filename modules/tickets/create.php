@@ -521,11 +521,12 @@ $photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
                     <div class="form-row">
                         <div class="form-group">
                             <label>Related Asset</label>
-                            <select name="asset_id" id="ticketAssetSelect">
+                            <select name="asset_id" id="ticketAssetSelect" data-addable-select="1" data-add-table="equipment" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($assetOptions as $assetOption): ?>
                                     <option value="<?php echo (int)$assetOption['id']; ?>" <?php echo (string)$data['asset_id'] === (string)$assetOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($assetOption['label']); ?></option>
                                 <?php endforeach; ?>
+                                <option value="__add_new__">➕</option>
                             </select>
                             <?php if ($photoDeleteBlockedByAsset): ?>
                                 <div class="form-hint" id="relatedAssetInUseHint"><?php echo sanitize($photoDeleteBlockedMessage); ?></div>
