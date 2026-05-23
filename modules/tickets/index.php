@@ -99,42 +99,21 @@ function tickets_prepare_import_excel_rows(mysqli $conn, int $companyId, array $
         return $importRows;
     }
 
-    $headers = $importRows[0];
-    $values = $importRows[1];
     $importHeader = static function (string $field): string {
         return ucwords(str_replace('_', ' ', $field));
     };
 
+    $headers = $importRows[0];
+    $headerNorms = [];
     foreach ($headers as $i => $header) {
         $norm = strtolower(trim(preg_replace('/\s+/', ' ', (string)$header)));
-        $raw = trim((string)($values[$i] ?? ''));
-        if ($raw === '' || strcasecmp($raw, 'null') === 0) {
-            continue;
-        }
+        $headerNorms[$i] = $norm;
 
         if ($norm === 'status' || $norm === 'status id' || $norm === 'status name') {
-            if (!ctype_digit($raw)) {
-                $resolved = tickets_resolve_fk_id_by_name($conn, 'ticket_statuses', $companyId, $raw);
-                if ($resolved !== '') {
-                    $values[$i] = $resolved;
-                }
-            }
             $headers[$i] = $importHeader('status_id');
-            continue;
-        }
-
-        if ($norm === 'priority' || $norm === 'priority id' || $norm === 'priority name') {
-            if (!ctype_digit($raw)) {
-                $resolved = tickets_resolve_fk_id_by_name($conn, 'ticket_priorities', $companyId, $raw);
-                if ($resolved !== '') {
-                    $values[$i] = $resolved;
-                }
-            }
+        } elseif ($norm === 'priority' || $norm === 'priority id' || $norm === 'priority name') {
             $headers[$i] = $importHeader('priority_id');
-            continue;
-        }
-
-        if ($norm === 'external code' || $norm === 'ticket external code') {
+        } elseif ($norm === 'external code' || $norm === 'ticket external code') {
             $headers[$i] = $importHeader('ticket_external_code');
         }
     }
@@ -145,11 +124,12 @@ function tickets_prepare_import_excel_rows(mysqli $conn, int $companyId, array $
         $present[$norm] = true;
     }
 
+    $appendValues = [];
     if (empty($present['created by user id']) && empty($present['created by'])) {
         $userId = tickets_import_default_user_id($conn, $companyId);
         if ($userId > 0) {
             $headers[] = $importHeader('created_by_user_id');
-            $values[] = (string)$userId;
+            $appendValues[] = (string)$userId;
         }
     }
 
@@ -163,12 +143,45 @@ function tickets_prepare_import_excel_rows(mysqli $conn, int $companyId, array $
             mysqli_stmt_close($categoryStmt);
             if ($categoryRow) {
                 $headers[] = $importHeader('category_id');
-                $values[] = (string)(int)($categoryRow['id'] ?? 0);
+                $appendValues[] = (string)(int)($categoryRow['id'] ?? 0);
             }
         }
     }
 
-    return [$headers, $values];
+    $prepared = [$headers];
+    for ($rowIndex = 1, $rowCount = count($importRows); $rowIndex < $rowCount; $rowIndex++) {
+        if (!is_array($importRows[$rowIndex])) {
+            continue;
+        }
+
+        $values = array_values($importRows[$rowIndex]);
+        foreach ($headerNorms as $i => $norm) {
+            $raw = trim((string)($values[$i] ?? ''));
+            if ($raw === '' || strcasecmp($raw, 'null') === 0) {
+                continue;
+            }
+
+            if (($norm === 'status' || $norm === 'status id' || $norm === 'status name') && !ctype_digit($raw)) {
+                $resolved = tickets_resolve_fk_id_by_name($conn, 'ticket_statuses', $companyId, $raw);
+                if ($resolved !== '') {
+                    $values[$i] = $resolved;
+                }
+            } elseif (($norm === 'priority' || $norm === 'priority id' || $norm === 'priority name') && !ctype_digit($raw)) {
+                $resolved = tickets_resolve_fk_id_by_name($conn, 'ticket_priorities', $companyId, $raw);
+                if ($resolved !== '') {
+                    $values[$i] = $resolved;
+                }
+            }
+        }
+
+        foreach ($appendValues as $appendValue) {
+            $values[] = $appendValue;
+        }
+
+        $prepared[] = $values;
+    }
+
+    return $prepared;
 }
 
 /**
