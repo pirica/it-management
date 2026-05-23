@@ -43,13 +43,32 @@ function ticket_render_color_swatch(string $value): string
     return '<span title="' . sanitize($color) . '" aria-label="Quick Color Tag ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
 }
 
+/**
+ * Renders a lookup label badge tinted by ticket_statuses/ticket_priorities hex color.
+ */
+function ticket_render_lookup_badge(string $label, string $color, string $fallbackLabel = '-'): string
+{
+    $name = trim($label);
+    if ($name === '') {
+        $name = $fallbackLabel;
+    }
+
+    $hex = trim($color);
+    if ($hex === '' || !preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $hex)) {
+        $hex = '#9aa4b2';
+    }
+
+    return '<span class="badge" style="background-color:' . sanitize($hex) . '33;color:' . sanitize($hex) . ';">' . sanitize($name) . '</span>';
+}
+
 // Fetch ticket context
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT t.*, tc.name AS category_name, ts.name AS status_name, tp.name AS priority_name,
+        'SELECT t.*, tc.name AS category_name, ts.name AS status_name, ts.color AS status_color,
+            tp.name AS priority_name, tp.color AS priority_color,
             assigned_user.username AS assigned_to_username, created_user.username AS created_by_username,
             e.name AS asset_name
         FROM tickets t
@@ -132,6 +151,20 @@ if ($id > 0) {
                                 <tr>
                                     <th style="width:220px;"><?php echo sanitize($label); ?></th>
                                     <td><?php echo ticket_render_color_swatch((string)($value ?? '')); ?></td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php if ($field === 'status_id'): ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
+                                    <td><?php echo ticket_render_lookup_badge((string)($item['status_name'] ?? ''), (string)($item['status_color'] ?? ''), 'Open'); ?></td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php if ($field === 'priority_id'): ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
+                                    <td><?php echo ticket_render_lookup_badge((string)($item['priority_name'] ?? ''), (string)($item['priority_color'] ?? '')); ?></td>
                                 </tr>
                                 <?php continue; ?>
                             <?php endif; ?>
