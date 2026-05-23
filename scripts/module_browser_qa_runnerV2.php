@@ -2008,10 +2008,14 @@ function mbqa_runner_module_step_exceptions(): array
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
         ],
-        // Why: audit_logs is an immutable evidence trail; delete controls stay disabled in the UI.
+        // Why: audit_logs is an immutable evidence trail; delete/import/sample HTTP seed stay disabled in QA.
         'audit_logs' => [
+            'bulk_cancel' => 'N/A (no bulk-delete form in HTML)',
             'bulk_delete' => 'N/A (read-only audit centre; delete disabled)',
+            'clear_table' => 'N/A (read-only audit centre; delete disabled)',
+            'import_db' => 'N/A (read-only audit centre)',
             'single_delete' => 'N/A (read-only audit centre; delete disabled)',
+            'sample_data' => 'N/A (read-only audit centre)',
         ],
     ];
 
@@ -5111,17 +5115,25 @@ foreach ($companiesToRun as $companyId) {
         $paginationNav = mbqa_run_pagination_nav_step($moduleUrl, $cookieFile, $rowCountAfterAdd, $perPage);
         $steps[] = mbqa_step_result('pagination', $paginationNav['ok'], $paginationNav['note']);
 
-        $bulkCancelCheck = mbqa_verify_bulk_cancel_contract($index['body']);
-        if ($bulkCancelCheck['na']) {
-            $steps[] = mbqa_step_result('bulk_cancel', true, $bulkCancelCheck['note']);
+        $bulkCancelNaNote = mbqa_runner_module_step_exception_note($slug, 'bulk_cancel');
+        if ($bulkCancelNaNote !== null) {
+            $steps[] = mbqa_step_result('bulk_cancel', true, $bulkCancelNaNote);
         } else {
-            $steps[] = mbqa_step_result('bulk_cancel', $bulkCancelCheck['ok'], $bulkCancelCheck['note']);
+            $bulkCancelCheck = mbqa_verify_bulk_cancel_contract($index['body']);
+            if ($bulkCancelCheck['na']) {
+                $steps[] = mbqa_step_result('bulk_cancel', true, $bulkCancelCheck['note']);
+            } else {
+                $steps[] = mbqa_step_result('bulk_cancel', $bulkCancelCheck['ok'], $bulkCancelCheck['note']);
+            }
         }
 
         $deletePath = $modulesDir . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'delete.php';
         $canBulkAfterAdd = $rowCountAfterAdd >= $perPage && mbqa_index_shows_bulk_actions($index['body']);
 
-        if ($canBulkAfterAdd && is_file($deletePath) && $csrfIndex !== '') {
+        $bulkDeleteNaNote = mbqa_runner_module_step_exception_note($slug, 'bulk_delete');
+        if ($bulkDeleteNaNote !== null) {
+            $steps[] = mbqa_step_result('bulk_delete', true, $bulkDeleteNaNote);
+        } elseif ($canBulkAfterAdd && is_file($deletePath) && $csrfIndex !== '') {
             $bulkHtmlReady = mbqa_html_step_bulk_delete_ready($index['body']);
             $bulkIds = array_slice(mbqa_row_ids($index['body']), 0, 3);
             if (!empty($bulkIds) && $bulkHtmlReady['ok']) {
@@ -5204,7 +5216,10 @@ foreach ($companiesToRun as $companyId) {
             && is_file($deletePath)
             && $csrfIndex !== '';
 
-        if ($canRunClearTable) {
+        $clearTableNaNote = mbqa_runner_module_step_exception_note($slug, 'clear_table');
+        if ($clearTableNaNote !== null) {
+            $steps[] = mbqa_step_result('clear_table', true, $clearTableNaNote);
+        } elseif ($canRunClearTable) {
             $clearTableHtml = mbqa_html_step_clear_table_button($index['body']);
             if (!$clearTableHtml['ok']) {
                 $steps[] = mbqa_step_result('clear_table', false, $clearTableHtml['note']);
