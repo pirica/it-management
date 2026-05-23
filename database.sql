@@ -2927,7 +2927,6 @@ CREATE TABLE `tickets` (
   `created_by_user_id` int NOT NULL,
   `assigned_to_user_id` int DEFAULT NULL,
   `asset_id` int DEFAULT NULL,
-  `ui_color` char(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '#0969da',
   `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -2950,12 +2949,13 @@ CREATE TABLE `tickets` (
 -- Manual migration (existing databases only — skip if import uses CREATE TABLE above):
 -- ALTER TABLE `tickets` DROP INDEX `ticket_external_code`;
 -- ALTER TABLE `tickets` ADD UNIQUE KEY `uq_tickets_id_company` (`id`, `company_id`);
+-- ALTER TABLE `tickets` DROP COLUMN `ui_color`;
 -- Data for `tickets`
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', '#0969da', NULL, '2026-01-01 00:00:01');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', '#0969da', NULL, '2026-01-01 00:00:01');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '1', '1', '3', '#0969da', NULL, '2026-01-01 00:00:01');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', '#0969da', NULL, '2026-01-01 00:00:01');
-INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', '#0969da', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('3', '3', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '14', '9', '12', '1', '1', '3', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', NULL, '2026-01-01 00:00:01');
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', NULL, '2026-01-01 00:00:01');
 -- Table structure for `ui_configuration`
 DROP TABLE IF EXISTS `ui_configuration`;
 CREATE TABLE `ui_configuration` (
@@ -4184,7 +4184,7 @@ WHERE NOT EXISTS (
     FROM `user_companies` uc
     WHERE uc.`user_id` = u.`id` AND uc.`company_id` = c.`id`
 );
-INSERT IGNORE INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `ui_color`, `created_at`)
+INSERT IGNORE INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_user_id`, `assigned_to_user_id`, `asset_id`, `created_at`)
 SELECT
     c.`id`,
     t.`ticket_external_code`,
@@ -4196,7 +4196,6 @@ SELECT
     COALESCE(u_creator_target.`id`, u_fallback.`id`),
     u_assignee_target.`id`,
     e_target.`id`,
-    t.`ui_color`,
     '2026-01-01 00:00:01'
 FROM `tickets` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
@@ -5437,15 +5436,15 @@ DROP TRIGGER IF EXISTS `trg_tickets_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_tickets_audit_insert` AFTER INSERT ON `tickets` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'ui_color', NEW.`ui_color`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_tickets_audit_update` AFTER UPDATE ON `tickets` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'ui_color', OLD.`ui_color`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'ui_color', NEW.`ui_color`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_tickets_audit_delete` AFTER DELETE ON `tickets` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'ui_color', OLD.`ui_color`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DELIMITER $$
