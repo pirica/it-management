@@ -128,10 +128,28 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+function cr_is_safe_color_value($value) {
+    $color = trim((string)$value);
+    return (bool)preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color);
+}
+
+function cr_render_color_swatch($value) {
+    $safeColor = trim((string)$value);
+    if (!cr_is_safe_color_value($safeColor)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($safeColor) . '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($safeColor) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if ($table === 'ticket_priorities' && $field === 'color') {
+        return cr_render_color_swatch($value);
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -891,6 +909,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                            <?php elseif ($name === 'color' && $crud_table === 'ticket_priorities'): ?>
+                                <?php
+                                    $colorVal = cr_is_safe_color_value($displayVal) ? $displayVal : '#0000ff';
+                                ?>
+                                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                    <input type="color" name="<?php echo sanitize($name); ?>" id="ticketPriorityColorPicker" value="<?php echo sanitize(strtolower($colorVal)); ?>">
+                                    <span id="ticketPriorityColorPreview" aria-label="Color preview"><?php echo cr_render_color_swatch($colorVal); ?></span>
+                                </div>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
@@ -950,6 +976,22 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+(function () {
+    var picker = document.getElementById('ticketPriorityColorPicker');
+    var preview = document.getElementById('ticketPriorityColorPreview');
+    if (!picker || !preview) return;
+    function syncTicketPriorityColorPreview() {
+        var hex = (picker.value || '').toLowerCase();
+        if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(hex)) {
+            preview.innerHTML = '<span style="color:#666;">—</span>';
+            return;
+        }
+        preview.innerHTML = '<span title="' + hex + '" aria-label="Color swatch" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' + hex + ';vertical-align:middle;border-radius:2px;"></span>';
+    }
+    picker.addEventListener('input', syncTicketPriorityColorPreview);
+    picker.addEventListener('change', syncTicketPriorityColorPreview);
+})();
 </script>
 
 </body>
