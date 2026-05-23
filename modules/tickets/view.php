@@ -28,6 +28,21 @@ function ticket_photo_public_path(string $filename): string
     return TICKET_UPLOAD_URL . rawurlencode($filename);
 }
 
+function ticket_is_valid_hex_color(string $value): bool
+{
+    return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1;
+}
+
+function ticket_render_color_swatch(string $value): string
+{
+    $color = trim($value);
+    if (!ticket_is_valid_hex_color($color)) {
+        return '<span style="color:#666;">—</span>';
+    }
+
+    return '<span title="' . sanitize($color) . '" aria-label="Quick Color Tag ' . sanitize($color) . '" style="display:inline-block;width:14px;height:14px;border:1px solid #999;background:' . sanitize($color) . ';vertical-align:middle;border-radius:2px;"></span>';
+}
+
 // Fetch ticket context
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
@@ -83,7 +98,7 @@ if ($id > 0) {
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_user_id' => 'Created By',
                             'assigned_to_user_id' => 'Assigned To', 'asset_id' => 'Related Asset',
-                            'ui_color' => 'UI Color Tag', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
+                            'ui_color' => 'Quick Color Tag', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
                         ];
 
                         $fieldDisplayValues = [
@@ -110,6 +125,13 @@ if ($id > 0) {
                                             </div>
                                         <?php endif; ?>
                                     </td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php if ($field === 'ui_color'): ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
+                                    <td><?php echo ticket_render_color_swatch((string)($value ?? '')); ?></td>
                                 </tr>
                                 <?php continue; ?>
                             <?php endif; ?>
