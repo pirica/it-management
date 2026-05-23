@@ -771,7 +771,7 @@ if (!function_exists('itm_format_record_usage_source_label')) {
             return 'ticket Related Asset link(s)';
         }
 
-        return ucwords(str_replace('_', ' ', (string)$sourceTable));
+        return (string)$sourceTable;
     }
 }
 
